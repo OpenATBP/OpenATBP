@@ -1,0 +1,3 @@
+# Always checkout source with LF line endings
+src/*.c text eol=lf
+src/*.h text eol=lf
