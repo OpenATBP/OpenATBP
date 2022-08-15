@@ -4,14 +4,13 @@ import types
 import json
 
 PORT = 6778
-
+playerNum = 0
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(('0.0.0.0', PORT))
 
 class Packet():
 	cmd: str
 	payload: types.SimpleNamespace()
-
 	def __init__(self, cmd, payload):
 		self.cmd = cmd
 		self.payload = payload
@@ -62,13 +61,16 @@ def send_packet(data, conn):
 
 # Packet handlers
 # TODO: move these into seperate source file
-
 def handshake(data, conn):
 	reply = Packet("handshake", {"result": True})
 	send_packet(reply.get_json(), conn)
 
 def login(data, conn):
-	reply = Packet("login", {"player": 1234, "teg_id": "Guest"})
+	global playerNum
+	reply = Packet("login", {"player": data['payload']['auth_id'], "teg_id": data['payload']['teg_id']})
+	playerNum += 1
+	print("Logged in normally!")
+	print(data)
 	send_packet(reply.get_json(), conn)
 
 def go_character_select(data, conn):

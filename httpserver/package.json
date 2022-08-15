@@ -1,0 +1,14 @@
+{
+  "name": "httpserver",
+  "version": "1.0.0",
+  "description": "Server to handle HTTP requests sent by the ATBP client",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "fs": "0.0.1-security"
+  }
+}
