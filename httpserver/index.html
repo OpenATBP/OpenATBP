@@ -88,36 +88,51 @@
 					}
 				};
 				LoginModule.showLoginWindow = function(){
-					console.log("test");
-					try{
-							var xhr = new XMLHttpRequest();
-							xhr.open("POST", "http://127.0.0.1:8001/service/authenticate/whoami");
+					var userName = prompt("Enter name");
+					if(userName != null){
+						try{
 
-							xhr.onload = () => {
-								document.cookie = `TEGid=SpookyUmbrella`;
-								document.cookie = "authid=0001";
-								document.cookie = `dname=Spooky Umbrella`;
-								document.cookie = "authpass=dev1";
-								document.cookie = "logged=true";
-								unity.SendMessage("MainGameController","HandleLogin","");
-							};
+								fetch(`http://127.0.0.1:8001/service/authenticate/user/${userName}`,{ //If user exists, requests the user information to authenticate
+									Method: "GET",
+									Body: JSON.stringify({"username":userName}),
+									Mode: 'cors',
+									Cache: 'default'
+								}).then((res) => res.json()).then((data) => {
+									if(data != undefined && data.user == undefined){
+										document.cookie = `TEGid=${data.TEGid}`,
+										document.cookie = `authid=${data.authid}`;
+										document.cookie = `dname=${data.dname}`;
+										document.cookie = `authpass=${data.authpass}`;
+										document.cookie = "logged=true";
+										unity.SendMessage("MainGameController","HandleLogin","");
+									}else{ //If user does not exist, it asks for a password to add as the authpass to the database. If passwords are stored, will need to hash
+										var password = prompt("New user! Enter password");
+										if(password != null){
+											var xhr = new XMLHttpRequest();
+											xhr.open("POST", `http://127.0.0.1:8001/service/authenticate/user/${userName.replace("%20"," ")}`);
 
-							xhr.send(JSON.stringify({"displayName":"Spooky Rhombus"}));
-							/*
-							fetch(`http://127.0.0.1:8001/service/authenticate/whoami`,{
-								Method: "POST",
-								Body: JSON.stringify({"displayName":"Spooky Umbrella"}),
-								Mode: 'cors',
-								Cache: 'default'
-							}).then((res) => res.json()).then((data) => {
+											xhr.onload = () => {
+												var userData = JSON.parse(xhr.response);
 
+												document.cookie = `TEGid=${userData.TEGid}`,
+												document.cookie = `authid=${userData.authid}`;
+												document.cookie = `dname=${userData.dname}`;
+												document.cookie = `authpass=${userData.authpass}`;
+												document.cookie = "logged=true";
+												unity.SendMessage("MainGameController","HandleLogin","");
 
-							}).catch((err) => {
-								console.log(err);
-							});
-							*/
-					}catch(e){
-						console.log(e);
+											};
+
+											xhr.send(JSON.stringify({"password": password}));
+										}
+									}
+								}).catch((err) => {
+									console.log(err);
+								});
+
+						}catch(e){
+							console.log(e);
+						}
 					}
 
 				};
