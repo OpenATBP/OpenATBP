@@ -32,3 +32,6 @@ replay_pid*
 
 # Node Modules #
 /httpserver/node_modules
+
+# Key/secret files #
+mongosecrets.js
