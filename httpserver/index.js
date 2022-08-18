@@ -5,6 +5,8 @@ const host = 'localhost';
 const port = 8001;
 
 const secrets = require('./mongosecrets.js');
+const getRequest = require('./get-requests.js');
+const postRequest = require('./post-requests.js');
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = secrets.uri;
@@ -85,7 +87,7 @@ client.connect(err => {
       'Access-Control-Allow-Methods': 'OPTIONS, POST, GET',
       'Access-Control-Max-Age': 2592000
     });
-
+    console.log(req.url + " " + req.method);
     if(req.method == "POST"){ //Handles new user request
       if(req.url.includes("/authenticate/user")){
         var userNameSplit = req.url.split("/");
@@ -101,27 +103,31 @@ client.connect(err => {
             res.end(JSON.stringify(user));
           })
         });
-      }else{ //DEPRECATED
-        var body = "";
-        req.on("data", (data) => {
-          body += data;
-        });
-
-        req.on('end', () => { //When finished reading the data, it will write to the file listed by the POST request. This is to my PC but will eventually go to the server.
-          console.log(JSON.parse(body));
-          fs.writeFile(`/Users/0lies/Desktop/Blank ATBP/ATBP-web/htdocs${req.url}`,JSON.stringify(JSON.parse(body))).then(() => {
-            res.end(JSON.stringify({"test": "Working!"}));
-          }).catch((e) => {
-            console.log(e);
-          });
-        });
+      }else if(req.url.includes("/service/authenticate/login")){ //DEPRECATED
+        postRequest.handleLogin({}).then((obj) => {
+          res.end(obj);
+        }).catch(console.error);
     }
   }else if(req.method == "GET"){ //Handles web request for user information when logging in
       if(req.url.includes("/authenticate/user")){
         var userNameSplit = req.url.split("/");
         var userName = userNameSplit[userNameSplit.length-1];
+      }else if(req.url.includes("/crossdomain.xml")){
+        res.end(getRequest.handleCrossDomain());
+      }else if(req.url.includes("/service/presence/present")){
+        res.end(getRequest.handlePresent());
+      }else if(req.url.includes("/service/authenticate/whoami")){
+        res.end(getRequest.handleWhoAmI({}));
+      }else if(req.url.includes("/service/data/user/champions/tournament")){
+        res.end(getRequest.handleTournamentData({}));
+      }else if(req.url.includes("/service/shop/inventory")){
+        getRequest.handleShop().then((data) => {
+          res.end(data);
+        }).catch(console.error);
+      }else if(req.url.includes("/service/data/config/champions")){
+        res.end(getRequest.handleChampConfig());
       }
-        //console.log(JSON.parse(body));
+        /*
         const collection = client.db("openatbp").collection("players");
         var filter = {"user.TEGid": userName.replace("%20","")};
         collection.findOne(filter).then((data) => {
@@ -134,9 +140,9 @@ client.connect(err => {
             res.end(JSON.stringify({"user": "null"}));
           }
         }).catch(console.error);
-
+        */
     }
-     //Doesn't seem to matter right now. Just resolves the request.
+
   }
 
   const server = http.createServer(requestListener)
