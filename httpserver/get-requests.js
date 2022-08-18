@@ -12,8 +12,18 @@ module.exports = {
   handlePresent: function(){ // /service/presence/present
     return (JSON.stringify({}));
   },
-  handleWhoAmI: function(data){ // /service/authenticate/whoami?authToken={data.token} RETURNS displayName
-    return (JSON.stringify({"displayName": "Spooky Umbrella"}));
+  handleWhoAmI: function(data,collection){ // /service/authenticate/whoami?authToken={data.token} RETURNS displayName
+    return new Promise(function(resolve, reject) {
+      var authTokenSplit = data.split("=");
+      var authToken = authTokenSplit[authTokenSplit.length-1];
+      console.log("AuthToken: " + authToken);
+      collection.findOne({"authToken":authToken}).then((res) => {
+        if(res != null) resolve(JSON.stringify({"displayName":res.user.dname}));
+        else reject();
+      }).catch((e) => {
+        reject(e);
+      });
+    });
   },
   handleTournamentData: function(data) { // /service/data/user/champions/tournament?authToken={data.token} Useless unless we do a tournament
     return (JSON.stringify({
@@ -48,6 +58,15 @@ module.exports = {
   handlePlayerFriends: function(){ // /service/presence/roster/{TEGiid} RETURNS friends list from db
     return new Promise(function(resolve, reject) {
 
+    });
+  },
+  handleBrowserLogin: function(username,collection){
+    return new Promise(function(resolve, reject) {
+      collection.findOne({"user.TEGid": username}).then((data) => {
+        resolve(data);
+      }).catch((err) => {
+        reject(err);
+      });
     });
   }
 };

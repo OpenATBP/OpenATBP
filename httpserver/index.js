@@ -31,6 +31,7 @@ function createNewUser(username,authpass){ //Creates new user in web server and 
       console.log(playerNumber);
       collection.updateOne({"playerNum":"true"}, {$set: {num: `${newNumber}`}}, {upsert:true}).then(() => { //Tells the database that we have one new user
         console.log("Successfully updated!");
+        var token = Math.random().toString(36).slice(2,10);
         var playerFile = {
           user: {
             "TEGid": username.replace("%20"," ").replace(" ", ""),
@@ -62,14 +63,11 @@ function createNewUser(username,authpass){ //Creates new user in web server and 
             "scoreTotal": 0,
             "rankProgress": "0.5",
             "gameLog": []
-          }
+          },
+          authToken: token
         };
         collection.insertOne(playerFile).then(() => { //Writes displayName file for the user
-          fs.writeFile(`/Users/0lies/Desktop/Blank ATBP/ATBP-web/htdocs/service/authenticate/whoami`,JSON.stringify({"displayName":playerFile.user.dname})).then(() => {
-            fulfill(playerFile.user);
-          }).catch((er) => {
-            reject(er);
-          });
+          fulfill(playerFile.user);
         }).catch((err) => {
           reject(err);
         });
@@ -80,6 +78,7 @@ function createNewUser(username,authpass){ //Creates new user in web server and 
 
 client.connect(err => {
   const requestListener = function(req,res) {
+    const collection = client.db("openatbp").collection("players");
     //console.log(Object.keys(req));
     //console.log(res);
     res.writeHead(200, { //This is what requests are allowed to go through
@@ -98,26 +97,50 @@ client.connect(err => {
         });
 
         req.on('end', () => { //When finished reading the data, it will create a new user.
-          console.log(JSON.parse(body));
-          createNewUser(userName,JSON.parse(body).password).then((user) => {
-            res.end(JSON.stringify(user));
-          })
+          createNewUser(userName,JSON.parse(body).password).then((data) => {
+            res.end(JSON.stringify(data));
+          }).catch(console.error);
         });
-      }else if(req.url.includes("/service/authenticate/login")){ //DEPRECATED
-        postRequest.handleLogin({}).then((obj) => {
-          res.end(obj);
-        }).catch(console.error);
+      }else if(req.url.includes("/service/authenticate/login")){
+        req.on("data", (data) => {
+          body += data;
+        });
+
+        req.on('end', () => { //When finished reading the data, it will create a new user.
+          console.log(body.replace("undefined",""));
+          if(body.replace("undefined","") != ""){
+            postRequest.handleLogin(JSON.parse(body.replace("undefined","")),collection).then((obj) => {
+              res.end(obj);
+            }).catch(console.error);
+          }
+        });
+    }else if(req.url.includes('/service/presence/present')){
+      req.on("data", (data) => {
+        body += data;
+      });
+
+      req.on('end', () => { //When finished reading the data, it will create a new user.
+        //console.log(body.replace("undefined",""));
+        if(body.replace("undefined","") != ""){
+          res.end(postRequest.handlePresent(body));
+        }
+      });
     }
   }else if(req.method == "GET"){ //Handles web request for user information when logging in
       if(req.url.includes("/authenticate/user")){
         var userNameSplit = req.url.split("/");
         var userName = userNameSplit[userNameSplit.length-1];
+        getRequest.handleBrowserLogin(userName,collection).then((data) => {
+          res.end(JSON.stringify(data));
+        }).catch(console.error);
       }else if(req.url.includes("/crossdomain.xml")){
         res.end(getRequest.handleCrossDomain());
       }else if(req.url.includes("/service/presence/present")){
         res.end(getRequest.handlePresent());
       }else if(req.url.includes("/service/authenticate/whoami")){
-        res.end(getRequest.handleWhoAmI({}));
+        getRequest.handleWhoAmI(req.url,collection).then((data) => {
+          res.end(data);
+        }).catch(console.error);
       }else if(req.url.includes("/service/data/user/champions/tournament")){
         res.end(getRequest.handleTournamentData({}));
       }else if(req.url.includes("/service/shop/inventory")){
@@ -128,18 +151,7 @@ client.connect(err => {
         res.end(getRequest.handleChampConfig());
       }
         /*
-        const collection = client.db("openatbp").collection("players");
-        var filter = {"user.TEGid": userName.replace("%20","")};
-        collection.findOne(filter).then((data) => {
-          if(data != null){ //Check to see if user exists in the database
-            fs.writeFile(`/Users/0lies/Desktop/Blank ATBP/ATBP-web/htdocs/service/authenticate/whoami`,JSON.stringify({"displayName":data.user.dname})).then(() => {
-              res.end(JSON.stringify(data.user));
-            }).catch(console.error);
-          }else{
-            console.log("No user exists!");
-            res.end(JSON.stringify({"user": "null"}));
-          }
-        }).catch(console.error);
+
         */
     }
 

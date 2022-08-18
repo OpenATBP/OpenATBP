@@ -98,12 +98,12 @@
 									Mode: 'cors',
 									Cache: 'default'
 								}).then((res) => res.json()).then((data) => {
-									if(data != undefined && data.user == undefined){
-										document.cookie = `TEGid=${data.TEGid}`,
-										document.cookie = `authid=${data.authid}`;
-										document.cookie = `dname=${data.dname}`;
-										document.cookie = `authpass=${data.authpass}`;
-										document.cookie = "logged=true";
+									if(data != null){
+										document.cookie = `TEGid=${data.user.TEGid}`,
+										document.cookie = `authid=${data.user.authid}`;
+										document.cookie = `dname=${data.user.dname}`;
+										document.cookie = `authpass=${data.user.authpass}`;
+										document.cookie = "logged=true"
 										unity.SendMessage("MainGameController","HandleLogin","");
 									}else{ //If user does not exist, it asks for a password to add as the authpass to the database. If passwords are stored, will need to hash
 										var password = prompt("New user! Enter password");
@@ -118,7 +118,7 @@
 												document.cookie = `authid=${userData.authid}`;
 												document.cookie = `dname=${userData.dname}`;
 												document.cookie = `authpass=${userData.authpass}`;
-												document.cookie = "logged=true";
+												document.cookie = "logged=true"
 												unity.SendMessage("MainGameController","HandleLogin","");
 
 											};
