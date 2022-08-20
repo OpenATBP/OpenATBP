@@ -63,6 +63,7 @@ function createNewUser(username,authpass){ //Creates new user in web server and 
             "scoreHighest": 0,
             "scoreTotal": 0
           },
+          inventory: [],
           authToken: token
         };
         collection.insertOne(playerFile).then(() => { //Creates new user in the db
@@ -78,6 +79,7 @@ function createNewUser(username,authpass){ //Creates new user in web server and 
 client.connect(err => {
   const requestListener = function(req,res) {
     const collection = client.db("openatbp").collection("players");
+    const shopCollection = client.db("openatbp").collection("shop");
     //console.log(Object.keys(req));
     //console.log(res);
     res.writeHead(200, { //This is what requests are allowed to go through
@@ -86,8 +88,8 @@ client.connect(err => {
       'Access-Control-Max-Age': 2592000
     });
     console.log(req.url + " " + req.method);
-    if(req.method == "POST"){ //Handles new user request
-      if(req.url.includes("/authenticate/user")){
+    if(req.method == "POST"){ //Handles POST Requests
+      if(req.url.includes("/authenticate/user")){ //Custom protocol that deals with new users being created
         var userNameSplit = req.url.split("/");
         var userName = userNameSplit[userNameSplit.length-1];
         var body = "";
@@ -100,12 +102,12 @@ client.connect(err => {
             res.end(JSON.stringify(data));
           }).catch(console.error);
         });
-      }else if(req.url.includes("/service/authenticate/login")){
+      }else if(req.url.includes("/service/authenticate/login")){ //Cookies are good and client is logging into Lobby Server
         req.on("data", (data) => {
           body += data;
         });
 
-        req.on('end', () => { //When finished reading the data, it will create a new user.
+        req.on('end', () => {
           console.log(body.replace("undefined",""));
           if(body.replace("undefined","") != ""){
             postRequest.handleLogin(JSON.parse(body.replace("undefined","")),collection).then((obj) => {
@@ -113,53 +115,70 @@ client.connect(err => {
             }).catch(console.error);
           }
         });
-    }else if(req.url.includes('/service/presence/present')){
+    }else if(req.url.includes('/service/presence/present')){ //Client checks in with the server to make sure the connection is still valid
       req.on("data", (data) => {
         body += data;
       });
 
-      req.on('end', () => { //When finished reading the data, it will create a new user.
-        //console.log(body.replace("undefined",""));
+      req.on('end', () => {
         if(body.replace("undefined","") != ""){
           res.end(postRequest.handlePresent(body));
         }
       });
+    }else if(req.url.includes("/service/shop/purchase")){ //User tries to purchase an item
+      req.on("data", (data) => {
+        body += data;
+      });
+
+      req.on('end', () => {
+        var boughtItem = JSON.parse(body.replace("undefined","")).data.item;
+        var tokenSplit = req.url.split("?");
+        var aToken = tokenSplit[tokenSplit.length-1].replace("authToken=", "");
+        postRequest.handlePurchase(aToken,boughtItem,collection,shopCollection).then((dat) => {
+          res.end(dat);
+        }).catch(console.error);
+        console.log(boughtItem);
+      });
     }
-  }else if(req.method == "GET"){ //Handles web request for user information when logging in
-      if(req.url.includes("/authenticate/user")){
+  }else if(req.method == "GET"){ //Handles GET requests
+      if(req.url.includes("/authenticate/user")){ //Custom authentication protocol for logging into an existing user
         var userNameSplit = req.url.split("/");
         var userName = userNameSplit[userNameSplit.length-1];
         getRequest.handleBrowserLogin(userName,collection).then((data) => {
           res.end(JSON.stringify(data));
         }).catch(console.error);
-      }else if(req.url.includes("/crossdomain.xml")){
+      }else if(req.url.includes("/crossdomain.xml")){ //Gets crossdomain info
         res.end(getRequest.handleCrossDomain());
-      }else if(req.url.includes("/service/presence/present")){
+      }else if(req.url.includes("/service/presence/present")){ //Doesn't do anything
         res.end(getRequest.handlePresent());
-      }else if(req.url.includes("/service/authenticate/whoami")){
+      }else if(req.url.includes("/service/authenticate/whoami")){ //Gets display name from the database
         getRequest.handleWhoAmI(req.url,collection).then((data) => {
           res.end(data);
         }).catch(console.error);
-      }else if(req.url.includes("/service/data/user/champions/tournament")){
+      }else if(req.url.includes("/service/data/user/champions/tournament")){ //Does nothing unless we run a tournament and even then I think the devs disabled tournament in the client
         res.end(getRequest.handleTournamentData({}));
-      }else if(req.url.includes("/service/shop/inventory")){
-        getRequest.handleShop().then((data) => {
+      }else if(req.url.includes("/service/shop/inventory")){ //Gets all shop info from the server
+
+        getRequest.handleShop(shopCollection).then((data) => {
           res.end(data);
         }).catch(console.error);
-      }else if(req.url.includes("/service/data/config/champions")){
+      }else if(req.url.includes("/service/data/config/champions")){ //Grabs data for elo/tier progression
         res.end(getRequest.handleChampConfig());
-      }else if(req.url.includes("/service/data/user/champions/profile")){
+      }else if(req.url.includes("/service/data/user/champions/profile")){ //Grabs user data
         var tokenSplit = req.url.split("?"); //Definitely feel like there's a better way to get the authToken query
         var aToken = tokenSplit[tokenSplit.length-1].replace("authToken=","");
         getRequest.handlePlayerChampions(aToken,collection).then((data) => {
           res.end(data);
         }).catch(console.error);
-      }else if(req.url.includes("/service/presence/roster/")){
+      }else if(req.url.includes("/service/presence/roster/")){ // Grabs friends list :)
         res.end(JSON.stringify({"roster":[]}));
+      }else if(req.url.includes('/service/shop/player')){ //Grabs player's inventory
+        var tokenSplit = req.url.split("?");
+        var aToken = tokenSplit[tokenSplit.length-1].replace("authToken=", ""); //Reminder to make this a function
+        getRequest.handlePlayerInventory(aToken,collection).then((data) => {
+          res.end(data);
+        }).catch(console.error);
       }
-        /*
-
-        */
     }
 
   }

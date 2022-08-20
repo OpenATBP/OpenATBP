@@ -30,13 +30,19 @@ module.exports = {
     	"tournamentData": {}
     }));
   },
-  handleShop: function(){ // /service/shop/inventory RETURNS all inventory data
+  handleShop: function(collection){ // /service/shop/inventory RETURNS all inventory data
     return new Promise(function(resolve, reject) {
+      collection.find({}).toArray((e,res) => {
+        if(e) reject(e);
+        resolve(JSON.stringify(res));
+      });
+      /*
       fs.readFile("/Users/0lies/Desktop/Blank ATBP/ATBP-web/htdocs/service/shop/inventory").then((data) => {
         resolve(data);
       }).catch((err) => {
         reject(err);
       });
+      */
     });
   },
   handleChampConfig: function(){ // /service/data/config/champions/ Not sure if this is what it should be returning or not.
@@ -44,9 +50,13 @@ module.exports = {
     "eloTier": ["1", "100", "200", "500"] //This changes the tiers that change your icon based on elo. 500 marks bronze and 2000 is burple
     });
   },
-  handlePlayerInventory: function(){ // /service/shop/player?authToken={data.token} RETURNS player inventory from db
+  handlePlayerInventory: function(token,collection){ // /service/shop/player?authToken={data.token} RETURNS player inventory from db
     return new Promise(function(resolve, reject) {
-
+      collection.findOne({"authToken":token}).then((data) => {
+        if(data != null) resolve(JSON.stringify(data.inventory));
+      }).catch((err) => {
+        reject(err);
+      });
     });
   },
   handlePlayerChampions: function(data,collection){ // /service/data/user/champions/profile?authToken={data.token} RETURNS player info from db
