@@ -66,9 +66,7 @@ def handshake(data, conn):
 	send_packet(reply.get_json(), conn)
 
 def login(data, conn):
-	global playerNum
-	reply = Packet("login", {"player": data['payload']['auth_id'], "teg_id": data['payload']['teg_id']})
-	playerNum += 1
+	reply = Packet("login", {"player": float(data['payload']['auth_id']), "teg_id": data['payload']['teg_id'], "name": data['payload']['name']})
 	print("Logged in normally!")
 	print(data)
 	send_packet(reply.get_json(), conn)

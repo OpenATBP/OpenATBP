@@ -40,15 +40,16 @@ function createNewUser(username,authpass){ //Creates new user in web server and 
             "authpass": `${authpass}`
           },
           player: {
-            "disconnects": 0,
-            "playsPVP": 0,
-            "winsPVP": 0,
-            "playsBots": 0,
-            "winsBots": 0,
-            "elo": 1.5,
-            "tier": 1,
-            "rank": 3.0,
-            "points": 0,
+            "playsPVP": 1.0,
+            "tier": 0.0,
+            "elo": 0.0,
+            "disconnects": 0.0,
+            "playsBots": 0.0,
+            "rank" :1.0,
+            "rankProgress": 0.0,
+            "winsPVP": 0.0,
+            "winsBots": 0.0,
+            "points": 0.0,
             "coins": 500,
             "kills": 0,
             "deaths": 0,
@@ -60,13 +61,11 @@ function createNewUser(username,authpass){ //Creates new user in web server and 
             "largestSpree": 0,
             "largestMulti": 0,
             "scoreHighest": 0,
-            "scoreTotal": 0,
-            "rankProgress": "0.5",
-            "gameLog": []
+            "scoreTotal": 0
           },
           authToken: token
         };
-        collection.insertOne(playerFile).then(() => { //Writes displayName file for the user
+        collection.insertOne(playerFile).then(() => { //Creates new user in the db
           fulfill(playerFile.user);
         }).catch((err) => {
           reject(err);
@@ -149,6 +148,14 @@ client.connect(err => {
         }).catch(console.error);
       }else if(req.url.includes("/service/data/config/champions")){
         res.end(getRequest.handleChampConfig());
+      }else if(req.url.includes("/service/data/user/champions/profile")){
+        var tokenSplit = req.url.split("?"); //Definitely feel like there's a better way to get the authToken query
+        var aToken = tokenSplit[tokenSplit.length-1].replace("authToken=","");
+        getRequest.handlePlayerChampions(aToken,collection).then((data) => {
+          res.end(data);
+        }).catch(console.error);
+      }else if(req.url.includes("/service/presence/roster/")){
+        res.end(JSON.stringify({"roster":[]}));
       }
         /*
 

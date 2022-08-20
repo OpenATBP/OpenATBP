@@ -40,9 +40,8 @@ module.exports = {
     });
   },
   handleChampConfig: function(){ // /service/data/config/champions/ Not sure if this is what it should be returning or not.
-    return JSON.stringify({
-    	"upperELO": 2000,
-    	"eloTier": ["scrub", "gamer", "pro gamer"]
+    return JSON.stringify({"upperELO": 2000.0,
+    "eloTier": ["1", "100", "200", "500"] //This changes the tiers that change your icon based on elo. 500 marks bronze and 2000 is burple
     });
   },
   handlePlayerInventory: function(){ // /service/shop/player?authToken={data.token} RETURNS player inventory from db
@@ -50,9 +49,13 @@ module.exports = {
 
     });
   },
-  handlePlayerChampions: function(){ // /service/data/user/champions/profile?authToken={data.token} Not sure what this should return
+  handlePlayerChampions: function(data,collection){ // /service/data/user/champions/profile?authToken={data.token} RETURNS player info from db
     return new Promise(function(resolve, reject) {
-
+      collection.findOne({"authToken":data}).then((dat) => {
+        if(dat != null) resolve(JSON.stringify(dat.player));
+      }).catch((err) => {
+        reject(err);
+      });
     });
   },
   handlePlayerFriends: function(){ // /service/presence/roster/{TEGiid} RETURNS friends list from db
@@ -60,7 +63,7 @@ module.exports = {
 
     });
   },
-  handleBrowserLogin: function(username,collection){
+  handleBrowserLogin: function(username,collection){ // /authenticate/user/{username} RETURNS username from database
     return new Promise(function(resolve, reject) {
       collection.findOne({"user.TEGid": username}).then((data) => {
         resolve(data);
