@@ -59,7 +59,7 @@ module.exports = {
       });
     });
   },
-  handlePlayerChampions: function(data,collection){ // /service/data/user/champions/profile?authToken={data.token} RETURNS player info from db
+  handlePlayerChampions: function(data,collection){ // /service/data/user/champions/profile?authToken={data} RETURNS player info from db
     return new Promise(function(resolve, reject) {
       collection.findOne({"authToken":data}).then((dat) => {
         if(dat != null) resolve(JSON.stringify(dat.player));
