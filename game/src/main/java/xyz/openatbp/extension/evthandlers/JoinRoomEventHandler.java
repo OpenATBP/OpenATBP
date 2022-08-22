@@ -1,4 +1,4 @@
-package net.cakelancelot.battleparty.extension.evthandlers;
+package xyz.openatbp.extension.evthandlers;
 
 import com.smartfoxserver.v2.core.ISFSEvent;
 import com.smartfoxserver.v2.core.SFSEventParam;
@@ -7,7 +7,7 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseServerEventHandler;
-import net.cakelancelot.battleparty.extension.ATBPExtension;
+import xyz.openatbp.extension.ATBPExtension;
 
 public class JoinRoomEventHandler extends BaseServerEventHandler {
     @Override

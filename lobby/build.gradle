@@ -1,0 +1,11 @@
+apply plugin: 'java'
+group 'xyz.openatbp'
+version '0.1.0-SNAPSHOT'
+
+tasks.withType(JavaCompile) {
+    options.release = 11
+}
+
+jar {
+    archiveFileName = "ATBPLobbyServer.jar"
+}

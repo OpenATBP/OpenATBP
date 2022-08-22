@@ -1,0 +1,44 @@
+apply plugin: 'java'
+group 'xyz.openatbp'
+version '0.1.0-SNAPSHOT'
+
+ext.getSFS2XPath = {
+    // TODO make sure this works for OSes other than Windows
+    if (System.getenv('SFS2X_HOME') == null) {
+        return new File(System.getProperty('user.home'), 'SmartFoxServer_2X/SFS2X')
+    } else {
+        return new File(System.getenv('SFS2X_HOME'))
+    }
+}
+
+tasks.register('copySFS2XLibs', Copy) {
+    if (getSFS2XPath() == null) {
+        throw new FileNotFoundException('Unable to find SFS2X - please install it or set up SFS2X_HOME environment variable.')
+    }
+
+    def SFS2XLibPath = new File(getSFS2XPath(), 'lib')
+
+    duplicatesStrategy= DuplicatesStrategy.EXCLUDE
+    from new File(SFS2XLibPath, 'sfs2x.jar'), new File(SFS2XLibPath, 'sfs2x-core.jar')
+    into layout.projectDirectory.dir("lib")
+}
+
+tasks.register('deploy', Copy) {
+    duplicatesStrategy= DuplicatesStrategy.INCLUDE
+    from layout.buildDirectory.file('libs/ATBPExtension.jar')
+    into new File(getSFS2XPath, 'extensions/Champions/')
+}
+
+tasks.withType(JavaCompile) {
+    options.release = 11
+}
+
+jar {
+    archiveFileName = "ATBPExtension.jar"
+}
+
+dependencies {
+    implementation files('lib/sfs2x-core.jar', 'lib/sfs2x.jar')
+}
+
+assemble.dependsOn copySFS2XLibs

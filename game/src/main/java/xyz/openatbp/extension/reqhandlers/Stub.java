@@ -1,4 +1,4 @@
-package net.cakelancelot.battleparty.extension.reqhandlers;
+package xyz.openatbp.extension.reqhandlers;
 
 import com.smartfoxserver.v2.annotations.MultiHandler;
 import com.smartfoxserver.v2.entities.User;

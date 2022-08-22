@@ -1,13 +1,13 @@
-package net.cakelancelot.battleparty.extension;
+package xyz.openatbp.extension;
 
 import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.extensions.SFSExtension;
-import net.cakelancelot.battleparty.extension.evthandlers.JoinRoomEventHandler;
-import net.cakelancelot.battleparty.extension.evthandlers.JoinZoneEventHandler;
-import net.cakelancelot.battleparty.extension.reqhandlers.ClientReadyHandler;
-import net.cakelancelot.battleparty.extension.reqhandlers.MoveActor;
-import net.cakelancelot.battleparty.extension.reqhandlers.PingHandler;
-import net.cakelancelot.battleparty.extension.reqhandlers.Stub;
+import xyz.openatbp.extension.evthandlers.JoinRoomEventHandler;
+import xyz.openatbp.extension.evthandlers.JoinZoneEventHandler;
+import xyz.openatbp.extension.reqhandlers.ClientReadyHandler;
+import xyz.openatbp.extension.reqhandlers.MoveActor;
+import xyz.openatbp.extension.reqhandlers.PingHandler;
+import xyz.openatbp.extension.reqhandlers.Stub;
 
 public class ATBPExtension extends SFSExtension {
     @Override
