@@ -26,7 +26,7 @@ tasks.register('copySFS2XLibs', Copy) {
 tasks.register('deploy', Copy) {
     duplicatesStrategy= DuplicatesStrategy.INCLUDE
     from layout.buildDirectory.file('libs/ATBPExtension.jar')
-    into new File(getSFS2XPath, 'extensions/Champions/')
+    into new File(getSFS2XPath(), 'extensions/Champions/')
 }
 
 tasks.withType(JavaCompile) {
