@@ -2,9 +2,6 @@
 # IntelliJ project dirctory
 .idea
 
-#
-
-
 # Compiled class file
 *.class
 
@@ -56,7 +53,5 @@ lib/*
 mongosecrets.js
 
 # Web server files #
-/httpserver/htdocs/*
-!/httpserver/htdocs/game/
-/httpserver/htdocs/game/*
+/httpserver/htdocs/**
 !/httpserver/htdocs/game/index.html

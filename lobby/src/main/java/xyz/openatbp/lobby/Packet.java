@@ -19,7 +19,7 @@ public class Packet {
             int textLength = clientIn.readChar(); // needs to be 2 bytes
 
             // this should catch 0 and -1 (end of stream)
-            if (textLength > 2 && textLength <= 8192) {
+            if (textLength > 0 && textLength <= 8192) {
                 byte[] receivedBytes = new byte[textLength];
                 clientIn.readFully(receivedBytes);
                 String receivedMessage = new String(receivedBytes, StandardCharsets.UTF_8);
