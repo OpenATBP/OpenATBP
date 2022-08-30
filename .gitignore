@@ -54,3 +54,9 @@ lib/*
 
 # Key/secret files #
 mongosecrets.js
+
+# Web server files #
+/httpserver/htdocs/*
+!/httpserver/htdocs/game/
+/httpserver/htdocs/game/*
+!/httpserver/htdocs/game/index.html

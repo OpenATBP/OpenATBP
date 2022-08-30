@@ -15,7 +15,7 @@ module.exports = {
   handleWhoAmI: function(data,collection){ // /service/authenticate/whoami?authToken={data.token} RETURNS displayName
     return new Promise(function(resolve, reject) {
       var authTokenSplit = data.split("=");
-      var authToken = authTokenSplit[authTokenSplit.length-1];
+      var authToken = data;
       console.log("AuthToken: " + authToken);
       collection.findOne({"authToken":authToken}).then((res) => {
         if(res != null) resolve(JSON.stringify({"displayName":res.user.dname}));
