@@ -5,7 +5,7 @@ import com.smartfoxserver.v2.extensions.SFSExtension;
 import xyz.openatbp.extension.evthandlers.JoinRoomEventHandler;
 import xyz.openatbp.extension.evthandlers.JoinZoneEventHandler;
 import xyz.openatbp.extension.reqhandlers.ClientReadyHandler;
-import xyz.openatbp.extension.reqhandlers.MoveActor;
+import xyz.openatbp.extension.reqhandlers.MoveActorHandler;
 import xyz.openatbp.extension.reqhandlers.PingHandler;
 import xyz.openatbp.extension.reqhandlers.Stub;
 
@@ -18,7 +18,7 @@ public class ATBPExtension extends SFSExtension {
         this.addRequestHandler("req_hit_actor", Stub.class);
         this.addRequestHandler("req_keep_alive", Stub.class);
         this.addRequestHandler("req_goto_room", Stub.class);
-        this.addRequestHandler("req_move_actor", MoveActor.class);
+        this.addRequestHandler("req_move_actor", MoveActorHandler.class);
         this.addRequestHandler("req_delayed_login", Stub.class);
         this.addRequestHandler("req_buy_item", Stub.class);
         this.addRequestHandler("req_pickup_item", Stub.class);
