@@ -2,8 +2,11 @@ package xyz.openatbp.lobby;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.ArrayList;
 
 public class ATBPLobbyServer {
+    private static ArrayList<Player> players = new ArrayList<Player>();
+    private static ArrayList<Queue> queues = new ArrayList<Queue>();
     public static void main(String[] args) {
         if (args.length == 1) {
             try {
@@ -34,7 +37,7 @@ public class ATBPLobbyServer {
         while (true) {
             ClientWorker w;
             try {
-                w = new ClientWorker(server.accept());
+                w = new ClientWorker(server.accept(),players,queues);
                 Thread t = new Thread(w);
                 t.start();
             } catch (IOException e) {

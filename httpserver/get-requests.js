@@ -68,9 +68,29 @@ module.exports = {
       });
     });
   },
-  handlePlayerFriends: function(){ // /service/presence/roster/{TEGiid} RETURNS friends list from db
+  handlePlayerFriends: function(username, onlinePlayers, friendsList){ // /service/presence/roster/{TEGiid} RETURNS friends list from db
     return new Promise(function(resolve, reject) {
-
+      var friends = []
+        for(var name of friendsList){
+          for(var p of onlinePlayers){
+            if(p.username == name){
+              friends.push({
+                user_id: name,
+                name: p.name,
+                avatar: "lich.png",
+                options: {
+                  location: p.location,
+                  game: "ATBP",
+                  tier: p.tier,
+                  level: p.level,
+                  elo: p.elo
+                }
+              });
+              break;
+            }
+          }
+        }
+        resolve(JSON.stringify({"roster":friends}));
     });
   },
   handleBrowserLogin: function(username,collection){ // /authenticate/user/{username} RETURNS username from database

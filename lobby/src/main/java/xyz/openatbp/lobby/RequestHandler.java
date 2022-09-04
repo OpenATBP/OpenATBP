@@ -26,23 +26,15 @@ public class RequestHandler {
         return objectNode;
     }
 
-    public static JsonNode handleMatchFound(JsonNode obj){
+    public static JsonNode handleMatchFound(){
         ObjectNode objectNode = objectMapper.createObjectNode();
         objectNode.put("countdown",30);
         return objectNode;
     }
 
-    public static JsonNode handleTeamUpdate(JsonNode obj){
+    public static JsonNode handleTeamUpdate(ArrayNode team){
         ObjectNode objectNode = objectMapper.createObjectNode();
-        ArrayNode playerObjArray = objectMapper.createArrayNode();
-        ObjectNode playerObj = objectMapper.createObjectNode();
-        playerObj.put("name", "Spooky Umbrella");
-        playerObj.put("player", (float)0001);
-        playerObj.put("teg_id", "SpookyUmbrella");
-        playerObj.put("avatar", "unassigned");
-        playerObj.put("is_ready",false);
-        playerObjArray.add(playerObj);
-        objectNode.set("players",playerObjArray);
+        objectNode.set("players",team);
         objectNode.put("team","BLUE");
         return objectNode;
     }
@@ -74,6 +66,24 @@ public class RequestHandler {
         playerObjArray.add(playerObj);
         objectNode.set("players",playerObjArray);
         objectNode.put("team","BLUE");
+        return objectNode;
+    }
+
+    public static JsonNode handleQueueUpdate(int size){
+        ObjectNode objectNode = objectMapper.createObjectNode();
+        objectNode.put("size", size);
+        return objectNode;
+    }
+
+    public static JsonNode handleGameReady(){
+        ObjectNode objectNode = objectMapper.createObjectNode();
+        objectNode.put("countdown", 5);
+        objectNode.put("ip", "127.0.0.1");
+        objectNode.put("port", 9993);
+        objectNode.put("policy_port", 843);
+        objectNode.put("room_id", "notlobby");
+        objectNode.put("team", "BLUE");
+        objectNode.put("password", "abc123");
         return objectNode;
     }
 }

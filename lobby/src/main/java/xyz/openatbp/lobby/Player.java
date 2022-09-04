@@ -60,4 +60,24 @@ public class Player {
     public boolean isAddress(String address){
         return this.conn.getRemoteSocketAddress().toString().equals(address);
     }
+
+    public String getUsername(){
+        return this.tegid;
+    }
+
+    public String getName() {
+        return this.name;
+    }
+
+    public float getPid(){
+        return this.pid;
+    }
+
+    public String getAvatar(){
+        return this.avatar;
+    }
+
+    public boolean isReady(){
+        return this.ready;
+    }
 }

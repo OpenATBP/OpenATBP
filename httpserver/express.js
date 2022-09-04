@@ -11,6 +11,24 @@ const uri = secrets.uri;
 console.log(uri);
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+var onlinePlayers = [];
+
+var onlineChecker = setInterval(() => {
+  console.log("Checking online users!");
+  for(var p of onlinePlayers){
+    if(Date.now()-p.lastChecked > 10000){
+      console.log(p.username + " offline!");
+      onlinePlayers = onlinePlayers.filter((i) => {
+        return i.username != p.username;
+      });
+    //  console.log(onlinePlayers);
+    }else{
+      console.log(p.username + " online!");
+      //console.log(onlinePlayers);
+    }
+  }
+}, 11000);
+
 function createNewUser(username,authpass){ //Creates new user in web server and database
   return new Promise((fulfill,reject) => {
     const collection = client.db("openatbp").collection("players");
@@ -62,7 +80,8 @@ function createNewUser(username,authpass){ //Creates new user in web server and 
             "scoreTotal": 0
           },
           inventory: [],
-          authToken: token
+          authToken: token,
+          friends: []
         };
         collection.insertOne(playerFile).then(() => { //Creates new user in the db
           fulfill(playerFile.user);
@@ -123,7 +142,18 @@ client.connect(err => {
   });
 
   app.get('/service/presence/roster/*', (req,res) => {
-    res.send(JSON.stringify({"roster":[]}));
+    var userNameSplit = req.url.split("/");
+    var userName = userNameSplit[userNameSplit.length-1];
+    var friendsList = [];
+    for(var p of onlinePlayers){
+      if(p.username == userName){
+        friendsList = p.friends;
+        break;
+      }
+    }
+    getRequest.handlePlayerFriends(userName,onlinePlayers,friendsList).then((data) => {
+      res.send(data);
+    }).catch(console.error);
   });
 
   app.get('/service/authenticate/user/*', (req,res) => {
@@ -141,7 +171,44 @@ client.connect(err => {
   });
 
   app.post('/service/presence/present', (req,res) => {
-    res.send(postRequest.handlePresent({}));
+    console.log(req.body);
+    var test = 0;
+    var options = JSON.parse(req.body.options);
+    for(var p of onlinePlayers){
+      if(p.username != req.body.username){
+        test++;
+      }else{
+        console.log(Date.now()-p.lastChecked);
+        p.lastChecked = Date.now();
+        p.username = req.body.username;
+        p.level = options.level;
+        p.elo = options.level;
+        p.location = options.location;
+        p.name = options.name;
+        p.tier = options.tier;
+        break;
+      }
+    }
+    if(test == onlinePlayers.length){
+      console.log("Pushed!");
+      var playerObj = {
+        username: req.body.username,
+        level: options.level,
+        elo: options.level,
+        location: options.location,
+        name: options.name,
+        tier: options.tier,
+        lastChecked: Date.now(),
+        friends: []
+      };
+      collection.findOne({"user.TEGid": req.body.username}).then((data) => {
+        playerObj.friends = data.friends;
+        onlinePlayers.push(playerObj);
+      }).catch(console.error);
+    }else{
+      console.log("Players: " + onlinePlayers.length + " vs " + test);
+    }
+    res.send(postRequest.handlePresent(req.body));
   });
 
   app.post('/service/shop/purchase', (req,res) => {

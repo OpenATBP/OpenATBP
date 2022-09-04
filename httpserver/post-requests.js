@@ -20,6 +20,7 @@ module.exports = {
     });
   },
   handlePresent: function(data){ // /service/presence/present PROVIDES username, property, level, elo, location, displayName, game, and tier
+    //console.log(data);
     return (JSON.stringify({}));
   },
   handleNewUser: function(username,password,collection){ //DEPRECATED
