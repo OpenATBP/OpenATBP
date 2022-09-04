@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class Packet {
     private String type = "";
@@ -38,11 +39,15 @@ public class Packet {
         return false;
     }
 
-    public boolean send(DataOutputStream clientOut) {
+    public boolean send(DataOutputStream clientOut, String cmd, JsonNode pay) {
         ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode mes = objectMapper.createObjectNode();
+        mes.set("payload",pay);
+        mes.put("cmd",cmd);
         String payloadString = null;
         try {
-            payloadString = objectMapper.writeValueAsString(this.payload);
+            payloadString = objectMapper.writeValueAsString(mes);
+            System.out.println(payloadString);
         } catch (JsonProcessingException e) {
             System.out.println(e);
             return false;

@@ -57,7 +57,7 @@ def handle_client(conn, addr):
 	conn.close()
 	print("Connection closed")
 	leave_team("","",addr)
-		
+
 def handle_request(data, conn, addr):
 	#TODO Don't need data or conn for many of these. So I could probably remove it from the functions
 	if data['req'] == 'handshake':
@@ -94,7 +94,7 @@ def login(data, conn, addr):
 	reply = Packet("login", {"player": float(data['payload']['auth_id']), "teg_id": data['payload']['teg_id'], "name": data['payload']['name']})
 	print("Logged in normally!")
 	global players
-	players.append(Player(data['payload']['name'], addr, conn,data['payload']['auth_id'],data['payload']['teg_id'])) #DEPRECATED
+	players.append(Player(data['payload']['name'], addr, conn,data['payload']['auth_id'],data['payload']['teg_id']))
 	for p in players:
 		print("Player " + p.name)
 	send_packet(reply.get_json(), conn)
