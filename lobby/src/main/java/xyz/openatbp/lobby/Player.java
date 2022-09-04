@@ -29,7 +29,7 @@ public class Player {
         this.ready = false;
     }
 
-    public JsonNode toObject(){
+    @Deprecated public JsonNode toObject(){ //Turns Player obj to Json Object
         ObjectNode playerObj = objectMapper.createObjectNode();
         playerObj.put("name",this.name);
         playerObj.put("player",this.pid);
@@ -42,13 +42,13 @@ public class Player {
 
     public void setAvatar(JsonNode node){
         this.avatar = node.get("name").asText();
-    }
+    } //Avatar setter
 
     public void setReady(){
         this.ready = true;
-    }
+    } //Ready setter
 
-    public DataOutputStream getOutputStream(){
+    public DataOutputStream getOutputStream(){ //Gets output stream to send info to client
         try{
             return new DataOutputStream(this.conn.getOutputStream());
         }
@@ -57,27 +57,27 @@ public class Player {
         }
     }
 
-    public boolean isAddress(String address){
+    public boolean isAddress(String address){ //Returns if address matches player's address
         return this.conn.getRemoteSocketAddress().toString().equals(address);
     }
 
-    public String getUsername(){
+    public String getUsername(){ //Returns TEGid
         return this.tegid;
     }
 
-    public String getName() {
+    public String getName() { //Returns display name
         return this.name;
     }
 
-    public float getPid(){
+    public float getPid(){ //Returns authid
         return this.pid;
     }
 
-    public String getAvatar(){
+    public String getAvatar(){ // Returns avatar
         return this.avatar;
     }
 
-    public boolean isReady(){
+    public boolean isReady(){ // Returns ready status
         return this.ready;
     }
 }
