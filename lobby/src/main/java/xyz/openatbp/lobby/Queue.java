@@ -44,6 +44,9 @@ public class Queue {
         this.pvp = pvp;
         this.premade = false;
         System.out.println("New queue - Queue size: " + this.getSize());
+        if(type.equalsIgnoreCase("m_moba_practice")){ //Sends player to champ select if practice mode
+            this.queueFull();
+        }
     }
 
     public Queue(Player p, String type, boolean pvp, boolean team){ //Called when a new team is created
