@@ -80,4 +80,9 @@ public class Player {
     public boolean isReady(){ // Returns ready status
         return this.ready;
     }
+
+    public void leaveTeam(){
+        this.avatar = "unassigned";
+        this.ready = false;
+    }
 }

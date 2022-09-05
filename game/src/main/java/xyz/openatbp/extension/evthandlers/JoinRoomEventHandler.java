@@ -11,19 +11,25 @@ import xyz.openatbp.extension.ATBPExtension;
 
 public class JoinRoomEventHandler extends BaseServerEventHandler {
     @Override
-    public void handleServerEvent(ISFSEvent event) {
+    public void handleServerEvent(ISFSEvent event) { //Initialize everything
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         Room room = (Room) event.getParameter(SFSEventParam.ROOM);
-        User user = (User) event.getParameter(SFSEventParam.USER);
-
+        User sender = (User) event.getParameter(SFSEventParam.USER);
         ISFSObject data = new SFSObject();
-        data.putUtfString("set", "m_moba_tutorial");
+        data.putUtfString("set","AT_1L_Arena");
         data.putUtfString("soundtrack", "music_main1");
         data.putInt("roomId", room.getId());
         data.putUtfString("roomName", room.getName());
         data.putInt("capacity", 2);
-        data.putInt("botCount", 1);
+        data.putInt("botCount", 0);
+        parentExt.send("cmd_load_room", data, sender);
 
-        parentExt.send("cmd_load_room", data, user);
+        ISFSObject readyData = new SFSObject();
+        readyData.putUtfString("id", String.valueOf(sender.getId()));
+        readyData.putInt("progress", 50);
+        readyData.putBool("isReady", false);
+        parentExt.send("cmd_client_ready", readyData, sender);
+
+
     }
 }

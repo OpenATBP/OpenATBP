@@ -79,7 +79,7 @@ public class RequestHandler {
         ObjectNode objectNode = objectMapper.createObjectNode();
         objectNode.put("countdown", 5);
         objectNode.put("ip", "127.0.0.1");
-        objectNode.put("port", 9993);
+        objectNode.put("port", 9933);
         objectNode.put("policy_port", 843);
         objectNode.put("room_id", "notlobby");
         objectNode.put("team", "BLUE");

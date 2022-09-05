@@ -70,6 +70,7 @@ class ClientWorker implements Runnable {
                     }else if(request.getType().equalsIgnoreCase("leave_team")){ //Calls when player leaves a queue or premade team
                         Player requestingPlayer = this.findPlayer(socket.getRemoteSocketAddress().toString());
                         Queue affectedQueue = this.findQueue(requestingPlayer);
+                        requestingPlayer.leaveTeam();
                         affectedQueue.removePlayer(requestingPlayer);
                         if(affectedQueue.isPremade()){ //If the queue is a premade team
                             Packet out = new Packet();
