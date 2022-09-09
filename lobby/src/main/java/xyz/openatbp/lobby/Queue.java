@@ -185,7 +185,7 @@ public class Queue {
     private void gameReady(){ //Sends all players into the game
         for(int i = 0; i < players.size(); i++){
             Packet out = new Packet();
-            out.send(players.get(i).getOutputStream(),"game_ready", RequestHandler.handleGameReady());
+            out.send(players.get(i).getOutputStream(),"game_ready", RequestHandler.handleGameReady(players.get(0).getUsername(),i, this.type));
         }
     }
 

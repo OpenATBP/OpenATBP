@@ -17,7 +17,7 @@ public class ClientReadyHandler extends BaseClientRequestHandler {
         data.putInt("progress", 100);
         data.putBool("isReady", true);
         parentExt.send("cmd_client_ready", data, sender);
-
+        /*
         ISFSObject actorData = new SFSObject();
         actorData.putUtfString("id", String.valueOf(sender.getId()));
         actorData.putUtfString("actor", sender.getVariable("avatar").getStringValue());
@@ -50,7 +50,9 @@ public class ClientReadyHandler extends BaseClientRequestHandler {
         updateData.putInt("assists", 0);
         parentExt.send("cmd_update_actor_data", updateData, sender);
 
-        parentExt.send("cmd_match_starting", data, sender);
+        //parentExt.send("cmd_match_starting", data, sender);
+
+         */
 
     }
 }

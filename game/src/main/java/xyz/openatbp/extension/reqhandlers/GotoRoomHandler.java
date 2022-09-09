@@ -1,5 +1,7 @@
 package xyz.openatbp.extension.reqhandlers;
 
+import com.smartfoxserver.v2.api.CreateRoomSettings;
+import com.smartfoxserver.v2.config.ZoneSettings;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.SFSRoom;
 import com.smartfoxserver.v2.entities.User;
@@ -7,6 +9,7 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.entities.variables.SFSUserVariable;
 import com.smartfoxserver.v2.entities.variables.UserVariable;
+import com.smartfoxserver.v2.exceptions.SFSCreateRoomException;
 import com.smartfoxserver.v2.exceptions.SFSJoinRoomException;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.ATBPExtension;
@@ -27,7 +30,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
         SFSUserVariable team = new SFSUserVariable("team", params.getUtfString("team"));
         SFSUserVariable name = new SFSUserVariable("name", sender.getSession().getProperty("name"));
         SFSUserVariable tid = new SFSUserVariable("tegid", sender.getSession().getProperty("tegid"));
-        SFSUserVariable id = new SFSUserVariable("authid", sender.getSession().getProperty("id"));
+        sender.getSession().setProperty("room_id", params.getUtfString("room_id").substring(0,10));
         userVariables.add(avatar);
         userVariables.add(belt);
         userVariables.add(team);
@@ -35,20 +38,32 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
         userVariables.add(tid);
         parentExt.getApi().setUserVariables(sender, userVariables);
 
-        Room requestedRoom = sender.getZone().getRoomByName(params.getUtfString("room_id"));
-        ISFSObject userData = new SFSObject();
-        int authID = Integer.parseInt(id.getStringValue());
-        userData.putInt("id", sender.getId());
-        userData.putUtfString("name", name.getStringValue());
-        userData.putUtfString("champion", avatar.getStringValue());
-        userData.putInt("team", 0); //Change up team data
-        userData.putUtfString("tid", tid.getStringValue());
-        userData.putUtfString("backpack", belt.getStringValue());
-        userData.putInt("elo", 1700); //Database
-        parentExt.send("cmd_add_user", userData, sender);
+        Room requestedRoom = sender.getZone().getRoomByName(params.getUtfString("room_id").substring(0,10));
+        boolean createdRoom = false;
+        if(requestedRoom == null){
+            CreateRoomSettings settings = new CreateRoomSettings();
+            settings.setName(params.getUtfString("room_id").substring(0,10));
+            settings.setGame(true);
+            if(params.getUtfString("room_id").contains("practice")){
+                settings.setMaxUsers(1);
+                settings.setGroupId("Practice");
+            }else if(params.getUtfString("room_id").contains("pve")){
+                settings.setMaxUsers(3);
+                settings.setGroupId("PVE");
+            }else{
+                settings.setMaxUsers(6);
+                settings.setGroupId("PVP");
+            }
+            try {
+                requestedRoom = parentExt.getApi().createRoom(sender.getZone(), settings, sender);
+                createdRoom = true;
+            } catch (SFSCreateRoomException e) {
+                throw new RuntimeException(e);
+            }
+        }
         requestedRoom.setPassword("");
         try {
-            parentExt.getApi().joinRoom(sender, requestedRoom);
+            if(!createdRoom) parentExt.getApi().joinRoom(sender, requestedRoom);
         } catch (SFSJoinRoomException e) {
             throw new RuntimeException(e);
         }

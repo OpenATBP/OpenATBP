@@ -8,28 +8,33 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseServerEventHandler;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.GameManager;
+
+import java.util.ArrayList;
 
 public class JoinRoomEventHandler extends BaseServerEventHandler {
     @Override
     public void handleServerEvent(ISFSEvent event) { //Initialize everything
-        ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         Room room = (Room) event.getParameter(SFSEventParam.ROOM);
         User sender = (User) event.getParameter(SFSEventParam.USER);
-        ISFSObject data = new SFSObject();
-        data.putUtfString("set","AT_1L_Arena");
-        data.putUtfString("soundtrack", "music_main1");
-        data.putInt("roomId", room.getId());
-        data.putUtfString("roomName", room.getName());
-        data.putInt("capacity", 2);
-        data.putInt("botCount", 0);
-        parentExt.send("cmd_load_room", data, sender);
+        ArrayList<User> users = (ArrayList<User>) room.getUserList();
+        ATBPExtension parentExt = (ATBPExtension) getParentExtension();
 
-        ISFSObject readyData = new SFSObject();
-        readyData.putUtfString("id", String.valueOf(sender.getId()));
-        readyData.putInt("progress", 50);
-        readyData.putBool("isReady", false);
-        parentExt.send("cmd_client_ready", readyData, sender);
+        if(GameManager.playersLoaded(users, 2)){
+            System.out.println("Last to join is " + sender.getName());
+            GameManager.addPlayer(users,parentExt);
+            GameManager.loadPlayers(users,parentExt,room);
+        }
+
+        System.out.println("Joined room!");
 
 
+        for(int i = 0; i < users.size(); i++){
+            ISFSObject readyData = new SFSObject();
+            readyData.putUtfString("id", String.valueOf(sender.getId()));
+            readyData.putInt("progress", 50);
+            readyData.putBool("isReady", false);
+            parentExt.send("cmd_client_ready", readyData, users.get(i));
+        }
     }
 }

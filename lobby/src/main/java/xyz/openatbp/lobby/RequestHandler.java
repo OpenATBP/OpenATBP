@@ -75,15 +75,22 @@ public class RequestHandler {
         return objectNode;
     }
 
-    public static JsonNode handleGameReady(){ //When the game is ready, sends players to the game server. (Hard coded)
+    public static JsonNode handleGameReady(String partyLeader, int index, String type){ //When the game is ready, sends players to the game server. (Hard coded)
         ObjectNode objectNode = objectMapper.createObjectNode();
         objectNode.put("countdown", 5);
         objectNode.put("ip", "127.0.0.1");
         objectNode.put("port", 9933);
         objectNode.put("policy_port", 843);
-        objectNode.put("room_id", "notlobby");
-        objectNode.put("team", "BLUE");
-        objectNode.put("password", "abc123");
+        String roomId = "" + partyLeader + "_";
+        if(type.equalsIgnoreCase("m_moba_practice")){
+            roomId+="practice";
+        }
+        objectNode.put("room_id", roomId);
+        String team = "-1";
+        if(index<=2) team="0";
+        else team = "1";
+        objectNode.put("team", team); //Change based on players
+        objectNode.put("password", "");
         return objectNode;
     }
 
