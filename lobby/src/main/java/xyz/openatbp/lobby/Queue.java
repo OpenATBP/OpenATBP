@@ -46,6 +46,8 @@ public class Queue {
         System.out.println("New queue - Queue size: " + this.getSize());
         if(type.equalsIgnoreCase("m_moba_practice")){ //Sends player to champ select if practice mode
             this.queueFull();
+        }else if(type.equalsIgnoreCase("m_moba_tutorial")){
+            this.queueFull();
         }
     }
 

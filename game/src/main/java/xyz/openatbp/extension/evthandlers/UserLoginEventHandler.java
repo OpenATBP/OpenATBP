@@ -23,7 +23,7 @@ public class UserLoginEventHandler extends BaseServerEventHandler {
         session.setProperty("id", loginData.getUtfString("authid"));
         String userName = (String) isfsEvent.getParameter(SFSEventParam.LOGIN_NAME);
         ISFSObject outData = (ISFSObject) isfsEvent.getParameter(SFSEventParam.LOGIN_OUT_DATA);
-        outData.putUtfString(SFSConstants.NEW_LOGIN_NAME, loginData.getUtfString("name"));
+        outData.putUtfString(SFSConstants.NEW_LOGIN_NAME, loginData.getUtfString("name").toUpperCase());
 
     }
 }

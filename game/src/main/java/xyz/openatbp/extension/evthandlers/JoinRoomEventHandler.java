@@ -19,22 +19,14 @@ public class JoinRoomEventHandler extends BaseServerEventHandler {
         User sender = (User) event.getParameter(SFSEventParam.USER);
         ArrayList<User> users = (ArrayList<User>) room.getUserList();
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
-
-        if(GameManager.playersLoaded(users, 2)){
+        int maxPlayers = room.getMaxUsers();
+        if(maxPlayers>1) maxPlayers = 2; //Remove after testing
+        if(GameManager.playersLoaded(users, maxPlayers)){
             System.out.println("Last to join is " + sender.getName());
             GameManager.addPlayer(users,parentExt);
             GameManager.loadPlayers(users,parentExt,room);
         }
 
         System.out.println("Joined room!");
-
-
-        for(int i = 0; i < users.size(); i++){
-            ISFSObject readyData = new SFSObject();
-            readyData.putUtfString("id", String.valueOf(sender.getId()));
-            readyData.putInt("progress", 50);
-            readyData.putBool("isReady", false);
-            parentExt.send("cmd_client_ready", readyData, users.get(i));
-        }
     }
 }

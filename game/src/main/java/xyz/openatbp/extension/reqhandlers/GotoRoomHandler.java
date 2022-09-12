@@ -30,7 +30,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
         SFSUserVariable team = new SFSUserVariable("team", params.getUtfString("team"));
         SFSUserVariable name = new SFSUserVariable("name", sender.getSession().getProperty("name"));
         SFSUserVariable tid = new SFSUserVariable("tegid", sender.getSession().getProperty("tegid"));
-        sender.getSession().setProperty("room_id", params.getUtfString("room_id").substring(0,10));
+        sender.getSession().setProperty("room_id", params.getUtfString("room_id"));
         userVariables.add(avatar);
         userVariables.add(belt);
         userVariables.add(team);
