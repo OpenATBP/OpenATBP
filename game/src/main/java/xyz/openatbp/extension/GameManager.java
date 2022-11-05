@@ -103,7 +103,8 @@ public class GameManager {
 
             ISFSObject updateData = new SFSObject();
             updateData.putUtfString("id", String.valueOf(sender.getId()));
-            int champMaxHealth = ChampionData.getMaxHealth(sender.getVariable("avatar").getStringValue());
+            System.out.println("Here!");
+            int champMaxHealth = parentExt.getActorStats(sender.getVariable("avatar").getStringValue()).get("health").asInt();
             updateData.putInt("currentHealth", champMaxHealth);
             updateData.putInt("maxHealth", champMaxHealth);
             updateData.putDouble("pHealth", 1);

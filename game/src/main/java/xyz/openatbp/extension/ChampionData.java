@@ -1,5 +1,6 @@
 package xyz.openatbp.extension;
 
+@Deprecated
 public class ChampionData {
     public static int getMaxHealth(String champion){
         System.out.println(champion);

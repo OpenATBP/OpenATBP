@@ -48,6 +48,8 @@ public class Queue {
             this.queueFull();
         }else if(type.equalsIgnoreCase("m_moba_tutorial")){
             this.queueFull();
+        }else if(type.contains("1p")){
+            this.queueFull();
         }
     }
 
