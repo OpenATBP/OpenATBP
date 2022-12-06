@@ -70,15 +70,19 @@ class ClientWorker implements Runnable {
                     }else if(request.getType().equalsIgnoreCase("leave_team")){ //Calls when player leaves a queue or premade team
                         Player requestingPlayer = this.findPlayer(socket.getRemoteSocketAddress().toString());
                         Queue affectedQueue = this.findQueue(requestingPlayer);
-                        affectedQueue.removePlayer(requestingPlayer);
-                        if(affectedQueue.isPremade()){ //If the queue is a premade team
-                            Packet out = new Packet();
-                            out.send(affectedQueue.getPartyLeader().getOutputStream(), "invite_declined", RequestHandler.handleInviteDecline(requestingPlayer.getUsername())); //Sends invite decline so host can reinvite
+                        if(affectedQueue != null){
+                            requestingPlayer.leaveTeam();
+                            affectedQueue.removePlayer(requestingPlayer);
+                            if(affectedQueue.isPremade()){ //If the queue is a premade team
+                                Packet out = new Packet();
+                                out.send(affectedQueue.getPartyLeader().getOutputStream(), "invite_declined", RequestHandler.handleInviteDecline(requestingPlayer.getUsername())); //Sends invite decline so host can reinvite
+                            }
+                            if(affectedQueue.getSize() == 0){ //If this was the last player in the team/queue, disbands the queue
+                                queues.remove(affectedQueue);
+                                System.out.println("Removed queue!");
+                            }
                         }
-                        if(affectedQueue.getSize() == 0){ //If this was the last player in the team/queue, disbands the queue
-                            queues.remove(affectedQueue);
-                            System.out.println("Removed queue!");
-                        }
+
                     }else if(request.getType().equalsIgnoreCase("send_invite")){ //Calls when host of team sends an invite
                         Player reqestingPlayer = this.findPlayer(socket.getRemoteSocketAddress().toString());
                         Player receivingPlayer = null;

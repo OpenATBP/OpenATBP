@@ -8,22 +8,26 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseServerEventHandler;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.GameManager;
+
+import java.util.ArrayList;
 
 public class JoinRoomEventHandler extends BaseServerEventHandler {
     @Override
-    public void handleServerEvent(ISFSEvent event) {
-        ATBPExtension parentExt = (ATBPExtension) getParentExtension();
+    public void handleServerEvent(ISFSEvent event) { //Initialize everything
         Room room = (Room) event.getParameter(SFSEventParam.ROOM);
-        User user = (User) event.getParameter(SFSEventParam.USER);
+        User sender = (User) event.getParameter(SFSEventParam.USER);
+        ArrayList<User> users = (ArrayList<User>) room.getUserList();
+        ATBPExtension parentExt = (ATBPExtension) getParentExtension();
+        int maxPlayers = room.getMaxUsers();
+        if(maxPlayers>1) maxPlayers = 1; //Remove after testing
+        else if(maxPlayers < 0) maxPlayers = 1;
+        if(GameManager.playersLoaded(users, maxPlayers)){
+            System.out.println("Last to join is " + sender.getName());
+            GameManager.addPlayer(users,parentExt);
+            GameManager.loadPlayers(users,parentExt,room);
+        }
 
-        ISFSObject data = new SFSObject();
-        data.putUtfString("set", "m_moba_tutorial");
-        data.putUtfString("soundtrack", "music_main1");
-        data.putInt("roomId", room.getId());
-        data.putUtfString("roomName", room.getName());
-        data.putInt("capacity", 2);
-        data.putInt("botCount", 1);
-
-        parentExt.send("cmd_load_room", data, user);
+        System.out.println("Joined room!");
     }
 }

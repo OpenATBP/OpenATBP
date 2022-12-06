@@ -46,6 +46,10 @@ public class Queue {
         System.out.println("New queue - Queue size: " + this.getSize());
         if(type.equalsIgnoreCase("m_moba_practice")){ //Sends player to champ select if practice mode
             this.queueFull();
+        }else if(type.equalsIgnoreCase("m_moba_tutorial")){
+            this.queueFull();
+        }else if(type.contains("1p")){
+            this.queueFull();
         }
     }
 
@@ -185,7 +189,7 @@ public class Queue {
     private void gameReady(){ //Sends all players into the game
         for(int i = 0; i < players.size(); i++){
             Packet out = new Packet();
-            out.send(players.get(i).getOutputStream(),"game_ready", RequestHandler.handleGameReady());
+            out.send(players.get(i).getOutputStream(),"game_ready", RequestHandler.handleGameReady(players.get(0).getUsername(),i, this.type));
         }
     }
 
