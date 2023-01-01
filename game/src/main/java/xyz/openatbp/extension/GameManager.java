@@ -91,6 +91,7 @@ public class GameManager {
     public static void initializeGame(ArrayList<User> users, ATBPExtension parentExt){
         for(int i = 0; i < users.size(); i++){ //Initialize character
             User sender = users.get(i);
+            initializeMap(sender,parentExt);
             ISFSObject actorData = new SFSObject();
             actorData.putUtfString("id", String.valueOf(sender.getId()));
             actorData.putUtfString("actor", sender.getVariable("avatar").getStringValue());
@@ -133,5 +134,31 @@ public class GameManager {
             parentExt.send("cmd_match_starting", data, users.get(i));
         }
 
+    }
+
+    private static void initializeMap(User user, ATBPExtension parentExt){
+        parentExt.send("cmd_create_actor",MapData.getBaseActorData(0),user);
+        parentExt.send("cmd_create_actor",MapData.getBaseActorData(1),user);
+
+        spawnTowers(user,parentExt);
+
+        parentExt.send("cmd_create_actor",MapData.getAltarActorData(1),user);
+        parentExt.send("cmd_create_actor",MapData.getAltarActorData(2),user);
+
+        parentExt.send("cmd_create_actor",MapData.getHealthActorData(0),user);
+        parentExt.send("cmd_create_actor",MapData.getHealthActorData(1),user);
+
+        parentExt.send("cmd_create_actor",MapData.getGuardianActorData(0),user);
+        parentExt.send("cmd_create_actor",MapData.getGuardianActorData(1),user);
+
+        parentExt.send("cmd_create_actor",MapData.getKeeothActorData(),user);
+        parentExt.send("cmd_create_actor",MapData.getOozeActorData(),user);
+    }
+
+    private static void spawnTowers(User user, ATBPExtension parentExt){
+        parentExt.send("cmd_create_actor",MapData.getTowerActorData(0,1),user);
+        parentExt.send("cmd_create_actor",MapData.getTowerActorData(0,2),user);
+        parentExt.send("cmd_create_actor",MapData.getTowerActorData(1,1),user);
+        parentExt.send("cmd_create_actor",MapData.getTowerActorData(1,2),user);
     }
 }
