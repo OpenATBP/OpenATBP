@@ -1,7 +1,10 @@
 package xyz.openatbp.extension;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.extensions.SFSExtension;
@@ -9,13 +12,18 @@ import org.w3c.dom.Element;
 import xyz.openatbp.extension.evthandlers.*;
 import xyz.openatbp.extension.reqhandlers.*;
 
+import java.awt.*;
+import java.awt.geom.Path2D;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.*;
 
 public class ATBPExtension extends SFSExtension {
     HashMap<String, JsonNode> actorDefinitions = new HashMap<>();
-    @Override
+    ArrayList<Vector<Float>>[] mapColliders;
+    ArrayList<Vector<Float>>[] mainMapColliders;
+    ArrayList<Path2D> mapPaths;
+    ArrayList<Path2D> mainMapPaths;
     public void init() {
         this.addEventHandler(SFSEventType.USER_JOIN_ROOM, JoinRoomEventHandler.class);
         this.addEventHandler(SFSEventType.USER_JOIN_ZONE, JoinZoneEventHandler.class);
@@ -41,6 +49,7 @@ public class ATBPExtension extends SFSExtension {
         this.addRequestHandler("req_auto_target", Stub.class);
         try {
             loadDefinitions();
+            loadColliders();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -55,6 +64,68 @@ public class ATBPExtension extends SFSExtension {
             JsonNode node = mapper.readTree(f);
             actorDefinitions.put(f.getName().replace(".xml",""),node);
         }
+    }
+
+    private void loadColliders() throws IOException {
+        File practiceMap = new File(getCurrentFolder()+"/colliders/practice.json");
+        File mainMap = new File(getCurrentFolder()+"/colliders/main.json");
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode node = mapper.readTree(practiceMap);
+        ArrayNode colliders = (ArrayNode) node.get("SceneColliders").get("collider");
+        mapColliders = new ArrayList[colliders.size()];
+        mapPaths = new ArrayList(colliders.size());
+        for(int i = 0; i < colliders.size(); i++){
+            Path2D path = new Path2D.Float();
+            ArrayNode vertices = (ArrayNode) colliders.get(i).get("vertex");
+            ArrayList<Vector<Float>> vecs = new ArrayList(vertices.size());
+            for(int g = 0; g < vertices.size(); g++){
+                if(g == 0){
+                    path.moveTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
+                }else{
+                    path.lineTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
+                }
+                Vector<Float> vertex = new Vector<Float>(2);
+                vertex.add(0, (float) vertices.get(g).get("x").asDouble());
+                vertex.add(1, (float) vertices.get(g).get("z").asDouble());
+                vecs.add(vertex);
+            }
+            path.closePath();
+            mapPaths.add(path);
+            mapColliders[i] = vecs;
+        }
+        node = mapper.readTree(mainMap);
+        colliders = (ArrayNode) node.get("SceneColliders").get("collider");
+        mainMapColliders = new ArrayList[colliders.size()];
+        mainMapPaths = new ArrayList(colliders.size());
+        for(int i = 0; i < colliders.size(); i++){
+            Path2D path = new Path2D.Float();
+            ArrayNode vertices = (ArrayNode) colliders.get(i).get("vertex");
+            ArrayList<Vector<Float>> vecs = new ArrayList(vertices.size());
+            for(int g = 0; g < vertices.size(); g++){
+                if(g == 0){
+                    path.moveTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
+                }else{
+                    path.lineTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
+                }
+                Vector<Float> vertex = new Vector<Float>(2);
+                vertex.add(0, (float) vertices.get(g).get("x").asDouble());
+                vertex.add(1, (float) vertices.get(g).get("z").asDouble());
+                vecs.add(vertex);
+            }
+            path.closePath();
+            mainMapPaths.add(path);
+            mainMapColliders[i] = vecs;
+        }
+    }
+
+    public ArrayList<Vector<Float>>[] getColliders(String map){
+        if(map.equalsIgnoreCase("practice")) return mapColliders;
+        else return mainMapColliders;
+    }
+
+    public ArrayList<Path2D> getMapPaths(String map){
+        if(map.equalsIgnoreCase("practice")) return mainMapPaths;
+        else return mainMapPaths;
     }
 
     public JsonNode getDefintion(String actorName){

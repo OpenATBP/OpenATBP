@@ -7,6 +7,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Vector;
 
 public class GameManager {
 
@@ -137,28 +138,76 @@ public class GameManager {
     }
 
     private static void initializeMap(User user, ATBPExtension parentExt){
-        parentExt.send("cmd_create_actor",MapData.getBaseActorData(0),user);
-        parentExt.send("cmd_create_actor",MapData.getBaseActorData(1),user);
+        String room = user.getLastJoinedRoom().getGroupId();
+        parentExt.send("cmd_create_actor",MapData.getBaseActorData(0,room),user);
+        parentExt.send("cmd_create_actor",MapData.getBaseActorData(1,room),user);
 
         spawnTowers(user,parentExt);
+        spawnAltars(user,parentExt,room);
+        spawnHealth(user,parentExt,room);
 
-        parentExt.send("cmd_create_actor",MapData.getAltarActorData(1),user);
-        parentExt.send("cmd_create_actor",MapData.getAltarActorData(2),user);
+        parentExt.send("cmd_create_actor",MapData.getGuardianActorData(0,room),user);
+        parentExt.send("cmd_create_actor",MapData.getGuardianActorData(1,room),user);
 
-        parentExt.send("cmd_create_actor",MapData.getHealthActorData(0),user);
-        parentExt.send("cmd_create_actor",MapData.getHealthActorData(1),user);
+        parentExt.send("cmd_create_actor",MapData.getKeeothActorData(room),user);
+        parentExt.send("cmd_create_actor",MapData.getOozeActorData(room),user);
+        ArrayList<Vector<Float>>[] points = parentExt.getColliders("practice");
+        /*
+        for(int i = 0; i < points.length; i++){
+            ArrayList<Vector<Float>> collider = points[i];
+            for(int j = 0; j < collider.size(); j++){
+                Vector<Float> v = collider.get(j);
+                float x = v.get(0);
+                float z = v.get(1);
+                ISFSObject base = new SFSObject();
+                ISFSObject baseSpawn = new SFSObject();
+                base.putUtfString("id","collider"+i+"_"+j);
+                base.putUtfString("actor","gnome_a");
+                baseSpawn.putFloat("x", x);
+                baseSpawn.putFloat("y", (float) 0.0);
+                baseSpawn.putFloat("z", z);
+                base.putSFSObject("spawn_point", baseSpawn);
+                base.putFloat("rotation", (float) 0.0);
+                base.putInt("team", 2);
+                parentExt.send("cmd_create_actor",base,user);
+            }
+        }
 
-        parentExt.send("cmd_create_actor",MapData.getGuardianActorData(0),user);
-        parentExt.send("cmd_create_actor",MapData.getGuardianActorData(1),user);
+         */
 
-        parentExt.send("cmd_create_actor",MapData.getKeeothActorData(),user);
-        parentExt.send("cmd_create_actor",MapData.getOozeActorData(),user);
     }
 
     private static void spawnTowers(User user, ATBPExtension parentExt){
-        parentExt.send("cmd_create_actor",MapData.getTowerActorData(0,1),user);
-        parentExt.send("cmd_create_actor",MapData.getTowerActorData(0,2),user);
-        parentExt.send("cmd_create_actor",MapData.getTowerActorData(1,1),user);
-        parentExt.send("cmd_create_actor",MapData.getTowerActorData(1,2),user);
+        String room = user.getLastJoinedRoom().getGroupId();
+        parentExt.send("cmd_create_actor",MapData.getTowerActorData(0,1,room),user);
+        parentExt.send("cmd_create_actor",MapData.getTowerActorData(0,2,room),user);
+        parentExt.send("cmd_create_actor",MapData.getTowerActorData(1,1,room),user);
+        parentExt.send("cmd_create_actor",MapData.getTowerActorData(1,2,room),user);
+        if(!room.equalsIgnoreCase("practice")){
+            parentExt.send("cmd_create_actor",MapData.getTowerActorData(0,3,room),user);
+            parentExt.send("cmd_create_actor",MapData.getTowerActorData(1,3,room),user);
+        }
+    }
+
+    private static void spawnAltars(User user, ATBPExtension parentExt, String room){
+        parentExt.send("cmd_create_actor",MapData.getAltarActorData(1,room),user);
+        parentExt.send("cmd_create_actor",MapData.getAltarActorData(2,room),user);
+        if(!room.equalsIgnoreCase("practice")){
+            parentExt.send("cmd_create_actor",MapData.getAltarActorData(0,room),user);
+        }
+    }
+
+    private static void spawnHealth(User user, ATBPExtension parentExt, String room){
+        if(room.equalsIgnoreCase("practice")){
+            parentExt.send("cmd_create_actor",MapData.getHealthActorData(0,room,-1),user);
+            parentExt.send("cmd_create_actor",MapData.getHealthActorData(1,room,-1),user);
+        }else{
+            parentExt.send("cmd_create_actor",MapData.getHealthActorData(0,room,0),user);
+            parentExt.send("cmd_create_actor",MapData.getHealthActorData(0,room,1),user);
+            parentExt.send("cmd_create_actor",MapData.getHealthActorData(0,room,2),user);
+            parentExt.send("cmd_create_actor",MapData.getHealthActorData(1,room,0),user);
+            parentExt.send("cmd_create_actor",MapData.getHealthActorData(1,room,1),user);
+            parentExt.send("cmd_create_actor",MapData.getHealthActorData(1,room,2),user);
+        }
     }
 }
