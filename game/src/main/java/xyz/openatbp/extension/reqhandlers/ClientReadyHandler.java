@@ -13,21 +13,21 @@ import java.util.ArrayList;
 
 public class ClientReadyHandler extends BaseClientRequestHandler {
     @Override
-    public void handleClientRequest(User sender, ISFSObject params) {
+    public void handleClientRequest(User sender, ISFSObject params) { //Sent when client has loaded all assets
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         trace("Client is ready");
         ISFSObject data = new SFSObject();
         data.putUtfString("id", String.valueOf(sender.getId()));
         data.putInt("progress", 100);
         data.putBool("isReady", true);
-        parentExt.send("cmd_client_ready", data, sender);
+        parentExt.send("cmd_client_ready", data, sender); //Handles progress bar
         sender.getSession().setProperty("ready", true);
 
         Room room = sender.getLastJoinedRoom();
 
-        if(GameManager.playersReady(room)){
-            parentExt.startScripts(room);
-            GameManager.initializeGame((ArrayList<User>) room.getUserList(), parentExt);
+        if(GameManager.playersReady(room)){ //If all players are ready, load everyone into the actual map
+            parentExt.startScripts(room); //Starts the background scripts for the game
+            GameManager.initializeGame((ArrayList<User>) room.getUserList(), parentExt); //Initializes the map for everyone
         }
 
     }

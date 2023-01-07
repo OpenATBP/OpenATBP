@@ -6,17 +6,14 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.entities.variables.RoomVariable;
 import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
-import com.smartfoxserver.v2.entities.variables.SFSUserVariable;
-import com.smartfoxserver.v2.entities.variables.UserVariable;
 import com.smartfoxserver.v2.exceptions.SFSVariableException;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Vector;
 
 public class GameManager {
 
+    //bh1 = Blue Health 1 ph1 = Purple Health 1. Numbers refer to top,bottom,and outside respectively.
     public static final String[] SPAWNS = {"bh1","bh2","bh3","ph1","ph2","ph3","keeoth","ooze","hugwolf","gnomes","owls","grassbear"};
 
     private void updateAllPlayers(ArrayList<User> users, String cmd, SFSObject data, ATBPExtension parentExt){
@@ -25,7 +22,7 @@ public class GameManager {
         }
     }
 
-    public static void addPlayer(ArrayList<User> users, ATBPExtension parentExt){
+    public static void addPlayer(ArrayList<User> users, ATBPExtension parentExt){ //Sends player info to client
         for(int i = 0; i < users.size(); i++){
             ISFSObject userData = new SFSObject();
             User player = users.get(i);
@@ -42,7 +39,7 @@ public class GameManager {
             }
 
         }
-        if(users.size() > 1){
+        if(users.size() > 1){ //Testing method just adds fake users to the game to run properly
             for(int i = 0; i < users.size(); i++){
                 ISFSObject userData = new SFSObject();
                 User player = users.get(i);
@@ -59,7 +56,7 @@ public class GameManager {
 
     }
 
-    public static void loadPlayers(ArrayList<User> users, ATBPExtension parentExt, Room room){
+    public static void loadPlayers(ArrayList<User> users, ATBPExtension parentExt, Room room){ //Loads the map for everyone
         String groupID = room.getGroupId();
         for(int i = 0; i < users.size(); i++){
             ISFSObject data = new SFSObject();
@@ -82,7 +79,7 @@ public class GameManager {
         return users.size() == gameSize;
     }
 
-    public static boolean playersReady(Room room){
+    public static boolean playersReady(Room room){ //Checks if all clients are ready
         int ready = 0;
         ArrayList<User> users = (ArrayList<User>) room.getUserList();
         for(int i = 0; i < users.size(); i++){
@@ -139,7 +136,7 @@ public class GameManager {
                 parentExt.send("cmd_update_actor_data", updateData, user);
             }
         }
-        try{
+        try{ //Sets all the room variables once the game is about to begin
             setRoomVariables(users.get(0).getLastJoinedRoom());
         }catch(SFSVariableException e){
             System.out.println(e);
@@ -147,14 +144,14 @@ public class GameManager {
 
         for(int i = 0; i < users.size(); i++){
             ISFSObject data = new SFSObject();
-            parentExt.send("cmd_match_starting", data, users.get(i));
+            parentExt.send("cmd_match_starting", data, users.get(i)); //Starts the game for everyone
         }
 
     }
 
     private static void setRoomVariables(Room room) throws SFSVariableException {
         ISFSObject spawnTimers = new SFSObject();
-        for(String s : SPAWNS){
+        for(String s : SPAWNS){ //Adds in spawn timers for all mobs/health. AKA time dead
             spawnTimers.putInt(s,0);
         }
         RoomVariable spawnVar = new SFSRoomVariable("spawns",spawnTimers);
@@ -173,8 +170,8 @@ public class GameManager {
         parentExt.send("cmd_create_actor",MapData.getGuardianActorData(0,room),user);
         parentExt.send("cmd_create_actor",MapData.getGuardianActorData(1,room),user);
 
+        /* Keeping for now... this shows where every collider is on the map
         ArrayList<Vector<Float>>[] points = parentExt.getColliders("practice");
-        /*
         for(int i = 0; i < points.length; i++){
             ArrayList<Vector<Float>> collider = points[i];
             for(int j = 0; j < collider.size(); j++){

@@ -13,10 +13,10 @@ public class UserDisconnect extends BaseServerEventHandler {
     public void handleServerEvent(ISFSEvent event){
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         User user = (User) event.getParameter(SFSEventParam.USER);
-        String roomID = user.getSession().getProperty("room_id").toString();
+        String roomID = user.getSession().getProperty("room_id").toString(); //Can probably find a better way to handle room names
         if(roomID.length() >= 10) roomID = roomID.substring(0,10);
         Room room = user.getZone().getRoomByName(roomID);
-        if(room.isEmpty()){
+        if(room.isEmpty()){ //If there is no one left in the room, delete the room
             parentExt.getApi().removeRoom(room);
         }
     }

@@ -45,7 +45,6 @@ public class MapData {
     public static final float[] GRASS = {(float)-8.64, (float)-8.45};
     public static final Point2D[] GNOMES = {new Point2D.Double(-9.29,8.03),new Point2D.Double(-8.10,8.26), new Point2D.Double(-9.47,8.84)};
 
-
     public static ISFSObject getBaseActorData(int team, String room){
         float x = 0;
         float z = 0;
@@ -225,49 +224,4 @@ public class MapData {
         return guardian;
     }
 
-    public static ISFSObject getKeeothActorData(String room){
-        float x = 0;
-        float z = 0;
-        if(room.equalsIgnoreCase("practice")){
-            x = L1_KEEOTH_X;
-            z = L1_KEEOTH_Z;
-        }else{
-            x = L2_KEEOTH[0];
-            z = L2_KEEOTH[1];
-        }
-        ISFSObject keeoth = new SFSObject();
-        ISFSObject keeothSpawn = new SFSObject();
-        keeoth.putUtfString("id","keeoth");
-        keeoth.putUtfString("actor","keeoth");
-        keeothSpawn.putFloat("x", x);
-        keeothSpawn.putFloat("y", (float) 0.0);
-        keeothSpawn.putFloat("z", z);
-        keeoth.putSFSObject("spawn_point", keeothSpawn);
-        keeoth.putFloat("rotation", (float) 0.0);
-        keeoth.putInt("team", 2);
-        return keeoth;
-    }
-
-    public static ISFSObject getOozeActorData(String room){
-        float x = 0;
-        float z = 0;
-        if(room.equalsIgnoreCase("practice")){
-            x = L1_OOZE_X;
-            z = L1_OOZE_Z;
-        }else{
-            x = L2_OOZE[0];
-            z = L2_OOZE[1];
-        }
-        ISFSObject ooze = new SFSObject();
-        ISFSObject oozeSpawn = new SFSObject();
-        ooze.putUtfString("id","ooze_monster");
-        ooze.putUtfString("actor","ooze_monster");
-        oozeSpawn.putFloat("x", x);
-        oozeSpawn.putFloat("y", (float) 0.0);
-        oozeSpawn.putFloat("z", z);
-        ooze.putSFSObject("spawn_point", oozeSpawn);
-        ooze.putFloat("rotation", (float) 0.0);
-        ooze.putInt("team", 2);
-        return ooze;
-    }
 }

@@ -22,10 +22,10 @@ public class JoinRoomEventHandler extends BaseServerEventHandler {
         int maxPlayers = room.getMaxUsers();
         if(maxPlayers>1) maxPlayers = 1; //Remove after testing
         else if(maxPlayers < 0) maxPlayers = 1;
-        if(GameManager.playersLoaded(users, maxPlayers)){
+        if(GameManager.playersLoaded(users, maxPlayers)){ //If all players have loaded into the room
             System.out.println("Last to join is " + sender.getName());
-            GameManager.addPlayer(users,parentExt);
-            GameManager.loadPlayers(users,parentExt,room);
+            GameManager.addPlayer(users,parentExt); //Add users to the game
+            GameManager.loadPlayers(users,parentExt,room); //Load the players into the map
         }
 
         System.out.println("Joined room!");

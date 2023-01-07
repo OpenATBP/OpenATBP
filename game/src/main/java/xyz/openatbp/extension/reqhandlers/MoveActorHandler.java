@@ -7,130 +7,67 @@ import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.GameManager;
 
-import java.awt.*;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
-import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Vector;
 
 public class MoveActorHandler extends BaseClientRequestHandler {
     @Override
-    public void handleClientRequest(User sender, ISFSObject params) {
+    public void handleClientRequest(User sender, ISFSObject params) { //Called when player clicks on the map to move
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         String room = sender.getLastJoinedRoom().getGroupId();
         float px = params.getFloat("orig_x");
         float pz = params.getFloat("orig_z");
         float dx = params.getFloat("dest_x");
         float dz = params.getFloat("dest_z");
-        Line2D movementLine = new Line2D.Float(px,pz,dx,dz);
-        Point2D[] movementLinePoints = findAllPoints(movementLine);
+        Line2D movementLine = new Line2D.Float(px,pz,dx,dz); //Creates the path of the player
         boolean intersects = false;
-        Point2D closestVector = new Point2D.Float(-100,-100);
         int mapPathIndex = -1;
         float closestDistance = 100000;
-        ArrayList<Vector<Float>>[] colliders = ((ATBPExtension) getParentExtension()).getColliders(room);
-        ArrayList<Vector<Float>> closestCollider = new ArrayList<Vector<Float>>(2);
-        ArrayList<Path2D> mapPaths = ((ATBPExtension) getParentExtension()).getMapPaths(room);
+        ArrayList<Vector<Float>>[] colliders = ((ATBPExtension) getParentExtension()).getColliders(room); //Gets all collision object vertices
+        ArrayList<Path2D> mapPaths = ((ATBPExtension) getParentExtension()).getMapPaths(room); //Gets all created paths for the collision objects
         Point2D intersectionPoint = new Point2D.Float(-1,-1);
-        float[] testCoords = new float[2];
-        for(int i = 0; i < mapPaths.size(); i++){
-            if(mapPaths.get(i).intersects(movementLine.getBounds())){
-                //trace("Intersects!");
+        for(int i = 0; i < mapPaths.size(); i++){ //Search through all colliders
+            if(mapPaths.get(i).intersects(movementLine.getBounds())){ //If the player's movement intersects a collider
                 ArrayList<Vector<Float>> collider = colliders[i];
-
-                for(int g = 0; g < collider.size(); g++){
+                for(int g = 0; g < collider.size(); g++){ //Check all vertices in the collider
 
                     Vector<Float> v = collider.get(g);
                     Vector<Float> v2;
-                    if(g+1 == collider.size()){
+                    if(g+1 == collider.size()){ //If it's the final vertex, loop to the beginning
                         v2 = collider.get(0);
                     }else{
                         v2 = collider.get(g+1);
                     }
 
 
-                    Line2D colliderLine = new Line2D.Float(v.get(0),v.get(1),v2.get(0),v2.get(1));
-                    if(movementLine.intersectsLine(colliderLine)){
-                        //trace("Intersects!");
+                    Line2D colliderLine = new Line2D.Float(v.get(0),v.get(1),v2.get(0),v2.get(1)); //Draws a line segment for the sides of the collider
+                    if(movementLine.intersectsLine(colliderLine)){ //If the player movement intersects a side
                         intersects = true;
                         Point2D intPoint = getIntersectionPoint(movementLine,colliderLine);
                         float dist = (float)movementLine.getP1().distance(intPoint);
-                        if(dist<closestDistance){
+                        if(dist<closestDistance){ //If the player intersects two objects, this chooses the closest one.
                             mapPathIndex = i;
                             closestDistance = dist;
                             intersectionPoint = intPoint;
                         }
 
-                    }else{
-                        //trace("Does not intersect!");
                     }
                 }
             }
         }
-        /*
-        for(int i = 1; i < movementLinePoints.length; i++){ //Search all points in the line
-            Point2D movementPoint = movementLinePoints[i];
-
-            for(int g = 0; g < colliders.length; g++){ //Get all colliders
-                Path2D colliderPath = mapPaths.get(g);
-                Point2D currentPoint = new Point2D.Float(colliders[g].get(0).get(0),colliders[g].get(0).get(1));
-                //trace(movementPoint.toString());
-                //trace(currentPoint.toString());
-                //trace(closestVector.toString());
-                if(movementPoint.distance(currentPoint) < movementPoint.distance(closestVector) && !intersects){
-                    closestVector = currentPoint;
-                    closestCollider = colliders[g];
-                    mapPathIndex = g;
-                }
-
-            }
-            for(int g = 0; g < closestCollider.size(); g++){
-
-                Vector<Float> v = closestCollider.get(g);
-                Vector<Float> v2;
-                if(g+1 == closestCollider.size()){
-                    v2 = closestCollider.get(0);
-                }else{
-                    v2 = closestCollider.get(g+1);
-                }
-
-
-                Line2D colliderLine = new Line2D.Float(v.get(0),v.get(1),v2.get(0),v2.get(1));
-                if(movementLine.intersectsLine(colliderLine)){
-                    intersects = true;
-                    //trace("Intersects!");
-                    Point2D intPoint = getIntersectionPoint(movementLine,colliderLine);
-                    float dist = (float)movementLine.getP1().distance(intPoint);
-                    if(dist<closestDistance){
-                        closestDistance = dist;
-                        intersectionPoint = intPoint;
-                    }
-
-                }else{
-                    //trace("Does not intersect!");
-                }
-            }
-            if(mapPaths.get(mapPathIndex).intersects(movementLine.getBounds())){
-                trace("Intersects!");
-            }
-            if(intersects) break;
-        }
-        */
-        int testPoly = 11;
-        testCoords[0] = (float)closestVector.getX();
-        testCoords[1] = (float)closestVector.getY();
         float destx = (float)movementLine.getX2();
         float destz = (float)movementLine.getY2();
-        if(intersects){
+        if(intersects){ //If the player hits an object, find where they should end up
             Point2D finalPoint = collidePlayer(new Line2D.Double(movementLine.getX1(),movementLine.getY1(),intersectionPoint.getX(),intersectionPoint.getY()),mapPaths.get(mapPathIndex));
             destx = (float)finalPoint.getX();
             destz = (float)finalPoint.getY();
         }
         trace("X: " + movementLine.getX2());
         trace("Y:" + movementLine.getY2());
+        //Updates the player's location variable for the server's internal use
         ISFSObject userLocation = sender.getVariable("location").getSFSObjectValue();
         userLocation.putFloat("x",destx);
         userLocation.putFloat("z",destz);
@@ -142,32 +79,29 @@ public class MoveActorHandler extends BaseClientRequestHandler {
         data.putFloat("dz", destz);
         data.putBool("o", params.getBool("orient"));
         data.putFloat("s", params.getFloat("speed"));
+        //Send all users the movement data
         GameManager.sendAllUsers(parentExt,data,"cmd_move_actor",sender.getLastJoinedRoom());
     }
 
-    private Point2D[] findAllPoints(Line2D line){
-        int arrayLength = (int)(line.getP1().distance(line.getP2()))*30;
+    private Point2D[] findAllPoints(Line2D line){ //Finds all points within a line
+        int arrayLength = (int)(line.getP1().distance(line.getP2()))*30; //Longer movement have more precision when checking collisions
         if(arrayLength < 8) arrayLength = 8;
         Point2D[] points = new Point2D[arrayLength];
         float slope = (float)((line.getP2().getY() - line.getP1().getY())/(line.getP2().getX()-line.getP1().getX()));
-        //trace("Slope: " + slope);
         float intercept = (float)(line.getP2().getY()-(slope*line.getP2().getX()));
-        //trace("Intercept: " + intercept);
         float distance = (float)(line.getX2()-line.getX1());
         int pValue = 0;
-        for(int i = 0; i < points.length; i++){
+        for(int i = 0; i < points.length; i++){ //Finds the points on the line based on distance
             float x = (float)line.getP1().getX()+((distance/points.length)*i);
             float y = slope*x + intercept;
             Point2D point = new Point2D.Float(x,y);
             points[pValue] = point;
-            //("i: " + i);
-            //trace(point.toString());
             pValue++;
         }
         return points;
     }
 
-    private Point2D getIntersectionPoint(Line2D line, Line2D line2){
+    private Point2D getIntersectionPoint(Line2D line, Line2D line2){ //Finds the intersection of two lines
         float slope1 = (float)((line.getP2().getY() - line.getP1().getY())/(line.getP2().getX()-line.getP1().getX()));
         float slope2 = (float)((line2.getP2().getY() - line2.getP1().getY())/(line2.getP2().getX()-line2.getP1().getX()));
         float intercept1 = (float)(line.getP2().getY()-(slope1*line.getP2().getX()));
@@ -177,10 +111,11 @@ public class MoveActorHandler extends BaseClientRequestHandler {
         return new Point2D.Float(x,y);
     }
 
+    //Returns a point where the player is no longer colliding with an object so that they can move freely and don't clip inside an object
     private Point2D collidePlayer(Line2D movementLine, Path2D collider){
         Point2D[] points = findAllPoints(movementLine);
         Point2D p = movementLine.getP1();
-        for(int i = points.length-2; i>0; i--){
+        for(int i = points.length-2; i>0; i--){ //Searchs all points in the movement line to see how close it can move without crashing into the collider
             Point2D p2 = new Point2D.Double(points[i].getX(),points[i].getY());
             Line2D line = new Line2D.Double(movementLine.getP1(),p2);
             if(collider.intersects(line.getBounds())){
