@@ -4,12 +4,20 @@ import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
+import com.smartfoxserver.v2.entities.variables.RoomVariable;
+import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
+import com.smartfoxserver.v2.entities.variables.SFSUserVariable;
+import com.smartfoxserver.v2.entities.variables.UserVariable;
+import com.smartfoxserver.v2.exceptions.SFSVariableException;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Vector;
 
 public class GameManager {
+
+    public static final String[] SPAWNS = {"bh1","bh2","bh3","ph1","ph2","ph3","keeoth","ooze","hugwolf","gnomes","owls","grassbear"};
 
     private void updateAllPlayers(ArrayList<User> users, String cmd, SFSObject data, ATBPExtension parentExt){
         for(int i = 0; i < users.size(); i++){
@@ -21,12 +29,13 @@ public class GameManager {
         for(int i = 0; i < users.size(); i++){
             ISFSObject userData = new SFSObject();
             User player = users.get(i);
+            ISFSObject playerInfo = player.getVariable("player").getSFSObjectValue();
             userData.putInt("id", player.getId());
-            userData.putUtfString("name", player.getVariable("name").getStringValue());
-            userData.putUtfString("champion", player.getVariable("avatar").getStringValue());
+            userData.putUtfString("name", playerInfo.getUtfString("name"));
+            userData.putUtfString("champion", playerInfo.getUtfString("avatar"));
             userData.putInt("team", 0); //Change up team data
-            userData.putUtfString("tid", player.getVariable("tegid").getStringValue());
-            userData.putUtfString("backpack", player.getVariable("backpack").getStringValue());
+            userData.putUtfString("tid", playerInfo.getUtfString("tegid"));
+            userData.putUtfString("backpack", playerInfo.getUtfString("backpack"));
             userData.putInt("elo", 1700); //Database
             for(int g = 0; g < users.size(); g++){
                 parentExt.send("cmd_add_user",userData,users.get(g));
@@ -94,8 +103,9 @@ public class GameManager {
             User sender = users.get(i);
             initializeMap(sender,parentExt);
             ISFSObject actorData = new SFSObject();
+            ISFSObject playerInfo = sender.getVariable("player").getSFSObjectValue();
             actorData.putUtfString("id", String.valueOf(sender.getId()));
-            actorData.putUtfString("actor", sender.getVariable("avatar").getStringValue());
+            actorData.putUtfString("actor", playerInfo.getUtfString("avatar"));
             ISFSObject spawnPoint = new SFSObject();
             spawnPoint.putFloat("x", (float) -1.5);
             spawnPoint.putFloat("y", (float) 0);
@@ -106,7 +116,7 @@ public class GameManager {
             ISFSObject updateData = new SFSObject();
             updateData.putUtfString("id", String.valueOf(sender.getId()));
             System.out.println("Here!");
-            int champMaxHealth = parentExt.getActorStats(sender.getVariable("avatar").getStringValue()).get("health").asInt();
+            int champMaxHealth = parentExt.getActorStats(playerInfo.getUtfString("avatar")).get("health").asInt();
             updateData.putInt("currentHealth", champMaxHealth);
             updateData.putInt("maxHealth", champMaxHealth);
             updateData.putDouble("pHealth", 1);
@@ -129,12 +139,26 @@ public class GameManager {
                 parentExt.send("cmd_update_actor_data", updateData, user);
             }
         }
+        try{
+            setRoomVariables(users.get(0).getLastJoinedRoom());
+        }catch(SFSVariableException e){
+            System.out.println(e);
+        }
 
         for(int i = 0; i < users.size(); i++){
             ISFSObject data = new SFSObject();
             parentExt.send("cmd_match_starting", data, users.get(i));
         }
 
+    }
+
+    private static void setRoomVariables(Room room) throws SFSVariableException {
+        ISFSObject spawnTimers = new SFSObject();
+        for(String s : SPAWNS){
+            spawnTimers.putInt(s,0);
+        }
+        RoomVariable spawnVar = new SFSRoomVariable("spawns",spawnTimers);
+        room.setVariable(spawnVar);
     }
 
     private static void initializeMap(User user, ATBPExtension parentExt){
@@ -149,8 +173,6 @@ public class GameManager {
         parentExt.send("cmd_create_actor",MapData.getGuardianActorData(0,room),user);
         parentExt.send("cmd_create_actor",MapData.getGuardianActorData(1,room),user);
 
-        parentExt.send("cmd_create_actor",MapData.getKeeothActorData(room),user);
-        parentExt.send("cmd_create_actor",MapData.getOozeActorData(room),user);
         ArrayList<Vector<Float>>[] points = parentExt.getColliders("practice");
         /*
         for(int i = 0; i < points.length; i++){

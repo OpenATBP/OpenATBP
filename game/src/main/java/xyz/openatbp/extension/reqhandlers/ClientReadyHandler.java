@@ -26,6 +26,7 @@ public class ClientReadyHandler extends BaseClientRequestHandler {
         Room room = sender.getLastJoinedRoom();
 
         if(GameManager.playersReady(room)){
+            parentExt.startScripts(room);
             GameManager.initializeGame((ArrayList<User>) room.getUserList(), parentExt);
         }
 

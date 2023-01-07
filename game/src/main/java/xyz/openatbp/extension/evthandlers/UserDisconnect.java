@@ -14,7 +14,8 @@ public class UserDisconnect extends BaseServerEventHandler {
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         User user = (User) event.getParameter(SFSEventParam.USER);
         String roomID = user.getSession().getProperty("room_id").toString();
-        Room room = user.getZone().getRoomByName(roomID.substring(0,10));
+        if(roomID.length() >= 10) roomID = roomID.substring(0,10);
+        Room room = user.getZone().getRoomByName(roomID);
         if(room.isEmpty()){
             parentExt.getApi().removeRoom(room);
         }

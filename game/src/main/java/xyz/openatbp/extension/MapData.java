@@ -3,6 +3,7 @@ package xyz.openatbp.extension;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 
+import java.awt.geom.Point2D;
 import java.util.Vector;
 
 public class MapData {
@@ -38,6 +39,11 @@ public class MapData {
     public static final float[] L2_BOT_BLUE_HEALTH = {(float) 27.68, (float) 3.03};
     public static final float[] L2_BOT_ALTAR = {(float) 14.47, (float) 27.08};
     public static final float[] L2_KEEOTH = {(float) 0.26, (float) 25.82};
+
+    public static final float[] HUGWOLF = {(float)8.15, (float)8.19};
+    public static final Point2D[] OWLS = {new Point2D.Double(9.57,-8.95),new Point2D.Double(8.41,-8.68),new Point2D.Double(8.42,-9.79)};
+    public static final float[] GRASS = {(float)-8.64, (float)-8.45};
+    public static final Point2D[] GNOMES = {new Point2D.Double(-9.29,8.03),new Point2D.Double(-8.10,8.26), new Point2D.Double(-9.47,8.84)};
 
 
     public static ISFSObject getBaseActorData(int team, String room){

@@ -129,8 +129,11 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             destx = (float)finalPoint.getX();
             destz = (float)finalPoint.getY();
         }
-        trace("Change in x: " + (movementLine.getX2()-movementLine.getX1()));
-        trace("Change in y: " + (movementLine.getY2() - movementLine.getY1()));
+        trace("X: " + movementLine.getX2());
+        trace("Y:" + movementLine.getY2());
+        ISFSObject userLocation = sender.getVariable("location").getSFSObjectValue();
+        userLocation.putFloat("x",destx);
+        userLocation.putFloat("z",destz);
         ISFSObject data = new SFSObject();
         data.putUtfString("i", String.valueOf(sender.getId()));
         data.putFloat("px", params.getFloat("orig_x"));
