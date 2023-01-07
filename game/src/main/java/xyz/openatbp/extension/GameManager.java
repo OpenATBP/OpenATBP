@@ -4,11 +4,17 @@ import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
+import com.smartfoxserver.v2.entities.variables.RoomVariable;
+import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
+import com.smartfoxserver.v2.exceptions.SFSVariableException;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Vector;
 
 public class GameManager {
+
+    //bh1 = Blue Health 1 ph1 = Purple Health 1. Numbers refer to top,bottom,and outside respectively.
+    public static final String[] SPAWNS = {"bh1","bh2","bh3","ph1","ph2","ph3","keeoth","ooze","hugwolf","gnomes","owls","grassbear"};
 
     private void updateAllPlayers(ArrayList<User> users, String cmd, SFSObject data, ATBPExtension parentExt){
         for(int i = 0; i < users.size(); i++){
@@ -16,23 +22,24 @@ public class GameManager {
         }
     }
 
-    public static void addPlayer(ArrayList<User> users, ATBPExtension parentExt){
+    public static void addPlayer(ArrayList<User> users, ATBPExtension parentExt){ //Sends player info to client
         for(int i = 0; i < users.size(); i++){
             ISFSObject userData = new SFSObject();
             User player = users.get(i);
+            ISFSObject playerInfo = player.getVariable("player").getSFSObjectValue();
             userData.putInt("id", player.getId());
-            userData.putUtfString("name", player.getVariable("name").getStringValue());
-            userData.putUtfString("champion", player.getVariable("avatar").getStringValue());
+            userData.putUtfString("name", playerInfo.getUtfString("name"));
+            userData.putUtfString("champion", playerInfo.getUtfString("avatar"));
             userData.putInt("team", 0); //Change up team data
-            userData.putUtfString("tid", player.getVariable("tegid").getStringValue());
-            userData.putUtfString("backpack", player.getVariable("backpack").getStringValue());
+            userData.putUtfString("tid", playerInfo.getUtfString("tegid"));
+            userData.putUtfString("backpack", playerInfo.getUtfString("backpack"));
             userData.putInt("elo", 1700); //Database
             for(int g = 0; g < users.size(); g++){
                 parentExt.send("cmd_add_user",userData,users.get(g));
             }
 
         }
-        if(users.size() > 1){
+        if(users.size() > 1){ //Testing method just adds fake users to the game to run properly
             for(int i = 0; i < users.size(); i++){
                 ISFSObject userData = new SFSObject();
                 User player = users.get(i);
@@ -49,7 +56,7 @@ public class GameManager {
 
     }
 
-    public static void loadPlayers(ArrayList<User> users, ATBPExtension parentExt, Room room){
+    public static void loadPlayers(ArrayList<User> users, ATBPExtension parentExt, Room room){ //Loads the map for everyone
         String groupID = room.getGroupId();
         for(int i = 0; i < users.size(); i++){
             ISFSObject data = new SFSObject();
@@ -72,7 +79,7 @@ public class GameManager {
         return users.size() == gameSize;
     }
 
-    public static boolean playersReady(Room room){
+    public static boolean playersReady(Room room){ //Checks if all clients are ready
         int ready = 0;
         ArrayList<User> users = (ArrayList<User>) room.getUserList();
         for(int i = 0; i < users.size(); i++){
@@ -91,9 +98,11 @@ public class GameManager {
     public static void initializeGame(ArrayList<User> users, ATBPExtension parentExt){
         for(int i = 0; i < users.size(); i++){ //Initialize character
             User sender = users.get(i);
+            initializeMap(sender,parentExt);
             ISFSObject actorData = new SFSObject();
+            ISFSObject playerInfo = sender.getVariable("player").getSFSObjectValue();
             actorData.putUtfString("id", String.valueOf(sender.getId()));
-            actorData.putUtfString("actor", sender.getVariable("avatar").getStringValue());
+            actorData.putUtfString("actor", playerInfo.getUtfString("avatar"));
             ISFSObject spawnPoint = new SFSObject();
             spawnPoint.putFloat("x", (float) -1.5);
             spawnPoint.putFloat("y", (float) 0);
@@ -104,7 +113,7 @@ public class GameManager {
             ISFSObject updateData = new SFSObject();
             updateData.putUtfString("id", String.valueOf(sender.getId()));
             System.out.println("Here!");
-            int champMaxHealth = parentExt.getActorStats(sender.getVariable("avatar").getStringValue()).get("health").asInt();
+            int champMaxHealth = parentExt.getActorStats(playerInfo.getUtfString("avatar")).get("health").asInt();
             updateData.putInt("currentHealth", champMaxHealth);
             updateData.putInt("maxHealth", champMaxHealth);
             updateData.putDouble("pHealth", 1);
@@ -127,11 +136,97 @@ public class GameManager {
                 parentExt.send("cmd_update_actor_data", updateData, user);
             }
         }
+        try{ //Sets all the room variables once the game is about to begin
+            setRoomVariables(users.get(0).getLastJoinedRoom());
+        }catch(SFSVariableException e){
+            System.out.println(e);
+        }
 
         for(int i = 0; i < users.size(); i++){
             ISFSObject data = new SFSObject();
-            parentExt.send("cmd_match_starting", data, users.get(i));
+            parentExt.send("cmd_match_starting", data, users.get(i)); //Starts the game for everyone
         }
 
+    }
+
+    private static void setRoomVariables(Room room) throws SFSVariableException {
+        ISFSObject spawnTimers = new SFSObject();
+        for(String s : SPAWNS){ //Adds in spawn timers for all mobs/health. AKA time dead
+            spawnTimers.putInt(s,0);
+        }
+        RoomVariable spawnVar = new SFSRoomVariable("spawns",spawnTimers);
+        room.setVariable(spawnVar);
+    }
+
+    private static void initializeMap(User user, ATBPExtension parentExt){
+        String room = user.getLastJoinedRoom().getGroupId();
+        parentExt.send("cmd_create_actor",MapData.getBaseActorData(0,room),user);
+        parentExt.send("cmd_create_actor",MapData.getBaseActorData(1,room),user);
+
+        spawnTowers(user,parentExt);
+        spawnAltars(user,parentExt,room);
+        spawnHealth(user,parentExt,room);
+
+        parentExt.send("cmd_create_actor",MapData.getGuardianActorData(0,room),user);
+        parentExt.send("cmd_create_actor",MapData.getGuardianActorData(1,room),user);
+
+        /* Keeping for now... this shows where every collider is on the map
+        ArrayList<Vector<Float>>[] points = parentExt.getColliders("practice");
+        for(int i = 0; i < points.length; i++){
+            ArrayList<Vector<Float>> collider = points[i];
+            for(int j = 0; j < collider.size(); j++){
+                Vector<Float> v = collider.get(j);
+                float x = v.get(0);
+                float z = v.get(1);
+                ISFSObject base = new SFSObject();
+                ISFSObject baseSpawn = new SFSObject();
+                base.putUtfString("id","collider"+i+"_"+j);
+                base.putUtfString("actor","gnome_a");
+                baseSpawn.putFloat("x", x);
+                baseSpawn.putFloat("y", (float) 0.0);
+                baseSpawn.putFloat("z", z);
+                base.putSFSObject("spawn_point", baseSpawn);
+                base.putFloat("rotation", (float) 0.0);
+                base.putInt("team", 2);
+                parentExt.send("cmd_create_actor",base,user);
+            }
+        }
+
+         */
+
+    }
+
+    private static void spawnTowers(User user, ATBPExtension parentExt){
+        String room = user.getLastJoinedRoom().getGroupId();
+        parentExt.send("cmd_create_actor",MapData.getTowerActorData(0,1,room),user);
+        parentExt.send("cmd_create_actor",MapData.getTowerActorData(0,2,room),user);
+        parentExt.send("cmd_create_actor",MapData.getTowerActorData(1,1,room),user);
+        parentExt.send("cmd_create_actor",MapData.getTowerActorData(1,2,room),user);
+        if(!room.equalsIgnoreCase("practice")){
+            parentExt.send("cmd_create_actor",MapData.getTowerActorData(0,3,room),user);
+            parentExt.send("cmd_create_actor",MapData.getTowerActorData(1,3,room),user);
+        }
+    }
+
+    private static void spawnAltars(User user, ATBPExtension parentExt, String room){
+        parentExt.send("cmd_create_actor",MapData.getAltarActorData(1,room),user);
+        parentExt.send("cmd_create_actor",MapData.getAltarActorData(2,room),user);
+        if(!room.equalsIgnoreCase("practice")){
+            parentExt.send("cmd_create_actor",MapData.getAltarActorData(0,room),user);
+        }
+    }
+
+    private static void spawnHealth(User user, ATBPExtension parentExt, String room){
+        if(room.equalsIgnoreCase("practice")){
+            parentExt.send("cmd_create_actor",MapData.getHealthActorData(0,room,-1),user);
+            parentExt.send("cmd_create_actor",MapData.getHealthActorData(1,room,-1),user);
+        }else{
+            parentExt.send("cmd_create_actor",MapData.getHealthActorData(0,room,0),user);
+            parentExt.send("cmd_create_actor",MapData.getHealthActorData(0,room,1),user);
+            parentExt.send("cmd_create_actor",MapData.getHealthActorData(0,room,2),user);
+            parentExt.send("cmd_create_actor",MapData.getHealthActorData(1,room,0),user);
+            parentExt.send("cmd_create_actor",MapData.getHealthActorData(1,room,1),user);
+            parentExt.send("cmd_create_actor",MapData.getHealthActorData(1,room,2),user);
+        }
     }
 }

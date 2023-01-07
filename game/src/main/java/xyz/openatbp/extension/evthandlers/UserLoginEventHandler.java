@@ -16,14 +16,13 @@ public class UserLoginEventHandler extends BaseServerEventHandler {
     public void handleServerEvent(ISFSEvent isfsEvent) throws SFSException {
         ISession session = (ISession) isfsEvent.getParameter(SFSEventParam.SESSION);
 
-        ISFSObject loginData = (ISFSObject) isfsEvent.getParameter(SFSEventParam.LOGIN_IN_DATA);
+        ISFSObject loginData = (ISFSObject) isfsEvent.getParameter(SFSEventParam.LOGIN_IN_DATA); //Given from the Lobby Server
         trace(loginData.getDump());
-        session.setProperty("name", loginData.getUtfString("name"));
+        session.setProperty("name", loginData.getUtfString("name").toUpperCase());
         session.setProperty("tegid", loginData.getUtfString("tid"));
         session.setProperty("id", loginData.getUtfString("authid"));
-        String userName = (String) isfsEvent.getParameter(SFSEventParam.LOGIN_NAME);
         ISFSObject outData = (ISFSObject) isfsEvent.getParameter(SFSEventParam.LOGIN_OUT_DATA);
-        outData.putUtfString(SFSConstants.NEW_LOGIN_NAME, loginData.getUtfString("name").toUpperCase());
+        outData.putUtfString(SFSConstants.NEW_LOGIN_NAME, loginData.getUtfString("name").toUpperCase()); //Changes the default "Guest" name to player's name
 
     }
 }

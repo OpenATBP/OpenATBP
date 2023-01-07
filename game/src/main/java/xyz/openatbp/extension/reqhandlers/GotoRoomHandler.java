@@ -21,28 +21,31 @@ import java.util.List;
 public class GotoRoomHandler extends BaseClientRequestHandler {
 
     @Override
-    public void handleClientRequest(User sender, ISFSObject params){
+    public void handleClientRequest(User sender, ISFSObject params){ //Called when player is trying to join a match
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
-        trace(params.getDump());
         List<UserVariable> userVariables = new ArrayList<>();
-        SFSUserVariable avatar = new SFSUserVariable("avatar", params.getUtfString("avatar"));
-        SFSUserVariable belt = new SFSUserVariable("backpack", params.getUtfString("belt"));
-        SFSUserVariable team = new SFSUserVariable("team", params.getUtfString("team"));
-        SFSUserVariable name = new SFSUserVariable("name", sender.getSession().getProperty("name"));
-        SFSUserVariable tid = new SFSUserVariable("tegid", sender.getSession().getProperty("tegid"));
+        ISFSObject playerInfo = new SFSObject(); //Player info from champ select
+        playerInfo.putUtfString("avatar",params.getUtfString("avatar"));
+        playerInfo.putUtfString("backpack",params.getUtfString("belt"));
+        playerInfo.putUtfString("team",params.getUtfString("team"));
+        playerInfo.putUtfString("name", (String) sender.getSession().getProperty("name"));
+        playerInfo.putUtfString("tegid", (String) sender.getSession().getProperty("tegid"));
+        SFSUserVariable playerVar = new SFSUserVariable("player",playerInfo);
+        ISFSObject location = new SFSObject(); //Will need to be changed when we get actual spawn points made
+        location.putFloat("x",0);
+        location.putFloat("z", 0);
+        UserVariable locVar = new SFSUserVariable("location",location);
         sender.getSession().setProperty("room_id", params.getUtfString("room_id"));
-        userVariables.add(avatar);
-        userVariables.add(belt);
-        userVariables.add(team);
-        userVariables.add(name);
-        userVariables.add(tid);
+        userVariables.add(playerVar);
+        userVariables.add(locVar);
         parentExt.getApi().setUserVariables(sender, userVariables);
-
-        Room requestedRoom = sender.getZone().getRoomByName(params.getUtfString("room_id").substring(0,10));
+        String name = params.getUtfString("room_id");
+        if(name.length() >= 10) name = name.substring(0,10);
+        Room requestedRoom = sender.getZone().getRoomByName(name); //Tries to find existing room
         boolean createdRoom = false;
-        if(requestedRoom == null){
+        if(requestedRoom == null){ //If the room is not created yet, create it.
             CreateRoomSettings settings = new CreateRoomSettings();
-            settings.setName(params.getUtfString("room_id").substring(0,10));
+            settings.setName(name);
             settings.setGame(true);
             if(params.getUtfString("room_id").contains("practice")){
                 settings.setMaxUsers(1);
@@ -63,7 +66,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
         }
         requestedRoom.setPassword("");
         try {
-            if(!createdRoom) parentExt.getApi().joinRoom(sender, requestedRoom);
+            if(!createdRoom) parentExt.getApi().joinRoom(sender, requestedRoom); //If you did not create the room, join the existing one.
         } catch (SFSJoinRoomException e) {
             throw new RuntimeException(e);
         }
