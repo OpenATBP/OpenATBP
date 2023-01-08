@@ -75,7 +75,7 @@ public class RequestHandler {
         return objectNode;
     }
 
-    public static JsonNode handleGameReady(String partyLeader, int index, String type){ //When the game is ready, sends players to the game server. (Hard coded)
+    public static JsonNode handleGameReady(String partyLeader, int index, String type){ //When the game is ready, sends players to the game server.
         ObjectNode objectNode = objectMapper.createObjectNode();
         objectNode.put("countdown", 5);
         objectNode.put("ip", "127.0.0.1");

@@ -19,6 +19,6 @@ public class JoinZoneEventHandler extends BaseServerEventHandler {
         trace("Joined zone! " + user.getDump());
         ISFSObject data = new SFSObject();
 
-        parentExt.send("cmd_player_loaded", data, user);
+        parentExt.send("cmd_player_loaded", data, user); //Tells the client that the player is connected
     }
 }
