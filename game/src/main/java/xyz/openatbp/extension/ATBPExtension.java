@@ -50,7 +50,7 @@ public class ATBPExtension extends SFSExtension {
         this.addRequestHandler("req_mini_map_message", PingHandler.class);
         this.addRequestHandler("req_use_spell_point", SpellPointHandler.class);
         this.addRequestHandler("req_reset_spell_points", SpellPointHandler.class);
-        this.addRequestHandler("req_toggle_auto_level", Stub.class);
+        this.addRequestHandler("req_toggle_auto_level", AutoLevelHandler.class);
         this.addRequestHandler("req_client_ready", ClientReadyHandler.class);
         this.addRequestHandler("req_dump_player", Stub.class);
         this.addRequestHandler("req_auto_target", Stub.class);
