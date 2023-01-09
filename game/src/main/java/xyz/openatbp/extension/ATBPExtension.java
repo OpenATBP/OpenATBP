@@ -14,7 +14,7 @@ import com.smartfoxserver.v2.extensions.SFSExtension;
 import xyz.openatbp.extension.evthandlers.*;
 import xyz.openatbp.extension.reqhandlers.*;
 
-import java.awt.geom.Path2D;
+import java.awt.geom.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 public class ATBPExtension extends SFSExtension {
     HashMap<String, JsonNode> actorDefinitions = new HashMap<>(); //Contains all xml definitions for the characters
     //TODO: Change Vectors to Point2D
+    HashMap<String, JsonNode> itemDefinitions = new HashMap<>();
     ArrayList<Vector<Float>>[] mapColliders; //Contains all vertices for the practice map
     ArrayList<Vector<Float>>[] mainMapColliders; //Contains all vertices for the main map
     ArrayList<Path2D> mapPaths; //Contains all line paths of the colliders for the practice map
@@ -47,8 +48,8 @@ public class ATBPExtension extends SFSExtension {
         this.addRequestHandler("req_do_actor_ability", Stub.class);
         this.addRequestHandler("req_console_message", Stub.class);
         this.addRequestHandler("req_mini_map_message", PingHandler.class);
-        this.addRequestHandler("req_use_spell_point", Stub.class);
-        this.addRequestHandler("req_reset_spell_points", Stub.class);
+        this.addRequestHandler("req_use_spell_point", SpellPointHandler.class);
+        this.addRequestHandler("req_reset_spell_points", SpellPointHandler.class);
         this.addRequestHandler("req_toggle_auto_level", Stub.class);
         this.addRequestHandler("req_client_ready", ClientReadyHandler.class);
         this.addRequestHandler("req_dump_player", Stub.class);
@@ -56,6 +57,7 @@ public class ATBPExtension extends SFSExtension {
         try {
             loadDefinitions();
             loadColliders();
+            loadItems();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -77,6 +79,16 @@ public class ATBPExtension extends SFSExtension {
         for(File f : files){
             JsonNode node = mapper.readTree(f);
             actorDefinitions.put(f.getName().replace(".xml",""),node);
+        }
+    }
+
+    private void loadItems() throws IOException {
+        File path = new File(getCurrentFolder()+"/items");
+        File[] files = path.listFiles();
+        ObjectMapper mapper = new ObjectMapper();
+        for(File f : files){
+            JsonNode node = mapper.readTree(f);
+            itemDefinitions.put(f.getName().replace(".json",""),node);
         }
     }
 
@@ -178,6 +190,8 @@ public class ATBPExtension extends SFSExtension {
         private Room room;
         private int secondsRan = 0;
         private int aValue;
+        private int[] altarStatus = {0,0,0};
+        private HashMap<String,Integer> cooldowns = new HashMap<>();
 
         public MatchScripts(Room room, int aValue){
             this.room = room;
@@ -185,20 +199,12 @@ public class ATBPExtension extends SFSExtension {
         }
         @Override
         public void run() {
-
             try{
                 if(room.getUserList().size() == 0) stopScript(aValue); //If no one is in the room, stop running.
                 else{
-                    List<User> users = room.getUserList();
-                    for(User u : users){ //Check all player's movements. Will be used for altars
-                        String name = u.getVariable("player").getSFSObjectValue().getUtfString("name");
-                        float x = u.getVariable("location").getSFSObjectValue().getFloat("x");
-                        float z = u.getVariable("location").getSFSObjectValue().getFloat("z");
-                        trace(name + " at " + x + "," + z);
-
-                    }
+                    handleAltars();
                 }
-                trace("Running passively! " + secondsRan);
+               // trace("Running passively! " + secondsRan);
                 ISFSObject mobSpawns = room.getVariable("spawns").getSFSObjectValue();
                 for(String s : GameManager.SPAWNS){ //Check all mob/health spawns for how long it's been since dead
                     int spawnRate = 45;
@@ -211,9 +217,10 @@ public class ATBPExtension extends SFSExtension {
                         mobSpawns.putInt(s,mobSpawns.getInt(s)+1);
                     }
                 }
+                handleCooldowns();
                 secondsRan++;
             }catch(Exception e){
-                trace(e.toString());
+                e.printStackTrace();
             }
         }
         private void spawnMonster(String monster){
@@ -276,6 +283,223 @@ public class ATBPExtension extends SFSExtension {
                     monsterObject.putSFSObject("spawn_point",monsterSpawn);
                     monsterObject.putInt("team",2);
                     send("cmd_create_actor",monsterObject,u);
+                }
+            }
+        }
+
+        private void handleAltars(){
+            int[] altarChange = {0,0,0};
+            boolean[] playerInside = {false,false,false};
+            for(User u : room.getUserList()){
+                float x = u.getVariable("location").getSFSObjectValue().getFloat("x");
+                float z = u.getVariable("location").getSFSObjectValue().getFloat("z");
+
+                int team = Integer.parseInt(u.getVariable("player").getSFSObjectValue().getUtfString("team"));
+                Point2D currentPoint = getRelativePoint(u.getVariable("location").getSFSObjectValue());
+                if(currentPoint.getX() != x && currentPoint.getY() != z){
+                    u.getVariable("location").getSFSObjectValue().putInt("time",u.getVariable("location").getSFSObjectValue().getInt("time")+1);
+                }
+                for(int i = 0; i < 3; i++){ // 0 is top, 1 is mid, 2 is bot
+                    if(insideAltar(currentPoint,i)){
+                        playerInside[i] = true;
+                        trace("inside altar!");
+                        if(team == 1) altarChange[i]--;
+                        else altarChange[i]++;
+                    }
+                }
+            }
+            for(int i = 0; i < 3; i++){
+                if(altarChange[i] > 0) altarChange[i] = 1;
+                else if(altarChange[i] < 0) altarChange[i] = -1;
+                else if(altarChange[i] == 0 && !playerInside[i]){
+                    if(altarStatus[i]>0) altarChange[i]=-1;
+                    else if(altarStatus[i]<0) altarChange[i]=1;
+                }
+                if(Math.abs(altarStatus[i]) <= 5) altarStatus[i]+=altarChange[i];
+                for(User u : room.getPlayersList()){
+                    int team = 2;
+                    if(altarStatus[i]>0) team = 0;
+                    else team = 1;
+                    String altarId = "altar_"+i;
+                    if(Math.abs(altarStatus[i]) == 6){ //Lock altar
+                        trace("Updating altar!");
+                        altarStatus[i]=10; //Locks altar
+                        if(i == 1) addScore(team,15,u);
+                        else addScore(team,10,u);
+                        cooldowns.put(altarId+"__"+"altar",180);
+                        ISFSObject data2 = new SFSObject();
+                        data2.putUtfString("id",altarId);
+                        data2.putUtfString("bundle","fx_altar_lock");
+                        data2.putInt("duration",1000*60*3);
+                        data2.putUtfString("fx_id","fx_altar_lock"+i);
+                        data2.putBool("parent",false);
+                        data2.putUtfString("emit",altarId);
+                        data2.putBool("orient",false);
+                        data2.putBool("highlight",true);
+                        data2.putInt("team",team);
+                        send("cmd_create_actor_fx",data2,u);
+                        ISFSObject data = new SFSObject();
+                        int altarNum = -1;
+                        if(i == 0) altarNum = 1;
+                        else if(i == 1) altarNum = 0;
+                        else if(i == 2) altarNum = i;
+                        data.putInt("altar",altarNum);
+                        data.putInt("team",team);
+                        data.putBool("locked",true);
+                        send("cmd_altar_update",data,u);
+                        if(Integer.parseInt(u.getVariable("player").getSFSObjectValue().getUtfString("team"))==team){
+                            ISFSObject data3 = new SFSObject();
+                            String buffName;
+                            String buffDescription;
+                            String icon;
+                            String bundle;
+                            if(i == 1){
+                                buffName = "Attack Altar" +i + " Buff";
+                                buffDescription = "Gives you a burst of attack damage!";
+                                icon = "icon_altar_attack";
+                                bundle = "altar_buff_offense";
+                            }else{
+                                buffName = "Defense Altar" + i + " Buff";
+                                buffDescription = "Gives you defense!";
+                                icon = "icon_altar_armor";
+                                bundle = "altar_buff_defense";
+                            }
+                            data3.putUtfString("name",buffName);
+                            data3.putUtfString("desc",buffDescription);
+                            data3.putUtfString("icon",icon);
+                            data3.putFloat("duration",1000*60);
+                            send("cmd_add_status_icon",data3,u);
+                            cooldowns.put(u.getId()+"__buff__"+buffName,60);
+                            ISFSObject data4 = new SFSObject();
+                            data4.putUtfString("id",String.valueOf(u.getId()));
+                            data4.putUtfString("bundle",bundle);
+                            data4.putInt("duration",1000*60);
+                            data4.putUtfString("fx_id",bundle+u.getId());
+                            data4.putBool("parent",true);
+                            data4.putUtfString("emit",String.valueOf(u.getId()));
+                            data4.putBool("orient",true);
+                            data4.putBool("highlight",true);
+                            data4.putInt("team",team);
+                            send("cmd_create_actor_fx",data4,u);
+                            ISFSObject data5 = new SFSObject();
+                            data5.putUtfString("id",altarId);
+                            data5.putUtfString("attackerId",String.valueOf(u.getId()));
+                            data5.putInt("deathTime",180);
+                            send("cmd_knockout_actor",data5,u);
+                            ExtensionCommands.updateActorData(ATBPExtension.this,u,ChampionData.addXP(u,101,ATBPExtension.this));
+                        }
+                    }else if(Math.abs(altarStatus[i])<=5 && altarStatus[i]!=0){ //Update altar
+                        int stage = Math.abs(altarStatus[i]);
+                        trace("Updating altar status! " + stage);
+                        ISFSObject data = new SFSObject();
+                        data.putUtfString("id",altarId);
+                        data.putUtfString("bundle","fx_altar_"+stage);
+                        data.putInt("duration",1000);
+                        data.putUtfString("fx_id","fx_altar_"+stage+i);
+                        data.putBool("parent",false);
+                        data.putUtfString("emit",altarId);
+                        data.putBool("orient",false);
+                        data.putBool("highlight",true);
+                        data.putInt("team",team);
+                        send("cmd_create_actor_fx",data,u);
+                    }
+                }
+            }
+        }
+        private Point2D getRelativePoint(ISFSObject playerLoc){ //Gets player's current location based on time
+            Point2D rPoint = new Point2D.Float();
+            float x2 = playerLoc.getFloat("x");
+            float y2 = playerLoc.getFloat("z");
+            float x1 = playerLoc.getSFSObject("p1").getFloat("x");
+            float y1 = playerLoc.getSFSObject("p1").getFloat("z");
+            Line2D movementLine = new Line2D.Double(x1,y1,x2,y2);
+            double dist = movementLine.getP1().distance(movementLine.getP2());
+            double time = dist/playerLoc.getFloat("speed");
+            double currentTime = playerLoc.getInt("time") + 1;
+            if(currentTime>time) currentTime=time;
+            double currentDist = playerLoc.getFloat("speed")*currentTime;
+            float x = (float)(x1+(currentDist/dist)*(x2-x1));
+            float y = (float)(y1+(currentDist/dist)*(y2-y1));
+            rPoint.setLocation(x,y);
+            return rPoint;
+        }
+
+        private boolean insideAltar(Point2D pLoc, int altar){
+            double altar2_x = 0;
+            double altar2_y = 0;
+            if(altar == 0){
+                altar2_x = MapData.L2_TOP_ALTAR[0];
+                altar2_y = MapData.L2_TOP_ALTAR[1];
+            }else if(altar == 2){
+                altar2_x = MapData.L2_BOT_ALTAR[0];
+                altar2_y = MapData.L2_BOT_ALTAR[1];
+            }
+            double px = pLoc.getX();
+            double pz = pLoc.getY();
+            double dist = Math.sqrt(Math.pow(px-altar2_x,2) + Math.pow(pz-altar2_y,2));
+            return dist<=2;
+        }
+
+        private void addScore(int team, int points, List<User> users){
+            int blueScore = room.getVariable("score").getSFSObjectValue().getInt("blue");
+            int purpleScore = room.getVariable("score").getSFSObjectValue().getInt("purple");
+            if(team == 0) blueScore+=points;
+            else purpleScore+=points;
+            ISFSObject pointData = new SFSObject();
+            pointData.putInt("teamA",blueScore);
+            pointData.putInt("teamB",purpleScore);
+            for(User u : users){
+                send("cmd_update_score",pointData,u);
+            }
+        }
+        private void addScore(int team, int points, User user){
+            ISFSObject scoreObject = room.getVariable("score").getSFSObjectValue();
+            int blueScore = scoreObject.getInt("blue");
+            int purpleScore = scoreObject.getInt("purple");
+            if(team == 0) blueScore+=points;
+            else purpleScore+=points;
+            scoreObject.putInt("blue",blueScore);
+            scoreObject.putInt("purple",purpleScore);
+            ISFSObject pointData = new SFSObject();
+            pointData.putInt("teamA",blueScore);
+            pointData.putInt("teamB",purpleScore);
+            send("cmd_update_score",pointData,user);
+        }
+
+        private void handleCooldowns(){ //Cooldown keys structure is id__cooldownType__value. Example for a buff cooldown could be lich__buff__attackDamage
+            for(String key : cooldowns.keySet()){
+                String[] keyVal = key.split("__");
+                String id = keyVal[0];
+                String cooldown = keyVal[1];
+                String value = "";
+                if(keyVal.length > 2) value = keyVal[2];
+                int time = cooldowns.get(key)-1;
+                if(time<=0){
+                    switch(cooldown){
+                        case "altar":
+                            for(User u : room.getUserList()){
+                                int altarIndex = Integer.parseInt(id.split("_")[1]);
+                                ISFSObject data = new SFSObject();
+                                int altarNum = -1;
+                                if(id.equalsIgnoreCase("altar_0")) altarNum = 1;
+                                else if(id.equalsIgnoreCase("altar_1")) altarNum = 0;
+                                else if(id.equalsIgnoreCase("altar_2")) altarNum = 2;
+                                data.putInt("altar",altarNum);
+                                data.putInt("team",2);
+                                data.putBool("locked",false);
+                                send("cmd_altar_update",data,u);
+                                altarStatus[altarIndex] = 0;
+                            }
+                            break;
+                        case "buff":
+                            ISFSObject data = new SFSObject();
+                            data.putUtfString("name",value);
+                            send("cmd_remove_status_icon",data,room.getUserById(Integer.parseInt(id)));
+                            break;
+                    }
+                    cooldowns.remove(key);
+                }else{
+                    cooldowns.put(key,time);
                 }
             }
         }

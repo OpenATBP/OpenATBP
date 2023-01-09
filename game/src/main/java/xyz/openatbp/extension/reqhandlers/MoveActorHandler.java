@@ -71,6 +71,12 @@ public class MoveActorHandler extends BaseClientRequestHandler {
         ISFSObject userLocation = sender.getVariable("location").getSFSObjectValue();
         userLocation.putFloat("x",destx);
         userLocation.putFloat("z",destz);
+        ISFSObject currentLoc = new SFSObject();
+        currentLoc.putFloat("x",(float)movementLine.getX1());
+        currentLoc.putFloat("z",(float)movementLine.getY1());
+        userLocation.putSFSObject("p1",currentLoc);
+        userLocation.putInt("time",0);
+        userLocation.putFloat("speed",params.getFloat("speed"));
         ISFSObject data = new SFSObject();
         data.putUtfString("i", String.valueOf(sender.getId()));
         data.putFloat("px", params.getFloat("orig_x"));
@@ -125,4 +131,5 @@ public class MoveActorHandler extends BaseClientRequestHandler {
         }
         return p;
     }
+
 }
