@@ -1,26 +1,24 @@
 package xyz.openatbp.extension;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.entities.variables.RoomVariable;
 import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
+import com.smartfoxserver.v2.entities.variables.SFSUserVariable;
+import com.smartfoxserver.v2.entities.variables.UserVariable;
 import com.smartfoxserver.v2.exceptions.SFSVariableException;
 
 import java.util.ArrayList;
-import java.util.Vector;
+import java.util.Iterator;
+import java.util.List;
 
 public class GameManager {
 
     //bh1 = Blue Health 1 ph1 = Purple Health 1. Numbers refer to top,bottom,and outside respectively.
     public static final String[] SPAWNS = {"bh1","bh2","bh3","ph1","ph2","ph3","keeoth","ooze","hugwolf","gnomes","owls","grassbear"};
-
-    private void updateAllPlayers(ArrayList<User> users, String cmd, SFSObject data, ATBPExtension parentExt){
-        for(int i = 0; i < users.size(); i++){
-            parentExt.send(cmd, data, users.get(i));
-        }
-    }
 
     public static void addPlayer(ArrayList<User> users, ATBPExtension parentExt){ //Sends player info to client
         for(int i = 0; i < users.size(); i++){
@@ -95,7 +93,7 @@ public class GameManager {
         }
     }
 
-    public static void initializeGame(ArrayList<User> users, ATBPExtension parentExt){
+    public static void initializeGame(ArrayList<User> users, ATBPExtension parentExt) throws SFSVariableException {
         for(int i = 0; i < users.size(); i++){ //Initialize character
             User sender = users.get(i);
             initializeMap(sender,parentExt);
@@ -127,9 +125,15 @@ public class GameManager {
             updateData.putInt("sp_category3" ,0);
             updateData.putInt("sp_category4", 0);
             updateData.putInt("sp_category5", 0);
-            updateData.putInt("kills", 0);
             updateData.putInt("deaths", 0);
             updateData.putInt("assists", 0);
+            JsonNode actorStats = parentExt.getActorStats(playerInfo.getUtfString("avatar"));
+            for (Iterator<String> it = actorStats.fieldNames(); it.hasNext(); ) {
+                String k = it.next();
+                updateData.putDouble(k,actorStats.get(k).asDouble());
+            }
+            UserVariable userStat = new SFSUserVariable("stats",updateData);
+            sender.setVariable(userStat);
             for(int g = 0; g < users.size(); g++){ //Send characters
                 User user = users.get(g);
                 parentExt.send("cmd_create_actor", actorData, user);
@@ -154,8 +158,16 @@ public class GameManager {
         for(String s : SPAWNS){ //Adds in spawn timers for all mobs/health. AKA time dead
             spawnTimers.putInt(s,0);
         }
+        ISFSObject teamScore = new SFSObject();
+        teamScore.putInt("blue",0);
+        teamScore.putInt("purple",0);
+        RoomVariable scoreVar = new SFSRoomVariable("score",teamScore);
+        List<RoomVariable> variables = new ArrayList<>();
         RoomVariable spawnVar = new SFSRoomVariable("spawns",spawnTimers);
-        room.setVariable(spawnVar);
+        variables.add(scoreVar);
+        variables.add(spawnVar);
+        room.setVariables(variables);
+
     }
 
     private static void initializeMap(User user, ATBPExtension parentExt){
@@ -169,30 +181,6 @@ public class GameManager {
 
         parentExt.send("cmd_create_actor",MapData.getGuardianActorData(0,room),user);
         parentExt.send("cmd_create_actor",MapData.getGuardianActorData(1,room),user);
-
-        /* Keeping for now... this shows where every collider is on the map
-        ArrayList<Vector<Float>>[] points = parentExt.getColliders("practice");
-        for(int i = 0; i < points.length; i++){
-            ArrayList<Vector<Float>> collider = points[i];
-            for(int j = 0; j < collider.size(); j++){
-                Vector<Float> v = collider.get(j);
-                float x = v.get(0);
-                float z = v.get(1);
-                ISFSObject base = new SFSObject();
-                ISFSObject baseSpawn = new SFSObject();
-                base.putUtfString("id","collider"+i+"_"+j);
-                base.putUtfString("actor","gnome_a");
-                baseSpawn.putFloat("x", x);
-                baseSpawn.putFloat("y", (float) 0.0);
-                baseSpawn.putFloat("z", z);
-                base.putSFSObject("spawn_point", baseSpawn);
-                base.putFloat("rotation", (float) 0.0);
-                base.putInt("team", 2);
-                parentExt.send("cmd_create_actor",base,user);
-            }
-        }
-
-         */
 
     }
 

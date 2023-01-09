@@ -99,9 +99,9 @@ public class MapData {
                 z = L2_TOWER2_Z;
             }
         }
-        if(team == 1) x*=-1;
+        if(team == 0) x*=-1;
         String id = "error";
-        if(team == 0){
+        if(team == 1){
             id = "blue_tower"+tower;
         }else{
             id = "purple_tower"+tower;

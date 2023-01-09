@@ -1,5 +1,6 @@
 package xyz.openatbp.extension.reqhandlers;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.api.CreateRoomSettings;
 import com.smartfoxserver.v2.config.ZoneSettings;
 import com.smartfoxserver.v2.entities.Room;
@@ -14,9 +15,7 @@ import com.smartfoxserver.v2.exceptions.SFSJoinRoomException;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.ATBPExtension;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public class GotoRoomHandler extends BaseClientRequestHandler {
 
@@ -34,10 +33,21 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
         ISFSObject location = new SFSObject(); //Will need to be changed when we get actual spawn points made
         location.putFloat("x",0);
         location.putFloat("z", 0);
+        ISFSObject p1 = new SFSObject();
+        p1.putFloat("x", 0);
+        p1.putFloat("z", 0);
+        location.putSFSObject("p1",p1);
+        location.putInt("time",0);
+        location.putFloat("speed",0);
         UserVariable locVar = new SFSUserVariable("location",location);
+        ISFSObject actorInfo = new SFSObject();
+        actorInfo.putBool("autoAttack",true);
+        actorInfo.putBool("autoLevel",false);
+        UserVariable actorVar = new SFSUserVariable("champion",actorInfo);
         sender.getSession().setProperty("room_id", params.getUtfString("room_id"));
         userVariables.add(playerVar);
         userVariables.add(locVar);
+        userVariables.add(actorVar);
         parentExt.getApi().setUserVariables(sender, userVariables);
         String name = params.getUtfString("room_id");
         if(name.length() >= 10) name = name.substring(0,10);
