@@ -12,6 +12,7 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.SFSExtension;
 import xyz.openatbp.extension.evthandlers.*;
+import xyz.openatbp.extension.game.Minion;
 import xyz.openatbp.extension.reqhandlers.*;
 
 import java.awt.geom.*;
@@ -31,6 +32,7 @@ public class ATBPExtension extends SFSExtension {
     ArrayList<Path2D> mapPaths; //Contains all line paths of the colliders for the practice map
     ArrayList<Path2D> mainMapPaths; //Contains all line paths of the colliders for the main map
     ArrayList<ScheduledFuture<?>> tasks = new ArrayList(); //Contains all recurring tasks for each room
+    ArrayList<ScheduledFuture<?>> miniTasks = new ArrayList();
     public void init() {
         this.addEventHandler(SFSEventType.USER_JOIN_ROOM, JoinRoomEventHandler.class);
         this.addEventHandler(SFSEventType.USER_JOIN_ZONE, JoinZoneEventHandler.class);
@@ -178,12 +180,15 @@ public class ATBPExtension extends SFSExtension {
 
     public void startScripts(Room room){ //Creates a new task scheduler for a room
         tasks.add(SmartFoxServer.getInstance().getTaskScheduler().scheduleAtFixedRate(new MatchScripts(room,tasks.size()),1,1, TimeUnit.SECONDS));
+        miniTasks.add(SmartFoxServer.getInstance().getTaskScheduler().scheduleAtFixedRate(new MiniScripts(room,miniTasks.size()),100,100,TimeUnit.MILLISECONDS));
     }
 
     public void stopScript(int val){ //Stops a task scheduler when room is deleted
         trace("Stopping script!");
         tasks.get(val).cancel(true);
         tasks.remove(val);
+        miniTasks.get(val).cancel(true);
+        miniTasks.remove(val);
     }
 
     private class MatchScripts implements Runnable{
@@ -291,14 +296,9 @@ public class ATBPExtension extends SFSExtension {
             int[] altarChange = {0,0,0};
             boolean[] playerInside = {false,false,false};
             for(User u : room.getUserList()){
-                float x = u.getVariable("location").getSFSObjectValue().getFloat("x");
-                float z = u.getVariable("location").getSFSObjectValue().getFloat("z");
 
                 int team = Integer.parseInt(u.getVariable("player").getSFSObjectValue().getUtfString("team"));
                 Point2D currentPoint = getRelativePoint(u.getVariable("location").getSFSObjectValue());
-                if(currentPoint.getX() != x && currentPoint.getY() != z){
-                    u.getVariable("location").getSFSObjectValue().putInt("time",u.getVariable("location").getSFSObjectValue().getInt("time")+1);
-                }
                 for(int i = 0; i < 3; i++){ // 0 is top, 1 is mid, 2 is bot
                     if(insideAltar(currentPoint,i)){
                         playerInside[i] = true;
@@ -415,7 +415,7 @@ public class ATBPExtension extends SFSExtension {
             Line2D movementLine = new Line2D.Double(x1,y1,x2,y2);
             double dist = movementLine.getP1().distance(movementLine.getP2());
             double time = dist/playerLoc.getFloat("speed");
-            double currentTime = playerLoc.getInt("time") + 1;
+            double currentTime = playerLoc.getFloat("time") + 0.1;
             if(currentTime>time) currentTime=time;
             double currentDist = playerLoc.getFloat("speed")*currentTime;
             float x = (float)(x1+(currentDist/dist)*(x2-x1));
@@ -502,6 +502,82 @@ public class ATBPExtension extends SFSExtension {
                     cooldowns.put(key,time);
                 }
             }
+        }
+    }
+    private class MiniScripts implements Runnable{
+        private Room room;
+        private int index;
+        private ArrayList<Minion> minions;
+        private int mSecondsRan = 0;
+        public MiniScripts(Room room, int index){
+            this.room = room;
+            this.index = index;
+            this.minions = new ArrayList<>();
+        }
+        @Override
+        public void run() {
+            try{
+                mSecondsRan+=100;
+                for(Minion m : minions){
+                    if(m.getPathIndex() < 10 && m.getDesiredPath() != null && ((Math.abs(m.getDesiredPath().distance(m.getRelativePoint())) < 0.2) || Double.isNaN(m.getDesiredPath().getX()))){
+                        System.out.println("Reached destination!");
+                        //System.out.println("Distance" + Math.abs(m.getDesiredPath().distance(m.getLocation())));
+                        m.arrived();
+                        m.move(ATBPExtension.this);
+                    }else{
+                        m.addTravelTime(0.1f);
+                    }
+                }
+                for(User u : room.getUserList()){
+                    float x = u.getVariable("location").getSFSObjectValue().getFloat("x");
+                    float z = u.getVariable("location").getSFSObjectValue().getFloat("z");
+                    Point2D currentPoint = getRelativePoint(u.getVariable("location").getSFSObjectValue());
+                    if(currentPoint.getX() != x && currentPoint.getY() != z){
+                        u.getVariable("location").getSFSObjectValue().putFloat("time",u.getVariable("location").getSFSObjectValue().getFloat("time")+0.1f);
+                    }
+                }
+                if(mSecondsRan == 5000){
+                    trace("Adding minion!");
+                    this.addMinion("minion1",0,35.17f,4.06f);
+                }
+                if(this.room.getUserList().size() == 0) stopScript(this.index);
+            }catch(Exception e){
+                e.printStackTrace();
+            }
+
+        }
+
+        public void addMinion(Minion m){
+            minions.add(m);
+            for(User u : room.getUserList()){
+                ExtensionCommands.createActor(ATBPExtension.this,u,m.creationObject());
+            }
+        }
+
+        public void addMinion(String id, int team, float x, float z){
+            Minion m = new Minion(id,this.room,team,x,z);
+            minions.add(m);
+            for(User u : room.getUserList()){
+                ExtensionCommands.createActor(ATBPExtension.this,u,m.creationObject());
+                m.move(ATBPExtension.this);
+            }
+        }
+        private Point2D getRelativePoint(ISFSObject playerLoc){ //Gets player's current location based on time
+            Point2D rPoint = new Point2D.Float();
+            float x2 = playerLoc.getFloat("x");
+            float y2 = playerLoc.getFloat("z");
+            float x1 = playerLoc.getSFSObject("p1").getFloat("x");
+            float y1 = playerLoc.getSFSObject("p1").getFloat("z");
+            Line2D movementLine = new Line2D.Double(x1,y1,x2,y2);
+            double dist = movementLine.getP1().distance(movementLine.getP2());
+            double time = dist/playerLoc.getFloat("speed");
+            double currentTime = playerLoc.getFloat("time") + 0.1;
+            if(currentTime>time) currentTime=time;
+            double currentDist = playerLoc.getFloat("speed")*currentTime;
+            float x = (float)(x1+(currentDist/dist)*(x2-x1));
+            float y = (float)(y1+(currentDist/dist)*(y2-y1));
+            rPoint.setLocation(x,y);
+            return rPoint;
         }
     }
 }

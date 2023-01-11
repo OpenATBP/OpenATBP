@@ -4,6 +4,8 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 
+import java.awt.geom.Point2D;
+
 public class ExtensionCommands {
     /**
         @param id - ID of the actor
@@ -33,5 +35,52 @@ public class ExtensionCommands {
     public static void updateActorData(ATBPExtension parentExt, User u, ISFSObject data){
         System.out.println(data.getDump());
         parentExt.send("cmd_update_actor_data",data,u);
+    }
+
+    /**
+     *
+     * @param id - ID of who is moving
+     * @param p - Point2D object of where the actor is
+     * @param d - Point2D object of where the actor is going
+     * @param speed - Movement speed of actor
+     * @param orient - Should the actor face in the direction of their path?
+     */
+    public static void moveActor(ATBPExtension parentExt, User u, String id, Point2D p, Point2D d, float speed, boolean orient){
+        System.out.println("Moving from " + p.getX() + "," + p.getY() + " to " + d.getX() + "," + d.getY());
+        ISFSObject data = new SFSObject();
+        data.putUtfString("i",id);
+        data.putFloat("px",(float)p.getX());
+        data.putFloat("pz",(float)p.getY());
+        data.putFloat("dx",(float) d.getX());
+        data.putFloat("dz",(float) d.getY());
+        data.putFloat("s",speed);
+        data.putBool("o",orient);
+        parentExt.send("cmd_move_actor",data,u);
+    }
+
+    /**
+     *
+     * @param id - String ID of actor being spawned
+     * @param actor - Name of actor/avatar asset for the new actor
+     * @param spawn - Point2D object of spawn point
+     * @param rotation - Rotation float for how it should be facing
+     * @param team - Team int value
+     */
+    public static void createActor(ATBPExtension parentExt, User u, String id, String actor, Point2D spawn, float rotation, int team){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("id",id);
+        data.putUtfString("actor",actor);
+        ISFSObject spawnPoint = new SFSObject();
+        spawnPoint.putFloat("x", (float) spawn.getX());
+        spawnPoint.putFloat("y",0f);
+        spawnPoint.putFloat("z", (float) spawn.getY());
+        data.putSFSObject("spawn_point",spawnPoint);
+        data.putFloat("rotation",rotation);
+        data.putInt("team",team);
+        parentExt.send("cmd_create_actor",data,u);
+    }
+
+    public static void createActor(ATBPExtension parentExt, User u, ISFSObject data){
+        parentExt.send("cmd_create_actor",data,u);
     }
 }
