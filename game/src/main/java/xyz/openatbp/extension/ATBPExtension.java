@@ -40,14 +40,14 @@ public class ATBPExtension extends SFSExtension {
         this.addEventHandler(SFSEventType.ROOM_ADDED, RoomCreatedEventHandler.class);
         this.addEventHandler(SFSEventType.USER_DISCONNECT, UserDisconnect.class);
 
-        this.addRequestHandler("req_hit_actor", Stub.class);
+        this.addRequestHandler("req_hit_actor", HitActorHandler.class);
         this.addRequestHandler("req_keep_alive", Stub.class);
         this.addRequestHandler("req_goto_room", GotoRoomHandler.class);
         this.addRequestHandler("req_move_actor", MoveActorHandler.class);
         this.addRequestHandler("req_delayed_login", Stub.class);
         this.addRequestHandler("req_buy_item", Stub.class);
         this.addRequestHandler("req_pickup_item", Stub.class);
-        this.addRequestHandler("req_do_actor_ability", Stub.class);
+        this.addRequestHandler("req_do_actor_ability", DoActorAbilityHandler.class);
         this.addRequestHandler("req_console_message", Stub.class);
         this.addRequestHandler("req_mini_map_message", PingHandler.class);
         this.addRequestHandler("req_use_spell_point", SpellPointHandler.class);
