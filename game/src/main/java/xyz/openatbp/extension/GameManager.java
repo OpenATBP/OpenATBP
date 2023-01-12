@@ -119,6 +119,7 @@ public class GameManager {
             updateData.putDouble("pLevel", 0);
             updateData.putInt("level", 1);
             updateData.putInt("availableSpellPoints", 1);
+            updateData.putLong("timeSinceBasicAttack", 0);
             //SP_CATEGORY 1-5 TBD
             updateData.putInt("sp_category1", 0);
             updateData.putInt("sp_category2", 0);
@@ -137,7 +138,16 @@ public class GameManager {
             for(int g = 0; g < users.size(); g++){ //Send characters
                 User user = users.get(g);
                 parentExt.send("cmd_create_actor", actorData, user);
+                //testing code to spawn a dummy
+                ISFSObject actorData1 = new SFSObject();
+                actorData1.putUtfString("id", "100");
+                actorData1.putUtfString("actor", "magicman");
+                actorData1.putSFSObject("spawn_point", spawnPoint);
+                actorData1.putInt("team", 1);
+                parentExt.send("cmd_create_actor", actorData1, user);
+
                 parentExt.send("cmd_update_actor_data", updateData, user);
+
             }
         }
         try{ //Sets all the room variables once the game is about to begin
