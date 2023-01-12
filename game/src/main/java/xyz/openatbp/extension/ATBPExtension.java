@@ -519,7 +519,7 @@ public class ATBPExtension extends SFSExtension {
             try{
                 mSecondsRan+=100;
                 for(Minion m : minions){
-                    if(m.getPathIndex() < 10 && m.getDesiredPath() != null && ((Math.abs(m.getDesiredPath().distance(m.getRelativePoint())) < 0.2) || Double.isNaN(m.getDesiredPath().getX()))){
+                    if(m.getState() == 0 && m.getPathIndex() < 10 && m.getDesiredPath() != null && ((Math.abs(m.getDesiredPath().distance(m.getRelativePoint())) < 0.2) || Double.isNaN(m.getDesiredPath().getX()))){
                         System.out.println("Reached destination!");
                         //System.out.println("Distance" + Math.abs(m.getDesiredPath().distance(m.getLocation())));
                         m.arrived();
@@ -534,6 +534,27 @@ public class ATBPExtension extends SFSExtension {
                     Point2D currentPoint = getRelativePoint(u.getVariable("location").getSFSObjectValue());
                     if(currentPoint.getX() != x && currentPoint.getY() != z){
                         u.getVariable("location").getSFSObjectValue().putFloat("time",u.getVariable("location").getSFSObjectValue().getFloat("time")+0.1f);
+                    }
+                    for(Minion m: minions){
+                        if(m.nearEntity(currentPoint) && m.getState() == 0){
+                            System.out.println("Near player!");
+                            if(m.facingEntity(currentPoint)){
+                                m.setTarget(String.valueOf(u.getId()));
+                            }
+                        }else if(m.nearEntity(currentPoint) && m.getState() == 1){
+                            if(m.withinAttackRange(currentPoint)){
+                                System.out.println("Attacking player!");
+                                if(m.canAttack()){
+                                    m.attack(ATBPExtension.this,currentPoint,String.valueOf(u.getId()));
+                                }else m.reduceAttackCooldown();
+                            }else{
+                                if(m.getAttackCooldown()>200) m.reduceAttackCooldown();
+                                m.moveTowardsActor(ATBPExtension.this,currentPoint);
+                            }
+                        }else if(m.getState() != 0){
+                            System.out.println("Lost player!");
+                            m.setState(0);
+                        }
                     }
                 }
                 if(mSecondsRan == 5000){

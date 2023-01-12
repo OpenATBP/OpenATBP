@@ -83,4 +83,33 @@ public class ExtensionCommands {
     public static void createActor(ATBPExtension parentExt, User u, ISFSObject data){
         parentExt.send("cmd_create_actor",data,u);
     }
+
+    /**
+     *
+     * @param id - ID of who is attacking
+     * @param target - ID of who is being attacked
+     * @param x - X of player being attacked
+     * @param z - Z position of player being attacked
+     * @param crit - Does the attack crit?
+     * @param orient - Should the player face the target?
+     */
+    public static void attackActor(ATBPExtension parentExt, User u, String id, String target, float x, float z, boolean crit, boolean orient){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("id", id);
+        data.putUtfString("target_id",target);
+        data.putFloat("dest_x",x);
+        data.putFloat("dest_y",0f);
+        data.putFloat("dest_z",z);
+        data.putUtfString("attack_type","basic");
+        data.putBool("crit",crit);
+        data.putBool("orient",orient);
+        parentExt.send("cmd_attack_actor",data,u);
+    }
+
+    public static void damageActor(ATBPExtension parentExt, User u, String target, int damage){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("target_id",target);
+        data.putInt("damage",damage);
+        parentExt.send("cmd_damage_actor",data,u);
+    }
 }
