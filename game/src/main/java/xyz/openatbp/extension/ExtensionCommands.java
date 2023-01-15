@@ -1,5 +1,6 @@
 package xyz.openatbp.extension;
 
+import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
@@ -106,6 +107,11 @@ public class ExtensionCommands {
         parentExt.send("cmd_attack_actor",data,u);
     }
 
+    /**
+     *
+     * @param target - ID of the target of the damage
+     * @param damage - Damage the target is taking
+     */
     public static void damageActor(ATBPExtension parentExt, User u, String target, int damage){
         ISFSObject data = new SFSObject();
         data.putUtfString("target_id",target);
@@ -133,10 +139,98 @@ public class ExtensionCommands {
         parentExt.send("cmd_create_projectile_fx",data,u);
     }
 
+    /**
+     *
+     * @param actorId - ID of the actor targeting another actor
+     * @param targetId - ID of the actor being targeted
+     */
     public static void setTarget(ATBPExtension parentExt, User u, String actorId, String targetId){
         ISFSObject data = new SFSObject();
         data.putUtfString("actor_id",actorId);
         data.putUtfString("target_id",targetId);
         parentExt.send("cmd_set_target",data,u);
+    }
+
+    /**
+     *
+     * @param tower - Tower identifier to show what tower is being attacked.
+     */
+    public static void towerAttacked(ATBPExtension parentExt, User u, int tower){
+        ISFSObject data = new SFSObject();
+        data.putInt("tower",tower);
+        parentExt.send("cmd_tower_under_attack",data,u);
+    }
+
+    /**
+     *
+     * @param tower - Tower identifier to show what tower is destroyed.
+     */
+    public static void towerDown(ATBPExtension parentExt, User u, int tower){
+        ISFSObject data = new SFSObject();
+        data.putInt("tower",tower);
+        parentExt.send("cmd_tower_down",data,u);
+    }
+
+    /**
+     *
+     * @param id - ID of actor who is knocking out another actor
+     * @param attackerId - ID of actor being knocked out
+     * @param deathTime - Respawn time for the knocked out actor
+     */
+    public static void knockOutActor(ATBPExtension parentExt, User u, String id, String attackerId, int deathTime){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("id",id);
+        data.putUtfString("attackerId",attackerId);
+        data.putInt("deathTime",deathTime);
+        parentExt.send("cmd_knockout_actor",data,u);
+    }
+
+    /**
+     *
+     * @param id - ID of actor being destroyed
+     */
+    public static void destroyActor(ATBPExtension parentExt, User u, String id){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("id",id);
+        parentExt.send("cmd_destroy_actor",data,u);
+    }
+
+    /**
+     *
+     * @param id - ID of player receiving the effect?
+     * @param bundle - Assetbundle of the effect
+     * @param fxId - Special ID given to this specific effect
+     * @param duration - Milliseconds of effect duration
+     * @param x - X position of effect
+     * @param z - Z position of effect
+     * @param highlight - Should the effect be highlighted based on team?
+     * @param team - Int value of team effect belongs to
+     * @param rotation - Float y-rotation for effect
+     */
+    public static void createWorldFX(ATBPExtension parentExt, User u, String id, String bundle, String fxId, int duration, float x, float z, boolean highlight, int team, float rotation){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("id",id);
+        data.putUtfString("bundle",bundle);
+        data.putUtfString("fx_id",fxId);
+        data.putInt("duration",duration);
+        data.putFloat("x",x);
+        data.putFloat("y",0f);
+        data.putFloat("z",z);
+        data.putBool("highlight",highlight);
+        data.putInt("team",team);
+        data.putFloat("yrot",rotation);
+        parentExt.send("cmd_create_world_fx",data,u);
+    }
+
+    /**
+     *
+     * @param teamA - New score for purple team
+     * @param teamB - New score for blue team
+     */
+    public static void updateScores(ATBPExtension parentExt, User u, int teamA, int teamB){
+        ISFSObject data = new SFSObject();
+        data.putInt("teamA",teamA);
+        data.putInt("teamB",teamB);
+        parentExt.send("cmd_update_score",data,u);
     }
 }

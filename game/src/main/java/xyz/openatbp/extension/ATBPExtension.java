@@ -57,6 +57,9 @@ public class ATBPExtension extends SFSExtension {
         this.addRequestHandler("req_client_ready", ClientReadyHandler.class);
         this.addRequestHandler("req_dump_player", Stub.class);
         this.addRequestHandler("req_auto_target", Stub.class);
+        this.addRequestHandler("req_admin_command", Stub.class);
+        this.addRequestHandler("req_spam", Stub.class);
+
         try {
             loadDefinitions();
             loadColliders();
@@ -522,7 +525,7 @@ public class ATBPExtension extends SFSExtension {
         @Override
         public void run() {
             try{
-                if(towers == null){
+                if(towers == null){ //If the tower objects have not been created yet, create them.
                     towers = new ArrayList<>();
                     HashMap<String,Point2D> towers0 = MapData.getTowerData(room.getGroupId(),0);
                     HashMap<String, Point2D> towers1 = MapData.getTowerData(room.getGroupId(),1);
@@ -534,7 +537,7 @@ public class ATBPExtension extends SFSExtension {
                     }
                 }
                 mSecondsRan+=100;
-                for(User u : room.getUserList()){
+                for(User u : room.getUserList()){ //Tracks player location
                     float x = u.getVariable("location").getSFSObjectValue().getFloat("x");
                     float z = u.getVariable("location").getSFSObjectValue().getFloat("z");
                     Point2D currentPoint = getRelativePoint(u.getVariable("location").getSFSObjectValue());
@@ -542,34 +545,28 @@ public class ATBPExtension extends SFSExtension {
                         u.getVariable("location").getSFSObjectValue().putFloat("time",u.getVariable("location").getSFSObjectValue().getFloat("time")+0.1f);
                     }
                 }
-                for(Minion m : minions){
+                for(Minion m : minions){ //Handles minion behavior
                     switchcase:
                         switch(m.getState()){
                             case 0: // MOVING
                                 if(m.getState() == 0 && (m.getPathIndex() < 10 & m.getPathIndex()>= 0) && m.getDesiredPath() != null && ((Math.abs(m.getDesiredPath().distance(m.getRelativePoint())) < 0.2) || Double.isNaN(m.getDesiredPath().getX()))){
-                                    System.out.println("Reached destination!");
-                                    //System.out.println("Distance" + Math.abs(m.getDesiredPath().distance(m.getLocation())));
                                     m.arrived();
                                     m.move(ATBPExtension.this);
                                 }else{
-                                    System.out.println("Traveling!");
                                     m.addTravelTime(0.1f);
                                 }
                                 for(Tower t: towers){
-                                    if(t.getTeam() != m.getTeam() && m.withinAttackRange(t.getLocation())){
-                                        trace("Near tower!");
-                                        m.stopMoving(ATBPExtension.this);
-                                        m.setState(2);
+                                    if(t.getTeam() != m.getTeam() && m.nearEntity(t.getLocation())){ //Minion prioritizes towers over players
                                         m.setTarget(ATBPExtension.this,t.getId());
+                                        m.moveTowardsActor(ATBPExtension.this,t.getLocation());
                                         break switchcase;
                                     }
                                 }
-                                trace("Step 2!");
                                 for(User u : room.getUserList()){
                                     int userTeam = Integer.parseInt(u.getVariable("player").getSFSObjectValue().getUtfString("team"));
                                     Point2D currentPoint = getRelativePoint(u.getVariable("location").getSFSObjectValue());
                                     if(m.getTeam() != userTeam && m.nearEntity(currentPoint) && m.facingEntity(currentPoint)){
-                                        if(m.getTarget() == null){
+                                        if(m.getTarget() == null){ //This will probably always be true.
                                             m.setTarget(ATBPExtension.this,String.valueOf(u.getId()));
                                             ExtensionCommands.setTarget(ATBPExtension.this,u,m.getId(), String.valueOf(u.getId()));
                                         }
@@ -578,8 +575,7 @@ public class ATBPExtension extends SFSExtension {
                                 break;
                             case 1: //PLAYER TARGET
                                 Point2D currentPoint = getRelativePoint(room.getUserById(Integer.parseInt(m.getTarget())).getVariable("location").getSFSObjectValue());
-                                if(!m.nearEntity(currentPoint)){
-                                    trace("Not near player!");
+                                if(!m.nearEntity(currentPoint)){ //Resets the minion's movement if it loses the target
                                     m.setState(0);
                                     m.move(ATBPExtension.this);
                                 }else{
@@ -590,63 +586,38 @@ public class ATBPExtension extends SFSExtension {
                                         }else{
                                             m.reduceAttackCooldown();
                                         }
-                                        trace("Within attack range!");
                                     }else{
-                                        trace("Moving towards player!");
                                         m.moveTowardsActor(ATBPExtension.this,currentPoint);
                                         if(m.getAttackCooldown() > 300) m.reduceAttackCooldown();
                                     }
                                 }
-                                trace("Current location: " + m.getRelativePoint().getX() + "," + m.getRelativePoint().getY());
                                 break;
-                            case 2: // TOWER TARGET
-                                break;
-                        }
-                }
-                /*
-                for(User u : room.getUserList()){
-                    float x = u.getVariable("location").getSFSObjectValue().getFloat("x");
-                    float z = u.getVariable("location").getSFSObjectValue().getFloat("z");
-                    Point2D currentPoint = getRelativePoint(u.getVariable("location").getSFSObjectValue());
-                    if(currentPoint.getX() != x && currentPoint.getY() != z){
-                        u.getVariable("location").getSFSObjectValue().putFloat("time",u.getVariable("location").getSFSObjectValue().getFloat("time")+0.1f);
-                    }
-                    for(Minion m: minions){
-                        if(m.nearEntity(currentPoint) && m.getState() == 0){
-                            System.out.println("Near player!");
-                            if(m.facingEntity(currentPoint)){
-                                System.out.println("Facing player!");
-                                m.setTarget(String.valueOf(u.getId()));
-                            }
-                        }else if(m.nearEntity(currentPoint) && m.getState() == 1){
-                            System.out.println("Near target!");
-                            if(m.withinAttackRange(currentPoint)){
-                                System.out.println("Attacking player!");
-                                if(m.canAttack()){
-                                    System.out.println("Damaging player!");
-                                    m.attack(ATBPExtension.this,currentPoint,String.valueOf(u.getId()));
-                                }else{
-                                    trace("On cooldown!");
-                                    m.reduceAttackCooldown();
+                            case 3: // TOWER TARGET
+                                Tower targetTower = findTower(m.getTarget());
+                                if(targetTower != null && (m.withinAttackRange(targetTower.getLocation()) || m.getAttackCooldown() < 300)){
+                                    m.stopMoving(ATBPExtension.this);
+                                    if(m.canAttack()){
+                                            if(targetTower.getHealth() > 0){
+                                                m.attack(ATBPExtension.this, targetTower);
+                                            }else{ //Handles tower death and resets minion on tower kill
+                                                towers.remove(targetTower);
+                                                m.setState(0);
+                                                m.move(ATBPExtension.this);
+                                            }
+                                    }else{
+                                        m.reduceAttackCooldown();
+                                    }
+                                }else if(targetTower != null){
+                                    m.moveTowardsActor(ATBPExtension.this,targetTower.getLocation());
+                                    if(m.getAttackCooldown() > 300) m.reduceAttackCooldown();
                                 }
-                            }else{
-                                trace("Distance: " + currentPoint.distance(m.getRelativePoint()));
-                                System.out.println("Moving to target!");
-                                if(m.getAttackCooldown()>200) m.reduceAttackCooldown();
-                                m.moveTowardsActor(ATBPExtension.this,currentPoint);
-                            }
-                        }else if(m.getState() != 0){
-                            System.out.println("Lost player!");
-                            m.setState(0);
-                        }else{
-                            System.out.println("Error!");
+                                break;
                         }
-                    }
                 }
-                */
+                //TODO: Add minion waves
                 if(mSecondsRan == 5000){
                     trace("Adding minion!");
-                    this.addMinion(1,1,0);
+                    this.addMinion(1,0,0);
                 }else if(mSecondsRan == 7000){
                     //this.addMinion(0,1,0);
                 }else if(mSecondsRan == 9000){
@@ -659,20 +630,11 @@ public class ATBPExtension extends SFSExtension {
 
         }
 
-        public void addMinion(Minion m){
-            minions.add(m);
-            for(User u : room.getUserList()){
-                ExtensionCommands.createActor(ATBPExtension.this,u,m.creationObject());
+        private Tower findTower(String id){
+            for(Tower t : towers){
+                if(t.getId().equalsIgnoreCase(id)) return t;
             }
-        }
-
-        public void addMinion(String id, int team, float x, float z){
-            Minion m = new Minion(id,this.room,team,x,z);
-            minions.add(m);
-            for(User u : room.getUserList()){
-                ExtensionCommands.createActor(ATBPExtension.this,u,m.creationObject());
-                m.move(ATBPExtension.this);
-            }
+            return null;
         }
 
         public void addMinion(int team, int type, int wave){
