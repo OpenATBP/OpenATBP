@@ -112,4 +112,31 @@ public class ExtensionCommands {
         data.putInt("damage",damage);
         parentExt.send("cmd_damage_actor",data,u);
     }
+
+    /**
+     *
+     * @param fxName - Name of projectile being spawned
+     * @param attackerId - ID of Champion spawning the projectile
+     * @param targetId - ID of Champion getting hit by the projectile
+     * @param emit - Emit location (like hand, leg, etc.)
+     * @param hit - Target location
+     * @param time - Time for projectile to be spawned
+     */
+    public static void createProjectileFX(ATBPExtension parentExt, User u, String fxName, String attackerId, String targetId, String emit, String hit, float time){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("name", fxName);
+        data.putUtfString("attacker", attackerId);
+        data.putUtfString("target",targetId);
+        data.putUtfString("emit",emit);
+        data.putUtfString("hit",hit);
+        data.putFloat("time",time);
+        parentExt.send("cmd_create_projectile_fx",data,u);
+    }
+
+    public static void setTarget(ATBPExtension parentExt, User u, String actorId, String targetId){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("actor_id",actorId);
+        data.putUtfString("target_id",targetId);
+        parentExt.send("cmd_set_target",data,u);
+    }
 }

@@ -1,9 +1,11 @@
 package xyz.openatbp.extension;
 
+import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 
 import java.awt.geom.Point2D;
+import java.util.HashMap;
 import java.util.Vector;
 
 public class MapData {
@@ -55,9 +57,9 @@ public class MapData {
             x = L2_BASE1_X;
             z = L2_BASE1_Z;
         }
-        if(team == 1) x*=-1;
-        String actor = "error";
-        if(team == 0){
+        if(team == 0) x*=-1;
+        String actor;
+        if(team == 1){
             actor = "base_blue";
         }else{
             actor = "base_purple";
@@ -118,6 +120,45 @@ public class MapData {
         towerObj.putInt("team", team);
 
         return towerObj;
+    }
+
+    public static HashMap<String, Point2D> getTowerData(String room, int team){
+        HashMap<String, Point2D> towers = new HashMap<>();
+        for(int tower = 1; tower < 4; tower++){
+            float x = 0;
+            float z = 0;
+            float towerDifference = 0;
+            String towerID = "tower"+tower;
+            if(room.equalsIgnoreCase("practice")){
+                towerDifference = L1_TOWER1_X-L1_TOWER2_X;
+                x = (L1_TOWER1_X-(towerDifference*(tower-1)));
+                z = L1_TOWER_Z;
+            }else{
+                if(tower == 1){
+                    towerID = "tower2";
+                    x = L2_TOP_TOWER1_X;
+                    z = L2_TOP_TOWER1_Z;
+                }else if(tower == 2){
+                    towerID = "tower2";
+                    x = L2_BOT_TOWER1[0];
+                    z = L2_BOT_TOWER1[1];
+                }else if(tower == 3){
+                    towerID = "tower1";
+                    x = L2_TOWER2_X;
+                    z = L2_TOWER2_Z;
+                }
+            }
+            if(team == 0) x*=-1;
+            String id = "error";
+            if(team == 1){
+                id = "blue_tower"+tower;
+            }else{
+                id = "purple_tower"+tower;
+            }
+            Point2D towerLoc = new Point2D.Float(x,z);
+            towers.put(id,towerLoc);
+        }
+        return towers;
     }
 
     public static ISFSObject getAltarActorData(int type, String room){
