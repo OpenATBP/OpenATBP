@@ -12,6 +12,8 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.SFSExtension;
 import xyz.openatbp.extension.evthandlers.*;
+import xyz.openatbp.extension.game.Minion;
+import xyz.openatbp.extension.game.Tower;
 import xyz.openatbp.extension.reqhandlers.*;
 
 import java.awt.geom.*;
@@ -31,6 +33,7 @@ public class ATBPExtension extends SFSExtension {
     ArrayList<Path2D> mapPaths; //Contains all line paths of the colliders for the practice map
     ArrayList<Path2D> mainMapPaths; //Contains all line paths of the colliders for the main map
     ArrayList<ScheduledFuture<?>> tasks = new ArrayList(); //Contains all recurring tasks for each room
+    ArrayList<ScheduledFuture<?>> miniTasks = new ArrayList();
     public void init() {
         this.addEventHandler(SFSEventType.USER_JOIN_ROOM, JoinRoomEventHandler.class);
         this.addEventHandler(SFSEventType.USER_JOIN_ZONE, JoinZoneEventHandler.class);
@@ -50,10 +53,13 @@ public class ATBPExtension extends SFSExtension {
         this.addRequestHandler("req_mini_map_message", PingHandler.class);
         this.addRequestHandler("req_use_spell_point", SpellPointHandler.class);
         this.addRequestHandler("req_reset_spell_points", SpellPointHandler.class);
-        this.addRequestHandler("req_toggle_auto_level", Stub.class);
+        this.addRequestHandler("req_toggle_auto_level", AutoLevelHandler.class);
         this.addRequestHandler("req_client_ready", ClientReadyHandler.class);
         this.addRequestHandler("req_dump_player", Stub.class);
         this.addRequestHandler("req_auto_target", Stub.class);
+        this.addRequestHandler("req_admin_command", Stub.class);
+        this.addRequestHandler("req_spam", Stub.class);
+
         try {
             loadDefinitions();
             loadColliders();
@@ -68,6 +74,9 @@ public class ATBPExtension extends SFSExtension {
     public void destroy(){ //Destroys all room tasks to prevent memory leaks
         super.destroy();
         for(ScheduledFuture<?> t : tasks){
+            if(t != null) t.cancel(true);
+        }
+        for(ScheduledFuture<?> t : miniTasks){
             if(t != null) t.cancel(true);
         }
     }
@@ -178,12 +187,15 @@ public class ATBPExtension extends SFSExtension {
 
     public void startScripts(Room room){ //Creates a new task scheduler for a room
         tasks.add(SmartFoxServer.getInstance().getTaskScheduler().scheduleAtFixedRate(new MatchScripts(room,tasks.size()),1,1, TimeUnit.SECONDS));
+        miniTasks.add(SmartFoxServer.getInstance().getTaskScheduler().scheduleAtFixedRate(new MiniScripts(room,miniTasks.size()),100,100,TimeUnit.MILLISECONDS));
     }
 
     public void stopScript(int val){ //Stops a task scheduler when room is deleted
         trace("Stopping script!");
         tasks.get(val).cancel(true);
         tasks.remove(val);
+        miniTasks.get(val).cancel(true);
+        miniTasks.remove(val);
     }
 
     private class MatchScripts implements Runnable{
@@ -291,14 +303,9 @@ public class ATBPExtension extends SFSExtension {
             int[] altarChange = {0,0,0};
             boolean[] playerInside = {false,false,false};
             for(User u : room.getUserList()){
-                float x = u.getVariable("location").getSFSObjectValue().getFloat("x");
-                float z = u.getVariable("location").getSFSObjectValue().getFloat("z");
 
                 int team = Integer.parseInt(u.getVariable("player").getSFSObjectValue().getUtfString("team"));
                 Point2D currentPoint = getRelativePoint(u.getVariable("location").getSFSObjectValue());
-                if(currentPoint.getX() != x && currentPoint.getY() != z){
-                    u.getVariable("location").getSFSObjectValue().putInt("time",u.getVariable("location").getSFSObjectValue().getInt("time")+1);
-                }
                 for(int i = 0; i < 3; i++){ // 0 is top, 1 is mid, 2 is bot
                     if(insideAltar(currentPoint,i)){
                         playerInside[i] = true;
@@ -415,7 +422,7 @@ public class ATBPExtension extends SFSExtension {
             Line2D movementLine = new Line2D.Double(x1,y1,x2,y2);
             double dist = movementLine.getP1().distance(movementLine.getP2());
             double time = dist/playerLoc.getFloat("speed");
-            double currentTime = playerLoc.getInt("time") + 1;
+            double currentTime = playerLoc.getFloat("time") + 0.1;
             if(currentTime>time) currentTime=time;
             double currentDist = playerLoc.getFloat("speed")*currentTime;
             float x = (float)(x1+(currentDist/dist)*(x2-x1));
@@ -502,6 +509,158 @@ public class ATBPExtension extends SFSExtension {
                     cooldowns.put(key,time);
                 }
             }
+        }
+    }
+    private class MiniScripts implements Runnable{
+        private Room room;
+        private int index;
+        private ArrayList<Minion> minions;
+        private ArrayList<Tower> towers;
+        private int mSecondsRan = 0;
+        public MiniScripts(Room room, int index){
+            this.room = room;
+            this.index = index;
+            this.minions = new ArrayList<>();
+        }
+        @Override
+        public void run() {
+            try{
+                if(towers == null){ //If the tower objects have not been created yet, create them.
+                    towers = new ArrayList<>();
+                    HashMap<String,Point2D> towers0 = MapData.getTowerData(room.getGroupId(),0);
+                    HashMap<String, Point2D> towers1 = MapData.getTowerData(room.getGroupId(),1);
+                    for(String key : towers0.keySet()){
+                        towers.add(new Tower(key,0,towers0.get(key)));
+                    }
+                    for(String key : towers1.keySet()){
+                        towers.add(new Tower(key,1,towers1.get(key)));
+                    }
+                }
+                mSecondsRan+=100;
+                for(User u : room.getUserList()){ //Tracks player location
+                    float x = u.getVariable("location").getSFSObjectValue().getFloat("x");
+                    float z = u.getVariable("location").getSFSObjectValue().getFloat("z");
+                    Point2D currentPoint = getRelativePoint(u.getVariable("location").getSFSObjectValue());
+                    if(currentPoint.getX() != x && currentPoint.getY() != z){
+                        u.getVariable("location").getSFSObjectValue().putFloat("time",u.getVariable("location").getSFSObjectValue().getFloat("time")+0.1f);
+                    }
+                }
+                for(Minion m : minions){ //Handles minion behavior
+                    switchcase:
+                        switch(m.getState()){
+                            case 0: // MOVING
+                                if(m.getState() == 0 && (m.getPathIndex() < 10 & m.getPathIndex()>= 0) && m.getDesiredPath() != null && ((Math.abs(m.getDesiredPath().distance(m.getRelativePoint())) < 0.2) || Double.isNaN(m.getDesiredPath().getX()))){
+                                    m.arrived();
+                                    m.move(ATBPExtension.this);
+                                }else{
+                                    m.addTravelTime(0.1f);
+                                }
+                                for(Tower t: towers){
+                                    if(t.getTeam() != m.getTeam() && m.nearEntity(t.getLocation())){ //Minion prioritizes towers over players
+                                        m.setTarget(ATBPExtension.this,t.getId());
+                                        m.moveTowardsActor(ATBPExtension.this,t.getLocation());
+                                        break switchcase;
+                                    }
+                                }
+                                for(User u : room.getUserList()){
+                                    int userTeam = Integer.parseInt(u.getVariable("player").getSFSObjectValue().getUtfString("team"));
+                                    Point2D currentPoint = getRelativePoint(u.getVariable("location").getSFSObjectValue());
+                                    if(m.getTeam() != userTeam && m.nearEntity(currentPoint) && m.facingEntity(currentPoint)){
+                                        if(m.getTarget() == null){ //This will probably always be true.
+                                            m.setTarget(ATBPExtension.this,String.valueOf(u.getId()));
+                                            ExtensionCommands.setTarget(ATBPExtension.this,u,m.getId(), String.valueOf(u.getId()));
+                                        }
+                                    }
+                                }
+                                break;
+                            case 1: //PLAYER TARGET
+                                Point2D currentPoint = getRelativePoint(room.getUserById(Integer.parseInt(m.getTarget())).getVariable("location").getSFSObjectValue());
+                                if(!m.nearEntity(currentPoint)){ //Resets the minion's movement if it loses the target
+                                    m.setState(0);
+                                    m.move(ATBPExtension.this);
+                                }else{
+                                    if (m.withinAttackRange(currentPoint) || m.getAttackCooldown() < 300) {
+                                        m.stopMoving(ATBPExtension.this);
+                                        if(m.canAttack()) {
+                                            m.attack(ATBPExtension.this,currentPoint);
+                                        }else{
+                                            m.reduceAttackCooldown();
+                                        }
+                                    }else{
+                                        m.moveTowardsActor(ATBPExtension.this,currentPoint);
+                                        if(m.getAttackCooldown() > 300) m.reduceAttackCooldown();
+                                    }
+                                }
+                                break;
+                            case 3: // TOWER TARGET
+                                Tower targetTower = findTower(m.getTarget());
+                                if(targetTower != null && (m.withinAttackRange(targetTower.getLocation()) || m.getAttackCooldown() < 300)){
+                                    m.stopMoving(ATBPExtension.this);
+                                    if(m.canAttack()){
+                                            if(targetTower.getHealth() > 0){
+                                                m.attack(ATBPExtension.this, targetTower);
+                                            }else{ //Handles tower death and resets minion on tower kill
+                                                towers.remove(targetTower);
+                                                m.setState(0);
+                                                m.move(ATBPExtension.this);
+                                            }
+                                    }else{
+                                        m.reduceAttackCooldown();
+                                    }
+                                }else if(targetTower != null){
+                                    m.moveTowardsActor(ATBPExtension.this,targetTower.getLocation());
+                                    if(m.getAttackCooldown() > 300) m.reduceAttackCooldown();
+                                }
+                                break;
+                        }
+                }
+                //TODO: Add minion waves
+                if(mSecondsRan == 5000){
+                    trace("Adding minion!");
+                    this.addMinion(1,0,0);
+                }else if(mSecondsRan == 7000){
+                    //this.addMinion(0,1,0);
+                }else if(mSecondsRan == 9000){
+                    //this.addMinion(0,2,0);
+                }
+                if(this.room.getUserList().size() == 0) stopScript(this.index);
+            }catch(Exception e){
+                e.printStackTrace();
+            }
+
+        }
+
+        private Tower findTower(String id){
+            for(Tower t : towers){
+                if(t.getId().equalsIgnoreCase(id)) return t;
+            }
+            return null;
+        }
+
+        public void addMinion(int team, int type, int wave){
+            Minion m = new Minion(room, team, type, wave);
+            minions.add(m);
+            for(User u : room.getUserList()){
+                ExtensionCommands.createActor(ATBPExtension.this,u,m.creationObject());
+            }
+            m.move(ATBPExtension.this);
+        }
+        private Point2D getRelativePoint(ISFSObject playerLoc){ //Gets player's current location based on time
+            Point2D rPoint = new Point2D.Float();
+            float x2 = playerLoc.getFloat("x");
+            float y2 = playerLoc.getFloat("z");
+            float x1 = playerLoc.getSFSObject("p1").getFloat("x");
+            float y1 = playerLoc.getSFSObject("p1").getFloat("z");
+            Line2D movementLine = new Line2D.Double(x1,y1,x2,y2);
+            double dist = movementLine.getP1().distance(movementLine.getP2());
+            double time = dist/playerLoc.getFloat("speed");
+            double currentTime = playerLoc.getFloat("time") + 0.1;
+            if(currentTime>time) currentTime=time;
+            double currentDist = playerLoc.getFloat("speed")*currentTime;
+            float x = (float)(x1+(currentDist/dist)*(x2-x1));
+            float y = (float)(y1+(currentDist/dist)*(y2-y1));
+            rPoint.setLocation(x,y);
+            return rPoint;
         }
     }
 }

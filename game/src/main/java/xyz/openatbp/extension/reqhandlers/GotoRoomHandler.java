@@ -37,7 +37,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
         p1.putFloat("x", 0);
         p1.putFloat("z", 0);
         location.putSFSObject("p1",p1);
-        location.putInt("time",0);
+        location.putFloat("time",0);
         location.putFloat("speed",0);
         UserVariable locVar = new SFSUserVariable("location",location);
         ISFSObject actorInfo = new SFSObject();

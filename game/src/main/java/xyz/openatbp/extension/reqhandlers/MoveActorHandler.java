@@ -21,7 +21,6 @@ public class MoveActorHandler extends BaseClientRequestHandler {
 
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         String room = sender.getLastJoinedRoom().getGroupId();
-
         long timeSinceBasicAttack = sender.getVariable("stats").getSFSObjectValue().getLong("timeSinceBasicAttack");
         if ((System.currentTimeMillis() - timeSinceBasicAttack) < 500) return; //hard coded, this seems to be when the projectile should leaving during the animation
 
@@ -82,7 +81,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
         currentLoc.putFloat("x",(float)movementLine.getX1());
         currentLoc.putFloat("z",(float)movementLine.getY1());
         userLocation.putSFSObject("p1",currentLoc);
-        userLocation.putInt("time",0);
+        userLocation.putFloat("time",0);
         userLocation.putFloat("speed",params.getFloat("speed"));
         ISFSObject data = new SFSObject();
         data.putUtfString("i", String.valueOf(sender.getId()));

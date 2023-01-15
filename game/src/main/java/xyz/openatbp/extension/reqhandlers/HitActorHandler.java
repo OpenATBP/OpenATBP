@@ -19,7 +19,6 @@ public class HitActorHandler extends BaseClientRequestHandler {
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
 
         trace(params.getDump());
-
         double attackRange = sender.getVariable("stats").getSFSObjectValue().getDouble("attackRange");
         float userX = params.getFloat("x");
         float userY = params.getFloat("y");
@@ -83,6 +82,8 @@ public class HitActorHandler extends BaseClientRequestHandler {
                     new HitActorRunnable(sender, parentExt, userId, targetId, projectileFx, "Bip001", "", projectileSpeed),
                     projectileAppearTimeMs,
                     TimeUnit.MILLISECONDS);
+        }else{
+            trace("Don't work");
         }
     }
 
@@ -92,5 +93,42 @@ public class HitActorHandler extends BaseClientRequestHandler {
 
     private float distanceFromTarget(float userX, float userZ, float targetX, float targetZ) {
         return (float) Math.sqrt(Math.pow(targetZ - userZ, 2) + Math.pow(targetX - userX, 2));
+    }
+}
+
+class HitActorRunnable implements Runnable {
+
+    User user;
+    ATBPExtension parentExt;
+    String userId;
+    String targetId;
+    String fxName;
+    String emitLocation;
+    String hitLocation;
+    float projectileSpeed;
+
+    public HitActorRunnable(User user, ATBPExtension parentExt, String userId, String targetId, String fxName, String emitLocation, String hitLocation, float projectileSpeed) {
+        this.user = user;
+        this.parentExt = parentExt;
+        this.userId = userId;
+        this.targetId = targetId;
+        this.fxName = fxName;
+        this.emitLocation = emitLocation;
+        this.hitLocation = hitLocation;
+        this.projectileSpeed = projectileSpeed;
+    }
+
+    @Override
+    public void run() {
+        System.out.println("Running!");
+        ISFSObject CreateProjectileFxData = new SFSObject();
+        CreateProjectileFxData.putUtfString("name", this.fxName); //fx name
+        CreateProjectileFxData.putUtfString("attacker", this.userId); //attacker id
+        CreateProjectileFxData.putUtfString("target", this.targetId); //target id
+        CreateProjectileFxData.putUtfString("emit", this.emitLocation); //where the projectile comes from
+        CreateProjectileFxData.putUtfString("hit",  this.hitLocation); //where the projectile stops (?)
+        CreateProjectileFxData.putFloat("time", this.projectileSpeed);
+
+        GameManager.sendAllUsers(parentExt, CreateProjectileFxData,"cmd_create_projectile_fx", this.user.getLastJoinedRoom());
     }
 }
