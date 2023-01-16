@@ -555,6 +555,16 @@ public class ATBPExtension extends SFSExtension {
                                 }else{
                                     m.addTravelTime(0.1f);
                                 }
+                                for(Minion minion : minions){
+                                    if(m.getTeam() != minion.getTeam() && m.getLane() == minion.getLane()){
+                                        if(m.nearEntity(minion.getRelativePoint()) && m.facingEntity(minion.getRelativePoint())){
+                                            if(m.getTarget() == null){
+                                                m.setTarget(ATBPExtension.this, minion.getId());
+                                                break switchcase;
+                                            }
+                                        }
+                                    }
+                                }
                                 for(Tower t: towers){
                                     if(t.getTeam() != m.getTeam() && m.nearEntity(t.getLocation())){ //Minion prioritizes towers over players
                                         m.setTarget(ATBPExtension.this,t.getId());
@@ -592,10 +602,39 @@ public class ATBPExtension extends SFSExtension {
                                     }
                                 }
                                 break;
+                            case 2: // MINION TARGET
+                                Minion targetMinion = findMinion(m.getTarget());
+                                if(targetMinion != null && (m.withinAttackRange(targetMinion.getRelativePoint()) || m.getAttackCooldown() < 300)){
+                                    if(!m.isAttacking()){
+                                        m.stopMoving(ATBPExtension.this);
+                                        m.setAttacking(true);
+                                    }
+                                    if(m.canAttack()){
+                                        if(targetMinion.getHealth() > 0){
+                                            m.attack(ATBPExtension.this, targetMinion);
+                                        }else{ //Handles tower death and resets minion on tower kill
+                                            m.setState(0);
+                                            m.move(ATBPExtension.this);
+                                        }
+                                    }else{
+                                        m.reduceAttackCooldown();
+                                    }
+                                }else if(targetMinion != null){
+                                    trace("Distance: " + m.getRelativePoint().distance(targetMinion.getRelativePoint()));
+                                    m.moveTowardsActor(ATBPExtension.this,targetMinion.getRelativePoint()); //TODO: Optimize so it's not sending a lot of commands
+                                    if(m.getAttackCooldown() > 300) m.reduceAttackCooldown();
+                                }else{
+                                    m.setState(0);
+                                    m.move(ATBPExtension.this);
+                                }
+                                break;
                             case 3: // TOWER TARGET
                                 Tower targetTower = findTower(m.getTarget());
                                 if(targetTower != null && (m.withinAttackRange(targetTower.getLocation()) || m.getAttackCooldown() < 300)){
-                                    m.stopMoving(ATBPExtension.this);
+                                    if(!m.isAttacking()){
+                                        m.stopMoving(ATBPExtension.this);
+                                        m.setAttacking(true);
+                                    }
                                     if(m.canAttack()){
                                             if(targetTower.getHealth() > 0){
                                                 m.attack(ATBPExtension.this, targetTower);
@@ -608,18 +647,23 @@ public class ATBPExtension extends SFSExtension {
                                         m.reduceAttackCooldown();
                                     }
                                 }else if(targetTower != null){
-                                    m.moveTowardsActor(ATBPExtension.this,targetTower.getLocation());
+                                    trace("Distance: " + m.getRelativePoint().distance(targetTower.getLocation()));
+                                    m.addTravelTime(0.1f);
+                                    //m.moveTowardsActor(ATBPExtension.this,targetTower.getLocation()); //TODO: Optimize so it's not sending a lot of commands
                                     if(m.getAttackCooldown() > 300) m.reduceAttackCooldown();
                                 }
                                 break;
                         }
                 }
+                minions.removeIf(m -> (m.getHealth()<=0));
                 //TODO: Add minion waves
                 if(mSecondsRan == 5000){
                     trace("Adding minion!");
-                    this.addMinion(1,0,0);
+                    this.addMinion(1,0,0,1);
+                    this.addMinion(0,0,0,1);
                 }else if(mSecondsRan == 7000){
-                    //this.addMinion(0,1,0);
+                    this.addMinion(1,1,0,1);
+                    this.addMinion(0,1,0,1);
                 }else if(mSecondsRan == 9000){
                     //this.addMinion(0,2,0);
                 }
@@ -637,8 +681,15 @@ public class ATBPExtension extends SFSExtension {
             return null;
         }
 
-        public void addMinion(int team, int type, int wave){
-            Minion m = new Minion(room, team, type, wave);
+        private Minion findMinion(String id){
+            for(Minion m : minions){
+                if(m.getId().equalsIgnoreCase(id)) return m;
+            }
+            return null;
+        }
+
+        public void addMinion(int team, int type, int wave, int lane){
+            Minion m = new Minion(room, team, type, wave,lane);
             minions.add(m);
             for(User u : room.getUserList()){
                 ExtensionCommands.createActor(ATBPExtension.this,u,m.creationObject());

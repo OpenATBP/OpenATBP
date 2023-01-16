@@ -34,7 +34,6 @@ public class ExtensionCommands {
         parentExt.send("cmd_create_actor_fx",data2,u);
     }
     public static void updateActorData(ATBPExtension parentExt, User u, ISFSObject data){
-        System.out.println(data.getDump());
         parentExt.send("cmd_update_actor_data",data,u);
     }
 
@@ -232,5 +231,17 @@ public class ExtensionCommands {
         data.putInt("teamA",teamA);
         data.putInt("teamB",teamB);
         parentExt.send("cmd_update_score",data,u);
+    }
+
+    /**
+     *
+     * @param id - ID of actor being changed
+     * @param bundle - File name (minus extension) for asset bundle
+     */
+    public static void swapActorAsset(ATBPExtension parentExt, User u, String id, String bundle){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("actor_id",id);
+        data.putUtfString("bundle",bundle);
+        parentExt.send("cmd_swap_asset",data,u);
     }
 }

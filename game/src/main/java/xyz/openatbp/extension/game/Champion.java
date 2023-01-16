@@ -54,6 +54,25 @@ public class Champion {
         }
     }
 
+    public static void attackMinion(ATBPExtension parentExt, String attacker, Minion m, int damage){
+        System.out.println(attacker + " attacking " + m.getId() + "!");
+        float currentHealth = m.getHealth()-damage;
+        if(m.damage(parentExt,attacker,damage)){ //Minion dies
+            System.out.println("Minion dead!");
+        }else{
+            float maxHealth = m.getMaxHealth();
+            double pHealth = currentHealth/maxHealth;
+            ISFSObject updateData = new SFSObject();
+            updateData.putUtfString("id",m.getId());
+            updateData.putInt("currentHealth",(int) currentHealth);
+            updateData.putDouble("pHealth",pHealth);
+            updateData.putInt("maxHealth", (int) maxHealth);
+            for(User u : m.getRoomUsers()){
+                ExtensionCommands.updateActorData(parentExt,u,updateData);
+            }
+        }
+    }
+
 
     //TODO: Implement player death
     private static void handleDeath(ATBPExtension parentExt, User player){
@@ -144,6 +163,36 @@ public class Champion {
             ExtensionCommands.createProjectileFX(parentExt,u,fxId,attacker,tower.getId(),"Bip001","Bip001",(float)0.5);
         }
     }
+
+    public static void rangedAttackMinion(ATBPExtension parentExt, Room room, String attacker, Minion m, int damage){
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(parentExt,room,damage,attacker,m), 500, TimeUnit.MILLISECONDS);
+        for(User u : room.getUserList()){
+            String fxId;
+            if(attacker.contains("creep")){
+                fxId = "minion_projectile_";
+                int team = Integer.parseInt(String.valueOf(attacker.charAt(0)));
+                if(team == 1) fxId+="blue";
+                else fxId+="purple";
+            }else{
+                User p = room.getUserById(Integer.parseInt(attacker));
+                String avatar = p.getVariable("player").getSFSObjectValue().getUtfString("avatar");
+                if(avatar.contains("skin")){
+                    avatar = avatar.split("_")[0];
+                }
+                fxId = avatar+"_projectile";
+            }
+            ExtensionCommands.createProjectileFX(parentExt,u,fxId,attacker,m.getId(),"Bip001","Bip001",(float)0.5);
+        }
+    }
+
+    public static void handleMinionDeath(ATBPExtension parentExt, User u, String attacker, Minion m){
+        System.out.println("Dying!");
+        ExtensionCommands.knockOutActor(parentExt,u,m.getId(),attacker,0);
+        ExtensionCommands.destroyActor(parentExt,u,m.getId());
+        if(!attacker.contains("creep") & !attacker.contains("tower")){ // Attacker is a player
+
+        }
+    }
 }
 
 class RangedAttack implements Runnable{ //Handles damage from ranged attacks
@@ -153,6 +202,7 @@ class RangedAttack implements Runnable{ //Handles damage from ranged attacks
     String target;
     Tower tower;
     String attacker;
+    Minion minion;
 
     RangedAttack(ATBPExtension parentExt, Room room, int damage, String attacker, String target){
         this.parentExt = parentExt;
@@ -170,10 +220,21 @@ class RangedAttack implements Runnable{ //Handles damage from ranged attacks
         this.tower = tower;
         this.attacker = attacker;
     }
+
+    RangedAttack(ATBPExtension parentExt, Room room, int damage, String attacker, Minion m){
+        this.parentExt = parentExt;
+        this.room = room;
+        this.damage = damage;
+        this.target = m.getId();
+        this.minion = m;
+        this.attacker = attacker;
+    }
     @Override
     public void run() {
         if(target.contains("tower") && tower != null){
             Champion.attackTower(parentExt,room,attacker,tower,damage);
+        }else if(target.contains("creep") && minion != null){
+            Champion.attackMinion(parentExt,attacker,minion,damage);
         }else{
             User p = room.getUserById(Integer.parseInt(target));
             for(User u : room.getUserList()){
@@ -188,16 +249,27 @@ class DestroyActor implements Runnable{ //TODO: Used for destroying actors, when
     String id;
     ATBPExtension parentExt;
     Room room;
+    User user;
 
     DestroyActor(ATBPExtension parentExt, Room room, String id){
         this.id = id;
         this.parentExt = parentExt;
         this.room = room;
     }
+
+    DestroyActor(ATBPExtension parentExt, User user, String id){
+        this.id = id;
+        this.user = user;
+        this.parentExt = parentExt;
+    }
     @Override
     public void run() {
-        for(User u : room.getUserList()){
-            ExtensionCommands.destroyActor(parentExt,u,id);
+        if(room != null){
+            for(User u : room.getUserList()){
+                ExtensionCommands.destroyActor(parentExt,u,id);
+            }
+        }else if(user != null){
+            ExtensionCommands.destroyActor(parentExt,user,id);
         }
     }
 }
