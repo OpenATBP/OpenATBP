@@ -20,7 +20,7 @@ public class GameManager {
     //bh1 = Blue Health 1 ph1 = Purple Health 1. Numbers refer to top,bottom,and outside respectively.
     public static final String[] SPAWNS = {"bh1","bh2","bh3","ph1","ph2","ph3","keeoth","ooze","hugwolf","gnomes","owls","grassbear"};
 
-    public static void addPlayer(ArrayList<User> users, ATBPExtension parentExt){ //Sends player info to client
+    public static void addPlayer(List<User> users, ATBPExtension parentExt){ //Sends player info to client
         for(int i = 0; i < users.size(); i++){
             ISFSObject userData = new SFSObject();
             User player = users.get(i);
@@ -54,7 +54,7 @@ public class GameManager {
 
     }
 
-    public static void loadPlayers(ArrayList<User> users, ATBPExtension parentExt, Room room){ //Loads the map for everyone
+    public static void loadPlayers(List<User> users, ATBPExtension parentExt, Room room){ //Loads the map for everyone
         String groupID = room.getGroupId();
         for(int i = 0; i < users.size(); i++){
             ISFSObject data = new SFSObject();
@@ -73,13 +73,13 @@ public class GameManager {
 
     }
 
-    public static boolean playersLoaded(ArrayList<User> users, int gameSize){
+    public static boolean playersLoaded(List<User> users, int gameSize){
         return users.size() == gameSize;
     }
 
     public static boolean playersReady(Room room){ //Checks if all clients are ready
         int ready = 0;
-        ArrayList<User> users = (ArrayList<User>) room.getUserList();
+        List<User> users = room.getUserList();
         for(int i = 0; i < users.size(); i++){
             if((boolean) users.get(i).getSession().getProperty("ready")) ready++;
         }
