@@ -132,6 +132,7 @@ public class Minion {
     public boolean nearEntity(Point2D p){
         return this.getRelativePoint().distance(p)<=5;
     }
+    public boolean nearEntity(Point2D p, float radius){ return this.getRelativePoint().distance(p)<=5+radius; }
     public boolean facingEntity(Point2D p){ // Returns true if the point is in the same direction as the minion is heading
         Point2D currentPoint = getRelativePoint();
         double deltaX = desiredPath.getX()-location.getX();
@@ -146,6 +147,14 @@ public class Minion {
         float range = 1.25f;
         if(this.type == MinionType.RANGED) range = 4f;
         else if(this.type == MinionType.SUPER) range = 1.5f;
+        return this.getRelativePoint().distance(p)<=range;
+    }
+
+    public boolean withinAttackRange(Point2D p, float radius){
+        float range = 1f;
+        if(this.type == MinionType.RANGED) range = 4f;
+        else if(this.type == MinionType.SUPER) range = 1.5f;
+        range+=radius;
         return this.getRelativePoint().distance(p)<=range;
     }
     private int findPathIndex(){ //Finds the nearest point along the defined path for the minion to travel to
@@ -325,11 +334,27 @@ public class Minion {
             else if(this.type == MinionType.SUPER) newCooldown = 1000;
             this.attackCooldown = newCooldown;
             if(this.type != MinionType.RANGED) Champion.attackMinion(parentExt,this.id,m,20);
-            else Champion.rangedAttackMinion(parentExt,this.room,this.id,m,50);
+            else Champion.rangedAttackMinion(parentExt,this.room,this.id,m,150);
         }else if(attackCooldown == 300){
             reduceAttackCooldown();
             for(User u : room.getUserList()){
                 ExtensionCommands.attackActor(parentExt,u,this.id,m.getId(), (float) m.getLocation().getX(), (float) m.getLocation().getY(),false,true);
+            }
+        }else if(attackCooldown == 100 || attackCooldown == 200) reduceAttackCooldown();
+    }
+
+    public void attack(ATBPExtension parentExt, Base b){
+        if(this.state == AggroState.BASE && attackCooldown == 0){
+            int newCooldown = 1500;
+            if(this.type == MinionType.RANGED) newCooldown = 2000;
+            else if(this.type == MinionType.SUPER) newCooldown = 1000;
+            this.attackCooldown = newCooldown;
+            if(this.type != MinionType.RANGED) Champion.attackBase(parentExt,this.room,this.id,b,25);
+            else Champion.rangedAttackBase(parentExt,this.room,this.id,b,150);
+        }else if(attackCooldown == 300){
+            reduceAttackCooldown();
+            for(User u : room.getUserList()){
+                ExtensionCommands.attackActor(parentExt,u,this.id,b.getId(), (float) b.getLocation().getX(), (float) b.getLocation().getY(),false,true);
             }
         }else if(attackCooldown == 100 || attackCooldown == 200) reduceAttackCooldown();
     }

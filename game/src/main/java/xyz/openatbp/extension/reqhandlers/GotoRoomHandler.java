@@ -29,6 +29,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
         playerInfo.putUtfString("team",params.getUtfString("team"));
         playerInfo.putUtfString("name", (String) sender.getSession().getProperty("name"));
         playerInfo.putUtfString("tegid", (String) sender.getSession().getProperty("tegid"));
+        playerInfo.putInt("elo", 1700); //TODO: Add database functionality
         SFSUserVariable playerVar = new SFSUserVariable("player",playerInfo);
         ISFSObject location = new SFSObject(); //Will need to be changed when we get actual spawn points made
         location.putFloat("x",0);

@@ -1,9 +1,14 @@
 package xyz.openatbp.extension;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
+import xyz.openatbp.extension.game.Champion;
 
 import java.awt.geom.Point2D;
 
@@ -189,6 +194,7 @@ public class ExtensionCommands {
      * @param id - ID of actor being destroyed
      */
     public static void destroyActor(ATBPExtension parentExt, User u, String id){
+        System.out.println("Destroying: " + id);
         ISFSObject data = new SFSObject();
         data.putUtfString("id",id);
         parentExt.send("cmd_destroy_actor",data,u);
@@ -243,5 +249,22 @@ public class ExtensionCommands {
         data.putUtfString("actor_id",id);
         data.putUtfString("bundle",bundle);
         parentExt.send("cmd_swap_asset",data,u);
+    }
+
+    public static void gameOver(ATBPExtension parentExt, User u, double winningTeam) throws JsonProcessingException {
+        System.out.println("Calling game over!");
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode node = objectMapper.createObjectNode();
+        node.set("teamA", GameManager.getTeamData(0,u.getLastJoinedRoom()));
+
+        node.set("teamB", GameManager.getTeamData(1,u.getLastJoinedRoom()));
+        node.set("gloalTeamData", GameManager.getGlobalTeamData(u.getLastJoinedRoom()));
+        node.put("winner",winningTeam);
+        ISFSObject data = new SFSObject();
+        String objectAsText;
+        objectAsText = objectMapper.writeValueAsString(node);
+        System.out.println(objectAsText);
+        data.putUtfString("game_results",objectAsText);
+        parentExt.send("cmd_game_over", data, u);
     }
 }

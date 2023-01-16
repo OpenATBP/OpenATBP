@@ -12,6 +12,7 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.SFSExtension;
 import xyz.openatbp.extension.evthandlers.*;
+import xyz.openatbp.extension.game.Base;
 import xyz.openatbp.extension.game.Minion;
 import xyz.openatbp.extension.game.Tower;
 import xyz.openatbp.extension.reqhandlers.*;
@@ -516,26 +517,27 @@ public class ATBPExtension extends SFSExtension {
         private int index;
         private ArrayList<Minion> minions;
         private ArrayList<Tower> towers;
+        private Base[] bases = new Base[2];
         private int mSecondsRan = 0;
         public MiniScripts(Room room, int index){
             this.room = room;
             this.index = index;
             this.minions = new ArrayList<>();
+            towers = new ArrayList<>();
+            HashMap<String,Point2D> towers0 = MapData.getTowerData(room.getGroupId(),0);
+            HashMap<String, Point2D> towers1 = MapData.getTowerData(room.getGroupId(),1);
+            for(String key : towers0.keySet()){
+                towers.add(new Tower(key,0,towers0.get(key)));
+            }
+            for(String key : towers1.keySet()){
+                towers.add(new Tower(key,1,towers1.get(key)));
+            }
+            bases[0] = new Base(0);
+            bases[1] = new Base(1);
         }
         @Override
         public void run() {
             try{
-                if(towers == null){ //If the tower objects have not been created yet, create them.
-                    towers = new ArrayList<>();
-                    HashMap<String,Point2D> towers0 = MapData.getTowerData(room.getGroupId(),0);
-                    HashMap<String, Point2D> towers1 = MapData.getTowerData(room.getGroupId(),1);
-                    for(String key : towers0.keySet()){
-                        towers.add(new Tower(key,0,towers0.get(key)));
-                    }
-                    for(String key : towers1.keySet()){
-                        towers.add(new Tower(key,1,towers1.get(key)));
-                    }
-                }
                 mSecondsRan+=100;
                 for(User u : room.getUserList()){ //Tracks player location
                     float x = u.getVariable("location").getSFSObjectValue().getFloat("x");
@@ -563,6 +565,14 @@ public class ATBPExtension extends SFSExtension {
                                                 break switchcase;
                                             }
                                         }
+                                    }
+                                }
+                                Base opposingBase = getOpposingTeamBase(m.getTeam());
+                                if(opposingBase.isUnlocked() && m.nearEntity(opposingBase.getLocation(),1.8f)){
+                                    if(m.getTarget() == null){
+                                        m.setTarget(ATBPExtension.this,opposingBase.getId());
+                                        m.moveTowardsActor(ATBPExtension.this,opposingBase.getLocation());
+                                        break;
                                     }
                                 }
                                 for(Tower t: towers){
@@ -639,9 +649,10 @@ public class ATBPExtension extends SFSExtension {
                                             if(targetTower.getHealth() > 0){
                                                 m.attack(ATBPExtension.this, targetTower);
                                             }else{ //Handles tower death and resets minion on tower kill
-                                                towers.remove(targetTower);
+                                                if(targetTower.getTowerNum() == 0 || targetTower.getTowerNum() == 3) bases[targetTower.getTeam()].unlock();
                                                 m.setState(0);
                                                 m.move(ATBPExtension.this);
+                                                break;
                                             }
                                     }else{
                                         m.reduceAttackCooldown();
@@ -651,19 +662,45 @@ public class ATBPExtension extends SFSExtension {
                                     m.addTravelTime(0.1f);
                                     //m.moveTowardsActor(ATBPExtension.this,targetTower.getLocation()); //TODO: Optimize so it's not sending a lot of commands
                                     if(m.getAttackCooldown() > 300) m.reduceAttackCooldown();
+                                }else{
+                                    m.setState(0);
+                                    m.move(ATBPExtension.this);
+                                    break;
+                                }
+                                break;
+                            case 4: // BASE TARGET
+                                Base targetBase = getOpposingTeamBase(m.getTeam());
+                                if(targetBase != null && (m.withinAttackRange(targetBase.getLocation(),1.8f) || m.getAttackCooldown() < 300)){
+                                    if(!m.isAttacking()){
+                                        m.stopMoving(ATBPExtension.this);
+                                        m.setAttacking(true);
+                                    }
+                                    if(m.canAttack()){
+                                        if(targetBase.getHealth() > 0){
+                                            m.attack(ATBPExtension.this,targetBase);
+                                        }else{ //Handles base death and ends game
+                                            stopScript(index);
+                                        }
+                                    }else{
+                                        m.reduceAttackCooldown();
+                                    }
+                                }else if(targetBase != null){
+                                    m.addTravelTime(0.1f);
+                                    if(m.getAttackCooldown() > 300) m.reduceAttackCooldown();
                                 }
                                 break;
                         }
                 }
                 minions.removeIf(m -> (m.getHealth()<=0));
+                towers.removeIf(t -> (t.getHealth()<=0));
                 //TODO: Add minion waves
                 if(mSecondsRan == 5000){
                     trace("Adding minion!");
                     this.addMinion(1,0,0,1);
-                    this.addMinion(0,0,0,1);
+                    //this.addMinion(0,0,0,1);
                 }else if(mSecondsRan == 7000){
                     this.addMinion(1,1,0,1);
-                    this.addMinion(0,1,0,1);
+                    //this.addMinion(0,1,0,1);
                 }else if(mSecondsRan == 9000){
                     //this.addMinion(0,2,0);
                 }
@@ -712,6 +749,11 @@ public class ATBPExtension extends SFSExtension {
             float y = (float)(y1+(currentDist/dist)*(y2-y1));
             rPoint.setLocation(x,y);
             return rPoint;
+        }
+
+        private Base getOpposingTeamBase(int team){
+            if(team == 0) return bases[1];
+            else return  bases[0];
         }
     }
 }
