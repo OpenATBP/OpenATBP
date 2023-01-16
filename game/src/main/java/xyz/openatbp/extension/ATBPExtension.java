@@ -25,15 +25,15 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class ATBPExtension extends SFSExtension {
-    HashMap<String, JsonNode> actorDefinitions = new HashMap<>(); //Contains all xml definitions for the characters
+    Map<String, JsonNode> actorDefinitions = new HashMap<>(); //Contains all xml definitions for the characters
     //TODO: Change Vectors to Point2D
-    HashMap<String, JsonNode> itemDefinitions = new HashMap<>();
-    ArrayList<Vector<Float>>[] mapColliders; //Contains all vertices for the practice map
-    ArrayList<Vector<Float>>[] mainMapColliders; //Contains all vertices for the main map
-    ArrayList<Path2D> mapPaths; //Contains all line paths of the colliders for the practice map
-    ArrayList<Path2D> mainMapPaths; //Contains all line paths of the colliders for the main map
-    ArrayList<ScheduledFuture<?>> tasks = new ArrayList(); //Contains all recurring tasks for each room
-    ArrayList<ScheduledFuture<?>> miniTasks = new ArrayList();
+    Map<String, JsonNode> itemDefinitions = new HashMap<>();
+    List<Vector<Float>>[] mapColliders; //Contains all vertices for the practice map
+    List<Vector<Float>>[] mainMapColliders; //Contains all vertices for the main map
+    List<Path2D> mapPaths; //Contains all line paths of the colliders for the practice map
+    List<Path2D> mainMapPaths; //Contains all line paths of the colliders for the main map
+    List<ScheduledFuture<?>> tasks = new ArrayList<>(); //Contains all recurring tasks for each room
+    List<ScheduledFuture<?>> miniTasks = new ArrayList<>();
     public void init() {
         this.addEventHandler(SFSEventType.USER_JOIN_ROOM, JoinRoomEventHandler.class);
         this.addEventHandler(SFSEventType.USER_JOIN_ZONE, JoinZoneEventHandler.class);
@@ -112,7 +112,7 @@ public class ATBPExtension extends SFSExtension {
         for(int i = 0; i < colliders.size(); i++){ //Reads all colliders and makes a list of their vertices
             Path2D path = new Path2D.Float();
             ArrayNode vertices = (ArrayNode) colliders.get(i).get("vertex");
-            ArrayList<Vector<Float>> vecs = new ArrayList(vertices.size());
+            List<Vector<Float>> vecs = new ArrayList(vertices.size());
             for(int g = 0; g < vertices.size(); g++){
                 if(g == 0){
                     path.moveTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
@@ -136,14 +136,14 @@ public class ATBPExtension extends SFSExtension {
         for(int i = 0; i < colliders.size(); i++){
             Path2D path = new Path2D.Float();
             ArrayNode vertices = (ArrayNode) colliders.get(i).get("vertex");
-            ArrayList<Vector<Float>> vecs = new ArrayList(vertices.size());
+            List<Vector<Float>> vecs = new ArrayList<>(vertices.size());
             for(int g = 0; g < vertices.size(); g++){
                 if(g == 0){
                     path.moveTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
                 }else{
                     path.lineTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
                 }
-                Vector<Float> vertex = new Vector<Float>(2);
+                Vector<Float> vertex = new Vector<>(2);
                 vertex.add(0, (float) vertices.get(g).get("x").asDouble());
                 vertex.add(1, (float) vertices.get(g).get("z").asDouble());
                 vecs.add(vertex);
@@ -154,12 +154,12 @@ public class ATBPExtension extends SFSExtension {
         }
     }
 
-    public ArrayList<Vector<Float>>[] getColliders(String map){
+    public List<Vector<Float>>[] getColliders(String map){
         if(map.equalsIgnoreCase("practice")) return mapColliders;
         else return mainMapColliders;
     }
 
-    public ArrayList<Path2D> getMapPaths(String map){
+    public List<Path2D> getMapPaths(String map){
         if(map.equalsIgnoreCase("practice")) return mainMapPaths;
         else return mainMapPaths;
     }
@@ -168,7 +168,7 @@ public class ATBPExtension extends SFSExtension {
         return actorDefinitions.get(actorName);
     }
 
-    public HashMap<String, JsonNode> getDefinitions(){
+    public Map<String, JsonNode> getDefinitions(){
         return actorDefinitions;
     }
 
@@ -203,7 +203,7 @@ public class ATBPExtension extends SFSExtension {
         private int secondsRan = 0;
         private int aValue;
         private int[] altarStatus = {0,0,0};
-        private HashMap<String,Integer> cooldowns = new HashMap<>();
+        private Map<String,Integer> cooldowns = new HashMap<>();
 
         public MatchScripts(Room room, int aValue){
             this.room = room;
@@ -236,7 +236,7 @@ public class ATBPExtension extends SFSExtension {
             }
         }
         private void spawnMonster(String monster){
-            ArrayList<User> users = (ArrayList<User>) room.getUserList();
+            List<User> users = room.getUserList();
             String map = room.getGroupId();
             for(User u : users){
                 ISFSObject monsterObject = new SFSObject();
@@ -514,8 +514,8 @@ public class ATBPExtension extends SFSExtension {
     private class MiniScripts implements Runnable{
         private Room room;
         private int index;
-        private ArrayList<Minion> minions;
-        private ArrayList<Tower> towers;
+        private List<Minion> minions;
+        private List<Tower> towers;
         private int mSecondsRan = 0;
         public MiniScripts(Room room, int index){
             this.room = room;
@@ -527,8 +527,8 @@ public class ATBPExtension extends SFSExtension {
             try{
                 if(towers == null){ //If the tower objects have not been created yet, create them.
                     towers = new ArrayList<>();
-                    HashMap<String,Point2D> towers0 = MapData.getTowerData(room.getGroupId(),0);
-                    HashMap<String, Point2D> towers1 = MapData.getTowerData(room.getGroupId(),1);
+                    Map<String,Point2D> towers0 = MapData.getTowerData(room.getGroupId(),0);
+                    Map<String, Point2D> towers1 = MapData.getTowerData(room.getGroupId(),1);
                     for(String key : towers0.keySet()){
                         towers.add(new Tower(key,0,towers0.get(key)));
                     }

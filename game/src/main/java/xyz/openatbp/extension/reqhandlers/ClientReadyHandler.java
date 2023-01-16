@@ -30,7 +30,7 @@ public class ClientReadyHandler extends BaseClientRequestHandler {
             if(GameManager.playersReady(room)){ //If all players are ready, load everyone into the actual map
                 parentExt.startScripts(room); //Starts the background scripts for the game
                 try{
-                    GameManager.initializeGame((ArrayList<User>) room.getUserList(), parentExt); //Initializes the map for everyone
+                    GameManager.initializeGame(room.getUserList(), parentExt); //Initializes the map for everyone
                 }catch(Exception e){
                     e.printStackTrace();
                 }

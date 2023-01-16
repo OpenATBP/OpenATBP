@@ -6,6 +6,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 
 import java.awt.geom.Point2D;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Vector;
 
 public class MapData {
@@ -122,8 +123,8 @@ public class MapData {
         return towerObj;
     }
 
-    public static HashMap<String, Point2D> getTowerData(String room, int team){
-        HashMap<String, Point2D> towers = new HashMap<>();
+    public static Map<String, Point2D> getTowerData(String room, int team){
+        Map<String, Point2D> towers = new HashMap<>();
         for(int tower = 1; tower < 4; tower++){
             float x = 0;
             float z = 0;

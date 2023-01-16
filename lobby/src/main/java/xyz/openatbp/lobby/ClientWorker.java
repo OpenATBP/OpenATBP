@@ -5,13 +5,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.List;
 
 class ClientWorker implements Runnable {
     private final Socket socket;
-    private ArrayList<Player> players;
-    private ArrayList<Queue> queues;
+    private List<Player> players;
+    private List<Queue> queues;
 
-    ClientWorker(Socket socket, ArrayList<Player> players, ArrayList<Queue> queues) {
+    ClientWorker(Socket socket, List<Player> players, List<Queue> queues) {
         this.socket = socket;
         this.players = players;
         this.queues = queues;

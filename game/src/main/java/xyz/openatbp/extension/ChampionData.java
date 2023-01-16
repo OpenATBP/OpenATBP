@@ -9,6 +9,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
 public class ChampionData {
 
@@ -180,8 +181,8 @@ public class ChampionData {
         return mods;
     }
 
-    private static ArrayList<JsonNode> getItemPointVal(ArrayNode mods, int category){
-        ArrayList<JsonNode> stats = new ArrayList<>();
+    private static List<JsonNode> getItemPointVal(ArrayNode mods, int category){
+        List<JsonNode> stats = new ArrayList<>();
         for(JsonNode m : mods){
             if(m.get("point").asInt() == category){
                 stats.add(m);

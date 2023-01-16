@@ -3,10 +3,11 @@ package xyz.openatbp.lobby;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ATBPLobbyServer {
-    private static ArrayList<Player> players = new ArrayList<Player>();
-    private static ArrayList<Queue> queues = new ArrayList<Queue>();
+    private static List<Player> players = new ArrayList<>();
+    private static List<Queue> queues = new ArrayList<>();
     public static void main(String[] args) {
         if (args.length == 1) {
             try {

@@ -12,6 +12,7 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
 public class MoveActorHandler extends BaseClientRequestHandler {
@@ -32,12 +33,12 @@ public class MoveActorHandler extends BaseClientRequestHandler {
         boolean intersects = false;
         int mapPathIndex = -1;
         float closestDistance = 100000;
-        ArrayList<Vector<Float>>[] colliders = ((ATBPExtension) getParentExtension()).getColliders(room); //Gets all collision object vertices
-        ArrayList<Path2D> mapPaths = ((ATBPExtension) getParentExtension()).getMapPaths(room); //Gets all created paths for the collision objects
+        List<Vector<Float>>[] colliders = ((ATBPExtension) getParentExtension()).getColliders(room); //Gets all collision object vertices
+        List<Path2D> mapPaths = ((ATBPExtension) getParentExtension()).getMapPaths(room); //Gets all created paths for the collision objects
         Point2D intersectionPoint = new Point2D.Float(-1,-1);
         for(int i = 0; i < mapPaths.size(); i++){ //Search through all colliders
             if(mapPaths.get(i).intersects(movementLine.getBounds())){ //If the player's movement intersects a collider
-                ArrayList<Vector<Float>> collider = colliders[i];
+                List<Vector<Float>> collider = colliders[i];
                 for(int g = 0; g < collider.size(); g++){ //Check all vertices in the collider
 
                     Vector<Float> v = collider.get(g);

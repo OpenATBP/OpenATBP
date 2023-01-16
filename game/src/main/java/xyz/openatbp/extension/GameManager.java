@@ -87,13 +87,13 @@ public class GameManager {
     }
 
     public static void sendAllUsers(ATBPExtension parentExt, ISFSObject data, String cmd, Room room){
-        ArrayList<User> users = (ArrayList<User>) room.getUserList();
+        List<User> users = room.getUserList();
         for(int i = 0; i < users.size(); i++){
             parentExt.send(cmd, data, users.get(i));
         }
     }
 
-    public static void initializeGame(ArrayList<User> users, ATBPExtension parentExt) throws SFSVariableException {
+    public static void initializeGame(List<User> users, ATBPExtension parentExt) throws SFSVariableException {
         for(int i = 0; i < users.size(); i++){ //Initialize character
             User sender = users.get(i);
             initializeMap(sender,parentExt);

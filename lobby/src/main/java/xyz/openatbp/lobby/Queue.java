@@ -5,9 +5,10 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class Queue {
-    private ArrayList<Player> players;
+    private List<Player> players;
     private String type;
     private boolean inGame;
     private boolean pvp;
@@ -17,12 +18,12 @@ public class Queue {
     private Player partyLeader;
 
     @Deprecated public Queue(){
-        this.players = new ArrayList<Player>();
+        this.players = new ArrayList<>();
         this.inGame = false;
     }
 
-    public Queue(ArrayList<Player> players, String type, boolean pvp){ //Called when a new queue is created by a team joining matchmaking
-        this.players = new ArrayList<Player>();
+    public Queue(List<Player> players, String type, boolean pvp){ //Called when a new queue is created by a team joining matchmaking
+        this.players = new ArrayList<>();
         this.inGame = false;
         for(int i = 0; i < players.size(); i++){
             this.players.add(players.get(i));
@@ -37,7 +38,7 @@ public class Queue {
     }
 
     public Queue(Player p, String type, boolean pvp){ //Called when a new queue is created by quick match
-        this.players = new ArrayList<Player>();
+        this.players = new ArrayList<>();
         this.players.add(p);
         this.inGame = false;
         this.type = type;
@@ -54,7 +55,7 @@ public class Queue {
     }
 
     public Queue(Player p, String type, boolean pvp, boolean team){ //Called when a new team is created
-        this.players = new ArrayList<Player>();
+        this.players = new ArrayList<>();
         this.players.add(p);
         this.inGame = false;
         this.type = type;
@@ -64,7 +65,7 @@ public class Queue {
         System.out.println("New queue - Queue size: " + this.getSize());
     }
 
-    public ArrayList<Player> getPlayers(){ //Returns list of players
+    public List<Player> getPlayers(){ //Returns list of players
         return this.players;
     }
 
@@ -104,7 +105,7 @@ public class Queue {
         }
     }
 
-    public void addPlayer(ArrayList<Player> p){ //Adds an array of players to the arraylist
+    public void addPlayer(List<Player> p){ //Adds an array of players to the arraylist
         for(int i = 0; i < p.size(); i++){
             this.players.add(p.get(i));
         }
