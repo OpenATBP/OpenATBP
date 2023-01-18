@@ -12,8 +12,7 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.SFSExtension;
 import xyz.openatbp.extension.evthandlers.*;
-import xyz.openatbp.extension.game.Minion;
-import xyz.openatbp.extension.game.Tower;
+import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.reqhandlers.*;
 
 import java.awt.geom.*;
@@ -25,15 +24,15 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class ATBPExtension extends SFSExtension {
-    Map<String, JsonNode> actorDefinitions = new HashMap<>(); //Contains all xml definitions for the characters
+    HashMap<String, JsonNode> actorDefinitions = new HashMap<>(); //Contains all xml definitions for the characters
     //TODO: Change Vectors to Point2D
-    Map<String, JsonNode> itemDefinitions = new HashMap<>();
-    List<Vector<Float>>[] mapColliders; //Contains all vertices for the practice map
-    List<Vector<Float>>[] mainMapColliders; //Contains all vertices for the main map
-    List<Path2D> mapPaths; //Contains all line paths of the colliders for the practice map
-    List<Path2D> mainMapPaths; //Contains all line paths of the colliders for the main map
-    List<ScheduledFuture<?>> tasks = new ArrayList<>(); //Contains all recurring tasks for each room
-    List<ScheduledFuture<?>> miniTasks = new ArrayList<>();
+    HashMap<String, JsonNode> itemDefinitions = new HashMap<>();
+    ArrayList<Vector<Float>>[] mapColliders; //Contains all vertices for the practice map
+    ArrayList<Vector<Float>>[] mainMapColliders; //Contains all vertices for the main map
+    ArrayList<Path2D> mapPaths; //Contains all line paths of the colliders for the practice map
+    ArrayList<Path2D> mainMapPaths; //Contains all line paths of the colliders for the main map
+    ArrayList<ScheduledFuture<?>> tasks = new ArrayList(); //Contains all recurring tasks for each room
+    ArrayList<ScheduledFuture<?>> miniTasks = new ArrayList();
     public void init() {
         this.addEventHandler(SFSEventType.USER_JOIN_ROOM, JoinRoomEventHandler.class);
         this.addEventHandler(SFSEventType.USER_JOIN_ZONE, JoinZoneEventHandler.class);
@@ -112,7 +111,7 @@ public class ATBPExtension extends SFSExtension {
         for(int i = 0; i < colliders.size(); i++){ //Reads all colliders and makes a list of their vertices
             Path2D path = new Path2D.Float();
             ArrayNode vertices = (ArrayNode) colliders.get(i).get("vertex");
-            List<Vector<Float>> vecs = new ArrayList(vertices.size());
+            ArrayList<Vector<Float>> vecs = new ArrayList(vertices.size());
             for(int g = 0; g < vertices.size(); g++){
                 if(g == 0){
                     path.moveTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
@@ -136,14 +135,14 @@ public class ATBPExtension extends SFSExtension {
         for(int i = 0; i < colliders.size(); i++){
             Path2D path = new Path2D.Float();
             ArrayNode vertices = (ArrayNode) colliders.get(i).get("vertex");
-            List<Vector<Float>> vecs = new ArrayList<>(vertices.size());
+            ArrayList<Vector<Float>> vecs = new ArrayList(vertices.size());
             for(int g = 0; g < vertices.size(); g++){
                 if(g == 0){
                     path.moveTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
                 }else{
                     path.lineTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
                 }
-                Vector<Float> vertex = new Vector<>(2);
+                Vector<Float> vertex = new Vector<Float>(2);
                 vertex.add(0, (float) vertices.get(g).get("x").asDouble());
                 vertex.add(1, (float) vertices.get(g).get("z").asDouble());
                 vecs.add(vertex);
@@ -154,12 +153,12 @@ public class ATBPExtension extends SFSExtension {
         }
     }
 
-    public List<Vector<Float>>[] getColliders(String map){
+    public ArrayList<Vector<Float>>[] getColliders(String map){
         if(map.equalsIgnoreCase("practice")) return mapColliders;
         else return mainMapColliders;
     }
 
-    public List<Path2D> getMapPaths(String map){
+    public ArrayList<Path2D> getMapPaths(String map){
         if(map.equalsIgnoreCase("practice")) return mainMapPaths;
         else return mainMapPaths;
     }
@@ -168,7 +167,7 @@ public class ATBPExtension extends SFSExtension {
         return actorDefinitions.get(actorName);
     }
 
-    public Map<String, JsonNode> getDefinitions(){
+    public HashMap<String, JsonNode> getDefinitions(){
         return actorDefinitions;
     }
 
@@ -203,7 +202,7 @@ public class ATBPExtension extends SFSExtension {
         private int secondsRan = 0;
         private int aValue;
         private int[] altarStatus = {0,0,0};
-        private Map<String,Integer> cooldowns = new HashMap<>();
+        private HashMap<String,Integer> cooldowns = new HashMap<>();
 
         public MatchScripts(Room room, int aValue){
             this.room = room;
@@ -215,18 +214,36 @@ public class ATBPExtension extends SFSExtension {
                 if(room.getUserList().size() == 0) stopScript(aValue); //If no one is in the room, stop running.
                 else{
                     handleAltars();
+                    handleHealthRegen();
                 }
                // trace("Running passively! " + secondsRan);
-                ISFSObject mobSpawns = room.getVariable("spawns").getSFSObjectValue();
+                ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
                 for(String s : GameManager.SPAWNS){ //Check all mob/health spawns for how long it's been since dead
-                    int spawnRate = 45;
-                    if(s.equalsIgnoreCase("keeoth")) spawnRate = 120;
-                    else if(s.equalsIgnoreCase("ooze")) spawnRate = 90;
-                    if(mobSpawns.getInt(s) == spawnRate){ //Mob timers will be set to 0 when killed or health when taken
-                        spawnMonster(s);
-                        mobSpawns.putInt(s,mobSpawns.getInt(s)+1);
+                    if(s.length()>3){
+                        int spawnRate = 45;
+                        if(s.equalsIgnoreCase("keeoth")) spawnRate = 120;
+                        else if(s.equalsIgnoreCase("ooze")) spawnRate = 90;
+                        if(spawns.getInt(s) == spawnRate){ //Mob timers will be set to 0 when killed or health when taken
+                            spawnMonster(s);
+                            spawns.putInt(s,spawns.getInt(s)+1);
+                        }else{
+                            spawns.putInt(s,spawns.getInt(s)+1);
+                        }
                     }else{
-                        mobSpawns.putInt(s,mobSpawns.getInt(s)+1);
+                        System.out.println("Checking health! " + s);
+                        int time = spawns.getInt(s);
+                        if(time == 10){
+                            trace("Spawning health!");
+                            spawnHealth(s);
+                        }
+                        else if(time < 91){
+                            trace(s + " time remaining: " + time);
+                            time++;
+                            spawns.putInt(s,time);
+                        }
+                        else{
+                            trace(s + " time remaining: " + time);
+                        }
                     }
                 }
                 handleCooldowns();
@@ -236,7 +253,7 @@ public class ATBPExtension extends SFSExtension {
             }
         }
         private void spawnMonster(String monster){
-            List<User> users = room.getUserList();
+            ArrayList<User> users = (ArrayList<User>) room.getUserList();
             String map = room.getGroupId();
             for(User u : users){
                 ISFSObject monsterObject = new SFSObject();
@@ -297,6 +314,15 @@ public class ATBPExtension extends SFSExtension {
                     send("cmd_create_actor",monsterObject,u);
                 }
             }
+        }
+        private void spawnHealth(String id){
+            int healthNum = getHealthNum(id);
+            Point2D healthLocation = getHealthLocation(healthNum);
+            for(User u : room.getUserList()){
+                int effectTime = (15*60-secondsRan)*1000;
+                ExtensionCommands.createWorldFX(ATBPExtension.this,u, String.valueOf(u.getId()),"pickup_health_cyclops",id+"_fx",effectTime,(float)healthLocation.getX(),(float)healthLocation.getY(),false,2,0f);
+            }
+            room.getVariable("spawns").getSFSObjectValue().putInt(id,91);
         }
 
         private void handleAltars(){
@@ -510,32 +536,90 @@ public class ATBPExtension extends SFSExtension {
                 }
             }
         }
+
+        private Point2D getHealthLocation(int num){
+            float x = MapData.L2_BOT_BLUE_HEALTH[0];
+            float z = MapData.L2_BOT_BLUE_HEALTH[1];
+            // num = 1
+            switch(num){
+                case 0:
+                    z*=-1;
+                    break;
+                case 2:
+                    x = MapData.L2_LEFT_HEALTH[0];
+                    z = MapData.L2_LEFT_HEALTH[1];
+                    break;
+                case 3:
+                    x*=-1;
+                    z*=-1;
+                    break;
+                case 4:
+                    x*=-1;
+                    break;
+                case 5:
+                    x = MapData.L2_LEFT_HEALTH[0]*-1;
+                    z = MapData.L2_LEFT_HEALTH[1];
+                    break;
+            }
+            return new Point2D.Float(x,z);
+        }
+
+        private int getHealthNum(String id){
+            switch(id){
+                case "ph2": //Purple team bot
+                    return 4;
+                case "ph1": //Purple team top
+                    return 3;
+                case "ph3": // Purple team mid
+                    return 5;
+                case "bh2": // Blue team bot
+                    return 1;
+                case "bh1": // Blue team top
+                    return 0;
+                case "bh3": //Blue team mid
+                    return 2;
+            }
+            return -1;
+        }
+
+        private void handleHealthRegen(){
+            for(User u : room.getUserList()){
+                ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
+                if(stats.getInt("currentHealth") < stats.getInt("maxHealth")){
+                    double healthRegen = stats.getDouble("healthRegen");
+                    Champion.updateHealth(ATBPExtension.this,u,(int)healthRegen);
+                }
+
+            }
+        }
+
     }
     private class MiniScripts implements Runnable{
         private Room room;
         private int index;
-        private List<Minion> minions;
-        private List<Tower> towers;
+        private ArrayList<Minion> minions;
+        private ArrayList<Tower> towers;
+        private Base[] bases = new Base[2];
         private int mSecondsRan = 0;
         public MiniScripts(Room room, int index){
             this.room = room;
             this.index = index;
             this.minions = new ArrayList<>();
+            towers = new ArrayList<>();
+            HashMap<String,Point2D> towers0 = MapData.getTowerData(room.getGroupId(),0);
+            HashMap<String, Point2D> towers1 = MapData.getTowerData(room.getGroupId(),1);
+            for(String key : towers0.keySet()){
+                towers.add(new Tower(key,0,towers0.get(key)));
+            }
+            for(String key : towers1.keySet()){
+                towers.add(new Tower(key,1,towers1.get(key)));
+            }
+            bases[0] = new Base(0);
+            bases[1] = new Base(1);
         }
         @Override
         public void run() {
             try{
-                if(towers == null){ //If the tower objects have not been created yet, create them.
-                    towers = new ArrayList<>();
-                    Map<String,Point2D> towers0 = MapData.getTowerData(room.getGroupId(),0);
-                    Map<String, Point2D> towers1 = MapData.getTowerData(room.getGroupId(),1);
-                    for(String key : towers0.keySet()){
-                        towers.add(new Tower(key,0,towers0.get(key)));
-                    }
-                    for(String key : towers1.keySet()){
-                        towers.add(new Tower(key,1,towers1.get(key)));
-                    }
-                }
                 mSecondsRan+=100;
                 for(User u : room.getUserList()){ //Tracks player location
                     float x = u.getVariable("location").getSFSObjectValue().getFloat("x");
@@ -545,6 +629,7 @@ public class ATBPExtension extends SFSExtension {
                         u.getVariable("location").getSFSObjectValue().putFloat("time",u.getVariable("location").getSFSObjectValue().getFloat("time")+0.1f);
                     }
                 }
+                handleHealth();
                 for(Minion m : minions){ //Handles minion behavior
                     switchcase:
                         switch(m.getState()){
@@ -554,6 +639,24 @@ public class ATBPExtension extends SFSExtension {
                                     m.move(ATBPExtension.this);
                                 }else{
                                     m.addTravelTime(0.1f);
+                                }
+                                for(Minion minion : minions){
+                                    if(m.getTeam() != minion.getTeam() && m.getLane() == minion.getLane()){
+                                        if(m.nearEntity(minion.getRelativePoint()) && m.facingEntity(minion.getRelativePoint())){
+                                            if(m.getTarget() == null){
+                                                m.setTarget(ATBPExtension.this, minion.getId());
+                                                break switchcase;
+                                            }
+                                        }
+                                    }
+                                }
+                                Base opposingBase = getOpposingTeamBase(m.getTeam());
+                                if(opposingBase.isUnlocked() && m.nearEntity(opposingBase.getLocation(),1.8f)){
+                                    if(m.getTarget() == null){
+                                        m.setTarget(ATBPExtension.this,opposingBase.getId());
+                                        m.moveTowardsActor(ATBPExtension.this,opposingBase.getLocation());
+                                        break;
+                                    }
                                 }
                                 for(Tower t: towers){
                                     if(t.getTeam() != m.getTeam() && m.nearEntity(t.getLocation())){ //Minion prioritizes towers over players
@@ -592,34 +695,95 @@ public class ATBPExtension extends SFSExtension {
                                     }
                                 }
                                 break;
+                            case 2: // MINION TARGET
+                                Minion targetMinion = findMinion(m.getTarget());
+                                if(targetMinion != null && (m.withinAttackRange(targetMinion.getRelativePoint()) || m.getAttackCooldown() < 300)){
+                                    if(!m.isAttacking()){
+                                        m.stopMoving(ATBPExtension.this);
+                                        m.setAttacking(true);
+                                    }
+                                    if(m.canAttack()){
+                                        if(targetMinion.getHealth() > 0){
+                                            m.attack(ATBPExtension.this, targetMinion);
+                                        }else{ //Handles tower death and resets minion on tower kill
+                                            m.setState(0);
+                                            m.move(ATBPExtension.this);
+                                        }
+                                    }else{
+                                        m.reduceAttackCooldown();
+                                    }
+                                }else if(targetMinion != null){
+                                    trace("Distance: " + m.getRelativePoint().distance(targetMinion.getRelativePoint()));
+                                    m.moveTowardsActor(ATBPExtension.this,targetMinion.getRelativePoint()); //TODO: Optimize so it's not sending a lot of commands
+                                    if(m.getAttackCooldown() > 300) m.reduceAttackCooldown();
+                                }else{
+                                    m.setState(0);
+                                    m.move(ATBPExtension.this);
+                                }
+                                break;
                             case 3: // TOWER TARGET
                                 Tower targetTower = findTower(m.getTarget());
                                 if(targetTower != null && (m.withinAttackRange(targetTower.getLocation()) || m.getAttackCooldown() < 300)){
-                                    m.stopMoving(ATBPExtension.this);
+                                    if(!m.isAttacking()){
+                                        m.stopMoving(ATBPExtension.this);
+                                        m.setAttacking(true);
+                                    }
                                     if(m.canAttack()){
                                             if(targetTower.getHealth() > 0){
                                                 m.attack(ATBPExtension.this, targetTower);
                                             }else{ //Handles tower death and resets minion on tower kill
-                                                towers.remove(targetTower);
+                                                if(targetTower.getTowerNum() == 0 || targetTower.getTowerNum() == 3) bases[targetTower.getTeam()].unlock();
                                                 m.setState(0);
                                                 m.move(ATBPExtension.this);
+                                                break;
                                             }
                                     }else{
                                         m.reduceAttackCooldown();
                                     }
                                 }else if(targetTower != null){
-                                    m.moveTowardsActor(ATBPExtension.this,targetTower.getLocation());
+                                    trace("Distance: " + m.getRelativePoint().distance(targetTower.getLocation()));
+                                    m.addTravelTime(0.1f);
+                                    //m.moveTowardsActor(ATBPExtension.this,targetTower.getLocation()); //TODO: Optimize so it's not sending a lot of commands
+                                    if(m.getAttackCooldown() > 300) m.reduceAttackCooldown();
+                                }else{
+                                    m.setState(0);
+                                    m.move(ATBPExtension.this);
+                                    break;
+                                }
+                                break;
+                            case 4: // BASE TARGET
+                                Base targetBase = getOpposingTeamBase(m.getTeam());
+                                if(targetBase != null && (m.withinAttackRange(targetBase.getLocation(),1.8f) || m.getAttackCooldown() < 300)){
+                                    if(!m.isAttacking()){
+                                        m.stopMoving(ATBPExtension.this);
+                                        m.setAttacking(true);
+                                    }
+                                    if(m.canAttack()){
+                                        if(targetBase.getHealth() > 0){
+                                            m.attack(ATBPExtension.this,targetBase);
+                                        }else{ //Handles base death and ends game
+                                            stopScript(index);
+                                        }
+                                    }else{
+                                        m.reduceAttackCooldown();
+                                    }
+                                }else if(targetBase != null){
+                                    m.addTravelTime(0.1f);
                                     if(m.getAttackCooldown() > 300) m.reduceAttackCooldown();
                                 }
                                 break;
                         }
                 }
+                minions.removeIf(m -> (m.getHealth()<=0));
+                towers.removeIf(t -> (t.getHealth()<=0));
                 //TODO: Add minion waves
                 if(mSecondsRan == 5000){
                     trace("Adding minion!");
-                    this.addMinion(1,0,0);
+                    this.addMinion(1,0,0,1);
+                    //this.addMinion(0,0,0,1);
                 }else if(mSecondsRan == 7000){
-                    //this.addMinion(0,1,0);
+                    this.addMinion(1,1,0,1);
+                    //this.addMinion(0,1,0,1);
                 }else if(mSecondsRan == 9000){
                     //this.addMinion(0,2,0);
                 }
@@ -637,8 +801,15 @@ public class ATBPExtension extends SFSExtension {
             return null;
         }
 
-        public void addMinion(int team, int type, int wave){
-            Minion m = new Minion(room, team, type, wave);
+        private Minion findMinion(String id){
+            for(Minion m : minions){
+                if(m.getId().equalsIgnoreCase(id)) return m;
+            }
+            return null;
+        }
+
+        public void addMinion(int team, int type, int wave, int lane){
+            Minion m = new Minion(room, team, type, wave,lane);
             minions.add(m);
             for(User u : room.getUserList()){
                 ExtensionCommands.createActor(ATBPExtension.this,u,m.creationObject());
@@ -661,6 +832,99 @@ public class ATBPExtension extends SFSExtension {
             float y = (float)(y1+(currentDist/dist)*(y2-y1));
             rPoint.setLocation(x,y);
             return rPoint;
+        }
+
+        private Base getOpposingTeamBase(int team){
+            if(team == 0) return bases[1];
+            else return  bases[0];
+        }
+
+        private void handleHealth(){
+            for(String s : GameManager.SPAWNS){
+                if(s.length() == 3){
+                    ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
+                    if(spawns.getInt(s) == 91){
+                        for(User u : room.getUserList()){
+                            Point2D currentPoint = getRelativePoint(u.getVariable("location").getSFSObjectValue());
+                            if(insideHealth(currentPoint,getHealthNum(s))){
+                                int team = Integer.parseInt(u.getVariable("player").getSFSObjectValue().getUtfString("team"));
+                                Point2D healthLoc = getHealthLocation(getHealthNum(s));
+                                ExtensionCommands.removeFx(ATBPExtension.this,room,s+"_fx");
+                                ExtensionCommands.createActorFX(ATBPExtension.this,room,String.valueOf(u.getId()),"picked_up_health_cyclops",2000,s+"_fx2",true,"",false,false,team);
+                                ExtensionCommands.playSound(ATBPExtension.this,u,"sfx_health_picked_up",healthLoc);
+                                Champion.updateHealth(ATBPExtension.this,u,100);
+                                Champion.giveBuff(ATBPExtension.this,u, Buff.HEALTH_PACK);
+                                spawns.putInt(s,0);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private boolean insideHealth(Point2D pLoc, int health){
+            Point2D healthLocation = getHealthLocation(health);
+            double hx = healthLocation.getX();
+            double hy = healthLocation.getY();
+            double px = pLoc.getX();
+            double pz = pLoc.getY();
+            double dist = Math.sqrt(Math.pow(px-hx,2) + Math.pow(pz-hy,2));
+            return dist<=0.5;
+        }
+
+        private Point2D getHealthLocation(int num){
+            float x = MapData.L2_BOT_BLUE_HEALTH[0];
+            float z = MapData.L2_BOT_BLUE_HEALTH[1];
+            // num = 1
+            switch(num){
+                case 0:
+                    z*=-1;
+                    break;
+                case 2:
+                    x = MapData.L2_LEFT_HEALTH[0];
+                    z = MapData.L2_LEFT_HEALTH[1];
+                    break;
+                case 3:
+                    x*=-1;
+                    z*=-1;
+                    break;
+                case 4:
+                    x*=-1;
+                    break;
+                case 5:
+                    x = MapData.L2_LEFT_HEALTH[0]*-1;
+                    z = MapData.L2_LEFT_HEALTH[1];
+                    break;
+            }
+            return new Point2D.Float(x,z);
+        }
+
+        private int getHealthNum(String id){
+            switch(id){
+                case "ph2": //Purple team bot
+                    return 4;
+                case "ph1": //Purple team top
+                    return 3;
+                case "ph3": // Purple team mid
+                    return 5;
+                case "bh2": // Blue team bot
+                    return 1;
+                case "bh1": // Blue team top
+                    return 0;
+                case "bh3": //Blue team mid
+                    return 2;
+            }
+            return -1;
+        }
+
+        private ArrayList<User> getNearbyPlayers(Point2D source){
+            ArrayList<User> users = new ArrayList<>();
+            for(User u : room.getUserList()){
+                Point2D currentLocation = getRelativePoint(u.getVariable("location").getSFSObjectValue());
+                if(source.distance(currentLocation) <= 5) users.add(u);
+            }
+            return users;
         }
     }
 }

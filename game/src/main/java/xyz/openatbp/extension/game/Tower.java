@@ -12,6 +12,7 @@ public class Tower {
     private final int[] PURPLE_TOWER_NUM = {2,1,0};
     private final int[] BLUE_TOWER_NUM = {5,4,3};
     private long lastHit;
+    private boolean destroyed = false;
 
     public Tower(String id, int team, Point2D location){
         this.id = id;
@@ -65,5 +66,13 @@ public class Tower {
 
     public int getMaxHealth(){
         return this.maxHealth;
+    }
+
+    public void destroy(){
+        this.destroyed = true;
+    }
+
+    public boolean isDestroyed(){
+        return this.destroyed;
     }
 }

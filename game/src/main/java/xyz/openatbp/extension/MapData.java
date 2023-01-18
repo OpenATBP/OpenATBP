@@ -207,7 +207,7 @@ public class MapData {
         if(room.equalsIgnoreCase("practice")){
             x = L1_BLUE_HEALTH_X;
             z = L1_BLUE_HEALTH_Z;
-            if(team == 1){
+            if(team == 0){
                 x*=-1;
                 z*=-1;
             }
@@ -222,7 +222,7 @@ public class MapData {
                 x = L2_LEFT_HEALTH[0];
                 z = L2_LEFT_HEALTH[1];
             }
-            if(team == 1){
+            if(team == 0){
                 x*=-1;
             }
         }
