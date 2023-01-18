@@ -12,9 +12,7 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.SFSExtension;
 import xyz.openatbp.extension.evthandlers.*;
-import xyz.openatbp.extension.game.Base;
-import xyz.openatbp.extension.game.Minion;
-import xyz.openatbp.extension.game.Tower;
+import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.reqhandlers.*;
 
 import java.awt.geom.*;
@@ -216,18 +214,36 @@ public class ATBPExtension extends SFSExtension {
                 if(room.getUserList().size() == 0) stopScript(aValue); //If no one is in the room, stop running.
                 else{
                     handleAltars();
+                    handleHealthRegen();
                 }
                // trace("Running passively! " + secondsRan);
-                ISFSObject mobSpawns = room.getVariable("spawns").getSFSObjectValue();
+                ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
                 for(String s : GameManager.SPAWNS){ //Check all mob/health spawns for how long it's been since dead
-                    int spawnRate = 45;
-                    if(s.equalsIgnoreCase("keeoth")) spawnRate = 120;
-                    else if(s.equalsIgnoreCase("ooze")) spawnRate = 90;
-                    if(mobSpawns.getInt(s) == spawnRate){ //Mob timers will be set to 0 when killed or health when taken
-                        spawnMonster(s);
-                        mobSpawns.putInt(s,mobSpawns.getInt(s)+1);
+                    if(s.length()>3){
+                        int spawnRate = 45;
+                        if(s.equalsIgnoreCase("keeoth")) spawnRate = 120;
+                        else if(s.equalsIgnoreCase("ooze")) spawnRate = 90;
+                        if(spawns.getInt(s) == spawnRate){ //Mob timers will be set to 0 when killed or health when taken
+                            spawnMonster(s);
+                            spawns.putInt(s,spawns.getInt(s)+1);
+                        }else{
+                            spawns.putInt(s,spawns.getInt(s)+1);
+                        }
                     }else{
-                        mobSpawns.putInt(s,mobSpawns.getInt(s)+1);
+                        System.out.println("Checking health! " + s);
+                        int time = spawns.getInt(s);
+                        if(time == 10){
+                            trace("Spawning health!");
+                            spawnHealth(s);
+                        }
+                        else if(time < 91){
+                            trace(s + " time remaining: " + time);
+                            time++;
+                            spawns.putInt(s,time);
+                        }
+                        else{
+                            trace(s + " time remaining: " + time);
+                        }
                     }
                 }
                 handleCooldowns();
@@ -298,6 +314,15 @@ public class ATBPExtension extends SFSExtension {
                     send("cmd_create_actor",monsterObject,u);
                 }
             }
+        }
+        private void spawnHealth(String id){
+            int healthNum = getHealthNum(id);
+            Point2D healthLocation = getHealthLocation(healthNum);
+            for(User u : room.getUserList()){
+                int effectTime = (15*60-secondsRan)*1000;
+                ExtensionCommands.createWorldFX(ATBPExtension.this,u, String.valueOf(u.getId()),"pickup_health_cyclops",id+"_fx",effectTime,(float)healthLocation.getX(),(float)healthLocation.getY(),false,2,0f);
+            }
+            room.getVariable("spawns").getSFSObjectValue().putInt(id,91);
         }
 
         private void handleAltars(){
@@ -511,6 +536,63 @@ public class ATBPExtension extends SFSExtension {
                 }
             }
         }
+
+        private Point2D getHealthLocation(int num){
+            float x = MapData.L2_BOT_BLUE_HEALTH[0];
+            float z = MapData.L2_BOT_BLUE_HEALTH[1];
+            // num = 1
+            switch(num){
+                case 0:
+                    z*=-1;
+                    break;
+                case 2:
+                    x = MapData.L2_LEFT_HEALTH[0];
+                    z = MapData.L2_LEFT_HEALTH[1];
+                    break;
+                case 3:
+                    x*=-1;
+                    z*=-1;
+                    break;
+                case 4:
+                    x*=-1;
+                    break;
+                case 5:
+                    x = MapData.L2_LEFT_HEALTH[0]*-1;
+                    z = MapData.L2_LEFT_HEALTH[1];
+                    break;
+            }
+            return new Point2D.Float(x,z);
+        }
+
+        private int getHealthNum(String id){
+            switch(id){
+                case "ph2": //Purple team bot
+                    return 4;
+                case "ph1": //Purple team top
+                    return 3;
+                case "ph3": // Purple team mid
+                    return 5;
+                case "bh2": // Blue team bot
+                    return 1;
+                case "bh1": // Blue team top
+                    return 0;
+                case "bh3": //Blue team mid
+                    return 2;
+            }
+            return -1;
+        }
+
+        private void handleHealthRegen(){
+            for(User u : room.getUserList()){
+                ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
+                if(stats.getInt("currentHealth") < stats.getInt("maxHealth")){
+                    double healthRegen = stats.getDouble("healthRegen");
+                    Champion.updateHealth(ATBPExtension.this,u,(int)healthRegen);
+                }
+
+            }
+        }
+
     }
     private class MiniScripts implements Runnable{
         private Room room;
@@ -547,6 +629,7 @@ public class ATBPExtension extends SFSExtension {
                         u.getVariable("location").getSFSObjectValue().putFloat("time",u.getVariable("location").getSFSObjectValue().getFloat("time")+0.1f);
                     }
                 }
+                handleHealth();
                 for(Minion m : minions){ //Handles minion behavior
                     switchcase:
                         switch(m.getState()){
@@ -754,6 +837,94 @@ public class ATBPExtension extends SFSExtension {
         private Base getOpposingTeamBase(int team){
             if(team == 0) return bases[1];
             else return  bases[0];
+        }
+
+        private void handleHealth(){
+            for(String s : GameManager.SPAWNS){
+                if(s.length() == 3){
+                    ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
+                    if(spawns.getInt(s) == 91){
+                        for(User u : room.getUserList()){
+                            Point2D currentPoint = getRelativePoint(u.getVariable("location").getSFSObjectValue());
+                            if(insideHealth(currentPoint,getHealthNum(s))){
+                                int team = Integer.parseInt(u.getVariable("player").getSFSObjectValue().getUtfString("team"));
+                                Point2D healthLoc = getHealthLocation(getHealthNum(s));
+                                ExtensionCommands.removeFx(ATBPExtension.this,room,s+"_fx");
+                                ExtensionCommands.createActorFX(ATBPExtension.this,room,String.valueOf(u.getId()),"picked_up_health_cyclops",2000,s+"_fx2",true,"",false,false,team);
+                                ExtensionCommands.playSound(ATBPExtension.this,u,"sfx_health_picked_up",healthLoc);
+                                Champion.updateHealth(ATBPExtension.this,u,100);
+                                Champion.giveBuff(ATBPExtension.this,u, Buff.HEALTH_PACK);
+                                spawns.putInt(s,0);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private boolean insideHealth(Point2D pLoc, int health){
+            Point2D healthLocation = getHealthLocation(health);
+            double hx = healthLocation.getX();
+            double hy = healthLocation.getY();
+            double px = pLoc.getX();
+            double pz = pLoc.getY();
+            double dist = Math.sqrt(Math.pow(px-hx,2) + Math.pow(pz-hy,2));
+            return dist<=0.5;
+        }
+
+        private Point2D getHealthLocation(int num){
+            float x = MapData.L2_BOT_BLUE_HEALTH[0];
+            float z = MapData.L2_BOT_BLUE_HEALTH[1];
+            // num = 1
+            switch(num){
+                case 0:
+                    z*=-1;
+                    break;
+                case 2:
+                    x = MapData.L2_LEFT_HEALTH[0];
+                    z = MapData.L2_LEFT_HEALTH[1];
+                    break;
+                case 3:
+                    x*=-1;
+                    z*=-1;
+                    break;
+                case 4:
+                    x*=-1;
+                    break;
+                case 5:
+                    x = MapData.L2_LEFT_HEALTH[0]*-1;
+                    z = MapData.L2_LEFT_HEALTH[1];
+                    break;
+            }
+            return new Point2D.Float(x,z);
+        }
+
+        private int getHealthNum(String id){
+            switch(id){
+                case "ph2": //Purple team bot
+                    return 4;
+                case "ph1": //Purple team top
+                    return 3;
+                case "ph3": // Purple team mid
+                    return 5;
+                case "bh2": // Blue team bot
+                    return 1;
+                case "bh1": // Blue team top
+                    return 0;
+                case "bh3": //Blue team mid
+                    return 2;
+            }
+            return -1;
+        }
+
+        private ArrayList<User> getNearbyPlayers(Point2D source){
+            ArrayList<User> users = new ArrayList<>();
+            for(User u : room.getUserList()){
+                Point2D currentLocation = getRelativePoint(u.getVariable("location").getSFSObjectValue());
+                if(source.distance(currentLocation) <= 5) users.add(u);
+            }
+            return users;
         }
     }
 }

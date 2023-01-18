@@ -250,6 +250,52 @@ public class Champion {
 
         }
     }
+
+    public static void giveBuff(ATBPExtension parentExt,User u, Buff buff){
+        String stat = null;
+        float duration = 0;
+        double value = 0;
+        boolean icon = false;
+        String effect = null;
+        switch(buff){
+            case HEALTH_PACK:
+                stat = "healthRegen";
+                value = 20;
+                duration = 5f;
+                effect = "fx_health_regen";
+                break;
+            case ATTACK_ALTAR:
+                break;
+        }
+        ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
+        if(stat != null && stats.getDouble(stat) != null){
+            double newStat = stats.getDouble(stat) + value;
+            stats.putDouble(stat,newStat);
+            int interval = (int) Math.floor(duration*1000);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new BuffHandler(u,stat,value,icon),interval,TimeUnit.MILLISECONDS);
+            if(effect != null && effect.length() > 0){
+                int team = Integer.parseInt(u.getVariable("player").getSFSObjectValue().getUtfString("team"));
+                ExtensionCommands.createActorFX(parentExt,u.getLastJoinedRoom(),String.valueOf(u.getId()),effect,interval,effect+u.getId(),true,"",false,false,team);
+            }
+        }
+    }
+
+    public static void updateHealth(ATBPExtension parentExt, User u, int health){
+        ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
+        double currentHealth = stats.getInt("currentHealth");
+        double maxHealth = stats.getInt("maxHealth");
+        currentHealth+=health;
+        if(currentHealth>maxHealth) currentHealth = maxHealth;
+        double pHealth = currentHealth/maxHealth;
+        ISFSObject updateData = new SFSObject();
+        updateData.putUtfString("id", String.valueOf(u.getId()));
+        updateData.putInt("maxHealth",(int)maxHealth);
+        updateData.putInt("currentHealth",(int)currentHealth);
+        updateData.putDouble("pHealth",pHealth);
+        ExtensionCommands.updateActorData(parentExt,u,updateData);
+        stats.putInt("currentHealth",(int)currentHealth);
+        stats.putDouble("pHealth",pHealth);
+    }
 }
 
 class RangedAttack implements Runnable{ //Handles damage from ranged attacks
@@ -309,6 +355,30 @@ class RangedAttack implements Runnable{ //Handles damage from ranged attacks
             for(User u : room.getUserList()){
                 Champion.attackChampion(parentExt,u,p,damage);
             }
+        }
+    }
+}
+
+class BuffHandler implements Runnable {
+
+    User u;
+    String buff;
+    double value;
+    boolean icon;
+
+    BuffHandler(User u, String buff, double value, boolean icon){
+        this.u = u;
+        this.buff = buff;
+        this.value = value;
+        this.icon = icon;
+    }
+
+    @Override
+    public void run() {
+        double currentStat = u.getVariable("stats").getSFSObjectValue().getDouble(buff);
+        u.getVariable("stats").getSFSObjectValue().putDouble(buff,currentStat-value);
+        if(icon){
+
         }
     }
 }

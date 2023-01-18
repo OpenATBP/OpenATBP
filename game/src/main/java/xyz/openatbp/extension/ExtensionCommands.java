@@ -11,6 +11,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.game.Champion;
 
 import java.awt.geom.Point2D;
+import java.util.ArrayList;
 
 public class ExtensionCommands {
     /**
@@ -37,6 +38,23 @@ public class ExtensionCommands {
         data2.putBool("highlight",highlight);
         data2.putInt("team",team);
         parentExt.send("cmd_create_actor_fx",data2,u);
+    }
+
+    public static void createActorFX(ATBPExtension parentExt, Room room, String id, String bundle, int duration, String fxId, boolean parent, String emit, boolean orient, boolean highlight, int team){
+        for(User u : room.getUserList()){
+            System.out.println("Creating actor FX!");
+            ISFSObject data2 = new SFSObject();
+            data2.putUtfString("id",id);
+            data2.putUtfString("bundle",bundle);
+            data2.putInt("duration",duration);
+            data2.putUtfString("fx_id",fxId);
+            data2.putBool("parent",parent);
+            data2.putUtfString("emit",emit);
+            data2.putBool("orient",orient);
+            data2.putBool("highlight",highlight);
+            data2.putInt("team",team);
+            parentExt.send("cmd_create_actor_fx",data2,u);
+        }
     }
     public static void updateActorData(ATBPExtension parentExt, User u, ISFSObject data){
         parentExt.send("cmd_update_actor_data",data,u);
@@ -227,6 +245,23 @@ public class ExtensionCommands {
         parentExt.send("cmd_create_world_fx",data,u);
     }
 
+    public static void createWorldFX(ATBPExtension parentExt, Room room, String id, String bundle, String fxId, int duration, float x, float z, boolean highlight, int team, float rotation){
+        for(User u : room.getUserList()){
+            ISFSObject data = new SFSObject();
+            data.putUtfString("id",id);
+            data.putUtfString("bundle",bundle);
+            data.putUtfString("fx_id",fxId);
+            data.putInt("duration",duration);
+            data.putFloat("x",x);
+            data.putFloat("y",0f);
+            data.putFloat("z",z);
+            data.putBool("highlight",highlight);
+            data.putInt("team",team);
+            data.putFloat("yrot",rotation);
+            parentExt.send("cmd_create_world_fx",data,u);
+        }
+    }
+
     /**
      *
      * @param teamA - New score for purple team
@@ -266,5 +301,41 @@ public class ExtensionCommands {
         System.out.println(objectAsText);
         data.putUtfString("game_results",objectAsText);
         parentExt.send("cmd_game_over", data, u);
+    }
+
+    public static void removeFx(ATBPExtension parentExt, User u, String id){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("fx_id",id);
+        parentExt.send("cmd_remove_fx",data,u);
+    }
+
+    public static void removeFx(ATBPExtension parentExt, Room room, String id){
+        for(User u : room.getUserList()){
+            ISFSObject data = new SFSObject();
+            data.putUtfString("fx_id",id);
+            parentExt.send("cmd_remove_fx",data,u);
+        }
+    }
+
+    public static void playSound(ATBPExtension parentExt, ArrayList<User> users, String name, Point2D source){
+        for(User u : users){
+            ISFSObject data = new SFSObject();
+            data.putUtfString("name",name);
+            data.putUtfString("id", String.valueOf(u.getId()));
+            data.putFloat("x",(float)source.getX());
+            data.putFloat("y",0f);
+            data.putFloat("z",(float)source.getY());
+            parentExt.send("cmd_play_sound",data,u);
+        }
+    }
+
+    public static void playSound(ATBPExtension parentExt, User u, String name, Point2D source){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("name",name);
+        data.putUtfString("id", String.valueOf(u.getId()));
+        data.putFloat("x",(float)source.getX());
+        data.putFloat("y",0f);
+        data.putFloat("z",(float)source.getY());
+        parentExt.send("cmd_play_sound",data,u);
     }
 }
