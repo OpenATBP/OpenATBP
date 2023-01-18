@@ -597,8 +597,8 @@ public class ATBPExtension extends SFSExtension {
     private class MiniScripts implements Runnable{
         private Room room;
         private int index;
-        private ArrayList<Minion> minions;
-        private ArrayList<Tower> towers;
+        private List<Minion> minions;
+        private List<Tower> towers;
         private Base[] bases = new Base[2];
         private int mSecondsRan = 0;
         public MiniScripts(Room room, int index){
@@ -606,8 +606,8 @@ public class ATBPExtension extends SFSExtension {
             this.index = index;
             this.minions = new ArrayList<>();
             towers = new ArrayList<>();
-            HashMap<String,Point2D> towers0 = MapData.getTowerData(room.getGroupId(),0);
-            HashMap<String, Point2D> towers1 = MapData.getTowerData(room.getGroupId(),1);
+            Map<String,Point2D> towers0 = MapData.getTowerData(room.getGroupId(),0);
+            Map<String, Point2D> towers1 = MapData.getTowerData(room.getGroupId(),1);
             for(String key : towers0.keySet()){
                 towers.add(new Tower(key,0,towers0.get(key)));
             }
