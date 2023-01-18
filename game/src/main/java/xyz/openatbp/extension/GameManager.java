@@ -1,6 +1,8 @@
 package xyz.openatbp.extension;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -11,6 +13,7 @@ import com.smartfoxserver.v2.entities.variables.SFSUserVariable;
 import com.smartfoxserver.v2.entities.variables.UserVariable;
 import com.smartfoxserver.v2.exceptions.SFSVariableException;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -19,6 +22,7 @@ public class GameManager {
 
     //bh1 = Blue Health 1 ph1 = Purple Health 1. Numbers refer to top,bottom,and outside respectively.
     public static final String[] SPAWNS = {"bh1","bh2","bh3","ph1","ph2","ph3","keeoth","ooze","hugwolf","gnomes","owls","grassbear"};
+    private static ObjectMapper objectMapper = new ObjectMapper();
 
     public static void addPlayer(ArrayList<User> users, ATBPExtension parentExt){ //Sends player info to client
         for(int i = 0; i < users.size(); i++){
@@ -171,11 +175,16 @@ public class GameManager {
         ISFSObject teamScore = new SFSObject();
         teamScore.putInt("blue",0);
         teamScore.putInt("purple",0);
+        ISFSObject mapData = new SFSObject();
+        mapData.putBool("blueUnlocked", false);
+        mapData.putBool("purpleUnlocked", false);
         RoomVariable scoreVar = new SFSRoomVariable("score",teamScore);
         List<RoomVariable> variables = new ArrayList<>();
         RoomVariable spawnVar = new SFSRoomVariable("spawns",spawnTimers);
+        RoomVariable mapVar = new SFSRoomVariable("map",mapData);
         variables.add(scoreVar);
         variables.add(spawnVar);
+        variables.add(mapVar);
         room.setVariables(variables);
 
     }
@@ -226,5 +235,47 @@ public class GameManager {
             parentExt.send("cmd_create_actor",MapData.getHealthActorData(1,room,1),user);
             parentExt.send("cmd_create_actor",MapData.getHealthActorData(1,room,2),user);
         }
+    }
+
+    public static JsonNode getTeamData(int team, Room room){
+        ObjectNode node = objectMapper.createObjectNode();
+        for(User u : room.getUserList()){
+            if(Integer.parseInt(u.getVariable("player").getSFSObjectValue().getUtfString("team")) == team){
+                ObjectNode player = objectMapper.createObjectNode();
+                ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
+                ISFSObject playerVar = u.getVariable("player").getSFSObjectValue();
+                player.put("id",u.getId());
+                player.put("name",playerVar.getUtfString("name"));
+                int kills = 0;
+                if(stats.getInt("kills") != null) kills = stats.getInt("kills");
+                player.put("kills", kills);
+                player.put("deaths", stats.getInt("deaths"));
+                player.put("assists", stats.getInt("assists"));
+                player.put("playerName",playerVar.getUtfString("avatar"));
+                player.put("myElo",(double)playerVar.getInt("elo"));
+                node.set(String.valueOf(u.getId()),player);
+            }
+        }
+        return node;
+    }
+
+    public static JsonNode getGlobalTeamData(Room room){
+        ObjectNode node = objectMapper.createObjectNode();
+        for(User u : room.getUserList()){
+                ObjectNode player = objectMapper.createObjectNode();
+                ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
+                ISFSObject playerVar = u.getVariable("player").getSFSObjectValue();
+                player.put("id",u.getId());
+                player.put("name",playerVar.getUtfString("name"));
+                int kills = 0;
+                if(stats.getInt("kills") != null) kills = stats.getInt("kills");
+                player.put("kills", kills);
+                player.put("deaths", stats.getInt("deaths"));
+                player.put("assists", stats.getInt("assists"));
+                player.put("playerName",playerVar.getUtfString("avatar"));
+                player.put("myElo",(double)playerVar.getInt("elo"));
+                node.set(String.valueOf(u.getId()),player);
+        }
+        return node;
     }
 }

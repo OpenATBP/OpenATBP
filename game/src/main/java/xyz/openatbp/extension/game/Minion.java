@@ -9,6 +9,7 @@ import xyz.openatbp.extension.ExtensionCommands;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.util.List;
 
 //TODO: Add more accurate pathing by creating more points alongside the main ones already defined. Also add collision detection.
 public class Minion {
@@ -28,16 +29,11 @@ public class Minion {
     private Point2D desiredPath; //Where the minion is heading to
     private int pathIndex = 0; //What stage in their pathing to the other side are they in
     private float attackCooldown = 300; //Starts at 300 to account for the first animation
+    private boolean attacking = false;
+    private int lane;
+    private int maxHealth;
 
-    public Minion(String id, Room room, int team, float x, float z){
-        this.id = id;
-        this.team = team;
-        this.location = new Point2D.Float(x,z);
-        this.room = room;
-        if(team == 0) pathIndex = blueBotX.length-1; //Purple base would use the path in reverse.
-    }
-
-    public Minion(Room room, int team, int type, int wave){
+    public Minion(Room room, int team, int type, int wave, int lane, int num){
         String typeString = "super";
         if(type == 0){
             typeString = "melee";
@@ -49,11 +45,45 @@ public class Minion {
         else{
             this.type = MinionType.SUPER;
         }
-        this.id = team+"creep_"+typeString+wave; //TODO: Account for multiple of the same minion in the same wave
+        this.id = team+"creep_"+lane+typeString+wave+num; //TODO: Account for multiple of the same minion in the same wave
         this.team = team;
-        float x = (float) blueBotX[0];
+        this.lane = lane;
+        float x = (float) blueBotX[0]; //Bot Lane
         float y = (float) blueBotY[0];
         if(team == 0) x = (float) blueBotX[blueBotX.length-1];
+        if(lane == 0){ //Top Lane
+
+        }
+        this.location = new Point2D.Float(x,y);
+        this.room = room;
+        if(team == 0) pathIndex = blueBotX.length-1;
+    }
+
+    public Minion(Room room, int team, int type, int wave, int lane){
+        String typeString = "super";
+        if(type == 0){
+            typeString = "melee";
+            this.type = MinionType.MELEE;
+            this.maxHealth = 450;
+        }else if(type == 1){
+            typeString = "ranged";
+            this.type = MinionType.RANGED;
+            this.maxHealth = 350;
+        }
+        else{
+            this.type = MinionType.SUPER;
+            this.maxHealth = 500;
+        }
+        this.health = this.maxHealth;
+        this.id = team+"creep_"+lane+typeString+wave; //TODO: Account for multiple of the same minion in the same wave
+        this.team = team;
+        this.lane = lane;
+        float x = (float) blueBotX[0]; //Bot Lane
+        float y = (float) blueBotY[0];
+        if(team == 0) x = (float) blueBotX[blueBotX.length-1];
+        if(lane == 0){ //Top Lane
+
+        }
         this.location = new Point2D.Float(x,y);
         this.room = room;
         if(team == 0) pathIndex = blueBotX.length-1;
@@ -102,6 +132,7 @@ public class Minion {
     public boolean nearEntity(Point2D p){
         return this.getRelativePoint().distance(p)<=5;
     }
+    public boolean nearEntity(Point2D p, float radius){ return this.getRelativePoint().distance(p)<=5+radius; }
     public boolean facingEntity(Point2D p){ // Returns true if the point is in the same direction as the minion is heading
         Point2D currentPoint = getRelativePoint();
         double deltaX = desiredPath.getX()-location.getX();
@@ -113,10 +144,17 @@ public class Minion {
     }
 
     public boolean withinAttackRange(Point2D p){ // Checks if point is within minion's attack range
-        System.out.println("Enemy location: " + p.getX() + "," + p.getY());
-        float range = 1;
+        float range = 1.25f;
         if(this.type == MinionType.RANGED) range = 4f;
         else if(this.type == MinionType.SUPER) range = 1.5f;
+        return this.getRelativePoint().distance(p)<=range;
+    }
+
+    public boolean withinAttackRange(Point2D p, float radius){
+        float range = 1f;
+        if(this.type == MinionType.RANGED) range = 4f;
+        else if(this.type == MinionType.SUPER) range = 1.5f;
+        range+=radius;
         return this.getRelativePoint().distance(p)<=range;
     }
     private int findPathIndex(){ //Finds the nearest point along the defined path for the minion to travel to
@@ -187,10 +225,10 @@ public class Minion {
     public void setTarget(ATBPExtension parentExt, String id){ //Sets what the minion is targeting. Also changes state
         this.target = id;
         if(id.contains("tower")) this.state = AggroState.TOWER;
-        else if(id.contains("minion")) this.state = AggroState.MINION;
+        else if(id.contains("creep")) this.state = AggroState.MINION;
         else if(id.contains("base")) this.state = AggroState.BASE;
         else this.state = AggroState.PLAYER;
-        this.stopMoving(parentExt);
+        //this.stopMoving(parentExt);
     }
 
     public int getState(){
@@ -234,6 +272,7 @@ public class Minion {
                 this.travelTime = 0;
                 this.target = null;
                 this.pathIndex = index;
+                this.attacking = false;
                 break;
             case 1:
                 this.state = AggroState.PLAYER;
@@ -278,12 +317,44 @@ public class Minion {
             if(this.type == MinionType.RANGED) newCooldown = 2000;
             else if(this.type == MinionType.SUPER) newCooldown = 1000;
             this.attackCooldown = newCooldown;
-            if(this.type != MinionType.RANGED) Champion.attackTower(parentExt,this.room,this.id,tower,15);
-            else Champion.rangedAttackTower(parentExt,room,this.id,tower,15);
+            if(this.type != MinionType.RANGED) Champion.attackTower(parentExt,this.room,this.id,tower,150);
+            else Champion.rangedAttackTower(parentExt,room,this.id,tower,150);
         }else if(attackCooldown == 300){
             reduceAttackCooldown();
             for(User u : room.getUserList()){
                 ExtensionCommands.attackActor(parentExt,u,this.id,tower.getId(), (float) tower.getLocation().getX(), (float) tower.getLocation().getY(),false,true);
+            }
+        }else if(attackCooldown == 100 || attackCooldown == 200) reduceAttackCooldown();
+    }
+
+    public void attack(ATBPExtension parentExt, Minion m){
+        if(this.state == AggroState.MINION && attackCooldown == 0){
+            int newCooldown = 1500;
+            if(this.type == MinionType.RANGED) newCooldown = 2000;
+            else if(this.type == MinionType.SUPER) newCooldown = 1000;
+            this.attackCooldown = newCooldown;
+            if(this.type != MinionType.RANGED) Champion.attackMinion(parentExt,this.id,m,20);
+            else Champion.rangedAttackMinion(parentExt,this.room,this.id,m,150);
+        }else if(attackCooldown == 300){
+            reduceAttackCooldown();
+            for(User u : room.getUserList()){
+                ExtensionCommands.attackActor(parentExt,u,this.id,m.getId(), (float) m.getLocation().getX(), (float) m.getLocation().getY(),false,true);
+            }
+        }else if(attackCooldown == 100 || attackCooldown == 200) reduceAttackCooldown();
+    }
+
+    public void attack(ATBPExtension parentExt, Base b){
+        if(this.state == AggroState.BASE && attackCooldown == 0){
+            int newCooldown = 1500;
+            if(this.type == MinionType.RANGED) newCooldown = 2000;
+            else if(this.type == MinionType.SUPER) newCooldown = 1000;
+            this.attackCooldown = newCooldown;
+            if(this.type != MinionType.RANGED) Champion.attackBase(parentExt,this.room,this.id,b,25);
+            else Champion.rangedAttackBase(parentExt,this.room,this.id,b,150);
+        }else if(attackCooldown == 300){
+            reduceAttackCooldown();
+            for(User u : room.getUserList()){
+                ExtensionCommands.attackActor(parentExt,u,this.id,b.getId(), (float) b.getLocation().getX(), (float) b.getLocation().getY(),false,true);
             }
         }else if(attackCooldown == 100 || attackCooldown == 200) reduceAttackCooldown();
     }
@@ -325,5 +396,41 @@ public class Minion {
 
     public int getTeam(){
         return this.team;
+    }
+
+    public boolean isAttacking(){
+        return this.attacking;
+    }
+
+    public void setAttacking(boolean attacking){
+        this.attacking = attacking;
+    }
+
+    public int getLane(){
+        return this.lane;
+    }
+
+    public int getHealth(){
+        return this.health;
+    }
+
+    public boolean damage(ATBPExtension parentExt,String attacker, int damage){
+        this.health-=damage;
+        if(this.health <= 0){
+            System.out.println(this.id + ": I am dead!");
+            for(User u : this.getRoomUsers()){
+                Champion.handleMinionDeath(parentExt,u,attacker,this);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public int getMaxHealth(){
+        return this.maxHealth;
+    }
+
+    public List<User> getRoomUsers(){
+        return this.room.getUserList();
     }
 }
