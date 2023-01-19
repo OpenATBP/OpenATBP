@@ -338,4 +338,10 @@ public class ExtensionCommands {
         data.putFloat("z",(float)source.getY());
         parentExt.send("cmd_play_sound",data,u);
     }
+
+    public static void respawnActor(ATBPExtension parentExt, User u, String id){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("id",id);
+        parentExt.send("cmd_respawn_actor",data,u);
+    }
 }

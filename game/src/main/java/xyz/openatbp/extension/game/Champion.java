@@ -7,14 +7,13 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.GameManager;
 
 import java.util.concurrent.TimeUnit;
 
 public class Champion {
 
     @Deprecated
-    public static void attackChampion(ATBPExtension parentExt, User player, int damage){ //Used for melee attacks TODO: Move over to one function as this likely does not work with multiplayer
+    public static void attackChampion(ATBPExtension parentExt, User player, String attacker, int damage){ //Used for melee attacks TODO: Move over to one function as this likely does not work with multiplayer
         ExtensionCommands.damageActor(parentExt,player, String.valueOf(player.getId()),damage);
         ISFSObject stats = player.getVariable("stats").getSFSObjectValue();
         float currentHealth = stats.getInt("currentHealth")-damage;
@@ -30,12 +29,12 @@ public class Champion {
             stats.putDouble("pHealth", pHealth);
             ExtensionCommands.updateActorData(parentExt,player,updateData);
         }else{
-            handleDeath(parentExt,player); //TODO: Implement player death
+            handleDeath(parentExt,player,attacker); //TODO: Implement player death
         }
 
     }
 
-    public static void attackChampion(ATBPExtension parentExt, User u, User target, int damage){ //Used for ranged attacks
+    public static void attackChampion(ATBPExtension parentExt, User u, User target, String attacker, int damage){ //Used for ranged attacks
         ExtensionCommands.damageActor(parentExt,u, String.valueOf(target.getId()),damage);
         ISFSObject stats = target.getVariable("stats").getSFSObjectValue();
         float currentHealth = stats.getInt("currentHealth")-damage;
@@ -51,7 +50,7 @@ public class Champion {
             stats.putDouble("pHealth", pHealth);
             ExtensionCommands.updateActorData(parentExt,u,updateData);
         }else{
-            handleDeath(parentExt,u);
+            handleDeath(parentExt,u,attacker);
         }
     }
 
@@ -76,8 +75,10 @@ public class Champion {
 
 
     //TODO: Implement player death
-    private static void handleDeath(ATBPExtension parentExt, User player){
-
+    private static void handleDeath(ATBPExtension parentExt, User player, String attacker){
+        Champion.setHealth(parentExt,player,0);
+        ExtensionCommands.knockOutActor(parentExt,player, String.valueOf(player.getId()),attacker,10);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new RespawnCharacter(parentExt,player.getLastJoinedRoom(),String.valueOf(player.getId())),10,TimeUnit.SECONDS);
     }
 
     public static void rangedAttackChampion(ATBPExtension parentExt, Room room, String attacker, String target, int damage){
@@ -148,10 +149,6 @@ public class Champion {
             updateData.putInt("maxHealth", (int) maxHealth);
             ExtensionCommands.updateActorData(parentExt,u,updateData);
         }
-    }
-
-    public static void handleBaseDeath(ATBPExtension parentExt, Room room, Base base){
-
     }
 
     private static void handleTowerDeath(ATBPExtension parentExt, User u, Tower tower, String attacker){ //Handles tower death
@@ -296,6 +293,23 @@ public class Champion {
         stats.putInt("currentHealth",(int)currentHealth);
         stats.putDouble("pHealth",pHealth);
     }
+
+    public static void setHealth(ATBPExtension parentExt, User u, int health){
+        ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
+        double currentHealth = health;
+        double maxHealth = stats.getInt("maxHealth");
+        if(currentHealth>maxHealth) currentHealth = maxHealth;
+        else if(currentHealth<0) currentHealth = 0;
+        double pHealth = currentHealth/maxHealth;
+        ISFSObject updateData = new SFSObject();
+        updateData.putUtfString("id", String.valueOf(u.getId()));
+        updateData.putInt("maxHealth",(int)maxHealth);
+        updateData.putInt("currentHealth",(int)currentHealth);
+        updateData.putDouble("pHealth",pHealth);
+        ExtensionCommands.updateActorData(parentExt,u,updateData);
+        stats.putInt("currentHealth",(int)currentHealth);
+        stats.putDouble("pHealth",pHealth);
+    }
 }
 
 class RangedAttack implements Runnable{ //Handles damage from ranged attacks
@@ -353,7 +367,7 @@ class RangedAttack implements Runnable{ //Handles damage from ranged attacks
         }else{
             User p = room.getUserById(Integer.parseInt(target));
             for(User u : room.getUserList()){
-                Champion.attackChampion(parentExt,u,p,damage);
+                Champion.attackChampion(parentExt,u,p,attacker,damage);
             }
         }
     }
@@ -379,6 +393,25 @@ class BuffHandler implements Runnable {
         u.getVariable("stats").getSFSObjectValue().putDouble(buff,currentStat-value);
         if(icon){
 
+        }
+    }
+}
+
+class RespawnCharacter implements  Runnable {
+
+    String id;
+    ATBPExtension parentExt;
+    Room room;
+
+    RespawnCharacter(ATBPExtension parentExt, Room room, String id){
+        this.parentExt = parentExt;
+        this.room = room;
+        this.id = id;
+    }
+    @Override
+    public void run() {
+        for(User u : room.getUserList()){
+            ExtensionCommands.respawnActor(parentExt,u,id);
         }
     }
 }

@@ -585,7 +585,7 @@ public class ATBPExtension extends SFSExtension {
         private void handleHealthRegen(){
             for(User u : room.getUserList()){
                 ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
-                if(stats.getInt("currentHealth") < stats.getInt("maxHealth")){
+                if(stats.getInt("currentHealth") > 0 && stats.getInt("currentHealth") < stats.getInt("maxHealth")){
                     double healthRegen = stats.getDouble("healthRegen");
                     Champion.updateHealth(ATBPExtension.this,u,(int)healthRegen);
                 }
@@ -666,9 +666,10 @@ public class ATBPExtension extends SFSExtension {
                                     }
                                 }
                                 for(User u : room.getUserList()){
+                                    int health = u.getVariable("stats").getSFSObjectValue().getInt("currentHealth");
                                     int userTeam = Integer.parseInt(u.getVariable("player").getSFSObjectValue().getUtfString("team"));
                                     Point2D currentPoint = getRelativePoint(u.getVariable("location").getSFSObjectValue());
-                                    if(m.getTeam() != userTeam && m.nearEntity(currentPoint) && m.facingEntity(currentPoint)){
+                                    if(m.getTeam() != userTeam && health > 0 && m.nearEntity(currentPoint) && m.facingEntity(currentPoint)){
                                         if(m.getTarget() == null){ //This will probably always be true.
                                             m.setTarget(ATBPExtension.this,String.valueOf(u.getId()));
                                             ExtensionCommands.setTarget(ATBPExtension.this,u,m.getId(), String.valueOf(u.getId()));
@@ -677,8 +678,10 @@ public class ATBPExtension extends SFSExtension {
                                 }
                                 break;
                             case 1: //PLAYER TARGET
-                                Point2D currentPoint = getRelativePoint(room.getUserById(Integer.parseInt(m.getTarget())).getVariable("location").getSFSObjectValue());
-                                if(!m.nearEntity(currentPoint)){ //Resets the minion's movement if it loses the target
+                                User target = room.getUserById(Integer.parseInt(m.getTarget()));
+                                Point2D currentPoint = getRelativePoint(target.getVariable("location").getSFSObjectValue());
+                                int health = target.getVariable("stats").getSFSObjectValue().getInt("currentHealth");
+                                if(!m.nearEntity(currentPoint) || health <= 0){ //Resets the minion's movement if it loses the target
                                     m.setState(0);
                                     m.move(ATBPExtension.this);
                                 }else{

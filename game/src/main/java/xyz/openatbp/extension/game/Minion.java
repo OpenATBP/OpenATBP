@@ -301,7 +301,7 @@ public class Minion {
                 else if(this.type == MinionType.SUPER) newCooldown = 1000;
                 this.attackCooldown = newCooldown;
                 User player = room.getUserById(Integer.parseInt(this.target));
-                if(this.type != MinionType.RANGED) Champion.attackChampion(parentExt,player,20);
+                if(this.type != MinionType.RANGED) Champion.attackChampion(parentExt,player,this.id,20);
                 else Champion.rangedAttackChampion(parentExt,room,this.id,this.target,20);
             }else if(attackCooldown == 300){
                 reduceAttackCooldown();
