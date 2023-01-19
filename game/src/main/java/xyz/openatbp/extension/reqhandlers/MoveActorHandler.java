@@ -7,6 +7,8 @@ import com.smartfoxserver.v2.entities.variables.UserVariable;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.GameManager;
+import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.game.champions.UserActor;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
@@ -18,8 +20,9 @@ public class MoveActorHandler extends BaseClientRequestHandler {
     @Override
     public void handleClientRequest(User sender, ISFSObject params) { //Called when player clicks on the map to move
         trace(params.getDump());
-
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
+        RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId());
+        UserActor user = roomHandler.getPlayer(String.valueOf(sender.getId()));
         String room = sender.getLastJoinedRoom().getGroupId();
         long timeSinceBasicAttack = sender.getVariable("stats").getSFSObjectValue().getLong("timeSinceBasicAttack");
         if ((System.currentTimeMillis() - timeSinceBasicAttack) < 500) return; //hard coded, this seems to be when the projectile should leaving during the animation
@@ -80,6 +83,9 @@ public class MoveActorHandler extends BaseClientRequestHandler {
         ISFSObject currentLoc = new SFSObject();
         currentLoc.putFloat("x",(float)movementLine.getX1());
         currentLoc.putFloat("z",(float)movementLine.getY1());
+        Point2D startLoc = movementLine.getP1();
+        Point2D endLoc = new Point2D.Float(destx,destz);
+        user.setPath(startLoc,endLoc);
         userLocation.putSFSObject("p1",currentLoc);
         userLocation.putFloat("time",0);
         userLocation.putFloat("speed",params.getFloat("speed"));
