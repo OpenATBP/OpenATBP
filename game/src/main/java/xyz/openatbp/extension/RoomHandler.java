@@ -5,6 +5,7 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.game.*;
+import xyz.openatbp.extension.game.champions.FlamePrincess;
 import xyz.openatbp.extension.game.champions.UserActor;
 
 import java.awt.geom.Line2D;
@@ -40,7 +41,7 @@ public class RoomHandler implements Runnable{
         bases[0] = new Base(0);
         bases[1] = new Base(1);
         for(User u : room.getUserList()){
-            players.add(new UserActor(u));
+            players.add(Champion.getCharacterClass(u,parentExt));
         }
     }
     @Override
@@ -65,7 +66,6 @@ public class RoomHandler implements Runnable{
                             spawns.putInt(s,spawns.getInt(s)+1);
                         }
                     }else{
-                        System.out.println("Checking health! " + s);
                         int time = spawns.getInt(s);
                         if(time == 10){
                             spawnHealth(s);
@@ -85,9 +85,9 @@ public class RoomHandler implements Runnable{
         try{
             mSecondsRan+=100;
             for(UserActor u : players){ //Tracks player location
-                float x = (float) u.getLocation().getX();
-                float z = (float) u.getLocation().getY();
-                Point2D currentPoint = u.getRelativePoint();
+                float x = (float) u.getOriginalLocation().getX();
+                float z = (float) u.getOriginalLocation().getY();
+                Point2D currentPoint = u.getLocation();
                 if(currentPoint.getX() != x && currentPoint.getY() != z){
                     u.updateMovementTime();
                 }
@@ -131,7 +131,7 @@ public class RoomHandler implements Runnable{
                         for(UserActor u : players){
                             int health = u.getHealth();
                             int userTeam = u.getTeam();
-                            Point2D currentPoint = u.getRelativePoint();
+                            Point2D currentPoint = u.getLocation();
                             if(m.getTeam() != userTeam && health > 0 && m.nearEntity(currentPoint) && m.facingEntity(currentPoint)){
                                 if(m.getTarget() == null){ //This will probably always be true.
                                     m.setTarget(parentExt,u.getId());
@@ -142,7 +142,7 @@ public class RoomHandler implements Runnable{
                         break;
                     case 1: //PLAYER TARGET
                         UserActor target = getPlayer(m.getTarget());
-                        Point2D currentPoint = target.getRelativePoint();
+                        Point2D currentPoint = target.getLocation();
                         int health = target.getHealth();
                         if(!m.nearEntity(currentPoint) || health <= 0){ //Resets the minion's movement if it loses the target
                             m.setState(0);
@@ -242,10 +242,10 @@ public class RoomHandler implements Runnable{
             towers.removeIf(t -> (t.getHealth()<=0));
             //TODO: Add minion waves
             if(mSecondsRan == 5000){
-                this.addMinion(1,0,0,1);
+                //this.addMinion(1,0,0,1);
                 //this.addMinion(0,0,0,1);
             }else if(mSecondsRan == 7000){
-                this.addMinion(1,1,0,1);
+                //this.addMinion(1,1,0,1);
                 //this.addMinion(0,1,0,1);
             }else if(mSecondsRan == 9000){
                 //this.addMinion(0,2,0);
@@ -291,7 +291,7 @@ public class RoomHandler implements Runnable{
                 ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
                 if(spawns.getInt(s) == 91){
                     for(UserActor u : players){
-                        Point2D currentPoint = u.getRelativePoint();
+                        Point2D currentPoint = u.getLocation();
                         if(insideHealth(currentPoint,getHealthNum(s))){
                             int team = u.getTeam();
                             Point2D healthLoc = getHealthLocation(getHealthNum(s));
@@ -443,7 +443,7 @@ public class RoomHandler implements Runnable{
         for(UserActor u : players){
 
             int team = u.getTeam();
-            Point2D currentPoint = u.getRelativePoint();
+            Point2D currentPoint = u.getLocation();
             for(int i = 0; i < 3; i++){ // 0 is top, 1 is mid, 2 is bot
                 if(insideAltar(currentPoint,i)){
                     playerInside[i] = true;

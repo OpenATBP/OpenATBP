@@ -1,13 +1,22 @@
 package xyz.openatbp.extension.game;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
+import com.smartfoxserver.v2.entities.SFSUser;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.game.champions.FlamePrincess;
+import xyz.openatbp.extension.game.champions.UserActor;
 
+import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
+import java.awt.geom.Point2D;
+import java.util.ArrayList;
+import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 
 public class Champion {
@@ -309,6 +318,96 @@ public class Champion {
         ExtensionCommands.updateActorData(parentExt,u,updateData);
         stats.putInt("currentHealth",(int)currentHealth);
         stats.putDouble("pHealth",pHealth);
+    }
+
+    public static UserActor getCharacterClass(User u, ATBPExtension parentExt){
+        String avatar = u.getVariable("player").getSFSObjectValue().getUtfString("avatar");
+        String character = avatar.split("_")[0];
+        switch(character){
+            case "flame":
+                return new FlamePrincess(u,parentExt);
+        }
+        return new UserActor(u, parentExt);
+    }
+
+    public static JsonNode getSpellData(ATBPExtension parentExt, String avatar, int spell){
+        JsonNode actorDef = parentExt.getDefintion(avatar);
+        return actorDef.get("MonoBehaviours").get("ActorData").get("spell"+spell);
+    }
+
+    public static Point2D getDashPoint(ATBPExtension parentExt, UserActor player, Point2D dest){
+        String room = player.getUser().getLastJoinedRoom().getGroupId();
+        Line2D movementLine = new Line2D.Float(player.getLocation(),dest);
+        ArrayList<Vector<Float>>[] colliders = parentExt.getColliders(room); //Gets all collision object vertices
+        ArrayList<Path2D> mapPaths = parentExt.getMapPaths(room); //Gets all created paths for the collision objects
+        for(int i = 0; i < mapPaths.size(); i++){
+            if(mapPaths.get(i).contains(movementLine.getP2())){
+                ArrayList<Vector<Float>> collider = colliders[i];
+                for(int g = 0; g < collider.size(); g++){ //Check all vertices in the collider
+
+                    Vector<Float> v = collider.get(g);
+                    Vector<Float> v2;
+                    if(g+1 == collider.size()){ //If it's the final vertex, loop to the beginning
+                        v2 = collider.get(0);
+                    }else{
+                        v2 = collider.get(g+1);
+                    }
+
+
+                    Line2D colliderLine = new Line2D.Float(v.get(0),v.get(1),v2.get(0),v2.get(1)); //Draws a line segment for the sides of the collider
+                    if(movementLine.intersectsLine(colliderLine)){ //If the player movement intersects a side
+                        Line2D newMovementLine = new Line2D.Float(movementLine.getP1(),getIntersectionPoint(movementLine,colliderLine));
+                        return collidePlayer(newMovementLine,mapPaths.get(i));
+                    }
+                }
+            }
+        }
+        return dest;
+    }
+
+    private static Point2D collidePlayer(Line2D movementLine, Path2D collider){
+        Point2D[] points = findAllPoints(movementLine);
+        Point2D p = movementLine.getP1();
+        for(int i = points.length-2; i>0; i--){ //Searchs all points in the movement line to see how close it can move without crashing into the collider
+            Point2D p2 = new Point2D.Double(points[i].getX(),points[i].getY());
+            Line2D line = new Line2D.Double(movementLine.getP1(),p2);
+            if(collider.intersects(line.getBounds())){
+                System.out.println("Intersects!");
+                p = p2;
+                break;
+            }else{
+                System.out.println("Does not intersect!");
+            }
+        }
+        return p;
+    }
+
+    private static Point2D getIntersectionPoint(Line2D line, Line2D line2){ //Finds the intersection of two lines
+        float slope1 = (float)((line.getP2().getY() - line.getP1().getY())/(line.getP2().getX()-line.getP1().getX()));
+        float slope2 = (float)((line2.getP2().getY() - line2.getP1().getY())/(line2.getP2().getX()-line2.getP1().getX()));
+        float intercept1 = (float)(line.getP2().getY()-(slope1*line.getP2().getX()));
+        float intercept2 = (float)(line2.getP2().getY()-(slope2*line2.getP2().getX()));
+        float x = (intercept2-intercept1)/(slope1-slope2);
+        float y = slope1 * ((intercept2-intercept1)/(slope1-slope2)) + intercept1;
+        return new Point2D.Float(x,y);
+    }
+
+    private static Point2D[] findAllPoints(Line2D line){ //Finds all points within a line
+        int arrayLength = (int)(line.getP1().distance(line.getP2()))*30; //Longer movement have more precision when checking collisions
+        if(arrayLength < 8) arrayLength = 8;
+        Point2D[] points = new Point2D[arrayLength];
+        float slope = (float)((line.getP2().getY() - line.getP1().getY())/(line.getP2().getX()-line.getP1().getX()));
+        float intercept = (float)(line.getP2().getY()-(slope*line.getP2().getX()));
+        float distance = (float)(line.getX2()-line.getX1());
+        int pValue = 0;
+        for(int i = 0; i < points.length; i++){ //Finds the points on the line based on distance
+            float x = (float)line.getP1().getX()+((distance/points.length)*i);
+            float y = slope*x + intercept;
+            Point2D point = new Point2D.Float(x,y);
+            points[pValue] = point;
+            pValue++;
+        }
+        return points;
     }
 }
 
