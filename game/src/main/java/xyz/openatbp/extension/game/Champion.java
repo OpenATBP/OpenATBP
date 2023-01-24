@@ -9,13 +9,16 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.champions.FlamePrincess;
 import xyz.openatbp.extension.game.champions.UserActor;
 
+import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 
@@ -263,6 +266,7 @@ public class Champion {
         double value = 0;
         boolean icon = false;
         String effect = null;
+        String iconString = null;
         switch(buff){
             case HEALTH_PACK:
                 stat = "healthRegen";
@@ -272,17 +276,28 @@ public class Champion {
                 break;
             case ATTACK_ALTAR:
                 break;
+            case POLYMORPH:
+                double currentSpeed = u.getVariable("stats").getSFSObjectValue().getDouble("speed");
+                value = currentSpeed*-0.15f;
+                stat = "speed";
+                icon = true;
+                effect = "flambit_aoe";
+                duration = 3f;
+                ExtensionCommands.swapActorAsset(parentExt,u, String.valueOf(u.getId()),"flambit");
+                break;
         }
         ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
         if(stat != null && stats.getDouble(stat) != null){
             double newStat = stats.getDouble(stat) + value;
             stats.putDouble(stat,newStat);
+            ISFSObject updateData = new SFSObject();
+            updateData.putUtfString("id", String.valueOf(u.getId()));
+            updateData.putDouble(stat,newStat);
+            ExtensionCommands.updateActorData(parentExt,u,updateData);
             int interval = (int) Math.floor(duration*1000);
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(new BuffHandler(u,stat,value,icon),interval,TimeUnit.MILLISECONDS);
-            if(effect != null && effect.length() > 0){
-                int team = Integer.parseInt(u.getVariable("player").getSFSObjectValue().getUtfString("team"));
-                ExtensionCommands.createActorFX(parentExt,u.getLastJoinedRoom(),String.valueOf(u.getId()),effect,interval,effect+u.getId(),true,"",false,false,team);
-            }
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new BuffHandler(parentExt,u,buff,stat,value,icon),interval,TimeUnit.MILLISECONDS);
+            int team = Integer.parseInt(u.getVariable("player").getSFSObjectValue().getUtfString("team"));
+            ExtensionCommands.createActorFX(parentExt,u.getLastJoinedRoom(),String.valueOf(u.getId()),effect,interval,effect+u.getId(),true,"",false,false,team);
         }
     }
 
@@ -409,6 +424,18 @@ public class Champion {
         }
         return points;
     }
+
+    public static List<UserActor> getUsersInRadius(RoomHandler room, Point2D center, float radius){
+        List<UserActor> allUsers = room.getPlayers();
+        List<UserActor> affectedUsers = new ArrayList<>(allUsers.size());
+        Ellipse2D circle = new Ellipse2D.Double(center.getX()-radius,center.getY()-radius,radius*2,radius*2);
+        System.out.println("Circle center: " + circle.getCenterX() + "," + circle.getCenterY());
+        for(UserActor user : allUsers){
+            Point2D location = user.getLocation();
+            if(circle.contains(location)) affectedUsers.add(user);
+        }
+        return affectedUsers;
+    }
 }
 
 class RangedAttack implements Runnable{ //Handles damage from ranged attacks
@@ -475,23 +502,43 @@ class RangedAttack implements Runnable{ //Handles damage from ranged attacks
 class BuffHandler implements Runnable {
 
     User u;
-    String buff;
+    Buff buff;
+    String buffName;
     double value;
     boolean icon;
+    ATBPExtension parentExt;
 
-    BuffHandler(User u, String buff, double value, boolean icon){
+    BuffHandler(User u, Buff buff, String buffName, double value, boolean icon){
         this.u = u;
-        this.buff = buff;
+        this.buffName = buffName;
         this.value = value;
         this.icon = icon;
+        this.buff = buff;
+    }
+
+    BuffHandler(ATBPExtension parentExt,User u, Buff buff, String buffName, double value, boolean icon){
+        this.u = u;
+        this.buffName = buffName;
+        this.value = value;
+        this.icon = icon;
+        this.buff = buff;
+        this.parentExt = parentExt;
     }
 
     @Override
     public void run() {
-        double currentStat = u.getVariable("stats").getSFSObjectValue().getDouble(buff);
-        u.getVariable("stats").getSFSObjectValue().putDouble(buff,currentStat-value);
+        double currentStat = u.getVariable("stats").getSFSObjectValue().getDouble(buffName);
+        u.getVariable("stats").getSFSObjectValue().putDouble(buffName,currentStat-value);
+        ISFSObject data = new SFSObject();
+        data.putUtfString("id", String.valueOf(u.getId()));
+        data.putDouble(buffName,currentStat-value);
+        ExtensionCommands.updateActorData(parentExt,u,data);
         if(icon){
 
+        }
+        if(buff == Buff.POLYMORPH){
+            ExtensionCommands.swapActorAsset(parentExt,u, String.valueOf(u.getId()),u.getVariable("player").getSFSObjectValue().getUtfString("avatar"));
+            parentExt.getRoomHandler(u.getLastJoinedRoom().getId()).getPlayer(String.valueOf(u.getId())).setState(ActorState.POLYMORPH,false);
         }
     }
 }

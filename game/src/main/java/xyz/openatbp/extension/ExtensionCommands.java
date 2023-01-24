@@ -8,6 +8,7 @@ import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
+import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Champion;
 
 import java.awt.geom.Point2D;
@@ -375,5 +376,13 @@ public class ExtensionCommands {
         for(User u : room.getUserList()){
             parentExt.send("cmd_snap_actor",data,u);
         }
+    }
+
+    public static void updateActorState(ATBPExtension parentExt, User u, String id, ActorState state, boolean enabled){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("id", String.valueOf(u.getId()));
+        data.putInt("state",state.ordinal());
+        data.putBool("enable", enabled);
+        parentExt.send("cmd_update_actor_state",data,u);
     }
 }

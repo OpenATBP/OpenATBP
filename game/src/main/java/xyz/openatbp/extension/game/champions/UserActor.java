@@ -4,11 +4,15 @@ import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.Actor;
+import xyz.openatbp.extension.game.ActorState;
 
 import java.awt.*;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.util.HashMap;
+import java.util.Map;
 
 public class UserActor extends Actor {
 
@@ -17,6 +21,7 @@ public class UserActor extends Actor {
     private Point2D destination;
     private Point2D originalLocation;
     private float timeTraveled = 0;
+    protected Map<ActorState, Boolean> states;
 
     public UserActor(User u, ATBPExtension parentExt){
         this.parentExt = parentExt;
@@ -29,6 +34,10 @@ public class UserActor extends Actor {
         float z = playerLoc.getSFSObject("p1").getFloat("z");
         this.location = new Point2D.Float(x,z);
         this.speed = getStat("speed");
+        states = new HashMap<>(ActorState.values().length);
+        for(ActorState s : ActorState.values()){
+            states.put(s, false);
+        }
     }
 
     public Point2D getRelativePoint(){ //Gets player's current location based on time
@@ -106,6 +115,30 @@ public class UserActor extends Actor {
     }
     public void setCanMove(boolean canMove){
         this.canMove = canMove;
+    }
+
+    public void setState(ActorState state, boolean stateBool){
+        states.put(state,stateBool);
+        ExtensionCommands.updateActorState(parentExt,player,id,state,stateBool);
+    }
+
+    public void setState(ActorState[] states, boolean stateBool){
+        for(ActorState s : states){
+            this.states.put(s,stateBool);
+            ExtensionCommands.updateActorState(parentExt,player,id,s,stateBool);
+        }
+    }
+
+    public boolean isState(ActorState state){
+        return this.states.get(state);
+    }
+
+    public boolean canUseAbility(){
+        ActorState[] hinderingStates = {ActorState.POLYMORPH, ActorState.AIRBORNE, ActorState.CHARMED, ActorState.FEARED, ActorState.SILENCED, ActorState.STUNNED};
+        for(ActorState s : hinderingStates){
+            if(this.states.get(s)) return false;
+        }
+        return true;
     }
 
     protected class MovementStopper implements Runnable {

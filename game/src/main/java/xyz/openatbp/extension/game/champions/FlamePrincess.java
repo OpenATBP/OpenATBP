@@ -6,9 +6,13 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.game.ActorState;
+import xyz.openatbp.extension.game.Buff;
 import xyz.openatbp.extension.game.Champion;
 
 import java.awt.geom.Point2D;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class FlamePrincess extends UserActor{
@@ -27,13 +31,16 @@ public class FlamePrincess extends UserActor{
             case 1: //Q
                 break;
             case 2: //W
-                ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"fx_target_ring_2","flame_w",3000, abilityData.getFloat("x"), abilityData.getFloat("z"),true,this.team,0f);
+                ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"fx_target_ring_2","flame_w",1000, abilityData.getFloat("x"), abilityData.getFloat("z"),true,this.team,0f);
+                ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"flame_princess_polymorph_fireball","flame_w_polymorph",1000, abilityData.getFloat("x"),abilityData.getFloat("z"),false,this.team,0f);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new AbilityRunnable(ability,abilityData), 500, TimeUnit.MILLISECONDS);
                 break;
             case 3: //E
                 if(!ultStarted && ultUses == 3){
                     int duration = Champion.getSpellData(parentExt,this.avatar,ability).get("spellDuration").asInt();
                     ultStarted = true;
                     ultFinished = false;
+                    this.setState(ActorState.TRANSFORMED, true);
                     ExtensionCommands.playSound(this.parentExt,this.player,"vo/vo_flame_princess_flame_form",this.getLocation());
                     ExtensionCommands.playSound(this.parentExt,this.player,"sfx_flame_princess_flame_form",this.getLocation());
                     ExtensionCommands.swapActorAsset(this.parentExt,this.player,this.id,"flame_ult");
@@ -82,9 +89,14 @@ public class FlamePrincess extends UserActor{
     private class AbilityRunnable implements Runnable {
 
         int ability;
+        ISFSObject abilityData;
 
         AbilityRunnable(int ability){
             this.ability = ability;
+        }
+        AbilityRunnable(int ability, ISFSObject abilityData){
+            this.ability = ability;
+            this.abilityData = abilityData;
         }
 
         @Override
@@ -93,6 +105,16 @@ public class FlamePrincess extends UserActor{
                 case 1:
                     break;
                 case 2:
+                    RoomHandler roomHandler = parentExt.getRoomHandler(player.getLastJoinedRoom().getId());
+                    Point2D center = new Point2D.Float(this.abilityData.getFloat("x"),this.abilityData.getFloat("z"));
+                    List<UserActor> affectedUsers = Champion.getUsersInRadius(roomHandler,center,2);
+                    for(UserActor u : affectedUsers){
+                        System.out.println("Hit: " + u.getAvatar());
+                        u.setState(ActorState.POLYMORPH, true);
+                        Champion.attackChampion(parentExt, player, u.getUser(), id, 50);
+                        Champion.giveBuff(parentExt,u.getUser(), Buff.POLYMORPH);
+                    }
+                    System.out.println("Ability done!");
                     break;
                 case 3:
                     if(!ultFinished && ultStarted){
@@ -100,6 +122,7 @@ public class FlamePrincess extends UserActor{
                         JsonNode spellData = Champion.getSpellData(parentExt,avatar,ability);
                         int cooldown = spellData.get("spellCoolDown").asInt();
                         int gCooldown = spellData.get("spellGlobalCoolDown").asInt();
+                        setState(ActorState.TRANSFORMED, false);
                         ExtensionCommands.removeFx(parentExt,player,"flame_e");
                         ExtensionCommands.swapActorAsset(parentExt,player,id,avatar);
                         ExtensionCommands.actorAbilityResponse(parentExt,player,getAbilityString(ability),true,cooldown,gCooldown);

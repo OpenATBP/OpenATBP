@@ -39,6 +39,7 @@ public abstract class Actor {
     public void setLocation(Point2D location){
         this.location = location;
     }
+    public String getAvatar(){return this.avatar;}
 
     public abstract Room getRoom();
 }

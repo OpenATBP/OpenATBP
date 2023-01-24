@@ -76,6 +76,23 @@ public class RoomHandler implements Runnable{
                         }
                     }
                 }
+                for(UserActor u : players){
+                    if(u.isState(ActorState.POLYMORPH)){
+                        for(UserActor a : Champion.getUsersInRadius(this,u.getLocation(),2)){
+                            if(a.getTeam() == u.getTeam()){
+                                System.out.println("Damaging: " + a.getAvatar());
+                                Champion.attackChampion(parentExt,u.getUser(),a.getUser(),u.getId(),50);
+                            }
+                        }
+                    }else if(u.isState(ActorState.TRANSFORMED) && u.getAvatar().contains("flame")){
+                        for(UserActor a : Champion.getUsersInRadius(this,u.getLocation(),2)){
+                            if(a.getTeam() == u.getTeam()){ //TODO: Set so FP doesn't target her team or self
+                                System.out.println("Damaging: " + a.getAvatar());
+                                Champion.attackChampion(parentExt,u.getUser(),a.getUser(),u.getId(),75);
+                            }
+                        }
+                    }
+                }
                 handleCooldowns();
                 secondsRan++;
             }catch(Exception e){
@@ -91,6 +108,7 @@ public class RoomHandler implements Runnable{
                 if(currentPoint.getX() != x && currentPoint.getY() != z){
                     u.updateMovementTime();
                 }
+
             }
             handleHealth();
             for(Minion m : minions){ //Handles minion behavior

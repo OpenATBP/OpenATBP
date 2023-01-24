@@ -26,35 +26,37 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         UserActor player = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId()).getPlayer(String.valueOf(sender.getId()));
         trace(params.getDump());
+        if(player.canUseAbility()){
+            String userId = String.valueOf(sender.getId());
+            String ability = params.getUtfString("id");
+            float x = params.getFloat("x");
+            float y = 0f;
+            float z = params.getFloat("z");
+            float fx = params.getFloat("fx");
+            float fy = params.getFloat("fy");
+            float fz = params.getFloat("fz");
 
-        String userId = String.valueOf(sender.getId());
-        String ability = params.getUtfString("id");
-        float x = params.getFloat("x");
-        float y = params.getFloat("y");
-        float z = params.getFloat("z");
-        float fx = params.getFloat("fx");
-        float fy = params.getFloat("fy");
-        float fz = params.getFloat("fz");
+            ISFSObject specialAttackData = new SFSObject();
+            List<Float> location = new ArrayList<>(Arrays.asList(x, y, z));
+            specialAttackData.putUtfString("id", userId);
+            specialAttackData.putFloatArray("location", location);
+            specialAttackData.putUtfString("ability", ability);
+            Point2D loc = player.getLocation();
+            ExtensionCommands.moveActor(parentExt,sender, String.valueOf(sender.getId()),loc,loc,1f,false);
+            player.setLocation(loc);
+            player.setCanMove(false);
+            GameManager.sendAllUsers(parentExt, specialAttackData,"cmd_special_attack", sender.getLastJoinedRoom());
 
-        ISFSObject specialAttackData = new SFSObject();
-        List<Float> location = new ArrayList<>(Arrays.asList(x, y, z));
-        specialAttackData.putUtfString("id", userId);
-        specialAttackData.putFloatArray("location", location);
-        specialAttackData.putUtfString("ability", ability);
-        Point2D loc = player.getLocation();
-        ExtensionCommands.moveActor(parentExt,sender, String.valueOf(sender.getId()),loc,loc,1f,false);
-        player.setLocation(loc);
-        player.setCanMove(false);
-        GameManager.sendAllUsers(parentExt, specialAttackData,"cmd_special_attack", sender.getLastJoinedRoom());
+            String playerActor = sender.getVariable("player").getSFSObjectValue().getUtfString("avatar");
+            int spellNum = getAbilityNum(params.getUtfString("id"));
+            JsonNode spellData = getSpellData(playerActor,spellNum);
+            int cooldown = spellData.get("spellCoolDown").asInt();
+            int gCooldown = spellData.get("spellGlobalCoolDown").asInt();
+            int castDelay = spellData.get("castDelay").asInt();
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new DelayedAbility(player,spellNum),castDelay,TimeUnit.MILLISECONDS);
+            player.useAbility(spellNum,params);
+        }
 
-        String playerActor = sender.getVariable("player").getSFSObjectValue().getUtfString("avatar");
-        int spellNum = getAbilityNum(params.getUtfString("id"));
-        JsonNode spellData = getSpellData(playerActor,spellNum);
-        int cooldown = spellData.get("spellCoolDown").asInt();
-        int gCooldown = spellData.get("spellGlobalCoolDown").asInt();
-        int castDelay = spellData.get("castDelay").asInt();
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new DelayedAbility(player,spellNum),castDelay,TimeUnit.MILLISECONDS);
-        player.useAbility(spellNum,params);
     }
 
     private JsonNode getSpellData(String avatar, int spell){
