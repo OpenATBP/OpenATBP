@@ -1,6 +1,7 @@
 package xyz.openatbp.extension;
 
 import com.smartfoxserver.v2.entities.Room;
+import com.smartfoxserver.v2.entities.SFSUser;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
@@ -12,6 +13,7 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class RoomHandler implements Runnable{
     private ATBPExtension parentExt;
@@ -19,6 +21,7 @@ public class RoomHandler implements Runnable{
     private ArrayList<Minion> minions;
     private ArrayList<Tower> towers;
     private ArrayList<UserActor> players;
+    private List<Projectile> activeProjectiles;
     private Base[] bases = new Base[2];
     private int mSecondsRan = 0;
     private int secondsRan = 0;
@@ -43,6 +46,7 @@ public class RoomHandler implements Runnable{
         for(User u : room.getUserList()){
             players.add(Champion.getCharacterClass(u,parentExt));
         }
+        activeProjectiles = new ArrayList<>();
     }
     @Override
     public void run() {
@@ -109,6 +113,21 @@ public class RoomHandler implements Runnable{
                     u.updateMovementTime();
                 }
 
+            }
+            for(Projectile p : activeProjectiles){
+                p.updateTimeTraveled();
+                if(p.getDestination().distance(p.getLocation()) <= 0.01){
+                    System.out.println("Removing projectile");
+                    p.destroy();
+                    activeProjectiles.remove(p);
+                    break;
+                }
+                UserActor hitActor = p.checkPlayerCollision(this);
+                if(hitActor != null){
+                    System.out.println("Hit w/ projectile: " + hitActor.getAvatar());
+                    activeProjectiles.remove(p);
+                    break;
+                }
             }
             handleHealth();
             for(Minion m : minions){ //Handles minion behavior
@@ -671,5 +690,9 @@ public class RoomHandler implements Runnable{
             if(p.getId().equalsIgnoreCase(id)) return p;
         }
         return null;
+    }
+
+    public void addProjectile(Projectile p){
+        this.activeProjectiles.add(p);
     }
 }

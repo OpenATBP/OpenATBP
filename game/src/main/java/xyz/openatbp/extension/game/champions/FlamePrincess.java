@@ -10,7 +10,9 @@ import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Buff;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.Projectile;
 
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -18,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 public class FlamePrincess extends UserActor{
 
     private boolean ultFinished = false;
+    private boolean passiveEnabled = false;
     private boolean ultStarted = false;
     private int ultUses = 3;
 
@@ -27,8 +30,19 @@ public class FlamePrincess extends UserActor{
 
     @Override
     public void useAbility(int ability, ISFSObject abilityData){
+        if(ability != 3 && !passiveEnabled){
+            ExtensionCommands.createActorFX(parentExt,player,id,"flame_princess_passive_flames",1000*60,"flame_passive",true,"",false,false,team);
+            passiveEnabled = true;
+        }
         switch(ability){
             case 1: //Q
+                float x = abilityData.getFloat("x");
+                float z = abilityData.getFloat("z");
+                Point2D endLocation = new Point2D.Float(x,z);
+                Line2D skillShotLine = new Line2D.Float(this.location,endLocation);
+                Line2D maxRangeLine = Champion.getMaxRangeLine(skillShotLine,8f);
+                ExtensionCommands.createProjectile(parentExt,this.room,this,"projectile_flame_cone", maxRangeLine.getP1(), maxRangeLine.getP2(), 8f);
+                this.parentExt.getRoomHandler(this.room.getId()).addProjectile(new FlameProjectile(this,maxRangeLine,8f,0.5f,this.id+"projectile_flame_cone"));
                 break;
             case 2: //W
                 ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"fx_target_ring_2","flame_w",1000, abilityData.getFloat("x"), abilityData.getFloat("z"),true,this.team,0f);
@@ -48,6 +62,7 @@ public class FlamePrincess extends UserActor{
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new AbilityRunnable(ability),duration, TimeUnit.MILLISECONDS);
                 }else{
                     if(ultUses>0){
+                        //TODO: Fix so FP can dash and still get health packs
                         ultUses--;
                         Point2D dest = new Point2D.Float(abilityData.getFloat("x"),abilityData.getFloat("z"));
                         ExtensionCommands.moveActor(parentExt,player,id,getLocation(),Champion.getDashPoint(parentExt,this,dest),20f,true);
@@ -141,4 +156,30 @@ public class FlamePrincess extends UserActor{
             }
         }
     }
+
+    private class FlameProjectile extends Projectile {
+
+        public FlameProjectile(UserActor owner, Line2D path, float speed, float hitboxRadius, String id) {
+            super(owner, path, speed, hitboxRadius, id);
+        }
+
+        @Override
+        public void hit(UserActor victim){
+            if(victim.getAvatar() == null){ //Test
+                ExtensionCommands.moveActor(parentExt,player,this.id,this.location,this.location,this.speed,false);
+                ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_projectile_large_explosion",200,"flame_explosion",false,"",false,false,team);
+                ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_cone_of_flames",300,"flame_cone",false,"",true,false,team);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new DelayedProjectile(), 300, TimeUnit.MILLISECONDS);
+            }
+        }
+
+        private class DelayedProjectile implements Runnable {
+
+            @Override
+            public void run() {
+                ExtensionCommands.destroyActor(parentExt,player,FlameProjectile.this.id);
+            }
+        }
+    }
+
 }

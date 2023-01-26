@@ -10,6 +10,7 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.champions.UserActor;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -384,5 +385,12 @@ public class ExtensionCommands {
         data.putInt("state",state.ordinal());
         data.putBool("enable", enabled);
         parentExt.send("cmd_update_actor_state",data,u);
+    }
+
+    public static void createProjectile(ATBPExtension parentExt, Room room, UserActor owner, String id, Point2D loc, Point2D dest, float speed){
+        for(User u : room.getUserList()){
+            ExtensionCommands.createActor(parentExt,u, owner.getId() + id, id,loc,0f,owner.getTeam());
+            ExtensionCommands.moveActor(parentExt,u, owner.getId()+id,loc,dest,speed,true);
+        }
     }
 }

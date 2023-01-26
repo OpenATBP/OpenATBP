@@ -8,11 +8,12 @@ import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.Actor;
 import xyz.openatbp.extension.game.ActorState;
 
-import java.awt.*;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 
 public class UserActor extends Actor {
 
@@ -38,9 +39,16 @@ public class UserActor extends Actor {
         for(ActorState s : ActorState.values()){
             states.put(s, false);
         }
+        this.room = u.getLastJoinedRoom();
     }
 
-    public Point2D getRelativePoint(){ //Gets player's current location based on time
+    public UserActor(){
+    }
+
+    protected Point2D getRelativePoint(boolean external){ //Gets player's current location based on time
+        double currentTime = -1;
+        if(external) currentTime = this.timeTraveled + 0.1;
+        else currentTime = this.timeTraveled;
         Point2D rPoint = new Point2D.Float();
         if(this.destination == null) this.destination = this.location;
         float x2 = (float) this.destination.getX();
@@ -52,7 +60,6 @@ public class UserActor extends Actor {
         double dist = movementLine.getP1().distance(movementLine.getP2());
         if(dist == 0) return this.originalLocation;
         double time = dist/speed;
-        double currentTime = this.timeTraveled + 0.1;
         if(currentTime>time) currentTime=time;
         double currentDist = speed*currentTime;
         float x = (float)(x1+(currentDist/dist)*(x2-x1));
@@ -98,7 +105,7 @@ public class UserActor extends Actor {
 
     @Override
     public Point2D getLocation(){
-        return this.getRelativePoint();
+        return this.getRelativePoint(true);
     }
 
     @Override
@@ -139,6 +146,11 @@ public class UserActor extends Actor {
             if(this.states.get(s)) return false;
         }
         return true;
+    }
+
+    public Line2D getMovementLine(){
+        if(this.originalLocation != null && this.destination != null)  return new Line2D.Double(this.originalLocation,this.destination);
+        else return new Line2D.Double(this.location,this.location);
     }
 
     protected class MovementStopper implements Runnable {

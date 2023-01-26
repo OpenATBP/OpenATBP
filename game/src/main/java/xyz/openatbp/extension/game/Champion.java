@@ -397,13 +397,14 @@ public class Champion {
         return p;
     }
 
-    private static Point2D getIntersectionPoint(Line2D line, Line2D line2){ //Finds the intersection of two lines
+    public static Point2D getIntersectionPoint(Line2D line, Line2D line2){ //Finds the intersection of two lines
         float slope1 = (float)((line.getP2().getY() - line.getP1().getY())/(line.getP2().getX()-line.getP1().getX()));
         float slope2 = (float)((line2.getP2().getY() - line2.getP1().getY())/(line2.getP2().getX()-line2.getP1().getX()));
         float intercept1 = (float)(line.getP2().getY()-(slope1*line.getP2().getX()));
         float intercept2 = (float)(line2.getP2().getY()-(slope2*line2.getP2().getX()));
         float x = (intercept2-intercept1)/(slope1-slope2);
         float y = slope1 * ((intercept2-intercept1)/(slope1-slope2)) + intercept1;
+        if(Float.isNaN(x) || Float.isNaN(y)) return line.getP1();
         return new Point2D.Float(x,y);
     }
 
@@ -435,6 +436,38 @@ public class Champion {
             if(circle.contains(location)) affectedUsers.add(user);
         }
         return affectedUsers;
+    }
+
+    public static UserActor getUserInLine(RoomHandler room, List<UserActor> exemptedUsers, Line2D line){
+        UserActor hitActor = null;
+        double closestDistance = 100;
+        for(UserActor u : room.getPlayers()){
+            if(!exemptedUsers.contains(u)){
+                if(line.intersectsLine(u.getMovementLine())){
+                    if(u.getLocation().distance(line.getP1()) < closestDistance){
+                        closestDistance = u.getLocation().distance(line.getP1());
+                        hitActor = u;
+                    }
+                }
+            }
+        }
+        if(hitActor != null){
+            Point2D intersectionPoint = getIntersectionPoint(line,hitActor.getMovementLine());
+        }
+        return hitActor;
+    }
+
+    public static Line2D getMaxRangeLine(Line2D projectileLine, float spellRange){
+        float remainingRange = (float) (spellRange-projectileLine.getP1().distance(projectileLine.getP2()));
+        if(projectileLine.getP1().distance(projectileLine.getP2()) >= spellRange-0.01) return projectileLine;
+        float slope = (float)((projectileLine.getP2().getY() - projectileLine.getP1().getY())/(projectileLine.getP2().getX()-projectileLine.getP1().getX()));
+        float intercept = (float)(projectileLine.getP2().getY()-(slope*projectileLine.getP2().getX()));
+        float deltaX = (float) (projectileLine.getX2()-projectileLine.getX1());
+        float x = (float)projectileLine.getP2().getX()+(remainingRange);
+        if (deltaX < 0) x = (float)projectileLine.getX2()-remainingRange;
+        float y = slope*x + intercept;
+        Point2D newPoint = new Point2D.Float(x,y);
+        return new Line2D.Float(projectileLine.getP1(),newPoint);
     }
 }
 
