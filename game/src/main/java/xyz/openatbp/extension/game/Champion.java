@@ -3,7 +3,6 @@ package xyz.openatbp.extension.game;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
-import com.smartfoxserver.v2.entities.SFSUser;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
@@ -224,7 +223,7 @@ public class Champion {
         Actor target;
         int damage;
 
-        DelayedAttack(Actor attacker, Actor target, int damage){
+        public DelayedAttack(Actor attacker, Actor target, int damage){
             this.attacker = attacker;
             this.target = target;
             this.damage = damage;

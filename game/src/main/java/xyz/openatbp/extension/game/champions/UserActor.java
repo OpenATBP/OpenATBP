@@ -15,6 +15,7 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class UserActor extends Actor {
@@ -24,6 +25,10 @@ public class UserActor extends Actor {
     private Point2D destination;
     private Point2D originalLocation;
     private float timeTraveled = 0;
+    protected double attackCooldown;
+    protected Point2D lastTargetLocation;
+    protected Actor target;
+    protected ScheduledFuture<?> currentAutoAttack = null;
     protected Map<ActorState, Boolean> states;
 
     public UserActor(User u, ATBPExtension parentExt){
@@ -37,6 +42,7 @@ public class UserActor extends Actor {
         float z = playerLoc.getSFSObject("p1").getFloat("z");
         this.location = new Point2D.Float(x,z);
         this.speed = getStat("speed");
+        this.attackCooldown = getStat("attackSpeed");
         this.currentHealth = u.getVariable("stats").getSFSObjectValue().getInt("currentHealth");
         this.maxHealth = u.getVariable("stats").getSFSObjectValue().getInt("maxHealth");
         states = new HashMap<>(ActorState.values().length);
@@ -44,6 +50,9 @@ public class UserActor extends Actor {
             states.put(s, false);
         }
         this.room = u.getLastJoinedRoom();
+        this.attackSpeed = getStat("attackSpeed");
+        this.attackCooldown = 500;
+        this.attackRange = getStat("attackRange");
     }
 
     public UserActor(){
@@ -100,6 +109,14 @@ public class UserActor extends Actor {
         this.timeTraveled+=0.1f;
     }
 
+    public void cancelAuto(){
+        if(this.currentAutoAttack != null){
+            System.out.println("Auto canceled!");
+            this.currentAutoAttack.cancel(false);
+            this.currentAutoAttack = null;
+        }
+    }
+
     public User getUser(){
         return this.player;
     }
@@ -145,9 +162,26 @@ public class UserActor extends Actor {
         }
     }
 
+    public boolean canAttack(){
+        return this.attackCooldown == 0;
+    }
+
     @Override
     public void attack(Actor a) {
+        if(attackCooldown == 0){
+            for(User u : room.getUserList()){
+                ExtensionCommands.attackActor(parentExt,u,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),false,true);
+            }
+            attackCooldown = attackSpeed;
+        }
+    }
 
+    public void reduceAttackCooldown(){
+        this.attackCooldown-=100;
+    }
+
+    public void resetAttack(){
+        this.attackCooldown = 600;
     }
 
     @Override
@@ -210,6 +244,14 @@ public class UserActor extends Actor {
         stats.putDouble("pHealth",pHealth);
     }
 
+    public void stopMoving(int delay){
+        this.stopMoving();
+        this.canMove = false;
+        if(delay > 0){
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(true),delay,TimeUnit.MILLISECONDS);
+        }
+    }
+
     protected class MovementStopper implements Runnable {
 
         boolean move;
@@ -220,6 +262,29 @@ public class UserActor extends Actor {
         @Override
         public void run() {
             canMove = this.move;
+        }
+    }
+
+    protected class RangedAttack implements Runnable {
+
+        Actor target;
+        Runnable attackRunnable;
+        String projectile;
+
+        RangedAttack(Actor target, Runnable attackRunnable, String projectile){
+            this.target = target;
+            this.attackRunnable = attackRunnable;
+            this.projectile = projectile;
+        }
+
+        @Override
+        public void run() {
+            System.out.println("Running projectile!");
+            for(User u : room.getUserList()){
+                ExtensionCommands.createProjectileFX(parentExt,u,projectile,id,target.getId(),"Bip001","Bip001",0.5f);
+            }
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(attackRunnable,500,TimeUnit.MILLISECONDS);
+            currentAutoAttack = null;
         }
     }
 }

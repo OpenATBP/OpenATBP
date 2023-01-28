@@ -25,11 +25,11 @@ public class Minion extends Actor{
     private float travelTime; //How long the minion has been traveling
     private Point2D desiredPath; //Where the minion is heading to
     private int pathIndex = 0; //What stage in their pathing to the other side are they in
-    private float attackCooldown = 300; //Starts at 300 to account for the first animation
     private boolean attacking = false;
     private int lane;
 
     public Minion(ATBPExtension parentExt, Room room, int team, int type, int wave, int lane){
+        this.attackCooldown = 300;
         String typeString = "super";
         if(type == 0){
             typeString = "melee";
@@ -247,10 +247,6 @@ public class Minion extends Actor{
         return attackCooldown<=300;
     }
 
-    public void reduceAttackCooldown(){
-        attackCooldown-=100;
-    }
-
     @Override
     public void attack(Actor a){
         if(attackCooldown == 0 && this.state != AggroState.MOVING){
@@ -287,10 +283,6 @@ public class Minion extends Actor{
         for(User u : room.getUserList()){
             ExtensionCommands.moveActor(parentExt,u,this.id,getRelativePoint(),getRelativePoint(),1.75f,false);
         }
-    }
-
-    public float getAttackCooldown(){
-        return this.attackCooldown;
     }
 
     public String getType(){

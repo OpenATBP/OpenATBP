@@ -112,7 +112,7 @@ public class RoomHandler implements Runnable{
                 if(currentPoint.getX() != x && currentPoint.getY() != z){
                     u.updateMovementTime();
                 }
-
+                if(!u.canAttack()) u.reduceAttackCooldown();
             }
             for(Projectile p : activeProjectiles){
                 p.updateTimeTraveled();
@@ -681,5 +681,19 @@ public class RoomHandler implements Runnable{
 
     public void addProjectile(Projectile p){
         this.activeProjectiles.add(p);
+    }
+
+    public Minion getMinion(String id){
+        for(Minion m : minions){
+            if(m.getId().equalsIgnoreCase(id)) return m;
+        }
+        return  null;
+    }
+
+    public Tower getTower(String id){
+        for(Tower t : towers){
+            if(t.getId().equalsIgnoreCase(id)) return t;
+        }
+        return null;
     }
 }

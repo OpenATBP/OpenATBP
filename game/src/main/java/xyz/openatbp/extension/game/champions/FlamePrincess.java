@@ -7,10 +7,7 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
-import xyz.openatbp.extension.game.ActorState;
-import xyz.openatbp.extension.game.Buff;
-import xyz.openatbp.extension.game.Champion;
-import xyz.openatbp.extension.game.Projectile;
+import xyz.openatbp.extension.game.*;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
@@ -21,6 +18,7 @@ public class FlamePrincess extends UserActor{
 
     private boolean ultFinished = false;
     private boolean passiveEnabled = false;
+    private long lastPassiveUsage = 0;
     private boolean ultStarted = false;
     private int ultUses = 3;
 
@@ -30,7 +28,7 @@ public class FlamePrincess extends UserActor{
 
     @Override
     public void useAbility(int ability, ISFSObject abilityData){
-        if(ability != 3 && !passiveEnabled){
+        if(ultUses == 3 && !passiveEnabled && System.currentTimeMillis()-lastPassiveUsage >= 10000){
             ExtensionCommands.createActorFX(parentExt,player,id,"flame_princess_passive_flames",1000*60,"flame_passive",true,"",false,false,team);
             passiveEnabled = true;
         }
@@ -80,6 +78,12 @@ public class FlamePrincess extends UserActor{
             case 4: //Passive
                 break;
         }
+    }
+
+    @Override
+    public void attack(Actor a){
+        super.attack(a);
+        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,new PassiveAttack(a),"flame_princess_projectile"),500,TimeUnit.MILLISECONDS);
     }
 
     private String getAbilityString(int ability){
@@ -182,4 +186,27 @@ public class FlamePrincess extends UserActor{
         }
     }
 
+    private class PassiveAttack implements Runnable {
+
+        Actor target;
+
+        PassiveAttack(Actor target){
+            this.target = target;
+        }
+
+        @Override
+        public void run() {
+            target.damaged(FlamePrincess.this,50);
+            if(FlamePrincess.this.passiveEnabled){
+                FlamePrincess.this.passiveEnabled = false;
+                ExtensionCommands.removeFx(parentExt,room,"flame_passive");
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"passive",true,10000,0);
+                lastPassiveUsage = System.currentTimeMillis();
+                ExtensionCommands.createActorFX(parentExt,room,target.getId(),"flame_princess_dot",3000,"flame_passive_burn",true,"",false,false,team);
+                for(int i = 0; i < 3; i++){
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(FlamePrincess.this,target,20),i+1,TimeUnit.SECONDS);
+                }
+            }
+        }
+    }
 }
