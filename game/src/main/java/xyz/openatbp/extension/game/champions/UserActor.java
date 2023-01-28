@@ -1,19 +1,21 @@
 package xyz.openatbp.extension.game.champions;
 
+import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
+import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.Actor;
 import xyz.openatbp.extension.game.ActorState;
+import xyz.openatbp.extension.game.Champion;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class UserActor extends Actor {
 
@@ -35,6 +37,8 @@ public class UserActor extends Actor {
         float z = playerLoc.getSFSObject("p1").getFloat("z");
         this.location = new Point2D.Float(x,z);
         this.speed = getStat("speed");
+        this.currentHealth = u.getVariable("stats").getSFSObjectValue().getInt("currentHealth");
+        this.maxHealth = u.getVariable("stats").getSFSObjectValue().getInt("maxHealth");
         states = new HashMap<>(ActorState.values().length);
         for(ActorState s : ActorState.values()){
             states.put(s, false);
@@ -108,12 +112,49 @@ public class UserActor extends Actor {
         return this.getRelativePoint(true);
     }
 
+    public Point2D getCurrentLocation(){return this.location;}
+
     @Override
     public void setLocation(Point2D location){
         this.location = location;
         this.originalLocation = location;
         this.destination = location;
         this.timeTraveled = 0f;
+    }
+
+    @Override
+    public boolean damaged(Actor a, int damage) {
+        ExtensionCommands.damageActor(parentExt,player,this.id,damage);
+        ISFSObject stats = this.getStats();
+        this.currentHealth-=damage;
+        if(this.currentHealth > 0){
+            for(User u : room.getUserList()){
+                ISFSObject updateData = new SFSObject();
+                updateData.putUtfString("id", this.id);
+                updateData.putInt("currentHealth", (int) currentHealth);
+                updateData.putDouble("pHealth", getPHealth());
+                updateData.putInt("maxHealth", (int) maxHealth);
+                stats.putInt("currentHealth", (int) currentHealth);
+                stats.putDouble("pHealth", getPHealth());
+                ExtensionCommands.updateActorData(parentExt,u,updateData);
+            }
+            return false;
+        }else{
+            this.die(a);
+            return true;
+        }
+    }
+
+    @Override
+    public void attack(Actor a) {
+
+    }
+
+    @Override
+    public void die(Actor a) {
+        this.setHealth(0);
+        ExtensionCommands.knockOutActor(parentExt,player, String.valueOf(player.getId()),a.getId(),10);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.RespawnCharacter(parentExt,player.getLastJoinedRoom(),String.valueOf(player.getId())),10, TimeUnit.SECONDS);
     }
 
     public void useAbility(int ability, ISFSObject abilityData){System.out.println("No character selected!");}
@@ -151,6 +192,22 @@ public class UserActor extends Actor {
     public Line2D getMovementLine(){
         if(this.originalLocation != null && this.destination != null)  return new Line2D.Double(this.originalLocation,this.destination);
         else return new Line2D.Double(this.location,this.location);
+    }
+
+    public void setHealth(double health){
+        this.currentHealth = health;
+        ISFSObject stats = this.getStats();
+        if(currentHealth>maxHealth) currentHealth = maxHealth;
+        else if(currentHealth<0) currentHealth = 0;
+        double pHealth = this.getPHealth();
+        ISFSObject updateData = new SFSObject();
+        updateData.putUtfString("id", this.id);
+        updateData.putInt("maxHealth",(int)maxHealth);
+        updateData.putInt("currentHealth",(int)currentHealth);
+        updateData.putDouble("pHealth",pHealth);
+        ExtensionCommands.updateActorData(parentExt,player,updateData);
+        stats.putInt("currentHealth",(int)currentHealth);
+        stats.putDouble("pHealth",pHealth);
     }
 
     protected class MovementStopper implements Runnable {

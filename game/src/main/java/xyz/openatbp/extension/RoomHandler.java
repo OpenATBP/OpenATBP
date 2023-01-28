@@ -36,13 +36,13 @@ public class RoomHandler implements Runnable{
         HashMap<String, Point2D> towers0 = MapData.getTowerData(room.getGroupId(),0);
         HashMap<String, Point2D> towers1 = MapData.getTowerData(room.getGroupId(),1);
         for(String key : towers0.keySet()){
-            towers.add(new Tower(key,0,towers0.get(key)));
+            towers.add(new Tower(parentExt,room,key,0,towers0.get(key)));
         }
         for(String key : towers1.keySet()){
-            towers.add(new Tower(key,1,towers1.get(key)));
+            towers.add(new Tower(parentExt,room,key,1,towers1.get(key)));
         }
-        bases[0] = new Base(0);
-        bases[1] = new Base(1);
+        bases[0] = new Base(parentExt, room,0);
+        bases[1] = new Base(parentExt, room, 1);
         for(User u : room.getUserList()){
             players.add(Champion.getCharacterClass(u,parentExt));
         }
@@ -85,14 +85,14 @@ public class RoomHandler implements Runnable{
                         for(UserActor a : Champion.getUsersInRadius(this,u.getLocation(),2)){
                             if(a.getTeam() == u.getTeam()){
                                 System.out.println("Damaging: " + a.getAvatar());
-                                Champion.attackChampion(parentExt,u.getUser(),a.getUser(),u.getId(),50);
+                                a.damaged(u,50);
                             }
                         }
                     }else if(u.isState(ActorState.TRANSFORMED) && u.getAvatar().contains("flame")){
                         for(UserActor a : Champion.getUsersInRadius(this,u.getLocation(),2)){
                             if(a.getTeam() == u.getTeam()){ //TODO: Set so FP doesn't target her team or self
                                 System.out.println("Damaging: " + a.getAvatar());
-                                Champion.attackChampion(parentExt,u.getUser(),a.getUser(),u.getId(),75);
+                                a.damaged(u,75);
                             }
                         }
                     }
@@ -168,7 +168,7 @@ public class RoomHandler implements Runnable{
                         for(UserActor u : players){
                             int health = u.getHealth();
                             int userTeam = u.getTeam();
-                            Point2D currentPoint = u.getLocation();
+                            Point2D currentPoint = u.getCurrentLocation();
                             if(m.getTeam() != userTeam && health > 0 && m.nearEntity(currentPoint) && m.facingEntity(currentPoint)){
                                 if(m.getTarget() == null){ //This will probably always be true.
                                     m.setTarget(parentExt,u.getId());
@@ -188,7 +188,7 @@ public class RoomHandler implements Runnable{
                             if (m.withinAttackRange(currentPoint) || m.getAttackCooldown() < 300) {
                                 m.stopMoving(parentExt);
                                 if(m.canAttack()) {
-                                    m.attack(parentExt,currentPoint);
+                                    m.attack(target);
                                 }else{
                                     m.reduceAttackCooldown();
                                 }
@@ -207,7 +207,7 @@ public class RoomHandler implements Runnable{
                             }
                             if(m.canAttack()){
                                 if(targetMinion.getHealth() > 0){
-                                    m.attack(parentExt, targetMinion);
+                                    m.attack(targetMinion);
                                 }else{ //Handles tower death and resets minion on tower kill
                                     m.setState(0);
                                     m.move(parentExt);
@@ -232,8 +232,9 @@ public class RoomHandler implements Runnable{
                             }
                             if(m.canAttack()){
                                 if(targetTower.getHealth() > 0){
-                                    m.attack(parentExt, targetTower);
+                                    m.attack(targetTower);
                                 }else{ //Handles tower death and resets minion on tower kill
+                                    System.out.println("Tower dead!");
                                     if(targetTower.getTowerNum() == 0 || targetTower.getTowerNum() == 3) bases[targetTower.getTeam()].unlock();
                                     m.setState(0);
                                     m.move(parentExt);
@@ -261,7 +262,7 @@ public class RoomHandler implements Runnable{
                             }
                             if(m.canAttack()){
                                 if(targetBase.getHealth() > 0){
-                                    m.attack(parentExt,targetBase);
+                                    m.attack(targetBase);
                                 }else{ //Handles base death and ends game
                                     parentExt.stopScript(room.getId());
                                 }
@@ -276,10 +277,13 @@ public class RoomHandler implements Runnable{
                 }
             }
             minions.removeIf(m -> (m.getHealth()<=0));
+            for(Tower t : towers){
+                if(t.getHealth() <= 0 && (t.getTowerNum() == 0 || t.getTowerNum() == 3)) bases[t.getTeam()].unlock();
+            }
             towers.removeIf(t -> (t.getHealth()<=0));
             //TODO: Add minion waves
             if(mSecondsRan == 5000){
-                //this.addMinion(1,0,0,1);
+                this.addMinion(1,1,0,1);
                 //this.addMinion(0,0,0,1);
             }else if(mSecondsRan == 7000){
                 //this.addMinion(1,1,0,1);
@@ -309,7 +313,7 @@ public class RoomHandler implements Runnable{
     }
 
     public void addMinion(int team, int type, int wave, int lane){
-        Minion m = new Minion(room, team, type, wave,lane);
+        Minion m = new Minion(parentExt,room, team, type, wave,lane);
         minions.add(m);
         for(User u : room.getUserList()){
             ExtensionCommands.createActor(parentExt,u,m.creationObject());
@@ -317,7 +321,7 @@ public class RoomHandler implements Runnable{
         m.move(parentExt);
     }
 
-    private Base getOpposingTeamBase(int team){
+    public Base getOpposingTeamBase(int team){
         if(team == 0) return bases[1];
         else return  bases[0];
     }
@@ -584,23 +588,6 @@ public class RoomHandler implements Runnable{
                 }
             }
         }
-    }
-    private Point2D getRelativePoint(ISFSObject playerLoc){ //Gets player's current location based on time
-        Point2D rPoint = new Point2D.Float();
-        float x2 = playerLoc.getFloat("x");
-        float y2 = playerLoc.getFloat("z");
-        float x1 = playerLoc.getSFSObject("p1").getFloat("x");
-        float y1 = playerLoc.getSFSObject("p1").getFloat("z");
-        Line2D movementLine = new Line2D.Double(x1,y1,x2,y2);
-        double dist = movementLine.getP1().distance(movementLine.getP2());
-        double time = dist/playerLoc.getFloat("speed");
-        double currentTime = playerLoc.getFloat("time") + 0.1;
-        if(currentTime>time) currentTime=time;
-        double currentDist = playerLoc.getFloat("speed")*currentTime;
-        float x = (float)(x1+(currentDist/dist)*(x2-x1));
-        float y = (float)(y1+(currentDist/dist)*(y2-y1));
-        rPoint.setLocation(x,y);
-        return rPoint;
     }
 
     private boolean insideAltar(Point2D pLoc, int altar){

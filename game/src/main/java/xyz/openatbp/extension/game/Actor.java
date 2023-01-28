@@ -16,6 +16,7 @@ public abstract class Actor {
     protected double speed;
     protected String avatar;
     protected ATBPExtension parentExt;
+    protected ActorType actorType;
 
     public double getPHealth(){
         return currentHealth/maxHealth;
@@ -40,6 +41,13 @@ public abstract class Actor {
         this.location = location;
     }
     public String getAvatar(){return this.avatar;}
+    public ActorType getActorType(){return this.actorType;}
 
-    public abstract Room getRoom();
+    public abstract boolean damaged(Actor a, int damage);
+    public abstract void attack(Actor a);
+    public abstract void die(Actor a);
+
+    public Room getRoom(){
+        return this.room;
+    }
 }

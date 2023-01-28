@@ -126,7 +126,7 @@ public class FlamePrincess extends UserActor{
                     for(UserActor u : affectedUsers){
                         System.out.println("Hit: " + u.getAvatar());
                         u.setState(ActorState.POLYMORPH, true);
-                        Champion.attackChampion(parentExt, player, u.getUser(), id, 50);
+                        u.damaged(FlamePrincess.this,50);
                         Champion.giveBuff(parentExt,u.getUser(), Buff.POLYMORPH);
                     }
                     System.out.println("Ability done!");
