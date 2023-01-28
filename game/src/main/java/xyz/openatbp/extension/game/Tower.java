@@ -1,35 +1,81 @@
 package xyz.openatbp.extension.game;
 
+import com.smartfoxserver.v2.entities.Room;
+import com.smartfoxserver.v2.entities.User;
+import com.smartfoxserver.v2.entities.data.ISFSObject;
+import com.smartfoxserver.v2.entities.data.SFSObject;
+import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ExtensionCommands;
+
 import java.awt.geom.Point2D;
 
 //TODO: Add tower fighting back
-public class Tower {
-    private int health = 800;
-    private int maxHealth = 800;
-    private Point2D location;
-    private int team;
-    private String id;
+public class Tower extends Actor{
     private final int[] PURPLE_TOWER_NUM = {2,1,0};
     private final int[] BLUE_TOWER_NUM = {5,4,3};
     private long lastHit;
     private boolean destroyed = false;
 
-    public Tower(String id, int team, Point2D location){
-        this.id = id;
-        this.team = team;
+    public Tower(ATBPExtension parentExt, Room room, String id, int team, Point2D location){
+        this.currentHealth = 800;
+        this.maxHealth = 800;
         this.location = location;
+        this.id = id;
+        this.room = room;
+        this.team = team;
+        this.parentExt = parentExt;
         this.lastHit = 0;
     }
 
-    public int getHealth(){
-        return this.health;
+    @Override
+    public boolean damaged(Actor a, int damage) {
+        this.currentHealth-=damage;
+        boolean notify = System.currentTimeMillis()-this.lastHit >= 1000*5;
+        for(User u : room.getUserList()){
+            if(notify) ExtensionCommands.towerAttacked(parentExt,u,this.getTowerNum());
+            ISFSObject updateData = new SFSObject();
+            updateData.putUtfString("id", this.id);
+            updateData.putInt("currentHealth", (int) currentHealth);
+            updateData.putDouble("pHealth", this.getPHealth());
+            updateData.putInt("maxHealth", (int) maxHealth);
+            ExtensionCommands.updateActorData(parentExt,u,updateData);
+        }
+        if(this.currentHealth <= 0) this.die(a);
+        if(notify) this.triggerNotification();
+        return false;
     }
 
-    public Point2D getLocation(){
-        return this.location;
+    @Override
+    public void attack(Actor a) {
+
     }
-    public int getTeam(){
-        return this.team;
+
+    @Override
+    public void die(Actor a) {
+        for(User u : room.getUserList()){
+            ExtensionCommands.towerDown(parentExt,u, this.getTowerNum());
+            ExtensionCommands.knockOutActor(parentExt,u,this.id,a.getId(),100);
+            if(!this.isDestroyed()){
+                this.destroy();
+                ExtensionCommands.destroyActor(parentExt,u,this.id);
+            }
+            String actorId = "tower2a";
+            if(this.getTowerNum() == 0 || this.getTowerNum() == 3 ){
+                actorId = "tower1a";
+            }
+            ExtensionCommands.createWorldFX(parentExt,u,String.valueOf(u.getId()),actorId,this.id+"_destroyed",1000*60*15,(float)this.location.getX(),(float)this.location.getY(),false,this.team,0f);
+            ExtensionCommands.createWorldFX(parentExt,u,String.valueOf(u.getId()),"tower_destroyed_explosion",this.id+"_destroyed_explosion",1000,(float)this.location.getX(),(float)this.location.getY(),false,this.team,0f);
+            Room room = u.getLastJoinedRoom();
+            ISFSObject scoreObj = room.getVariable("score").getSFSObjectValue();
+            int teamA = scoreObj.getInt("purple");
+            int teamB = scoreObj.getInt("blue");
+            if(this.team == 0) teamB+=50;
+            else teamA+=50;
+            scoreObj.putInt("purple",teamA);
+            scoreObj.putInt("blue",teamB);
+            ExtensionCommands.updateScores(parentExt,u,teamA,teamB);
+        }
+        if(this.getTowerNum() == 0 || this.getTowerNum() == 3) parentExt.getRoomHandler(room.getId()).getOpposingTeamBase(this.team).unlock();
     }
 
     public String getId(){
@@ -51,10 +97,6 @@ public class Tower {
             return PURPLE_TOWER_NUM[Integer.parseInt(towerIdComponents[1].replace("tower",""))-1];
         }
     }
-    public boolean damage(int damage){ //Reduces tower health and returns true if it is destroyed
-        this.health-=damage;
-        return this.health<=0;
-    }
 
     public void triggerNotification(){ //Resets the hit timer so players aren't spammed by the tower being attacked
         this.lastHit = System.currentTimeMillis();
@@ -62,10 +104,6 @@ public class Tower {
 
     public long getLastHit(){
         return this.lastHit;
-    }
-
-    public int getMaxHealth(){
-        return this.maxHealth;
     }
 
     public void destroy(){

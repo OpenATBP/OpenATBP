@@ -8,7 +8,9 @@ import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
+import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.champions.UserActor;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -337,5 +339,58 @@ public class ExtensionCommands {
         data.putFloat("y",0f);
         data.putFloat("z",(float)source.getY());
         parentExt.send("cmd_play_sound",data,u);
+    }
+
+    public static void respawnActor(ATBPExtension parentExt, User u, String id){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("id",id);
+        parentExt.send("cmd_respawn_actor",data,u);
+    }
+
+    public static void actorAbilityResponse(ATBPExtension parentExt, User u, String id, boolean canCast, int cooldown, int gCooldown){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("id",id);
+        data.putBool("canCast",canCast);
+        data.putInt("cooldown",5000);
+        data.putInt("gCooldown",0);
+        System.out.println(data.getDump());
+        parentExt.send("cmd_actor_ability_response",data,u);
+    }
+
+    public static void brushChange(ATBPExtension parentExt, Room room, String id, int brushId){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("id",id);
+        data.putInt("brushId",brushId);
+        for(User u : room.getUserList()){
+            parentExt.send("cmd_brush_changed",data,u);
+        }
+    }
+
+    public static void snapActor(ATBPExtension parentExt, Room room, String id, Point2D p, Point2D d, boolean orient){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("i",id);
+        data.putFloat("px", (float) p.getX());
+        data.putFloat("pz",(float) p.getY());
+        data.putFloat("dx", (float)d.getX());
+        data.putFloat("dz", (float) d.getY());
+        data.putBool("o",orient);
+        for(User u : room.getUserList()){
+            parentExt.send("cmd_snap_actor",data,u);
+        }
+    }
+
+    public static void updateActorState(ATBPExtension parentExt, User u, String id, ActorState state, boolean enabled){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("id", String.valueOf(u.getId()));
+        data.putInt("state",state.ordinal());
+        data.putBool("enable", enabled);
+        parentExt.send("cmd_update_actor_state",data,u);
+    }
+
+    public static void createProjectile(ATBPExtension parentExt, Room room, UserActor owner, String id, Point2D loc, Point2D dest, float speed){
+        for(User u : room.getUserList()){
+            ExtensionCommands.createActor(parentExt,u, owner.getId() + id, id,loc,0f,owner.getTeam());
+            ExtensionCommands.moveActor(parentExt,u, owner.getId()+id,loc,dest,speed,true);
+        }
     }
 }

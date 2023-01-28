@@ -1,19 +1,21 @@
 package xyz.openatbp.extension.game;
 
+import com.smartfoxserver.v2.entities.Room;
+import com.smartfoxserver.v2.entities.User;
+import com.smartfoxserver.v2.entities.data.ISFSObject;
+import com.smartfoxserver.v2.entities.data.SFSObject;
+import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MapData;
 
 import java.awt.geom.Point2D;
 
-public class Base {
-
-    private int team;
-    private String id;
-    private Point2D location;
-    private int health = 2500;
-    public static final int MAX_HEALTH = 2500;
+public class Base extends Actor{
     private boolean unlocked = false;
 
-    public Base(int team){
+    public Base(ATBPExtension parentExt, Room room, int team){
+        this.currentHealth = 3500;
+        this.maxHealth = 3500;
         this.team = team;
         if(team == 0){
             id = "base_purple";
@@ -23,22 +25,46 @@ public class Base {
             id = "base_blue";
             location = new Point2D.Float(MapData.L2_BASE1_X,0f);
         }
+        this.parentExt = parentExt;
+        this.room = room;
     }
 
     public int getTeam(){
         return this.team;
     }
 
-    public int getHealth(){
-        return this.health;
+    @Override
+    public boolean damaged(Actor a, int damage) {
+        this.currentHealth-=damage;
+        for(User u : room.getUserList()){
+            if(this.currentHealth <= 0){
+                double oppositeTeam = 0;
+                if(this.team == 0) oppositeTeam = 1;
+                try{
+                    ExtensionCommands.gameOver(parentExt,u,oppositeTeam);
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
+            }
+            ISFSObject updateData = new SFSObject();
+            updateData.putUtfString("id", this.id);
+            updateData.putInt("currentHealth", (int) currentHealth);
+            updateData.putDouble("pHealth", getPHealth());
+            updateData.putInt("maxHealth", (int) maxHealth);
+            ExtensionCommands.updateActorData(parentExt,u,updateData);
+        }
+        if(currentHealth > 0) return false;
+        else return true;
     }
 
-    public Point2D getLocation(){
-        return this.location;
+    @Override
+    public void attack(Actor a) {
+        System.out.println("Bases can't attack silly!");
     }
 
-    public String getId(){
-        return this.id;
+    @Override
+    public void die(Actor a) {
+
     }
 
     public void unlock(){
@@ -47,10 +73,5 @@ public class Base {
 
     public boolean isUnlocked(){
         return this.unlocked;
-    }
-
-    public boolean damage(int damage){
-        this.health-=damage;
-        return this.health<=0;
     }
 }

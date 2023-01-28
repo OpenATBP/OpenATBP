@@ -48,7 +48,7 @@ public class GameManager {
                 userData.putInt("id", 100);
                 userData.putUtfString("name", "Fake User");
                 userData.putUtfString("champion", "magicman");
-                userData.putInt("team", 0); //Change up team data
+                userData.putInt("team", 1); //Change up team data
                 userData.putUtfString("tid", "fakeuser");
                 userData.putUtfString("backpack", "belt_champions");
                 userData.putInt("elo", 1700); //Database
@@ -111,6 +111,7 @@ public class GameManager {
             spawnPoint.putFloat("z", (float) 2.3);
             spawnPoint.putFloat("rotation", 0);
             actorData.putSFSObject("spawn_point", spawnPoint);
+            sender.getVariable("location").getSFSObjectValue().putSFSObject("p1",spawnPoint);
 
             ISFSObject updateData = new SFSObject();
             updateData.putUtfString("id", String.valueOf(sender.getId()));
