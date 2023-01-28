@@ -252,6 +252,17 @@ public class UserActor extends Actor {
         }
     }
 
+    public void giveStatBuff(String stat, double value, int duration){
+        ISFSObject stats = this.getStats();
+        double currentStat = stats.getDouble(stat);
+        stats.putDouble(stat,currentStat+value);
+        ISFSObject updateData = new SFSObject();
+        updateData.putUtfString("id",this.id);
+        updateData.putDouble(stat,currentStat+value);
+        ExtensionCommands.updateActorData(parentExt,player,updateData);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new StatChanger(stat,value),duration,TimeUnit.MILLISECONDS);
+    }
+
     protected class MovementStopper implements Runnable {
 
         boolean move;
@@ -285,6 +296,26 @@ public class UserActor extends Actor {
             }
             SmartFoxServer.getInstance().getTaskScheduler().schedule(attackRunnable,500,TimeUnit.MILLISECONDS);
             currentAutoAttack = null;
+        }
+    }
+
+    protected class StatChanger implements Runnable {
+        double value;
+        String stat;
+
+        StatChanger(String stat, double value){
+            this.value = value;
+            this.stat = stat;
+        }
+        @Override
+        public void run() {
+            ISFSObject stats = getStats();
+            double currentStat = stats.getDouble(stat);
+            stats.putDouble(stat,currentStat-value);
+            ISFSObject updateData = new SFSObject();
+            updateData.putUtfString("id",id);
+            updateData.putDouble(stat,currentStat-value);
+            ExtensionCommands.updateActorData(parentExt,player,updateData);
         }
     }
 }

@@ -10,6 +10,7 @@ import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.champions.FlamePrincess;
+import xyz.openatbp.extension.game.champions.Lich;
 import xyz.openatbp.extension.game.champions.UserActor;
 
 import java.awt.geom.Ellipse2D;
@@ -88,6 +89,8 @@ public class Champion {
         switch(character){
             case "flame":
                 return new FlamePrincess(u,parentExt);
+            case "lich":
+                return new Lich(u,parentExt);
         }
         return new UserActor(u, parentExt);
     }

@@ -41,10 +41,6 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
             specialAttackData.putUtfString("id", userId);
             specialAttackData.putFloatArray("location", location);
             specialAttackData.putUtfString("ability", ability);
-            Point2D loc = player.getLocation();
-            ExtensionCommands.moveActor(parentExt,sender, String.valueOf(sender.getId()),loc,loc,1f,false);
-            player.setLocation(loc);
-            player.setCanMove(false);
             GameManager.sendAllUsers(parentExt, specialAttackData,"cmd_special_attack", sender.getLastJoinedRoom());
 
             String playerActor = sender.getVariable("player").getSFSObjectValue().getUtfString("avatar");
@@ -53,6 +49,10 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
             int cooldown = spellData.get("spellCoolDown").asInt();
             int gCooldown = spellData.get("spellGlobalCoolDown").asInt();
             int castDelay = spellData.get("castDelay").asInt();
+            Point2D loc = player.getLocation();
+            ExtensionCommands.moveActor(parentExt,sender, String.valueOf(sender.getId()),loc,loc,1f,false);
+            player.setLocation(loc); //TODO: Make ability based by putting in useAbility method
+            player.setCanMove(false);
             SmartFoxServer.getInstance().getTaskScheduler().schedule(new DelayedAbility(player,spellNum),castDelay,TimeUnit.MILLISECONDS);
             player.useAbility(spellNum,params);
         }
