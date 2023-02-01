@@ -594,7 +594,8 @@ public class ATBPExtension extends SFSExtension {
         }
 
     }
-    private class MiniScripts implements Runnable{
+    //TODO: move this into another class since its too complex to keep inside this
+    private class MiniScripts implements Runnable {
         private Room room;
         private int index;
         private List<Minion> minions;
@@ -779,10 +780,10 @@ public class ATBPExtension extends SFSExtension {
                 //TODO: Add minion waves
                 if(mSecondsRan == 5000){
                     trace("Adding minion!");
-                    this.addMinion(1,0,0,1);
+                    this.addMinion(1, Minion.MinionType.MELEE,0,1);
                     //this.addMinion(0,0,0,1);
                 }else if(mSecondsRan == 7000){
-                    this.addMinion(1,1,0,1);
+                    this.addMinion(1,Minion.MinionType.RANGED,0,1);
                     //this.addMinion(0,1,0,1);
                 }else if(mSecondsRan == 9000){
                     //this.addMinion(0,2,0);
@@ -808,7 +809,7 @@ public class ATBPExtension extends SFSExtension {
             return null;
         }
 
-        public void addMinion(int team, int type, int wave, int lane){
+        public void addMinion(int team, Minion.MinionType type, int wave, int lane){
             Minion m = new Minion(room, team, type, wave,lane);
             minions.add(m);
             for(User u : room.getUserList()){

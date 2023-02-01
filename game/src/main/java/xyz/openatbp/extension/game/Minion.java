@@ -9,21 +9,22 @@ import xyz.openatbp.extension.ExtensionCommands;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.lang.reflect.Type;
 import java.util.List;
 
 //TODO: Add more accurate pathing by creating more points alongside the main ones already defined. Also add collision detection.
-public class Minion {
+public class Minion extends NPC {
     enum AggroState{MOVING, PLAYER, TOWER, MINION, BASE} //State in which the minion is targeting
-    enum MinionType{RANGED, MELEE, SUPER} //Type of minion
-    private Point2D location;
-    private int team;
+    public enum MinionType{RANGED, MELEE, SUPER} //Type of minion
+    //private Point2D location;
+    //private int team;
     private AggroState state = AggroState.MOVING;
     private MinionType type;
     private String target;
-    private int health;
+    //private int health;
     private final double[] blueBotX = {36.90,26.00,21.69,16.70,3.44,-9.56,-21.20,-28.02,-33.11,-36.85}; //Path points from blue base to purple base
     private final double[] blueBotY = {2.31,8.64,12.24,17.25,17.81,18.76,14.78,7.19,5.46,2.33};
-    private String id;
+    //private String id;
     private Room room;
     private float travelTime; //How long the minion has been traveling
     private Point2D desiredPath; //Where the minion is heading to
@@ -31,63 +32,24 @@ public class Minion {
     private float attackCooldown = 300; //Starts at 300 to account for the first animation
     private boolean attacking = false;
     private int lane;
-    private int maxHealth;
+    //private int maxHealth;
 
-    public Minion(Room room, int team, int type, int wave, int lane, int num){
-        String typeString = "super";
-        if(type == 0){
-            typeString = "melee";
-            this.type = MinionType.MELEE;
-        }else if(type == 1){
-            typeString = "ranged";
-            this.type = MinionType.RANGED;
-        }
-        else{
-            this.type = MinionType.SUPER;
-        }
-        this.id = team+"creep_"+lane+typeString+wave+num; //TODO: Account for multiple of the same minion in the same wave
-        this.team = team;
-        this.lane = lane;
-        float x = (float) blueBotX[0]; //Bot Lane
-        float y = (float) blueBotY[0];
-        if(team == 0) x = (float) blueBotX[blueBotX.length-1];
-        if(lane == 0){ //Top Lane
-
-        }
-        this.location = new Point2D.Float(x,y);
-        this.room = room;
-        if(team == 0) pathIndex = blueBotX.length-1;
+    public Minion(Room room, Team team, MinionType type, int wave, int lane, int num){
+        this(room, team, type, wave, lane);
+        //TODO: implement num usage
     }
 
-    public Minion(Room room, int team, int type, int wave, int lane){
-        String typeString = "super";
-        if(type == 0){
-            typeString = "melee";
-            this.type = MinionType.MELEE;
-            this.maxHealth = 450;
-        }else if(type == 1){
-            typeString = "ranged";
-            this.type = MinionType.RANGED;
-            this.maxHealth = 350;
-        }
-        else{
-            this.type = MinionType.SUPER;
-            this.maxHealth = 500;
-        }
-        this.health = this.maxHealth;
-        this.id = team+"creep_"+lane+typeString+wave; //TODO: Account for multiple of the same minion in the same wave
+    public Minion(Room room, Team team, MinionType type, int wave, int lane){
+        this.type = type;
+        this.id = team + "creep_" + lane + type.name() + wave; //TODO: Account for multiple of the same minion in the same wave
         this.team = team;
         this.lane = lane;
-        float x = (float) blueBotX[0]; //Bot Lane
-        float y = (float) blueBotY[0];
-        if(team == 0) x = (float) blueBotX[blueBotX.length-1];
-        if(lane == 0){ //Top Lane
-
-        }
-        this.location = new Point2D.Float(x,y);
+        this.location = setInitialLocation(team);
         this.room = room;
-        if(team == 0) pathIndex = blueBotX.length-1;
+        this.pathIndex = setInitialPathIndex(team);
     }
+
+
 
     public void move(ATBPExtension parentExt){ // Moves the minion along the defined path
         if(this.pathIndex < blueBotX.length && this.pathIndex > -1){
@@ -114,7 +76,7 @@ public class Minion {
     public ISFSObject creationObject(){ //Object fed to the extension command to spawn the minion
         ISFSObject minion = new SFSObject();
         String actorName = "creep";
-        if(this.team == 1) actorName+="1";
+        if(this.team == Team.BLUE) actorName+="1";
         if(this.type != MinionType.MELEE) actorName+="_";
         minion.putUtfString("id",this.id);
         minion.putUtfString("actor",actorName + getType());
@@ -157,7 +119,7 @@ public class Minion {
         range+=radius;
         return this.getRelativePoint().distance(p)<=range;
     }
-    private int findPathIndex(){ //Finds the nearest point along the defined path for the minion to travel to
+    private int findPathIndex() { //Finds the nearest point along the defined path for the minion to travel to
         double shortestDistance = 100;
         int index = -1;
         if(desiredPath == null) index = 1;
@@ -169,8 +131,8 @@ public class Minion {
                     index = i;
                 }
             }
-            if(Math.abs(shortestDistance) < 0.01 && ((this.team == 1 && index+1 != blueBotX.length) || (this.team == 0 && index-1 != 0))){
-                if(this.team == 1) index++;
+            if(Math.abs(shortestDistance) < 0.01 && ((this.team == Team.BLUE && index+1 != blueBotX.length) || (this.team == Team.PURPLE && index-1 != 0))){
+                if(this.team == Team.BLUE) index++;
                 else index--;
             }
         }
@@ -211,7 +173,7 @@ public class Minion {
     public void arrived(){ //Ran when the minion arrives at a point on the path
         this.travelTime = 0;
         this.location = this.desiredPath;
-        if(this.team == 1) this.pathIndex++;
+        if(this.team == Team.BLUE) this.pathIndex++;
         else this.pathIndex--;
     }
 
@@ -255,12 +217,12 @@ public class Minion {
         }
     }
 
-    public void setState(int state){ //Really only useful for setting to the movement state.
+    public void setState(int state) { //Really only useful for setting to the movement state.
         switch(state){
             case 0:
                 int index = findPathIndex();
                 if(this.state != AggroState.PLAYER){
-                    if(this.team == 0) index--;
+                    if(this.team == Team.PURPLE) index--;
                     else index++;
                     if(index < 0) index = 0;
                     if(index >= this.blueBotX.length) index = this.blueBotX.length-1;
@@ -310,7 +272,7 @@ public class Minion {
                 }
             }else if(attackCooldown == 100 || attackCooldown == 200) reduceAttackCooldown();
     }
-
+/*
     public void attack(ATBPExtension parentExt, Tower tower){ //Handles attacking towers
         if(this.state == AggroState.TOWER && attackCooldown == 0){
             int newCooldown = 1500;
@@ -358,8 +320,27 @@ public class Minion {
             }
         }else if(attackCooldown == 100 || attackCooldown == 200) reduceAttackCooldown();
     }
+*/
+    public void attack(ATBPExtension parentExt, NPC target){
+        if(this.state == AggroState.BASE && attackCooldown == 0){
+            int newCooldown = 1500;
+            if(this.type == MinionType.RANGED) newCooldown = 2000;
+            else if(this.type == MinionType.SUPER) newCooldown = 1000;
+            this.attackCooldown = newCooldown;
+            if(this.type != MinionType.RANGED) Champion.attackBase(parentExt,this.room,this.id,target,25);
+            else Champion.rangedAttackBase(parentExt,this.room,this.id,target,150);
+        }else if(attackCooldown == 300){
+            reduceAttackCooldown();
+            for(User u : room.getUserList()){
+                ExtensionCommands.attackActor(parentExt,u,this.id,target.getId(), (float) target.getLocation().getX(), (float) target.getLocation().getY(),false,true);
+            }
+        }else if(attackCooldown == 100 || attackCooldown == 200) reduceAttackCooldown();
 
-    public void stopMoving(ATBPExtension parentExt){ //Stops moving
+
+
+    }
+
+    public void stopMoving(ATBPExtension parentExt) { //Stops moving
         for(User u : room.getUserList()){
             ExtensionCommands.moveActor(parentExt,u,this.id,getRelativePoint(),getRelativePoint(),1.75f,false);
         }
@@ -394,7 +375,23 @@ public class Minion {
         else return "super";
     }
 
-    public int getTeam(){
+    @Override
+    public boolean takeDamage(ATBPExtension parentExt, String attacker, int damage) {
+        return false;
+    }
+
+    @Override
+    public void handleDeath() {
+
+    }
+
+    private Point2D setInitialLocation(Team team) {
+        float x = team == Team.BLUE ? (float) blueBotX[0] : (float) blueBotX[blueBotX.length-1];
+        float y = (float) blueBotY[0];
+        return new Point2D.Float(x,y);
+    }
+
+    public Team getTeam(){
         return this.team;
     }
 
@@ -415,7 +412,7 @@ public class Minion {
     }
 
     public boolean damage(ATBPExtension parentExt,String attacker, int damage){
-        this.health-=damage;
+        this.health -=damage;
         if(this.health <= 0){
             System.out.println(this.id + ": I am dead!");
             for(User u : this.getRoomUsers()){
@@ -427,7 +424,11 @@ public class Minion {
     }
 
     public int getMaxHealth(){
-        return this.maxHealth;
+        return this.MAX_HEALTH;
+    }
+
+    private int setInitialPathIndex(Team team) {
+        return team == Team.PURPLE ? blueBotX.length-1 : 0;
     }
 
     public List<User> getRoomUsers(){

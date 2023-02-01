@@ -74,6 +74,58 @@ public class Champion {
         }
     }
 
+    public static void rangedAttackMinion(ATBPExtension parentExt, Room room, String attacker, Minion m, int damage) {
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(parentExt, room, damage, attacker, m), 500, TimeUnit.MILLISECONDS);
+        for (User u : room.getUserList()) {
+            String fxId;
+            if (attacker.contains("creep")) {
+                fxId = "minion_projectile_";
+                int team = Integer.parseInt(String.valueOf(attacker.charAt(0)));
+                if (team == 1) fxId += "blue";
+                else fxId += "purple";
+            } else {
+                User p = room.getUserById(Integer.parseInt(attacker));
+                String avatar = p.getVariable("player").getSFSObjectValue().getUtfString("avatar");
+                if (avatar.contains("skin")) {
+                    avatar = avatar.split("_")[0];
+                }
+                fxId = avatar + "_projectile";
+            }
+            ExtensionCommands.createProjectileFX(parentExt, u, fxId, attacker, m.getId(), "Bip001", "Bip001", (float) 0.5);
+        }
+    }
+
+    //NEW
+    public static void attackMinion(ATBPExtension parentExt, String attacker, Minion m, int damage, boolean ranged) {
+
+        if (ranged) {
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(parentExt, room, damage, attacker, m), 500, TimeUnit.MILLISECONDS);
+            ExtensionCommands.createProjectileFX(parentExt, attacker, fxId, attacker, m.getId(), "Bip001", "Bip001", (float) 0.5);
+            return;
+        }
+        float currentHealth = m.getHealth()-damage;
+        if(m.damage(parentExt,attacker,damage)){ //Minion dies
+            System.out.println("Minion dead!");
+        }
+        else{
+            float maxHealth = m.getMaxHealth();
+            double pHealth = currentHealth/maxHealth;
+            ISFSObject updateData = new SFSObject();
+            updateData.putUtfString("id",m.getId());
+            updateData.putInt("currentHealth",(int) currentHealth);
+            updateData.putDouble("pHealth",pHealth);
+            updateData.putInt("maxHealth", (int) maxHealth);
+            for(User u : m.getRoomUsers()){
+                ExtensionCommands.updateActorData(parentExt,u,updateData);
+            }
+        }
+
+
+    }
+
+
+
+
 
     //TODO: Implement player death
     private static void handleDeath(ATBPExtension parentExt, User player){
@@ -124,6 +176,55 @@ public class Champion {
         if(notify) tower.triggerNotification(); //Resets tower notification time
     }
 
+    public static void rangedAttackTower(ATBPExtension parentExt, Room room, String attacker, Tower tower, int damage){ //Handles ranged attacks against tower
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(parentExt,room,damage,attacker,tower),500, TimeUnit.MILLISECONDS);
+        for(User u : room.getUserList()){
+            String fxId;
+            if(attacker.contains("creep")){
+                fxId = "minion_projectile_";
+                int team = Integer.parseInt(String.valueOf(attacker.charAt(0)));
+                if(team == 1) fxId+="blue";
+                else fxId+="purple";
+            }else{
+                User p = room.getUserById(Integer.parseInt(attacker));
+                String avatar = p.getVariable("player").getSFSObjectValue().getUtfString("avatar");
+                if(avatar.contains("skin")){
+                    avatar = avatar.split("_")[0];
+                }
+                fxId = avatar+"_projectile";
+            }
+            ExtensionCommands.createProjectileFX(parentExt,u,fxId,attacker,tower.getId(),"Bip001","Bip001",0.5f);
+        }
+    }
+
+    //NEW
+    public static void attackTower(ATBPExtension parentExt, Room room, String attacker, Tower tower, int damage, boolean ranged) {
+        if (ranged){
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(parentExt,room,damage,attacker,tower),500, TimeUnit.MILLISECONDS);
+            ExtensionCommands.createProjectileFX(parentExt,u,fxId,attacker,tower.getId(),"Bip001","Bip001",0.5f);
+        }
+        boolean towerDown = tower.damage(damage); // Returns true if tower is destroyed
+        boolean notify = System.currentTimeMillis()-tower.getLastHit() >= 1000*5; //Returns true if we should notify players of a tower being hit
+        for(User u : room.getUserList()){
+            if(notify) ExtensionCommands.towerAttacked(parentExt,u, tower.getTowerNum());
+            if(towerDown){ // Tower is dead
+                handleTowerDeath(parentExt,u,tower,attacker);
+            }
+            float maxHealth = tower.getMaxHealth();
+            float currentHealth = tower.getHealth();
+            double pHealth = currentHealth/maxHealth;
+            ISFSObject updateData = new SFSObject();
+            updateData.putUtfString("id", tower.getId());
+            updateData.putInt("currentHealth", (int) currentHealth);
+            updateData.putDouble("pHealth", pHealth);
+            updateData.putInt("maxHealth", (int) maxHealth);
+            ExtensionCommands.updateActorData(parentExt,u,updateData);
+        }
+        if(notify) tower.triggerNotification(); //Resets tower notification time
+    }
+
+
+
     public static void attackBase(ATBPExtension parentExt, Room room, String attacker, Base base, int damage){
         boolean gameEnded = base.damage(damage);
         for(User u : room.getUserList()){
@@ -149,6 +250,82 @@ public class Champion {
             ExtensionCommands.updateActorData(parentExt,u,updateData);
         }
     }
+
+    public static void rangedAttackBase(ATBPExtension parentExt, Room room, String attacker, Base base, int damage){
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(parentExt,room,damage,attacker,base), 500, TimeUnit.MILLISECONDS);
+        for(User u : room.getUserList()){
+            String fxId;
+            if(attacker.contains("creep")){
+                fxId = "minion_projectile_";
+                int team = Integer.parseInt(String.valueOf(attacker.charAt(0)));
+                if(team == 1) fxId+="blue";
+                else fxId+="purple";
+            }else{
+                User p = room.getUserById(Integer.parseInt(attacker));
+                String avatar = p.getVariable("player").getSFSObjectValue().getUtfString("avatar");
+                if(avatar.contains("skin")){
+                    avatar = avatar.split("_")[0];
+                }
+                fxId = avatar+"_projectile";
+            }
+            ExtensionCommands.createProjectileFX(parentExt,u,fxId,attacker,base.getId(),"Bip001","Bip001",(float)0.5);
+        }
+    }
+
+    //NEW
+    public static void attackBase(ATBPExtension parentExt, Room room, String attacker, Base base, int damage, boolean ranged){
+        if (ranged) {
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(parentExt,room,damage,attacker,base), 500, TimeUnit.MILLISECONDS);
+            ExtensionCommands.createProjectileFX(parentExt,u,fxId,attacker,base.getId(),"Bip001","Bip001",(float)0.5);
+        }
+        boolean gameEnded = base.damage(damage);
+        for(User u : room.getUserList()){
+            if(gameEnded){ //Handle end of game
+                double oppositeTeam = 0;
+                if(base.getTeam() == 0) oppositeTeam = 1;
+                System.out.println("Game ended!");
+                try{
+                    ExtensionCommands.gameOver(parentExt,u,oppositeTeam);
+                }catch(Exception e){
+                    e.printStackTrace();
+                    System.out.println(e);
+                }
+            }
+            float maxHealth = Base.MAX_HEALTH;
+            float currentHealth = base.getHealth();
+            double pHealth = currentHealth/maxHealth;
+            ISFSObject updateData = new SFSObject();
+            updateData.putUtfString("id", base.getId());
+            updateData.putInt("currentHealth", (int) currentHealth);
+            updateData.putDouble("pHealth", pHealth);
+            updateData.putInt("maxHealth", (int) maxHealth);
+            ExtensionCommands.updateActorData(parentExt,u,updateData);
+        }
+
+
+    }
+    //new
+    public static void rangedAttack(ATBPExtension parentExt, Room room, String attacker, NPC target, int damage){ //Handles ranged attacks against tower
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(parentExt,room,damage,attacker,target),500, TimeUnit.MILLISECONDS);
+        for(User u : room.getUserList()){
+            String fxId;
+            if(attacker.contains("creep")){
+                fxId = "minion_projectile_";
+                int team = Integer.parseInt(String.valueOf(attacker.charAt(0)));
+                if(team == 1) fxId+="blue";
+                else fxId+="purple";
+            }else{
+                User p = room.getUserById(Integer.parseInt(attacker));
+                String avatar = p.getVariable("player").getSFSObjectValue().getUtfString("avatar");
+                if(avatar.contains("skin")){
+                    avatar = avatar.split("_")[0];
+                }
+                fxId = avatar+"_projectile";
+            }
+            ExtensionCommands.createProjectileFX(parentExt,u,fxId,attacker,target.getId(),"Bip001","Bip001",0.5f);
+        }
+    }
+
 
     public static void handleBaseDeath(ATBPExtension parentExt, Room room, Base base){
 
@@ -178,70 +355,11 @@ public class Champion {
         ExtensionCommands.updateScores(parentExt,u,teamA,teamB);
     }
 
-    public static void rangedAttackTower(ATBPExtension parentExt, Room room, String attacker, Tower tower, int damage){ //Handles ranged attacks against tower
-        //Schedules damage after projectile hits target
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(parentExt,room,damage,attacker,tower),500, TimeUnit.MILLISECONDS);
-        for(User u : room.getUserList()){
-            String fxId;
-            if(attacker.contains("creep")){
-                fxId = "minion_projectile_";
-                int team = Integer.parseInt(String.valueOf(attacker.charAt(0)));
-                if(team == 1) fxId+="blue";
-                else fxId+="purple";
-            }else{
-                User p = room.getUserById(Integer.parseInt(attacker));
-                String avatar = p.getVariable("player").getSFSObjectValue().getUtfString("avatar");
-                if(avatar.contains("skin")){
-                    avatar = avatar.split("_")[0];
-                }
-                fxId = avatar+"_projectile";
-            }
-            ExtensionCommands.createProjectileFX(parentExt,u,fxId,attacker,tower.getId(),"Bip001","Bip001",(float)0.5);
-        }
-    }
 
-    public static void rangedAttackMinion(ATBPExtension parentExt, Room room, String attacker, Minion m, int damage){
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(parentExt,room,damage,attacker,m), 500, TimeUnit.MILLISECONDS);
-        for(User u : room.getUserList()){
-            String fxId;
-            if(attacker.contains("creep")){
-                fxId = "minion_projectile_";
-                int team = Integer.parseInt(String.valueOf(attacker.charAt(0)));
-                if(team == 1) fxId+="blue";
-                else fxId+="purple";
-            }else{
-                User p = room.getUserById(Integer.parseInt(attacker));
-                String avatar = p.getVariable("player").getSFSObjectValue().getUtfString("avatar");
-                if(avatar.contains("skin")){
-                    avatar = avatar.split("_")[0];
-                }
-                fxId = avatar+"_projectile";
-            }
-            ExtensionCommands.createProjectileFX(parentExt,u,fxId,attacker,m.getId(),"Bip001","Bip001",(float)0.5);
-        }
-    }
 
-    public static void rangedAttackBase(ATBPExtension parentExt, Room room, String attacker, Base base, int damage){
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(parentExt,room,damage,attacker,base), 500, TimeUnit.MILLISECONDS);
-        for(User u : room.getUserList()){
-            String fxId;
-            if(attacker.contains("creep")){
-                fxId = "minion_projectile_";
-                int team = Integer.parseInt(String.valueOf(attacker.charAt(0)));
-                if(team == 1) fxId+="blue";
-                else fxId+="purple";
-            }else{
-                User p = room.getUserById(Integer.parseInt(attacker));
-                String avatar = p.getVariable("player").getSFSObjectValue().getUtfString("avatar");
-                if(avatar.contains("skin")){
-                    avatar = avatar.split("_")[0];
-                }
-                fxId = avatar+"_projectile";
-            }
-            ExtensionCommands.createProjectileFX(parentExt,u,fxId,attacker,base.getId(),"Bip001","Bip001",(float)0.5);
-        }
-    }
 
+
+    @Deprecated
     public static void handleMinionDeath(ATBPExtension parentExt, User u, String attacker, Minion m){
         System.out.println("Dying!");
         ExtensionCommands.knockOutActor(parentExt,u,m.getId(),attacker,0);
@@ -302,8 +420,8 @@ class RangedAttack implements Runnable{ //Handles damage from ranged attacks
     ATBPExtension parentExt;
     Room room;
     int damage;
-    String target;
-    Tower tower;
+    String targetId;
+    NPC target;
     String attacker;
     Minion minion;
     Base base;
@@ -316,32 +434,16 @@ class RangedAttack implements Runnable{ //Handles damage from ranged attacks
         this.attacker = attacker;
     }
 
-    RangedAttack(ATBPExtension parentExt, Room room, int damage, String attacker, Tower tower){
+    RangedAttack(ATBPExtension parentExt, Room room, int damage, String attacker, NPC target){
         this.parentExt = parentExt;
         this.room = room;
         this.damage = damage;
-        this.target = tower.getId();
-        this.tower = tower;
+        this.targetId = target.getId();
+        this.target = target;
         this.attacker = attacker;
     }
 
-    RangedAttack(ATBPExtension parentExt, Room room, int damage, String attacker, Minion m){
-        this.parentExt = parentExt;
-        this.room = room;
-        this.damage = damage;
-        this.target = m.getId();
-        this.minion = m;
-        this.attacker = attacker;
-    }
 
-    RangedAttack(ATBPExtension parentExt, Room room, int damage, String attacker, Base b){
-        this.parentExt = parentExt;
-        this.room = room;
-        this.damage = damage;
-        this.target = b.getId();
-        this.base = b;
-        this.attacker = attacker;
-    }
     @Override
     public void run() {
         if(target.contains("tower") && tower != null){

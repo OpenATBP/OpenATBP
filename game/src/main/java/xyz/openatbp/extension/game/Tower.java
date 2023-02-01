@@ -1,9 +1,66 @@
 package xyz.openatbp.extension.game;
 
+import xyz.openatbp.extension.ATBPExtension;
+
 import java.awt.geom.Point2D;
 
 //TODO: Add tower fighting back
-public class Tower {
+public class Tower extends NPC {
+
+    public static int MAX_HEALTH = 800;
+    private final int[] PURPLE_TOWER_NUM = {2,1,0};
+    private final int[] BLUE_TOWER_NUM = {5,4,3};
+    private long lastHit = 0;
+    private boolean isDestroyed = false;
+    private int towerNum;
+
+    public Tower(String id, Team team, Point2D location) {
+        this.id = id;
+        this.team = team;
+        this.location = location;
+        this.towerNum = getTowerNum(team);
+
+    }
+
+
+    @Override
+    public boolean takeDamage(ATBPExtension parentExt, String attacker, int damage) {
+        this.health -= damage;
+        return this.health <= 0;
+    }
+
+    @Override
+    public void handleDeath() {
+
+    }
+
+    public void destroy(){
+        this.isDestroyed = true;
+    }
+
+    public void triggerNotification(){ //Resets the hit timer so players aren't spammed by the tower being attacked
+        this.lastHit = System.currentTimeMillis();
+    }
+
+    public boolean isDestroyed() {
+        return isDestroyed;
+    }
+
+    public int getTowerNum(Team team){ //Gets tower number for the client to process correctly
+        /*
+        0 - Purple Base Tower
+        1 - Purple Bot Tower
+        2 - Purple Top Tower
+        3 - Blue Base Tower
+        4 - Blue Bot Tower
+        5 - Blue Top Tower
+         */
+        int towerNum = Integer.parseInt(this.id.split("_")[1].replace("tower",""))-1;
+        return (team == Team.BLUE) ? BLUE_TOWER_NUM[towerNum] : PURPLE_TOWER_NUM[towerNum];
+    }
+
+
+    /*
     private int health = 800;
     private int maxHealth = 800;
     private Point2D location;
@@ -44,6 +101,7 @@ public class Tower {
         4 - Blue Bot Tower
         5 - Blue Top Tower
          */
+    /*
         String[] towerIdComponents = this.id.split("_");
         if(towerIdComponents[0].equalsIgnoreCase("blue")){
             return BLUE_TOWER_NUM[Integer.parseInt(towerIdComponents[1].replace("tower",""))-1];
@@ -75,4 +133,6 @@ public class Tower {
     public boolean isDestroyed(){
         return this.destroyed;
     }
+    */
+
 }

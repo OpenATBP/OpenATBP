@@ -1,11 +1,45 @@
 package xyz.openatbp.extension.game;
 
+import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.MapData;
 
 import java.awt.geom.Point2D;
 
-public class Base {
+public class Base extends NPC {
 
+    public static int MAX_HEALTH = 2500;
+
+    public Base(Team team) {
+        this.team = team;
+        this.id = setId(team);
+        this.location = setLocation(team);
+
+    }
+
+
+    @Override
+    public boolean takeDamage(ATBPExtension parentExt, String attacker, int damage) {
+        this.health -= damage;
+        return this.health <= 0;
+    }
+
+    @Override
+    public void handleDeath() {
+
+    }
+
+    private Point2D setLocation(Team team) {
+        float x = (team == Team.BLUE) ? MapData.L2_BASE1_X*-1 : MapData.L2_BASE1_X;
+        return  new Point2D.Float(x,0f);
+
+    }
+
+    private String setId(Team team) {
+        return (team == Team.BLUE) ? "base_blue" : "base_purple";
+
+
+    }
+    /*
     private int team;
     private String id;
     private Point2D location;
@@ -53,4 +87,6 @@ public class Base {
         this.health-=damage;
         return this.health<=0;
     }
+    */
+
 }
