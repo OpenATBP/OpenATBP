@@ -94,6 +94,7 @@ function createNewUser(username,authpass){ //Creates new user in web server and 
 }
 
 client.connect(err => {
+  console.log(err);
   const collection = client.db("openatbp").collection("players");
   const shopCollection = client.db("openatbp").collection("shop");
 

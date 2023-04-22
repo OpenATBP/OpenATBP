@@ -51,7 +51,7 @@ public class ATBPExtension extends SFSExtension {
         this.addRequestHandler("req_toggle_auto_level", AutoLevelHandler.class);
         this.addRequestHandler("req_client_ready", ClientReadyHandler.class);
         this.addRequestHandler("req_dump_player", Stub.class);
-        this.addRequestHandler("req_auto_target", Stub.class);
+        this.addRequestHandler("req_auto_target", AutoTargetHandler.class);
         this.addRequestHandler("req_admin_command", Stub.class);
         this.addRequestHandler("req_spam", Stub.class);
 

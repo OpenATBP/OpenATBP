@@ -67,6 +67,11 @@ public class Base extends Actor{
 
     }
 
+    @Override
+    public void update(int msRan) {
+
+    }
+
     public void unlock(){
         unlocked = true;
     }

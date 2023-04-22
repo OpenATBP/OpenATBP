@@ -16,6 +16,7 @@ import xyz.openatbp.extension.game.Actor;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.champions.UserActor;
 
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.concurrent.TimeUnit;
 
@@ -28,32 +29,43 @@ public class HitActorHandler extends BaseClientRequestHandler {
         UserActor actor = handler.getPlayer(String.valueOf(sender.getId()));
         if(actor != null){
             String targetId = params.getUtfString("target_id");
-            Actor target = null;
-            if(targetId.contains("creep")) target = handler.getMinion(targetId);
-            else if(targetId.contains("tower")) target = handler.getTower(targetId);
-            else if(targetId.contains("base")) target = handler.getOpposingTeamBase(actor.getTeam());
-            else handler.getPlayer(targetId);
+            Actor target = handler.getActor(targetId);
+            Point2D location = new Point2D.Float(params.getFloat("x"),params.getFloat("z"));
             if(target != null){
+                actor.setTarget(target);
                 if(actor.withinRange(target) && actor.canAttack()){
-                    Point2D location = new Point2D.Float(params.getFloat("x"),params.getFloat("z"));
-                    ExtensionCommands.moveActor(parentExt,sender,actor.getId(),location,location,3.75f,false);
+
+                    ExtensionCommands.moveActor(parentExt,sender,actor.getId(),location,location,(float) actor.getSpeed(),false);
                     actor.setLocation(location);
                     actor.setCanMove(false);
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(actor),250,TimeUnit.MILLISECONDS);
                     actor.attack(target);
                 }else if(!actor.withinRange(target)){ //Move actor
-
+                    int attackRange = parentExt.getActorStats(actor.getAvatar()).get("attackRange").asInt();
+                    Line2D movementLine = new Line2D.Float(location,target.getLocation());
+                    float targetDistance = (float)target.getLocation().distance(location)-attackRange;
+                    Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
+                    actor.setPath(newPath);
+                    ExtensionCommands.moveActor(parentExt,sender, actor.getId(),location, newPath.getP2(), (float) actor.getSpeed(),true);
+                }else if(actor.withinRange(target)){
+                    trace("Failed to attack!");
+                    ExtensionCommands.moveActor(parentExt,sender,actor.getId(),location,location, (float) actor.getSpeed(),false);
+                    actor.setLocation(location);
                 }
+            }else{
+                trace("No target found!");
             }
+        }else{
+            trace("No player found!");
         }
         trace(params.getDump());
     }
 
-    private class MovementStopper implements Runnable {
+    public static class MovementStopper implements Runnable {
 
         UserActor actor;
 
-        MovementStopper(UserActor actor){
+        public MovementStopper(UserActor actor){
             this.actor = actor;
         }
 

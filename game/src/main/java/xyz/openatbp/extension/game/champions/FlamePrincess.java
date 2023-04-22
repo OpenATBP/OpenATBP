@@ -13,17 +13,38 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class FlamePrincess extends UserActor{
 
     private boolean ultFinished = false;
     private boolean passiveEnabled = false;
     private long lastPassiveUsage = 0;
+    private long lastUltUsage = -1;
     private boolean ultStarted = false;
     private int ultUses = 3;
 
     public FlamePrincess(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+    }
+
+    @Override
+    public void update(int msRan){
+        super.update(msRan);
+        if(this.ultStarted && lastUltUsage == -1) lastUltUsage = msRan;
+        if(this.ultStarted && !this.ultFinished && msRan-lastUltUsage == 1000){
+            lastUltUsage = msRan;
+            for(Actor a : Champion.getUsersInRadius(parentExt.getRoomHandler(this.room.getId()),this.location,2)){
+                if(a.getTeam() != this.team){ //TODO: Set so FP doesn't target her team or self
+                    System.out.println("Damaging: " + a.getAvatar());
+                    a.damaged(this,75);
+                }else{
+                    System.out.println(a.getId() + " is on your team!");
+                }
+            }
+        }else{
+            System.out.println("ms: " + msRan + "vs " + lastUltUsage);
+        }
     }
 
     @Override
@@ -126,12 +147,13 @@ public class FlamePrincess extends UserActor{
                 case 2:
                     RoomHandler roomHandler = parentExt.getRoomHandler(player.getLastJoinedRoom().getId());
                     Point2D center = new Point2D.Float(this.abilityData.getFloat("x"),this.abilityData.getFloat("z"));
-                    List<UserActor> affectedUsers = Champion.getUsersInRadius(roomHandler,center,2);
-                    for(UserActor u : affectedUsers){
+                    List<Actor> affectedUsers = Champion.getUsersInRadius(roomHandler,center,2).stream().filter(a -> a.getClass() == UserActor.class).collect(Collectors.toList());
+                    for(Actor u : affectedUsers){
+                        UserActor userActor = (UserActor) u;
                         System.out.println("Hit: " + u.getAvatar());
                         u.setState(ActorState.POLYMORPH, true);
                         u.damaged(FlamePrincess.this,50);
-                        Champion.giveBuff(parentExt,u.getUser(), Buff.POLYMORPH);
+                        Champion.giveBuff(parentExt,userActor.getUser(), Buff.POLYMORPH);
                     }
                     System.out.println("Ability done!");
                     break;
@@ -148,11 +170,13 @@ public class FlamePrincess extends UserActor{
                         ultStarted = false;
                         ultFinished = true;
                         ultUses = 3;
+                        lastUltUsage = -1;
                     }else if(ultFinished){
                         System.out.println("Ability already ended!");
                         ultStarted = false;
                         ultFinished = false;
                         ultUses = 3;
+                        lastUltUsage = -1;
                     }
                     break;
                 case 4:
@@ -197,7 +221,7 @@ public class FlamePrincess extends UserActor{
         @Override
         public void run() {
             target.damaged(FlamePrincess.this,50);
-            if(FlamePrincess.this.passiveEnabled){
+            if(FlamePrincess.this.passiveEnabled && (target.getClass() != Tower.class && target.getClass() != Base.class)){
                 FlamePrincess.this.passiveEnabled = false;
                 ExtensionCommands.removeFx(parentExt,room,"flame_passive");
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"passive",true,10000,0);

@@ -12,11 +12,14 @@ import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
 import com.smartfoxserver.v2.entities.variables.SFSUserVariable;
 import com.smartfoxserver.v2.entities.variables.UserVariable;
 import com.smartfoxserver.v2.exceptions.SFSVariableException;
+import xyz.openatbp.extension.game.Monster;
 
 import java.awt.*;
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public class GameManager {
 
@@ -278,5 +281,21 @@ public class GameManager {
                 node.set(String.valueOf(u.getId()),player);
         }
         return node;
+    }
+
+    public static List<Monster> initializeCamps(ATBPExtension parentExt, Room room){
+        List<Monster> monsters = new ArrayList<>(8);
+        monsters.add(new Monster(parentExt,room,MapData.GRASS,"grassbear"));
+        monsters.add(new Monster(parentExt,room,MapData.HUGWOLF,"hugwolf"));
+        char[] chars = {'a','b','c'};
+        for(int i = 0; i < MapData.OWLS.length; i++){
+            String monsterName = "ironowl_"+chars[i];
+            monsters.add(new Monster(parentExt,room,MapData.OWLS[i],monsterName));
+        }
+        for(int i = 0; i < MapData.GNOMES.length; i++){
+            String monsterName = "gnome_"+chars[i];
+            monsters.add(new Monster(parentExt,room,MapData.GNOMES[i],monsterName));
+        }
+        return monsters;
     }
 }

@@ -7,9 +7,11 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.GameManager;
 import xyz.openatbp.extension.game.Actor;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.reqhandlers.HitActorHandler;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
@@ -22,14 +24,14 @@ public class UserActor extends Actor {
 
     protected User player;
     protected boolean canMove = true;
-    private Point2D destination;
+    protected Point2D destination;
     private Point2D originalLocation;
     private float timeTraveled = 0;
     protected double attackCooldown;
     protected Point2D lastTargetLocation;
     protected Actor target;
     protected ScheduledFuture<?> currentAutoAttack = null;
-    protected Map<ActorState, Boolean> states;
+    protected boolean autoAttackEnabled = false;
 
     public UserActor(User u, ATBPExtension parentExt){
         this.parentExt = parentExt;
@@ -41,14 +43,12 @@ public class UserActor extends Actor {
         float x = playerLoc.getSFSObject("p1").getFloat("x");
         float z = playerLoc.getSFSObject("p1").getFloat("z");
         this.location = new Point2D.Float(x,z);
+        this.originalLocation = location;
+        this.destination = location;
         this.speed = getStat("speed");
         this.attackCooldown = getStat("attackSpeed");
         this.currentHealth = u.getVariable("stats").getSFSObjectValue().getInt("currentHealth");
         this.maxHealth = u.getVariable("stats").getSFSObjectValue().getInt("maxHealth");
-        states = new HashMap<>(ActorState.values().length);
-        for(ActorState s : ActorState.values()){
-            states.put(s, false);
-        }
         this.room = u.getLastJoinedRoom();
         this.attackSpeed = getStat("attackSpeed");
         this.attackCooldown = 500;
@@ -56,6 +56,10 @@ public class UserActor extends Actor {
     }
 
     public UserActor(){
+    }
+
+    public void setAutoAttackEnabled(boolean enabled){
+        this.autoAttackEnabled = enabled;
     }
 
     protected Point2D getRelativePoint(boolean external){ //Gets player's current location based on time
@@ -105,11 +109,18 @@ public class UserActor extends Actor {
         this.timeTraveled = 0f;
     }
 
+    public void setPath(Line2D path){
+        this.originalLocation = path.getP1();
+        this.destination = path.getP2();
+        this.timeTraveled = 0f;
+    }
+
     public void updateMovementTime(){
         this.timeTraveled+=0.1f;
     }
 
     public void cancelAuto(){
+        this.target = null;
         if(this.currentAutoAttack != null){
             System.out.println("Auto canceled!");
             this.currentAutoAttack.cancel(false);
@@ -176,6 +187,15 @@ public class UserActor extends Actor {
         }
     }
 
+    public void autoAttack(Actor a){
+        Point2D location = this.location;
+        ExtensionCommands.moveActor(parentExt,this.player,this.id,location,location,3.75f,false);
+        this.setLocation(location);
+        this.setCanMove(false);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new HitActorHandler.MovementStopper(this),250,TimeUnit.MILLISECONDS);
+        this.attack(a);
+    }
+
     public void reduceAttackCooldown(){
         this.attackCooldown-=100;
     }
@@ -190,6 +210,47 @@ public class UserActor extends Actor {
         ExtensionCommands.knockOutActor(parentExt,player, String.valueOf(player.getId()),a.getId(),10);
         SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.RespawnCharacter(parentExt,player.getLastJoinedRoom(),String.valueOf(player.getId())),10, TimeUnit.SECONDS);
     }
+
+    @Override
+    public void update(int msRan) {
+        float x = (float) this.getOriginalLocation().getX();
+        float z = (float) this.getOriginalLocation().getY();
+        Point2D currentPoint = this.getLocation();
+        if(currentPoint.getX() != x && currentPoint.getY() != z){
+            this.updateMovementTime();
+        }
+        if(!this.canAttack()) this.reduceAttackCooldown();
+        if(this.target != null && this.autoAttackEnabled){
+            if(this.withinRange(target) && this.canAttack()){
+                this.autoAttack(target);
+                System.out.println("Auto attacking!");
+            }else if(!this.withinRange(target)){
+                int attackRange = parentExt.getActorStats(this.avatar).get("attackRange").asInt();
+                Line2D movementLine = new Line2D.Float(currentPoint,target.getLocation());
+                float targetDistance = (float)target.getLocation().distance(currentPoint)-attackRange;
+                Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
+                if(newPath.getP2().distance(this.destination) > 0.1f){
+                    System.out.println("Distance: " + newPath.getP2().distance(this.destination));
+                    this.setPath(newPath);
+                    ExtensionCommands.moveActor(parentExt,this.player, this.id,currentPoint, movementLine.getP2(), (float) this.speed,true);
+                }
+            }
+        }else{
+            if(this.target != null) System.out.println("Target: " + this.target.getId());
+            System.out.println("AutoAttack: " + this.autoAttackEnabled);
+        }
+        if(msRan % 1000 == 0){
+            if(this.isState(ActorState.POLYMORPH)){
+                for(Actor a : Champion.getUsersInRadius(parentExt.getRoomHandler(this.room.getId()),this.location,2)){
+                    if(a.getTeam() != this.team){
+                        System.out.println("Damaging: " + a.getAvatar());
+                        a.damaged(this,50);
+                    }
+                }
+            }
+        }
+    }
+
 
     public void useAbility(int ability, ISFSObject abilityData){System.out.println("No character selected!");}
     public boolean canMove(){
@@ -209,6 +270,10 @@ public class UserActor extends Actor {
             this.states.put(s,stateBool);
             ExtensionCommands.updateActorState(parentExt,player,id,s,stateBool);
         }
+    }
+
+    public void setTarget(Actor a){
+        this.target = a;
     }
 
     public boolean isState(ActorState state){

@@ -18,6 +18,7 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
@@ -176,16 +177,16 @@ public class Champion {
         return points;
     }
 
-    public static List<UserActor> getUsersInRadius(RoomHandler room, Point2D center, float radius){
-        List<UserActor> allUsers = room.getPlayers();
-        List<UserActor> affectedUsers = new ArrayList<>(allUsers.size());
+    public static List<Actor> getUsersInRadius(RoomHandler room, Point2D center, float radius){
+        List<Actor> actors = room.getActors();
+        List<Actor> affectedActors = new ArrayList<>(actors.size());
         Ellipse2D circle = new Ellipse2D.Double(center.getX()-radius,center.getY()-radius,radius*2,radius*2);
         System.out.println("Circle center: " + circle.getCenterX() + "," + circle.getCenterY());
-        for(UserActor user : allUsers){
-            Point2D location = user.getLocation();
-            if(circle.contains(location)) affectedUsers.add(user);
+        for(Actor a : actors){
+            Point2D location = a.getLocation();
+            if(circle.contains(location)) affectedActors.add(a);
         }
-        return affectedUsers;
+        return affectedActors;
     }
 
     public static UserActor getUserInLine(RoomHandler room, List<UserActor> exemptedUsers, Line2D line){
@@ -218,6 +219,31 @@ public class Champion {
         float y = slope*x + intercept;
         Point2D newPoint = new Point2D.Float(x,y);
         return new Line2D.Float(projectileLine.getP1(),newPoint);
+    }
+
+    public static Line2D getDistanceLine(Line2D movementLine, float distance){
+        float slope = (float)((movementLine.getP2().getY() - movementLine.getP1().getY())/(movementLine.getP2().getX()-movementLine.getP1().getX()));
+        float intercept = (float)(movementLine.getP2().getY()-(slope*movementLine.getP2().getX()));
+        float deltaX = (float) (movementLine.getX2()-movementLine.getX1());
+        float x = -1;
+        if(distance > 0){
+            x = (float)movementLine.getP1().getX()+(distance);
+            if (deltaX < 0) x = (float)movementLine.getX1()-distance;
+        }else if(distance < 0){
+            x = (float)movementLine.getX2()+distance;
+            if(deltaX < 0) x = (float)movementLine.getX2()-distance;
+        }
+        float y = slope*x + intercept;
+        Point2D newPoint = new Point2D.Float(x,y);
+        return new Line2D.Float(movementLine.getP1(),newPoint);
+    }
+
+    public static HashMap<ActorState, Boolean> getBlankStates(){
+        HashMap<ActorState, Boolean> states = new HashMap<>(ActorState.values().length);
+        for(ActorState s : ActorState.values()){
+            states.put(s,false);
+        }
+        return states;
     }
 
     public static class DelayedAttack implements Runnable{
@@ -253,6 +279,29 @@ public class Champion {
             for(User u : room.getUserList()){
                 ExtensionCommands.respawnActor(parentExt,u,id);
             }
+        }
+    }
+    public static class EffectHandler implements Runnable {
+        Actor actor;
+        ActorState state;
+        double originalStat;
+        EffectHandler(Actor a, ActorState state, double originalStat){
+            this.actor = a;
+            this.state = state;
+            this.originalStat = originalStat;
+        }
+        @Override
+        public void run() {
+            switch(state){
+                case SLOWED:
+                    this.actor.setSpeed((float) originalStat);
+                    break;
+            }
+            this.actor.setState(this.state,false);
+        }
+
+        public double getOriginalStat(){
+            return this.originalStat;
         }
     }
 }
@@ -300,3 +349,4 @@ class BuffHandler implements Runnable {
         }
     }
 }
+

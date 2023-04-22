@@ -78,6 +78,11 @@ public class Tower extends Actor{
         if(this.getTowerNum() == 0 || this.getTowerNum() == 3) parentExt.getRoomHandler(room.getId()).getOpposingTeamBase(this.team).unlock();
     }
 
+    @Override
+    public void update(int msRan) {
+
+    }
+
     public String getId(){
         return this.id;
     }

@@ -12,6 +12,7 @@ import xyz.openatbp.extension.game.champions.UserActor;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -22,6 +23,7 @@ public class RoomHandler implements Runnable{
     private ArrayList<Tower> towers;
     private ArrayList<UserActor> players;
     private List<Projectile> activeProjectiles;
+    private List<Monster> campMonsters;
     private Base[] bases = new Base[2];
     private int mSecondsRan = 0;
     private int secondsRan = 0;
@@ -31,8 +33,9 @@ public class RoomHandler implements Runnable{
         this.parentExt = parentExt;
         this.room = room;
         this.minions = new ArrayList<>();
-        towers = new ArrayList<>();
+        this.towers = new ArrayList<>();
         this.players = new ArrayList<>();
+        this.campMonsters = new ArrayList<>();
         HashMap<String, Point2D> towers0 = MapData.getTowerData(room.getGroupId(),0);
         HashMap<String, Point2D> towers1 = MapData.getTowerData(room.getGroupId(),1);
         for(String key : towers0.keySet()){
@@ -46,10 +49,12 @@ public class RoomHandler implements Runnable{
         for(User u : room.getUserList()){
             players.add(Champion.getCharacterClass(u,parentExt));
         }
-        activeProjectiles = new ArrayList<>();
+        this.activeProjectiles = new ArrayList<>();
+        this.campMonsters = GameManager.initializeCamps(parentExt,room);
     }
     @Override
     public void run() {
+        mSecondsRan+=100;
         if(mSecondsRan % 1000 == 0){ // Handle every second
             try{
                 if(room.getUserList().size() == 0) parentExt.stopScript(room.getId()); //If no one is in the room, stop running.
@@ -80,23 +85,6 @@ public class RoomHandler implements Runnable{
                         }
                     }
                 }
-                for(UserActor u : players){
-                    if(u.isState(ActorState.POLYMORPH)){
-                        for(UserActor a : Champion.getUsersInRadius(this,u.getLocation(),2)){
-                            if(a.getTeam() == u.getTeam()){
-                                System.out.println("Damaging: " + a.getAvatar());
-                                a.damaged(u,50);
-                            }
-                        }
-                    }else if(u.isState(ActorState.TRANSFORMED) && u.getAvatar().contains("flame")){
-                        for(UserActor a : Champion.getUsersInRadius(this,u.getLocation(),2)){
-                            if(a.getTeam() == u.getTeam()){ //TODO: Set so FP doesn't target her team or self
-                                System.out.println("Damaging: " + a.getAvatar());
-                                a.damaged(u,75);
-                            }
-                        }
-                    }
-                }
                 handleCooldowns();
                 secondsRan++;
             }catch(Exception e){
@@ -104,17 +92,10 @@ public class RoomHandler implements Runnable{
             }
         }
         try{
-            mSecondsRan+=100;
             for(UserActor u : players){ //Tracks player location
-                float x = (float) u.getOriginalLocation().getX();
-                float z = (float) u.getOriginalLocation().getY();
-                Point2D currentPoint = u.getLocation();
-                if(currentPoint.getX() != x && currentPoint.getY() != z){
-                    u.updateMovementTime();
-                }
-                if(!u.canAttack()) u.reduceAttackCooldown();
+                u.update(mSecondsRan);
             }
-            for(Projectile p : activeProjectiles){
+            for(Projectile p : activeProjectiles){ //Handles skill shots
                 p.updateTimeTraveled();
                 if(p.getDestination().distance(p.getLocation()) <= 0.01){
                     System.out.println("Removing projectile");
@@ -131,150 +112,11 @@ public class RoomHandler implements Runnable{
             }
             handleHealth();
             for(Minion m : minions){ //Handles minion behavior
-                switchcase:
-                switch(m.getState()){
-                    case 0: // MOVING
-                        if(m.getState() == 0 && (m.getPathIndex() < 10 & m.getPathIndex()>= 0) && m.getDesiredPath() != null && ((Math.abs(m.getDesiredPath().distance(m.getRelativePoint())) < 0.2) || Double.isNaN(m.getDesiredPath().getX()))){
-                            m.arrived();
-                            m.move(parentExt);
-                        }else{
-                            m.addTravelTime(0.1f);
-                        }
-                        for(Minion minion : minions){ // Check other minions
-                            if(m.getTeam() != minion.getTeam() && m.getLane() == minion.getLane()){
-                                if(m.nearEntity(minion.getRelativePoint()) && m.facingEntity(minion.getRelativePoint())){
-                                    if(m.getTarget() == null){
-                                        m.setTarget(parentExt, minion.getId());
-                                        break switchcase;
-                                    }
-                                }
-                            }
-                        }
-                        Base opposingBase = getOpposingTeamBase(m.getTeam());
-                        if(opposingBase.isUnlocked() && m.nearEntity(opposingBase.getLocation(),1.8f)){
-                            if(m.getTarget() == null){
-                                m.setTarget(parentExt,opposingBase.getId());
-                                m.moveTowardsActor(parentExt,opposingBase.getLocation());
-                                break;
-                            }
-                        }
-                        for(Tower t: towers){
-                            if(t.getTeam() != m.getTeam() && m.nearEntity(t.getLocation())){ //Minion prioritizes towers over players
-                                m.setTarget(parentExt,t.getId());
-                                m.moveTowardsActor(parentExt,t.getLocation());
-                                break switchcase;
-                            }
-                        }
-                        for(UserActor u : players){
-                            int health = u.getHealth();
-                            int userTeam = u.getTeam();
-                            Point2D currentPoint = u.getCurrentLocation();
-                            if(m.getTeam() != userTeam && health > 0 && m.nearEntity(currentPoint) && m.facingEntity(currentPoint)){
-                                if(m.getTarget() == null){ //This will probably always be true.
-                                    m.setTarget(parentExt,u.getId());
-                                    ExtensionCommands.setTarget(parentExt,u.getUser(),m.getId(), u.getId());
-                                }
-                            }
-                        }
-                        break;
-                    case 1: //PLAYER TARGET
-                        UserActor target = getPlayer(m.getTarget());
-                        Point2D currentPoint = target.getLocation();
-                        int health = target.getHealth();
-                        if(!m.nearEntity(currentPoint) || health <= 0){ //Resets the minion's movement if it loses the target
-                            m.setState(0);
-                            m.move(parentExt);
-                        }else{
-                            if (m.withinAttackRange(currentPoint) || m.getAttackCooldown() < 300) {
-                                m.stopMoving(parentExt);
-                                if(m.canAttack()) {
-                                    m.attack(target);
-                                }else{
-                                    m.reduceAttackCooldown();
-                                }
-                            }else{
-                                m.moveTowardsActor(parentExt,currentPoint);
-                                if(m.getAttackCooldown() > 300) m.reduceAttackCooldown();
-                            }
-                        }
-                        break;
-                    case 2: // MINION TARGET
-                        Minion targetMinion = findMinion(m.getTarget());
-                        if(targetMinion != null && (m.withinAttackRange(targetMinion.getRelativePoint()) || m.getAttackCooldown() < 300)){
-                            if(!m.isAttacking()){
-                                m.stopMoving(parentExt);
-                                m.setAttacking(true);
-                            }
-                            if(m.canAttack()){
-                                if(targetMinion.getHealth() > 0){
-                                    m.attack(targetMinion);
-                                }else{ //Handles tower death and resets minion on tower kill
-                                    m.setState(0);
-                                    m.move(parentExt);
-                                }
-                            }else{
-                                m.reduceAttackCooldown();
-                            }
-                        }else if(targetMinion != null){
-                            m.moveTowardsActor(parentExt,targetMinion.getRelativePoint()); //TODO: Optimize so it's not sending a lot of commands
-                            if(m.getAttackCooldown() > 300) m.reduceAttackCooldown();
-                        }else{
-                            m.setState(0);
-                            m.move(parentExt);
-                        }
-                        break;
-                    case 3: // TOWER TARGET
-                        Tower targetTower = findTower(m.getTarget());
-                        if(targetTower != null && (m.withinAttackRange(targetTower.getLocation()) || m.getAttackCooldown() < 300)){
-                            if(!m.isAttacking()){
-                                m.stopMoving(parentExt);
-                                m.setAttacking(true);
-                            }
-                            if(m.canAttack()){
-                                if(targetTower.getHealth() > 0){
-                                    m.attack(targetTower);
-                                }else{ //Handles tower death and resets minion on tower kill
-                                    System.out.println("Tower dead!");
-                                    if(targetTower.getTowerNum() == 0 || targetTower.getTowerNum() == 3) bases[targetTower.getTeam()].unlock();
-                                    m.setState(0);
-                                    m.move(parentExt);
-                                    break;
-                                }
-                            }else{
-                                m.reduceAttackCooldown();
-                            }
-                        }else if(targetTower != null){
-                            m.addTravelTime(0.1f);
-                            //m.moveTowardsActor(parentExt,targetTower.getLocation()); //TODO: Optimize so it's not sending a lot of commands
-                            if(m.getAttackCooldown() > 300) m.reduceAttackCooldown();
-                        }else{
-                            m.setState(0);
-                            m.move(parentExt);
-                            break;
-                        }
-                        break;
-                    case 4: // BASE TARGET
-                        Base targetBase = getOpposingTeamBase(m.getTeam());
-                        if(targetBase != null && (m.withinAttackRange(targetBase.getLocation(),1.8f) || m.getAttackCooldown() < 300)){
-                            if(!m.isAttacking()){
-                                m.stopMoving(parentExt);
-                                m.setAttacking(true);
-                            }
-                            if(m.canAttack()){
-                                if(targetBase.getHealth() > 0){
-                                    m.attack(targetBase);
-                                }else{ //Handles base death and ends game
-                                    parentExt.stopScript(room.getId());
-                                }
-                            }else{
-                                m.reduceAttackCooldown();
-                            }
-                        }else if(targetBase != null){
-                            m.addTravelTime(0.1f);
-                            if(m.getAttackCooldown() > 300) m.reduceAttackCooldown();
-                        }
-                        break;
-                }
+                m.update(mSecondsRan);
+            }
+
+            for(Monster m : campMonsters){
+                m.update(mSecondsRan);
             }
             minions.removeIf(m -> (m.getHealth()<=0));
             for(Tower t : towers){
@@ -283,7 +125,7 @@ public class RoomHandler implements Runnable{
             towers.removeIf(t -> (t.getHealth()<=0));
             //TODO: Add minion waves
             if(mSecondsRan == 5000){
-                this.addMinion(1,1,0,1);
+                //this.addMinion(1,1,0,1);
                 //this.addMinion(0,0,0,1);
             }else if(mSecondsRan == 7000){
                 //this.addMinion(1,1,0,1);
@@ -298,14 +140,14 @@ public class RoomHandler implements Runnable{
 
     }
 
-    private Tower findTower(String id){
+    public Tower findTower(String id){
         for(Tower t : towers){
             if(t.getId().equalsIgnoreCase(id)) return t;
         }
         return null;
     }
 
-    private Minion findMinion(String id){
+    public Minion findMinion(String id){
         for(Minion m : minions){
             if(m.getId().equalsIgnoreCase(id)) return m;
         }
@@ -508,8 +350,8 @@ public class RoomHandler implements Runnable{
                 String altarId = "altar_"+i;
                 if(Math.abs(altarStatus[i]) == 6){ //Lock altar
                     altarStatus[i]=10; //Locks altar
-                    if(i == 1) addScore(team,15,u.getUser());
-                    else addScore(team,10,u.getUser());
+                    if(i == 1) addScore(team,15);
+                    else addScore(team,10);
                     cooldowns.put(altarId+"__"+"altar",180);
                     ISFSObject data2 = new SFSObject();
                     data2.putUtfString("id",altarId);
@@ -605,7 +447,7 @@ public class RoomHandler implements Runnable{
         double dist = Math.sqrt(Math.pow(px-altar2_x,2) + Math.pow(pz-altar2_y,2));
         return dist<=2;
     }
-    private void addScore(int team, int points, User user){
+    public void addScore(int team, int points){
         ISFSObject scoreObject = room.getVariable("score").getSFSObjectValue();
         int blueScore = scoreObject.getInt("blue");
         int purpleScore = scoreObject.getInt("purple");
@@ -616,7 +458,10 @@ public class RoomHandler implements Runnable{
         ISFSObject pointData = new SFSObject();
         pointData.putInt("teamA",blueScore);
         pointData.putInt("teamB",purpleScore);
-        parentExt.send("cmd_update_score",pointData,user);
+        for(User u : room.getUserList()){
+            parentExt.send("cmd_update_score",pointData,u);
+        }
+
     }
 
     private void handleCooldowns(){ //Cooldown keys structure is id__cooldownType__value. Example for a buff cooldown could be lich__buff__attackDamage
@@ -695,5 +540,30 @@ public class RoomHandler implements Runnable{
             if(t.getId().equalsIgnoreCase(id)) return t;
         }
         return null;
+    }
+
+    public List<Actor> getActors(){
+        List<Actor> actors = new ArrayList<>();
+        actors.addAll(towers);
+        actors.addAll(minions);
+        Collections.addAll(actors, bases);
+        actors.addAll(players);
+        actors.addAll(campMonsters);
+        return actors;
+    }
+
+    public Actor getActor(String id){
+        for(Actor a : this.getActors()){
+            if(a.getId().equalsIgnoreCase(id)) return a;
+        }
+        return null;
+    }
+
+    public List<Minion> getMinions(){
+        return this.minions;
+    }
+
+    public List<Tower> getTowers(){
+        return this.towers;
     }
 }

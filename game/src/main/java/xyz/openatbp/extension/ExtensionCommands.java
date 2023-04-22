@@ -387,6 +387,16 @@ public class ExtensionCommands {
         parentExt.send("cmd_update_actor_state",data,u);
     }
 
+    public static void updateActorState(ATBPExtension parentExt, Room r, String id, ActorState state, boolean enabled){
+        for(User u : r.getUserList()){
+            ISFSObject data = new SFSObject();
+            data.putUtfString("id", id);
+            data.putInt("state",state.ordinal());
+            data.putBool("enable", enabled);
+            parentExt.send("cmd_update_actor_state",data,u);
+        }
+    }
+
     public static void createProjectile(ATBPExtension parentExt, Room room, UserActor owner, String id, Point2D loc, Point2D dest, float speed){
         for(User u : room.getUserList()){
             ExtensionCommands.createActor(parentExt,u, owner.getId() + id, id,loc,0f,owner.getTeam());
