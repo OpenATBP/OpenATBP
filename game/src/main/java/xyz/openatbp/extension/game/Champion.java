@@ -261,6 +261,23 @@ public class Champion {
         @Override
         public void run() {
             target.damaged(attacker,damage);
+            if(attacker.getActorType() == ActorType.MONSTER && !attacker.getId().contains("_")) attacker.setCanMove(true);
+        }
+    }
+
+    public static class DelayedRangedAttack implements Runnable {
+        Actor attacker;
+        Actor target;
+        int damage;
+
+        DelayedRangedAttack(Actor a, Actor t){
+            this.attacker = a;
+            this.target = t;
+        }
+        @Override
+        public void run() {
+            attacker.rangedAttack(target);
+            attacker.setCanMove(true);
         }
     }
     public static class RespawnCharacter implements  Runnable {

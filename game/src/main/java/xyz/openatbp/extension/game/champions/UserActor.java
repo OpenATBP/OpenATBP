@@ -237,7 +237,6 @@ public class UserActor extends Actor {
             }
         }else{
             if(this.target != null) System.out.println("Target: " + this.target.getId());
-            System.out.println("AutoAttack: " + this.autoAttackEnabled);
         }
         if(msRan % 1000 == 0){
             if(this.isState(ActorState.POLYMORPH)){

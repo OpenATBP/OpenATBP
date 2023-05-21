@@ -25,6 +25,7 @@ public abstract class Actor {
     protected double speed;
     protected String avatar;
     protected ATBPExtension parentExt;
+    protected boolean canMove = true;
     protected double attackSpeed;
     protected double attackCooldown;
     protected ActorType actorType;
@@ -78,6 +79,10 @@ public abstract class Actor {
         this.speed = speed;
     }
 
+    public void setCanMove(boolean move){
+        this.canMove = move;
+    }
+
     public double getSpeed(){return this.speed;}
 
     public void setState(ActorState state, boolean enabled){
@@ -113,6 +118,10 @@ public abstract class Actor {
         }
     }
 
+    public double getStat(String stat){
+        return this.parentExt.getActorStats(this.avatar).get(stat).asDouble();
+    }
+
     public boolean damaged(Actor a, int damage){
         this.currentHealth-=damage;
         if(this.currentHealth <= 0) this.currentHealth = 0;
@@ -130,6 +139,9 @@ public abstract class Actor {
     public abstract void die(Actor a);
 
     public abstract void update(int msRan);
+    public void rangedAttack(Actor a){
+        System.out.println(this.id + " is using an undefined method.");
+    }
 
     public Room getRoom(){
         return this.room;

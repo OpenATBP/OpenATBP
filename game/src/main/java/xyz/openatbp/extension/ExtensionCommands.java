@@ -71,7 +71,7 @@ public class ExtensionCommands {
      * @param orient - Should the actor face in the direction of their path?
      */
     public static void moveActor(ATBPExtension parentExt, User u, String id, Point2D p, Point2D d, float speed, boolean orient){
-        System.out.println("Moving from " + p.getX() + "," + p.getY() + " to " + d.getX() + "," + d.getY());
+        System.out.println(id + " moving!");
         ISFSObject data = new SFSObject();
         data.putUtfString("i",id);
         data.putFloat("px",(float)p.getX());

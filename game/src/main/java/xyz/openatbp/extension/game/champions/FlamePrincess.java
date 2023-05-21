@@ -42,8 +42,6 @@ public class FlamePrincess extends UserActor{
                     System.out.println(a.getId() + " is on your team!");
                 }
             }
-        }else{
-            System.out.println("ms: " + msRan + "vs " + lastUltUsage);
         }
     }
 

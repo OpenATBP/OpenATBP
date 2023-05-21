@@ -48,9 +48,14 @@ public class RoomHandler implements Runnable{
         bases[1] = new Base(parentExt, room, 1);
         for(User u : room.getUserList()){
             players.add(Champion.getCharacterClass(u,parentExt));
+            //ExtensionCommands.createActor(this.parentExt,u,"testMonster","bot_finn",new Point2D.Float(0f,0f),0f,2);
+            ExtensionCommands.createActor(this.parentExt,u,"testMonster2","bot_jake",new Point2D.Float(0f,0f),0f,2);
+            //ExtensionCommands.createActor(this.parentExt,u,"testMonster3","bot_iceking",new Point2D.Float(0f,0f),0f,2);
+
         }
         this.activeProjectiles = new ArrayList<>();
         this.campMonsters = GameManager.initializeCamps(parentExt,room);
+
     }
     @Override
     public void run() {
@@ -65,7 +70,7 @@ public class RoomHandler implements Runnable{
                 ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
                 for(String s : GameManager.SPAWNS){ //Check all mob/health spawns for how long it's been since dead
                     if(s.length()>3){
-                        int spawnRate = 45;
+                        int spawnRate = 10; //Mob spawn rate
                         if(s.equalsIgnoreCase("keeoth")) spawnRate = 120;
                         else if(s.equalsIgnoreCase("ooze")) spawnRate = 90;
                         if(spawns.getInt(s) == spawnRate){ //Mob timers will be set to 0 when killed or health when taken
@@ -507,6 +512,7 @@ public class RoomHandler implements Runnable{
             ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
             if(stats.getInt("currentHealth") > 0 && stats.getInt("currentHealth") < stats.getInt("maxHealth")){
                 double healthRegen = stats.getDouble("healthRegen");
+                this.getPlayer(String.valueOf(u.getId())).setHealth(stats.getInt("currentHealth"));
                 Champion.updateHealth(parentExt,u,(int)healthRegen);
             }
 
@@ -561,6 +567,21 @@ public class RoomHandler implements Runnable{
 
     public List<Minion> getMinions(){
         return this.minions;
+    }
+
+    public List<Monster> getCampMonsters(){
+        return this.campMonsters;
+    }
+
+    public List<Monster> getCampMonsters(String id){
+        List<Monster> returnMonsters = new ArrayList<>(3);
+        String type = id.split("_")[0];
+        for(Monster m : this.campMonsters){
+            if(!m.getId().equalsIgnoreCase(id) && m.getId().contains(type)){
+                returnMonsters.add(m);
+            }
+        }
+        return returnMonsters;
     }
 
     public List<Tower> getTowers(){
