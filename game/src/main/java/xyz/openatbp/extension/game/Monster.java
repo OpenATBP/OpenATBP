@@ -25,7 +25,7 @@ public class Monster extends Actor{
     private Line2D movementLine;
     private boolean dead = false;
 
-    public Monster(ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName){
+    public Monster(ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName){ //TODO: Make all startingLocation(s) uniform
         this.startingLocation = new Point2D.Float(startingLocation[0],startingLocation[1]);
         this.type = MonsterType.BIG;
         this.attackCooldown = 300;
@@ -59,11 +59,10 @@ public class Monster extends Actor{
         this.actorType = ActorType.MONSTER;
     }
     @Override
-    public boolean damaged(Actor a, int damage) {
-        if(this.dead) return true;
-        if(this.location.distance(this.startingLocation) > 0.01f && this.state == AggroState.PASSIVE){
-            //Play sound?
-            if(a.getActorType() == ActorType.PLAYER){
+    public boolean damaged(Actor a, int damage) { //Runs when taking damage
+        if(this.dead) return true; //Prevents bugs that take place when taking damage (somehow from FP passive) after dying
+        if(this.location.distance(this.startingLocation) > 0.01f && this.state == AggroState.PASSIVE){ //Prevents damage when walking back from being de-aggro
+            if(a.getActorType() == ActorType.PLAYER){ //Plays attack-miss sound when trying to damage invulnerable monster
                 UserActor player = (UserActor) a;
                 ExtensionCommands.playSound(parentExt,player.getUser(),"sfx_attack_miss",this.location);
             }
@@ -71,12 +70,12 @@ public class Monster extends Actor{
         }
 
         boolean returnVal = super.damaged(a,damage);
-        if(this.state == AggroState.PASSIVE && this.target == null){
+        if(this.state == AggroState.PASSIVE && this.target == null){ //If being attacked while minding own business, it will target player
             state = AggroState.ATTACKED;
             target = (UserActor) a;
             this.travelTime = 0f;
             this.moveTowardsActor(this.target.getLocation());
-            if(this.type == MonsterType.SMALL){
+            if(this.type == MonsterType.SMALL){ //Gets all mini monsters like gnomes and owls to all target player when one is hit
                 for(Monster m : parentExt.getRoomHandler(this.room.getId()).getCampMonsters(this.id)){
                     m.setAggroState(AggroState.ATTACKED,a);
                 }
@@ -93,22 +92,22 @@ public class Monster extends Actor{
 
     @Override
     public void attack(Actor a) { //TODO: Almost identical to minions - maybe move to Actor class?
-        //System.out.println(this.id + " is attacking " + a.getId());
+        //Called when it is attacking a player
         this.stopMoving();
         this.canMove = false;
         if(this.attackCooldown == 0){
             this.attackCooldown = this.getStat("attackSpeed");
-            for(User u : room.getUserList()){
+            for(User u : room.getUserList()){ //TODO: Add crit chance
                 ExtensionCommands.attackActor(parentExt,u,this.id,a.getId(),(float) a.getLocation().getX(), (float) a.getLocation().getY(), false, true);
             }
-            if(this.avatar.contains("gnome")) SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedRangedAttack(this,a),300,TimeUnit.MILLISECONDS);
-            else SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,10),500, TimeUnit.MILLISECONDS);
-        }else if(attackCooldown == 300){
+            if(this.type == MonsterType.SMALL) SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedRangedAttack(this,a),300,TimeUnit.MILLISECONDS); // Small camps are ranged
+            else SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,10),500, TimeUnit.MILLISECONDS); //Melee damage
+        }else if(attackCooldown == 300){ //Deprecated (changed from internal delay of attacks to using task schedulers)
             reduceAttackCooldown();
-        }else if(attackCooldown == 100 || attackCooldown == 200) reduceAttackCooldown();
+        }else if(attackCooldown == 100 || attackCooldown == 200) reduceAttackCooldown(); //Deprecated (see above) im scared to remove for now
     }
 
-    public void rangedAttack(Actor a){
+    public void rangedAttack(Actor a){ //Called when ranged attacks take place to spawn projectile and deal damage after projectile hits
         String fxId = "gnome_projectile";
         for(User u : room.getUserList()){
             ExtensionCommands.createProjectileFX(this.parentExt,u,fxId,this.id,a.getId(),"Bip001","Bip001",0.5f);
@@ -117,28 +116,27 @@ public class Monster extends Actor{
     }
 
     @Override
-    public void die(Actor a) {
-        if(!this.dead){
+    public void die(Actor a) { //Called when monster dies
+        if(!this.dead){ //No double deaths
             this.dead = true;
-            System.out.println(this.id + ": I am dead :(");
             this.currentHealth = -1;
             RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getId());
             int scoreValue = parentExt.getActorStats(this.id).get("valueScore").asInt();
-            for(User u : room.getUserList()){
+            for(User u : room.getUserList()){ //Handles death animation
                 ExtensionCommands.knockOutActor(parentExt,u,this.id,a.getId(),9);
                 ExtensionCommands.destroyActor(parentExt,u,this.id);
             }
-            if(a.getActorType() == ActorType.PLAYER){
+            if(a.getActorType() == ActorType.PLAYER){ //Adds score + party xp when killed by player
                 roomHandler.addScore(a.getTeam(),scoreValue);
                 roomHandler.handleXPShare((UserActor)a,this.parentExt.getActorXP(this.id));
-                roomHandler.handleSpawnDeath(this);
             }
+            roomHandler.handleSpawnDeath(this);
         }
     }
 
     @Override
     public void update(int msRan) {
-        if(msRan % 1000 == 0){
+        if(msRan % 1000*60 == 0){ //Every second it checks average player level and scales accordingly
             int averagePLevel = parentExt.getRoomHandler(this.room.getId()).getAveragePlayerLevel();
             if(averagePLevel != level){
                 int levelDiff = averagePLevel-level;
@@ -147,7 +145,7 @@ public class Monster extends Actor{
                 Champion.updateServerHealth(this.parentExt,this);
             }
         }
-        if(this.movementLine != null) this.location = this.getRelativePoint();
+        if(this.movementLine != null) this.location = this.getRelativePoint(); //Sets location variable to its actual location using *math*
         else this.movementLine = new Line2D.Float(this.location,this.location);
         if(this.state == AggroState.PASSIVE){
             if(this.currentHealth < this.maxHealth){
@@ -161,7 +159,7 @@ public class Monster extends Actor{
                 travelTime = 0f;
                 this.movementLine = null;
             }
-        }else{
+        }else{ //Monster is pissed!!
             if(this.location.distance(this.startingLocation) >= 10){
                 this.state = AggroState.PASSIVE; //Far from camp, heading back
                 this.move(this.startingLocation);
@@ -174,10 +172,7 @@ public class Monster extends Actor{
                     this.travelTime+=0.1f;
                     this.moveTowardsActor(this.target.getLocation());
                 }else if(this.withinRange(this.target)){
-                    //System.out.println(this.id + ": Distance: " + this.location.distance(this.target.getLocation()) + " Can attack: " + this.canAttack());
                     if(this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f) this.stopMoving();
-                }else{
-                    //System.out.println(this.id + ": Can Move: " + this.canMove + " Within Range: " + this.withinRange(this.target));
                 }
             }
         }
@@ -195,9 +190,8 @@ public class Monster extends Actor{
         this.travelTime = 0f;
     }
 
-    public Point2D getRelativePoint(){ //Gets player's current location based on time TODO: Have this.location be relative point and use startingLocation for calculation
-        if(this.travelTime == 0 && this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f) this.travelTime+=0.1f;
-        //if(this.state == AggroState.ATTACKED) System.out.println(this.id + " Travel Time: " + this.travelTime);
+    public Point2D getRelativePoint(){ //Gets player's current location based on time
+        if(this.travelTime == 0 && this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f) this.travelTime+=0.1f; //Prevents any stagnation in movement
         Point2D rPoint = new Point2D.Float();
         Point2D destination;
         if(this.state == AggroState.PASSIVE) destination = startingLocation;

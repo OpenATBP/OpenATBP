@@ -289,6 +289,11 @@ public class ExtensionCommands {
         parentExt.send("cmd_swap_asset",data,u);
     }
 
+    /**
+     *
+     * @param winningTeam - double value for what the winning team is
+     * @throws JsonProcessingException
+     */
     public static void gameOver(ATBPExtension parentExt, User u, double winningTeam) throws JsonProcessingException {
         System.out.println("Calling game over!");
         ObjectMapper objectMapper = new ObjectMapper();
@@ -306,6 +311,10 @@ public class ExtensionCommands {
         parentExt.send("cmd_game_over", data, u);
     }
 
+    /**
+     *
+     * @param id - ID of effect being removed
+     */
     public static void removeFx(ATBPExtension parentExt, User u, String id){
         ISFSObject data = new SFSObject();
         data.putUtfString("fx_id",id);
@@ -320,6 +329,11 @@ public class ExtensionCommands {
         }
     }
 
+    /**
+     *
+     * @param name - String of sound effect name
+     * @param source - Point2D of where the sound is coming from
+     */
     public static void playSound(ATBPExtension parentExt, ArrayList<User> users, String name, Point2D source){
         for(User u : users){
             ISFSObject data = new SFSObject();
@@ -342,12 +356,24 @@ public class ExtensionCommands {
         parentExt.send("cmd_play_sound",data,u);
     }
 
+    /**
+     *
+     * @param id - ID of player/actor respawning
+     */
     public static void respawnActor(ATBPExtension parentExt, User u, String id){
         ISFSObject data = new SFSObject();
         data.putUtfString("id",id);
         parentExt.send("cmd_respawn_actor",data,u);
     }
 
+    /**
+     *
+     * @param id - ID of actor using ability
+     * @param canCast - Boolean if the actor can recast ability
+     * @param cooldown - Cooldown of ability
+     * @param gCooldown - Cooldown till player can use another ability
+     */
+    //TODO: Note to remove the hard coding after testing
     public static void actorAbilityResponse(ATBPExtension parentExt, User u, String id, boolean canCast, int cooldown, int gCooldown){
         ISFSObject data = new SFSObject();
         data.putUtfString("id",id);
@@ -358,28 +384,12 @@ public class ExtensionCommands {
         parentExt.send("cmd_actor_ability_response",data,u);
     }
 
-    public static void brushChange(ATBPExtension parentExt, Room room, String id, int brushId){
-        ISFSObject data = new SFSObject();
-        data.putUtfString("id",id);
-        data.putInt("brushId",brushId);
-        for(User u : room.getUserList()){
-            parentExt.send("cmd_brush_changed",data,u);
-        }
-    }
-
-    public static void snapActor(ATBPExtension parentExt, Room room, String id, Point2D p, Point2D d, boolean orient){
-        ISFSObject data = new SFSObject();
-        data.putUtfString("i",id);
-        data.putFloat("px", (float) p.getX());
-        data.putFloat("pz",(float) p.getY());
-        data.putFloat("dx", (float)d.getX());
-        data.putFloat("dz", (float) d.getY());
-        data.putBool("o",orient);
-        for(User u : room.getUserList()){
-            parentExt.send("cmd_snap_actor",data,u);
-        }
-    }
-
+    /**
+     *
+     * @param id - String id of actor being impacted
+     * @param state - ActorState of what state is being affected
+     * @param enabled - Boolean of whether the state is active or not
+     */
     public static void updateActorState(ATBPExtension parentExt, User u, String id, ActorState state, boolean enabled){
         ISFSObject data = new SFSObject();
         data.putUtfString("id", String.valueOf(u.getId()));
@@ -398,6 +408,14 @@ public class ExtensionCommands {
         }
     }
 
+    /**
+     *
+     * @param owner - UserActor of who owns the projectile
+     * @param id - Projectile id
+     * @param loc - Starting location of projectile
+     * @param dest - Ending location of projectile
+     * @param speed - Speed of projectile
+     */
     public static void createProjectile(ATBPExtension parentExt, Room room, UserActor owner, String id, Point2D loc, Point2D dest, float speed){
         for(User u : room.getUserList()){
             ExtensionCommands.createActor(parentExt,u, owner.getId() + id, id,loc,0f,owner.getTeam());
