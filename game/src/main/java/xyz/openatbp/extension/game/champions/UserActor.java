@@ -6,17 +6,16 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.GameManager;
 import xyz.openatbp.extension.game.Actor;
 import xyz.openatbp.extension.game.ActorState;
+import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.reqhandlers.HitActorHandler;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -32,7 +31,9 @@ public class UserActor extends Actor {
     protected Actor target;
     protected ScheduledFuture<?> currentAutoAttack = null;
     protected boolean autoAttackEnabled = false;
+    protected int xp = 0;
 
+    //TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt){
         this.parentExt = parentExt;
         this.id = String.valueOf(u.getId());
@@ -53,6 +54,7 @@ public class UserActor extends Actor {
         this.attackSpeed = getStat("attackSpeed");
         this.attackCooldown = 500;
         this.attackRange = getStat("attackRange");
+        this.actorType = ActorType.PLAYER;
     }
 
     public UserActor(){
@@ -325,6 +327,21 @@ public class UserActor extends Actor {
         updateData.putDouble(stat,currentStat+value);
         ExtensionCommands.updateActorData(parentExt,player,updateData);
         SmartFoxServer.getInstance().getTaskScheduler().schedule(new StatChanger(stat,value),duration,TimeUnit.MILLISECONDS);
+    }
+
+    public void addXP(int xp){
+        if(this.level != 10){
+            this.xp+=xp; //TODO: Backpack modifiers
+            System.out.println("Current xp for " + this.id + ":" + this.xp);
+            ExtensionCommands.updateActorData(this.parentExt,this.player,ChampionData.addXP(this,xp,this.parentExt));
+            if(ChampionData.getXPLevel(this.xp) != this.level){
+                this.level++;
+            }
+        }
+    }
+
+    public int getLevel(){
+        return this.level;
     }
 
     protected class MovementStopper implements Runnable {

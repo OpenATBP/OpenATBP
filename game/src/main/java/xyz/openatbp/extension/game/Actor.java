@@ -25,6 +25,7 @@ public abstract class Actor {
     protected double speed;
     protected String avatar;
     protected ATBPExtension parentExt;
+    protected int level = 1;
     protected boolean canMove = true;
     protected double attackSpeed;
     protected double attackCooldown;

@@ -5,6 +5,8 @@ import com.smartfoxserver.v2.entities.SFSUser;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
+import com.smartfoxserver.v2.entities.variables.RoomVariable;
+import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.champions.FlamePrincess;
 import xyz.openatbp.extension.game.champions.UserActor;
@@ -49,12 +51,13 @@ public class RoomHandler implements Runnable{
         for(User u : room.getUserList()){
             players.add(Champion.getCharacterClass(u,parentExt));
             //ExtensionCommands.createActor(this.parentExt,u,"testMonster","bot_finn",new Point2D.Float(0f,0f),0f,2);
-            ExtensionCommands.createActor(this.parentExt,u,"testMonster2","bot_jake",new Point2D.Float(0f,0f),0f,2);
+            //ExtensionCommands.createActor(this.parentExt,u,"testMonster2","bot_jake",new Point2D.Float(0f,0f),0f,2);
             //ExtensionCommands.createActor(this.parentExt,u,"testMonster3","bot_iceking",new Point2D.Float(0f,0f),0f,2);
 
         }
         this.activeProjectiles = new ArrayList<>();
-        this.campMonsters = GameManager.initializeCamps(parentExt,room);
+        this.campMonsters = new ArrayList<>();
+        //this.campMonsters = GameManager.initializeCamps(parentExt,room);
 
     }
     @Override
@@ -119,11 +122,11 @@ public class RoomHandler implements Runnable{
             for(Minion m : minions){ //Handles minion behavior
                 m.update(mSecondsRan);
             }
-
+            minions.removeIf(m -> (m.getHealth()<=0));
             for(Monster m : campMonsters){
                 m.update(mSecondsRan);
             }
-            minions.removeIf(m -> (m.getHealth()<=0));
+            //campMonsters.removeIf(m -> (m.getHealth()<=0));
             for(Tower t : towers){
                 if(t.getHealth() <= 0 && (t.getTowerNum() == 0 || t.getTowerNum() == 3)) bases[t.getTeam()].unlock();
             }
@@ -253,6 +256,7 @@ public class RoomHandler implements Runnable{
     }
 
     private void spawnMonster(String monster){
+        System.out.println("Spawning: " + monster);
         ArrayList<User> users = (ArrayList<User>) room.getUserList();
         String map = room.getGroupId();
         for(User u : users){
@@ -268,10 +272,12 @@ public class RoomHandler implements Runnable{
                         actor="gnome_"+abc[i];
                         x = (float)MapData.GNOMES[i].getX();
                         z = (float)MapData.GNOMES[i].getY();
+                        campMonsters.add(new Monster(parentExt,room,MapData.GNOMES[i],actor));
                     }else{
                         actor="ironowl_"+abc[i];
                         x = (float)MapData.OWLS[i].getX();
                         z = (float)MapData.OWLS[i].getY();
+                        campMonsters.add(new Monster(parentExt,room,MapData.OWLS[i],actor));
                     }
                     monsterObject.putUtfString("id",actor);
                     monsterObject.putUtfString("actor",actor);
@@ -288,19 +294,23 @@ public class RoomHandler implements Runnable{
                     case "hugwolf":
                         x = MapData.HUGWOLF[0];
                         z = MapData.HUGWOLF[1];
+                        campMonsters.add(new Monster(parentExt,room,MapData.HUGWOLF,actor));
                         break;
                     case "grassbear":
                         x = MapData.GRASS[0];
                         z = MapData.GRASS[1];
+                        campMonsters.add(new Monster(parentExt,room,MapData.GRASS,actor));
                         break;
                     case "keeoth":
                         x = MapData.L2_KEEOTH[0];
                         z = MapData.L2_KEEOTH[1];
+                        campMonsters.add(new Monster(parentExt,room,MapData.L2_KEEOTH,actor));
                         break;
                     case "ooze":
                         x = MapData.L2_OOZE[0];
                         z = MapData.L2_OOZE[1];
                         actor = "ooze_monster";
+                        campMonsters.add(new Monster(parentExt,room,MapData.L2_OOZE,actor));
                         break;
                 }
                 monsterObject.putUtfString("id",actor);
@@ -417,7 +427,8 @@ public class RoomHandler implements Runnable{
                         data5.putUtfString("attackerId",String.valueOf(u.getId()));
                         data5.putInt("deathTime",180);
                         parentExt.send("cmd_knockout_actor",data5,u.getUser());
-                        ExtensionCommands.updateActorData(parentExt,u.getUser(),ChampionData.addXP(u.getUser(),101,parentExt));
+                        handleXPShare(u,101);
+                        //ExtensionCommands.updateActorData(parentExt,u.getUser(),ChampionData.addXP(u,101,parentExt));
                     }
                 }else if(Math.abs(altarStatus[i])<=5 && altarStatus[i]!=0){ //Update altar
                     int stage = Math.abs(altarStatus[i]);
@@ -507,7 +518,7 @@ public class RoomHandler implements Runnable{
         }
     }
 
-    private void handleHealthRegen(){
+    private void handleHealthRegen(){ // TODO: Fully heals player for some reason
         for(User u : room.getUserList()){
             ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
             if(stats.getInt("currentHealth") > 0 && stats.getInt("currentHealth") < stats.getInt("maxHealth")){
@@ -582,6 +593,60 @@ public class RoomHandler implements Runnable{
             }
         }
         return returnMonsters;
+    }
+
+    public void handleSpawnDeath(Actor a){
+        System.out.println("The room has killed " + a.getId());
+        String mons = a.getId().split("_")[0];
+        if(a.getActorType() == ActorType.MONSTER){
+            campMonsters.remove((Monster) a);
+            System.out.println("New monster list: \n");
+            for(Monster m : campMonsters){
+                System.out.println(m.getId() + "\n");
+            }
+        }
+
+        for(String s : GameManager.SPAWNS){
+            if(s.contains(mons)){
+                if(s.contains("keeoth")){
+                    room.getVariable("spawns").getSFSObjectValue().putInt(s,0);
+                    return;
+                }
+                else if(s.contains("ooze")){
+                    room.getVariable("spawns").getSFSObjectValue().putInt(s,0);
+                    return;
+                }
+                else if(!s.contains("gnomes") && !s.contains("owls")){
+                    room.getVariable("spawns").getSFSObjectValue().putInt(s,0);
+                    return;
+                }
+                else {
+                    for(Monster m : campMonsters){
+                        if(!m.getId().equalsIgnoreCase(a.getId()) && m.getId().contains(mons)) return;
+                    }
+                    room.getVariable("spawns").getSFSObjectValue().putInt(s,0);
+                    return;
+                }
+            }
+        }
+    }
+
+    public void handleXPShare (UserActor a, int xp){
+        a.addXP(xp);
+        for(UserActor p : players){
+            if(!p.getId().equalsIgnoreCase(a.getId()) && p.getTeam() == a.getTeam()){
+                int newXP = (int)Math.floor(xp*0.2);
+                p.addXP(newXP);
+            }
+        }
+    }
+
+    public int getAveragePlayerLevel(){
+        int combinedPlayerLevel = 0;
+        for(UserActor a : this.players){
+            combinedPlayerLevel+=a.getLevel();
+        }
+        return combinedPlayerLevel/this.players.size();
     }
 
     public List<Tower> getTowers(){

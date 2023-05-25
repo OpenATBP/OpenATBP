@@ -173,6 +173,23 @@ public class ATBPExtension extends SFSExtension {
         return null;
     }
 
+    public JsonNode getActorData(String actorName){
+        JsonNode node = actorDefinitions.get(actorName);
+        if(node.has("MonoBehaviours")){
+            if(node.get("MonoBehaviours").has("ActorData")) return node.get("MonoBehaviours").get("ActorData");
+        }
+        return null;
+    }
+
+    public int getActorXP(String actorName){
+        JsonNode node = getActorData(actorName).get("scriptData");
+        return node.get("xp").asInt();
+    }
+
+    public int getHealthScaling(String actorName){
+        return getActorData(actorName).get("scriptData").get("healthScaling").asInt();
+    }
+
     public void startScripts(Room room){ //Creates a new task scheduler for a room
         RoomHandler handler = new RoomHandler(this,room);
         roomHandlers.put(room.getId(),handler);

@@ -84,6 +84,17 @@ public class Champion {
         stats.putDouble("pHealth",pHealth);
     }
 
+    public static void updateServerHealth(ATBPExtension parentExt, Actor a){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("id",a.getId());
+        data.putInt("maxHealth",a.getMaxHealth());
+        data.putInt("currentHealth",a.getHealth());
+        data.putDouble("pHealth",a.getPHealth());
+        for(User u : a.getRoom().getUserList()){
+            ExtensionCommands.updateActorData(parentExt,u,data);
+        }
+    }
+
     public static UserActor getCharacterClass(User u, ATBPExtension parentExt){
         String avatar = u.getVariable("player").getSFSObjectValue().getUtfString("avatar");
         String character = avatar.split("_")[0];

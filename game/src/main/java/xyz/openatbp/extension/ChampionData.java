@@ -5,14 +5,22 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
+import xyz.openatbp.extension.game.champions.UserActor;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
+
+//TODO: More clearly separate this from Champion.class and make functions void (or move into UserActor functions)
 
 public class ChampionData {
 
     private static final int[] XP_LEVELS = {100,200,300,400,500,600,700,800,900};
+
+    public static int getXPLevel(int xp){
+        for(int i = 0; i < XP_LEVELS.length; i++){
+            if(xp < XP_LEVELS[i]) return i+1;
+        }
+        return -1;
+    }
     public static ISFSObject updateChampionStat(User user, String stat, int value){
         int currentStat = user.getVariable("stats").getSFSObjectValue().getInt(stat);
         user.getVariable("stats").getSFSObjectValue().putInt(stat,currentStat+value);
@@ -24,7 +32,8 @@ public class ChampionData {
         return user.getVariable("stats").getSFSObjectValue();
     }
 
-    public static ISFSObject addXP(User user, int xp, ATBPExtension parentExt){
+    public static ISFSObject addXP(UserActor a, int xp, ATBPExtension parentExt){
+        User user = a.getUser();
         int level = user.getVariable("stats").getSFSObjectValue().getInt("level");
         int currentXp = user.getVariable("stats").getSFSObjectValue().getInt("xp")+xp;
         if(hasLeveledUp(user,xp)){

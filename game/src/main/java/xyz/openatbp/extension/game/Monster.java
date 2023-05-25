@@ -10,7 +10,6 @@ import xyz.openatbp.extension.game.champions.UserActor;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class Monster extends Actor{
@@ -19,11 +18,12 @@ public class Monster extends Actor{
     enum MonsterType{SMALL,BIG};
 
     private AggroState state = AggroState.PASSIVE;
-    private Point2D startingLocation;
+    private final Point2D startingLocation;
     private UserActor target;
     private float travelTime;
-    private MonsterType type;
+    private final MonsterType type;
     private Line2D movementLine;
+    private boolean dead = false;
 
     public Monster(ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName){
         this.startingLocation = new Point2D.Float(startingLocation[0],startingLocation[1]);
@@ -60,10 +60,22 @@ public class Monster extends Actor{
     }
     @Override
     public boolean damaged(Actor a, int damage) {
+        if(this.dead) return true;
+        if(this.location.distance(this.startingLocation) > 0.01f && this.state == AggroState.PASSIVE){
+            //Play sound?
+            if(a.getActorType() == ActorType.PLAYER){
+                UserActor player = (UserActor) a;
+                ExtensionCommands.playSound(parentExt,player.getUser(),"sfx_attack_miss",this.location);
+            }
+            return false;
+        }
+
         boolean returnVal = super.damaged(a,damage);
-        if(this.state == AggroState.PASSIVE){
+        if(this.state == AggroState.PASSIVE && this.target == null){
             state = AggroState.ATTACKED;
             target = (UserActor) a;
+            this.travelTime = 0f;
+            this.moveTowardsActor(this.target.getLocation());
             if(this.type == MonsterType.SMALL){
                 for(Monster m : parentExt.getRoomHandler(this.room.getId()).getCampMonsters(this.id)){
                     m.setAggroState(AggroState.ATTACKED,a);
@@ -81,7 +93,7 @@ public class Monster extends Actor{
 
     @Override
     public void attack(Actor a) { //TODO: Almost identical to minions - maybe move to Actor class?
-        System.out.println(this.id + " is attacking " + a.getId());
+        //System.out.println(this.id + " is attacking " + a.getId());
         this.stopMoving();
         this.canMove = false;
         if(this.attackCooldown == 0){
@@ -105,28 +117,44 @@ public class Monster extends Actor{
     }
 
     @Override
-    public void die(Actor a) { // TODO: Left off here - enemies still hurt you while dead
-        RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getId());
-        int scoreValue = parentExt.getActorStats(this.id).get("valueScore").asInt();
-        for(User u : room.getUserList()){
-            ExtensionCommands.knockOutActor(parentExt,u,this.id,a.getId(),30);
-            ExtensionCommands.destroyActor(parentExt,u,this.id);
+    public void die(Actor a) {
+        if(!this.dead){
+            this.dead = true;
+            System.out.println(this.id + ": I am dead :(");
+            this.currentHealth = -1;
+            RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getId());
+            int scoreValue = parentExt.getActorStats(this.id).get("valueScore").asInt();
+            for(User u : room.getUserList()){
+                ExtensionCommands.knockOutActor(parentExt,u,this.id,a.getId(),9);
+                ExtensionCommands.destroyActor(parentExt,u,this.id);
+            }
+            if(a.getActorType() == ActorType.PLAYER){
+                roomHandler.addScore(a.getTeam(),scoreValue);
+                roomHandler.handleXPShare((UserActor)a,this.parentExt.getActorXP(this.id));
+                roomHandler.handleSpawnDeath(this);
+            }
         }
-        roomHandler.addScore(a.getTeam(),scoreValue);
     }
 
     @Override
     public void update(int msRan) {
+        if(msRan % 1000 == 0){
+            int averagePLevel = parentExt.getRoomHandler(this.room.getId()).getAveragePlayerLevel();
+            if(averagePLevel != level){
+                int levelDiff = averagePLevel-level;
+                this.maxHealth+= parentExt.getHealthScaling(this.id)*levelDiff;
+                this.level = averagePLevel;
+                Champion.updateServerHealth(this.parentExt,this);
+            }
+        }
         if(this.movementLine != null) this.location = this.getRelativePoint();
         else this.movementLine = new Line2D.Float(this.location,this.location);
-        for(User u : this.room.getUserList()){
-            //if(this.id.contains("gnome_a")) ExtensionCommands.moveActor(this.parentExt,u,"testMonster",this.location,this.location,100f,true);
-            if(this.id.contains("gnome_b")) ExtensionCommands.moveActor(this.parentExt,u,"testMonster2",this.location,this.location,100f,true);
-           // if(this.id.contains("gnome_c")) ExtensionCommands.moveActor(this.parentExt,u,"testMonster3",this.location,this.location,100f,true);
-        }
-
-        if(this.state == AggroState.ATTACKED) System.out.println("Mob: " + this.id + " x: " + this.location.getX() + " y: " + this.location.getY() + " State: " + this.state.toString());
         if(this.state == AggroState.PASSIVE){
+            if(this.currentHealth < this.maxHealth){
+                this.currentHealth+=25;
+                if(this.currentHealth > this.maxHealth) this.currentHealth = this.maxHealth;
+                Champion.updateServerHealth(parentExt,this);
+            }
             if(this.location.distance(this.startingLocation) >= 0.01){ //Still walking from being de-agro'd
                 travelTime+=0.1f;
             }else{ //Standing still at camp
@@ -137,6 +165,7 @@ public class Monster extends Actor{
             if(this.location.distance(this.startingLocation) >= 10){
                 this.state = AggroState.PASSIVE; //Far from camp, heading back
                 this.move(this.startingLocation);
+                this.target = null;
             }
             else if(this.target != null){ //Chasing player
                 if(this.withinRange(this.target) && this.canAttack()){
@@ -145,10 +174,10 @@ public class Monster extends Actor{
                     this.travelTime+=0.1f;
                     this.moveTowardsActor(this.target.getLocation());
                 }else if(this.withinRange(this.target)){
-                    System.out.println(this.id + ": Distance: " + this.location.distance(this.target.getLocation()) + " Can attack: " + this.canAttack());
+                    //System.out.println(this.id + ": Distance: " + this.location.distance(this.target.getLocation()) + " Can attack: " + this.canAttack());
                     if(this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f) this.stopMoving();
                 }else{
-                    System.out.println(this.id + ": Can Move: " + this.canMove + " Within Range: " + this.withinRange(this.target));
+                    //System.out.println(this.id + ": Can Move: " + this.canMove + " Within Range: " + this.withinRange(this.target));
                 }
             }
         }
@@ -168,7 +197,7 @@ public class Monster extends Actor{
 
     public Point2D getRelativePoint(){ //Gets player's current location based on time TODO: Have this.location be relative point and use startingLocation for calculation
         if(this.travelTime == 0 && this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f) this.travelTime+=0.1f;
-        if(this.state == AggroState.ATTACKED) System.out.println(this.id + " Travel Time: " + this.travelTime);
+        //if(this.state == AggroState.ATTACKED) System.out.println(this.id + " Travel Time: " + this.travelTime);
         Point2D rPoint = new Point2D.Float();
         Point2D destination;
         if(this.state == AggroState.PASSIVE) destination = startingLocation;
@@ -192,12 +221,12 @@ public class Monster extends Actor{
 
     public void moveTowardsActor(Point2D dest){ //Moves towards a specific point. TODO: Have the path stop based on collision radius
         Line2D rawMovementLine = new Line2D.Double(this.location,this.target.getLocation());
-        System.out.println("Target position: " + this.target.getLocation().getX() + "," + this.target.getLocation().getY());
+        //System.out.println("Target position: " + this.target.getLocation().getX() + "," + this.target.getLocation().getY());
        //int dist = (int) Math.floor(rawMovementLine.getP1().distance(rawMovementLine.getP2()) - this.attackRange);
        // Line2D newPath = Champion.getDistanceLine(rawMovementLine,dist);
         if(this.movementLine == null) this.movementLine = rawMovementLine;
         if(this.movementLine.getP2().distance(rawMovementLine.getP2()) > 0.1f){
-            System.out.println("CHAMPION MOVED! Target1: " + this.movementLine.getP2().getX() + "," + this.movementLine.getP2().getY() + " Target2: " + rawMovementLine.getX1() + "," + rawMovementLine.getX2());
+            //System.out.println("CHAMPION MOVED! Target1: " + this.movementLine.getP2().getX() + "," + this.movementLine.getP2().getY() + " Target2: " + rawMovementLine.getX1() + "," + rawMovementLine.getX2());
             this.movementLine = rawMovementLine;
             this.travelTime = 0f;
             for(User u : room.getUserList()){
