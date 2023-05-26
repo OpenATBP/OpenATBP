@@ -28,7 +28,7 @@ public class Monster extends Actor{
     public Monster(ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName){ //TODO: Make all startingLocation(s) uniform
         this.startingLocation = new Point2D.Float(startingLocation[0],startingLocation[1]);
         this.type = MonsterType.BIG;
-        this.attackCooldown = 300;
+        this.attackCooldown = 0;
         this.parentExt = parentExt;
         this.room = room;
         this.location = this.startingLocation;
@@ -45,7 +45,7 @@ public class Monster extends Actor{
     public Monster(ATBPExtension parentExt, Room room, Point2D startingLocation, String monsterName){
         this.startingLocation = startingLocation;
         this.type = MonsterType.SMALL;
-        this.attackCooldown = 300;
+        this.attackCooldown = 0;
         this.parentExt = parentExt;
         this.room = room;
         this.location = this.startingLocation;
@@ -59,7 +59,7 @@ public class Monster extends Actor{
         this.actorType = ActorType.MONSTER;
     }
     @Override
-    public boolean damaged(Actor a, int damage) { //Runs when taking damage
+    public boolean damaged(Actor a, int damage) { //Runs when taking damage TODO: Implement armor
         if(this.dead) return true; //Prevents bugs that take place when taking damage (somehow from FP passive) after dying
         if(this.location.distance(this.startingLocation) > 0.01f && this.state == AggroState.PASSIVE){ //Prevents damage when walking back from being de-aggro
             if(a.getActorType() == ActorType.PLAYER){ //Plays attack-miss sound when trying to damage invulnerable monster
@@ -97,11 +97,12 @@ public class Monster extends Actor{
         this.canMove = false;
         if(this.attackCooldown == 0){
             this.attackCooldown = this.getStat("attackSpeed");
+            int attackDamage = (int) this.getStat("attackDamage");
             for(User u : room.getUserList()){ //TODO: Add crit chance
                 ExtensionCommands.attackActor(parentExt,u,this.id,a.getId(),(float) a.getLocation().getX(), (float) a.getLocation().getY(), false, true);
             }
             if(this.type == MonsterType.SMALL) SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedRangedAttack(this,a),300,TimeUnit.MILLISECONDS); // Small camps are ranged
-            else SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,10),500, TimeUnit.MILLISECONDS); //Melee damage
+            else SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,attackDamage),500, TimeUnit.MILLISECONDS); //Melee damage
         }else if(attackCooldown == 300){ //Deprecated (changed from internal delay of attacks to using task schedulers)
             reduceAttackCooldown();
         }else if(attackCooldown == 100 || attackCooldown == 200) reduceAttackCooldown(); //Deprecated (see above) im scared to remove for now
@@ -109,10 +110,11 @@ public class Monster extends Actor{
 
     public void rangedAttack(Actor a){ //Called when ranged attacks take place to spawn projectile and deal damage after projectile hits
         String fxId = "gnome_projectile";
+        int attackDamage = (int) this.getStat("attackDamage");
         for(User u : room.getUserList()){
             ExtensionCommands.createProjectileFX(this.parentExt,u,fxId,this.id,a.getId(),"Bip001","Bip001",0.5f);
         }
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,10),500, TimeUnit.MILLISECONDS);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,attackDamage),500, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -123,7 +125,7 @@ public class Monster extends Actor{
             RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getId());
             int scoreValue = parentExt.getActorStats(this.id).get("valueScore").asInt();
             for(User u : room.getUserList()){ //Handles death animation
-                ExtensionCommands.knockOutActor(parentExt,u,this.id,a.getId(),9);
+                ExtensionCommands.knockOutActor(parentExt,u,this.id,a.getId(),45);
                 ExtensionCommands.destroyActor(parentExt,u,this.id);
             }
             if(a.getActorType() == ActorType.PLAYER){ //Adds score + party xp when killed by player
@@ -215,12 +217,10 @@ public class Monster extends Actor{
 
     public void moveTowardsActor(Point2D dest){ //Moves towards a specific point. TODO: Have the path stop based on collision radius
         Line2D rawMovementLine = new Line2D.Double(this.location,this.target.getLocation());
-        //System.out.println("Target position: " + this.target.getLocation().getX() + "," + this.target.getLocation().getY());
        //int dist = (int) Math.floor(rawMovementLine.getP1().distance(rawMovementLine.getP2()) - this.attackRange);
        // Line2D newPath = Champion.getDistanceLine(rawMovementLine,dist);
         if(this.movementLine == null) this.movementLine = rawMovementLine;
         if(this.movementLine.getP2().distance(rawMovementLine.getP2()) > 0.1f){
-            //System.out.println("CHAMPION MOVED! Target1: " + this.movementLine.getP2().getX() + "," + this.movementLine.getP2().getY() + " Target2: " + rawMovementLine.getX1() + "," + rawMovementLine.getX2());
             this.movementLine = rawMovementLine;
             this.travelTime = 0f;
             for(User u : room.getUserList()){
