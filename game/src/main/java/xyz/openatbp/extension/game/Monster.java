@@ -75,6 +75,7 @@ public class Monster extends Actor{
             target = (UserActor) a;
             this.travelTime = 0f;
             this.moveTowardsActor(this.target.getLocation());
+            ExtensionCommands.setTarget(parentExt,target.getUser(),this.id, target.getId());
             if(this.type == MonsterType.SMALL){ //Gets all mini monsters like gnomes and owls to all target player when one is hit
                 for(Monster m : parentExt.getRoomHandler(this.room.getId()).getCampMonsters(this.id)){
                     m.setAggroState(AggroState.ATTACKED,a);

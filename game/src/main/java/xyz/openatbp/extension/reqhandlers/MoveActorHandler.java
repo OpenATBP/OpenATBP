@@ -20,7 +20,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
     @Override
     public void handleClientRequest(User sender, ISFSObject params) { //Called when player clicks on the map to move
 
-        //trace(params.getDump());
+        trace(params.getDump());
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId());
         UserActor user = roomHandler.getPlayer(String.valueOf(sender.getId()));

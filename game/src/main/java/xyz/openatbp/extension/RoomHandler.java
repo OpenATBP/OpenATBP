@@ -13,10 +13,7 @@ import xyz.openatbp.extension.game.champions.UserActor;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class RoomHandler implements Runnable{
     private ATBPExtension parentExt;
@@ -31,6 +28,7 @@ public class RoomHandler implements Runnable{
     private int secondsRan = 0;
     private int[] altarStatus = {0,0,0};
     private HashMap<String,Integer> cooldowns = new HashMap<>();
+    private int currentMinionWave = 0;
     public RoomHandler(ATBPExtension parentExt, Room room){
         this.parentExt = parentExt;
         this.room = room;
@@ -95,6 +93,31 @@ public class RoomHandler implements Runnable{
                 }
                 handleCooldowns();
                 secondsRan++;
+                int minionWave = secondsRan/30;
+                if(minionWave != this.currentMinionWave){ //TODO: Minions despawning for some reason
+                    int minionNum = secondsRan % 10;
+                    System.out.println("Minion num: " + minionNum);
+                    if(minionNum == 5) this.currentMinionWave = minionWave;
+                    if(minionNum <= 4){
+                        this.addMinion(1,minionNum,minionWave,0);
+                        this.addMinion(0,minionNum,minionWave,0);
+                        this.addMinion(1,minionNum,minionWave,1);
+                        this.addMinion(0,minionNum,minionWave,1);
+                    }else if(minionNum == 5){
+                        if(!this.hasSuperMinion(0)){
+                            Tower blue = this.getTower(2);
+                            Tower purple = this.getTower(5);
+                            if(blue == null || blue.getHealth() <= 0) this.addMinion(1,minionNum,minionWave,0);
+                            if(purple == null || purple.getHealth() <= 0) this.addMinion(0,minionNum,minionWave,0);
+                        }
+                        if(!this.hasSuperMinion(1)){
+                            Tower blue = this.getTower(1);
+                            Tower purple = this.getTower(4);
+                            if(blue == null || blue.getHealth() <= 0) this.addMinion(1,minionNum,minionWave,1);
+                            if(purple == null || purple.getHealth() <= 0) this.addMinion(0,minionNum,minionWave,1);
+                        }
+                    }
+                }
             }catch(Exception e){
                 e.printStackTrace();
             }
@@ -131,16 +154,6 @@ public class RoomHandler implements Runnable{
                 if(t.getHealth() <= 0 && (t.getTowerNum() == 0 || t.getTowerNum() == 3)) bases[t.getTeam()].unlock();
             }
             towers.removeIf(t -> (t.getHealth()<=0));
-            //TODO: Add minion waves
-            if(mSecondsRan == 5000){
-                //this.addMinion(1,1,0,1);
-                //this.addMinion(0,0,0,1);
-            }else if(mSecondsRan == 7000){
-                //this.addMinion(1,1,0,1);
-                //this.addMinion(0,1,0,1);
-            }else if(mSecondsRan == 9000){
-                //this.addMinion(0,2,0);
-            }
             if(this.room.getUserList().size() == 0) parentExt.stopScript(this.room.getId());
         }catch(Exception e){
             e.printStackTrace();
@@ -559,6 +572,20 @@ public class RoomHandler implements Runnable{
         return null;
     }
 
+    public Tower getTower(int num){
+        for(Tower t : towers){
+            if(t.getTowerNum() == num) return t;
+        }
+        return null;
+    }
+
+    private boolean hasSuperMinion(int lane){
+        for(Minion m : minions){
+            if(m.getLane() == lane && m.getType().equalsIgnoreCase("super") && m.getHealth() > 0) return true;
+        }
+        return false;
+    }
+
     public List<Actor> getActors(){
         List<Actor> actors = new ArrayList<>();
         actors.addAll(towers);
@@ -637,6 +664,19 @@ public class RoomHandler implements Runnable{
             if(!p.getId().equalsIgnoreCase(a.getId()) && p.getTeam() == a.getTeam()){
                 int newXP = (int)Math.floor(xp*0.2);
                 p.addXP(newXP);
+            }
+        }
+    }
+
+    public void handleAssistXP (Actor a, Set<String> ids, int xp){
+        if(a.getActorType() == ActorType.PLAYER){
+            UserActor user = (UserActor) a;
+            user.addXP(xp);
+        }
+        for(String id : ids){
+            if(!id.equalsIgnoreCase(a.getId())){
+                UserActor player = this.getPlayer(id);
+                if(player != null) player.addXP(xp/2);
             }
         }
     }

@@ -65,15 +65,7 @@ public class Tower extends Actor{
             }
             ExtensionCommands.createWorldFX(parentExt,u,String.valueOf(u.getId()),actorId,this.id+"_destroyed",1000*60*15,(float)this.location.getX(),(float)this.location.getY(),false,this.team,0f);
             ExtensionCommands.createWorldFX(parentExt,u,String.valueOf(u.getId()),"tower_destroyed_explosion",this.id+"_destroyed_explosion",1000,(float)this.location.getX(),(float)this.location.getY(),false,this.team,0f);
-            Room room = u.getLastJoinedRoom();
-            ISFSObject scoreObj = room.getVariable("score").getSFSObjectValue();
-            int teamA = scoreObj.getInt("purple");
-            int teamB = scoreObj.getInt("blue");
-            if(this.team == 0) teamB+=50;
-            else teamA+=50;
-            scoreObj.putInt("purple",teamA);
-            scoreObj.putInt("blue",teamB);
-            ExtensionCommands.updateScores(parentExt,u,teamA,teamB);
+            this.parentExt.getRoomHandler(this.room.getId()).addScore(a.getTeam(),50);
         }
         if(this.getTowerNum() == 0 || this.getTowerNum() == 3) parentExt.getRoomHandler(room.getId()).getOpposingTeamBase(this.team).unlock();
     }
