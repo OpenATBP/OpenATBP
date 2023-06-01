@@ -242,7 +242,7 @@ public class UserActor extends Actor {
         }
         if(msRan % 1000 == 0){
             if(this.isState(ActorState.POLYMORPH)){
-                for(Actor a : Champion.getUsersInRadius(parentExt.getRoomHandler(this.room.getId()),this.location,2)){
+                for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(this.room.getId()),this.location,2)){
                     if(a.getTeam() != this.team){
                         System.out.println("Damaging: " + a.getAvatar());
                         a.damaged(this,50);

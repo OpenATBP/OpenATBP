@@ -93,12 +93,13 @@ public class RoomHandler implements Runnable{
                 }
                 handleCooldowns();
                 secondsRan++;
+
                 int minionWave = secondsRan/30;
-                if(minionWave != this.currentMinionWave){ //TODO: Minions despawning for some reason
+                if(minionWave != this.currentMinionWave){
                     int minionNum = secondsRan % 10;
                     System.out.println("Minion num: " + minionNum);
                     if(minionNum == 5) this.currentMinionWave = minionWave;
-                    if(minionNum <= 4){
+                    if(minionNum <= 1){
                         this.addMinion(1,minionNum,minionWave,0);
                         this.addMinion(0,minionNum,minionWave,0);
                         this.addMinion(1,minionNum,minionWave,1);
@@ -118,6 +119,7 @@ public class RoomHandler implements Runnable{
                         }
                     }
                 }
+
             }catch(Exception e){
                 e.printStackTrace();
             }
@@ -151,6 +153,7 @@ public class RoomHandler implements Runnable{
             }
             //campMonsters.removeIf(m -> (m.getHealth()<=0));
             for(Tower t : towers){
+                t.update(mSecondsRan);
                 if(t.getHealth() <= 0 && (t.getTowerNum() == 0 || t.getTowerNum() == 3)) bases[t.getTeam()].unlock();
             }
             towers.removeIf(t -> (t.getHealth()<=0));

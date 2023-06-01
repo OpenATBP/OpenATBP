@@ -34,7 +34,7 @@ public class FlamePrincess extends UserActor{
         if(this.ultStarted && lastUltUsage == -1) lastUltUsage = msRan;
         if(this.ultStarted && !this.ultFinished && msRan-lastUltUsage == 1000){
             lastUltUsage = msRan;
-            for(Actor a : Champion.getUsersInRadius(parentExt.getRoomHandler(this.room.getId()),this.location,2)){
+            for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(this.room.getId()),this.location,2)){
                 if(a.getTeam() != this.team){ //TODO: Set so FP doesn't target her team or self
                     System.out.println("Damaging: " + a.getAvatar());
                     a.damaged(this,75);
@@ -145,7 +145,7 @@ public class FlamePrincess extends UserActor{
                 case 2:
                     RoomHandler roomHandler = parentExt.getRoomHandler(player.getLastJoinedRoom().getId());
                     Point2D center = new Point2D.Float(this.abilityData.getFloat("x"),this.abilityData.getFloat("z"));
-                    List<Actor> affectedUsers = Champion.getUsersInRadius(roomHandler,center,2).stream().filter(a -> a.getClass() == UserActor.class).collect(Collectors.toList());
+                    List<Actor> affectedUsers = Champion.getActorsInRadius(roomHandler,center,2).stream().filter(a -> a.getClass() == UserActor.class).collect(Collectors.toList());
                     for(Actor u : affectedUsers){
                         UserActor userActor = (UserActor) u;
                         System.out.println("Hit: " + u.getAvatar());

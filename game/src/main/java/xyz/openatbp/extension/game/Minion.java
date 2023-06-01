@@ -29,12 +29,12 @@ public class Minion extends Actor{
     private final double[] blueTopX = {36.68, 30.10, 21.46, 18.20, -5.26, -12.05, -24.69, -28.99, -35.67};
     private final double[] blueTopY = {-2.56, -7.81, -12.09, -16.31, -17.11, -17.96, -13.19, -7.50, -2.70};
     private float travelTime; //How long the minion has been traveling
-    private Point2D desiredPath; //Where the minion is heading to
     private int pathIndex = 0; //What stage in their pathing to the other side are they in
     private boolean attacking = false;
     private int lane;
     private boolean dead = false;
     private Map<String, Integer> aggressors;
+    private Line2D movementLine;
 
     public Minion(ATBPExtension parentExt, Room room, int team, int minionNum, int wave, int lane){
         this.attackCooldown = 300;
@@ -93,7 +93,8 @@ public class Minion extends Actor{
             for(User u : room.getUserList()){
                 ExtensionCommands.moveActor(parentExt,u,this.id,this.location,destination, (float) this.speed,true);
             }
-            this.desiredPath = destination;
+            this.movementLine = new Line2D.Float(this.location,destination);
+            this.travelTime = 0;
         }
     }
 
@@ -116,16 +117,15 @@ public class Minion extends Actor{
 
     //Checks if point is within minion's aggro range
     public boolean nearEntity(Point2D p){
-        return this.getRelativePoint().distance(p)<=5;
+        return this.location.distance(p)<=5;
     }
-    public boolean nearEntity(Point2D p, float radius){ return this.getRelativePoint().distance(p)<=5+radius; }
+    public boolean nearEntity(Point2D p, float radius){ return this.location.distance(p)<=5+radius; }
     public boolean facingEntity(Point2D p){ // Returns true if the point is in the same direction as the minion is heading
-        Point2D currentPoint = getRelativePoint();
-        double deltaX = desiredPath.getX()-location.getX();
+        double deltaX = movementLine.getX2()-location.getX();
         //Negative = left Positive = right
         if(Double.isNaN(deltaX)) return false;
-        if(deltaX>0 && p.getX()>currentPoint.getX()) return true;
-        else if(deltaX<0 && p.getX()<currentPoint.getX()) return true;
+        if(deltaX>0 && p.getX()>this.location.getX()) return true;
+        else if(deltaX<0 && p.getX()<this.location.getX()) return true;
         else return false;
     }
 
@@ -133,7 +133,7 @@ public class Minion extends Actor{
         float range = 1.25f;
         if(this.type == MinionType.RANGED) range = 4f;
         else if(this.type == MinionType.SUPER) range = 1.5f;
-        return this.getRelativePoint().distance(p)<=range;
+        return this.location.distance(p)<=range;
     }
 
     public boolean withinAttackRange(Point2D p, float radius){
@@ -141,7 +141,7 @@ public class Minion extends Actor{
         if(this.type == MinionType.RANGED) range = 4f;
         else if(this.type == MinionType.SUPER) range = 1.5f;
         range+=radius;
-        return this.getRelativePoint().distance(p)<=range;
+        return this.location.distance(p)<=range;
     }
     private int findPathIndex(){ //Finds the nearest point along the defined path for the minion to travel to
         double[] pathX;
@@ -155,7 +155,7 @@ public class Minion extends Actor{
         }
         double shortestDistance = 100;
         int index = -1;
-        if(desiredPath == null) index = 1;
+        if(movementLine == null) index = 1;
         else{
             for(int i = 0; i < pathX.length; i++){
                 Point2D pathPoint = new Point2D.Double(pathX[i],pathY[i]);
@@ -175,22 +175,17 @@ public class Minion extends Actor{
     public void addTravelTime(float time){
         this.travelTime+=time;
     }
-
-    public Point2D getDesiredPath(){
-        return this.desiredPath;
-    }
     
     public Point2D getLocation(){
         return this.location;
     }
 
-    public Point2D getRelativePoint(){ //Gets player's current location based on time
+    public Point2D getRelativePoint(){ //Gets player's current location based on time TODO: Last left off - make sure I didn't fuck up movement
         Point2D rPoint = new Point2D.Float();
-        float x2 = (float) desiredPath.getX();
-        float y2 = (float) desiredPath.getY();
-        float x1 = (float) location.getX();
-        float y1 = (float) location.getY();
-        Line2D movementLine = new Line2D.Double(x1,y1,x2,y2);
+        float x2 = (float) this.movementLine.getX2();
+        float y2 = (float) this.movementLine.getY2();
+        float x1 = (float) movementLine.getX1();
+        float y1 = (float) movementLine.getY1();
         double dist = movementLine.getP1().distance(movementLine.getP2());
         double time = dist/(float)this.speed;
         double currentTime = this.travelTime;
@@ -205,7 +200,7 @@ public class Minion extends Actor{
 
     public void arrived(){ //Ran when the minion arrives at a point on the path
         this.travelTime = 0;
-        this.location = this.desiredPath;
+        this.location = this.movementLine.getP2();
         if(this.team == 1) this.pathIndex++;
         else this.pathIndex--;
     }
@@ -242,8 +237,7 @@ public class Minion extends Actor{
     }
 
     public void moveTowardsActor(ATBPExtension parentExt, Point2D dest){ //Moves towards a specific point. TODO: Have the path stop based on collision radius
-        this.location = getRelativePoint();
-        this.desiredPath = dest;
+        this.movementLine = new Line2D.Float(this.location,dest);
         this.travelTime = 0.1f;
         for(User u : room.getUserList()){
             ExtensionCommands.moveActor(parentExt,u,this.id,this.location,dest,1.75f, true);
@@ -271,8 +265,7 @@ public class Minion extends Actor{
                 }
                 this.state = AggroState.MOVING;
                 Point2D newDest = new Point2D.Float((float) pathX[index], (float) pathY[index]);
-                this.location = getRelativePoint();
-                this.desiredPath = newDest;
+                this.movementLine = new Line2D.Float(this.location,newDest);
                 this.travelTime = 0;
                 this.target = null;
                 this.pathIndex = index;
@@ -329,6 +322,7 @@ public class Minion extends Actor{
 
     @Override
     public void update(int msRan) {
+        this.location = getRelativePoint();
         RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getId());
         if(msRan % 1000 == 0){
             for(String k : aggressors.keySet()){
@@ -339,7 +333,7 @@ public class Minion extends Actor{
         switchcase:
         switch(this.getState()){
             case 0: // MOVING
-                if(this.getState() == 0 && (this.getPathIndex() < 10 & this.getPathIndex()>= 0) && this.getDesiredPath() != null && ((Math.abs(this.getDesiredPath().distance(this.getRelativePoint())) < 0.2) || Double.isNaN(this.getDesiredPath().getX()))){
+                if(this.getState() == 0 && (this.getPathIndex() < 10 & this.getPathIndex()>= 0) && this.movementLine.getP2() != null && ((Math.abs(this.movementLine.getP2().distance(this.location)) < 0.2) || Double.isNaN(this.movementLine.getP2().getX()))){
                     this.arrived();
                     this.move(parentExt);
                 }else{
@@ -347,7 +341,7 @@ public class Minion extends Actor{
                 }
                 for(Minion minion : roomHandler.getMinions()){ // Check other minions
                     if(this.getTeam() != minion.getTeam() && this.getLane() == minion.getLane()){
-                        if(this.nearEntity(minion.getRelativePoint()) && this.facingEntity(minion.getRelativePoint())){
+                        if(this.nearEntity(minion.getLocation()) && this.facingEntity(minion.getLocation())){
                             if(this.getTarget() == null){
                                 this.setTarget(parentExt, minion.getId());
                                 break switchcase;
@@ -399,13 +393,14 @@ public class Minion extends Actor{
                         }
                     }else{
                         this.moveTowardsActor(parentExt,currentPoint);
+                        this.travelTime+=0.1f;
                         if(this.getAttackCooldown() > 300) this.reduceAttackCooldown();
                     }
                 }
                 break;
             case 2: // MINION TARGET
                 Minion targetMinion = roomHandler.findMinion(this.getTarget());
-                if(targetMinion != null && (this.withinAttackRange(targetMinion.getRelativePoint()) || this.getAttackCooldown() < 300)){
+                if(targetMinion != null && (this.withinAttackRange(targetMinion.getLocation()) || this.getAttackCooldown() < 300)){
                     if(!this.isAttacking()){
                         this.stopMoving(parentExt);
                         this.setAttacking(true);
@@ -416,16 +411,18 @@ public class Minion extends Actor{
                         }else{ //Handles tower death and resets minion on tower kill
                             this.setState(0);
                             this.move(parentExt);
+                            this.travelTime+=0.1f;
                         }
                     }else{
                         this.reduceAttackCooldown();
                     }
                 }else if(targetMinion != null){
-                    this.moveTowardsActor(parentExt,targetMinion.getRelativePoint()); //TODO: Optimize so it's not sending a lot of commands
+                    this.moveTowardsActor(parentExt,targetMinion.getLocation()); //TODO: Optimize so it's not sending a lot of commands
                     if(this.getAttackCooldown() > 300) this.reduceAttackCooldown();
                 }else{
                     this.setState(0);
                     this.move(parentExt);
+                    this.travelTime+=0.1f;
                 }
                 break;
             case 3: // TOWER TARGET
@@ -443,6 +440,7 @@ public class Minion extends Actor{
                             if(targetTower.getTowerNum() == 0 || targetTower.getTowerNum() == 3) roomHandler.getOpposingTeamBase(this.team).unlock();
                             this.setState(0);
                             this.move(parentExt);
+                            this.travelTime+=0.1f;
                             break;
                         }
                     }else{
@@ -484,7 +482,7 @@ public class Minion extends Actor{
 
     public void stopMoving(ATBPExtension parentExt){ //Stops moving
         for(User u : room.getUserList()){
-            ExtensionCommands.moveActor(parentExt,u,this.id,getRelativePoint(),getRelativePoint(),1.75f,false);
+            ExtensionCommands.moveActor(parentExt,u,this.id,this.location,this.location,1.75f,false);
         }
     }
 
@@ -500,10 +498,8 @@ public class Minion extends Actor{
         if(a.getActorType() == ActorType.PLAYER){
             aggressors.put(a.getId(),0);
         }
-        System.out.println(a.getId() + " attacking " + this.id + "!");
         this.currentHealth-=damage;
         if(currentHealth <= 0){ //Minion dies
-            System.out.println("Minion dead!");
             this.die(a);
             return true;
         }else{

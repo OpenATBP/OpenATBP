@@ -1,13 +1,17 @@
 package xyz.openatbp.extension.game;
 
+import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.game.champions.UserActor;
 
 import java.awt.geom.Point2D;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 //TODO: Add tower fighting back
 public class Tower extends Actor{
@@ -15,6 +19,7 @@ public class Tower extends Actor{
     private final int[] BLUE_TOWER_NUM = {5,4,3};
     private long lastHit;
     private boolean destroyed = false;
+    private Actor target;
 
     public Tower(ATBPExtension parentExt, Room room, String id, int team, Point2D location){
         this.currentHealth = 800;
@@ -25,11 +30,14 @@ public class Tower extends Actor{
         this.team = team;
         this.parentExt = parentExt;
         this.lastHit = 0;
+        this.actorType = ActorType.TOWER;
+        ExtensionCommands.createWorldFX(parentExt,room,this.id,"fx_target_ring_6",this.id+"_ring",15*60*1000,(float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
     }
 
     @Override
     public boolean damaged(Actor a, int damage) {
-        this.currentHealth-=damage;
+        if(this.target == null) this.currentHealth-=(damage*0.25);
+        else this.currentHealth-=damage;
         boolean notify = System.currentTimeMillis()-this.lastHit >= 1000*5;
         for(User u : room.getUserList()){
             if(notify) ExtensionCommands.towerAttacked(parentExt,u,this.getTowerNum());
@@ -47,32 +55,92 @@ public class Tower extends Actor{
 
     @Override
     public void attack(Actor a) {
-
+        this.attackCooldown = 2000;
+        for(User u : this.room.getUserList()){
+            ExtensionCommands.attackActor(this.parentExt,u,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),false,false);
+            String projectileName = "tower_projectile_blue";
+            if(this.team == 0) projectileName = "tower_projectile_purple";
+            ExtensionCommands.createProjectileFX(this.parentExt,u,projectileName,this.id,a.getId(),"Bip01 L UpperArm","Bip01",0.6f);
+        }
+        int damage = 250;
+        if(a.getActorType() == ActorType.MINION) damage*=0.25;
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,damage),600, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void die(Actor a) {
-        for(User u : room.getUserList()){
-            ExtensionCommands.towerDown(parentExt,u, this.getTowerNum());
-            ExtensionCommands.knockOutActor(parentExt,u,this.id,a.getId(),100);
-            if(!this.isDestroyed()){
-                this.destroy();
+        if(!this.destroyed){
+            this.destroyed = true;
+            for(User u : room.getUserList()){
+                ExtensionCommands.towerDown(parentExt,u, this.getTowerNum());
+                ExtensionCommands.knockOutActor(parentExt,u,this.id,a.getId(),100);
                 ExtensionCommands.destroyActor(parentExt,u,this.id);
+                String actorId = "tower2a";
+                if(this.getTowerNum() == 0 || this.getTowerNum() == 3 ){
+                    actorId = "tower1a";
+                }
+                ExtensionCommands.createWorldFX(parentExt,u,String.valueOf(u.getId()),actorId,this.id+"_destroyed",1000*60*15,(float)this.location.getX(),(float)this.location.getY(),false,this.team,0f);
+                ExtensionCommands.createWorldFX(parentExt,u,String.valueOf(u.getId()),"tower_destroyed_explosion",this.id+"_destroyed_explosion",1000,(float)this.location.getX(),(float)this.location.getY(),false,this.team,0f);
+                ExtensionCommands.removeFx(parentExt,u,this.id+"_ring");
+                this.parentExt.getRoomHandler(this.room.getId()).addScore(a.getTeam(),50);
             }
-            String actorId = "tower2a";
-            if(this.getTowerNum() == 0 || this.getTowerNum() == 3 ){
-                actorId = "tower1a";
-            }
-            ExtensionCommands.createWorldFX(parentExt,u,String.valueOf(u.getId()),actorId,this.id+"_destroyed",1000*60*15,(float)this.location.getX(),(float)this.location.getY(),false,this.team,0f);
-            ExtensionCommands.createWorldFX(parentExt,u,String.valueOf(u.getId()),"tower_destroyed_explosion",this.id+"_destroyed_explosion",1000,(float)this.location.getX(),(float)this.location.getY(),false,this.team,0f);
-            this.parentExt.getRoomHandler(this.room.getId()).addScore(a.getTeam(),50);
+            if(this.getTowerNum() == 0 || this.getTowerNum() == 3) parentExt.getRoomHandler(room.getId()).getOpposingTeamBase(this.team).unlock();
         }
-        if(this.getTowerNum() == 0 || this.getTowerNum() == 3) parentExt.getRoomHandler(room.getId()).getOpposingTeamBase(this.team).unlock();
     }
 
     @Override
     public void update(int msRan) {
-
+        if(!this.destroyed){
+            List<Actor> nearbyActors = Champion.getEnemyActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.team,this.location,6.2f);
+            if(this.attackCooldown != 0) this.reduceAttackCooldown();
+            if(this.target == null){
+                boolean hasMinion = false;
+                double distance = 1000;
+                Actor potentialTarget = null;
+                for(Actor a : nearbyActors){
+                    if(hasMinion && a.getActorType() == ActorType.MINION){
+                        if(a.getLocation().distance(this.location)<distance){//If minions exist in range, it only focuses on finding the closest minion
+                            potentialTarget = a;
+                            distance = a.getLocation().distance(this.location);
+                        }
+                    }else if(!hasMinion && a.getActorType() == ActorType.MINION){ //If minions have not been found yet but it just found one, sets the first target to be searched
+                        hasMinion = true;
+                        potentialTarget = a;
+                        distance = a.getLocation().distance(this.location);
+                    }else if(!hasMinion && a.getActorType() == ActorType.PLAYER){ //If potential target is a player and no minion has been found, starts processing closest player
+                        if(a.getLocation().distance(this.location) < distance){
+                            potentialTarget = a;
+                            distance = a.getLocation().distance(this.location);
+                        }
+                    }
+                }
+                if(potentialTarget != null){
+                    this.target = potentialTarget;
+                    if(this.target.getActorType() == ActorType.PLAYER){
+                        UserActor user = (UserActor) this.target;
+                        ExtensionCommands.setTarget(this.parentExt,user.getUser(),this.id,user.getId());
+                        ExtensionCommands.createWorldFX(this.parentExt, user.getUser(),user.getId(),"tower_danger_alert",this.id+"_aggro",10*60*1000,(float) this.location.getX(),(float)this.location.getY(),true,this.team,0f);
+                        ExtensionCommands.playSound(this.parentExt,user.getUser(),"sfx_turret_has_you_targeted",this.location);
+                    }
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.target.getId(),"tower_current_target_indicator",10*60*1000,this.id+"_target",true,"Bip01 Head",true,true,this.team);
+                }
+            }else{
+                System.out.println("Targeting " + target.getId());
+                if(nearbyActors.size() == 0){
+                    if(this.target.getActorType() == ActorType.PLAYER){
+                        UserActor ua = (UserActor) this.target;
+                        ExtensionCommands.removeFx(this.parentExt,ua.getUser(),this.id+"_aggro");
+                        ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_target");
+                    }
+                    this.target = null;
+                }
+                else{
+                    if(this.target.getLocation().distance(this.location) <= 6.2f){
+                        if(this.canAttack()) this.attack(this.target);
+                    }else this.resetTarget(this.target);
+                }
+            }
+        }
     }
 
     public String getId(){
@@ -109,5 +177,18 @@ public class Tower extends Actor{
 
     public boolean isDestroyed(){
         return this.destroyed;
+    }
+
+    private boolean canAttack(){
+        return this.attackCooldown == 0;
+    }
+
+    public void resetTarget(Actor a){
+        if(this.target.getActorType() == ActorType.PLAYER){
+            UserActor ua = (UserActor) this.target;
+            ExtensionCommands.removeFx(this.parentExt,ua.getUser(),this.id+"_aggro");
+        }
+        ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_target");
+        this.target = null;
     }
 }

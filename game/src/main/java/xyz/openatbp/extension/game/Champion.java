@@ -188,14 +188,26 @@ public class Champion {
         return points;
     }
 
-    public static List<Actor> getUsersInRadius(RoomHandler room, Point2D center, float radius){
+    public static List<Actor> getActorsInRadius(RoomHandler room, Point2D center, float radius){
         List<Actor> actors = room.getActors();
         List<Actor> affectedActors = new ArrayList<>(actors.size());
         Ellipse2D circle = new Ellipse2D.Double(center.getX()-radius,center.getY()-radius,radius*2,radius*2);
-        System.out.println("Circle center: " + circle.getCenterX() + "," + circle.getCenterY());
         for(Actor a : actors){
             Point2D location = a.getLocation();
             if(circle.contains(location)) affectedActors.add(a);
+        }
+        return affectedActors;
+    }
+
+    public static List<Actor> getEnemyActorsInRadius(RoomHandler room, int team, Point2D center, float radius){
+        List<Actor> actors = room.getActors();
+        List<Actor> affectedActors = new ArrayList<>(actors.size());
+        Ellipse2D circle = new Ellipse2D.Double(center.getX()-radius,center.getY()-radius,radius*2,radius*2);
+        for(Actor a : actors){
+            if(a.getTeam() != team){
+                Point2D location = a.getLocation();
+                if(circle.contains(location)) affectedActors.add(a);
+            }
         }
         return affectedActors;
     }
@@ -271,7 +283,10 @@ public class Champion {
 
         @Override
         public void run() {
-            target.damaged(attacker,damage);
+            if(target.damaged(attacker,damage) && this.attacker.getActorType() == ActorType.TOWER){
+                Tower t = (Tower) attacker;
+                t.resetTarget(target);
+            }
             if(attacker.getActorType() == ActorType.MONSTER && !attacker.getId().contains("_")) attacker.setCanMove(true);
         }
     }
