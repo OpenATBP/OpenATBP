@@ -100,6 +100,7 @@ public class Tower extends Actor{
             List<Actor> nearbyActors = Champion.getEnemyActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.team,this.location,6.2f);
             if(this.target == null){
                 if(this.attackCooldown > 500) this.reduceAttackCooldown();
+                else this.attackCooldown = 500;
                 boolean hasMinion = false;
                 double distance = 1000;
                 Actor potentialTarget = null;
