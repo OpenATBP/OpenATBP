@@ -146,13 +146,6 @@ public class GameManager {
             for(int g = 0; g < users.size(); g++){ //Send characters
                 User user = users.get(g);
                 parentExt.send("cmd_create_actor", actorData, user);
-                //testing code to spawn a dummy
-                ISFSObject actorData1 = new SFSObject();
-                actorData1.putUtfString("id", "100");
-                actorData1.putUtfString("actor", "magicman");
-                actorData1.putSFSObject("spawn_point", spawnPoint);
-                actorData1.putInt("team", 1);
-                parentExt.send("cmd_create_actor", actorData1, user);
 
                 parentExt.send("cmd_update_actor_data", updateData, user);
 

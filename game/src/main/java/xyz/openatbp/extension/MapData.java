@@ -81,22 +81,19 @@ public class MapData {
         float x = 0;
         float z = 0;
         float towerDifference = 0;
-        String towerID = "tower"+tower;
+        String towerID = "tower"+(team+1);
         if(room.equalsIgnoreCase("practice")){
             towerDifference = L1_TOWER1_X-L1_TOWER2_X;
             x = (L1_TOWER1_X-(towerDifference*(tower-1)));
             z = L1_TOWER_Z;
         }else{
             if(tower == 1){
-                towerID = "tower2";
                 x = L2_TOP_TOWER1_X;
                 z = L2_TOP_TOWER1_Z;
             }else if(tower == 2){
-                towerID = "tower2";
                 x = L2_BOT_TOWER1[0];
                 z = L2_BOT_TOWER1[1];
             }else if(tower == 3){
-                towerID = "tower1";
                 x = L2_TOWER2_X;
                 z = L2_TOWER2_Z;
             }

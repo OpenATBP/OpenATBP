@@ -31,6 +31,7 @@ public class Tower extends Actor{
         this.parentExt = parentExt;
         this.lastHit = 0;
         this.actorType = ActorType.TOWER;
+        this.attackCooldown = 500;
         ExtensionCommands.createWorldFX(parentExt,room,this.id,"fx_target_ring_6",this.id+"_ring",15*60*1000,(float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
     }
 
@@ -57,12 +58,16 @@ public class Tower extends Actor{
     public void attack(Actor a) {
         this.attackCooldown = 2000;
         for(User u : this.room.getUserList()){
-            ExtensionCommands.attackActor(this.parentExt,u,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),false,false);
             String projectileName = "tower_projectile_blue";
-            if(this.team == 0) projectileName = "tower_projectile_purple";
-            ExtensionCommands.createProjectileFX(this.parentExt,u,projectileName,this.id,a.getId(),"Bip01 L UpperArm","Bip01",0.6f);
+            String effectName = "tower_shoot_blue";
+            if(this.team == 0){
+                projectileName = "tower_projectile_purple";
+                effectName = "tower_shoot_purple";
+            }
+            ExtensionCommands.createProjectileFX(this.parentExt,u,projectileName,this.id,a.getId(),"emitNode","Bip01",0.6f);
+            ExtensionCommands.createActorFX(this.parentExt,u,this.id,effectName,600,this.id+"_attackFx",false,"emitNode",false,false,this.team);
         }
-        int damage = 250;
+        int damage = 15;
         if(a.getActorType() == ActorType.MINION) damage*=0.25;
         SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,damage),600, TimeUnit.MILLISECONDS);
     }
@@ -92,8 +97,8 @@ public class Tower extends Actor{
     public void update(int msRan) {
         if(!this.destroyed){
             List<Actor> nearbyActors = Champion.getEnemyActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.team,this.location,6.2f);
-            if(this.attackCooldown != 0) this.reduceAttackCooldown();
             if(this.target == null){
+                if(this.attackCooldown > 500) this.reduceAttackCooldown();
                 boolean hasMinion = false;
                 double distance = 1000;
                 Actor potentialTarget = null;
@@ -122,9 +127,10 @@ public class Tower extends Actor{
                         ExtensionCommands.createWorldFX(this.parentExt, user.getUser(),user.getId(),"tower_danger_alert",this.id+"_aggro",10*60*1000,(float) this.location.getX(),(float)this.location.getY(),true,this.team,0f);
                         ExtensionCommands.playSound(this.parentExt,user.getUser(),"sfx_turret_has_you_targeted",this.location);
                     }
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.target.getId(),"tower_current_target_indicator",10*60*1000,this.id+"_target",true,"Bip01 Head",true,true,this.team);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.target.getId(),"tower_current_target_indicator",10*60*1000,this.id+"_target",true,"displayBar",false,true,this.team);
                 }
             }else{
+                if(this.attackCooldown > 0) this.reduceAttackCooldown();
                 System.out.println("Targeting " + target.getId());
                 if(nearbyActors.size() == 0){
                     if(this.target.getActorType() == ActorType.PLAYER){
