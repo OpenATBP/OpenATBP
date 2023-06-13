@@ -99,23 +99,16 @@ public class RoomHandler implements Runnable{
                     int minionNum = secondsRan % 10;
                     System.out.println("Minion num: " + minionNum);
                     if(minionNum == 5) this.currentMinionWave = minionWave;
-                    if(minionNum <= 1){
+                    if(minionNum <= 4){
                         this.addMinion(1,minionNum,minionWave,0);
                         this.addMinion(0,minionNum,minionWave,0);
                         this.addMinion(1,minionNum,minionWave,1);
                         this.addMinion(0,minionNum,minionWave,1);
                     }else if(minionNum == 5){
-                        if(!this.hasSuperMinion(0)){
-                            Tower blue = this.getTower(2);
-                            Tower purple = this.getTower(5);
-                            if(blue == null || blue.getHealth() <= 0) this.addMinion(1,minionNum,minionWave,0);
-                            if(purple == null || purple.getHealth() <= 0) this.addMinion(0,minionNum,minionWave,0);
-                        }
-                        if(!this.hasSuperMinion(1)){
-                            Tower blue = this.getTower(1);
-                            Tower purple = this.getTower(4);
-                            if(blue == null || blue.getHealth() <= 0) this.addMinion(1,minionNum,minionWave,1);
-                            if(purple == null || purple.getHealth() <= 0) this.addMinion(0,minionNum,minionWave,1);
+                        for(int i = 0; i < 2; i++){ //i = lane
+                            for(int g = 0; g < 2; g++){
+                                if(!this.hasSuperMinion(i,g) && this.canSpawnSupers(g)) this.addMinion(g,minionNum,minionWave,i);
+                            }
                         }
                     }
                 }
@@ -582,9 +575,9 @@ public class RoomHandler implements Runnable{
         return null;
     }
 
-    private boolean hasSuperMinion(int lane){
+    private boolean hasSuperMinion(int lane, int team){
         for(Minion m : minions){
-            if(m.getLane() == lane && m.getType().equalsIgnoreCase("super") && m.getHealth() > 0) return true;
+            if(m.getTeam() == team && m.getLane() == lane && m.getType().equalsIgnoreCase("super") && m.getHealth() > 0) return true;
         }
         return false;
     }
@@ -694,5 +687,13 @@ public class RoomHandler implements Runnable{
 
     public List<Tower> getTowers(){
         return this.towers;
+    }
+    private boolean canSpawnSupers(int team){
+        for(Tower t : this.towers){
+            if(t.getTeam() != team){
+                if(t.getTowerNum() != 3 && t.getTowerNum() != 0 && t.getHealth() > 0) return false;
+            }
+        }
+        return true;
     }
 }

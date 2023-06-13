@@ -13,7 +13,6 @@ import java.awt.geom.Point2D;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-//TODO: Add tower fighting back
 public class Tower extends Actor{
     private final int[] PURPLE_TOWER_NUM = {2,1,0};
     private final int[] BLUE_TOWER_NUM = {5,4,3};
@@ -36,8 +35,10 @@ public class Tower extends Actor{
     }
 
     @Override
-    public boolean damaged(Actor a, int damage) {
+    public boolean damaged(Actor a, int damage) { //TODO: Last left off - add minion increased damage, lose hard coding, and fix interval attack cooldown reduction
+        if(this.destroyed) return true;
         if(this.target == null) this.currentHealth-=(damage*0.25);
+        else if(a.getActorType() == ActorType.MINION) this.currentHealth-=(damage*0.5);
         else this.currentHealth-=damage;
         boolean notify = System.currentTimeMillis()-this.lastHit >= 1000*5;
         for(User u : room.getUserList()){
@@ -67,9 +68,7 @@ public class Tower extends Actor{
             ExtensionCommands.createProjectileFX(this.parentExt,u,projectileName,this.id,a.getId(),"emitNode","Bip01",0.6f);
             ExtensionCommands.createActorFX(this.parentExt,u,this.id,effectName,600,this.id+"_attackFx",false,"emitNode",false,false,this.team);
         }
-        int damage = 15;
-        if(a.getActorType() == ActorType.MINION) damage*=0.25;
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,damage),600, TimeUnit.MILLISECONDS);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,250),600, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -87,6 +86,8 @@ public class Tower extends Actor{
                 ExtensionCommands.createWorldFX(parentExt,u,String.valueOf(u.getId()),actorId,this.id+"_destroyed",1000*60*15,(float)this.location.getX(),(float)this.location.getY(),false,this.team,0f);
                 ExtensionCommands.createWorldFX(parentExt,u,String.valueOf(u.getId()),"tower_destroyed_explosion",this.id+"_destroyed_explosion",1000,(float)this.location.getX(),(float)this.location.getY(),false,this.team,0f);
                 ExtensionCommands.removeFx(parentExt,u,this.id+"_ring");
+                ExtensionCommands.removeFx(parentExt,u,this.id+"_target");
+                if(this.target != null && this.target.getActorType() == ActorType.PLAYER) ExtensionCommands.removeFx(parentExt,u,this.id+"_aggro");
                 this.parentExt.getRoomHandler(this.room.getId()).addScore(a.getTeam(),50);
             }
             if(this.getTowerNum() == 0 || this.getTowerNum() == 3) parentExt.getRoomHandler(room.getId()).getOpposingTeamBase(this.team).unlock();

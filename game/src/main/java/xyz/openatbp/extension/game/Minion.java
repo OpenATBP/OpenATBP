@@ -35,6 +35,7 @@ public class Minion extends Actor{
     private boolean dead = false;
     private Map<String, Integer> aggressors;
     private Line2D movementLine;
+    private int xpWorth = 5;
 
     public Minion(ATBPExtension parentExt, Room room, int team, int minionNum, int wave, int lane){
         this.attackCooldown = 300;
@@ -298,8 +299,14 @@ public class Minion extends Actor{
         if(attackCooldown == 0 && this.state != AggroState.MOVING){
             this.stopMoving(parentExt);
             int newCooldown = 1500;
-            if(this.type == MinionType.RANGED) newCooldown = 2000;
-            else if(this.type == MinionType.SUPER) newCooldown = 1000;
+            int damage = 20;
+            if(this.type == MinionType.RANGED){
+                newCooldown = 2000;
+                damage = 25;
+            }else if(this.type == MinionType.SUPER){
+                newCooldown = 1000;
+                damage = 10;
+            }
             this.attackCooldown = newCooldown;
             for(User u : room.getUserList()){
                 ExtensionCommands.attackActor(parentExt,u,this.id,a.getId(),(float) a.getLocation().getX(), (float) a.getLocation().getY(), false, true);
@@ -307,7 +314,7 @@ public class Minion extends Actor{
             if(this.type == MinionType.RANGED){
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedRangedAttack(this,a),300, TimeUnit.MILLISECONDS);
             }else{
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,20),300,TimeUnit.MILLISECONDS);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,damage),300,TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -319,14 +326,14 @@ public class Minion extends Actor{
         for(User u : room.getUserList()){
             ExtensionCommands.createProjectileFX(parentExt,u,fxId,this.getId(),a.getId(),"Bip001","Bip001",(float)0.5);
         }
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,30),500, TimeUnit.MILLISECONDS);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,25),500, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void die(Actor a) { //TODO: Actor voice line plays after each kill (last hit or not)
         if(this.dead) return;
         this.dead = true;
-        this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,aggressors.keySet(), 10);
+        this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,aggressors.keySet(), this.xpWorth);
         for(User u : this.getRoomUsers()){
             ExtensionCommands.knockOutActor(parentExt,u,this.id,a.getId(),30);
             ExtensionCommands.destroyActor(parentExt,u,this.id);
@@ -344,6 +351,9 @@ public class Minion extends Actor{
                 if(aggressors.get(k) == 10) aggressors.remove(k);
                 else aggressors.put(k,aggressors.get(k)+1);
             }
+            int xp = 5 + ((msRan/1000)/60);
+            if(this.type == MinionType.SUPER) xp+=5;
+            if(xpWorth != xp) xpWorth = xp;
         }
         switch(this.getState()){
             case 0: // MOVING
@@ -463,7 +473,10 @@ public class Minion extends Actor{
         if(a.getActorType() == ActorType.PLAYER){
             aggressors.put(a.getId(),0);
         }
-        this.currentHealth-=damage;
+        if(a.getActorType() == ActorType.TOWER){
+            if(this.type == MinionType.SUPER) this.currentHealth-=(damage*0.05);
+            else this.currentHealth-=(damage*0.25);
+        }else this.currentHealth-=damage;
         if(currentHealth <= 0){ //Minion dies
             this.die(a);
             return true;
@@ -499,15 +512,6 @@ public class Minion extends Actor{
 
     public Actor getNewTarget(){
         RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getId());
-        for(Minion minion : roomHandler.getMinions()){ // Check other minions
-            if(this.getTeam() != minion.getTeam() && this.getLane() == minion.getLane()){
-                if(this.nearEntity(minion.getLocation()) && this.facingEntity(minion.getLocation())){
-                    if(this.getTarget() == null){
-                        return minion;
-                    }
-                }
-            }
-        }
         Base opposingBase = roomHandler.getOpposingTeamBase(this.team);
         if(opposingBase.isUnlocked() && this.nearEntity(opposingBase.getLocation(),1.8f)){
             if(this.getTarget() == null){
@@ -519,6 +523,15 @@ public class Minion extends Actor{
             if(t.getTeam() != this.getTeam() && this.nearEntity(t.getLocation())){ //Minion prioritizes towers over players
                 this.moveTowardsActor(parentExt,t.getLocation());
                 return t;
+            }
+        }
+        for(Minion minion : roomHandler.getMinions()){ // Check other minions
+            if(this.getTeam() != minion.getTeam() && this.getLane() == minion.getLane()){
+                if(this.nearEntity(minion.getLocation()) && this.facingEntity(minion.getLocation())){
+                    if(this.getTarget() == null){
+                        return minion;
+                    }
+                }
             }
         }
         for(UserActor u : roomHandler.getPlayers()){
