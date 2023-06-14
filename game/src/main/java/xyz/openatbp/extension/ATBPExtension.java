@@ -190,6 +190,10 @@ public class ATBPExtension extends SFSExtension {
         return getActorData(actorName).get("scriptData").get("healthScaling").asInt();
     }
 
+    public JsonNode getAttackData(String actorName, String attack){
+        return this.getActorData(actorName).get(attack);
+    }
+
     public void startScripts(Room room){ //Creates a new task scheduler for a room
         RoomHandler handler = new RoomHandler(this,room);
         roomHandlers.put(room.getId(),handler);

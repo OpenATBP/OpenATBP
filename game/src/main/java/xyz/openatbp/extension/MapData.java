@@ -46,6 +46,7 @@ public class MapData {
     public static final Point2D[] OWLS = {new Point2D.Double(9.57,-8.95),new Point2D.Double(8.41,-8.68),new Point2D.Double(8.42,-9.79)};
     public static final float[] GRASS = {(float)-8.64, (float)-8.45};
     public static final Point2D[] GNOMES = {new Point2D.Double(-9.29,8.03),new Point2D.Double(-8.10,8.26), new Point2D.Double(-9.47,8.84)};
+    public static final Point2D[] PURPLE_SPAWNS = {new Point2D.Float(-36.90f,2.3f)};
 
     public static ISFSObject getBaseActorData(int team, String room){
         float x = 0;

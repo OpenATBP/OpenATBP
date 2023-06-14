@@ -103,7 +103,7 @@ public class Monster extends Actor{
                 ExtensionCommands.attackActor(parentExt,u,this.id,a.getId(),(float) a.getLocation().getX(), (float) a.getLocation().getY(), false, true);
             }
             if(this.type == MonsterType.SMALL) SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedRangedAttack(this,a),300,TimeUnit.MILLISECONDS); // Small camps are ranged
-            else SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,attackDamage),500, TimeUnit.MILLISECONDS); //Melee damage
+            else SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,attackDamage,"basicAttack"),500, TimeUnit.MILLISECONDS); //Melee damage
         }else if(attackCooldown == 300){ //Deprecated (changed from internal delay of attacks to using task schedulers)
             reduceAttackCooldown();
         }else if(attackCooldown == 100 || attackCooldown == 200) reduceAttackCooldown(); //Deprecated (see above) im scared to remove for now
@@ -115,7 +115,7 @@ public class Monster extends Actor{
         for(User u : room.getUserList()){
             ExtensionCommands.createProjectileFX(this.parentExt,u,fxId,this.id,a.getId(),"Bip001","Bip001",0.5f);
         }
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,attackDamage),500, TimeUnit.MILLISECONDS);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,attackDamage,"basicAttack"),500, TimeUnit.MILLISECONDS);
     }
 
     @Override

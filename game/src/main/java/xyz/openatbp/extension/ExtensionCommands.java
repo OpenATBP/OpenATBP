@@ -3,17 +3,20 @@ package xyz.openatbp.extension;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
+import xyz.openatbp.extension.game.Actor;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.champions.UserActor;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class ExtensionCommands {
     /**
@@ -206,7 +209,8 @@ public class ExtensionCommands {
         ISFSObject data = new SFSObject();
         data.putUtfString("id",id);
         data.putUtfString("attackerId",attackerId);
-        data.putInt("deathTime",deathTime);
+        data.putInt("deathTime",deathTime*1000);
+        System.out.println("Death Time: " + deathTime);
         parentExt.send("cmd_knockout_actor",data,u);
     }
 
@@ -420,6 +424,55 @@ public class ExtensionCommands {
         for(User u : room.getUserList()){
             ExtensionCommands.createActor(parentExt,u, owner.getId() + id, id,loc,0f,owner.getTeam());
             ExtensionCommands.moveActor(parentExt,u, owner.getId()+id,loc,dest,speed,true);
+        }
+    }
+
+    public static void snapActor(ATBPExtension parentExt, User u, String id, Point2D location, Point2D dest, boolean orient){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("i",id);
+        data.putFloat("px",(float)location.getX());
+        data.putFloat("pz",(float)location.getY());
+        data.putFloat("dx",(float)dest.getX());
+        data.putFloat("dz",(float)dest.getY());
+        data.putBool("o",orient);
+        parentExt.send("cmd_snap_actor",data,u);
+    }
+
+    public static void handleDeathRecap(ATBPExtension parentExt, User u, String id, String killerId, HashMap<Actor, ISFSObject> aggressors) throws JsonProcessingException {
+        System.out.println(aggressors.toString());
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode data = mapper.createObjectNode();
+        data.put("killerId",killerId);
+        ObjectNode playerList = mapper.createObjectNode();
+        for(Actor a : aggressors.keySet()){ //Loops through each player in the set
+            ObjectNode playerObj = mapper.createObjectNode();
+            playerObj.put("name",a.getId());
+            playerObj.put("playerPortrait",a.getAvatar());
+            for(String k : aggressors.get(a).getKeys()){ //Loops through each different attack
+                if(k.contains("attack")){
+                    ISFSObject attackData = aggressors.get(a).getSFSObject(k);
+                    ObjectNode attackObj = mapper.createObjectNode();
+                    for(String key : attackData.getKeys()){ //Loops through the properties of one attack
+                        if(key.contains("Damage")) attackObj.put(key,attackData.getInt(key));
+                        else attackObj.put(key,attackData.getUtfString(key));
+                    }
+                    playerObj.set(k,attackObj);
+                }
+            }
+            playerList.set(a.getId(),playerObj);
+        }
+        data.set("playerList",playerList);
+        ISFSObject sendData = new SFSObject();
+        sendData.putUtfString("id",id);
+        sendData.putUtfString("deathRecap",mapper.writeValueAsString(data));
+        parentExt.send("cmd_death_recap",sendData,u);
+    }
+
+    public static void updateTime(ATBPExtension parentExt, Room room, int msRan){
+        ISFSObject data = new SFSObject();
+        data.putLong("time",msRan);
+        for(User u : room.getUserList()){
+            parentExt.send("cmd_update_time",data,u);
         }
     }
 }

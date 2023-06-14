@@ -36,8 +36,11 @@ public class FlamePrincess extends UserActor{
             lastUltUsage = msRan;
             for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(this.room.getId()),this.location,2)){
                 if(a.getTeam() != this.team){ //TODO: Set so FP doesn't target her team or self
-                    System.out.println("Damaging: " + a.getAvatar());
-                    a.damaged(this,75);
+                    if(a.getActorType() != ActorType.PLAYER) a.damaged(this,75);
+                    else{
+                        UserActor userActor = (UserActor) a;
+                        userActor.damaged(this,75,this.parentExt.getAttackData(this.avatar,"spell3"));
+                    }
                 }else{
                     System.out.println(a.getId() + " is on your team!");
                 }
@@ -226,7 +229,7 @@ public class FlamePrincess extends UserActor{
                 lastPassiveUsage = System.currentTimeMillis();
                 ExtensionCommands.createActorFX(parentExt,room,target.getId(),"flame_princess_dot",3000,"flame_passive_burn",true,"",false,false,team);
                 for(int i = 0; i < 3; i++){
-                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(FlamePrincess.this,target,20),i+1,TimeUnit.SECONDS);
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,FlamePrincess.this,target,20,"spell4"),i+1,TimeUnit.SECONDS);
                 }
             }
         }

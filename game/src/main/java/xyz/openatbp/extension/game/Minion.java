@@ -314,7 +314,7 @@ public class Minion extends Actor{
             if(this.type == MinionType.RANGED){
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedRangedAttack(this,a),300, TimeUnit.MILLISECONDS);
             }else{
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,damage),300,TimeUnit.MILLISECONDS);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,damage,"basicAttack"),300,TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -326,7 +326,7 @@ public class Minion extends Actor{
         for(User u : room.getUserList()){
             ExtensionCommands.createProjectileFX(parentExt,u,fxId,this.getId(),a.getId(),"Bip001","Bip001",(float)0.5);
         }
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,25),500, TimeUnit.MILLISECONDS);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,25,"basicAttack"),500, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -468,7 +468,6 @@ public class Minion extends Actor{
 
     @Override
     public boolean damaged(Actor a, int damage) {
-        if(this.id.equalsIgnoreCase("0creep_0melee01")) return false;
         if(this.dead) return true;
         if(a.getActorType() == ActorType.PLAYER){
             aggressors.put(a.getId(),0);

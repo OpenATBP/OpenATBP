@@ -204,7 +204,7 @@ public class Champion {
         List<Actor> affectedActors = new ArrayList<>(actors.size());
         Ellipse2D circle = new Ellipse2D.Double(center.getX()-radius,center.getY()-radius,radius*2,radius*2);
         for(Actor a : actors){
-            if(a.getTeam() != team){
+            if(a.getTeam() != team && a.getHealth() > 0){
                 Point2D location = a.getLocation();
                 if(circle.contains(location)) affectedActors.add(a);
             }
@@ -274,16 +274,28 @@ public class Champion {
         Actor attacker;
         Actor target;
         int damage;
+        ATBPExtension parentExt;
+        String attack;
 
-        public DelayedAttack(Actor attacker, Actor target, int damage){
+        public DelayedAttack(ATBPExtension parentExt, Actor attacker, Actor target, int damage, String attack){
             this.attacker = attacker;
             this.target = target;
             this.damage = damage;
+            this.parentExt = parentExt;
+            this.attack = attack;
         }
 
         @Override
         public void run() {
-            if(target.damaged(attacker,damage) && this.attacker.getActorType() == ActorType.TOWER){
+            if(this.target.getActorType() == ActorType.PLAYER){
+                UserActor user = (UserActor) this.target;
+                JsonNode attackData = this.parentExt.getAttackData(this.attacker.avatar,this.attack);
+                if(user.damaged(attacker,damage,attackData) && this.attacker.getActorType() == ActorType.TOWER){
+                    Tower t = (Tower) attacker;
+                    t.resetTarget(target);
+                }
+            }
+            else if(target.damaged(attacker,damage) && this.attacker.getActorType() == ActorType.TOWER){
                 Tower t = (Tower) attacker;
                 t.resetTarget(target);
             }
@@ -308,20 +320,14 @@ public class Champion {
     }
     public static class RespawnCharacter implements  Runnable {
 
-        String id;
-        ATBPExtension parentExt;
-        Room room;
+        UserActor deadActor;
 
-        public RespawnCharacter(ATBPExtension parentExt, Room room, String id){
-            this.parentExt = parentExt;
-            this.room = room;
-            this.id = id;
+        public RespawnCharacter(UserActor a){
+            this.deadActor = a;
         }
         @Override
         public void run() {
-            for(User u : room.getUserList()){
-                ExtensionCommands.respawnActor(parentExt,u,id);
-            }
+            deadActor.respawn();
         }
     }
     public static class EffectHandler implements Runnable {

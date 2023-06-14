@@ -31,11 +31,12 @@ public class Tower extends Actor{
         this.lastHit = 0;
         this.actorType = ActorType.TOWER;
         this.attackCooldown = 500;
+        this.avatar = "tower1"; //TODO: Remove hard coding
         ExtensionCommands.createWorldFX(parentExt,room,this.id,"fx_target_ring_6",this.id+"_ring",15*60*1000,(float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
     }
 
     @Override
-    public boolean damaged(Actor a, int damage) { //TODO: Last left off - add minion increased damage, lose hard coding, and fix interval attack cooldown reduction
+    public boolean damaged(Actor a, int damage) {
         if(this.destroyed) return true;
         if(this.target == null) this.currentHealth-=(damage*0.25);
         else if(a.getActorType() == ActorType.MINION) this.currentHealth-=(damage*0.5);
@@ -68,7 +69,7 @@ public class Tower extends Actor{
             ExtensionCommands.createProjectileFX(this.parentExt,u,projectileName,this.id,a.getId(),"emitNode","Bip01",0.6f);
             ExtensionCommands.createActorFX(this.parentExt,u,this.id,effectName,600,this.id+"_attackFx",false,"emitNode",false,false,this.team);
         }
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this,a,250),600, TimeUnit.MILLISECONDS);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,250,"basicAttack"),600, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -95,7 +96,7 @@ public class Tower extends Actor{
     }
 
     @Override
-    public void update(int msRan) {
+    public void update(int msRan) { //TODO: Tower still targeting player after player dies
         if(!this.destroyed){
             List<Actor> nearbyActors = Champion.getEnemyActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.team,this.location,6.2f);
             if(this.target == null){

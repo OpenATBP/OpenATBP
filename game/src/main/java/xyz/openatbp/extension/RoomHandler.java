@@ -67,6 +67,7 @@ public class RoomHandler implements Runnable{
                 else{
                     handleAltars();
                     handleHealthRegen();
+                    ExtensionCommands.updateTime(parentExt,this.room,mSecondsRan);
                 }
                 ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
                 for(String s : GameManager.SPAWNS){ //Check all mob/health spawns for how long it's been since dead
@@ -589,6 +590,7 @@ public class RoomHandler implements Runnable{
         Collections.addAll(actors, bases);
         actors.addAll(players);
         actors.addAll(campMonsters);
+        actors.removeIf(a -> a.getHealth() <= 0 && a.getActorType() == ActorType.PLAYER);
         return actors;
     }
 
