@@ -18,8 +18,7 @@ import xyz.openatbp.extension.reqhandlers.HitActorHandler;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -31,7 +30,6 @@ public class UserActor extends Actor {
     private Point2D originalLocation;
     private float timeTraveled = 0;
     protected double attackCooldown;
-    protected Point2D lastTargetLocation;
     protected Actor target;
     protected ScheduledFuture<?> currentAutoAttack = null;
     protected boolean autoAttackEnabled = false;
@@ -39,6 +37,7 @@ public class UserActor extends Actor {
     private int deathTime = 10;
     private boolean dead = false;
     protected Map<Actor,ISFSObject> aggressors = new HashMap<>();
+    protected Map<String, Object> stats;
 
     //TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt){
@@ -47,20 +46,21 @@ public class UserActor extends Actor {
         this.team = Integer.parseInt(u.getVariable("player").getSFSObjectValue().getUtfString("team"));
         player = u;
         this.avatar = u.getVariable("player").getSFSObjectValue().getUtfString("avatar");
+        this.displayName = u.getVariable("player").getSFSObjectValue().getUtfString("name");
         ISFSObject playerLoc = player.getVariable("location").getSFSObjectValue();
         float x = playerLoc.getSFSObject("p1").getFloat("x");
         float z = playerLoc.getSFSObject("p1").getFloat("z");
         this.location = new Point2D.Float(x,z);
         this.originalLocation = location;
         this.destination = location;
-        this.speed = getStat("speed");
-        this.attackCooldown = getStat("attackSpeed");
-        this.currentHealth = u.getVariable("stats").getSFSObjectValue().getInt("currentHealth");
-        this.maxHealth = u.getVariable("stats").getSFSObjectValue().getInt("maxHealth");
+        this.stats = this.initializeStats();
+        this.speed = (double)this.stats.get("speed");
+        this.attackCooldown = (double)this.stats.get("attackSpeed");
+        this.currentHealth = (double)this.stats.get("health");
+        this.maxHealth = this.currentHealth;
         this.room = u.getLastJoinedRoom();
-        this.attackSpeed = getStat("attackSpeed");
-        this.attackCooldown = 500;
-        this.attackRange = getStat("attackRange");
+        this.attackSpeed = this.attackCooldown;
+        this.attackRange = (double)this.stats.get("attackRange");
         this.actorType = ActorType.PLAYER;
     }
 
@@ -107,10 +107,6 @@ public class UserActor extends Actor {
 
     public double getStat(String stat){
         return player.getVariable("stats").getSFSObjectValue().getDouble(stat);
-    }
-
-    public ISFSObject getSFSLocation(){
-        return player.getVariable("location").getSFSObjectValue();
     }
 
     public void setPath(Point2D start, Point2D end){
@@ -201,7 +197,7 @@ public class UserActor extends Actor {
             for(User u : room.getUserList()){
                 ExtensionCommands.attackActor(parentExt,u,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),false,true);
             }
-            attackCooldown = attackSpeed;
+            attackCooldown = (double) this.stats.get("attackSpeed");
         }
     }
 
@@ -218,20 +214,67 @@ public class UserActor extends Actor {
         this.attackCooldown-=100;
     }
 
-    public void resetAttack(){
-        this.attackCooldown = 600;
-    }
-
     @Override
     public void die(Actor a) { //TODO: Last left off - handing death needs to be properly implemented
         this.setHealth(0);
         ExtensionCommands.knockOutActor(parentExt,player, String.valueOf(player.getId()),a.getId(),this.deathTime);
         try{
             ExtensionCommands.handleDeathRecap(parentExt,player,this.id,a.getId(), (HashMap<Actor, ISFSObject>) this.aggressors);
+            this.increaseStat("deaths",1);
+            if(a.getActorType() == ActorType.PLAYER){
+                UserActor ua = (UserActor) a;
+                ua.increaseStat("kills",1);
+            }
+            Set<String> assistIds = new HashSet<>(2);
+            for(Actor actor : this.aggressors.keySet()){
+                if(actor.getActorType() == ActorType.PLAYER && !actor.getId().equalsIgnoreCase(a.getId())){
+                    UserActor ua = (UserActor) actor;
+                    ua.increaseStat("assists",1);
+                    assistIds.add(ua.getId());
+                }
+            }
+            this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,assistIds,50);
         }catch(Exception e){
             e.printStackTrace();
         }
         SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.RespawnCharacter(this),this.deathTime, TimeUnit.SECONDS);
+    }
+/*
+    Acceptable Keys:
+    availableSpellPoints: Integer
+    sp_category1
+    sp_category2
+    sp_category3
+    sp_category4
+    sp_category5
+    kills
+    deaths
+    assists
+    attackDamage
+    attackSpeed
+    armor
+    speed
+    spellResist
+    spellDamage
+    criticalChance
+    criticalDamage*
+    lifeSteal
+    armorPenetration
+    coolDownReduction
+    spellVamp
+    spellPenetration
+    attackRange
+    healthRegen
+ */
+    public void updateStat(String key, Object value){
+        this.stats.put(key,value);
+        ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,key,this.stats.get(key));
+    }
+
+    public void increaseStat(String key, int num){
+        if(this.stats.get(key).getClass() == Integer.class) this.stats.put(key,(int)this.stats.get(key)+num);
+        else if(this.stats.get(key).getClass() == Double.class) this.stats.put(key,(double)this.stats.get(key)+num);
+        ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,key,this.stats.get(key));
     }
 
     @Override
@@ -354,6 +397,7 @@ public class UserActor extends Actor {
         if(this.team == 0) respawnPoint = MapData.PURPLE_SPAWNS[(int) (Math.random()*MapData.PURPLE_SPAWNS.length)];
         this.location = respawnPoint;
         this.originalLocation = respawnPoint;
+        this.destination = respawnPoint;
         this.timeTraveled = 0f;
         this.setHealth(this.maxHealth);
         this.dead = false;
@@ -434,6 +478,23 @@ public class UserActor extends Actor {
             playerData.putSFSObject("attack1",attackObj);
             this.aggressors.put(a,playerData);
         }
+    }
+
+    private HashMap<String, Object> initializeStats(){
+        HashMap<String, Object> stats = new HashMap<>();
+        stats.put("availableSpellPoints",1);
+        for(int i = 1; i < 6; i++){
+            stats.put("sp_category"+i,0);
+        }
+        stats.put("kills",0);
+        stats.put("deaths",0);
+        stats.put("assists",0);
+        JsonNode actorStats = this.parentExt.getActorStats(this.avatar);
+        for (Iterator<String> it = actorStats.fieldNames(); it.hasNext(); ) {
+            String k = it.next();
+            stats.put(k,actorStats.get(k).asDouble());
+        }
+        return stats;
     }
 
     protected class MovementStopper implements Runnable {

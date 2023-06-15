@@ -33,6 +33,7 @@ public abstract class Actor {
     protected double attackRange;
     protected Map<ActorState, Boolean> states = Champion.getBlankStates();
     protected Map<ActorState, ScheduledFuture<?>> stateCommands = new HashMap<>(ActorState.values().length);
+    protected String displayName = "FuzyBDragon";
 
     public double getPHealth(){
         return currentHealth/maxHealth;
@@ -122,6 +123,7 @@ public abstract class Actor {
     public double getStat(String stat){
         return this.parentExt.getActorStats(this.avatar).get(stat).asDouble();
     }
+    public String getDisplayName(){ return this.displayName;}
 
     public boolean damaged(Actor a, int damage){
         this.currentHealth-=damage;

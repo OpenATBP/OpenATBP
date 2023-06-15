@@ -39,7 +39,7 @@ public class Minion extends Actor{
 
     public Minion(ATBPExtension parentExt, Room room, int team, int minionNum, int wave, int lane){
         this.attackCooldown = 300;
-        this.avatar = "creep"+team+"_";
+        this.avatar = "creep"+team;
         String typeString = "super";
         if(minionNum <= 2){
             typeString = "melee"+minionNum;
@@ -47,15 +47,16 @@ public class Minion extends Actor{
             this.maxHealth = 450;
         }else if(minionNum <= 4){
             typeString = "ranged"+minionNum;
-            this.avatar+="ranged";
+            this.avatar+="_ranged";
             this.type = MinionType.RANGED;
             this.maxHealth = 350;
         }
         else{
             this.type = MinionType.SUPER;
-            this.avatar+="super";
+            this.avatar+="_super";
             this.maxHealth = 500;
         }
+        this.displayName = parentExt.getDisplayName(this.avatar.replace("0",""));
         this.currentHealth = this.maxHealth;
         float x = (float) blueBotX[0]; //Bot Lane
         float y = (float) blueBotY[0];

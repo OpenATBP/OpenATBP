@@ -65,6 +65,28 @@ public class ExtensionCommands {
         parentExt.send("cmd_update_actor_data",data,u);
     }
 
+    public static void updateActorData(ATBPExtension parentExt, Room room, String id, HashMap<String, Object> values){
+        ISFSObject updateData = new SFSObject();
+        updateData.putUtfString("id",id);
+        for(String k : values.keySet()){
+            if(values.get(k).getClass() == Double.class) updateData.putDouble(k, (double)values.get(k));
+            else if(values.get(k).getClass() == Integer.class) updateData.putInt(k,(int)values.get(k));
+        }
+        for(User u : room.getUserList()){
+            parentExt.send("cmd_update_actor_data",updateData,u);
+        }
+    }
+
+    public static void updateActorData(ATBPExtension parentExt, Room room, String id, String key, Object value){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("id",id);
+        if(value.getClass() == Double.class) data.putDouble(key,(double)value);
+        else if(value.getClass() == Integer.class) data.putInt(key,(int)value);
+        for(User u : room.getUserList()){
+            parentExt.send("cmd_update_actor_data",data,u);
+        }
+    }
+
     /**
      *
      * @param id - ID of who is moving
@@ -446,7 +468,7 @@ public class ExtensionCommands {
         ObjectNode playerList = mapper.createObjectNode();
         for(Actor a : aggressors.keySet()){ //Loops through each player in the set
             ObjectNode playerObj = mapper.createObjectNode();
-            playerObj.put("name",a.getId());
+            playerObj.put("name",a.getDisplayName());
             playerObj.put("playerPortrait",a.getAvatar());
             for(String k : aggressors.get(a).getKeys()){ //Loops through each different attack
                 if(k.contains("attack")){
@@ -462,6 +484,31 @@ public class ExtensionCommands {
             playerList.set(a.getId(),playerObj);
         }
         data.set("playerList",playerList);
+        ObjectNode misc = mapper.createObjectNode();
+        double totalDamage = 0;
+        double totalPhysical = 0;
+        double totalMagic = 0;
+        for(Actor a : aggressors.keySet()){
+            ISFSObject attackData = aggressors.get(a);
+            for(String k : attackData.getKeys()){
+                if(k.contains("attack")){
+                    ISFSObject attack = attackData.getSFSObject(k);
+                    totalDamage+= attack.getInt("atkDamage");
+                    if(attack.getUtfString("atkType").equalsIgnoreCase("physical")) totalPhysical+=attack.getInt("atkDamage");
+                    else totalMagic+=attack.getInt("atkDamage");
+                }
+            }
+        }
+        misc.put("totalDamage",totalDamage);
+        misc.put("percentPhysical",(totalPhysical/totalDamage)*100);
+        misc.put("percentSpell",(totalMagic/totalDamage)*100);
+        misc.put("totalTime",10000);
+        String tipType = "general";
+        if(killerId.contains("tower")) tipType = "tower";
+        else if(totalPhysical == 0 && Math.random() > 0.6) tipType = "spell";
+        else if(totalMagic == 0 && Math.random() > 0.6) tipType = "physical_damage";
+        misc.put("tip",parentExt.getRandomTip(tipType));
+        data.set("misc",misc);
         ISFSObject sendData = new SFSObject();
         sendData.putUtfString("id",id);
         sendData.putUtfString("deathRecap",mapper.writeValueAsString(data));

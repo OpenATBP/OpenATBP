@@ -12,6 +12,7 @@ import xyz.openatbp.extension.evthandlers.*;
 import xyz.openatbp.extension.reqhandlers.*;
 
 import java.awt.geom.*;
+import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -26,6 +27,7 @@ public class ATBPExtension extends SFSExtension {
     ArrayList<Vector<Float>>[] mainMapColliders; //Contains all vertices for the main map
     ArrayList<Path2D> mapPaths; //Contains all line paths of the colliders for the practice map
     ArrayList<Path2D> mainMapPaths; //Contains all line paths of the colliders for the main map
+    HashMap<String, List<String>> tips = new HashMap<>();
 
     HashMap<Integer, RoomHandler> roomHandlers = new HashMap<>();
     HashMap<Integer, ScheduledFuture<?>> roomTasks = new HashMap<>();
@@ -59,6 +61,7 @@ public class ATBPExtension extends SFSExtension {
             loadDefinitions();
             loadColliders();
             loadItems();
+            loadTips();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -78,8 +81,10 @@ public class ATBPExtension extends SFSExtension {
         File[] files = path.listFiles();
         ObjectMapper mapper = new XmlMapper();
         for(File f : files){
-            JsonNode node = mapper.readTree(f);
-            actorDefinitions.put(f.getName().replace(".xml",""),node);
+            if(f.getName().contains("xml")){
+                JsonNode node = mapper.readTree(f);
+                actorDefinitions.put(f.getName().replace(".xml",""),node);
+            }
         }
     }
 
@@ -90,6 +95,18 @@ public class ATBPExtension extends SFSExtension {
         for(File f : files){
             JsonNode node = mapper.readTree(f);
             itemDefinitions.put(f.getName().replace(".json",""),node);
+        }
+    }
+
+    private void loadTips() throws IOException {
+        File tipsFile = new File(getCurrentFolder() +"/definitions/tips.json");
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode tipsJson = mapper.readTree(tipsFile);
+        ArrayNode categoryNode = (ArrayNode) tipsJson.get("gameTips").get("category");
+        for(JsonNode category : categoryNode){
+            String jsonString = mapper.writeValueAsString(category.get("tip")).replace("[","").replace("]","").replaceAll("\"","");
+            String[] tips = jsonString.split(",");
+            this.tips.put(category.get("name").asText(),Arrays.asList(tips));
         }
     }
 
@@ -192,6 +209,16 @@ public class ATBPExtension extends SFSExtension {
 
     public JsonNode getAttackData(String actorName, String attack){
         return this.getActorData(actorName).get(attack);
+    }
+
+    public String getDisplayName(String actorName){
+        return this.getActorData(actorName).get("playerData").get("playerDisplayName").asText();
+    }
+
+    public String getRandomTip(String type){
+        List<String> tips = this.tips.get(type);
+        int num = (int)(Math.random()*(tips.size()-1));
+        return tips.get(num);
     }
 
     public void startScripts(Room room){ //Creates a new task scheduler for a room

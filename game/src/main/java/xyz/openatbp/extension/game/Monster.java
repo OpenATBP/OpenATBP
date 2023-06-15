@@ -40,6 +40,7 @@ public class Monster extends Actor{
         this.currentHealth = this.maxHealth;
         this.attackRange = this.getStat("attackRange");
         this.actorType = ActorType.MONSTER;
+        this.displayName = parentExt.getDisplayName(monsterName);
     }
 
     public Monster(ATBPExtension parentExt, Room room, Point2D startingLocation, String monsterName){
@@ -57,6 +58,7 @@ public class Monster extends Actor{
         this.currentHealth = this.maxHealth;
         this.attackRange = this.getStat("attackRange");
         this.actorType = ActorType.MONSTER;
+        this.displayName = parentExt.getDisplayName(monsterName);
     }
     @Override
     public boolean damaged(Actor a, int damage) { //Runs when taking damage TODO: Implement armor
@@ -163,7 +165,7 @@ public class Monster extends Actor{
                 this.movementLine = null;
             }
         }else{ //Monster is pissed!!
-            if(this.location.distance(this.startingLocation) >= 10){
+            if(this.location.distance(this.startingLocation) >= 10 || this.target.getHealth() <= 0){
                 this.state = AggroState.PASSIVE; //Far from camp, heading back
                 this.move(this.startingLocation);
                 this.target = null;

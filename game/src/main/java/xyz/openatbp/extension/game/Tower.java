@@ -31,7 +31,9 @@ public class Tower extends Actor{
         this.lastHit = 0;
         this.actorType = ActorType.TOWER;
         this.attackCooldown = 500;
-        this.avatar = "tower1"; //TODO: Remove hard coding
+        this.avatar = "tower1";
+        if(team == 1) this.avatar = "tower2";
+        this.displayName = parentExt.getDisplayName(this.avatar);
         ExtensionCommands.createWorldFX(parentExt,room,this.id,"fx_target_ring_6",this.id+"_ring",15*60*1000,(float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
     }
 
@@ -96,7 +98,7 @@ public class Tower extends Actor{
     }
 
     @Override
-    public void update(int msRan) { //TODO: Tower still targeting player after player dies
+    public void update(int msRan) {
         if(!this.destroyed){
             List<Actor> nearbyActors = Champion.getEnemyActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.team,this.location,6.2f);
             if(this.target == null){
@@ -133,6 +135,10 @@ public class Tower extends Actor{
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.target.getId(),"tower_current_target_indicator",10*60*1000,this.id+"_target",true,"displayBar",false,true,this.team);
                 }
             }else{
+                if(this.target.getHealth() <= 0){
+                    this.resetTarget(this.target);
+                    return;
+                }
                 if(this.attackCooldown > 0) this.reduceAttackCooldown();
                 System.out.println("Targeting " + target.getId());
                 if(nearbyActors.size() == 0){
