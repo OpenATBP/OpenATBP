@@ -371,7 +371,7 @@ public class Minion extends Actor{
                 Actor newTarget = this.getNewTarget();
                 if(newTarget != null) this.setTarget(this.parentExt, newTarget.getId());
                 break;
-            case 1: //PLAYER TARGET
+            case 1: //PLAYER TARGET TODO: Ranged minions still move towards you when in range for some reason
                 UserActor target = roomHandler.getPlayer(this.getTarget());
                 Point2D currentPoint = target.getLocation();
                 int health = target.getHealth();

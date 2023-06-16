@@ -69,7 +69,7 @@ public class FlamePrincess extends UserActor{
                 ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"flame_princess_polymorph_fireball","flame_w_polymorph",1000, abilityData.getFloat("x"),abilityData.getFloat("z"),false,this.team,0f);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new AbilityRunnable(ability,abilityData), 500, TimeUnit.MILLISECONDS);
                 break;
-            case 3: //E
+            case 3: //E TODO: FP does not return to form when skin is used also she needs to be scaled up
                 if(!ultStarted && ultUses == 3){
                     int duration = Champion.getSpellData(parentExt,this.avatar,ability).get("spellDuration").asInt();
                     ultStarted = true;

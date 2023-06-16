@@ -16,6 +16,7 @@ import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.reqhandlers.HitActorHandler;
 
+import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.*;
@@ -37,7 +38,6 @@ public class UserActor extends Actor {
     private int deathTime = 10;
     private boolean dead = false;
     protected Map<Actor,ISFSObject> aggressors = new HashMap<>();
-    protected Map<String, Object> stats;
 
     //TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt){
@@ -107,6 +107,24 @@ public class UserActor extends Actor {
 
     public double getStat(String stat){
         return player.getVariable("stats").getSFSObjectValue().getDouble(stat);
+    }
+
+    public Object getPlayerStat(String stat){
+        if(this.tempStats.containsKey(stat)) return this.tempStats.get(stat);
+        else return this.stats.get(stat);
+    }
+
+    @Override
+    public boolean setTempStat(String stat, double delta){
+        if(stat.contains("speed")){
+            this.originalLocation = this.getRelativePoint(false);
+            this.timeTraveled = 0f;
+        }
+        boolean returnVal = super.setTempStat(stat,delta);
+        parentExt.trace("Temp Stat Set!1");
+        if(!returnVal) ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,stat,this.tempStats.get(stat));
+        else ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,stat,this.stats.get(stat));
+        return returnVal;
     }
 
     public void setPath(Point2D start, Point2D end){
@@ -215,7 +233,7 @@ public class UserActor extends Actor {
     }
 
     @Override
-    public void die(Actor a) { //TODO: Last left off - handing death needs to be properly implemented
+    public void die(Actor a) {
         this.setHealth(0);
         ExtensionCommands.knockOutActor(parentExt,player, String.valueOf(player.getId()),a.getId(),this.deathTime);
         try{
@@ -393,8 +411,8 @@ public class UserActor extends Actor {
     }
 
     public void respawn(){
-        Point2D respawnPoint = new Point2D.Float(0,0);
-        if(this.team == 0) respawnPoint = MapData.PURPLE_SPAWNS[(int) (Math.random()*MapData.PURPLE_SPAWNS.length)];
+        Point2D respawnPoint = MapData.PURPLE_SPAWNS[parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id,this.team)];
+        if(this.team == 1) respawnPoint.setLocation(respawnPoint.getX()*-1,respawnPoint.getY());
         this.location = respawnPoint;
         this.originalLocation = respawnPoint;
         this.destination = respawnPoint;
@@ -404,7 +422,13 @@ public class UserActor extends Actor {
         for(User u : this.room.getUserList()){
             ExtensionCommands.snapActor(this.parentExt,u,this.id,this.location,respawnPoint,false);
             ExtensionCommands.respawnActor(this.parentExt,u,this.id);
+            ExtensionCommands.createActorFX(this.parentExt,u,this.id,"statusEffect_speed",5000,this.id+"_respawnSpeed",true,"Bip01 Footsteps",true,false,this.team);
         }
+        parentExt.trace("Testing!!!");
+        System.out.println("TempStat Success: " + this.setTempStat("speed",2d));
+        System.out.println("Speed: " + this.getPlayerStat("speed"));
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.NewBuffHandler(this,"speed",2d),5,TimeUnit.SECONDS);
+        ExtensionCommands.createActorFX(this.parentExt,this.player,this.id,"champion_respawn_effect",1000,this.id+"_respawn",true,"Bip001",false,false,this.team);
     }
 
     public void giveStatBuff(String stat, double value, int duration){
@@ -495,6 +519,12 @@ public class UserActor extends Actor {
             stats.put(k,actorStats.get(k).asDouble());
         }
         return stats;
+    }
+
+    private Point2D getRespawnLocation(){
+        double x = (Math.random() * ((-47.76)-(-50.33)) -47.76);
+        double y = (Math.random() * (3.02-(-3.13)) - 3.13);
+        return new Point2D.Double(x,y);
     }
 
     protected class MovementStopper implements Runnable {

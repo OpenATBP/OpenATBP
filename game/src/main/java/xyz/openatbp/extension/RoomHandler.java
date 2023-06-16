@@ -119,6 +119,7 @@ public class RoomHandler implements Runnable{
             }
         }
         try{
+            this.handleFountain();
             for(UserActor u : players){ //Tracks player location
                 u.update(mSecondsRan);
             }
@@ -697,5 +698,36 @@ public class RoomHandler implements Runnable{
             }
         }
         return true;
+    }
+
+    public int getTeamNumber(String id, int team){
+        int blue = 0;
+        int purple = 0;
+        for(UserActor ua : this.players){
+            if(ua.getId().equalsIgnoreCase(id)){
+                if(ua.getTeam() == 0) return purple;
+                else return blue;
+            }else{
+                if(ua.getTeam() == 0) purple++;
+                else blue++;
+            }
+        }
+        return -1;
+    }
+
+    public void handleFountain(){
+        Point2D purpleCenter = new Point2D.Float(-50.16f,0f);
+        List<Actor> purpleTeam = Champion.getEnemyActorsInRadius(this,1,purpleCenter,4f);
+        for(Actor a : purpleTeam){
+            if(a.getActorType() == ActorType.PLAYER){
+                UserActor ua = (UserActor) a;
+                if(ua.getHealth() < ua.getMaxHealth()){
+                    ua.setHealth(ua.getMaxHealth());
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,ua.getId(),"fx_health_regen",3000,ua.getId()+"_fountainRegen",true,"Bip01",false,false,ua.getTeam());
+                }
+                if(!ua.hasTempStat("speed")) ua.handleEffect("speed",2d,5000,"fountainSpeed");
+                else System.out.println(ua.getTempStat("speed"));
+            }
+        }
     }
 }

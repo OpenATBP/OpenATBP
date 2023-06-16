@@ -34,6 +34,9 @@ public abstract class Actor {
     protected Map<ActorState, Boolean> states = Champion.getBlankStates();
     protected Map<ActorState, ScheduledFuture<?>> stateCommands = new HashMap<>(ActorState.values().length);
     protected String displayName = "FuzyBDragon";
+    protected Map<String, Object> stats;
+    protected Map<String, Object> tempStats = new HashMap<>();
+
 
     public double getPHealth(){
         return currentHealth/maxHealth;
@@ -119,9 +122,72 @@ public abstract class Actor {
             e.printStackTrace();
         }
     }
-
+    @Deprecated
     public double getStat(String stat){
         return this.parentExt.getActorStats(this.avatar).get(stat).asDouble();
+    }
+
+    public Object getNewStat(String stat){
+        if(this.stats != null) return this.stats.get(stat);
+        else return null;
+    }
+
+    public Object getTempStat(String stat){
+        return this.tempStats.get(stat);
+    }
+
+    public boolean setTempStat(String stat, double delta){
+        try{
+            Object tempStat = this.tempStats.get(stat);
+            if(tempStat == null){
+                Object existingStat = this.stats.get(stat);
+                if(existingStat.getClass() == Integer.class){
+                    int existingInt = (int) ((int) existingStat + delta);
+                    this.tempStats.put(stat,existingInt);
+                }else if(existingStat.getClass() == Double.class){
+                    double existingDouble = (double)existingStat + delta;
+                    this.tempStats.put(stat,existingDouble);
+                }else return true;
+                return false;
+            }
+            if(tempStat.getClass() == Integer.class){
+                int intStat = (int) ((int) tempStat + delta);
+                if(intStat == 0 || Math.abs(intStat - (int)this.stats.get(stat)) < 0.01){
+                    this.tempStats.remove(stat);
+                    return true;
+                }else{
+                    this.tempStats.put(stat,intStat);
+                    return false;
+                }
+            }else if(tempStat.getClass() == Double.class){
+                double doubleStat = (double) tempStat + delta;
+                if(doubleStat == 0 || Math.abs(doubleStat - (double)this.stats.get(stat)) < 0.01){
+                    this.tempStats.remove(stat);
+                    return true;
+                }else{
+                    this.tempStats.put(stat,doubleStat);
+                    return false;
+                }
+            }
+        }catch(Exception e){
+            e.printStackTrace();
+            return true;
+        }
+        return true;
+    }
+
+    public void handleEffect(String stat, double delta, int duration, String fxId){
+        this.setTempStat(stat,delta);
+        switch(stat){
+            case "speed":
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_speed",duration,this.id+"_"+fxId,true,"Bip01",true,false,this.team);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.NewBuffHandler(this,stat,delta),duration,TimeUnit.MILLISECONDS);
+                break;
+        }
+    }
+
+    public boolean hasTempStat(String stat){
+        return this.tempStats.containsKey(stat);
     }
     public String getDisplayName(){ return this.displayName;}
 

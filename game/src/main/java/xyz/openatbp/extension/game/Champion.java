@@ -353,6 +353,25 @@ public class Champion {
             return this.originalStat;
         }
     }
+
+    public static class NewBuffHandler implements Runnable {
+
+        Actor a;
+        String stat;
+        double statIncrease;
+
+        public NewBuffHandler(Actor a, String stat, double statIncrease){
+            this.a = a;
+            this.stat = stat;
+            this.statIncrease = statIncrease;
+        }
+
+        @Override
+        public void run() {
+            a.setTempStat(stat,statIncrease*-1);
+        }
+    }
+
 }
 
 class BuffHandler implements Runnable {
