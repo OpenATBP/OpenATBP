@@ -61,7 +61,7 @@ public class ChampionData {
         return currentXp>=levelCap;
     }
 
-    public static ISFSObject useSpellPoint(User user, String category, ATBPExtension parentExt){
+    public static ISFSObject useSpellPoint(User user, String category, ATBPExtension parentExt){ //TODO: Switch to using UserActor stats
         ISFSObject toUpdate = new SFSObject();
         ISFSObject stats = user.getVariable("stats").getSFSObjectValue();
         int spellPoints = user.getVariable("stats").getSFSObjectValue().getInt("availableSpellPoints");
@@ -88,11 +88,14 @@ public class ChampionData {
                     double currentStat = user.getVariable("stats").getSFSObjectValue().getDouble(stat.get("stat").asText());
                     int packStat = stat.get("value").asInt();
                     if(stat.get("stat").asText().equalsIgnoreCase("health")){ //Health is tracked through 4 stats (health, currentHealth, maxHealth, and pHealth)
-                        int maxHealth = stats.getInt("maxHealth");
-                        double pHealth = stats.getDouble("pHealth");
+                        UserActor ua = parentExt.getRoomHandler(user.getLastJoinedRoom().getId()).getPlayer(String.valueOf(user.getId()));
+                        int maxHealth = ua.getMaxHealth();
+                        double pHealth = ua.getPHealth();
                         if(pHealth>1) pHealth=1;
                         maxHealth+=packStat;
                         int currentHealth = (int) Math.floor(pHealth*maxHealth);
+                        ua.setHealth(currentHealth,maxHealth);
+                        /*
                         stats.putInt("currentHealth",currentHealth);
                         stats.putInt("maxHealth",maxHealth);
                         toUpdate.putInt("currentHealth",currentHealth);
@@ -100,6 +103,8 @@ public class ChampionData {
                         toUpdate.putDouble("pHealth",pHealth);
                         stats.putDouble(stat.get("stat").asText(),maxHealth);
                         toUpdate.putDouble(stat.get("stat").asText(),maxHealth);
+
+                         */
                     }else{
                         user.getVariable("stats").getSFSObjectValue().putDouble(stat.get("stat").asText(),currentStat+packStat);
                         toUpdate.putDouble(stat.get("stat").asText(),currentStat+packStat);

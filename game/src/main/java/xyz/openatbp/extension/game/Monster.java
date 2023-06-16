@@ -140,7 +140,7 @@ public class Monster extends Actor{
     }
 
     @Override
-    public void update(int msRan) {
+    public void update(int msRan) { //TODO: Big monsters teleport to you but the math is working... check to make sure they actually do the initial move
         if(msRan % 1000*60 == 0){ //Every second it checks average player level and scales accordingly
             int averagePLevel = parentExt.getRoomHandler(this.room.getId()).getAveragePlayerLevel();
             if(averagePLevel != level){
@@ -154,9 +154,7 @@ public class Monster extends Actor{
         else this.movementLine = new Line2D.Float(this.location,this.location);
         if(this.state == AggroState.PASSIVE){
             if(this.currentHealth < this.maxHealth){
-                this.currentHealth+=25;
-                if(this.currentHealth > this.maxHealth) this.currentHealth = this.maxHealth;
-                Champion.updateServerHealth(parentExt,this);
+                this.changeHealth(25);
             }
             if(this.location.distance(this.startingLocation) >= 0.01){ //Still walking from being de-agro'd
                 travelTime+=0.1f;

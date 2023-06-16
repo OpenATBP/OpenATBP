@@ -87,6 +87,13 @@ public class ExtensionCommands {
         }
     }
 
+    public static void updateActorData(ATBPExtension parentExt, Room room, String id, ISFSObject data){
+        data.putUtfString("id",id);
+        for(User u : room.getUserList()){
+            parentExt.send("cmd_update_actor_data",data,u);
+        }
+    }
+
     /**
      *
      * @param id - ID of who is moving

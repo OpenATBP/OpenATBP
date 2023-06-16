@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Champion {
 
-
+    @Deprecated
     public static void giveBuff(ATBPExtension parentExt,User u, Buff buff){
         String stat = null;
         float duration = 0;
@@ -39,7 +39,9 @@ public class Champion {
                 value = 20;
                 duration = 5f;
                 effect = "fx_health_regen";
-                break;
+                parentExt.getRoomHandler(u.getLastJoinedRoom().getId()).getPlayer(String.valueOf(u.getId())).giveStatBuff(stat,value, (int) (duration*1000));
+                ExtensionCommands.createActorFX(parentExt,u.getLastJoinedRoom(),String.valueOf(u.getId()),effect,5000,effect+"_"+u.getId(),true,"Bip01",false,false,2);
+                return;
             case ATTACK_ALTAR:
                 break;
             case POLYMORPH:
@@ -66,7 +68,7 @@ public class Champion {
             ExtensionCommands.createActorFX(parentExt,u.getLastJoinedRoom(),String.valueOf(u.getId()),effect,interval,effect+u.getId(),true,"",false,false,team);
         }
     }
-
+    @Deprecated
     public static void updateHealth(ATBPExtension parentExt, User u, int health){
         ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
         double currentHealth = stats.getInt("currentHealth");
@@ -83,7 +85,6 @@ public class Champion {
         stats.putInt("currentHealth",(int)currentHealth);
         stats.putDouble("pHealth",pHealth);
     }
-
     public static void updateServerHealth(ATBPExtension parentExt, Actor a){
         ISFSObject data = new SFSObject();
         data.putUtfString("id",a.getId());
@@ -367,7 +368,7 @@ public class Champion {
         }
 
         @Override
-        public void run() {
+        public void run() { //TODO: Extend visual effects if there is still an active buff
             a.setTempStat(stat,statIncrease*-1);
         }
     }

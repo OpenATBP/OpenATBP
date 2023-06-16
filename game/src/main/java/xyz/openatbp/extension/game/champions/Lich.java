@@ -32,7 +32,7 @@ public class Lich extends UserActor{
     @Override
     public void useAbility(int ability, ISFSObject abilityData){
         if(skully == null && System.currentTimeMillis()-lastSkullySpawn > 40000){
-            //this.spawnSkully();
+            this.spawnSkully();
         }
         switch(ability){
             case 1: //Q

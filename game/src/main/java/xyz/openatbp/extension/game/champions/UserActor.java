@@ -15,8 +15,6 @@ import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.reqhandlers.HitActorHandler;
-
-import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.*;
@@ -116,14 +114,14 @@ public class UserActor extends Actor {
 
     @Override
     public boolean setTempStat(String stat, double delta){
+        boolean returnVal = super.setTempStat(stat,delta);
         if(stat.contains("speed")){
             this.originalLocation = this.getRelativePoint(false);
             this.timeTraveled = 0f;
+            this.speed = (double) this.getPlayerStat("speed");
         }
-        boolean returnVal = super.setTempStat(stat,delta);
         parentExt.trace("Temp Stat Set!1");
-        if(!returnVal) ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,stat,this.tempStats.get(stat));
-        else ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,stat,this.stats.get(stat));
+        ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,stat,this.getPlayerStat(stat));
         return returnVal;
     }
 
@@ -184,21 +182,10 @@ public class UserActor extends Actor {
         if(this.dead) return true;
         ExtensionCommands.damageActor(parentExt,player,this.id,damage);
         this.processHitData(a,attackData,damage);
-        ISFSObject stats = this.getStats();
-        this.currentHealth-=damage;
-        if(this.currentHealth > 0){
-            for(User u : room.getUserList()){
-                ISFSObject updateData = new SFSObject();
-                updateData.putUtfString("id", this.id);
-                updateData.putInt("currentHealth", (int) currentHealth);
-                updateData.putDouble("pHealth", getPHealth());
-                updateData.putInt("maxHealth", (int) maxHealth);
-                stats.putInt("currentHealth", (int) currentHealth);
-                stats.putDouble("pHealth", getPHealth());
-                ExtensionCommands.updateActorData(parentExt,u,updateData);
-            }
-            return false;
-        }else{
+        if(this.hasTempStat("healthRegen")) this.tempStats.remove("healthRegen");
+        this.changeHealth(damage*-1);
+        if(this.currentHealth > 0) return false;
+        else{
             this.dead = true;
             this.die(a);
             return true;
@@ -215,13 +202,13 @@ public class UserActor extends Actor {
             for(User u : room.getUserList()){
                 ExtensionCommands.attackActor(parentExt,u,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),false,true);
             }
-            attackCooldown = (double) this.stats.get("attackSpeed");
+            attackCooldown = (double) this.getPlayerStat("attackSpeed");
         }
     }
 
     public void autoAttack(Actor a){
         Point2D location = this.location;
-        ExtensionCommands.moveActor(parentExt,this.player,this.id,location,location,3.75f,false);
+        ExtensionCommands.moveActor(parentExt,this.player,this.id,location,location, (float) this.speed,false);
         this.setLocation(location);
         this.setCanMove(false);
         SmartFoxServer.getInstance().getTaskScheduler().schedule(new HitActorHandler.MovementStopper(this),250,TimeUnit.MILLISECONDS);
@@ -235,6 +222,7 @@ public class UserActor extends Actor {
     @Override
     public void die(Actor a) {
         this.setHealth(0);
+        this.target = null;
         ExtensionCommands.knockOutActor(parentExt,player, String.valueOf(player.getId()),a.getId(),this.deathTime);
         try{
             ExtensionCommands.handleDeathRecap(parentExt,player,this.id,a.getId(), (HashMap<Actor, ISFSObject>) this.aggressors);
@@ -310,7 +298,7 @@ public class UserActor extends Actor {
                 this.autoAttack(target);
                 System.out.println("Auto attacking!");
             }else if(!this.withinRange(target)){
-                int attackRange = parentExt.getActorStats(this.avatar).get("attackRange").asInt();
+                int attackRange = (int) this.getPlayerStat("attackRange");
                 Line2D movementLine = new Line2D.Float(currentPoint,target.getLocation());
                 float targetDistance = (float)target.getLocation().distance(currentPoint)-attackRange;
                 Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
@@ -327,13 +315,17 @@ public class UserActor extends Actor {
             }
         }
         if(msRan % 1000 == 0){
+            if(this.currentHealth < this.maxHealth && (this.aggressors.isEmpty() || this.hasTempStat("healthRegen"))){
+                double healthRegen = (double) this.getPlayerStat("healthRegen");
+                this.changeHealth((int)healthRegen);
+            }
             int newDeath = 10+((msRan/1000)/60);
             if(newDeath != this.deathTime) this.deathTime = newDeath;
             if(this.isState(ActorState.POLYMORPH)){
                 for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(this.room.getId()),this.location,2)){
                     if(a.getTeam() != this.team){
                         System.out.println("Damaging: " + a.getAvatar());
-                        a.damaged(this,50);
+                        a.damaged(this,50); //TODO: Manually put in FP damage
                     }
                 }
             }
@@ -431,6 +423,7 @@ public class UserActor extends Actor {
         ExtensionCommands.createActorFX(this.parentExt,this.player,this.id,"champion_respawn_effect",1000,this.id+"_respawn",true,"Bip001",false,false,this.team);
     }
 
+    @Deprecated
     public void giveStatBuff(String stat, double value, int duration){
         ISFSObject stats = this.getStats();
         double currentStat = stats.getDouble(stat);
@@ -519,12 +512,6 @@ public class UserActor extends Actor {
             stats.put(k,actorStats.get(k).asDouble());
         }
         return stats;
-    }
-
-    private Point2D getRespawnLocation(){
-        double x = (Math.random() * ((-47.76)-(-50.33)) -47.76);
-        double y = (Math.random() * (3.02-(-3.13)) - 3.13);
-        return new Point2D.Double(x,y);
     }
 
     protected class MovementStopper implements Runnable {

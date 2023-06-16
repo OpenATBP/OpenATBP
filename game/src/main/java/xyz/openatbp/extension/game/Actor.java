@@ -66,10 +66,6 @@ public abstract class Actor {
         this.attackCooldown-=100;
     }
 
-    public double getAttackCooldown(){
-        return this.attackCooldown;
-    }
-
     public boolean withinRange(Actor a){
         return a.getLocation().distance(this.location) <= this.attackRange;
     }
@@ -183,6 +179,10 @@ public abstract class Actor {
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_speed",duration,this.id+"_"+fxId,true,"Bip01",true,false,this.team);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.NewBuffHandler(this,stat,delta),duration,TimeUnit.MILLISECONDS);
                 break;
+            case "healthRegen":
+                ExtensionCommands.createActorFX(parentExt,this.room,this.id,"fx_health_regen",duration,this.id+"_"+fxId,true,"Bip01",false,false,this.team);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.NewBuffHandler(this,stat,delta),duration,TimeUnit.MILLISECONDS);
+                break;
         }
     }
 
@@ -214,5 +214,26 @@ public abstract class Actor {
 
     public Room getRoom(){
         return this.room;
+    }
+    public void changeHealth(int delta){
+        ISFSObject data = new SFSObject();
+        this.currentHealth+=delta;
+        if(this.currentHealth > this.maxHealth) this.currentHealth = this.maxHealth;
+        else if(this.currentHealth < 0) this.currentHealth = 0;
+        data.putInt("currentHealth", (int) this.currentHealth);
+        data.putInt("maxHealth",(int) this.maxHealth);
+        data.putDouble("pHealth",this.getPHealth());
+        ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,data);
+    }
+    public void setHealth(int currentHealth, int maxHealth){
+        this.currentHealth = currentHealth;
+        this.maxHealth = maxHealth;
+        if(this.currentHealth > this.maxHealth) this.currentHealth = this.maxHealth;
+        else if(this.currentHealth < 0) this.currentHealth = 0;
+        ISFSObject data = new SFSObject();
+        data.putInt("currentHealth",(int)this.currentHealth);
+        data.putInt("maxHealth", (int) this.maxHealth);
+        data.putDouble("pHealth",this.getPHealth());
+        ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,data);
     }
 }

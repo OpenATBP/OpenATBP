@@ -66,7 +66,6 @@ public class RoomHandler implements Runnable{
                 if(room.getUserList().size() == 0) parentExt.stopScript(room.getId()); //If no one is in the room, stop running.
                 else{
                     handleAltars();
-                    handleHealthRegen();
                     ExtensionCommands.updateTime(parentExt,this.room,mSecondsRan);
                 }
                 ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
@@ -200,8 +199,9 @@ public class RoomHandler implements Runnable{
                             ExtensionCommands.removeFx(parentExt,room,s+"_fx");
                             ExtensionCommands.createActorFX(parentExt,room,String.valueOf(u.getId()),"picked_up_health_cyclops",2000,s+"_fx2",true,"",false,false,team);
                             ExtensionCommands.playSound(parentExt,u.getUser(),"sfx_health_picked_up",healthLoc);
-                            Champion.updateHealth(parentExt,u.getUser(),100);
-                            Champion.giveBuff(parentExt,u.getUser(), Buff.HEALTH_PACK);
+                            u.changeHealth(100);
+                            u.handleEffect("healthRegen",20d,5000,"cyclopsTears");
+                            //Champion.giveBuff(parentExt,u.getUser(), Buff.HEALTH_PACK);
                             spawns.putInt(s,0);
                             break;
                         }
@@ -528,14 +528,15 @@ public class RoomHandler implements Runnable{
             }
         }
     }
-
+    @Deprecated
     private void handleHealthRegen(){ // TODO: Fully heals player for some reason
         for(User u : room.getUserList()){
             ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
             if(stats.getInt("currentHealth") > 0 && stats.getInt("currentHealth") < stats.getInt("maxHealth")){
-                double healthRegen = stats.getDouble("healthRegen");
                 this.getPlayer(String.valueOf(u.getId())).setHealth(stats.getInt("currentHealth"));
-                Champion.updateHealth(parentExt,u,(int)healthRegen);
+                UserActor ua = this.getPlayer(String.valueOf(u.getId()));
+                double healthRegen = (double) ua.getPlayerStat("healthRegen");
+                ua.changeHealth((int)healthRegen);
             }
 
         }
@@ -719,6 +720,19 @@ public class RoomHandler implements Runnable{
         Point2D purpleCenter = new Point2D.Float(-50.16f,0f);
         List<Actor> purpleTeam = Champion.getEnemyActorsInRadius(this,1,purpleCenter,4f);
         for(Actor a : purpleTeam){
+            if(a.getActorType() == ActorType.PLAYER){
+                UserActor ua = (UserActor) a;
+                if(ua.getHealth() < ua.getMaxHealth()){
+                    ua.setHealth(ua.getMaxHealth());
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,ua.getId(),"fx_health_regen",3000,ua.getId()+"_fountainRegen",true,"Bip01",false,false,ua.getTeam());
+                }
+                if(!ua.hasTempStat("speed")) ua.handleEffect("speed",2d,5000,"fountainSpeed");
+                else System.out.println(ua.getTempStat("speed"));
+            }
+        }
+        Point2D blueCenter = new Point2D.Float(-50.16f, 0f);
+        List<Actor> blueTeam = Champion.getEnemyActorsInRadius(this,0,blueCenter,4f);
+        for(Actor a : purpleTeam){ //I can optimize but that's future me's problem
             if(a.getActorType() == ActorType.PLAYER){
                 UserActor ua = (UserActor) a;
                 if(ua.getHealth() < ua.getMaxHealth()){
