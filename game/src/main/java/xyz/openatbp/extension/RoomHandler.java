@@ -528,19 +528,6 @@ public class RoomHandler implements Runnable{
             }
         }
     }
-    @Deprecated
-    private void handleHealthRegen(){ // TODO: Fully heals player for some reason
-        for(User u : room.getUserList()){
-            ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
-            if(stats.getInt("currentHealth") > 0 && stats.getInt("currentHealth") < stats.getInt("maxHealth")){
-                this.getPlayer(String.valueOf(u.getId())).setHealth(stats.getInt("currentHealth"));
-                UserActor ua = this.getPlayer(String.valueOf(u.getId()));
-                double healthRegen = (double) ua.getPlayerStat("healthRegen");
-                ua.changeHealth((int)healthRegen);
-            }
-
-        }
-    }
 
     public ArrayList<UserActor> getPlayers(){
         return this.players;
@@ -723,7 +710,7 @@ public class RoomHandler implements Runnable{
             if(a.getActorType() == ActorType.PLAYER){
                 UserActor ua = (UserActor) a;
                 if(ua.getHealth() < ua.getMaxHealth()){
-                    ua.setHealth(ua.getMaxHealth());
+                    ua.setHealth(ua.getMaxHealth(),ua.getMaxHealth()); //TODO: Set to not automatically fully heal
                     ExtensionCommands.createActorFX(this.parentExt,this.room,ua.getId(),"fx_health_regen",3000,ua.getId()+"_fountainRegen",true,"Bip01",false,false,ua.getTeam());
                 }
                 if(!ua.hasTempStat("speed")) ua.handleEffect("speed",2d,5000,"fountainSpeed");
@@ -736,7 +723,7 @@ public class RoomHandler implements Runnable{
             if(a.getActorType() == ActorType.PLAYER){
                 UserActor ua = (UserActor) a;
                 if(ua.getHealth() < ua.getMaxHealth()){
-                    ua.setHealth(ua.getMaxHealth());
+                    ua.setHealth(ua.getMaxHealth(),ua.getMaxHealth());
                     ExtensionCommands.createActorFX(this.parentExt,this.room,ua.getId(),"fx_health_regen",3000,ua.getId()+"_fountainRegen",true,"Bip01",false,false,ua.getTeam());
                 }
                 if(!ua.hasTempStat("speed")) ua.handleEffect("speed",2d,5000,"fountainSpeed");

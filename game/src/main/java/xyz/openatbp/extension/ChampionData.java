@@ -8,6 +8,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.game.champions.UserActor;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 //TODO: More clearly separate this from Champion.class and make functions void (or move into UserActor functions)
 
@@ -21,24 +22,20 @@ public class ChampionData {
         }
         return -1;
     }
-    public static ISFSObject updateChampionStat(User user, String stat, int value){
-        int currentStat = user.getVariable("stats").getSFSObjectValue().getInt(stat);
-        user.getVariable("stats").getSFSObjectValue().putInt(stat,currentStat+value);
-        return user.getVariable("stats").getSFSObjectValue();
+
+    public static int getLevelXP(int level){
+        if(level == 0) return 0;
+        return XP_LEVELS[level-1];
     }
 
-    public static ISFSObject setChampionStat(User user, String stat, int value){
-        user.getVariable("stats").getSFSObjectValue().putInt(stat,value);
-        return user.getVariable("stats").getSFSObjectValue();
-    }
-
+    @Deprecated
     public static ISFSObject addXP(UserActor a, int xp, ATBPExtension parentExt){
         User user = a.getUser();
         int level = user.getVariable("stats").getSFSObjectValue().getInt("level");
         int currentXp = user.getVariable("stats").getSFSObjectValue().getInt("xp")+xp;
         if(hasLeveledUp(user,xp)){
             level++;
-            levelUpCharacter(parentExt, user);
+            levelUpCharacter(parentExt, a);
         }
         double levelCap2 = XP_LEVELS[level-1];
         double newXP = levelCap2-currentXp;
@@ -53,7 +50,7 @@ public class ChampionData {
         toUpdate.putUtfString("id", String.valueOf(user.getId()));
         return toUpdate;
     }
-
+    @Deprecated
     public static boolean hasLeveledUp(User user, int xp){
         int level = user.getVariable("stats").getSFSObjectValue().getInt("level");
         int currentXp = user.getVariable("stats").getSFSObjectValue().getInt("xp")+xp;
@@ -204,33 +201,27 @@ public class ChampionData {
         return stats;
     }
 
-    public static void levelUpCharacter(ATBPExtension parentExt, User user){
-        ISFSObject stats = user.getVariable("stats").getSFSObjectValue();
-        ISFSObject toUpdate = new SFSObject();
-        int level = stats.getInt("level");
-        for(String k : stats.getKeys()){
+    @Deprecated
+    public static void levelUpCharacter(ATBPExtension parentExt, UserActor ua){
+        User user = ua.getUser();
+        Map<String, Object> playerStats = ua.getStats();
+        int level = ua.getLevel();
+        for(String k : playerStats.keySet()){
             if(k.contains("PerLevel")){
-                double levelStat = stats.getDouble(k)*level;
-                double currentStat = stats.getDouble(k.replace("PerLevel",""));
+                String stat = k.replace("PerLevel","");
+                double levelStat = (double) playerStats.get(k);
+                double currentStat = (double) playerStats.get(stat);
                 if(k.contains("health")){
-                    int maxHealth = stats.getInt("maxHealth");
-                    double pHealth = stats.getDouble("pHealth");
-                    if(pHealth>1) pHealth=1;
-                    maxHealth+=levelStat;
-                    int currentHealth = (int) Math.floor(pHealth*maxHealth);
-                    stats.putInt("currentHealth",currentHealth);
-                    stats.putInt("maxHealth",maxHealth);
-                    toUpdate.putInt("currentHealth",currentHealth);
-                    toUpdate.putInt("maxHealth",maxHealth);
-                    toUpdate.putDouble("pHealth",pHealth);
-                    stats.putDouble(k.replace("PerLevel",""),maxHealth);
-                    toUpdate.putDouble(k.replace("PerLevel",""),maxHealth);
+                    ua.setHealth((int) ((ua.getMaxHealth()+levelStat)*ua.getPHealth()), (int) (ua.getMaxHealth()+levelStat));
+                }else if(k.contains("attackSpeed")){
+                    ua.updateStat(stat,currentStat-levelStat);
                 }else{
-                    stats.putDouble(k.replace("PerLevel",""),levelStat+currentStat);
-                    toUpdate.putDouble(k.replace("PerLevel",""),levelStat+currentStat);
+                    ua.updateStat(stat,currentStat+levelStat);
                 }
             }
         }
+        ISFSObject toUpdate = new SFSObject();
+        ISFSObject stats = user.getVariable("stats").getSFSObjectValue(); //TODO: Convert to player stats
         int spellPoints = stats.getInt("availableSpellPoints")+1;
         stats.putInt("availableSpellPoints",spellPoints);
         toUpdate.putUtfString("id", String.valueOf(user.getId()));

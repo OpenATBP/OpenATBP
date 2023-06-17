@@ -99,8 +99,8 @@ public class UserActor extends Actor {
         return player.getLastJoinedRoom();
     }
 
-    public ISFSObject getStats(){
-        return player.getVariable("stats").getSFSObjectValue();
+    public Map<String, Object> getStats(){
+        return this.stats;
     }
 
     public double getStat(String stat){
@@ -196,6 +196,10 @@ public class UserActor extends Actor {
         return this.attackCooldown == 0;
     }
 
+    public double getAttackCooldown(){
+        return this.attackCooldown;
+    }
+
     @Override
     public void attack(Actor a) {
         if(attackCooldown == 0){
@@ -217,11 +221,12 @@ public class UserActor extends Actor {
 
     public void reduceAttackCooldown(){
         this.attackCooldown-=100;
+        if(attackCooldown < 0) this.attackCooldown = 0;
     }
 
     @Override
     public void die(Actor a) {
-        this.setHealth(0);
+        this.setHealth(0, (int) this.maxHealth);
         this.target = null;
         ExtensionCommands.knockOutActor(parentExt,player, String.valueOf(player.getId()),a.getId(),this.deathTime);
         try{
@@ -292,7 +297,7 @@ public class UserActor extends Actor {
         if(currentPoint.getX() != x && currentPoint.getY() != z){
             this.updateMovementTime();
         }
-        if(!this.canAttack()) this.reduceAttackCooldown();
+        if(this.attackCooldown > 0) this.reduceAttackCooldown();
         if(this.target != null && this.target.getHealth() > 0 && this.autoAttackEnabled){
             if(this.withinRange(target) && this.canAttack()){
                 this.autoAttack(target);
@@ -378,22 +383,6 @@ public class UserActor extends Actor {
         else return new Line2D.Double(this.location,this.location);
     }
 
-    public void setHealth(double health){
-        this.currentHealth = health;
-        ISFSObject stats = this.getStats();
-        if(currentHealth>maxHealth) currentHealth = maxHealth;
-        else if(currentHealth<0) currentHealth = 0;
-        double pHealth = this.getPHealth();
-        ISFSObject updateData = new SFSObject();
-        updateData.putUtfString("id", this.id);
-        updateData.putInt("maxHealth",(int)maxHealth);
-        updateData.putInt("currentHealth",(int)currentHealth);
-        updateData.putDouble("pHealth",pHealth);
-        ExtensionCommands.updateActorData(parentExt,player,updateData);
-        stats.putInt("currentHealth",(int)currentHealth);
-        stats.putDouble("pHealth",pHealth);
-    }
-
     public void stopMoving(int delay){
         this.stopMoving();
         this.canMove = false;
@@ -409,7 +398,7 @@ public class UserActor extends Actor {
         this.originalLocation = respawnPoint;
         this.destination = respawnPoint;
         this.timeTraveled = 0f;
-        this.setHealth(this.maxHealth);
+        this.setHealth((int) this.maxHealth, (int) this.maxHealth);
         this.dead = false;
         for(User u : this.room.getUserList()){
             ExtensionCommands.snapActor(this.parentExt,u,this.id,this.location,respawnPoint,false);
@@ -425,9 +414,8 @@ public class UserActor extends Actor {
 
     @Deprecated
     public void giveStatBuff(String stat, double value, int duration){
-        ISFSObject stats = this.getStats();
-        double currentStat = stats.getDouble(stat);
-        stats.putDouble(stat,currentStat+value);
+        double currentStat = (double) stats.get(stat);
+        stats.put(stat,currentStat+value);
         ISFSObject updateData = new SFSObject();
         updateData.putUtfString("id",this.id);
         updateData.putDouble(stat,currentStat+value);
@@ -439,15 +427,32 @@ public class UserActor extends Actor {
         if(this.level != 10){
             this.xp+=xp; //TODO: Backpack modifiers
             System.out.println("Current xp for " + this.id + ":" + this.xp);
-            ExtensionCommands.updateActorData(this.parentExt,this.player,ChampionData.addXP(this,xp,this.parentExt));
-            if(ChampionData.getXPLevel(this.xp) != this.level){
-                this.level++;
+            HashMap<String, Object> updateData = new HashMap<>(3);
+            updateData.put("xp",this.xp);
+            int level = ChampionData.getXPLevel(this.xp);
+            if(level != this.level){
+                this.level = level;
+                updateData.put("level",this.level);
+                ChampionData.levelUpCharacter(this.parentExt,this);
+
             }
+            updateData.put("pLevel",this.getPLevel());
+            ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,updateData);
         }
     }
 
     public int getLevel(){
         return this.level;
+    }
+
+    public double getPLevel(){
+        if(this.level == 10) return 0d;
+        double lastLevelXP = ChampionData.getLevelXP(this.level-1);
+        double currentLevelXP = ChampionData.getLevelXP(this.level);
+        double delta = currentLevelXP - lastLevelXP;
+        System.out.println("My xp: " + this.xp + " Current Level XP: " + currentLevelXP + " Next Level XP: " + lastLevelXP);
+        System.out.println((this.xp-lastLevelXP)/delta);
+        return (this.xp-lastLevelXP)/delta;
     }
 
     private void processHitData(Actor a, JsonNode attackData, int damage){
@@ -550,6 +555,7 @@ public class UserActor extends Actor {
         }
     }
 
+    @Deprecated
     protected class StatChanger implements Runnable {
         double value;
         String stat;
@@ -560,9 +566,8 @@ public class UserActor extends Actor {
         }
         @Override
         public void run() {
-            ISFSObject stats = getStats();
-            double currentStat = stats.getDouble(stat);
-            stats.putDouble(stat,currentStat-value);
+            double currentStat = (double) stats.get(stat);
+            stats.put(stat,currentStat-value);
             ISFSObject updateData = new SFSObject();
             updateData.putUtfString("id",id);
             updateData.putDouble(stat,currentStat-value);

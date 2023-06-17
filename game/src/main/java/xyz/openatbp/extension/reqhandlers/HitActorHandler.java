@@ -49,6 +49,7 @@ public class HitActorHandler extends BaseClientRequestHandler {
                     ExtensionCommands.moveActor(parentExt,sender, actor.getId(),location, newPath.getP2(), (float) actor.getSpeed(),true);
                 }else if(actor.withinRange(target)){
                     trace("Failed to attack!");
+                    trace("Attack cooldown: " + actor.getAttackCooldown());
                     ExtensionCommands.moveActor(parentExt,sender,actor.getId(),location,location, (float) actor.getSpeed(),false);
                     actor.setLocation(location);
                 }

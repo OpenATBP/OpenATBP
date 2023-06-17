@@ -34,7 +34,7 @@ public abstract class Actor {
     protected Map<ActorState, Boolean> states = Champion.getBlankStates();
     protected Map<ActorState, ScheduledFuture<?>> stateCommands = new HashMap<>(ActorState.values().length);
     protected String displayName = "FuzyBDragon";
-    protected Map<String, Object> stats;
+    protected Map<String, Object> stats; //TODO: Maybe change to ISFSObject
     protected Map<String, Object> tempStats = new HashMap<>();
 
 
