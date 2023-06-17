@@ -298,9 +298,9 @@ public class UserActor extends Actor {
                 this.autoAttack(target);
                 System.out.println("Auto attacking!");
             }else if(!this.withinRange(target)){
-                int attackRange = (int) this.getPlayerStat("attackRange");
+                double attackRange = (double) this.getPlayerStat("attackRange");
                 Line2D movementLine = new Line2D.Float(currentPoint,target.getLocation());
-                float targetDistance = (float)target.getLocation().distance(currentPoint)-attackRange;
+                float targetDistance = (float)(target.getLocation().distance(currentPoint)-attackRange);
                 Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
                 if(newPath.getP2().distance(this.destination) > 0.1f){
                     System.out.println("Distance: " + newPath.getP2().distance(this.destination));

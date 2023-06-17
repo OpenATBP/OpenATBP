@@ -82,10 +82,10 @@ public class RoomHandler implements Runnable{
                         }
                     }else{
                         int time = spawns.getInt(s);
-                        if(time == 10){
+                        if((this.secondsRan < 91 && time == 90) || (this.secondsRan > 91 && time == 60)){
                             spawnHealth(s);
                         }
-                        else if(time < 91){
+                        else if((this.secondsRan < 91 && time < 90) || (this.secondsRan > 91 && time < 60)){
                             time++;
                             spawns.putInt(s,time);
                         }
@@ -199,7 +199,7 @@ public class RoomHandler implements Runnable{
                             ExtensionCommands.removeFx(parentExt,room,s+"_fx");
                             ExtensionCommands.createActorFX(parentExt,room,String.valueOf(u.getId()),"picked_up_health_cyclops",2000,s+"_fx2",true,"",false,false,team);
                             ExtensionCommands.playSound(parentExt,u.getUser(),"sfx_health_picked_up",healthLoc);
-                            u.changeHealth(100);
+                            if(!u.hasTempStat("healthRegen")) u.changeHealth(100);
                             u.handleEffect("healthRegen",20d,5000,"cyclopsTears");
                             //Champion.giveBuff(parentExt,u.getUser(), Buff.HEALTH_PACK);
                             spawns.putInt(s,0);

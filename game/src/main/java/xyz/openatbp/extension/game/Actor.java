@@ -132,7 +132,7 @@ public abstract class Actor {
         return this.tempStats.get(stat);
     }
 
-    public boolean setTempStat(String stat, double delta){
+    public boolean setTempStat(String stat, double delta){ //TODO: Should maybe make this private/protected
         try{
             Object tempStat = this.tempStats.get(stat);
             if(tempStat == null){

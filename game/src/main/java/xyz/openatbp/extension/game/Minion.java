@@ -37,7 +37,7 @@ public class Minion extends Actor{
     private Line2D movementLine;
     private int xpWorth = 5;
 
-    public Minion(ATBPExtension parentExt, Room room, int team, int minionNum, int wave, int lane){
+    public Minion(ATBPExtension parentExt, Room room, int team, int minionNum, int wave, int lane){ //TODO: Sometimes the first minion in a wave will spawn across the map?
         this.attackCooldown = 300;
         this.avatar = "creep"+team;
         String typeString = "super";
@@ -474,22 +474,13 @@ public class Minion extends Actor{
             aggressors.put(a.getId(),0);
         }
         if(a.getActorType() == ActorType.TOWER){
-            if(this.type == MinionType.SUPER) this.currentHealth-=(damage*0.05);
-            else this.currentHealth-=(damage*0.25);
-        }else this.currentHealth-=damage;
+            if(this.type == MinionType.SUPER) this.changeHealth((int) Math.round(damage*-0.05));
+            else this.changeHealth((int) Math.round(damage*-0.25));;
+        }else this.changeHealth(damage*-1);
         if(currentHealth <= 0){ //Minion dies
             this.die(a);
             return true;
         }else{
-            double pHealth = currentHealth/maxHealth;
-            ISFSObject updateData = new SFSObject();
-            updateData.putUtfString("id",this.id);
-            updateData.putInt("currentHealth",(int) currentHealth);
-            updateData.putDouble("pHealth",pHealth);
-            updateData.putInt("maxHealth", (int) maxHealth);
-            for(User u : this.getRoomUsers()){
-                ExtensionCommands.updateActorData(parentExt,u,updateData);
-            }
             return false;
         }
     }
@@ -510,19 +501,13 @@ public class Minion extends Actor{
         return this.room.getUserList();
     }
 
-    public Actor getNewTarget(){
+    public Actor getNewTarget(){ //TODO: Make it so minion gets the closest target
         RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getId());
         Base opposingBase = roomHandler.getOpposingTeamBase(this.team);
         if(opposingBase.isUnlocked() && this.nearEntity(opposingBase.getLocation(),1.8f)){
             if(this.getTarget() == null){
                 this.moveTowardsActor(parentExt,opposingBase.getLocation());
                 return opposingBase;
-            }
-        }
-        for(Tower t: roomHandler.getTowers()){
-            if(t.getTeam() != this.getTeam() && this.nearEntity(t.getLocation())){ //Minion prioritizes towers over players
-                this.moveTowardsActor(parentExt,t.getLocation());
-                return t;
             }
         }
         for(Minion minion : roomHandler.getMinions()){ // Check other minions
@@ -532,6 +517,12 @@ public class Minion extends Actor{
                         return minion;
                     }
                 }
+            }
+        }
+        for(Tower t: roomHandler.getTowers()){
+            if(t.getTeam() != this.getTeam() && this.nearEntity(t.getLocation())){ //Minion prioritizes towers over players
+                this.moveTowardsActor(parentExt,t.getLocation());
+                return t;
             }
         }
         for(UserActor u : roomHandler.getPlayers()){

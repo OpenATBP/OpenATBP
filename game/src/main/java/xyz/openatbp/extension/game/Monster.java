@@ -140,7 +140,7 @@ public class Monster extends Actor{
     }
 
     @Override
-    public void update(int msRan) { //TODO: Big monsters teleport to you but the math is working... check to make sure they actually do the initial move
+    public void update(int msRan) {
         if(msRan % 1000*60 == 0){ //Every second it checks average player level and scales accordingly
             int averagePLevel = parentExt.getRoomHandler(this.room.getId()).getAveragePlayerLevel();
             if(averagePLevel != level){
@@ -220,7 +220,13 @@ public class Monster extends Actor{
         Line2D rawMovementLine = new Line2D.Double(this.location,this.target.getLocation());
        //int dist = (int) Math.floor(rawMovementLine.getP1().distance(rawMovementLine.getP2()) - this.attackRange);
        // Line2D newPath = Champion.getDistanceLine(rawMovementLine,dist);
-        if(this.movementLine == null) this.movementLine = rawMovementLine;
+        if(this.movementLine == null){
+            this.movementLine = rawMovementLine;
+            this.travelTime = 0f;
+            for(User u : room.getUserList()){
+                ExtensionCommands.moveActor(parentExt,u,this.id,this.location,movementLine.getP2(), (float) this.speed, true);
+            }
+        }
         if(this.movementLine.getP2().distance(rawMovementLine.getP2()) > 0.1f){
             this.movementLine = rawMovementLine;
             this.travelTime = 0f;
