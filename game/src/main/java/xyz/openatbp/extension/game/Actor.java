@@ -138,17 +138,15 @@ public abstract class Actor {
             if(tempStat == null){
                 Object existingStat = this.stats.get(stat);
                 if(existingStat.getClass() == Integer.class){
-                    int existingInt = (int) ((int) existingStat + delta);
-                    this.tempStats.put(stat,existingInt);
+                    this.tempStats.put(stat,(int)delta);
                 }else if(existingStat.getClass() == Double.class){
-                    double existingDouble = (double)existingStat + delta;
-                    this.tempStats.put(stat,existingDouble);
+                    this.tempStats.put(stat,delta);
                 }else return true;
                 return false;
             }
             if(tempStat.getClass() == Integer.class){
                 int intStat = (int) ((int) tempStat + delta);
-                if(intStat == 0 || Math.abs(intStat - (int)this.stats.get(stat)) < 0.01){
+                if(intStat == 0){
                     this.tempStats.remove(stat);
                     return true;
                 }else{
@@ -157,7 +155,7 @@ public abstract class Actor {
                 }
             }else if(tempStat.getClass() == Double.class){
                 double doubleStat = (double) tempStat + delta;
-                if(doubleStat == 0 || Math.abs(doubleStat - (double)this.stats.get(stat)) < 0.01){
+                if(doubleStat == 0){
                     this.tempStats.remove(stat);
                     return true;
                 }else{
@@ -176,14 +174,34 @@ public abstract class Actor {
         this.setTempStat(stat,delta);
         switch(stat){
             case "speed":
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_speed",duration,this.id+"_"+fxId,true,"Bip01",true,false,this.team);
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.NewBuffHandler(this,stat,delta),duration,TimeUnit.MILLISECONDS);
+                if(delta > 0) ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_speed",duration,this.id+"_"+fxId,true,"Bip01",true,false,this.team);
                 break;
             case "healthRegen":
                 ExtensionCommands.createActorFX(parentExt,this.room,this.id,"fx_health_regen",duration,this.id+"_"+fxId,true,"Bip01",false,false,this.team);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.NewBuffHandler(this,stat,delta),duration,TimeUnit.MILLISECONDS);
                 break;
+            case "attackDamage":
+                if(fxId.contains("altar")){ //Keeping the altar buff handling in the RoomHandler to declutter the Actor class for now
+                    //DO nothing
+                }
+                break;
+            case "criticalChance":
+                if(fxId.equalsIgnoreCase("altar")){
+                    //Do nothing!
+                }
+                break;
+            case "armor":
+                if(fxId.equalsIgnoreCase("altar")){
+                    //Do nothing!
+                }
+                break;
+            case "spellResist":
+                if(fxId.equalsIgnoreCase("altar")){
+                    //Do nothing!
+                }
+                break;
         }
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.NewBuffHandler(this,stat,delta),duration,TimeUnit.MILLISECONDS);
     }
 
     public boolean hasTempStat(String stat){

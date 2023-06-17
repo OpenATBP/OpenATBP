@@ -369,92 +369,51 @@ public class RoomHandler implements Runnable{
                 else if(altarStatus[i]<0) altarChange[i]=1;
             }
             if(Math.abs(altarStatus[i]) <= 5) altarStatus[i]+=altarChange[i];
-            for(UserActor u : players){
-                int team = 2;
-                if(altarStatus[i]>0) team = 0;
-                else team = 1;
-                String altarId = "altar_"+i;
-                if(Math.abs(altarStatus[i]) == 6){ //Lock altar
-                    altarStatus[i]=10; //Locks altar
-                    if(i == 1) addScore(team,15);
-                    else addScore(team,10);
-                    cooldowns.put(altarId+"__"+"altar",180);
-                    ISFSObject data2 = new SFSObject();
-                    data2.putUtfString("id",altarId);
-                    data2.putUtfString("bundle","fx_altar_lock");
-                    data2.putInt("duration",1000*60*3);
-                    data2.putUtfString("fx_id","fx_altar_lock"+i);
-                    data2.putBool("parent",false);
-                    data2.putUtfString("emit",altarId);
-                    data2.putBool("orient",false);
-                    data2.putBool("highlight",true);
-                    data2.putInt("team",team);
-                    parentExt.send("cmd_create_actor_fx",data2,u.getUser());
-                    ISFSObject data = new SFSObject();
-                    int altarNum = -1;
-                    if(i == 0) altarNum = 1;
-                    else if(i == 1) altarNum = 0;
-                    else if(i == 2) altarNum = i;
-                    data.putInt("altar",altarNum);
-                    data.putInt("team",team);
-                    data.putBool("locked",true);
-                    parentExt.send("cmd_altar_update",data,u.getUser());
-                    if(u.getTeam()==team){
-                        ISFSObject data3 = new SFSObject();
+            int team = 2;
+            if(altarStatus[i]>0) team = 0;
+            else team = 1;
+            String altarId = "altar_"+i;
+            if(Math.abs(altarStatus[i]) >= 6 && altarStatus[i] != 10){
+                altarStatus[i]=10; //Locks altar
+                if(i == 1) addScore(team,15);
+                else addScore(team,10);
+                cooldowns.put(altarId+"__"+"altar",180);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,altarId,"fx_altar_lock",1000*60*3,"fx_altar_lock"+i,false,"Bip01",false,true,team);
+                int altarNum = -1;
+                if(i == 0) altarNum = 1;
+                else if(i == 1) altarNum = 0;
+                else if(i == 2) altarNum = i;
+                ExtensionCommands.updateAltar(this.parentExt,this.room,altarNum,team,true);
+                for(UserActor u : this.players){
+                    if(u.getTeam() == team){
                         String buffName;
                         String buffDescription;
                         String icon;
                         String bundle;
                         if(i == 1){
-                            buffName = "Attack Altar" +i + " Buff";
-                            buffDescription = "Gives you a burst of attack damage!";
+                            buffName = "altar_buff_offense";
+                            buffDescription = "altar2_description";
                             icon = "icon_altar_attack";
                             bundle = "altar_buff_offense";
+                            u.handleEffect("attackDamage",(double)u.getPlayerStat("attackDamage")*0.25,1000*60,"altar");
+                            u.handleEffect("spellDamage",(double)u.getPlayerStat("spellDamage")*0.25,1000*60,"altar");
                         }else{
-                            buffName = "Defense Altar" + i + " Buff";
-                            buffDescription = "Gives you defense!";
+                            buffName = "altar_buff_defense";
+                            buffDescription = "altar1_description";
                             icon = "icon_altar_armor";
                             bundle = "altar_buff_defense";
+                            u.handleEffect("armor",(double)u.getPlayerStat("armor")*0.5,1000*60,"altar");
+                            u.handleEffect("spellResist",(double)u.getPlayerStat("spellResist")*0.5,1000*60,"altar");
                         }
-                        data3.putUtfString("name",buffName);
-                        data3.putUtfString("desc",buffDescription);
-                        data3.putUtfString("icon",icon);
-                        data3.putFloat("duration",1000*60);
-                        parentExt.send("cmd_add_status_icon",data3,u.getUser());
+                        ExtensionCommands.addStatusIcon(this.parentExt,u.getUser(),buffName,buffDescription,icon,1000*60);
                         cooldowns.put(u.getId()+"__buff__"+buffName,60);
-                        ISFSObject data4 = new SFSObject();
-                        data4.putUtfString("id",String.valueOf(u.getId()));
-                        data4.putUtfString("bundle",bundle);
-                        data4.putInt("duration",1000*60);
-                        data4.putUtfString("fx_id",bundle+u.getId());
-                        data4.putBool("parent",true);
-                        data4.putUtfString("emit",String.valueOf(u.getId()));
-                        data4.putBool("orient",true);
-                        data4.putBool("highlight",true);
-                        data4.putInt("team",team);
-                        parentExt.send("cmd_create_actor_fx",data4,u.getUser());
-                        ISFSObject data5 = new SFSObject();
-                        data5.putUtfString("id",altarId);
-                        data5.putUtfString("attackerId",String.valueOf(u.getId()));
-                        data5.putInt("deathTime",180);
-                        parentExt.send("cmd_knockout_actor",data5,u.getUser());
-                        handleXPShare(u,101);
-                        //ExtensionCommands.updateActorData(parentExt,u.getUser(),ChampionData.addXP(u,101,parentExt));
+                        ExtensionCommands.createActorFX(this.parentExt,this.room,u.getId(),bundle,1000*60,bundle+u.getId(),true,"Bip01",true,true,u.getTeam());
+                        ExtensionCommands.knockOutActor(parentExt,u.getUser(),altarId,u.getId(),180);
                     }
-                }else if(Math.abs(altarStatus[i])<=5 && altarStatus[i]!=0){ //Update altar
-                    int stage = Math.abs(altarStatus[i]);
-                    ISFSObject data = new SFSObject();
-                    data.putUtfString("id",altarId);
-                    data.putUtfString("bundle","fx_altar_"+stage);
-                    data.putInt("duration",1000);
-                    data.putUtfString("fx_id","fx_altar_"+stage+i);
-                    data.putBool("parent",false);
-                    data.putUtfString("emit",altarId);
-                    data.putBool("orient",false);
-                    data.putBool("highlight",true);
-                    data.putInt("team",team);
-                    parentExt.send("cmd_create_actor_fx",data,u.getUser());
                 }
+            }else if(Math.abs(altarStatus[i])<=5 && altarStatus[i]!=0){
+                int stage = Math.abs(altarStatus[i]);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,altarId,"fx_altar_"+stage,1000,"fx_altar_"+stage+i,false,"Bip01",false,true,team);
             }
         }
     }

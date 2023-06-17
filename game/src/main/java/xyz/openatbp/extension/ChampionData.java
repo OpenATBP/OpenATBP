@@ -60,6 +60,7 @@ public class ChampionData {
 
     public static ISFSObject useSpellPoint(User user, String category, ATBPExtension parentExt){ //TODO: Switch to using UserActor stats
         ISFSObject toUpdate = new SFSObject();
+        UserActor ua = parentExt.getRoomHandler(user.getLastJoinedRoom().getId()).getPlayer(String.valueOf(user.getId()));
         ISFSObject stats = user.getVariable("stats").getSFSObjectValue();
         int spellPoints = user.getVariable("stats").getSFSObjectValue().getInt("availableSpellPoints");
         int categoryPoints = user.getVariable("stats").getSFSObjectValue().getInt("sp_"+category);
@@ -82,10 +83,9 @@ public class ChampionData {
             ArrayNode itemStats = getItemStats(parentExt,inventory[cat-1]);
             for(JsonNode stat : getItemPointVal(itemStats,categoryPoints)){
                 if(stat.get("point").asInt() == categoryPoints){
-                    double currentStat = user.getVariable("stats").getSFSObjectValue().getDouble(stat.get("stat").asText());
+                    double currentStat = ua.getStat(stat.get("stat").asText());
                     int packStat = stat.get("value").asInt();
                     if(stat.get("stat").asText().equalsIgnoreCase("health")){ //Health is tracked through 4 stats (health, currentHealth, maxHealth, and pHealth)
-                        UserActor ua = parentExt.getRoomHandler(user.getLastJoinedRoom().getId()).getPlayer(String.valueOf(user.getId()));
                         int maxHealth = ua.getMaxHealth();
                         double pHealth = ua.getPHealth();
                         if(pHealth>1) pHealth=1;
@@ -103,8 +103,7 @@ public class ChampionData {
 
                          */
                     }else{
-                        user.getVariable("stats").getSFSObjectValue().putDouble(stat.get("stat").asText(),currentStat+packStat);
-                        toUpdate.putDouble(stat.get("stat").asText(),currentStat+packStat);
+                        ua.increaseStat(stat.get("stat").asText(),packStat);
                     }
                 }
             }
@@ -130,8 +129,9 @@ public class ChampionData {
     }
 
     public static ISFSObject resetSpellPoints(User user, ATBPExtension parentExt){
+        UserActor ua = parentExt.getRoomHandler(user.getLastJoinedRoom().getId()).getPlayer(String.valueOf(user.getId()));
         ISFSObject toUpdate = new SFSObject();
-        ISFSObject stats = user.getVariable("stats").getSFSObjectValue();
+        Map<String, Object> stats = ua.getStats();
         int spellPoints = user.getVariable("stats").getSFSObjectValue().getInt("availableSpellPoints");
         int newPoints = 0;
         for(int i = 0; i < 5; i++){
@@ -147,21 +147,15 @@ public class ChampionData {
                     double currentStat = user.getVariable("stats").getSFSObjectValue().getDouble(stat.get("stat").asText());
                     int packStat = stat.get("value").asInt();
                     if(stat.get("stat").asText().equalsIgnoreCase("health")){
-                        int maxHealth = stats.getInt("maxHealth");
-                        double pHealth = stats.getDouble("pHealth");
+                        double maxHealth = ua.getMaxHealth();
+                        double pHealth = ua.getPHealth();
                         if(pHealth>1) pHealth=1;
                         maxHealth-=packStat;
-                        int currentHealth = (int) Math.floor(pHealth*maxHealth);
-                        stats.putInt("currentHealth",currentHealth);
-                        stats.putInt("maxHealth",maxHealth);
-                        toUpdate.putInt("currentHealth",currentHealth);
-                        toUpdate.putInt("maxHealth",maxHealth);
-                        toUpdate.putDouble("pHealth",pHealth);
-                        stats.putDouble(stat.get("stat").asText(),maxHealth);
-                        toUpdate.putDouble(stat.get("stat").asText(),maxHealth);
+                        double currentHealth = (int) Math.floor(pHealth*maxHealth);
+                        ua.setHealth((int) currentHealth, (int) maxHealth);
+                    }else{
+                        ua.increaseStat(stat.get("stat").asText(),packStat*-1);
                     }
-                    user.getVariable("stats").getSFSObjectValue().putDouble(stat.get("stat").asText(),currentStat-packStat);
-                    toUpdate.putDouble(stat.get("stat").asText(), currentStat-packStat);
                 }
             }
         }
@@ -214,9 +208,9 @@ public class ChampionData {
                 if(k.contains("health")){
                     ua.setHealth((int) ((ua.getMaxHealth()+levelStat)*ua.getPHealth()), (int) (ua.getMaxHealth()+levelStat));
                 }else if(k.contains("attackSpeed")){
-                    ua.updateStat(stat,currentStat-levelStat);
+                    ua.increaseStat(stat, (int) (levelStat*-1));
                 }else{
-                    ua.updateStat(stat,currentStat+levelStat);
+                    ua.increaseStat(stat, (int) levelStat);
                 }
             }
         }

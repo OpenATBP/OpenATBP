@@ -529,4 +529,23 @@ public class ExtensionCommands {
             parentExt.send("cmd_update_time",data,u);
         }
     }
+
+    public static void updateAltar(ATBPExtension parentExt, Room room, int altarNum, int team, boolean locked){
+        ISFSObject data = new SFSObject();
+        data.putInt("altar",altarNum);
+        data.putInt("team",team);
+        data.putBool("locked",locked);
+        for(User u : room.getUserList()){
+            parentExt.send("cmd_altar_update",data,u);
+        }
+    }
+
+    public static void addStatusIcon(ATBPExtension parentExt, User u, String name, String desc, String icon, float duration){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("name",name);
+        data.putUtfString("desc",desc);
+        data.putUtfString("icon",icon);
+        data.putFloat("duration",duration);
+        parentExt.send("cmd_add_status_icon",data,u);
+    }
 }

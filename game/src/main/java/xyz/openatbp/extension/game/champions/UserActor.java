@@ -108,8 +108,23 @@ public class UserActor extends Actor {
     }
 
     public Object getPlayerStat(String stat){
-        if(this.tempStats.containsKey(stat)) return this.tempStats.get(stat);
-        else return this.stats.get(stat);
+        double currentStat = (double)this.stats.get(stat);
+        if(this.tempStats.containsKey(stat)){
+            return currentStat+(double)this.tempStats.get(stat);
+        }
+        else return currentStat;
+    }
+
+    @Deprecated
+    public Map<String, Object> getPlayerStats(){
+        Map<String, Object> newStats = new HashMap<>();
+        for(String k : this.tempStats.keySet()){
+            newStats.put(k,this.tempStats.get(k));
+        }
+        for(String k : this.stats.keySet()){
+            if(!newStats.containsKey(k)) newStats.put(k,this.stats.get(k));
+        }
+        return newStats;
     }
 
     @Override
@@ -279,13 +294,13 @@ public class UserActor extends Actor {
  */
     public void updateStat(String key, Object value){
         this.stats.put(key,value);
-        ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,key,this.stats.get(key));
+        ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,key,this.getPlayerStat(key));
     }
 
     public void increaseStat(String key, int num){
         if(this.stats.get(key).getClass() == Integer.class) this.stats.put(key,(int)this.stats.get(key)+num);
         else if(this.stats.get(key).getClass() == Double.class) this.stats.put(key,(double)this.stats.get(key)+num);
-        ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,key,this.stats.get(key));
+        ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,key,this.getPlayerStat(key));
     }
 
     @Override
