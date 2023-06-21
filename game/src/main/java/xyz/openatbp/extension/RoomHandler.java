@@ -29,6 +29,7 @@ public class RoomHandler implements Runnable{
     private int[] altarStatus = {0,0,0};
     private HashMap<String,Integer> cooldowns = new HashMap<>();
     private int currentMinionWave = 0;
+    private GumballGuardian[] guardians;
     public RoomHandler(ATBPExtension parentExt, Room room){
         this.parentExt = parentExt;
         this.room = room;
@@ -46,6 +47,7 @@ public class RoomHandler implements Runnable{
         }
         bases[0] = new Base(parentExt, room,0);
         bases[1] = new Base(parentExt, room, 1);
+        this.guardians = new GumballGuardian[]{new GumballGuardian(parentExt, room, 0),new GumballGuardian(parentExt,room,1)};
         for(User u : room.getUserList()){
             players.add(Champion.getCharacterClass(u,parentExt));
             //ExtensionCommands.createActor(this.parentExt,u,"testMonster","bot_finn",new Point2D.Float(0f,0f),0f,2);
@@ -149,6 +151,9 @@ public class RoomHandler implements Runnable{
             for(Tower t : towers){
                 t.update(mSecondsRan);
                 if(t.getHealth() <= 0 && (t.getTowerNum() == 0 || t.getTowerNum() == 3)) bases[t.getTeam()].unlock();
+            }
+            for(GumballGuardian g : this.guardians){
+                g.update(mSecondsRan);
             }
             towers.removeIf(t -> (t.getHealth()<=0));
             if(this.room.getUserList().size() == 0) parentExt.stopScript(this.room.getId());
@@ -390,25 +395,29 @@ public class RoomHandler implements Runnable{
                         String buffDescription;
                         String icon;
                         String bundle;
-                        if(i == 1){
-                            buffName = "altar_buff_offense";
-                            buffDescription = "altar2_description";
-                            icon = "icon_altar_attack";
-                            bundle = "altar_buff_offense";
-                            u.handleEffect("attackDamage",(double)u.getPlayerStat("attackDamage")*0.25,1000*60,"altar");
-                            u.handleEffect("spellDamage",(double)u.getPlayerStat("spellDamage")*0.25,1000*60,"altar");
-                        }else{
-                            buffName = "altar_buff_defense";
-                            buffDescription = "altar1_description";
-                            icon = "icon_altar_armor";
-                            bundle = "altar_buff_defense";
-                            u.handleEffect("armor",(double)u.getPlayerStat("armor")*0.5,1000*60,"altar");
-                            u.handleEffect("spellResist",(double)u.getPlayerStat("spellResist")*0.5,1000*60,"altar");
+                        try{
+                            if(i == 1){
+                                buffName = "altar_buff_offense";
+                                buffDescription = "altar2_description";
+                                icon = "icon_altar_attack";
+                                bundle = "altar_buff_offense";
+                                u.handleEffect("attackDamage",u.getPlayerStat("attackDamage")*0.25,1000*60,"altar");
+                                u.handleEffect("spellDamage",u.getPlayerStat("spellDamage")*0.25,1000*60,"altar");
+                            }else{
+                                buffName = "altar_buff_defense";
+                                buffDescription = "altar1_description";
+                                icon = "icon_altar_armor";
+                                bundle = "altar_buff_defense";
+                                u.handleEffect("armor",u.getPlayerStat("armor")*0.5,1000*60,"altar");
+                                u.handleEffect("spellResist",u.getPlayerStat("spellResist")*0.5,1000*60,"altar");
+                            }
+                            ExtensionCommands.addStatusIcon(this.parentExt,u.getUser(),buffName,buffDescription,icon,1000*60);
+                            cooldowns.put(u.getId()+"__buff__"+buffName,60);
+                            ExtensionCommands.createActorFX(this.parentExt,this.room,u.getId(),bundle,1000*60,bundle+u.getId(),true,"Bip01",true,true,u.getTeam());
+                            ExtensionCommands.knockOutActor(parentExt,u.getUser(),altarId,u.getId(),180);
+                        }catch(Exception e){
+                            e.printStackTrace();
                         }
-                        ExtensionCommands.addStatusIcon(this.parentExt,u.getUser(),buffName,buffDescription,icon,1000*60);
-                        cooldowns.put(u.getId()+"__buff__"+buffName,60);
-                        ExtensionCommands.createActorFX(this.parentExt,this.room,u.getId(),bundle,1000*60,bundle+u.getId(),true,"Bip01",true,true,u.getTeam());
-                        ExtensionCommands.knockOutActor(parentExt,u.getUser(),altarId,u.getId(),180);
                     }
                 }
             }else if(Math.abs(altarStatus[i])<=5 && altarStatus[i]!=0){
@@ -689,5 +698,12 @@ public class RoomHandler implements Runnable{
                 else System.out.println(ua.getTempStat("speed"));
             }
         }
+    }
+
+    public UserActor getEnemyCharacter(String avatar, int team){
+        for(UserActor ua : this.players){
+            if(ua.getTeam() != team && ua.getAvatar().equalsIgnoreCase(avatar)) return ua;
+        }
+        return null;
     }
 }

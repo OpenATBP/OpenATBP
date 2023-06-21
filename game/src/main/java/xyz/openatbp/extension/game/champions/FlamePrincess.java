@@ -36,10 +36,11 @@ public class FlamePrincess extends UserActor{
             lastUltUsage = msRan;
             for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(this.room.getId()),this.location,2)){
                 if(a.getTeam() != this.team){ //TODO: Set so FP doesn't target her team or self
-                    if(a.getActorType() != ActorType.PLAYER) a.damaged(this,75);
+                    JsonNode attackData = this.parentExt.getAttackData(this.avatar,"spell3");
+                    if(a.getActorType() != ActorType.PLAYER) a.damaged(this,75,attackData);
                     else{
                         UserActor userActor = (UserActor) a;
-                        userActor.damaged(this,75,this.parentExt.getAttackData(this.avatar,"spell3"));
+                        userActor.damaged(this,75,attackData);
                     }
                 }else{
                     System.out.println(a.getId() + " is on your team!");
@@ -105,6 +106,10 @@ public class FlamePrincess extends UserActor{
     @Override
     public void attack(Actor a){
         super.attack(a);
+        boolean crit = Math.random() < this.getPlayerStat("criticalChance");
+        for(User u : room.getUserList()){
+            ExtensionCommands.attackActor(parentExt,u,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
+        }
         currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,new PassiveAttack(a),"flame_princess_projectile"),500,TimeUnit.MILLISECONDS);
     }
 
@@ -153,7 +158,9 @@ public class FlamePrincess extends UserActor{
                         UserActor userActor = (UserActor) u;
                         System.out.println("Hit: " + u.getAvatar());
                         u.setState(ActorState.POLYMORPH, true);
-                        u.damaged(FlamePrincess.this,50);
+                        double newDamage = u.getMitigatedDamage(50d,AttackType.SPELL,FlamePrincess.this);
+                        handleSpellVamp(newDamage);
+                        u.damaged(FlamePrincess.this,50,parentExt.getAttackData(avatar,"spell2"));
                         Champion.giveBuff(parentExt,userActor.getUser(), Buff.POLYMORPH);
                     }
                     System.out.println("Ability done!");
@@ -162,12 +169,12 @@ public class FlamePrincess extends UserActor{
                     if(!ultFinished && ultStarted){
                         System.out.println("Ending ability!");
                         JsonNode spellData = Champion.getSpellData(parentExt,avatar,ability);
-                        int cooldown = spellData.get("spellCoolDown").asInt();
-                        int gCooldown = spellData.get("spellGlobalCoolDown").asInt();
+                        double cooldown = spellData.get("spellCoolDown").asInt();
+                        double gCooldown = spellData.get("spellGlobalCoolDown").asInt();
                         setState(ActorState.TRANSFORMED, false);
                         ExtensionCommands.removeFx(parentExt,player,"flame_e");
                         ExtensionCommands.swapActorAsset(parentExt,player,id,avatar);
-                        ExtensionCommands.actorAbilityResponse(parentExt,player,getAbilityString(ability),true,cooldown,gCooldown);
+                        ExtensionCommands.actorAbilityResponse(parentExt,player,getAbilityString(ability),true, getReducedCooldown(cooldown), (int) gCooldown);
                         ultStarted = false;
                         ultFinished = true;
                         ultUses = 3;
@@ -221,7 +228,7 @@ public class FlamePrincess extends UserActor{
 
         @Override
         public void run() {
-            target.damaged(FlamePrincess.this,50);
+            target.damaged(FlamePrincess.this,50, parentExt.getAttackData(avatar,"basicAttack"));
             if(FlamePrincess.this.passiveEnabled && (target.getClass() != Tower.class && target.getClass() != Base.class)){
                 FlamePrincess.this.passiveEnabled = false;
                 ExtensionCommands.removeFx(parentExt,room,"flame_passive");

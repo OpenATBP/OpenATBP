@@ -1,5 +1,6 @@
 package xyz.openatbp.extension.game.champions;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -37,7 +38,7 @@ public class Lich extends UserActor{
         switch(ability){
             case 1: //Q
                 double statIncrease = this.speed * 0.25;
-                this.giveStatBuff("speed",statIncrease,6000);
+                this.handleEffect("speed",statIncrease,6000,"lich_trail");
                 qActivated = true;
                 slimePath = new ArrayList<>();
                 slimedEnemies = new HashMap<>();
@@ -68,17 +69,18 @@ public class Lich extends UserActor{
             for(Point2D slime : this.slimePath){
                 for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
                     if(a.getTeam() != this.team && a.getLocation().distance(slime) < 0.5){
+                        JsonNode attackData = this.parentExt.getAttackData(this.avatar,"spell1");
                         if(slimedEnemies.containsKey(a.getId())){
                             if(System.currentTimeMillis() - slimedEnemies.get(a.getId()) >= 1000){
                                 System.out.println(a.getId() + " getting slimed!");
-                                a.damaged(this,20);
+                                a.damaged(this,20,attackData);
                                 a.getEffect(ActorState.SLOWED,1500,0.3);
                                 slimedEnemies.put(a.getId(),System.currentTimeMillis());
                                 break;
                             }
                         }else{
                             System.out.println(a.getId() + " getting slimed!");
-                            a.damaged(this,20);
+                            a.damaged(this,20,attackData);
                             a.getEffect(ActorState.SLOWED,1500,0.3);
                             slimedEnemies.put(a.getId(),System.currentTimeMillis());
                             break;
@@ -134,7 +136,7 @@ public class Lich extends UserActor{
         }
 
         @Override
-        public boolean damaged(Actor a, int damage) {
+        public boolean damaged(Actor a, int damage, JsonNode attackData) {
             return false;
         }
 

@@ -1,5 +1,6 @@
 package xyz.openatbp.extension.game;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
@@ -13,6 +14,7 @@ import xyz.openatbp.extension.game.champions.UserActor;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -80,6 +82,7 @@ public class Minion extends Actor{
         }
         this.movementLine = new Line2D.Float(this.location,this.location);
         aggressors = new HashMap<>(3);
+        this.stats = this.initializeStats();
     }
 
     public void move(ATBPExtension parentExt){ // Moves the minion along the defined path
@@ -100,7 +103,7 @@ public class Minion extends Actor{
         if(this.pathIndex < pathX.length && this.pathIndex > -1){
             Point2D destination = new Point2D.Float((float) pathX[this.pathIndex], (float) pathY[this.pathIndex]);
             for(User u : room.getUserList()){
-                ExtensionCommands.moveActor(parentExt,u,this.id,this.location,destination, (float) this.speed,true);
+                ExtensionCommands.moveActor(parentExt,u,this.id,this.location,destination, (float) this.getPlayerStat("speed"),true);
             }
             this.movementLine = new Line2D.Float(this.location,destination);
             this.travelTime = 0.1f;
@@ -140,16 +143,12 @@ public class Minion extends Actor{
     }
 
     public boolean withinAttackRange(Point2D p){ // Checks if point is within minion's attack range
-        float range = 1.25f;
-        if(this.type == MinionType.RANGED) range = 4f;
-        else if(this.type == MinionType.SUPER) range = 1.5f;
+        double range = this.getPlayerStat("attackRange");
         return this.location.distance(p)<=range;
     }
 
     public boolean withinAttackRange(Point2D p, float radius){
-        float range = 1f;
-        if(this.type == MinionType.RANGED) range = 4f;
-        else if(this.type == MinionType.SUPER) range = 1.5f;
+        double range = this.getPlayerStat("attackRange");
         range+=radius;
         return this.location.distance(p)<=range;
     }
@@ -198,10 +197,10 @@ public class Minion extends Actor{
         float x1 = (float) movementLine.getX1();
         float y1 = (float) movementLine.getY1();
         double dist = movementLine.getP1().distance(movementLine.getP2());
-        double time = dist/(float)this.speed;
+        double time = dist/(float)this.getPlayerStat("speed");
         double currentTime = this.travelTime;
         if(currentTime>time) currentTime=time;
-        double currentDist = (float)this.speed*currentTime;
+        double currentDist = (float)this.getPlayerStat("speed")*currentTime;
         float x = (float)(x1+(currentDist/dist)*(x2-x1));
         float y = (float)(y1+(currentDist/dist)*(y2-y1));
         rPoint.setLocation(x,y);
@@ -291,6 +290,21 @@ public class Minion extends Actor{
         }
     }
 
+    @Override
+    public boolean setTempStat(String stat, double delta) {
+        boolean returnVal = super.setTempStat(stat,delta);
+        if(stat.equalsIgnoreCase("speed")){
+            if(movementLine != null){
+                movementLine.setLine(this.location, movementLine.getP2());
+                this.travelTime = 0f;
+                for(User u : this.room.getUserList()){
+                    ExtensionCommands.moveActor(this.parentExt,u,this.id,this.location,movementLine.getP2(),(float)this.getPlayerStat("speed"),true);
+                }
+            }
+        }
+        return returnVal;
+    }
+
     public boolean canAttack(){
         return attackCooldown==0;
     }
@@ -299,16 +313,8 @@ public class Minion extends Actor{
     public void attack(Actor a){
         if(attackCooldown == 0 && this.state != AggroState.MOVING){
             this.stopMoving(parentExt);
-            int newCooldown = 1500;
-            int damage = 20;
-            if(this.type == MinionType.RANGED){
-                newCooldown = 2000;
-                damage = 25;
-            }else if(this.type == MinionType.SUPER){
-                newCooldown = 1000;
-                damage = 10;
-            }
-            this.attackCooldown = newCooldown;
+            int damage = (int) this.getPlayerStat("attackDamage");
+            this.attackCooldown = this.getPlayerStat("attackSpeed");
             for(User u : room.getUserList()){
                 ExtensionCommands.attackActor(parentExt,u,this.id,a.getId(),(float) a.getLocation().getX(), (float) a.getLocation().getY(), false, true);
             }
@@ -327,7 +333,7 @@ public class Minion extends Actor{
         for(User u : room.getUserList()){
             ExtensionCommands.createProjectileFX(parentExt,u,fxId,this.getId(),a.getId(),"Bip001","Bip001",(float)0.5);
         }
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,25,"basicAttack"),500, TimeUnit.MILLISECONDS);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),500, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -339,7 +345,11 @@ public class Minion extends Actor{
             ExtensionCommands.knockOutActor(parentExt,u,this.id,a.getId(),30);
             ExtensionCommands.destroyActor(parentExt,u,this.id);
         }
-        if(a.getActorType() == ActorType.PLAYER) this.parentExt.getRoomHandler(this.room.getId()).addScore(a.getTeam(),1);
+        if(a.getActorType() == ActorType.PLAYER){
+            UserActor ua = (UserActor) a;
+            if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(2);
+            this.parentExt.getRoomHandler(this.room.getId()).addScore(a.getTeam(),1);
+        }
     }
 
     @Override
@@ -468,21 +478,28 @@ public class Minion extends Actor{
     }
 
     @Override
-    public boolean damaged(Actor a, int damage) {
-        if(this.dead) return true;
-        if(a.getActorType() == ActorType.PLAYER){
-            aggressors.put(a.getId(),0);
-        }
-        if(a.getActorType() == ActorType.TOWER){
-            if(this.type == MinionType.SUPER) this.changeHealth((int) Math.round(damage*-0.05));
-            else this.changeHealth((int) Math.round(damage*-0.25));;
-        }else this.changeHealth(damage*-1);
-        if(currentHealth <= 0){ //Minion dies
-            this.die(a);
-            return true;
-        }else{
+    public boolean damaged(Actor a, int damage, JsonNode attackData) {
+        try{
+            if(this.dead) return true;
+            if(a.getActorType() == ActorType.PLAYER){
+                aggressors.put(a.getId(),0);
+            }
+            if(a.getActorType() == ActorType.TOWER){
+                if(this.type == MinionType.SUPER) damage = (int) Math.round(damage*0.05);
+                else damage = (int) Math.round(damage*0.25);
+            }
+            this.changeHealth(this.getMitigatedDamage(damage,this.getAttackType(attackData),a)*-1);
+            if(currentHealth <= 0){ //Minion dies
+                this.die(a);
+                return true;
+            }else{
+                return false;
+            }
+        }catch(Exception e){
+            e.printStackTrace();
             return false;
         }
+
     }
 
     public boolean isAttacking(){
@@ -537,5 +554,14 @@ public class Minion extends Actor{
             }
         }
         return null;
+    }
+    protected HashMap<String, Double> initializeStats(){
+        HashMap<String, Double> stats = new HashMap<>();
+        JsonNode actorStats = this.parentExt.getActorStats(this.avatar.replace("0",""));
+        for (Iterator<String> it = actorStats.fieldNames(); it.hasNext(); ) {
+            String k = it.next();
+            stats.put(k,actorStats.get(k).asDouble());
+        }
+        return stats;
     }
 }

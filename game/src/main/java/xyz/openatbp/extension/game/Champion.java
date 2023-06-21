@@ -288,15 +288,25 @@ public class Champion {
 
         @Override
         public void run() {
+            JsonNode attackData;
+            if(this.attacker.getActorType() == ActorType.MINION) attackData = this.parentExt.getAttackData(this.attacker.avatar.replace("0",""),this.attack);
+            else attackData = this.parentExt.getAttackData(this.attacker.avatar,this.attack);
+            if(this.attacker.getActorType() == ActorType.PLAYER){
+                UserActor ua = (UserActor) this.attacker;
+                if(ua.hasBackpackItem("junk_1_numb_chucks") && ua.getStat("sp_category1") > 0){
+                    if(!this.target.hasTempStat("attackSpeed")) this.target.handleEffect("attackSpeed",this.target.getPlayerStat("attackSpeed")*-0.1,3000,"numb_chucks");
+                }else if(ua.hasBackpackItem("junk_4_grob_gob_glob_grod") && ua.getStat("sp_category4") > 0){
+                    if(!this.target.hasTempStat("spellDamage")) this.target.handleEffect("spellDamage",this.target.getPlayerStat("spellDamage")*-0.1,3000,"grob_gob");
+                }
+            }
             if(this.target.getActorType() == ActorType.PLAYER){
                 UserActor user = (UserActor) this.target;
-                JsonNode attackData = this.parentExt.getAttackData(this.attacker.avatar,this.attack);
                 if(user.damaged(attacker,damage,attackData) && this.attacker.getActorType() == ActorType.TOWER){
                     Tower t = (Tower) attacker;
                     t.resetTarget(target);
                 }
             }
-            else if(target.damaged(attacker,damage) && this.attacker.getActorType() == ActorType.TOWER){
+            else if(target.damaged(attacker,damage,attackData) && this.attacker.getActorType() == ActorType.TOWER){
                 Tower t = (Tower) attacker;
                 t.resetTarget(target);
             }

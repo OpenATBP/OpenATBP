@@ -65,26 +65,50 @@ public class ExtensionCommands {
         parentExt.send("cmd_update_actor_data",data,u);
     }
 
-    public static void updateActorData(ATBPExtension parentExt, Room room, String id, HashMap<String, Object> values){
+    public static void updateActorData(ATBPExtension parentExt, Room room, String id, HashMap<String, Double> values){
+        String[] intVals = {"kills","assists","deaths","availableSpellPoints","sp_category", "level", "xp","currentHealth","maxHealth"};
         ISFSObject updateData = new SFSObject();
         updateData.putUtfString("id",id);
         for(String k : values.keySet()){
-            if(values.get(k).getClass() == Double.class) updateData.putDouble(k, (double)values.get(k));
-            else if(values.get(k).getClass() == Integer.class) updateData.putInt(k,(int)values.get(k));
+            boolean dub = true;
+            for(String i : intVals){
+                if(k.contains(i)){
+                    updateData.putInt(k, (int) Math.floor(values.get(k)));
+                    dub = false;
+                    break;
+                }
+            }
+            if(dub) updateData.putDouble(k,values.get(k));
         }
         for(User u : room.getUserList()){
             parentExt.send("cmd_update_actor_data",updateData,u);
         }
     }
 
-    public static void updateActorData(ATBPExtension parentExt, Room room, String id, String key, Object value){
-        ISFSObject data = new SFSObject();
-        data.putUtfString("id",id);
-        if(value.getClass() == Double.class) data.putDouble(key,(double)value);
-        else if(value.getClass() == Integer.class) data.putInt(key,(int)value);
-        for(User u : room.getUserList()){
-            parentExt.send("cmd_update_actor_data",data,u);
+    public static void updateActorData(ATBPExtension parentExt, Room room, String id, String key, double value){
+        try{
+            String[] intVals = {"kills","assists","deaths","availableSpellPoints","sp_category", "level", "xp","currentHealth","maxHealth"};
+            ISFSObject data = new SFSObject();
+            data.putUtfString("id",id);
+            boolean dub = true;
+            for(String k : intVals){
+                if(key.contains(k) || key.equalsIgnoreCase(k)){
+                    System.out.println("Putting in Int val:" + k);
+                    int val = (int) Math.floor(value);
+                    data.putInt(key, val);
+                    dub = false;
+                    break;
+                }
+            }
+            if(dub) data.putDouble(key,value);
+            for(User u : room.getUserList()){
+                System.out.println("Sending: " + data.toJson());
+                parentExt.send("cmd_update_actor_data",data,u);
+            }
+        }catch(Exception e){
+            e.printStackTrace();
         }
+
     }
 
     public static void updateActorData(ATBPExtension parentExt, Room room, String id, ISFSObject data){
@@ -411,8 +435,8 @@ public class ExtensionCommands {
         ISFSObject data = new SFSObject();
         data.putUtfString("id",id);
         data.putBool("canCast",canCast);
-        data.putInt("cooldown",5000);
-        data.putInt("gCooldown",0);
+        data.putInt("cooldown",cooldown);
+        data.putInt("gCooldown",gCooldown);
         System.out.println(data.getDump());
         parentExt.send("cmd_actor_ability_response",data,u);
     }

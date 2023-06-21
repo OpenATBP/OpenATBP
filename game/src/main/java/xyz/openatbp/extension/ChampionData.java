@@ -61,10 +61,9 @@ public class ChampionData {
     public static ISFSObject useSpellPoint(User user, String category, ATBPExtension parentExt){ //TODO: Switch to using UserActor stats
         ISFSObject toUpdate = new SFSObject();
         UserActor ua = parentExt.getRoomHandler(user.getLastJoinedRoom().getId()).getPlayer(String.valueOf(user.getId()));
-        ISFSObject stats = user.getVariable("stats").getSFSObjectValue();
-        int spellPoints = user.getVariable("stats").getSFSObjectValue().getInt("availableSpellPoints");
-        int categoryPoints = user.getVariable("stats").getSFSObjectValue().getInt("sp_"+category);
-        int spentPoints = getTotalSpentPoints(user); //How many points have been used
+        int spellPoints = (int) ua.getStat("availableSpellPoints");
+        int categoryPoints = (int) ua.getStat("sp_"+category);
+        int spentPoints = getTotalSpentPoints(ua); //How many points have been used
         boolean works = false;
         if(spellPoints>0){
             if(categoryPoints+1 < 3) works = true;
@@ -77,13 +76,12 @@ public class ChampionData {
         if(works){
             spellPoints--;
             categoryPoints++;
-            String backpack = user.getVariable("player").getSFSObjectValue().getUtfString("backpack");
+            String backpack = ua.getBackpack();
             String[] inventory = getBackpackInventory(parentExt, backpack);
             int cat = Integer.parseInt(String.valueOf(category.charAt(category.length()-1))); //Gets category by looking at last number in the string
             ArrayNode itemStats = getItemStats(parentExt,inventory[cat-1]);
             for(JsonNode stat : getItemPointVal(itemStats,categoryPoints)){
                 if(stat.get("point").asInt() == categoryPoints){
-                    double currentStat = ua.getStat(stat.get("stat").asText());
                     int packStat = stat.get("value").asInt();
                     if(stat.get("stat").asText().equalsIgnoreCase("health")){ //Health is tracked through 4 stats (health, currentHealth, maxHealth, and pHealth)
                         int maxHealth = ua.getMaxHealth();
@@ -107,8 +105,8 @@ public class ChampionData {
                     }
                 }
             }
-            user.getVariable("stats").getSFSObjectValue().putInt("availableSpellPoints",spellPoints);
-            user.getVariable("stats").getSFSObjectValue().putInt("sp_"+category,categoryPoints);
+            ua.setStat("availableSpellPoints",spellPoints);
+            ua.setStat("sp_"+category,categoryPoints);
             toUpdate.putInt("sp_"+category,categoryPoints);
             toUpdate.putInt("availableSpellPoints",spellPoints);
             toUpdate.putUtfString("id", String.valueOf(user.getId()));
@@ -119,11 +117,10 @@ public class ChampionData {
         return null;
     }
 
-    public static int getTotalSpentPoints(User u){
+    public static int getTotalSpentPoints(UserActor ua){
         int totalUsedPoints = 0;
-        ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
         for(int i = 0; i < 5; i++){
-            totalUsedPoints+=stats.getInt("sp_category"+(i+1));
+            totalUsedPoints+=ua.getStat("sp_category"+(i+1));
         }
         return totalUsedPoints;
     }
@@ -131,20 +128,18 @@ public class ChampionData {
     public static ISFSObject resetSpellPoints(User user, ATBPExtension parentExt){
         UserActor ua = parentExt.getRoomHandler(user.getLastJoinedRoom().getId()).getPlayer(String.valueOf(user.getId()));
         ISFSObject toUpdate = new SFSObject();
-        Map<String, Object> stats = ua.getStats();
-        int spellPoints = user.getVariable("stats").getSFSObjectValue().getInt("availableSpellPoints");
+        int spellPoints = (int) ua.getStat("availableSpellPoints");
         int newPoints = 0;
         for(int i = 0; i < 5; i++){
-            int categoryPoints = user.getVariable("stats").getSFSObjectValue().getInt("sp_category"+(i+1));
+            int categoryPoints = (int) ua.getStat("sp_category"+(i+1));
             newPoints+=categoryPoints;
-            user.getVariable("stats").getSFSObjectValue().putInt("sp_category"+(i+1),0);
+            ua.setStat("sp_category"+(i+1),0);
             toUpdate.putInt("sp_category"+(i+1),0);
-            String backpack = user.getVariable("player").getSFSObjectValue().getUtfString("backpack");
+            String backpack = ua.getBackpack();
             String[] inventory = getBackpackInventory(parentExt, backpack);
             ArrayNode itemStats = getItemStats(parentExt,inventory[i]);
             for(JsonNode stat : getItemPointVal(itemStats,categoryPoints)){
                 if(stat.get("point").asInt() >= categoryPoints){
-                    double currentStat = user.getVariable("stats").getSFSObjectValue().getDouble(stat.get("stat").asText());
                     int packStat = stat.get("value").asInt();
                     if(stat.get("stat").asText().equalsIgnoreCase("health")){
                         double maxHealth = ua.getMaxHealth();
@@ -161,7 +156,7 @@ public class ChampionData {
         }
         if(spellPoints+newPoints>1) spellPoints--;
         spellPoints+=newPoints;
-        user.getVariable("stats").getSFSObjectValue().putInt("availableSpellPoints",spellPoints);
+        ua.setStat("availableSpellPoints",spellPoints);
         toUpdate.putInt("availableSpellPoints",spellPoints);
         toUpdate.putUtfString("id", String.valueOf(user.getId()));
         return toUpdate;
@@ -198,33 +193,32 @@ public class ChampionData {
     @Deprecated
     public static void levelUpCharacter(ATBPExtension parentExt, UserActor ua){
         User user = ua.getUser();
-        Map<String, Object> playerStats = ua.getStats();
+        Map<String, Double> playerStats = ua.getStats();
         int level = ua.getLevel();
         for(String k : playerStats.keySet()){
             if(k.contains("PerLevel")){
                 String stat = k.replace("PerLevel","");
-                double levelStat = (double) playerStats.get(k);
-                double currentStat = (double) playerStats.get(stat);
+                double levelStat = playerStats.get(k);
                 if(k.contains("health")){
                     ua.setHealth((int) ((ua.getMaxHealth()+levelStat)*ua.getPHealth()), (int) (ua.getMaxHealth()+levelStat));
                 }else if(k.contains("attackSpeed")){
-                    ua.increaseStat(stat, (int) (levelStat*-1));
+                    ua.increaseStat(stat, (levelStat*-1));
                 }else{
-                    ua.increaseStat(stat, (int) levelStat);
+                    ua.increaseStat(stat, levelStat);
                 }
             }
         }
         ISFSObject toUpdate = new SFSObject();
-        ISFSObject stats = user.getVariable("stats").getSFSObjectValue(); //TODO: Convert to player stats
-        int spellPoints = stats.getInt("availableSpellPoints")+1;
-        stats.putInt("availableSpellPoints",spellPoints);
+        Map<String, Double> stats = ua.getStats();
+        int spellPoints = (int) (stats.get("availableSpellPoints")+1);
+        ua.setStat("availableSpellPoints",spellPoints);
         toUpdate.putUtfString("id", String.valueOf(user.getId()));
         if(user.getVariable("champion").getSFSObjectValue().getBool("autoLevel")){
             level++;
-            int[] buildPath = getBuildPath(user.getVariable("player").getSFSObjectValue().getUtfString("avatar"),user.getVariable("player").getSFSObjectValue().getUtfString("backpack"));
+            int[] buildPath = getBuildPath(ua.getAvatar(),ua.getBackpack());
             int category = buildPath[level-1];
-            int categoryPoints = user.getVariable("stats").getSFSObjectValue().getInt("sp_category"+category);
-            int spentPoints = getTotalSpentPoints(user); //How many points have been used
+            int categoryPoints = (int) ua.getStat("sp_category"+category);
+            int spentPoints = getTotalSpentPoints(ua); //How many points have been used
             boolean works = false;
             if(categoryPoints+1 < 3) works = true;
             else if(categoryPoints+1 == 3) works = spentPoints+1>=4; //Can't get a third level without spending 4 points

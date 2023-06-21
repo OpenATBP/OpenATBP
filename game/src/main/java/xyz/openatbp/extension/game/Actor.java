@@ -1,5 +1,6 @@
 package xyz.openatbp.extension.game;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
@@ -10,12 +11,14 @@ import xyz.openatbp.extension.ExtensionCommands;
 
 import java.awt.geom.Point2D;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public abstract class Actor {
+    public enum AttackType{ PHYSICAL, SPELL};
     protected double currentHealth;
     protected double maxHealth;
     protected Point2D location;
@@ -34,8 +37,8 @@ public abstract class Actor {
     protected Map<ActorState, Boolean> states = Champion.getBlankStates();
     protected Map<ActorState, ScheduledFuture<?>> stateCommands = new HashMap<>(ActorState.values().length);
     protected String displayName = "FuzyBDragon";
-    protected Map<String, Object> stats; //TODO: Maybe change to ISFSObject
-    protected Map<String, Object> tempStats = new HashMap<>();
+    protected Map<String, Double> stats; //TODO: Maybe change to ISFSObject
+    protected Map<String, Double> tempStats = new HashMap<>();
 
 
     public double getPHealth(){
@@ -123,51 +126,35 @@ public abstract class Actor {
         return this.parentExt.getActorStats(this.avatar).get(stat).asDouble();
     }
 
-    public Object getNewStat(String stat){
+    public double getNewStat(String stat){
         if(this.stats != null) return this.stats.get(stat);
-        else return null;
+        else return -1d;
     }
 
-    public Object getTempStat(String stat){
+    public double getTempStat(String stat){
         return this.tempStats.get(stat);
     }
 
     public boolean setTempStat(String stat, double delta){ //TODO: Should maybe make this private/protected
         try{
-            Object tempStat = this.tempStats.get(stat);
-            if(tempStat == null){
-                Object existingStat = this.stats.get(stat);
-                if(existingStat.getClass() == Integer.class){
-                    this.tempStats.put(stat,(int)delta);
-                }else if(existingStat.getClass() == Double.class){
-                    this.tempStats.put(stat,delta);
-                }else return true;
+            if(this.tempStats.containsKey(stat)){
+                double tempStat = this.tempStats.get(stat);
+                double newStat = tempStat + delta;
+                if(newStat == 0){
+                    this.tempStats.remove(stat);
+                    return true;
+                }else{
+                    this.tempStats.put(stat,newStat);
+                    return false;
+                }
+            }else{
+                this.tempStats.put(stat,delta);
                 return false;
-            }
-            if(tempStat.getClass() == Integer.class){
-                int intStat = (int) ((int) tempStat + delta);
-                if(intStat == 0){
-                    this.tempStats.remove(stat);
-                    return true;
-                }else{
-                    this.tempStats.put(stat,intStat);
-                    return false;
-                }
-            }else if(tempStat.getClass() == Double.class){
-                double doubleStat = (double) tempStat + delta;
-                if(doubleStat == 0){
-                    this.tempStats.remove(stat);
-                    return true;
-                }else{
-                    this.tempStats.put(stat,doubleStat);
-                    return false;
-                }
             }
         }catch(Exception e){
             e.printStackTrace();
             return true;
         }
-        return true;
     }
 
     public void handleEffect(String stat, double delta, int duration, String fxId){
@@ -207,9 +194,19 @@ public abstract class Actor {
     public boolean hasTempStat(String stat){
         return this.tempStats.containsKey(stat);
     }
+
+    public double getPlayerStat(String stat){
+        double currentStat = this.stats.get(stat);
+        System.out.println("Getting stat: " + stat + " : " + currentStat);
+        if(this.tempStats.containsKey(stat)){
+            System.out.println("Getting Temp Stat: " + stat + " : " + (currentStat+this.tempStats.get(stat)));
+            return currentStat+this.tempStats.get(stat);
+        }
+        else return currentStat;
+    }
     public String getDisplayName(){ return this.displayName;}
 
-    public boolean damaged(Actor a, int damage){
+    public boolean damaged(Actor a, int damage, JsonNode attackData){
         this.currentHealth-=damage;
         if(this.currentHealth <= 0) this.currentHealth = 0;
         ISFSObject updateData = new SFSObject();
@@ -253,5 +250,46 @@ public abstract class Actor {
         data.putInt("maxHealth", (int) this.maxHealth);
         data.putDouble("pHealth",this.getPHealth());
         ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,data);
+    }
+
+    public int getMitigatedDamage(double rawDamage, AttackType attackType, Actor attacker){
+        try{
+            double armor = this.getPlayerStat("armor")*(1-(attacker.getPlayerStat("armorPenetration")/100));
+            double spellResist = this.getPlayerStat("spellResist")*(1-(attacker.getPlayerStat("spellPenetration")/100));
+            if(armor < 0) armor = 0;
+            if(spellResist < 0) spellResist = 0;
+            double modifier;
+            if(attackType == AttackType.PHYSICAL){
+                modifier = 100/(100+armor);
+            }else modifier = 100/(100+spellResist);
+            System.out.println(this.id + " damaged for " + rawDamage + " raw damage but took: " + Math.round(rawDamage*modifier) + " damage!");
+            return (int) Math.round(rawDamage*modifier);
+        }catch(Exception e){
+            e.printStackTrace();
+            return 0;
+        }
+
+    }
+
+    public void setStat(String key, double value){
+        this.stats.put(key,value);
+    }
+
+    protected HashMap<String, Double> initializeStats(){
+        HashMap<String, Double> stats = new HashMap<>();
+        JsonNode actorStats = this.parentExt.getActorStats(this.avatar);
+        for (Iterator<String> it = actorStats.fieldNames(); it.hasNext(); ) {
+            String k = it.next();
+            stats.put(k,actorStats.get(k).asDouble());
+        }
+        return stats;
+    }
+
+    protected AttackType getAttackType(JsonNode attackData){
+        if(attackData == null) return AttackType.SPELL;
+        System.out.println(attackData);
+        String type = attackData.get("attackType").asText();
+        if(type.equalsIgnoreCase("physical")) return AttackType.PHYSICAL;
+        else return AttackType.SPELL;
     }
 }
