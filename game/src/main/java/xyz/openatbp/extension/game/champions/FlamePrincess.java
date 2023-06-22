@@ -228,7 +228,7 @@ public class FlamePrincess extends UserActor{
 
         @Override
         public void run() {
-            target.damaged(FlamePrincess.this,50, parentExt.getAttackData(avatar,"basicAttack"));
+            target.damaged(FlamePrincess.this,(int)getPlayerStat("attackDamage"), parentExt.getAttackData(avatar,"basicAttack"));
             if(FlamePrincess.this.passiveEnabled && (target.getClass() != Tower.class && target.getClass() != Base.class)){
                 FlamePrincess.this.passiveEnabled = false;
                 ExtensionCommands.removeFx(parentExt,room,"flame_passive");

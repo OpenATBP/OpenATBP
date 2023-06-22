@@ -102,10 +102,10 @@ public class RoomHandler implements Runnable{
                     System.out.println("Minion num: " + minionNum);
                     if(minionNum == 5) this.currentMinionWave = minionWave;
                     if(minionNum <= 4){
-                        this.addMinion(1,minionNum,minionWave,0);
-                        this.addMinion(0,minionNum,minionWave,0);
-                        this.addMinion(1,minionNum,minionWave,1);
-                        this.addMinion(0,minionNum,minionWave,1);
+                        //this.addMinion(1,minionNum,minionWave,0);
+                        //this.addMinion(0,minionNum,minionWave,0);
+                        //this.addMinion(1,minionNum,minionWave,1);
+                        //this.addMinion(0,minionNum,minionWave,1);
                     }else if(minionNum == 5){
                         for(int i = 0; i < 2; i++){ //i = lane
                             for(int g = 0; g < 2; g++){

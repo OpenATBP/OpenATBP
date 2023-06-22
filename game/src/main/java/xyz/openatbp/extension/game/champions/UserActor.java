@@ -51,7 +51,7 @@ public class UserActor extends Actor {
         this.avatar = u.getVariable("player").getSFSObjectValue().getUtfString("avatar");
         this.displayName = u.getVariable("player").getSFSObjectValue().getUtfString("name");
         ISFSObject playerLoc = player.getVariable("location").getSFSObjectValue();
-        float x = playerLoc.getSFSObject("p1").getFloat("x");
+        float x = playerLoc.getSFSObject("p1").getFloat("x")*-1; //TODO: Hard coded for testing
         float z = playerLoc.getSFSObject("p1").getFloat("z");
         this.location = new Point2D.Float(x,z);
         this.originalLocation = location;
@@ -134,6 +134,8 @@ public class UserActor extends Actor {
             this.originalLocation = this.getRelativePoint(false);
             this.timeTraveled = 0f;
             this.speed = this.getPlayerStat("speed");
+        }else if(stat.contains("healthRegen")){
+            if(this.tempStats.get("healthRegen") < 0) this.tempStats.put("healthRegen",0d);
         }
         parentExt.trace("Temp Stat Set!1");
         ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,stat,this.getPlayerStat(stat));
@@ -279,6 +281,10 @@ public class UserActor extends Actor {
 
     @Override
     public void die(Actor a) {
+        for(User u : this.room.getUserList()){
+            Point2D location = this.getRelativePoint(false);
+            ExtensionCommands.moveActor(parentExt,u,this.id,location,location,2f,false);
+        }
         this.setHealth(0, (int) this.maxHealth);
         this.target = null;
         ExtensionCommands.knockOutActor(parentExt,player, String.valueOf(player.getId()),a.getId(),this.deathTime);

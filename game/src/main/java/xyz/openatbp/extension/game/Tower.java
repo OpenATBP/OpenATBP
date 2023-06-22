@@ -102,10 +102,10 @@ public class Tower extends Actor{
     @Override
     public void update(int msRan) {
         if(!this.destroyed){
-            List<Actor> nearbyActors = Champion.getEnemyActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.team,this.location,6.2f);
+            List<Actor> nearbyActors = Champion.getEnemyActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.team,this.location, (float) this.getPlayerStat("attackRange"));
             if(this.target == null){
-                if(this.attackCooldown > 500) this.reduceAttackCooldown();
-                else this.attackCooldown = 500;
+                if(this.attackCooldown > this.getPlayerStat("attackSpeed")) this.reduceAttackCooldown();
+                else this.attackCooldown = this.getPlayerStat("attackSpeed");
                 boolean hasMinion = false;
                 double distance = 1000;
                 Actor potentialTarget = null;
@@ -130,9 +130,7 @@ public class Tower extends Actor{
                     this.target = potentialTarget;
                     if(this.target.getActorType() == ActorType.PLAYER){
                         UserActor user = (UserActor) this.target;
-                        ExtensionCommands.setTarget(this.parentExt,user.getUser(),this.id,user.getId());
-                        ExtensionCommands.createWorldFX(this.parentExt, user.getUser(),user.getId(),"tower_danger_alert",this.id+"_aggro",10*60*1000,(float) this.location.getX(),(float)this.location.getY(),true,this.team,0f);
-                        ExtensionCommands.playSound(this.parentExt,user.getUser(),"sfx_turret_has_you_targeted",this.location);
+                        this.targetPlayer(user);
                     }
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.target.getId(),"tower_current_target_indicator",10*60*1000,this.id+"_target",true,"displayBar",false,true,this.team);
                 }
@@ -152,7 +150,7 @@ public class Tower extends Actor{
                     this.target = null;
                 }
                 else{
-                    if(this.target.getLocation().distance(this.location) <= 6.2f){
+                    if(this.target.getLocation().distance(this.location) <= this.getPlayerStat("attackRange")){
                         if(this.canAttack()) this.attack(this.target);
                     }else this.resetTarget(this.target);
                 }
@@ -207,5 +205,11 @@ public class Tower extends Actor{
         }
         ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_target");
         this.target = null;
+    }
+
+    public void targetPlayer(UserActor user){
+        ExtensionCommands.setTarget(this.parentExt,user.getUser(),this.id,user.getId());
+        ExtensionCommands.createWorldFX(this.parentExt, user.getUser(),user.getId(),"tower_danger_alert",this.id+"_aggro",10*60*1000,(float) this.location.getX(),(float)this.location.getY(),true,this.team,0f);
+        ExtensionCommands.playSound(this.parentExt,user.getUser(),"sfx_turret_has_you_targeted",this.location);
     }
 }

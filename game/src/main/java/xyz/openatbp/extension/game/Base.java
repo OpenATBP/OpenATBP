@@ -36,6 +36,7 @@ public class Base extends Actor{
 
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
+        if(!this.unlocked) return false;
         this.currentHealth-=damage;
         for(User u : room.getUserList()){
             if(this.currentHealth <= 0){

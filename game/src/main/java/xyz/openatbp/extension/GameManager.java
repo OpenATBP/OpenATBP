@@ -109,7 +109,7 @@ public class GameManager {
             actorData.putUtfString("id", String.valueOf(sender.getId()));
             actorData.putUtfString("actor", playerInfo.getUtfString("avatar"));
             ISFSObject spawnPoint = new SFSObject();
-            spawnPoint.putFloat("x", (float) -36.90);
+            spawnPoint.putFloat("x", (float) 36.90);
             spawnPoint.putFloat("y", (float) 0);
             spawnPoint.putFloat("z", (float) 2.3);
             spawnPoint.putFloat("rotation", 0);
@@ -195,8 +195,12 @@ public class GameManager {
         spawnAltars(user,parentExt,room);
         spawnHealth(user,parentExt,room);
 
+        Point2D guardianLoc = new Point2D.Float(MapData.L2_GUARDIAN1_X*-1,MapData.L2_GUARDIAN1_Z);
+        Point2D guardianLoc2 = new Point2D.Float(MapData.L2_GUARDIAN1_X,MapData.L2_GUARDIAN1_Z);
         parentExt.send("cmd_create_actor",MapData.getGuardianActorData(0,room),user);
         parentExt.send("cmd_create_actor",MapData.getGuardianActorData(1,room),user);
+        ExtensionCommands.moveActor(parentExt,user,"gumball0",guardianLoc,new Point2D.Float((float) (guardianLoc.getX()+0.01f), (float) guardianLoc.getY()),0.01f,true);
+        ExtensionCommands.moveActor(parentExt,user,"gumball1",guardianLoc2,new Point2D.Float((float) (guardianLoc2.getX()-0.01f), (float) guardianLoc2.getY()),0.01f,true);
 
     }
 

@@ -208,7 +208,12 @@ public class ATBPExtension extends SFSExtension {
     }
 
     public JsonNode getAttackData(String actorName, String attack){
-        return this.getActorData(actorName).get(attack);
+        try{
+            return this.getActorData(actorName).get(attack);
+        }catch(Exception e){
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public String getDisplayName(String actorName){

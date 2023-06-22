@@ -197,9 +197,7 @@ public abstract class Actor {
 
     public double getPlayerStat(String stat){
         double currentStat = this.stats.get(stat);
-        System.out.println("Getting stat: " + stat + " : " + currentStat);
         if(this.tempStats.containsKey(stat)){
-            System.out.println("Getting Temp Stat: " + stat + " : " + (currentStat+this.tempStats.get(stat)));
             return currentStat+this.tempStats.get(stat);
         }
         else return currentStat;
@@ -287,7 +285,6 @@ public abstract class Actor {
 
     protected AttackType getAttackType(JsonNode attackData){
         if(attackData == null) return AttackType.SPELL;
-        System.out.println(attackData);
         String type = attackData.get("attackType").asText();
         if(type.equalsIgnoreCase("physical")) return AttackType.PHYSICAL;
         else return AttackType.SPELL;
