@@ -284,7 +284,7 @@ public abstract class Actor {
     }
 
     protected AttackType getAttackType(JsonNode attackData){
-        if(attackData == null) return AttackType.SPELL;
+        if(attackData.has("spellType")) return AttackType.SPELL;
         String type = attackData.get("attackType").asText();
         if(type.equalsIgnoreCase("physical")) return AttackType.PHYSICAL;
         else return AttackType.SPELL;

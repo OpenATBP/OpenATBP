@@ -16,6 +16,7 @@ import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.reqhandlers.HitActorHandler;
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
@@ -356,6 +357,26 @@ public class UserActor extends Actor {
         Point2D currentPoint = this.getLocation();
         if(currentPoint.getX() != x && currentPoint.getY() != z){
             this.updateMovementTime();
+        }
+        boolean insideBrush = false;
+        for(Path2D brush : this.parentExt.getBrushPaths()){
+            if(brush.contains(currentPoint)){
+                insideBrush = true;
+                break;
+            }
+        }
+        if(insideBrush){
+            if(!this.states.get(ActorState.INVISIBLE)){
+                System.out.println("Inside brush!");
+                this.states.put(ActorState.INVISIBLE,true);
+                ExtensionCommands.updateActorState(this.parentExt,this.room,this.id,ActorState.INVISIBLE,true);
+            }
+        }else{
+            if(this.states.get(ActorState.INVISIBLE)){
+                System.out.println("Outside brush!");
+                this.states.put(ActorState.INVISIBLE,false);
+                ExtensionCommands.updateActorState(this.parentExt,this.room,this.id,ActorState.INVISIBLE,false);
+            }
         }
         if(this.attackCooldown > 0) this.reduceAttackCooldown();
         if(this.target != null && this.target.getHealth() > 0 && this.autoAttackEnabled){

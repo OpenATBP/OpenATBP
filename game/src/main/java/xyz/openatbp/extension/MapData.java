@@ -254,7 +254,7 @@ public class MapData {
         guardian.putUtfString("id","gumball"+team);
         guardian.putUtfString("actor","gumball_guardian");
         guardianSpawn.putFloat("x", x);
-        guardianSpawn.putFloat("y", 1f);
+        guardianSpawn.putFloat("y", 0f);
         guardianSpawn.putFloat("z", z);
         guardian.putSFSObject("spawn_point", guardianSpawn);
         float rotation = 0f;
