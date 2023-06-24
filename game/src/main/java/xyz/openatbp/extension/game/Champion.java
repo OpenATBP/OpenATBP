@@ -341,6 +341,7 @@ public class Champion {
             deadActor.respawn();
         }
     }
+    @Deprecated
     public static class EffectHandler implements Runnable {
         Actor actor;
         ActorState state;
@@ -365,6 +366,7 @@ public class Champion {
         }
     }
 
+    @Deprecated
     public static class NewBuffHandler implements Runnable {
 
         Actor a;
@@ -383,8 +385,125 @@ public class Champion {
         }
     }
 
+    public static class FinalBuffHandler implements Runnable {
+
+        String buff;
+        int duration = 0;
+        double delta;
+        double modifiedDelta = 0;
+        Actor a;
+        long started;
+        String fxName;
+
+        public FinalBuffHandler(Actor a, Buff buff, double delta){
+            switch(buff.ordinal()){
+                case 0:
+                    this.buff = "health_pack";
+                    break;
+                case 1:
+                    this.buff = "attack_altar";
+                    break;
+                case 2:
+                    this.buff = "defense_altar";
+                    break;
+                case 3:
+                    this.buff = "keeoth";
+                    break;
+                case 4:
+                    this.buff = "ooze";
+                    break;
+                case 5:
+                    this.buff = "dc1";
+                    break;
+                case 6:
+                    this.buff = "dc2";
+                    break;
+                case 7:
+                    this.buff = "polymorph";
+                    break;
+            }
+            this.delta = delta;
+            this.a = a;
+            this.started = System.currentTimeMillis();
+            a.setBuffHandler(this.buff,this);
+        }
+
+        public FinalBuffHandler(Actor a, String buff, double delta){
+            this.a = a;
+            this.buff = buff;
+            this.delta = delta;
+            this.started = System.currentTimeMillis();
+            a.setBuffHandler(buff,this);
+        }
+
+        public FinalBuffHandler(Actor a, String buff, double delta, String fxName){
+            System.out.println("Created buff handler with effects!");
+            this.a = a;
+            this.buff = buff;
+            this.delta = delta;
+            this.fxName = fxName;
+            this.started = System.currentTimeMillis();
+            a.setBuffHandler(buff,this);
+        }
+
+        @Override
+        public void run() {
+            System.out.println("Running buff handler!");
+            if(this.duration > 0){
+                int runTime = (int) Math.floor(duration - (System.currentTimeMillis()-started));
+                double statChange = this.getDelta();
+                if(modifiedDelta != 0 && modifiedDelta > delta){
+                    a.setTempStat(buff, delta*-1);
+                    statChange = modifiedDelta - delta;
+                }
+                if(this.fxName != null){
+                    ExtensionCommands.createActorFX(a.parentExt,a.getRoom(),a.getId(),fxName,runTime,a.getId()+"_"+fxName,true,"Bip01",true,true,a.getTeam());
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinalBuffHandler(a,buff,statChange,fxName),runTime,TimeUnit.MILLISECONDS);
+                }else{
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinalBuffHandler(a,buff,statChange),runTime,TimeUnit.MILLISECONDS);
+                }
+            }else{
+                System.out.println("Buff ended");
+                a.setTempStat(buff,delta*-1);
+                a.removeBuffHandler(this.buff);
+            }
+            if(this.fxName != null) this.handleIcons();
+        }
+
+        public void extendBuff(int duration){
+            this.started = System.currentTimeMillis();
+            this.duration+= duration;
+        }
+
+        public void setDuration(int duration){
+            this.started = System.currentTimeMillis();
+            this.duration = duration;
+        }
+        public void setDelta(double delta){
+            this.modifiedDelta = delta;
+        }
+
+        public int getDuration(){
+            return this.duration;
+        }
+
+        public double getDelta(){
+            if(this.modifiedDelta != 0) return modifiedDelta;
+            else return this.delta;
+        }
+
+        private void handleIcons(){
+            if(this.fxName.contains("altar")){
+                UserActor ua = (UserActor) this.a;
+                String altarType = this.fxName.split("_")[2];
+                ExtensionCommands.removeStatusIcon(ua.parentExt,ua.getUser(),"altar_buff_"+altarType);
+            }
+        }
+    }
+
 }
 
+@Deprecated
 class BuffHandler implements Runnable {
 
     User u;
@@ -428,4 +547,5 @@ class BuffHandler implements Runnable {
         }
     }
 }
+
 

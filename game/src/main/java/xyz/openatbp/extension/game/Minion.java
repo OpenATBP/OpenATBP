@@ -546,7 +546,7 @@ public class Minion extends Actor{
             int health = u.getHealth();
             int userTeam = u.getTeam();
             Point2D currentPoint = u.getCurrentLocation();
-            if(this.getTeam() != userTeam && health > 0 && this.nearEntity(currentPoint) && this.facingEntity(currentPoint)){
+            if(this.getTeam() != userTeam && health > 0 && !u.getState(ActorState.INVISIBLE) && this.nearEntity(currentPoint) && this.facingEntity(currentPoint)){
                 if(this.getTarget() == null){ //This will probably always be true.
                     ExtensionCommands.setTarget(parentExt,u.getUser(),this.getId(), u.getId());
                     return u;

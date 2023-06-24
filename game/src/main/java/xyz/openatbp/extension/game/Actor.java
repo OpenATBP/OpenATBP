@@ -8,6 +8,7 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.game.champions.UserActor;
 
 import java.awt.geom.Point2D;
 import java.util.HashMap;
@@ -39,6 +40,7 @@ public abstract class Actor {
     protected String displayName = "FuzyBDragon";
     protected Map<String, Double> stats; //TODO: Maybe change to ISFSObject
     protected Map<String, Double> tempStats = new HashMap<>();
+    protected Map<String, Champion.FinalBuffHandler> buffHandlers = new HashMap<>();
 
 
     public double getPHealth(){
@@ -132,11 +134,13 @@ public abstract class Actor {
     }
 
     public double getTempStat(String stat){
+        if(!this.hasTempStat(stat)) return 0d;
         return this.tempStats.get(stat);
     }
 
     public boolean setTempStat(String stat, double delta){ //TODO: Should maybe make this private/protected
         try{
+            System.out.println("Subtracting " + stat + " by " + delta);
             if(this.tempStats.containsKey(stat)){
                 double tempStat = this.tempStats.get(stat);
                 double newStat = tempStat + delta;
@@ -157,38 +161,62 @@ public abstract class Actor {
         }
     }
 
+    public void updateTempStat(String stat, double delta){
+        this.tempStats.put(stat,delta);
+    }
+
     public void handleEffect(String stat, double delta, int duration, String fxId){
-        this.setTempStat(stat,delta);
+        if(!this.buffHandlers.containsKey(stat)){
+            System.out.println("Effect increased!");
+            this.setTempStat(stat,delta);
+        }
+        else{
+            double currentTempStat = this.getTempStat(stat);
+            if(delta > currentTempStat){
+                if(fxId.contains("altar"))this.setTempStat(stat,delta);
+                else this.setTempStat(stat,delta-currentTempStat);
+            }
+            if(delta != currentTempStat) this.buffHandlers.get(stat).setDelta(this.getTempStat(stat));
+            if(fxId.equalsIgnoreCase("fountainSpeed")) this.buffHandlers.get(stat).setDuration(duration);
+            else this.buffHandlers.get(stat).extendBuff(duration);
+            if(stat.equalsIgnoreCase("armor") && fxId.contains("altar")){ //Only armor to prevent multiple icons from appearing
+                UserActor ua = (UserActor) this;
+                ExtensionCommands.addStatusIcon(this.parentExt,ua.getUser(),"altar_buff_defense","altar1_description","icon_altar_armor",1000*60);
+            }
+            return;
+        }
         switch(stat){
             case "speed":
-                if(delta > 0) ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_speed",duration,this.id+"_"+fxId,true,"Bip01",true,false,this.team);
+                if(delta > 0){
+                    System.out.println("Starting buff handler!");
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.FinalBuffHandler(this,stat,delta,"statusEffect_speed"),duration,TimeUnit.MILLISECONDS);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_speed",duration,this.id+"_"+fxId,true,"Bip01",true,false,this.team);
+                }
                 break;
             case "healthRegen":
                 ExtensionCommands.createActorFX(parentExt,this.room,this.id,"fx_health_regen",duration,this.id+"_"+fxId,true,"Bip01",false,false,this.team);
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.NewBuffHandler(this,stat,delta),duration,TimeUnit.MILLISECONDS);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.FinalBuffHandler(this,stat,delta,"fx_health_regen"),duration,TimeUnit.MILLISECONDS);
                 break;
             case "attackDamage":
                 if(fxId.contains("altar")){ //Keeping the altar buff handling in the RoomHandler to declutter the Actor class for now
-                    //DO nothing
-                }
-                break;
-            case "criticalChance":
-                if(fxId.equalsIgnoreCase("altar")){
-                    //Do nothing!
+                    UserActor ua = (UserActor) this;
+                    ExtensionCommands.addStatusIcon(this.parentExt,ua.getUser(),"altar_buff_offense","altar2_description","icon_altar_attack",1000*60);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"altar_buff_offense",duration,this.id+"_"+fxId,true,"Bip01",true,true, ua.getTeam());
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.FinalBuffHandler(this,stat,delta,"altar_buff_offense"),duration,TimeUnit.MILLISECONDS);
                 }
                 break;
             case "armor":
-                if(fxId.equalsIgnoreCase("altar")){
-                    //Do nothing!
+                if(fxId.contains("altar")){
+                    UserActor ua = (UserActor) this;
+                    ExtensionCommands.addStatusIcon(this.parentExt,ua.getUser(),"altar_buff_defense","altar1_description","icon_altar_armor",1000*60);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"altar_buff_defense",duration,this.id+"_"+fxId,true,"Bip01",true,true, ua.getTeam());
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.FinalBuffHandler(this,stat,delta,"altar_buff_defense"),duration,TimeUnit.MILLISECONDS);
                 }
                 break;
-            case "spellResist":
-                if(fxId.equalsIgnoreCase("altar")){
-                    //Do nothing!
-                }
+            default:
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.FinalBuffHandler(this,stat,delta),duration,TimeUnit.MILLISECONDS);
                 break;
         }
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.NewBuffHandler(this,stat,delta),duration,TimeUnit.MILLISECONDS);
     }
 
     public boolean hasTempStat(String stat){
@@ -288,5 +316,13 @@ public abstract class Actor {
         String type = attackData.get("attackType").asText();
         if(type.equalsIgnoreCase("physical")) return AttackType.PHYSICAL;
         else return AttackType.SPELL;
+    }
+
+    public void setBuffHandler(String buff, Champion.FinalBuffHandler handler){
+        this.buffHandlers.put(buff,handler);
+    }
+
+    public void removeBuffHandler(String buff){
+        this.buffHandlers.remove(buff);
     }
 }

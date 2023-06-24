@@ -52,7 +52,7 @@ public class UserActor extends Actor {
         this.avatar = u.getVariable("player").getSFSObjectValue().getUtfString("avatar");
         this.displayName = u.getVariable("player").getSFSObjectValue().getUtfString("name");
         ISFSObject playerLoc = player.getVariable("location").getSFSObjectValue();
-        float x = playerLoc.getSFSObject("p1").getFloat("x")*-1; //TODO: Hard coded for testing
+        float x = playerLoc.getSFSObject("p1").getFloat("x"); //TODO: Hard coded for testing
         float z = playerLoc.getSFSObject("p1").getFloat("z");
         this.location = new Point2D.Float(x,z);
         this.originalLocation = location;
@@ -644,6 +644,10 @@ public class UserActor extends Actor {
     public double getPlayerStat(String stat){
         if(stat.equalsIgnoreCase("attackDamage")) return super.getPlayerStat(stat) + this.nailDamage;
         else return super.getPlayerStat(stat);
+    }
+
+    public boolean getState(ActorState state){
+        return this.states.get(state);
     }
 
     protected class MovementStopper implements Runnable {

@@ -572,4 +572,10 @@ public class ExtensionCommands {
         data.putFloat("duration",duration);
         parentExt.send("cmd_add_status_icon",data,u);
     }
+
+    public static void removeStatusIcon(ATBPExtension parentExt, User u, String name){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("name",name);
+        parentExt.send("cmd_remove_status_icon",data,u);
+    }
 }
