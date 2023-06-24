@@ -1,0 +1,90 @@
+{
+  "junk": {
+    "name": "junk_5_antigravity_tote_chamber_name",
+    "description": "junk_5_antigravity_tote_chamber_description",
+    "modDescription1": "junk_5_antigravity_tote_chamber_mod1",
+    "modDescription2": "junk_5_antigravity_tote_chamber_mod2",
+    "modDescription3": "junk_5_antigravity_tote_chamber_mod3",
+    "mod1Icon": "stat_health",
+    "mod2Icon": "stat_regen",
+    "mod3Icon": "stat_speed",
+    "category": 5,
+    "mods": {
+      "mod": [
+        {
+          "point": 1,
+          "stat": "health",
+          "type": 0,
+          "value": 25
+        },
+        {
+          "point": 1,
+          "stat": "healthRegen",
+          "type": 0,
+          "value": 1
+        },
+        {
+          "point": 1,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.1
+        },
+        {
+          "point": 2,
+          "stat": "health",
+          "type": 0,
+          "value": 75
+        },
+        {
+          "point": 2,
+          "stat": "healthRegen",
+          "type": 0,
+          "value": 2
+        },
+        {
+          "point": 2,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.15
+        },
+        {
+          "point": 3,
+          "stat": "health",
+          "type": 0,
+          "value": 100
+        },
+        {
+          "point": 3,
+          "stat": "healthRegen",
+          "type": 0,
+          "value": 3
+        },
+        {
+          "point": 3,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.2
+        },
+        {
+          "point": 4,
+          "stat": "health",
+          "type": 0,
+          "value": 150
+        },
+        {
+          "point": 4,
+          "stat": "healthRegen",
+          "type": 0,
+          "value": 4
+        },
+        {
+          "point": 4,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.3
+        }
+      ]
+    },
+    "script": ""
+  }
+}

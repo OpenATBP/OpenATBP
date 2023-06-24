@@ -1,0 +1,42 @@
+{
+  "junk": {
+    "name": "junk_5_bacon_pancakes_name",
+    "description": "junk_5_bacon_pancakes_description",
+    "modDescription1": "junk_5_bacon_pancakes_mod1",
+    "modDescription2": "",
+    "modDescription3": "",
+    "mod1Icon": "stat_health",
+    "mod2Icon": "stat_icon_blank",
+    "mod3Icon": "stat_icon_blank",
+    "category": 5,
+    "mods": {
+      "mod": [
+        {
+          "point": 1,
+          "stat": "health",
+          "type": 0,
+          "value": 75
+        },
+        {
+          "point": 2,
+          "stat": "health",
+          "type": 0,
+          "value": 150
+        },
+        {
+          "point": 3,
+          "stat": "health",
+          "type": 0,
+          "value": 225
+        },
+        {
+          "point": 4,
+          "stat": "health",
+          "type": 0,
+          "value": 325
+        }
+      ]
+    },
+    "script": ""
+  }
+}

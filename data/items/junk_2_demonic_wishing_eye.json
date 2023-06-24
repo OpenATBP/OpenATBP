@@ -1,0 +1,90 @@
+{
+  "junk": {
+    "name": "junk_2_demonic_wishing_eye_name",
+    "description": "junk_2_demonic_wishing_eye_description",
+    "modDescription1": "junk_2_demonic_wishing_eye_mod1",
+    "modDescription2": "junk_2_demonic_wishing_eye_mod2",
+    "modDescription3": "junk_2_demonic_wishing_eye_mod3",
+    "mod1Icon": "stat_power_damage",
+    "mod2Icon": "stat_power_vamp",
+    "mod3Icon": "stat_crit_chance",
+    "category": 2,
+    "mods": {
+      "mod": [
+        {
+          "point": 1,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 15
+        },
+        {
+          "point": 1,
+          "stat": "spellVamp",
+          "type": 0,
+          "value": 3
+        },
+        {
+          "point": 1,
+          "stat": "criticalChance",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 2,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 35
+        },
+        {
+          "point": 2,
+          "stat": "spellVamp",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 2,
+          "stat": "criticalChance",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 3,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 75
+        },
+        {
+          "point": 3,
+          "stat": "spellVamp",
+          "type": 0,
+          "value": 7
+        },
+        {
+          "point": 3,
+          "stat": "criticalChance",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 4,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 150
+        },
+        {
+          "point": 4,
+          "stat": "spellVamp",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 4,
+          "stat": "criticalChance",
+          "type": 0,
+          "value": 5
+        }
+      ]
+    },
+    "script": ""
+  }
+}

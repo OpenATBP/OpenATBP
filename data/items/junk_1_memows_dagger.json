@@ -1,0 +1,90 @@
+{
+  "junk": {
+    "name": "junk_1_memows_dagger_name",
+    "description": "junk_1_memows_dagger_description",
+    "modDescription1": "junk_1_memows_dagger_mod1",
+    "modDescription2": "junk_1_memows_dagger_mod2",
+    "modDescription3": "junk_1_memows_dagger_mod3",
+    "mod1Icon": "stat_attack_damage",
+    "mod2Icon": "stat_crit_chance",
+    "mod3Icon": "stat_attack_speed",
+    "category": 1,
+    "mods": {
+      "mod": [
+        {
+          "point": 1,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 1,
+          "stat": "criticalChance",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 1,
+          "stat": "attackSpeed",
+          "type": 0,
+          "value": -75
+        },
+        {
+          "point": 2,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 20
+        },
+        {
+          "point": 2,
+          "stat": "criticalChance",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 2,
+          "stat": "attackSpeed",
+          "type": 0,
+          "value": -150
+        },
+        {
+          "point": 3,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 30
+        },
+        {
+          "point": 3,
+          "stat": "criticalChance",
+          "type": 0,
+          "value": 15
+        },
+        {
+          "point": 3,
+          "stat": "attackSpeed",
+          "type": 0,
+          "value": -250
+        },
+        {
+          "point": 4,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 50
+        },
+        {
+          "point": 4,
+          "stat": "criticalChance",
+          "type": 0,
+          "value": 20
+        },
+        {
+          "point": 4,
+          "stat": "attackSpeed",
+          "type": 0,
+          "value": -350
+        }
+      ]
+    },
+    "script": ""
+  }
+}
