@@ -1,0 +1,66 @@
+{
+  "junk": {
+    "name": "junk_2_marcelines_amp_name",
+    "description": "junk_2_marcelines_amp_description",
+    "modDescription1": "junk_2_marcelines_amp_mod1",
+    "modDescription2": "junk_2_marcelines_amp_mod2",
+    "modDescription3": "",
+    "mod1Icon": "stat_power_damage",
+    "mod2Icon": "stat_power_vamp",
+    "mod3Icon": "stat_icon_blank",
+    "category": 2,
+    "mods": {
+      "mod": [
+        {
+          "point": 1,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 15
+        },
+        {
+          "point": 1,
+          "stat": "spellVamp",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 2,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 35
+        },
+        {
+          "point": 2,
+          "stat": "spellVamp",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 3,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 75
+        },
+        {
+          "point": 3,
+          "stat": "spellVamp",
+          "type": 0,
+          "value": 15
+        },
+        {
+          "point": 4,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 150
+        },
+        {
+          "point": 4,
+          "stat": "spellVamp",
+          "type": 0,
+          "value": 20
+        }
+      ]
+    },
+    "script": ""
+  }
+}

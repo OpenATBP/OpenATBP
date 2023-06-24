@@ -26,49 +26,6 @@ import java.util.concurrent.TimeUnit;
 public class Champion {
 
     @Deprecated
-    public static void giveBuff(ATBPExtension parentExt,User u, Buff buff){
-        String stat = null;
-        float duration = 0;
-        double value = 0;
-        boolean icon = false;
-        String effect = null;
-        String iconString = null;
-        switch(buff){
-            case HEALTH_PACK:
-                stat = "healthRegen";
-                value = 20;
-                duration = 5f;
-                effect = "fx_health_regen";
-                parentExt.getRoomHandler(u.getLastJoinedRoom().getId()).getPlayer(String.valueOf(u.getId())).giveStatBuff(stat,value, (int) (duration*1000));
-                ExtensionCommands.createActorFX(parentExt,u.getLastJoinedRoom(),String.valueOf(u.getId()),effect,5000,effect+"_"+u.getId(),true,"Bip01",false,false,2);
-                return;
-            case ATTACK_ALTAR:
-                break;
-            case POLYMORPH:
-                double currentSpeed = u.getVariable("stats").getSFSObjectValue().getDouble("speed");
-                value = currentSpeed*-0.15f;
-                stat = "speed";
-                icon = true;
-                effect = "flambit_aoe";
-                duration = 3f;
-                ExtensionCommands.swapActorAsset(parentExt,u, String.valueOf(u.getId()),"flambit");
-                break;
-        }
-        ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
-        if(stat != null && stats.getDouble(stat) != null){
-            double newStat = stats.getDouble(stat) + value;
-            stats.putDouble(stat,newStat);
-            ISFSObject updateData = new SFSObject();
-            updateData.putUtfString("id", String.valueOf(u.getId()));
-            updateData.putDouble(stat,newStat);
-            ExtensionCommands.updateActorData(parentExt,u,updateData);
-            int interval = (int) Math.floor(duration*1000);
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(new BuffHandler(parentExt,u,buff,stat,value,icon),interval,TimeUnit.MILLISECONDS);
-            int team = Integer.parseInt(u.getVariable("player").getSFSObjectValue().getUtfString("team"));
-            ExtensionCommands.createActorFX(parentExt,u.getLastJoinedRoom(),String.valueOf(u.getId()),effect,interval,effect+u.getId(),true,"",false,false,team);
-        }
-    }
-    @Deprecated
     public static void updateHealth(ATBPExtension parentExt, User u, int health){
         ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
         double currentHealth = stats.getInt("currentHealth");
@@ -288,15 +245,25 @@ public class Champion {
 
         @Override
         public void run() {
+            JsonNode attackData;
+            if(this.attacker.getActorType() == ActorType.MINION) attackData = this.parentExt.getAttackData(this.attacker.avatar.replace("0",""),this.attack);
+            else attackData = this.parentExt.getAttackData(this.attacker.avatar,this.attack);
+            if(this.attacker.getActorType() == ActorType.PLAYER){
+                UserActor ua = (UserActor) this.attacker;
+                if(ua.hasBackpackItem("junk_1_numb_chucks") && ua.getStat("sp_category1") > 0){
+                    if(!this.target.hasTempStat("attackSpeed")) this.target.handleEffect("attackSpeed",this.target.getPlayerStat("attackSpeed")*-0.1,3000,"numb_chucks");
+                }else if(ua.hasBackpackItem("junk_4_grob_gob_glob_grod") && ua.getStat("sp_category4") > 0){
+                    if(!this.target.hasTempStat("spellDamage")) this.target.handleEffect("spellDamage",this.target.getPlayerStat("spellDamage")*-0.1,3000,"grob_gob");
+                }
+            }
             if(this.target.getActorType() == ActorType.PLAYER){
                 UserActor user = (UserActor) this.target;
-                JsonNode attackData = this.parentExt.getAttackData(this.attacker.avatar,this.attack);
                 if(user.damaged(attacker,damage,attackData) && this.attacker.getActorType() == ActorType.TOWER){
                     Tower t = (Tower) attacker;
                     t.resetTarget(target);
                 }
             }
-            else if(target.damaged(attacker,damage) && this.attacker.getActorType() == ActorType.TOWER){
+            else if(target.damaged(attacker,damage,attackData) && this.attacker.getActorType() == ActorType.TOWER){
                 Tower t = (Tower) attacker;
                 t.resetTarget(target);
             }
@@ -331,91 +298,144 @@ public class Champion {
             deadActor.respawn();
         }
     }
-    public static class EffectHandler implements Runnable {
-        Actor actor;
-        ActorState state;
-        double originalStat;
-        EffectHandler(Actor a, ActorState state, double originalStat){
-            this.actor = a;
-            this.state = state;
-            this.originalStat = originalStat;
-        }
-        @Override
-        public void run() {
-            switch(state){
-                case SLOWED:
-                    this.actor.setSpeed((float) originalStat);
+    public static class FinalBuffHandler implements Runnable {
+
+        String buff;
+        int duration = 0;
+        double delta;
+        double modifiedDelta = 0;
+        Actor a;
+        long started;
+        String fxName;
+        boolean isState = false;
+
+        public FinalBuffHandler(Actor a, Buff buff, double delta){
+            switch(buff.ordinal()){
+                case 0:
+                    this.buff = "health_pack";
+                    break;
+                case 1:
+                    this.buff = "attack_altar";
+                    break;
+                case 2:
+                    this.buff = "defense_altar";
+                    break;
+                case 3:
+                    this.buff = "keeoth";
+                    break;
+                case 4:
+                    this.buff = "ooze";
+                    break;
+                case 5:
+                    this.buff = "dc1";
+                    break;
+                case 6:
+                    this.buff = "dc2";
+                    break;
+                case 7:
+                    this.buff = "polymorph";
                     break;
             }
-            this.actor.setState(this.state,false);
-        }
-
-        public double getOriginalStat(){
-            return this.originalStat;
-        }
-    }
-
-    public static class NewBuffHandler implements Runnable {
-
-        Actor a;
-        String stat;
-        double statIncrease;
-
-        public NewBuffHandler(Actor a, String stat, double statIncrease){
+            this.delta = delta;
             this.a = a;
-            this.stat = stat;
-            this.statIncrease = statIncrease;
+            this.isState = true;
+            this.started = System.currentTimeMillis();
+            a.setBuffHandler(this.buff,this);
+        }
+
+        public FinalBuffHandler(Actor a, ActorState state, double delta){
+            this.a = a;
+            this.delta = delta;
+            this.buff = state.name().toLowerCase();
+            this.isState = true;
+            this.started = System.currentTimeMillis();
+            a.setBuffHandler(buff,this);
+        }
+
+        public FinalBuffHandler(Actor a, String buff, double delta){
+            this.a = a;
+            this.buff = buff;
+            this.delta = delta;
+            this.started = System.currentTimeMillis();
+            a.setBuffHandler(buff,this);
+        }
+
+        public FinalBuffHandler(Actor a, String buff, double delta, String fxName){
+            System.out.println("Created buff handler with effects!");
+            this.a = a;
+            this.buff = buff;
+            this.delta = delta;
+            this.fxName = fxName;
+            this.started = System.currentTimeMillis();
+            a.setBuffHandler(buff,this);
         }
 
         @Override
-        public void run() { //TODO: Extend visual effects if there is still an active buff
-            a.setTempStat(stat,statIncrease*-1);
+        public void run() {
+            if(this.isState){
+                if(this.duration > 0){
+                    int runTime = (int) Math.floor(duration - (System.currentTimeMillis()-started));
+                    double statChange = this.getDelta();
+                    if(modifiedDelta != 0 && modifiedDelta > delta){
+                        a.setTempStat(buff, delta*-1);
+                        statChange = modifiedDelta - delta;
+                    }
+                    if(this.fxName != null){
+                        ExtensionCommands.createActorFX(a.parentExt,a.getRoom(),a.getId(),fxName,runTime,a.getId()+"_"+fxName,true,"Bip01",true,true,a.getTeam());
+                        SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinalBuffHandler(a,buff,statChange,fxName),runTime,TimeUnit.MILLISECONDS);
+                    }else{
+                        SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinalBuffHandler(a,buff,statChange),runTime,TimeUnit.MILLISECONDS);
+                    }
+                }else{
+                    System.out.println("Buff ended");
+                    a.setTempStat(buff,delta*-1);
+                    a.removeBuffHandler(this.buff);
+                }
+                if(this.fxName != null) this.handleIcons();
+            }else{
+                switch(this.buff){
+                    case "polymorph":
+                        a.setState(ActorState.POLYMORPH,false);
+                        for(User u : a.getRoom().getUserList()){
+                            ExtensionCommands.swapActorAsset(a.parentExt,u,a.getId(),a.getAvatar());
+                        }
+                        a.setTempStat("speed",delta*-1);
+                        break;
+                }
+            }
+        }
+
+        public void extendBuff(int duration){
+            this.started = System.currentTimeMillis();
+            this.duration+= duration;
+        }
+
+        public void setDuration(int duration){
+            this.started = System.currentTimeMillis();
+            this.duration = duration;
+        }
+        public void setDelta(double delta){
+            this.modifiedDelta = delta;
+        }
+
+        public int getDuration(){
+            return this.duration;
+        }
+
+        public double getDelta(){
+            if(this.modifiedDelta != 0) return modifiedDelta;
+            else return this.delta;
+        }
+
+        private void handleIcons(){
+            if(this.fxName.contains("altar")){
+                UserActor ua = (UserActor) this.a;
+                String altarType = this.fxName.split("_")[2];
+                ExtensionCommands.removeStatusIcon(ua.parentExt,ua.getUser(),"altar_buff_"+altarType);
+            }
         }
     }
 
 }
 
-class BuffHandler implements Runnable {
-
-    User u;
-    Buff buff;
-    String buffName;
-    double value;
-    boolean icon;
-    ATBPExtension parentExt;
-
-    BuffHandler(User u, Buff buff, String buffName, double value, boolean icon){
-        this.u = u;
-        this.buffName = buffName;
-        this.value = value;
-        this.icon = icon;
-        this.buff = buff;
-    }
-
-    BuffHandler(ATBPExtension parentExt,User u, Buff buff, String buffName, double value, boolean icon){
-        this.u = u;
-        this.buffName = buffName;
-        this.value = value;
-        this.icon = icon;
-        this.buff = buff;
-        this.parentExt = parentExt;
-    }
-
-    @Override
-    public void run() {
-        double currentStat = u.getVariable("stats").getSFSObjectValue().getDouble(buffName);
-        u.getVariable("stats").getSFSObjectValue().putDouble(buffName,currentStat-value);
-        ISFSObject data = new SFSObject();
-        data.putUtfString("id", String.valueOf(u.getId()));
-        data.putDouble(buffName,currentStat-value);
-        ExtensionCommands.updateActorData(parentExt,u,data);
-        if(icon){
-
-        }
-        if(buff == Buff.POLYMORPH){
-            ExtensionCommands.swapActorAsset(parentExt,u, String.valueOf(u.getId()),u.getVariable("player").getSFSObjectValue().getUtfString("avatar"));
-            parentExt.getRoomHandler(u.getLastJoinedRoom().getId()).getPlayer(String.valueOf(u.getId())).setState(ActorState.POLYMORPH,false);
-        }
-    }
-}
 

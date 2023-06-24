@@ -1,0 +1,66 @@
+{
+  "junk": {
+    "name": "junk_2_lightning_sword_name",
+    "description": "junk_2_lightning_sword_description",
+    "modDescription1": "junk_2_lightning_sword_mod1",
+    "modDescription2": "junk_2_lightning_sword_mod2",
+    "modDescription3": "junk_2_lightning_sword_mod3",
+    "mod1Icon": "stat_power_damage",
+    "mod2Icon": "stat_attack_damage",
+    "mod3Icon": "stat_icon_blank",
+    "category": 2,
+    "mods": {
+      "mod": [
+        {
+          "point": 1,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 1,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 2,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 25
+        },
+        {
+          "point": 2,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 3,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 50
+        },
+        {
+          "point": 3,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 15
+        },
+        {
+          "point": 4,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 100
+        },
+        {
+          "point": 4,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 20
+        }
+      ]
+    },
+    "script": ""
+  }
+}

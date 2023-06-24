@@ -1,0 +1,66 @@
+{
+  "junk": {
+    "name": "junk_3_armor_of_zeldron",
+    "description": "junk_3_armor_of_zeldron_description",
+    "modDescription1": "junk_3_armor_of_zeldron_mod1",
+    "modDescription2": "junk_3_armor_of_zeldron_mod2",
+    "modDescription3": "",
+    "mod1Icon": "stat_armor",
+    "mod2Icon": "stat_speed",
+    "mod3Icon": "stat_icon_blank",
+    "category": 3,
+    "mods": {
+      "mod": [
+        {
+          "point": 1,
+          "stat": "armor",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 1,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.1
+        },
+        {
+          "point": 2,
+          "stat": "armor",
+          "type": 0,
+          "value": 20
+        },
+        {
+          "point": 2,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.15
+        },
+        {
+          "point": 3,
+          "stat": "armor",
+          "type": 0,
+          "value": 30
+        },
+        {
+          "point": 3,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.2
+        },
+        {
+          "point": 4,
+          "stat": "armor",
+          "type": 0,
+          "value": 50
+        },
+        {
+          "point": 4,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.3
+        }
+      ]
+    },
+    "script": ""
+  }
+}

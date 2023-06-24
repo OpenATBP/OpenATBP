@@ -25,8 +25,12 @@ public class ATBPExtension extends SFSExtension {
     HashMap<String, JsonNode> itemDefinitions = new HashMap<>();
     ArrayList<Vector<Float>>[] mapColliders; //Contains all vertices for the practice map
     ArrayList<Vector<Float>>[] mainMapColliders; //Contains all vertices for the main map
+
+    ArrayList<Vector<Float>>[] brushColliders;
     ArrayList<Path2D> mapPaths; //Contains all line paths of the colliders for the practice map
     ArrayList<Path2D> mainMapPaths; //Contains all line paths of the colliders for the main map
+
+    ArrayList<Path2D> brushPaths;
     HashMap<String, List<String>> tips = new HashMap<>();
 
     HashMap<Integer, RoomHandler> roomHandlers = new HashMap<>();
@@ -62,6 +66,7 @@ public class ATBPExtension extends SFSExtension {
             loadColliders();
             loadItems();
             loadTips();
+            loadBrushes();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -208,7 +213,12 @@ public class ATBPExtension extends SFSExtension {
     }
 
     public JsonNode getAttackData(String actorName, String attack){
-        return this.getActorData(actorName).get(attack);
+        try{
+            return this.getActorData(actorName).get(attack);
+        }catch(Exception e){
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public String getDisplayName(String actorName){
@@ -236,5 +246,41 @@ public class ATBPExtension extends SFSExtension {
 
     public RoomHandler getRoomHandler(int roomId){
         return roomHandlers.get(roomId);
+    }
+
+    private void loadBrushes() throws IOException { //Reads json files and turns them into JsonNodes
+        File mainMap = new File(getCurrentFolder()+"/colliders/brush.json");
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode node = mapper.readTree(mainMap);
+        ArrayNode colliders = (ArrayNode) node.get("BrushAreas").get("brush");
+        brushColliders = new ArrayList[colliders.size()];
+        brushPaths = new ArrayList<>(colliders.size());
+        for(int i = 0; i < colliders.size(); i++){ //Reads all colliders and makes a list of their vertices
+            Path2D path = new Path2D.Float();
+            ArrayNode vertices = (ArrayNode) colliders.get(i).get("vertex");
+            ArrayList<Vector<Float>> vecs = new ArrayList(vertices.size());
+            for(int g = 0; g < vertices.size(); g++){
+                if(g == 0){
+                    path.moveTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
+                }else{ //Draws lines from each vertex to make a shape
+                    path.lineTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
+                }
+                Vector<Float> vertex = new Vector<Float>(2);
+                vertex.add(0, (float) vertices.get(g).get("x").asDouble());
+                vertex.add(1, (float) vertices.get(g).get("z").asDouble());
+                vecs.add(vertex);
+            }
+            path.closePath();
+            brushPaths.add(path);
+            brushColliders[i] = vecs;
+        }
+    }
+
+    public ArrayList<Path2D> getBrushPaths(){
+        return this.brushPaths;
+    }
+
+    public Path2D getBrush(int num){
+        return this.brushPaths.get(num);
     }
 }

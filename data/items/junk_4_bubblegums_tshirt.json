@@ -1,0 +1,90 @@
+{
+  "junk": {
+    "name": "junk_4_bubblegums_tshirt_name",
+    "description": "junk_4_bubblegums_tshirt_description",
+    "modDescription1": "junk_4_bubblegums_tshirt_mod1",
+    "modDescription2": "junk_4_bubblegums_tshirt_mod2",
+    "modDescription3": "junk_4_bubblegums_tshirt_mod3",
+    "mod1Icon": "stat_shield",
+    "mod2Icon": "stat_health",
+    "mod3Icon": "stat_speed",
+    "category": 4,
+    "mods": {
+      "mod": [
+        {
+          "point": 1,
+          "stat": "spellResist",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 1,
+          "stat": "health",
+          "type": 0,
+          "value": 25
+        },
+        {
+          "point": 1,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.05
+        },
+        {
+          "point": 2,
+          "stat": "spellResist",
+          "type": 0,
+          "value": 20
+        },
+        {
+          "point": 2,
+          "stat": "health",
+          "type": 0,
+          "value": 75
+        },
+        {
+          "point": 2,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.1
+        },
+        {
+          "point": 3,
+          "stat": "spellResist",
+          "type": 0,
+          "value": 30
+        },
+        {
+          "point": 3,
+          "stat": "health",
+          "type": 0,
+          "value": 100
+        },
+        {
+          "point": 3,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.15
+        },
+        {
+          "point": 4,
+          "stat": "spellResist",
+          "type": 0,
+          "value": 50
+        },
+        {
+          "point": 4,
+          "stat": "health",
+          "type": 0,
+          "value": 150
+        },
+        {
+          "point": 4,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.2
+        }
+      ]
+    },
+    "script": ""
+  }
+}

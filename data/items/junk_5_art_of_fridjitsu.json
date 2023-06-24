@@ -1,0 +1,90 @@
+{
+  "junk": {
+    "name": "junk_5_art_of_fridjitsu_name",
+    "description": "junk_5_art_of_fridjitsu_description",
+    "modDescription1": "junk_5_art_of_fridjitsu_mod1",
+    "modDescription2": "junk_5_art_of_fridjitsu_mod2",
+    "modDescription3": "junk_5_art_of_fridjitsu_mod3",
+    "mod1Icon": "stat_cooldown",
+    "mod2Icon": "stat_speed",
+    "mod3Icon": "stat_crit_chance",
+    "category": 5,
+    "mods": {
+      "mod": [
+        {
+          "point": 1,
+          "stat": "coolDownReduction",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 1,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.05
+        },
+        {
+          "point": 1,
+          "stat": "criticalChance",
+          "type": 0,
+          "value": 3
+        },
+        {
+          "point": 2,
+          "stat": "coolDownReduction",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 2,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.1
+        },
+        {
+          "point": 2,
+          "stat": "criticalChance",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 3,
+          "stat": "coolDownReduction",
+          "type": 0,
+          "value": 15
+        },
+        {
+          "point": 3,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.15
+        },
+        {
+          "point": 3,
+          "stat": "criticalChance",
+          "type": 0,
+          "value": 7
+        },
+        {
+          "point": 4,
+          "stat": "coolDownReduction",
+          "type": 0,
+          "value": 20
+        },
+        {
+          "point": 4,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.2
+        },
+        {
+          "point": 4,
+          "stat": "criticalChance",
+          "type": 0,
+          "value": 10
+        }
+      ]
+    },
+    "script": ""
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "junk": {
+    "name": "junk_3_ice_armor_name",
+    "description": "junk_3_ice_armor_description",
+    "modDescription1": "junk_3_ice_armor_mod1",
+    "modDescription2": "junk_3_ice_armor_mod2",
+    "modDescription3": "junk_3_ice_armor_mod3",
+    "mod1Icon": "stat_armor",
+    "mod2Icon": "stat_health",
+    "mod3Icon": "stat_attack_speed",
+    "category": 3,
+    "mods": {
+      "mod": [
+        {
+          "point": 1,
+          "stat": "armor",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 1,
+          "stat": "health",
+          "type": 0,
+          "value": 25
+        },
+        {
+          "point": 1,
+          "stat": "attackSpeed",
+          "type": 0,
+          "value": 50
+        },
+        {
+          "point": 2,
+          "stat": "armor",
+          "type": 0,
+          "value": 25
+        },
+        {
+          "point": 2,
+          "stat": "health",
+          "type": 0,
+          "value": 75
+        },
+        {
+          "point": 2,
+          "stat": "attackSpeed",
+          "type": 0,
+          "value": 100
+        },
+        {
+          "point": 3,
+          "stat": "armor",
+          "type": 0,
+          "value": 50
+        },
+        {
+          "point": 3,
+          "stat": "health",
+          "type": 0,
+          "value": 100
+        },
+        {
+          "point": 3,
+          "stat": "attackSpeed",
+          "type": 0,
+          "value": 150
+        },
+        {
+          "point": 4,
+          "stat": "armor",
+          "type": 0,
+          "value": 100
+        },
+        {
+          "point": 4,
+          "stat": "health",
+          "type": 0,
+          "value": 150
+        },
+        {
+          "point": 4,
+          "stat": "attackSpeed",
+          "type": 0,
+          "value": 200
+        }
+      ]
+    },
+    "script": ""
+  }
+}

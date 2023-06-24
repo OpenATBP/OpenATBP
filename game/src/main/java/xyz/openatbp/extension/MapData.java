@@ -30,8 +30,8 @@ public class MapData {
     public static final float L2_BASE1_Z = (float) 0.0;
     public static final float L2_TOWER2_X = (float) 34.51;
     public static final float L2_TOWER2_Z = (float) 0.0;
-    public static final float L2_GUARDIAN1_X = (float) 52.68;
-    public static final float L2_GUARDIAN1_Z = (float) -0.44;
+    public static final float L2_GUARDIAN1_X = (float) 52.00;
+    public static final float L2_GUARDIAN1_Z = (float) 0;
     public static final float L2_TOP_TOWER1_X = (float) 26.55;
     public static final float L2_TOP_TOWER1_Z = (float) -12.74;
     public static final float[] L2_BOT_TOWER1 = {(float) 26.36, (float) 11.51};
@@ -248,17 +248,17 @@ public class MapData {
             x = L2_GUARDIAN1_X;
             z = L2_GUARDIAN1_Z;
         }
-        if(team == 1) x*=-1;
+        if(team == 0) x*=-1;
         ISFSObject guardian = new SFSObject();
         ISFSObject guardianSpawn = new SFSObject();
         guardian.putUtfString("id","gumball"+team);
         guardian.putUtfString("actor","gumball_guardian");
         guardianSpawn.putFloat("x", x);
-        guardianSpawn.putFloat("y", (float) 0.0);
+        guardianSpawn.putFloat("y", 0f);
         guardianSpawn.putFloat("z", z);
         guardian.putSFSObject("spawn_point", guardianSpawn);
-        float rotation = (float) 0.5;
-        if(team == 1) rotation = (float) -0.5;
+        float rotation = 0f;
+        if(team == 1) rotation = 0f;
         guardian.putFloat("rotation", rotation);
         guardian.putInt("team", team);
         return guardian;

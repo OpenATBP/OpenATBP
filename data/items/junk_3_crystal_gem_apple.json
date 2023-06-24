@@ -1,0 +1,90 @@
+{
+  "junk": {
+    "name": "junk_3_crystal_gem_apple_name",
+    "description": "junk_3_crystal_gem_apple_description",
+    "modDescription1": "junk_3_crystal_gem_apple_mod1",
+    "modDescription2": "junk_3_crystal_gem_apple_mod2",
+    "modDescription3": "junk_3_crystal_gem_apple_mod3",
+    "mod1Icon": "stat_armor",
+    "mod2Icon": "stat_power_damage",
+    "mod3Icon": "stat_cooldown",
+    "category": 3,
+    "mods": {
+      "mod": [
+        {
+          "point": 1,
+          "stat": "armor",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 1,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 1,
+          "stat": "coolDownReduction",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 2,
+          "stat": "armor",
+          "type": 0,
+          "value": 20
+        },
+        {
+          "point": 2,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 20
+        },
+        {
+          "point": 2,
+          "stat": "coolDownReduction",
+          "type": 0,
+          "value": 7
+        },
+        {
+          "point": 3,
+          "stat": "armor",
+          "type": 0,
+          "value": 40
+        },
+        {
+          "point": 3,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 30
+        },
+        {
+          "point": 3,
+          "stat": "coolDownReduction",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 4,
+          "stat": "armor",
+          "type": 0,
+          "value": 75
+        },
+        {
+          "point": 4,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 50
+        },
+        {
+          "point": 4,
+          "stat": "coolDownReduction",
+          "type": 0,
+          "value": 15
+        }
+      ]
+    },
+    "script": ""
+  }
+}

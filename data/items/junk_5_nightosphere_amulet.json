@@ -1,0 +1,90 @@
+{
+  "junk": {
+    "name": "junk_5_nightosphere_amulet_name",
+    "description": "junk_5_nightosphere_amulet_description",
+    "modDescription1": "junk_5_nightosphere_amulet_mod1",
+    "modDescription2": "junk_5_nightosphere_amulet_mod2",
+    "modDescription3": "junk_5_nightosphere_amulet_mod3",
+    "mod1Icon": "stat_health",
+    "mod2Icon": "stat_attack_vamp",
+    "mod3Icon": "stat_power_vamp",
+    "category": 5,
+    "mods": {
+      "mod": [
+        {
+          "point": 1,
+          "stat": "health",
+          "type": 0,
+          "value": 50
+        },
+        {
+          "point": 1,
+          "stat": "lifeSteal",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 1,
+          "stat": "spellVamp",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 2,
+          "stat": "health",
+          "type": 0,
+          "value": 100
+        },
+        {
+          "point": 2,
+          "stat": "lifeSteal",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 2,
+          "stat": "spellVamp",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 3,
+          "stat": "health",
+          "type": 0,
+          "value": 150
+        },
+        {
+          "point": 3,
+          "stat": "lifeSteal",
+          "type": 0,
+          "value": 15
+        },
+        {
+          "point": 3,
+          "stat": "spellVamp",
+          "type": 0,
+          "value": 15
+        },
+        {
+          "point": 4,
+          "stat": "health",
+          "type": 0,
+          "value": 225
+        },
+        {
+          "point": 4,
+          "stat": "lifeSteal",
+          "type": 0,
+          "value": 20
+        },
+        {
+          "point": 4,
+          "stat": "spellVamp",
+          "type": 0,
+          "value": 20
+        }
+      ]
+    },
+    "script": ""
+  }
+}

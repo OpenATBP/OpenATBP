@@ -1,0 +1,66 @@
+{
+  "junk": {
+    "name": "junk_5_glasses_of_nerdicon_name",
+    "description": "junk_5_glasses_of_nerdicon_description",
+    "modDescription1": "junk_5_glasses_of_nerdicon_mod1",
+    "modDescription2": "junk_5_glasses_of_nerdicon_mod2",
+    "modDescription3": "junk_5_glasses_of_nerdicon_mod3",
+    "mod1Icon": "stat_regen",
+    "mod2Icon": "stat_cooldown",
+    "mod3Icon": "stat_icon_blank",
+    "category": 5,
+    "mods": {
+      "mod": [
+        {
+          "point": 1,
+          "stat": "healthRegen",
+          "type": 0,
+          "value": 2
+        },
+        {
+          "point": 1,
+          "stat": "coolDownReduction",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 2,
+          "stat": "healthRegen",
+          "type": 0,
+          "value": 4
+        },
+        {
+          "point": 2,
+          "stat": "coolDownReduction",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 3,
+          "stat": "healthRegen",
+          "type": 0,
+          "value": 6
+        },
+        {
+          "point": 3,
+          "stat": "coolDownReduction",
+          "type": 0,
+          "value": 15
+        },
+        {
+          "point": 4,
+          "stat": "healthRegen",
+          "type": 0,
+          "value": 8
+        },
+        {
+          "point": 4,
+          "stat": "coolDownReduction",
+          "type": 0,
+          "value": 20
+        }
+      ]
+    },
+    "script": "junk/glasses_of_nerdicon.lua"
+  }
+}

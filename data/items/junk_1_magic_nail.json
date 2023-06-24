@@ -1,0 +1,66 @@
+{
+  "junk": {
+    "name": "junk_1_magic_nail_name",
+    "description": "junk_1_magic_nail_description",
+    "modDescription1": "junk_1_magic_nail_mod1",
+    "modDescription2": "junk_1_magic_nail_mod2",
+    "modDescription3": "junk_1_magic_nail_mod3",
+    "mod1Icon": "stat_attack_damage",
+    "mod2Icon": "stat_speed",
+    "mod3Icon": "stat_icon_blank",
+    "category": 1,
+    "mods": {
+      "mod": [
+        {
+          "point": 1,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 1,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.05
+        },
+        {
+          "point": 2,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 2,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.1
+        },
+        {
+          "point": 3,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 20
+        },
+        {
+          "point": 3,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.15
+        },
+        {
+          "point": 4,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 35
+        },
+        {
+          "point": 4,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.2
+        }
+      ]
+    },
+    "script": "junk/magic_nail_stacks.lua"
+  }
+}

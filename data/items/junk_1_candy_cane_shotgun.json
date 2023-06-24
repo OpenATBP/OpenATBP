@@ -1,0 +1,90 @@
+{
+  "junk": {
+    "name": "junk_1_candy_cane_shotgun_name",
+    "description": "junk_1_candy_cane_shotgun_description",
+    "modDescription1": "junk_1_candy_cane_shotgun_mod1",
+    "modDescription2": "junk_1_candy_cane_shotgun_mod2",
+    "modDescription3": "junk_1_candy_cane_shotgun_mod3",
+    "mod1Icon": "stat_attack_damage",
+    "mod2Icon": "stat_armor_pen",
+    "mod3Icon": "stat_attack_range",
+    "category": 1,
+    "mods": {
+      "mod": [
+        {
+          "point": 1,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 1,
+          "stat": "armorPenetration",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 1,
+          "stat": "attackRange",
+          "type": 1,
+          "value": 0.95
+        },
+        {
+          "point": 2,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 25
+        },
+        {
+          "point": 2,
+          "stat": "armorPenetration",
+          "type": 0,
+          "value": 20
+        },
+        {
+          "point": 2,
+          "stat": "attackRange",
+          "type": 1,
+          "value": 0.9
+        },
+        {
+          "point": 3,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 45
+        },
+        {
+          "point": 3,
+          "stat": "armorPenetration",
+          "type": 0,
+          "value": 40
+        },
+        {
+          "point": 3,
+          "stat": "attackRange",
+          "type": 1,
+          "value": 0.85
+        },
+        {
+          "point": 4,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 75
+        },
+        {
+          "point": 4,
+          "stat": "armorPenetration",
+          "type": 0,
+          "value": 75
+        },
+        {
+          "point": 4,
+          "stat": "attackRange",
+          "type": 1,
+          "value": 0.8
+        }
+      ]
+    },
+    "script": ""
+  }
+}

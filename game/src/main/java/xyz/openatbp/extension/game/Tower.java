@@ -1,5 +1,6 @@
 package xyz.openatbp.extension.game;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
@@ -34,24 +35,25 @@ public class Tower extends Actor{
         this.avatar = "tower1";
         if(team == 1) this.avatar = "tower2";
         this.displayName = parentExt.getDisplayName(this.avatar);
+        this.stats = this.initializeStats();
         ExtensionCommands.createWorldFX(parentExt,room,this.id,"fx_target_ring_6",this.id+"_ring",15*60*1000,(float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
     }
 
+    public Tower(ATBPExtension parentExt, Room room, int team){
+        this.parentExt = parentExt;
+        this.room = room;
+        this.team = team;
+    }
+
     @Override
-    public boolean damaged(Actor a, int damage) {
+    public boolean damaged(Actor a, int damage, JsonNode attackData) {
         if(this.destroyed) return true;
-        if(this.target == null) this.currentHealth-=(damage*0.25);
-        else if(a.getActorType() == ActorType.MINION) this.currentHealth-=(damage*0.5);
-        else this.currentHealth-=damage;
+        if(this.target == null) damage*=0.25;
+        else if(a.getActorType() == ActorType.MINION) damage*=0.5;
+        this.changeHealth(this.getMitigatedDamage(damage,this.getAttackType(attackData),a)*-1);
         boolean notify = System.currentTimeMillis()-this.lastHit >= 1000*5;
         for(User u : room.getUserList()){
             if(notify) ExtensionCommands.towerAttacked(parentExt,u,this.getTowerNum());
-            ISFSObject updateData = new SFSObject();
-            updateData.putUtfString("id", this.id);
-            updateData.putInt("currentHealth", (int) currentHealth);
-            updateData.putDouble("pHealth", this.getPHealth());
-            updateData.putInt("maxHealth", (int) maxHealth);
-            ExtensionCommands.updateActorData(parentExt,u,updateData);
         }
         if(this.currentHealth <= 0) this.die(a);
         if(notify) this.triggerNotification();
@@ -60,7 +62,7 @@ public class Tower extends Actor{
 
     @Override
     public void attack(Actor a) {
-        this.attackCooldown = 2000;
+        this.attackCooldown = this.getPlayerStat("attackSpeed");
         for(User u : this.room.getUserList()){
             String projectileName = "tower_projectile_blue";
             String effectName = "tower_shoot_blue";
@@ -71,7 +73,7 @@ public class Tower extends Actor{
             ExtensionCommands.createProjectileFX(this.parentExt,u,projectileName,this.id,a.getId(),"emitNode","Bip01",0.6f);
             ExtensionCommands.createActorFX(this.parentExt,u,this.id,effectName,600,this.id+"_attackFx",false,"emitNode",false,false,this.team);
         }
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,250,"basicAttack"),600, TimeUnit.MILLISECONDS);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),600, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -100,10 +102,10 @@ public class Tower extends Actor{
     @Override
     public void update(int msRan) {
         if(!this.destroyed){
-            List<Actor> nearbyActors = Champion.getEnemyActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.team,this.location,6.2f);
+            List<Actor> nearbyActors = Champion.getEnemyActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.team,this.location, (float) this.getPlayerStat("attackRange"));
             if(this.target == null){
-                if(this.attackCooldown > 500) this.reduceAttackCooldown();
-                else this.attackCooldown = 500;
+                if(this.attackCooldown > this.getPlayerStat("attackSpeed")) this.reduceAttackCooldown();
+                else this.attackCooldown = this.getPlayerStat("attackSpeed");
                 boolean hasMinion = false;
                 double distance = 1000;
                 Actor potentialTarget = null;
@@ -128,9 +130,7 @@ public class Tower extends Actor{
                     this.target = potentialTarget;
                     if(this.target.getActorType() == ActorType.PLAYER){
                         UserActor user = (UserActor) this.target;
-                        ExtensionCommands.setTarget(this.parentExt,user.getUser(),this.id,user.getId());
-                        ExtensionCommands.createWorldFX(this.parentExt, user.getUser(),user.getId(),"tower_danger_alert",this.id+"_aggro",10*60*1000,(float) this.location.getX(),(float)this.location.getY(),true,this.team,0f);
-                        ExtensionCommands.playSound(this.parentExt,user.getUser(),"sfx_turret_has_you_targeted",this.location);
+                        this.targetPlayer(user);
                     }
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.target.getId(),"tower_current_target_indicator",10*60*1000,this.id+"_target",true,"displayBar",false,true,this.team);
                 }
@@ -150,7 +150,7 @@ public class Tower extends Actor{
                     this.target = null;
                 }
                 else{
-                    if(this.target.getLocation().distance(this.location) <= 6.2f){
+                    if(this.target.getLocation().distance(this.location) <= this.getPlayerStat("attackRange")){
                         if(this.canAttack()) this.attack(this.target);
                     }else this.resetTarget(this.target);
                 }
@@ -198,12 +198,18 @@ public class Tower extends Actor{
         return this.attackCooldown == 0;
     }
 
-    public void resetTarget(Actor a){
-        if(this.target.getActorType() == ActorType.PLAYER){
-            UserActor ua = (UserActor) this.target;
+    public void resetTarget(Actor a){ //TODO: Does not always work
+        if(a.getActorType() == ActorType.PLAYER){
+            UserActor ua = (UserActor) a;
             ExtensionCommands.removeFx(this.parentExt,ua.getUser(),this.id+"_aggro");
         }
         ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_target");
         this.target = null;
+    }
+
+    public void targetPlayer(UserActor user){
+        ExtensionCommands.setTarget(this.parentExt,user.getUser(),this.id,user.getId());
+        ExtensionCommands.createWorldFX(this.parentExt, user.getUser(),user.getId(),"tower_danger_alert",this.id+"_aggro",10*60*1000,(float) this.location.getX(),(float)this.location.getY(),true,this.team,0f);
+        ExtensionCommands.playSound(this.parentExt,user.getUser(),"sfx_turret_has_you_targeted",this.location);
     }
 }

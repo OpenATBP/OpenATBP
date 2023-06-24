@@ -1,5 +1,6 @@
 package xyz.openatbp.extension.game;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -34,7 +35,8 @@ public class Base extends Actor{
     }
 
     @Override
-    public boolean damaged(Actor a, int damage) {
+    public boolean damaged(Actor a, int damage, JsonNode attackData) {
+        if(!this.unlocked) return false;
         this.currentHealth-=damage;
         for(User u : room.getUserList()){
             if(this.currentHealth <= 0){
