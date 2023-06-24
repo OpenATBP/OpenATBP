@@ -5,9 +5,13 @@ import java.net.ServerSocket;
 import java.util.ArrayList;
 
 public class ATBPLobbyServer {
-    private static ArrayList<Player> players = new ArrayList<Player>();
-    private static ArrayList<Queue> queues = new ArrayList<Queue>();
+    private static final ArrayList<Player> players = new ArrayList<>();
+    private static final ArrayList<Queue> queues = new ArrayList<>();
     public static void main(String[] args) {
+        if (!Config.loadConfig()) {
+            System.out.println("Could not load or create config.properties");
+            System.exit(-1);
+        }
         if (args.length == 1) {
             try {
                 createDungeonServer(Integer.parseInt(args[0]));
@@ -15,7 +19,7 @@ public class ATBPLobbyServer {
                 printUsage();
             }
         } else {
-            createDungeonServer(6778);
+            createDungeonServer(Config.getInt("lobby.port"));
         }
     }
 
@@ -28,21 +32,21 @@ public class ATBPLobbyServer {
         try {
             server = new ServerSocket(port);
             System.out.println("DungeonServer running on port " + port);
-        } catch (IOException e) {
+        } catch (IOException ex) {
             System.out.println("DungeonServer could not listen on port " + port);
-            System.out.println(e);
+            ex.printStackTrace();
             System.exit(-1);
         }
 
         while (true) {
-            ClientWorker w;
+            ClientWorker worker;
             try {
-                w = new ClientWorker(server.accept(),players,queues);
-                Thread t = new Thread(w);
-                t.start();
-            } catch (IOException e) {
+                worker = new ClientWorker(server.accept(),players,queues);
+                Thread thread = new Thread(worker);
+                thread.start();
+            } catch (IOException ex) {
                 System.out.println("DungeonServer accept failed");
-                System.out.println(e);
+                ex.printStackTrace();
                 System.exit(-1);
             }
         }

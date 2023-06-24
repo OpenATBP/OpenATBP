@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class RequestHandler {
-    private static ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = new ObjectMapper();
     public RequestHandler(){
 
     }
@@ -78,9 +78,9 @@ public class RequestHandler {
     public static JsonNode handleGameReady(String partyLeader, int index, String type){ //When the game is ready, sends players to the game server.
         ObjectNode objectNode = objectMapper.createObjectNode();
         objectNode.put("countdown", 5);
-        objectNode.put("ip", "127.0.0.1");
-        objectNode.put("port", 9933);
-        objectNode.put("policy_port", 843);
+        objectNode.put("ip", Config.getString("sfs2x.ip"));
+        objectNode.put("port", Config.getString("sfs2x.port"));
+        objectNode.put("policy_port", Config.getString("sockpol.port"));
         String roomId = "" + partyLeader + "_";
         if(type.equalsIgnoreCase("m_moba_practice")){
             roomId+="practice";

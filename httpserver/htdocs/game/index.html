@@ -64,8 +64,9 @@
 	</head>
 	<body onresize="OnResize()">
 		<div id="container">
-			<embed src="http://127.0.0.1:8000/cdn/toon/big/champions/20150519/CNChampions.unity3d" id="unity_player" bgColor=#000000 logoimage="logoimage.png" progressbarimage="progressbarimage.png" progressframeimage="progressframeimage.png" width=100% height=100% type="application/vnd.unity" backgroundcolor="021E2F" bordercolor="DF2900" textcolor="DF2900" disablecontextmenu="true" disablefullscreen="false">
-			<script type="text/javascript">
+			<embed src="../cdn/toon/big/champions/20150519/CNChampions.unity3d" id="unity_player" bgColor=#000000 logoimage="logoimage.png" progressbarimage="progressbarimage.png" progressframeimage="progressframeimage.png" width=100% height=100% type="application/vnd.unity" backgroundcolor="021E2F" bordercolor="DF2900" textcolor="DF2900" disablecontextmenu="true" disablefullscreen="false">
+		</div>
+		<script type="text/javascript">
 		  	var unity = document.getElementById('unity_player');
 				OnResize();
 				var Fireteam_AspenSend = function(name, callback){
@@ -90,9 +91,7 @@
 				LoginModule.showLoginWindow = function(){
 					var userName = prompt("Enter name");
 					if(userName != null){
-						try{
-
-								fetch(`http://127.0.0.1:8000/service/authenticate/user/${userName}`,{ //If user exists, requests the user information to authenticate
+						try{fetch(`../service/authenticate/user/${userName}`,{ //If user exists, requests the user information to authenticate
 									Method: "GET",
 									Body: JSON.stringify({"username":userName}),
 									Mode: 'cors',
@@ -109,7 +108,7 @@
 										var password = prompt("New user! Enter password");
 										if(password != null){
 											var xhr = new XMLHttpRequest();
-											xhr.open("POST", `http://127.0.0.1:8000/service/authenticate/user/${userName.replace("%20"," ")}`);
+											xhr.open("POST", `../service/authenticate/user/${userName.replace("%20"," ")}`);
 
 											xhr.onload = () => {
 												var userData = JSON.parse(xhr.response);
@@ -136,7 +135,6 @@
 					}
 
 				};
-			</script>
-		</div>
+		</script>
 	</body>
 </html>
