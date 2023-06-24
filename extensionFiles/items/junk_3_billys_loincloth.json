@@ -1,0 +1,90 @@
+{
+  "junk": {
+    "name": "junk_3_billys_loincloth_name",
+    "description": "junk_3_billys_loincloth_description",
+    "modDescription1": "junk_3_billys_loincloth_mod1",
+    "modDescription2": "junk_3_billys_loincloth_mod2",
+    "modDescription3": "junk_3_billys_loincloth_mod3",
+    "mod1Icon": "stat_armor",
+    "mod2Icon": "stat_regen",
+    "mod3Icon": "stat_speed",
+    "category": 3,
+    "mods": {
+      "mod": [
+        {
+          "point": 1,
+          "stat": "armor",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 1,
+          "stat": "healthRegen",
+          "type": 0,
+          "value": 2
+        },
+        {
+          "point": 1,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.05
+        },
+        {
+          "point": 2,
+          "stat": "armor",
+          "type": 0,
+          "value": 20
+        },
+        {
+          "point": 2,
+          "stat": "healthRegen",
+          "type": 0,
+          "value": 4
+        },
+        {
+          "point": 2,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.1
+        },
+        {
+          "point": 3,
+          "stat": "armor",
+          "type": 0,
+          "value": 30
+        },
+        {
+          "point": 3,
+          "stat": "healthRegen",
+          "type": 0,
+          "value": 6
+        },
+        {
+          "point": 3,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.15
+        },
+        {
+          "point": 4,
+          "stat": "armor",
+          "type": 0,
+          "value": 50
+        },
+        {
+          "point": 4,
+          "stat": "healthRegen",
+          "type": 0,
+          "value": 8
+        },
+        {
+          "point": 4,
+          "stat": "speed",
+          "type": 0,
+          "value": 0.2
+        }
+      ]
+    },
+    "script": ""
+  }
+}

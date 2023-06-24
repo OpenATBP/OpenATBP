@@ -1,0 +1,66 @@
+{
+  "junk": {
+    "name": "junk_1_nothung_name",
+    "description": "junk_1_nothung_description",
+    "modDescription1": "junk_1_nothung_mod1",
+    "modDescription2": "junk_1_nothung_mod2",
+    "modDescription3": "",
+    "mod1Icon": "stat_attack_damage",
+    "mod2Icon": "stat_armor_pen",
+    "mod3Icon": "stat_icon_blank",
+    "category": 1,
+    "mods": {
+      "mod": [
+        {
+          "point": 1,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 1,
+          "stat": "armorPenetration",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 2,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 25
+        },
+        {
+          "point": 2,
+          "stat": "armorPenetration",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 3,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 45
+        },
+        {
+          "point": 3,
+          "stat": "armorPenetration",
+          "type": 0,
+          "value": 15
+        },
+        {
+          "point": 4,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 75
+        },
+        {
+          "point": 4,
+          "stat": "armorPenetration",
+          "type": 0,
+          "value": 25
+        }
+      ]
+    },
+    "script": ""
+  }
+}

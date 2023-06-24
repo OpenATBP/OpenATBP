@@ -1,0 +1,90 @@
+{
+  "junk": {
+    "name": "junk_2_anti_anti_magic_potion_name",
+    "description": "junk_2_anti_anti_magic_potion_description",
+    "modDescription1": "junk_2_anti_anti_magic_potion_mod1",
+    "modDescription2": "junk_2_anti_anti_magic_potion_mod2",
+    "modDescription3": "junk_2_anti_anti_magic_potion_mod3",
+    "mod1Icon": "stat_power_damage",
+    "mod2Icon": "stat_power_vamp",
+    "mod3Icon": "stat_shield",
+    "category": 2,
+    "mods": {
+      "mod": [
+        {
+          "point": 1,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 20
+        },
+        {
+          "point": 1,
+          "stat": "spellVamp",
+          "type": 0,
+          "value": 3
+        },
+        {
+          "point": 1,
+          "stat": "spellResist",
+          "type": 0,
+          "value": -5
+        },
+        {
+          "point": 2,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 50
+        },
+        {
+          "point": 2,
+          "stat": "spellVamp",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 2,
+          "stat": "spellResist",
+          "type": 0,
+          "value": -10
+        },
+        {
+          "point": 3,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 100
+        },
+        {
+          "point": 3,
+          "stat": "spellVamp",
+          "type": 0,
+          "value": 7
+        },
+        {
+          "point": 3,
+          "stat": "spellResist",
+          "type": 0,
+          "value": -15
+        },
+        {
+          "point": 4,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 200
+        },
+        {
+          "point": 4,
+          "stat": "spellVamp",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 4,
+          "stat": "spellResist",
+          "type": 0,
+          "value": -25
+        }
+      ]
+    },
+    "script": ""
+  }
+}
