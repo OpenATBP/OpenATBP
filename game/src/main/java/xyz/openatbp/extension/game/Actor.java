@@ -36,7 +36,6 @@ public abstract class Actor {
     protected ActorType actorType;
     protected double attackRange;
     protected Map<ActorState, Boolean> states = Champion.getBlankStates();
-    protected Map<ActorState, ScheduledFuture<?>> stateCommands = new HashMap<>(ActorState.values().length);
     protected String displayName = "FuzyBDragon";
     protected Map<String, Double> stats; //TODO: Maybe change to ISFSObject
     protected Map<String, Double> tempStats = new HashMap<>();
@@ -91,38 +90,13 @@ public abstract class Actor {
 
     public double getSpeed(){return this.speed;}
 
+
     public void setState(ActorState state, boolean enabled){
         System.out.println(state.toString() + " set to: " + enabled);
         this.states.put(state,enabled);
-        if(!enabled) this.stateCommands.remove(state);
         ExtensionCommands.updateActorState(this.parentExt,this.room,this.id,state,enabled);
     }
 
-    public void getEffect(ActorState state, int duration, double value){
-        //TODO: Extend durations rather than create new task schedulers
-        Champion.EffectHandler effectHandler = null;
-        boolean alreadyHasEffect = this.stateCommands.containsKey(state) && this.stateCommands.get(state) != null;
-        if(!alreadyHasEffect) this.setState(state,true);
-        try{
-            switch(state){
-                case SLOWED:
-                    if(!alreadyHasEffect){
-                        System.out.println("Slowing actor!");
-                        effectHandler = new Champion.EffectHandler(this,state,this.speed);
-                        this.speed*=(1-value);
-                    }
-                    else effectHandler = new Champion.EffectHandler(this,state, this.speed/(1-value));
-                    break;
-            }
-            if(alreadyHasEffect && effectHandler != null){
-                System.out.println("Cancelling set back!");
-                this.stateCommands.get(state).cancel(true);
-            }
-            this.stateCommands.put(state,SmartFoxServer.getInstance().getTaskScheduler().schedule(effectHandler,duration, TimeUnit.MILLISECONDS));
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-    }
     @Deprecated
     public double getStat(String stat){
         return this.parentExt.getActorStats(this.avatar).get(stat).asDouble();
@@ -215,6 +189,18 @@ public abstract class Actor {
                 break;
             default:
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.FinalBuffHandler(this,stat,delta),duration,TimeUnit.MILLISECONDS);
+                break;
+        }
+    }
+
+    public void handleEffect(ActorState state, double delta, int duration){
+        switch(state){
+            case POLYMORPH:
+                UserActor ua = (UserActor) this;
+                ExtensionCommands.swapActorAsset(parentExt,ua.getUser(), this.id,"flambit");
+                double speedChange = this.getPlayerStat("speed")*-0.3;
+                ua.setTempStat("speed",speedChange);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.FinalBuffHandler(this,ActorState.POLYMORPH,speedChange),duration,TimeUnit.MILLISECONDS);
                 break;
         }
     }

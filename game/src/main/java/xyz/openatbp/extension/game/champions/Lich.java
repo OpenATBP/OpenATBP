@@ -74,14 +74,14 @@ public class Lich extends UserActor{
                             if(System.currentTimeMillis() - slimedEnemies.get(a.getId()) >= 1000){
                                 System.out.println(a.getId() + " getting slimed!");
                                 a.damaged(this,20,attackData);
-                                a.getEffect(ActorState.SLOWED,1500,0.3);
+                                a.handleEffect("speed",a.getPlayerStat("speed")*-0.3,1500,"lich_slow");
                                 slimedEnemies.put(a.getId(),System.currentTimeMillis());
                                 break;
                             }
                         }else{
                             System.out.println(a.getId() + " getting slimed!");
                             a.damaged(this,20,attackData);
-                            a.getEffect(ActorState.SLOWED,1500,0.3);
+                            a.handleEffect("speed",a.getPlayerStat("speed")*-0.3,1500,"lich_slow");
                             slimedEnemies.put(a.getId(),System.currentTimeMillis());
                             break;
                         }

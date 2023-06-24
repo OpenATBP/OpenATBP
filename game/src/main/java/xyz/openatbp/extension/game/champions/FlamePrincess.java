@@ -161,7 +161,7 @@ public class FlamePrincess extends UserActor{
                         double newDamage = u.getMitigatedDamage(50d,AttackType.SPELL,FlamePrincess.this);
                         handleSpellVamp(newDamage);
                         u.damaged(FlamePrincess.this,50,parentExt.getAttackData(avatar,"spell2"));
-                        Champion.giveBuff(parentExt,userActor.getUser(), Buff.POLYMORPH);
+                        u.handleEffect(ActorState.POLYMORPH,-1d,3000);
                     }
                     System.out.println("Ability done!");
                     break;

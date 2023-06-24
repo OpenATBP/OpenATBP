@@ -439,11 +439,6 @@ public class UserActor extends Actor {
         this.canMove = canMove;
     }
 
-    public void setState(ActorState state, boolean stateBool){
-        states.put(state,stateBool);
-        ExtensionCommands.updateActorState(parentExt,player,id,state,stateBool);
-    }
-
     public void setState(ActorState[] states, boolean stateBool){
         for(ActorState s : states){
             this.states.put(s,stateBool);
@@ -494,10 +489,7 @@ public class UserActor extends Actor {
             ExtensionCommands.respawnActor(this.parentExt,u,this.id);
             ExtensionCommands.createActorFX(this.parentExt,u,this.id,"statusEffect_speed",5000,this.id+"_respawnSpeed",true,"Bip01 Footsteps",true,false,this.team);
         }
-        parentExt.trace("Testing!!!");
-        System.out.println("TempStat Success: " + this.setTempStat("speed",2d));
-        System.out.println("Speed: " + this.getPlayerStat("speed"));
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.NewBuffHandler(this,"speed",2d),5,TimeUnit.SECONDS);
+        this.handleEffect("speed",2d,5000,"fountainSpeed");
         ExtensionCommands.createActorFX(this.parentExt,this.player,this.id,"champion_respawn_effect",1000,this.id+"_respawn",true,"Bip001",false,false,this.team);
     }
 
