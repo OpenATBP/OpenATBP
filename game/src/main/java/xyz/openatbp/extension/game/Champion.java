@@ -67,7 +67,7 @@ public class Champion {
     }
 
     public static JsonNode getSpellData(ATBPExtension parentExt, String avatar, int spell){
-        JsonNode actorDef = parentExt.getDefintion(avatar);
+        JsonNode actorDef = parentExt.getDefinition(avatar);
         return actorDef.get("MonoBehaviours").get("ActorData").get("spell"+spell);
     }
 

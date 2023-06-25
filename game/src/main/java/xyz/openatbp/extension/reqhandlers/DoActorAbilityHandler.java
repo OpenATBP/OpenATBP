@@ -48,7 +48,7 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
 
     private JsonNode getSpellData(String avatar, int spell){
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
-        JsonNode actorDef = parentExt.getDefintion(avatar);
+        JsonNode actorDef = parentExt.getDefinition(avatar);
         return actorDef.get("MonoBehaviours").get("ActorData").get("spell"+spell);
     }
 

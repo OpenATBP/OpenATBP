@@ -163,7 +163,7 @@ public class ChampionData {
     }
 
     public static String[] getBackpackInventory(ATBPExtension parentExt,String backpack){
-        JsonNode pack = parentExt.getDefintion(backpack).get("junk");
+        JsonNode pack = parentExt.getDefinition(backpack).get("junk");
         System.out.println(backpack);
         System.out.println(pack.toString());
         String[] itemNames = new String[5];
