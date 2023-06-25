@@ -26,6 +26,7 @@ public class RoomHandler implements Runnable{
     private HashMap<String,Integer> cooldowns = new HashMap<>();
     private int currentMinionWave = 0;
     private GumballGuardian[] guardians;
+    private boolean gameOver = false;
     public RoomHandler(ATBPExtension parentExt, Room room){
         this.parentExt = parentExt;
         this.room = room;
@@ -58,6 +59,7 @@ public class RoomHandler implements Runnable{
     }
     @Override
     public void run() {
+        if(this.gameOver) return;
         mSecondsRan+=100;
         if(mSecondsRan % 1000 == 0){ // Handle every second
             try{
@@ -686,5 +688,9 @@ public class RoomHandler implements Runnable{
             if(ua.getTeam() != team && ua.getAvatar().equalsIgnoreCase(avatar)) return ua;
         }
         return null;
+    }
+
+    public void gameOver(){
+        this.gameOver = true;
     }
 }
