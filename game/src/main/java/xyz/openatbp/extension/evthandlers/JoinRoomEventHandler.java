@@ -17,6 +17,7 @@ public class JoinRoomEventHandler extends BaseServerEventHandler {
     public void handleServerEvent(ISFSEvent event) { //Initialize everything
         Room room = (Room) event.getParameter(SFSEventParam.ROOM);
         User sender = (User) event.getParameter(SFSEventParam.USER);
+        sender.setProperty("joined",true);
         ArrayList<User> users = (ArrayList<User>) room.getUserList();
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         int maxPlayers = room.getMaxUsers();

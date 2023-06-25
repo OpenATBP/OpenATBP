@@ -80,7 +80,11 @@ public class GameManager {
     }
 
     public static boolean playersLoaded(ArrayList<User> users, int gameSize){
-        return users.size() == gameSize;
+        int num = 0;
+        for(User u : users){
+            if(u.getProperty("joined") != null && (boolean)u.getProperty("joined")) num++;
+        }
+        return num == gameSize;
     }
 
     public static boolean playersReady(Room room){ //Checks if all clients are ready
