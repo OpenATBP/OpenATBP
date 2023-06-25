@@ -123,20 +123,9 @@ public class RoomHandler implements Runnable{
                 u.update(mSecondsRan);
             }
             for(Projectile p : activeProjectiles){ //Handles skill shots
-                p.updateTimeTraveled();
-                if(p.getDestination().distance(p.getLocation()) <= 0.01){
-                    System.out.println("Removing projectile");
-                    p.destroy();
-                    activeProjectiles.remove(p);
-                    break;
-                }
-                UserActor hitActor = p.checkPlayerCollision(this);
-                if(hitActor != null){
-                    System.out.println("Hit w/ projectile: " + hitActor.getAvatar());
-                    activeProjectiles.remove(p);
-                    break;
-                }
+                p.update(this);
             }
+            activeProjectiles.removeIf(Projectile::isDestroyed);
             handleHealth();
             for(Minion m : minions){ //Handles minion behavior
                 m.update(mSecondsRan);

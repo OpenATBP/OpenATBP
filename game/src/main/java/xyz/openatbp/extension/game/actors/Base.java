@@ -8,6 +8,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MapData;
+import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.actors.Actor;
 
 import java.awt.geom.Point2D;
@@ -28,6 +29,8 @@ public class Base extends Actor {
             location = new Point2D.Float(MapData.L2_BASE1_X,0f);
         }
         this.parentExt = parentExt;
+        this.avatar = id;
+        this.actorType = ActorType.BASE;
         this.room = room;
     }
 

@@ -184,20 +184,18 @@ public class FlamePrincess extends UserActor {
         }
 
         @Override
-        public void hit(UserActor victim){
-            if(victim.getAvatar() == null){ //Test
-                ExtensionCommands.moveActor(parentExt,player,this.id,this.location,this.location,this.speed,false);
-                ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_projectile_large_explosion",200,"flame_explosion",false,"",false,false,team);
-                ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_cone_of_flames",300,"flame_cone",false,"",true,false,team);
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new DelayedProjectile(), 300, TimeUnit.MILLISECONDS);
-            }
+        public void hit(Actor victim){
+            //ExtensionCommands.moveActor(parentExt,player,this.id,this.location,this.location,this.speed,false);
+            ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_projectile_large_explosion",200,"flame_explosion",false,"",false,false,team);
+            ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_cone_of_flames",300,"flame_cone",false,"",true,false,team);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new DelayedProjectile(), 300, TimeUnit.MILLISECONDS);
         }
 
         private class DelayedProjectile implements Runnable {
 
             @Override
             public void run() {
-                ExtensionCommands.destroyActor(parentExt,player,FlameProjectile.this.id);
+                destroy();
             }
         }
     }

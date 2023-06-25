@@ -102,7 +102,7 @@ public class UserActor extends Actor {
 
     @Override
     public Room getRoom() {
-        return player.getLastJoinedRoom();
+        return this.room;
     }
 
     public Map<String, Double> getStats(){

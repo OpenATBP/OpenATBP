@@ -508,6 +508,11 @@ public class Minion extends Actor {
         return this.attacking;
     }
 
+    @Override
+    public String getAvatar(){
+        return this.avatar.replace("0","");
+    }
+
     public void setAttacking(boolean attacking){
         this.attacking = attacking;
     }

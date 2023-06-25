@@ -1,8 +1,10 @@
 package xyz.openatbp.extension.game;
 
+import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
@@ -10,7 +12,7 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Projectile {
+public abstract class Projectile {
 
     private float timeTraveled = 0;
     private Point2D destination;
@@ -21,6 +23,7 @@ public class Projectile {
     protected String id;
     private float hitbox;
     protected ATBPExtension parentExt;
+    protected boolean destroyed = false;
 
     public Projectile(ATBPExtension parentExt, UserActor owner, Line2D path, float speed, float hitboxRadius, String id){
         this.parentExt = parentExt;
@@ -33,7 +36,7 @@ public class Projectile {
         this.id = id;
     }
 
-    public Point2D getLocation(){ //Gets player's current location based on time
+    public Point2D getLocation(){ //Gets projectile's current location based on time
         double currentTime = this.timeTraveled;
         Point2D rPoint = new Point2D.Float();
         float x2 = (float) this.destination.getX();
@@ -57,40 +60,58 @@ public class Projectile {
         this.timeTraveled+=0.1f;
     }
 
-    public UserActor checkPlayerCollision(RoomHandler roomHandler){
-        Point2D testPoint = new Point2D.Float(-36.90f, 2.3f);
-        if(location.distance(testPoint) <= hitbox + 0.3f){ // TODO: Change to account for individual hit boxes
-            this.hit(new UserActor());
-            return new UserActor();
+    public void update(RoomHandler roomHandler){
+        if(destroyed) return;
+        this.updateTimeTraveled();
+        if(this.destination.distance(this.getLocation()) <= 0.01){
+            this.destroy();
+
         }
-        for(UserActor u : roomHandler.getPlayers()){
-            if(!getTeammates().contains(u)){ //TODO: Change to not hit teammates
-                if(u.getLocation().distance(location) <= hitbox + 0.3f){
-                    this.hit(u);
-                    return u;
+        Actor hitActor = this.checkPlayerCollision(roomHandler);
+        if(hitActor != null){
+            System.out.println("Hit w/ projectile: " + hitActor.getAvatar());
+            this.hit(hitActor);
+        }
+    }
+
+    public Actor checkPlayerCollision(RoomHandler roomHandler){
+        List<Actor> teammates = this.getTeammates(roomHandler);
+        for(Actor a : roomHandler.getActors()){
+            if((a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE) && !teammates.contains(a)){ //TODO: Change to not hit teammates
+                double collisionRadius = parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
+                if(a.getLocation().distance(location) <= hitbox + collisionRadius){
+                    return a;
                 }
             }
         }
         return null;
     }
 
-    private List<UserActor> getTeammates(){
-        List<UserActor> teammates = new ArrayList<>(3);
-        for(UserActor u : this.parentExt.getRoomHandler(owner.getRoom().getId()).getPlayers()){
-            if(u.getTeam() == owner.getTeam()) teammates.add(u);
+    private List<Actor> getTeammates(RoomHandler roomHandler){
+        List<Actor> teammates = new ArrayList<>(3);
+        for(Actor a : roomHandler.getActors()){
+            if((a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE) && a.getTeam() == this.owner.getTeam()) teammates.add(a);
         }
         return teammates;
     }
 
-    public void hit(UserActor victim){
-        System.out.println("Base projectile called!");
-    }
+    protected abstract void hit(Actor victim);
 
     public Point2D getDestination(){
         return this.destination;
     }
 
     public void destroy(){
-        ExtensionCommands.destroyActor(this.parentExt, owner.getUser(), this.id);
+        System.out.println(this.owner.getRoom());
+        if(!destroyed){
+            for(User u : this.owner.getRoom().getUserList()){
+                ExtensionCommands.destroyActor(this.parentExt, u, this.id);
+            }
+        }
+        this.destroyed = true;
+    }
+
+    public boolean isDestroyed(){
+        return this.destroyed;
     }
 }
