@@ -352,9 +352,9 @@ public class ExtensionCommands {
         System.out.println("Calling game over!");
         ObjectMapper objectMapper = new ObjectMapper();
         ObjectNode node = objectMapper.createObjectNode();
-        node.set("teamA", GameManager.getTeamData(0,u.getLastJoinedRoom()));
+        node.set("teamA", GameManager.getTeamData(parentExt,0,u.getLastJoinedRoom()));
 
-        node.set("teamB", GameManager.getTeamData(1,u.getLastJoinedRoom()));
+        node.set("teamB", GameManager.getTeamData(parentExt,1,u.getLastJoinedRoom()));
         node.set("gloalTeamData", GameManager.getGlobalTeamData(u.getLastJoinedRoom()));
         node.put("winner",winningTeam);
         ISFSObject data = new SFSObject();

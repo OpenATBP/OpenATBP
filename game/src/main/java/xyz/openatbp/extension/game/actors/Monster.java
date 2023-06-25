@@ -81,7 +81,9 @@ public class Monster extends Actor {
                 if(ua.hasBackpackItem("junk_1_demon_blood_sword") && ua.getStat("sp_category1") > 0) damage*=1.3;
             }
             System.out.println("Raw damage after sword: " + damage);
-            int newDamage = this.getMitigatedDamage(damage,this.getAttackType(attackData),a);
+            AttackType attackType = this.getAttackType(attackData);
+            int newDamage = this.getMitigatedDamage(damage,attackType,a);
+            if(a.getActorType() == ActorType.PLAYER) this.addDamageGameStat((UserActor) a,newDamage,attackType);
             boolean returnVal = super.damaged(a,newDamage,attackData);
             if(this.state == AggroState.PASSIVE && this.target == null){ //If being attacked while minding own business, it will target player
                 state = AggroState.ATTACKED;

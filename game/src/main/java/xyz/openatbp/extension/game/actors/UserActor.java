@@ -41,6 +41,8 @@ public class UserActor extends Actor {
     protected int nailDamage = 0;
     protected int moonTimer = 120;
     protected boolean moonActivated = false;
+    protected Map<String,Double> endGameStats = new HashMap<>();
+    protected int killingSpree = 0;
 
     //TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt){
@@ -220,6 +222,8 @@ public class UserActor extends Actor {
                 return false;
             }
             int newDamage = this.getMitigatedDamage(damage,type,a);
+            if(a.getActorType() == ActorType.PLAYER) this.addDamageGameStat((UserActor) a, newDamage,type);
+            this.handleDamageTakenStat(type,newDamage);
             System.out.println(this.id + " is being attacked! User");
             ExtensionCommands.damageActor(parentExt,player,this.id,newDamage);
             this.processHitData(a,attackData,newDamage);
@@ -292,6 +296,10 @@ public class UserActor extends Actor {
         try{
             ExtensionCommands.handleDeathRecap(parentExt,player,this.id,a.getId(), (HashMap<Actor, ISFSObject>) this.aggressors);
             this.increaseStat("deaths",1);
+            if(this.hasGameStat("spree")){
+                if(this.killingSpree > this.getGameStat("spree")) this.endGameStats.put("spree", (double) this.killingSpree);
+                this.killingSpree = 0;
+            }
             if(a.getActorType() == ActorType.PLAYER){
                 UserActor ua = (UserActor) a;
                 ua.increaseStat("kills",1);
@@ -309,6 +317,7 @@ public class UserActor extends Actor {
         }catch(Exception e){
             e.printStackTrace();
         }
+        this.addGameStat("timeDead",this.deathTime);
         SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.RespawnCharacter(this),this.deathTime, TimeUnit.SECONDS);
     }
 /*
@@ -344,6 +353,7 @@ public class UserActor extends Actor {
     }
 
     public void increaseStat(String key, double num){
+        if(key.equalsIgnoreCase("kills")) this.killingSpree+=num;
         this.stats.put(key,this.stats.get(key)+num);
         ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,key,this.getPlayerStat(key));
     }
@@ -654,6 +664,34 @@ public class UserActor extends Actor {
 
     public boolean getState(ActorState state){
         return this.states.get(state);
+    }
+
+    public void addGameStat(String stat, double value){
+        if(this.endGameStats.containsKey(stat)) this.endGameStats.put(stat,this.endGameStats.get(stat)+value);
+        else this.setGameStat(stat,value);
+    }
+
+    public void setGameStat(String stat, double value){
+        this.endGameStats.put(stat,value);
+    }
+
+    public void addDamageGameStat(UserActor ua, double value, AttackType type){
+        super.addDamageGameStat(ua,value,type);
+        ua.addGameStat("damageDealtChamps",value);
+    }
+
+    public void handleDamageTakenStat(AttackType type, double value){
+        this.addGameStat("damageReceivedTotal",value);
+        if(type == AttackType.PHYSICAL) this.addGameStat("damageReceivedPhysical",value);
+        else this.addGameStat("damageReceivedSpell",value);
+    }
+
+    public double getGameStat(String stat){
+        return this.endGameStats.get(stat);
+    }
+
+    public boolean hasGameStat(String stat){
+        return this.endGameStats.containsKey(stat);
     }
 
     protected class MovementStopper implements Runnable {

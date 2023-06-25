@@ -490,7 +490,10 @@ public class Minion extends Actor {
                 if(this.type == MinionType.SUPER) damage = (int) Math.round(damage*0.05);
                 else damage = (int) Math.round(damage*0.25);
             }
-            this.changeHealth(this.getMitigatedDamage(damage,this.getAttackType(attackData),a)*-1);
+            AttackType type = this.getAttackType(attackData);
+            int newDamage = this.getMitigatedDamage(damage,type,a);
+            if(a.getActorType() == ActorType.PLAYER) this.addDamageGameStat((UserActor) a,newDamage,type);
+            this.changeHealth(newDamage*-1);
             if(currentHealth <= 0){ //Minion dies
                 this.die(a);
                 return true;

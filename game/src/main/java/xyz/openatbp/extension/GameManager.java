@@ -13,6 +13,7 @@ import com.smartfoxserver.v2.entities.variables.SFSUserVariable;
 import com.smartfoxserver.v2.entities.variables.UserVariable;
 import com.smartfoxserver.v2.exceptions.SFSVariableException;
 import xyz.openatbp.extension.game.actors.Monster;
+import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -86,6 +87,7 @@ public class GameManager {
         int ready = 0;
         ArrayList<User> users = (ArrayList<User>) room.getUserList();
         for(int i = 0; i < users.size(); i++){
+            if(users.get(i).getSession().getProperty("ready") == null) return false;
             if((boolean) users.get(i).getSession().getProperty("ready")) ready++;
         }
         return ready == users.size();
@@ -236,21 +238,45 @@ public class GameManager {
         }
     }
 
-    public static JsonNode getTeamData(int team, Room room){
+    public static JsonNode getTeamData(ATBPExtension parentExt, int team, Room room){
+        final String[] STATS = {"damageDealtChamps","damageReceivedPhysical","damageReceivedSpell","spree","damageReceivedTotal","damageDealtSpell","score","timeDead","damageDealtTotal","damageDealtPhysical"};
+        /*
+        Stats:
+            damageDealtChamps
+            damageReceivedPhysical
+            damageReceivedSpell
+            name?
+            spree
+            deaths
+            damageReceivedTotal
+            assists
+            jungleMobs?
+            kills
+            minions?
+            damageDealtSpell
+            score
+            timeDead
+            healthPickUps?
+            playerName?
+            damageDealtTotal
+            damageDealtPhysical
+
+         */
         ObjectNode node = objectMapper.createObjectNode();
         for(User u : room.getUserList()){
-            if(Integer.parseInt(u.getVariable("player").getSFSObjectValue().getUtfString("team")) == team){
+            UserActor ua = parentExt.getRoomHandler(room.getId()).getPlayer(String.valueOf(u.getId()));
+            if(ua.getTeam() == team){
                 ObjectNode player = objectMapper.createObjectNode();
-                ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
                 ISFSObject playerVar = u.getVariable("player").getSFSObjectValue();
                 player.put("id",u.getId());
+                for(String s : STATS){
+                    if(ua.hasGameStat(s)) player.put(s,ua.getGameStat(s));
+                }
                 player.put("name",playerVar.getUtfString("name"));
-                int kills = 0;
-                if(stats.getInt("kills") != null) kills = stats.getInt("kills");
-                player.put("kills", kills);
-                player.put("deaths", stats.getInt("deaths"));
-                player.put("assists", stats.getInt("assists"));
-                player.put("playerName",playerVar.getUtfString("avatar"));
+                player.put("kills", ua.getStat("kills"));
+                player.put("deaths", ua.getStat("deaths"));
+                player.put("assists", ua.getStat("assists"));
+                player.put("playerName",ua.getAvatar());
                 player.put("myElo",(double)playerVar.getInt("elo"));
                 node.set(String.valueOf(u.getId()),player);
             }

@@ -217,7 +217,7 @@ public abstract class Actor {
         else return currentStat;
     }
     public String getDisplayName(){ return this.displayName;}
-    @Deprecated
+
     public boolean damaged(Actor a, int damage, JsonNode attackData){
         this.currentHealth-=damage;
         if(this.currentHealth <= 0) this.currentHealth = 0;
@@ -314,5 +314,11 @@ public abstract class Actor {
 
     public ATBPExtension getParentExt(){
         return this.parentExt;
+    }
+
+    public void addDamageGameStat(UserActor ua, double value, AttackType type){
+        ua.addGameStat("damageDealtTotal",value);
+        if(type == AttackType.PHYSICAL) ua.addGameStat("damageDealtPhysical",value);
+        else ua.addGameStat("damageDealtSpell",value);
     }
 }
