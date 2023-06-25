@@ -3,11 +3,14 @@ package xyz.openatbp.extension.game.champions;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
-import com.smartfoxserver.v2.entities.data.ISFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
+import xyz.openatbp.extension.game.actors.Actor;
+import xyz.openatbp.extension.game.actors.Base;
+import xyz.openatbp.extension.game.actors.Tower;
+import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
@@ -15,7 +18,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class FlamePrincess extends UserActor{
+public class FlamePrincess extends UserActor {
 
     private boolean ultFinished = false;
     private boolean passiveEnabled = false;
@@ -50,25 +53,28 @@ public class FlamePrincess extends UserActor{
     }
 
     @Override
-    public void useAbility(int ability, ISFSObject abilityData){
+    public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
+        super.useAbility(ability,spellData,cooldown,gCooldown,castDelay,dest);
         if(ultUses == 3 && !passiveEnabled && System.currentTimeMillis()-lastPassiveUsage >= 10000){
             ExtensionCommands.createActorFX(parentExt,player,id,"flame_princess_passive_flames",1000*60,"flame_passive",true,"",false,false,team);
             passiveEnabled = true;
         }
         switch(ability){
             case 1: //Q
-                float x = abilityData.getFloat("x");
-                float z = abilityData.getFloat("z");
-                Point2D endLocation = new Point2D.Float(x,z);
+                double x = dest.getX();
+                double z = dest.getY();
+                Point2D endLocation = new Point2D.Double(x,z);
                 Line2D skillShotLine = new Line2D.Float(this.location,endLocation);
                 Line2D maxRangeLine = Champion.getMaxRangeLine(skillShotLine,8f);
                 ExtensionCommands.createProjectile(parentExt,this.room,this,"projectile_flame_cone", maxRangeLine.getP1(), maxRangeLine.getP2(), 8f);
-                this.parentExt.getRoomHandler(this.room.getId()).addProjectile(new FlameProjectile(this,maxRangeLine,8f,0.5f,this.id+"projectile_flame_cone"));
+                this.parentExt.getRoomHandler(this.room.getId()).addProjectile(new FlameProjectile(this.parentExt,this,maxRangeLine,8f,0.5f,this.id+"projectile_flame_cone"));
+                ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),"q",true,getReducedCooldown(cooldown),gCooldown);
                 break;
             case 2: //W
-                ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"fx_target_ring_2","flame_w",1000, abilityData.getFloat("x"), abilityData.getFloat("z"),true,this.team,0f);
-                ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"flame_princess_polymorph_fireball","flame_w_polymorph",1000, abilityData.getFloat("x"),abilityData.getFloat("z"),false,this.team,0f);
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new AbilityRunnable(ability,abilityData), 500, TimeUnit.MILLISECONDS);
+                ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"fx_target_ring_2","flame_w",1000, (float) dest.getX(),(float) dest.getY(),true,this.team,0f);
+                ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"flame_princess_polymorph_fireball","flame_w_polymorph",1000, (float) dest.getX(),(float) dest.getY(),false,this.team,0f);
+                ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),"w",true,getReducedCooldown(cooldown),gCooldown);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest), 500, TimeUnit.MILLISECONDS);
                 break;
             case 3: //E TODO: FP does not return to form when skin is used also she needs to be scaled up
                 if(!ultStarted && ultUses == 3){
@@ -80,19 +86,18 @@ public class FlamePrincess extends UserActor{
                     ExtensionCommands.playSound(this.parentExt,this.player,"sfx_flame_princess_flame_form",this.getLocation());
                     ExtensionCommands.swapActorAsset(this.parentExt,this.player,this.id,"flame_ult");
                     ExtensionCommands.createActorFX(this.parentExt,this.player.getLastJoinedRoom(),this.id,"flame_princess_ultimate_aoe",5000,"flame_e",true,"",true,false,this.team);
-                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new AbilityRunnable(ability),duration, TimeUnit.MILLISECONDS);
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),duration, TimeUnit.MILLISECONDS);
                 }else{
                     if(ultUses>0){
                         //TODO: Fix so FP can dash and still get health packs
                         ultUses--;
-                        Point2D dest = new Point2D.Float(abilityData.getFloat("x"),abilityData.getFloat("z"));
                         ExtensionCommands.moveActor(parentExt,player,id,getLocation(),Champion.getDashPoint(parentExt,this,dest),20f,true);
                         double time = dest.distance(getLocation())/20f;
                         this.canMove = false;
                         SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(true),(int)Math.floor(time*1000),TimeUnit.MILLISECONDS);
                         if(ultUses == 0){
                             System.out.println("Time: " + time);
-                            SmartFoxServer.getInstance().getTaskScheduler().schedule(new AbilityRunnable(ability),(int)Math.floor(time*1000),TimeUnit.MILLISECONDS);
+                            SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),(int)Math.floor(time*1000),TimeUnit.MILLISECONDS);
                         }
                         setLocation(dest);
                     }
@@ -113,90 +118,69 @@ public class FlamePrincess extends UserActor{
         currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,new PassiveAttack(a),"flame_princess_projectile"),500,TimeUnit.MILLISECONDS);
     }
 
-    private String getAbilityString(int ability){
-        switch(ability){
-            case 1:
-                return "q";
-            case 2:
-                return "w";
-            case 3:
-                return "e";
-            default:
-                return "passive";
-        }
-    }
-
     @Override
     public void setCanMove(boolean canMove){
         if(ultStarted && !canMove) this.canMove = true;
         else this.canMove = canMove;
     }
 
-    private class AbilityRunnable implements Runnable {
+    private class FlameAbilityRunnable extends AbilityRunnable {
 
-        int ability;
-        ISFSObject abilityData;
-
-        AbilityRunnable(int ability){
-            this.ability = ability;
-        }
-        AbilityRunnable(int ability, ISFSObject abilityData){
-            this.ability = ability;
-            this.abilityData = abilityData;
+        public FlameAbilityRunnable(int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {
+            super(ability, spellData, cooldown, gCooldown, dest);
         }
 
         @Override
-        public void run() {
-            switch(ability){
-                case 1:
-                    break;
-                case 2:
-                    RoomHandler roomHandler = parentExt.getRoomHandler(player.getLastJoinedRoom().getId());
-                    Point2D center = new Point2D.Float(this.abilityData.getFloat("x"),this.abilityData.getFloat("z"));
-                    List<Actor> affectedUsers = Champion.getActorsInRadius(roomHandler,center,2).stream().filter(a -> a.getClass() == UserActor.class).collect(Collectors.toList());
-                    for(Actor u : affectedUsers){
-                        UserActor userActor = (UserActor) u;
-                        System.out.println("Hit: " + u.getAvatar());
-                        u.setState(ActorState.POLYMORPH, true);
-                        double newDamage = u.getMitigatedDamage(50d,AttackType.SPELL,FlamePrincess.this);
-                        handleSpellVamp(newDamage);
-                        u.damaged(FlamePrincess.this,50,parentExt.getAttackData(avatar,"spell2"));
-                        u.handleEffect(ActorState.POLYMORPH,-1d,3000);
-                    }
-                    System.out.println("Ability done!");
-                    break;
-                case 3:
-                    if(!ultFinished && ultStarted){
-                        System.out.println("Ending ability!");
-                        JsonNode spellData = Champion.getSpellData(parentExt,avatar,ability);
-                        double cooldown = spellData.get("spellCoolDown").asInt();
-                        double gCooldown = spellData.get("spellGlobalCoolDown").asInt();
-                        setState(ActorState.TRANSFORMED, false);
-                        ExtensionCommands.removeFx(parentExt,player,"flame_e");
-                        ExtensionCommands.swapActorAsset(parentExt,player,id,avatar);
-                        ExtensionCommands.actorAbilityResponse(parentExt,player,getAbilityString(ability),true, getReducedCooldown(cooldown), (int) gCooldown);
-                        ultStarted = false;
-                        ultFinished = true;
-                        ultUses = 3;
-                        lastUltUsage = -1;
-                    }else if(ultFinished){
-                        System.out.println("Ability already ended!");
-                        ultStarted = false;
-                        ultFinished = false;
-                        ultUses = 3;
-                        lastUltUsage = -1;
-                    }
-                    break;
-                case 4:
-                    break;
+        protected void spellQ() {
+
+        }
+
+        @Override
+        protected void spellW() {
+            RoomHandler roomHandler = parentExt.getRoomHandler(player.getLastJoinedRoom().getId());
+            List<Actor> affectedUsers = Champion.getActorsInRadius(roomHandler,this.dest,2).stream().filter(a -> a.getClass() == UserActor.class).collect(Collectors.toList());
+            for(Actor u : affectedUsers){
+                UserActor userActor = (UserActor) u;
+                System.out.println("Hit: " + u.getAvatar());
+                userActor.setState(ActorState.POLYMORPH, true);
+                double newDamage = u.getMitigatedDamage(50d,AttackType.SPELL,FlamePrincess.this);
+                handleSpellVamp(newDamage);
+                userActor.damaged(FlamePrincess.this,50,parentExt.getAttackData(avatar,"spell2"));
+                userActor.handleEffect(ActorState.POLYMORPH,-1d,3000);
             }
+            System.out.println("Ability done!");
+        }
+
+        @Override
+        protected void spellE() {
+            if(!ultFinished && ultStarted){
+                setState(ActorState.TRANSFORMED, false);
+                ExtensionCommands.removeFx(parentExt,player,"flame_e");
+                ExtensionCommands.swapActorAsset(parentExt,player,id,avatar);
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"e",true, getReducedCooldown(cooldown), (int) gCooldown);
+                ultStarted = false;
+                ultFinished = true;
+                ultUses = 3;
+                lastUltUsage = -1;
+            }else if(ultFinished){
+                System.out.println("Ability already ended!");
+                ultStarted = false;
+                ultFinished = false;
+                ultUses = 3;
+                lastUltUsage = -1;
+            }
+        }
+
+        @Override
+        protected void spellPassive() {
+
         }
     }
 
     private class FlameProjectile extends Projectile {
 
-        public FlameProjectile(UserActor owner, Line2D path, float speed, float hitboxRadius, String id) {
-            super(owner, path, speed, hitboxRadius, id);
+        public FlameProjectile(ATBPExtension parentExt,UserActor owner, Line2D path, float speed, float hitboxRadius, String id) {
+            super(parentExt,owner, path, speed, hitboxRadius, id);
         }
 
         @Override

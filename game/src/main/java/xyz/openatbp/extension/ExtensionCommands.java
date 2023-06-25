@@ -1,18 +1,15 @@
 package xyz.openatbp.extension;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
-import xyz.openatbp.extension.game.Actor;
+import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.ActorState;
-import xyz.openatbp.extension.game.Champion;
-import xyz.openatbp.extension.game.champions.UserActor;
+import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;

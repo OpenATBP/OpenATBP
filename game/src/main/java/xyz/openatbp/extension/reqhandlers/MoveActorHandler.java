@@ -3,12 +3,11 @@ package xyz.openatbp.extension.reqhandlers;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
-import com.smartfoxserver.v2.entities.variables.UserVariable;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.GameManager;
 import xyz.openatbp.extension.RoomHandler;
-import xyz.openatbp.extension.game.champions.UserActor;
+import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
-import xyz.openatbp.extension.game.champions.UserActor;
+import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.util.ArrayList;
 import java.util.Map;

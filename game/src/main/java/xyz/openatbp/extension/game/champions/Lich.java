@@ -3,12 +3,11 @@ package xyz.openatbp.extension.game.champions;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
-import com.smartfoxserver.v2.entities.data.ISFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.game.Actor;
-import xyz.openatbp.extension.game.ActorState;
+import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
@@ -17,7 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class Lich extends UserActor{
+public class Lich extends UserActor {
 
     private Skully skully;
     private long lastSkullySpawn;
@@ -31,7 +30,7 @@ public class Lich extends UserActor{
     }
 
     @Override
-    public void useAbility(int ability, ISFSObject abilityData){
+    public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
         if(skully == null && System.currentTimeMillis()-lastSkullySpawn > 40000){
             this.spawnSkully();
         }

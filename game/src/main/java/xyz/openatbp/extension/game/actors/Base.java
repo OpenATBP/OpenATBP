@@ -1,4 +1,4 @@
-package xyz.openatbp.extension.game;
+package xyz.openatbp.extension.game.actors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.Room;
@@ -8,10 +8,11 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MapData;
+import xyz.openatbp.extension.game.actors.Actor;
 
 import java.awt.geom.Point2D;
 
-public class Base extends Actor{
+public class Base extends Actor {
     private boolean unlocked = false;
 
     public Base(ATBPExtension parentExt, Room room, int team){

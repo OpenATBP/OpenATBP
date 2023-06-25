@@ -2,16 +2,17 @@ package xyz.openatbp.extension.game;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
-import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.game.actors.Actor;
+import xyz.openatbp.extension.game.actors.Tower;
 import xyz.openatbp.extension.game.champions.FlamePrincess;
 import xyz.openatbp.extension.game.champions.Lich;
-import xyz.openatbp.extension.game.champions.UserActor;
+import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
@@ -246,8 +247,8 @@ public class Champion {
         @Override
         public void run() {
             JsonNode attackData;
-            if(this.attacker.getActorType() == ActorType.MINION) attackData = this.parentExt.getAttackData(this.attacker.avatar.replace("0",""),this.attack);
-            else attackData = this.parentExt.getAttackData(this.attacker.avatar,this.attack);
+            if(this.attacker.getActorType() == ActorType.MINION) attackData = this.parentExt.getAttackData(this.attacker.getAvatar().replace("0",""),this.attack);
+            else attackData = this.parentExt.getAttackData(this.attacker.getAvatar(),this.attack);
             if(this.attacker.getActorType() == ActorType.PLAYER){
                 UserActor ua = (UserActor) this.attacker;
                 if(ua.hasBackpackItem("junk_1_numb_chucks") && ua.getStat("sp_category1") > 0){
@@ -276,7 +277,7 @@ public class Champion {
         Actor target;
         int damage;
 
-        DelayedRangedAttack(Actor a, Actor t){
+        public DelayedRangedAttack(Actor a, Actor t){
             this.attacker = a;
             this.target = t;
         }
@@ -381,7 +382,7 @@ public class Champion {
                         statChange = modifiedDelta - delta;
                     }
                     if(this.fxName != null){
-                        ExtensionCommands.createActorFX(a.parentExt,a.getRoom(),a.getId(),fxName,runTime,a.getId()+"_"+fxName,true,"Bip01",true,true,a.getTeam());
+                        ExtensionCommands.createActorFX(a.getParentExt(),a.getRoom(),a.getId(),fxName,runTime,a.getId()+"_"+fxName,true,"Bip01",true,true,a.getTeam());
                         SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinalBuffHandler(a,buff,statChange,fxName),runTime,TimeUnit.MILLISECONDS);
                     }else{
                         SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinalBuffHandler(a,buff,statChange),runTime,TimeUnit.MILLISECONDS);
@@ -397,7 +398,7 @@ public class Champion {
                     case "polymorph":
                         a.setState(ActorState.POLYMORPH,false);
                         for(User u : a.getRoom().getUserList()){
-                            ExtensionCommands.swapActorAsset(a.parentExt,u,a.getId(),a.getAvatar());
+                            ExtensionCommands.swapActorAsset(a.getParentExt(),u,a.getId(),a.getAvatar());
                         }
                         a.setTempStat("speed",delta*-1);
                         break;
@@ -431,7 +432,7 @@ public class Champion {
             if(this.fxName.contains("altar")){
                 UserActor ua = (UserActor) this.a;
                 String altarType = this.fxName.split("_")[2];
-                ExtensionCommands.removeStatusIcon(ua.parentExt,ua.getUser(),"altar_buff_"+altarType);
+                ExtensionCommands.removeStatusIcon(ua.getParentExt(),ua.getUser(),"altar_buff_"+altarType);
             }
         }
     }

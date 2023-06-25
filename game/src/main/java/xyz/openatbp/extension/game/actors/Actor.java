@@ -1,4 +1,4 @@
-package xyz.openatbp.extension.game;
+package xyz.openatbp.extension.game.actors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
@@ -8,14 +8,14 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.game.champions.UserActor;
+import xyz.openatbp.extension.game.ActorState;
+import xyz.openatbp.extension.game.ActorType;
+import xyz.openatbp.extension.game.Champion;
 
 import java.awt.geom.Point2D;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public abstract class Actor {
@@ -217,7 +217,7 @@ public abstract class Actor {
         else return currentStat;
     }
     public String getDisplayName(){ return this.displayName;}
-
+    @Deprecated
     public boolean damaged(Actor a, int damage, JsonNode attackData){
         this.currentHealth-=damage;
         if(this.currentHealth <= 0) this.currentHealth = 0;
@@ -310,5 +310,9 @@ public abstract class Actor {
 
     public void removeBuffHandler(String buff){
         this.buffHandlers.remove(buff);
+    }
+
+    public ATBPExtension getParentExt(){
+        return this.parentExt;
     }
 }

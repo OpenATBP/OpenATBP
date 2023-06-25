@@ -6,7 +6,7 @@ import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.game.champions.UserActor;
+import xyz.openatbp.extension.game.actors.UserActor;
 
 public class AutoLevelHandler extends BaseClientRequestHandler {
     @Override

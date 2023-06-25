@@ -1,4 +1,4 @@
-package xyz.openatbp.extension.game;
+package xyz.openatbp.extension.game.actors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
@@ -9,7 +9,9 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
-import xyz.openatbp.extension.game.champions.UserActor;
+import xyz.openatbp.extension.game.ActorState;
+import xyz.openatbp.extension.game.ActorType;
+import xyz.openatbp.extension.game.Champion;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
@@ -20,7 +22,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 //TODO: Add more accurate pathing by creating more points alongside the main ones already defined. Also add collision detection.
-public class Minion extends Actor{
+public class Minion extends Actor {
     enum AggroState{MOVING, PLAYER, TOWER, MINION, BASE} //State in which the minion is targeting
     enum MinionType{RANGED, MELEE, SUPER} //Type of minion
     private AggroState state = AggroState.MOVING;

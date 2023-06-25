@@ -1,9 +1,9 @@
 package xyz.openatbp.extension.game;
 
-import com.smartfoxserver.v2.entities.Room;
+import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
-import xyz.openatbp.extension.game.champions.UserActor;
+import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
@@ -20,8 +20,10 @@ public class Projectile {
     private UserActor owner;
     protected String id;
     private float hitbox;
+    protected ATBPExtension parentExt;
 
-    public Projectile(UserActor owner, Line2D path, float speed, float hitboxRadius, String id){
+    public Projectile(ATBPExtension parentExt, UserActor owner, Line2D path, float speed, float hitboxRadius, String id){
+        this.parentExt = parentExt;
         this.owner = owner;
         this.startingLocation = path.getP1();
         this.destination = path.getP2();
@@ -74,7 +76,7 @@ public class Projectile {
 
     private List<UserActor> getTeammates(){
         List<UserActor> teammates = new ArrayList<>(3);
-        for(UserActor u : owner.parentExt.getRoomHandler(owner.getRoom().getId()).getPlayers()){
+        for(UserActor u : this.parentExt.getRoomHandler(owner.getRoom().getId()).getPlayers()){
             if(u.getTeam() == owner.getTeam()) teammates.add(u);
         }
         return teammates;
@@ -89,6 +91,6 @@ public class Projectile {
     }
 
     public void destroy(){
-        ExtensionCommands.destroyActor(owner.parentExt, owner.getUser(), this.id);
+        ExtensionCommands.destroyActor(this.parentExt, owner.getUser(), this.id);
     }
 }

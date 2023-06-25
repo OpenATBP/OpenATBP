@@ -1,0 +1,56 @@
+package xyz.openatbp.extension.game;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import java.awt.geom.Point2D;
+
+public abstract class AbilityRunnable implements Runnable{
+    protected int abilityNum;
+    protected JsonNode spellData;
+    protected int cooldown;
+    protected int gCooldown;
+    protected Point2D dest;
+
+    public AbilityRunnable(int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest){
+        this.abilityNum = ability;
+        this.spellData = spellData;
+        this.cooldown = cooldown;
+        this.gCooldown = gCooldown;
+        this.dest = dest;
+    }
+
+    public void run(){
+        switch(this.abilityNum){
+            case 1:
+                this.spellQ();
+                break;
+            case 2:
+                this.spellW();
+                break;
+            case 3:
+                this.spellE();
+                break;
+            case 4:
+                this.spellPassive();
+                break;
+        }
+    }
+
+    protected abstract void spellQ();
+    protected abstract void spellW();
+    protected abstract void spellE();
+    protected abstract void spellPassive();
+
+    protected String getAbilityString(int ability){
+        switch(ability){
+            case 1:
+                return "q";
+            case 2:
+                return "w";
+            case 3:
+                return "e";
+            default:
+                return "passive";
+        }
+    }
+}

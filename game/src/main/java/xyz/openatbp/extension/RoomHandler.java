@@ -1,17 +1,13 @@
 package xyz.openatbp.extension;
 
 import com.smartfoxserver.v2.entities.Room;
-import com.smartfoxserver.v2.entities.SFSUser;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
-import com.smartfoxserver.v2.entities.variables.RoomVariable;
-import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
 import xyz.openatbp.extension.game.*;
-import xyz.openatbp.extension.game.champions.FlamePrincess;
-import xyz.openatbp.extension.game.champions.UserActor;
+import xyz.openatbp.extension.game.actors.*;
+import xyz.openatbp.extension.game.actors.UserActor;
 
-import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.*;
 

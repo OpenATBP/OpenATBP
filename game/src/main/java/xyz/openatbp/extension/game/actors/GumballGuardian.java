@@ -1,4 +1,4 @@
-package xyz.openatbp.extension.game;
+package xyz.openatbp.extension.game.actors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
@@ -7,12 +7,12 @@ import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MapData;
-import xyz.openatbp.extension.game.champions.UserActor;
+import xyz.openatbp.extension.game.Champion;
 
 import java.awt.geom.Point2D;
 import java.util.concurrent.TimeUnit;
 
-public class GumballGuardian extends Tower{ //TODO: Last left off - test the guardians
+public class GumballGuardian extends Tower { //TODO: Last left off - test the guardians
 
     public GumballGuardian(ATBPExtension parentExt, Room room, String id, int team, Point2D location){
         super(parentExt,room,id,team,location);

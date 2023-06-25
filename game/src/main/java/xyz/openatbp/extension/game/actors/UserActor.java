@@ -1,4 +1,4 @@
-package xyz.openatbp.extension.game.champions;
+package xyz.openatbp.extension.game.actors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
@@ -10,7 +10,6 @@ import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MapData;
-import xyz.openatbp.extension.game.Actor;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
@@ -430,8 +429,23 @@ public class UserActor extends Actor {
         }
     }
 
+    public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
+        System.out.println("Ability sent to x:" + dest.getX() + " y:" + dest.getY());
+        if(castDelay > 0){
+            this.stopMoving(castDelay);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(true),castDelay,TimeUnit.MILLISECONDS);
+        }else{
+            this.stopMoving();
+        }
+        if(this.getClass() == UserActor.class){
+            System.out.println("Base useAbility method used!");
+            String abilityString = "q";
+            if(ability == 2) abilityString = "w";
+            else if(ability == 3) abilityString = "e";
+            ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),abilityString,true,getReducedCooldown(cooldown),gCooldown);
+        }
+    }
 
-    public void useAbility(int ability, ISFSObject abilityData){System.out.println("No character selected!");}
     public boolean canMove(){
         return canMove;
     }
@@ -618,7 +632,7 @@ public class UserActor extends Actor {
 
     protected int getReducedCooldown(double cooldown){
         double cooldownReduction = this.getPlayerStat("coolDownReduction");
-        double ratio = 1-cooldownReduction;
+        double ratio = 1-(cooldownReduction/100);
         return (int) Math.round(cooldown*ratio);
     }
 
@@ -646,7 +660,7 @@ public class UserActor extends Actor {
 
         boolean move;
 
-        MovementStopper(boolean move){
+        public MovementStopper(boolean move){
             this.move = move;
         }
         @Override
@@ -661,7 +675,7 @@ public class UserActor extends Actor {
         Runnable attackRunnable;
         String projectile;
 
-        RangedAttack(Actor target, Runnable attackRunnable, String projectile){
+        public RangedAttack(Actor target, Runnable attackRunnable, String projectile){
             this.target = target;
             this.attackRunnable = attackRunnable;
             this.projectile = projectile;
