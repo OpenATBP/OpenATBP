@@ -43,14 +43,14 @@ public class GameManager {
             }
 
         }
-        if(users.size() > 1){ //Testing method just adds fake users to the game to run properly
+        if(users.size() < 3){ //Testing method just adds fake users to the game to run properly
             for(int i = 0; i < users.size(); i++){
                 ISFSObject userData = new SFSObject();
                 User player = users.get(i);
                 userData.putInt("id", 100);
                 userData.putUtfString("name", "Fake User");
                 userData.putUtfString("champion", "magicman");
-                userData.putInt("team", 1); //Change up team data
+                userData.putInt("team", 0); //Change up team data
                 userData.putUtfString("tid", "fakeuser");
                 userData.putUtfString("backpack", "belt_champions");
                 userData.putInt("elo", 1700); //Database
@@ -87,6 +87,7 @@ public class GameManager {
         int ready = 0;
         ArrayList<User> users = (ArrayList<User>) room.getUserList();
         for(int i = 0; i < users.size(); i++){
+            System.out.println(users.get(i).getSession());
             if(users.get(i).getSession().getProperty("ready") == null) return false;
             if((boolean) users.get(i).getSession().getProperty("ready")) ready++;
         }
@@ -109,7 +110,7 @@ public class GameManager {
             actorData.putUtfString("id", String.valueOf(sender.getId()));
             actorData.putUtfString("actor", playerInfo.getUtfString("avatar"));
             ISFSObject spawnPoint = new SFSObject();
-            spawnPoint.putFloat("x", (float) 36.90);
+            spawnPoint.putFloat("x", (float) -36.90);
             spawnPoint.putFloat("y", (float) 0);
             spawnPoint.putFloat("z", (float) 2.3);
             spawnPoint.putFloat("rotation", 0);
