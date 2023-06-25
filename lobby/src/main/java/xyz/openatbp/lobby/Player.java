@@ -16,6 +16,7 @@ public class Player {
     private String tegid;
     private boolean ready;
     private Socket conn;
+    private String team;
 
     private static ObjectMapper objectMapper = new ObjectMapper();
 
@@ -84,5 +85,13 @@ public class Player {
     public void leaveTeam(){
         this.avatar = "unassigned";
         this.ready = false;
+        this.team = null;
+    }
+    public String getTeam(){
+        return this.team;
+    }
+
+    public void setTeam(String team){
+        this.team = team;
     }
 }

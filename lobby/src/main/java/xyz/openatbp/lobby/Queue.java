@@ -105,9 +105,7 @@ public class Queue {
     }
 
     public void addPlayer(ArrayList<Player> p){ //Adds an array of players to the arraylist
-        for(int i = 0; i < p.size(); i++){
-            this.players.add(p.get(i));
-        }
+        this.players.addAll(p);
         this.queueUpdate(); //Updates queue GUI
         if(this.players.size() == 2) this.queueFull(); //Goes to champ select when queue is full
     }
@@ -136,6 +134,8 @@ public class Queue {
         this.inGame = true;
         for(int i = 0; i < players.size(); i++){
             Packet out = new Packet();
+            if(i <= 2) this.players.get(i).setTeam("PURPLE");
+            else this.players.get(i).setTeam("BLUE");
             out.send(this.players.get(i).getOutputStream(),"match_found",RequestHandler.handleMatchFound());
         }
         this.updateTeam();
@@ -155,10 +155,26 @@ public class Queue {
         return playerObjs;
     }
 
+    public ArrayNode getPlayerObjects(String team){
+        ArrayNode playerObjs = objectMapper.createArrayNode();
+        for(Player p : this.players){
+            if(p.getTeam().equalsIgnoreCase(team)){
+                ObjectNode playerObj = objectMapper.createObjectNode();
+                playerObj.put("name", p.getName());
+                playerObj.put("player", p.getPid());
+                playerObj.put("teg_id", p.getUsername());
+                playerObj.put("avatar", p.getAvatar());
+                playerObj.put("is_ready",p.isReady());
+                playerObjs.add(playerObj);
+            }
+        }
+        return playerObjs;
+    }
+
     private void updateTeam(){ //Updates the client with all current team info
-        for(int i = 0; i < players.size(); i++){
+        for(Player p : this.players){
             Packet out = new Packet();
-            out.send(players.get(i).getOutputStream(),"team_update",RequestHandler.handleTeamUpdate(this.getPlayerObjects()));
+            out.send(p.getOutputStream(),"team_update",RequestHandler.handleTeamUpdate(this.getPlayerObjects(p.getTeam()),p.getTeam()));
         }
     }
 

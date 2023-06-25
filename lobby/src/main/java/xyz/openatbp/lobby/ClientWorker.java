@@ -138,6 +138,16 @@ class ClientWorker implements Runnable {
                             queues.add(new Queue(currentQueue.getPlayers(),currentQueue.getType(), currentQueue.isPvP()));
                             queues.remove(currentQueue); //Removes the premade queue as it is now public
                         }
+                    }else if(request.getType().equalsIgnoreCase("chat_message")){
+                        Player chatter = this.findPlayer(socket.getRemoteSocketAddress().toString());
+                        if(chatter != null){
+                            Queue q = this.findQueue(chatter);
+                            if(q != null){
+                                for(Player p : q.getPlayers()){
+                                    if(p.getTeam().equalsIgnoreCase(chatter.getTeam())) request.send(p.getOutputStream(),"chat_message",RequestHandler.handleChatMessage(chatter,request.getPayload().get("message_id").asText()));
+                                }
+                            }
+                        }
                     }
                 } else {
                     this.close();

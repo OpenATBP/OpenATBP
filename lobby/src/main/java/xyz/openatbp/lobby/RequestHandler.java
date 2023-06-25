@@ -32,10 +32,10 @@ public class RequestHandler {
         return objectNode;
     }
 
-    public static JsonNode handleTeamUpdate(ArrayNode team){ //Updates a team
+    public static JsonNode handleTeamUpdate(ArrayNode team, String teamStr){ //Updates a team
         ObjectNode objectNode = objectMapper.createObjectNode();
         objectNode.set("players",team);
-        objectNode.put("team","BLUE"); //Hardcoded, will need to change when I can test more people
+        objectNode.put("team",teamStr);
         return objectNode;
     }
 
@@ -126,6 +126,14 @@ public class RequestHandler {
     public static JsonNode handleDisband(){ //Disbands team with the reason disconnect
         ObjectNode objectNode = objectMapper.createObjectNode();
         objectNode.put("reason", "disconnect");
+        return objectNode;
+    }
+
+    public static JsonNode handleChatMessage(Player p, String message){
+        ObjectNode objectNode = objectMapper.createObjectNode();
+        objectNode.put("name",p.getName());
+        objectNode.put("teg_id",p.getUsername());
+        objectNode.put("message_id",Double.valueOf(message));
         return objectNode;
     }
 }
