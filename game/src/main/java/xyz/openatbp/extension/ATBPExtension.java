@@ -12,7 +12,6 @@ import xyz.openatbp.extension.evthandlers.*;
 import xyz.openatbp.extension.reqhandlers.*;
 
 import java.awt.geom.*;
-import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -94,7 +93,7 @@ public class ATBPExtension extends SFSExtension {
     }
 
     private void loadItems() throws IOException {
-        File path = new File(getCurrentFolder()+"/items");
+        File path = new File(getCurrentFolder()+"/data/items");
         File[] files = path.listFiles();
         ObjectMapper mapper = new ObjectMapper();
         for(File f : files){
@@ -104,7 +103,7 @@ public class ATBPExtension extends SFSExtension {
     }
 
     private void loadTips() throws IOException {
-        File tipsFile = new File(getCurrentFolder() +"/definitions/tips.json");
+        File tipsFile = new File(getCurrentFolder() +"/data/tips.json");
         ObjectMapper mapper = new ObjectMapper();
         JsonNode tipsJson = mapper.readTree(tipsFile);
         ArrayNode categoryNode = (ArrayNode) tipsJson.get("gameTips").get("category");
@@ -116,8 +115,8 @@ public class ATBPExtension extends SFSExtension {
     }
 
     private void loadColliders() throws IOException { //Reads json files and turns them into JsonNodes
-        File practiceMap = new File(getCurrentFolder()+"/colliders/practice.json");
-        File mainMap = new File(getCurrentFolder()+"/colliders/main.json");
+        File practiceMap = new File(getCurrentFolder()+"/data/colliders/practice.json");
+        File mainMap = new File(getCurrentFolder()+"/data/colliders/main.json");
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(practiceMap);
         ArrayNode colliders = (ArrayNode) node.get("SceneColliders").get("collider");
@@ -178,7 +177,7 @@ public class ATBPExtension extends SFSExtension {
         else return mainMapPaths;
     }
 
-    public JsonNode getDefintion(String actorName){
+    public JsonNode getDefinition(String actorName){
         return actorDefinitions.get(actorName);
     }
 
@@ -249,7 +248,7 @@ public class ATBPExtension extends SFSExtension {
     }
 
     private void loadBrushes() throws IOException { //Reads json files and turns them into JsonNodes
-        File mainMap = new File(getCurrentFolder()+"/colliders/brush.json");
+        File mainMap = new File(getCurrentFolder()+"/data/colliders/brush.json");
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(mainMap);
         ArrayNode colliders = (ArrayNode) node.get("BrushAreas").get("brush");

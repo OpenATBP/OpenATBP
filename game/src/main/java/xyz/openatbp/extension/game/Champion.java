@@ -2,7 +2,6 @@ package xyz.openatbp.extension.game;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
-import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
@@ -66,7 +65,7 @@ public class Champion {
     }
 
     public static JsonNode getSpellData(ATBPExtension parentExt, String avatar, int spell){
-        JsonNode actorDef = parentExt.getDefintion(avatar);
+        JsonNode actorDef = parentExt.getDefinition(avatar);
         return actorDef.get("MonoBehaviours").get("ActorData").get("spell"+spell);
     }
 

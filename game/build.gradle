@@ -18,13 +18,19 @@ tasks.register('copySFS2XLibs', Copy) {
 
     def SFS2XLibPath = new File(getSFS2XPath(), 'lib')
 
-    duplicatesStrategy= DuplicatesStrategy.EXCLUDE
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from new File(SFS2XLibPath, 'sfs2x.jar'), new File(SFS2XLibPath, 'sfs2x-core.jar')
     into layout.projectDirectory.dir("lib")
 }
 
+tasks.register('copyDataFiles', Copy) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from layout.projectDirectory.dir('../data/')
+    into new File(getSFS2XPath(), 'extensions/Champions/data/')
+}
+
 tasks.register('deploy', Copy) {
-    duplicatesStrategy= DuplicatesStrategy.INCLUDE
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
     from layout.buildDirectory.file('libs/ATBPExtension.jar')
     into new File(getSFS2XPath(), 'extensions/Champions/')
 }
@@ -53,3 +59,4 @@ dependencies {
 }
 
 assemble.dependsOn copySFS2XLibs
+deploy.dependsOn copyDataFiles

@@ -7,11 +7,9 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
-import com.smartfoxserver.v2.extensions.SFSExtension;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.GameManager;
-import xyz.openatbp.extension.game.champions.FlamePrincess;
 import xyz.openatbp.extension.game.champions.UserActor;
 
 import java.awt.geom.Point2D;
@@ -61,7 +59,7 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
 
     private JsonNode getSpellData(String avatar, int spell){
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
-        JsonNode actorDef = parentExt.getDefintion(avatar);
+        JsonNode actorDef = parentExt.getDefinition(avatar);
         return actorDef.get("MonoBehaviours").get("ActorData").get("spell"+spell);
     }
 
