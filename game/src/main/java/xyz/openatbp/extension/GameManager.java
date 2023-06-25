@@ -114,7 +114,7 @@ public class GameManager {
             actorData.putUtfString("id", String.valueOf(sender.getId()));
             actorData.putUtfString("actor", playerInfo.getUtfString("avatar"));
             ISFSObject spawnPoint = new SFSObject();
-            spawnPoint.putFloat("x", (float) -36.90);
+            spawnPoint.putFloat("x", (float) 36.90);
             spawnPoint.putFloat("y", (float) 0);
             spawnPoint.putFloat("z", (float) 2.3);
             spawnPoint.putFloat("rotation", 0);
@@ -283,6 +283,8 @@ public class GameManager {
                 player.put("assists", ua.getStat("assists"));
                 player.put("playerName",ua.getAvatar());
                 player.put("myElo",(double)playerVar.getInt("elo"));
+                player.put("coins",100);
+                player.put("prestigePoints",50);
                 node.set(String.valueOf(u.getId()),player);
             }
         }

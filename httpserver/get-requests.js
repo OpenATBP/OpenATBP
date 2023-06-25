@@ -60,6 +60,7 @@ module.exports = {
     });
   },
   handlePlayerChampions: function(data,collection){ // /service/data/user/champions/profile?authToken={data} RETURNS player info from db
+    console.log("Getting data for: " + data);
     return new Promise(function(resolve, reject) {
       collection.findOne({"authToken":data}).then((dat) => {
         if(dat != null) resolve(JSON.stringify(dat.player));

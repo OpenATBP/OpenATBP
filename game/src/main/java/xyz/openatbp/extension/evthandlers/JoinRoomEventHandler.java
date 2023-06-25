@@ -21,8 +21,7 @@ public class JoinRoomEventHandler extends BaseServerEventHandler {
         ArrayList<User> users = (ArrayList<User>) room.getUserList();
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         int maxPlayers = room.getMaxUsers();
-        if(maxPlayers>2) maxPlayers = 2; //Remove after testing
-        else if(maxPlayers < 0) maxPlayers = 2;
+        if(true) maxPlayers = 1; //Remove after testing
         if(GameManager.playersLoaded(users, maxPlayers)){ //If all players have loaded into the room
             System.out.println("Last to join is " + sender.getName());
             GameManager.addPlayer(users,parentExt); //Add users to the game

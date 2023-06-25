@@ -4,10 +4,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.extensions.SFSExtension;
+import org.bson.Document;
 import xyz.openatbp.extension.evthandlers.*;
 import xyz.openatbp.extension.reqhandlers.*;
 
@@ -34,6 +39,9 @@ public class ATBPExtension extends SFSExtension {
 
     HashMap<Integer, RoomHandler> roomHandlers = new HashMap<>();
     HashMap<Integer, ScheduledFuture<?>> roomTasks = new HashMap<>();
+    MongoClient mongoClient;
+    MongoDatabase database;
+    MongoCollection<Document> playerDatabase;
     public void init() {
         this.addEventHandler(SFSEventType.USER_JOIN_ROOM, JoinRoomEventHandler.class);
         this.addEventHandler(SFSEventType.USER_JOIN_ZONE, JoinZoneEventHandler.class);
@@ -61,6 +69,9 @@ public class ATBPExtension extends SFSExtension {
         this.addRequestHandler("req_spam", Stub.class);
 
         try {
+            mongoClient = MongoClients.create(Secrets.MONGO_URI);
+            database = mongoClient.getDatabase("openatbp");
+            playerDatabase = database.getCollection("players");
             loadDefinitions();
             loadColliders();
             loadItems();
@@ -282,5 +293,9 @@ public class ATBPExtension extends SFSExtension {
 
     public Path2D getBrush(int num){
         return this.brushPaths.get(num);
+    }
+
+    public MongoCollection<Document> getPlayerDatabase(){
+        return this.playerDatabase;
     }
 }

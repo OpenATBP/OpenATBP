@@ -1,9 +1,18 @@
 package xyz.openatbp.extension;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.client.MongoCollection;
+import static com.mongodb.client.model.Filters.eq;
+
+import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.Updates;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.*;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -688,7 +697,53 @@ public class RoomHandler implements Runnable{
         return null;
     }
 
-    public void gameOver(){
-        this.gameOver = true;
+    public void gameOver(int winningTeam){
+        try{
+            this.gameOver = true;
+            MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
+            for(UserActor ua : this.players){
+                String tegID = (String) ua.getUser().getSession().getProperty("tegid");
+                Document data = playerData.find(eq("user.TEGid",tegID)).first();
+                if(data != null){
+                    int wins = 0;
+                    int points = 0;
+                    int kills = (int) ua.getStat("kills");
+                    int deaths = (int) ua.getStat("deaths");
+                    int assists = (int) ua.getStat("assists");
+                    int towers = 0;
+                    int minions = 0;
+                    int jungleMobs = 0;
+                    int altars = 0;
+                    int largestSpree = 0;
+                    int largestMulti = 0;
+                    int score = 0;
+                    if(ua.getTeam() == winningTeam) wins++;
+                    if(ua.hasGameStat("score")) score+=ua.getGameStat("score");
+                    Bson updates = Updates.combine(
+                            Updates.inc("playsPVP",1),
+                            Updates.inc("player.elo",20),
+                            Updates.inc("player.rankProgress",10),
+                            Updates.inc("player.winsPVP",wins),
+                            Updates.inc("player.points",points),
+                            Updates.inc("player.coins",100),
+                            Updates.inc("player.kills",kills),
+                            Updates.inc("player.deaths",deaths),
+                            Updates.inc("player.assists",assists),
+                            Updates.inc("player.towers",towers),
+                            Updates.inc("player.minions",minions),
+                            Updates.inc("player.jungleMobs",jungleMobs),
+                            Updates.inc("player.altars",altars),
+                            Updates.inc("player.scoreTotal",score)
+
+                    );
+                    UpdateOptions options = new UpdateOptions().upsert(true);
+                    System.out.println(playerData.updateOne(data,updates,options));
+                    ObjectMapper mapper = new ObjectMapper();
+                    JsonNode dataObj = mapper.readTree(data.toJson());
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 }

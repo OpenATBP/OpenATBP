@@ -42,11 +42,12 @@ public class Base extends Actor {
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         if(!this.unlocked) this.currentHealth-=this.currentHealth;
         this.currentHealth-=damage;
-        if(this.currentHealth <= 0) this.parentExt.getRoomHandler(this.room.getId()).gameOver();
+        double oppositeTeam = 0;
+        if(this.team == 0) oppositeTeam = 1;
+        if(this.currentHealth <= 0) this.parentExt.getRoomHandler(this.room.getId()).gameOver((int) oppositeTeam);
         for(User u : room.getUserList()){
             if(this.currentHealth <= 0){
-                double oppositeTeam = 0;
-                if(this.team == 0) oppositeTeam = 1;
+
                 try{
                     ExtensionCommands.gameOver(parentExt,u,oppositeTeam);
                 }catch(Exception e){

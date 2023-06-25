@@ -51,6 +51,7 @@ lib/*
 
 # Key/secret files #
 mongosecrets.js
+Secrets.java
 
 # Web server files #
 /httpserver/htdocs/**
