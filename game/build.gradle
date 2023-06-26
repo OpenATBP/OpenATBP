@@ -1,9 +1,12 @@
+plugins {
+    id "de.undercouch.download" version "5.4.0"
+}
+
 apply plugin: 'java'
 group 'xyz.openatbp'
 version '0.1.0-SNAPSHOT'
 
 ext.getSFS2XPath = {
-    // TODO make sure this works for OSes other than Windows
     if (System.getenv('SFS2X_HOME') == null) {
         return new File(System.getProperty('user.home'), 'SmartFoxServer_2X/SFS2X')
     } else {
@@ -23,13 +26,25 @@ tasks.register('copySFS2XLibs', Copy) {
     into layout.projectDirectory.dir("lib")
 }
 
+tasks.register('downloadDefinitions', Download) {
+    src 'https://archive.org/download/atbp-20150519/atbp-20150519-definitions.zip'
+    dest buildDir
+    overwrite false
+}
+
+tasks.register('extractDefinitions', Copy) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from zipTree(layout.buildDirectory.file("atbp-20150519-definitions.zip"))
+    into new File(getSFS2XPath(), 'extensions/Champions/')
+}
+
 tasks.register('copyDataFiles', Copy) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from layout.projectDirectory.dir('../data/')
     into new File(getSFS2XPath(), 'extensions/Champions/data/')
 }
 
-tasks.register('deploy', Copy) {
+tasks.register('deploy', Copy ) {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
     from layout.buildDirectory.file('libs/ATBPExtension.jar')
     into new File(getSFS2XPath(), 'extensions/Champions/')
@@ -60,4 +75,7 @@ dependencies {
 }
 
 assemble.dependsOn copySFS2XLibs
+
+extractDefinitions.dependsOn downloadDefinitions
+copyDataFiles.dependsOn extractDefinitions
 deploy.dependsOn copyDataFiles

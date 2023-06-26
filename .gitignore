@@ -1,4 +1,3 @@
-
 # IntelliJ project dirctory
 .idea
 
@@ -46,13 +45,24 @@ gradle-app.setting
 # Local libraries
 lib/*
 
-# Node Modules #
+# Node Modules
 /httpserver/node_modules
 
-# Key/secret files #
+# Key/secret files
 mongosecrets.js
 Secrets.java
 
-# Web server files #
-/httpserver/htdocs/**
-!/httpserver/htdocs/game/index.html
+# Config files
+# It's fine if these are in the repo, but we want to prevent
+# any local changes from being committed by listing them below
+config.properties
+config.js
+crossdomain.xml
+config.xml
+
+# Game assets
+/httpserver/static/assets
+/httpserver/static/definitions
+/httpserver/static/English.txt
+/httpserver/static/*.unity3d
+/httpserver/static/*.png

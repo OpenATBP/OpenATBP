@@ -1,14 +1,6 @@
 const fs = require('fs').promises;
 
 module.exports = {
-  handleCrossDomain: function(){ // /crossdomain.xml
-    return(`<?xml version="1.0" ?>
-    <cross-domain-policy>
-      <site-control permitted-cross-domain-policies="master-only"/>
-      <allow-access-from domain="*"/>
-      <allow-http-request-headers-from domain="*" headers="*"/>
-    </cross-domain-policy>`);
-  },
   handlePresent: function(){ // /service/presence/present
     return (JSON.stringify({}));
   },
@@ -36,13 +28,6 @@ module.exports = {
         if(e) reject(e);
         resolve(JSON.stringify(res));
       });
-      /*
-      fs.readFile("/Users/0lies/Desktop/Blank ATBP/ATBP-web/htdocs/service/shop/inventory").then((data) => {
-        resolve(data);
-      }).catch((err) => {
-        reject(err);
-      });
-      */
     });
   },
   handleChampConfig: function(){ // /service/data/config/champions/ Not sure if this is what it should be returning or not.

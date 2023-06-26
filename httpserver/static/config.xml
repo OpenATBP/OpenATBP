@@ -1,0 +1,25 @@
+<config>
+    <StreamedAssetURL>http://127.0.0.1:8000</StreamedAssetURL>
+    <Zone>Champions</Zone>
+    <AspenEnabled>False</AspenEnabled>
+    <AspenConfigURL></AspenConfigURL>
+    <Debug>True</Debug>
+    <DebugConsole>True</DebugConsole>
+    <LobbyIP>127.0.0.1</LobbyIP>
+    <LobbyPort>6778</LobbyPort>
+    <LobbyPolicyPort>843</LobbyPolicyPort>
+    <Language>English</Language>
+    <FacadeURL>http://127.0.0.1:8000</FacadeURL>
+    <Profiler>False</Profiler>
+    <LobbyVersion>1</LobbyVersion>
+    <PingLimit></PingLimit>
+    <ShowPromo>False</ShowPromo>
+    <PromoImageURL></PromoImageURL>
+    <PromoURL></PromoURL>
+    <DevLogin>False</DevLogin>
+    <DevMaps>True</DevMaps>
+    <PresenceURL></PresenceURL>
+    <PresenceUpdateDelay>10000</PresenceUpdateDelay>
+    <DirectPresence>False</DirectPresence>
+    <GuestModeOnly>False</GuestModeOnly>
+</config>

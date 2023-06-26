@@ -1,15 +1,15 @@
 const express = require('express');
+const bodyParser = require('body-parser');
 const app = express();
-const port = 8000;
+
+const config = require('./config.js');
+const secrets = require('./mongosecrets.js');
 const getRequest = require('./get-requests.js');
 const postRequest = require('./post-requests.js');
-const secrets = require('./mongosecrets.js');
-const bodyParser = require('body-parser');
 
+console.log("Using MongoDB URI: " + secrets.uri);
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = secrets.uri;
-console.log(uri);
-const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+const client = new MongoClient(secrets.uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 var onlinePlayers = [];
 
@@ -94,17 +94,16 @@ function createNewUser(username,authpass){ //Creates new user in web server and 
 }
 
 client.connect(err => {
-  console.log(err);
+  if(err){
+    console.log("MongoDB connect failed:" + err);
+    process.exit(1);
+  }
   const collection = client.db("openatbp").collection("players");
   const shopCollection = client.db("openatbp").collection("shop");
 
-  app.use(express.static('htdocs'));
+  app.use(express.static('static'));
   app.use(bodyParser.urlencoded({extended:false}));
   app.use(bodyParser.json());
-
-  app.get('/crossdomain.xml',(req,res) => {
-    res.send(getRequest.handleCrossDomain());
-  });
 
   app.get('/service/presence/present', (req, res) => {
     res.send(getRequest.handlePresent());
@@ -228,7 +227,10 @@ client.connect(err => {
   });
 
 
-  const server = app.listen(port, () => {
-    console.log("App running!");
+  const server = app.listen(config.httpserver.port, () => {
+    console.log(`App running on port ${config.httpserver.port}!`);
+    if (config.sockpol.enable) {
+      const sockpol = require('./socketpolicy.js');
+    }
   });
 });
