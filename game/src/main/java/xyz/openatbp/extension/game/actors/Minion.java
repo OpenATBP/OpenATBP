@@ -104,9 +104,7 @@ public class Minion extends Actor {
         }
         if(this.pathIndex < pathX.length && this.pathIndex > -1){
             Point2D destination = new Point2D.Float((float) pathX[this.pathIndex], (float) pathY[this.pathIndex]);
-            for(User u : room.getUserList()){
-                ExtensionCommands.moveActor(parentExt,u,this.id,this.location,destination, (float) this.getPlayerStat("speed"),true);
-            }
+            ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,destination, (float) this.getPlayerStat("speed"),true);
             this.movementLine = new Line2D.Float(this.location,destination);
             this.travelTime = 0.1f;
         }
@@ -140,8 +138,7 @@ public class Minion extends Actor {
         //Negative = left Positive = right
         if(Double.isNaN(deltaX)) return false;
         if(deltaX>0 && p.getX()>this.location.getX()) return true;
-        else if(deltaX<0 && p.getX()<this.location.getX()) return true;
-        else return false;
+        else return deltaX < 0 && p.getX() < this.location.getX();
     }
 
     public boolean withinAttackRange(Point2D p){ // Checks if point is within minion's attack range
@@ -251,9 +248,7 @@ public class Minion extends Actor {
     public void moveTowardsActor(ATBPExtension parentExt, Point2D dest){ //Moves towards a specific point. TODO: Have the path stop based on collision radius
         this.movementLine = new Line2D.Float(this.location,dest);
         this.travelTime = 0.1f;
-        for(User u : room.getUserList()){
-            ExtensionCommands.moveActor(parentExt,u,this.id,this.location,dest,1.75f, true);
-        }
+        ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,dest,1.75f, true);
     }
 
     public void setState(int state){ //Really only useful for setting to the movement state.
@@ -299,9 +294,8 @@ public class Minion extends Actor {
             if(movementLine != null){
                 movementLine.setLine(this.location, movementLine.getP2());
                 this.travelTime = 0f;
-                for(User u : this.room.getUserList()){
-                    ExtensionCommands.moveActor(this.parentExt,u,this.id,this.location,movementLine.getP2(),(float)this.getPlayerStat("speed"),true);
-                }
+                ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,movementLine.getP2(),(float)this.getPlayerStat("speed"),true);
+
             }
         }
         return returnVal;
@@ -317,9 +311,8 @@ public class Minion extends Actor {
             this.stopMoving(parentExt);
             int damage = (int) this.getPlayerStat("attackDamage");
             this.attackCooldown = this.getPlayerStat("attackSpeed");
-            for(User u : room.getUserList()){
-                ExtensionCommands.attackActor(parentExt,u,this.id,a.getId(),(float) a.getLocation().getX(), (float) a.getLocation().getY(), false, true);
-            }
+            ExtensionCommands.attackActor(parentExt,this.room,this.id,a.getId(),(float) a.getLocation().getX(), (float) a.getLocation().getY(), false, true);
+
             if(this.type == MinionType.RANGED){
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedRangedAttack(this,a),300, TimeUnit.MILLISECONDS);
             }else{
@@ -332,9 +325,8 @@ public class Minion extends Actor {
         String fxId = "minion_projectile_";
         if(this.team == 1) fxId+="blue";
         else fxId+="purple";
-        for(User u : room.getUserList()){
-            ExtensionCommands.createProjectileFX(parentExt,u,fxId,this.getId(),a.getId(),"Bip001","Bip001",(float)0.5);
-        }
+        ExtensionCommands.createProjectileFX(parentExt,this.room,fxId,this.getId(),a.getId(),"Bip001","Bip001",(float)0.5);
+
         SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),500, TimeUnit.MILLISECONDS);
     }
 
@@ -347,10 +339,8 @@ public class Minion extends Actor {
             ua.addGameStat("minions",1);
         }
         this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,aggressors.keySet(), this.xpWorth);
-        for(User u : this.getRoomUsers()){
-            ExtensionCommands.knockOutActor(parentExt,u,this.id,a.getId(),30);
-            ExtensionCommands.destroyActor(parentExt,u,this.id);
-        }
+        ExtensionCommands.knockOutActor(parentExt,this.room,this.id,a.getId(),30);
+        ExtensionCommands.destroyActor(parentExt,this.room,this.id);
         if(a.getActorType() == ActorType.PLAYER){
             UserActor ua = (UserActor) a;
             if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(2);
@@ -442,7 +432,7 @@ public class Minion extends Actor {
                     }
                 }else if(targetTower != null){
                     this.addTravelTime(0.1f);
-                    //m.moveTowardsActor(parentExt,targetTower.getLocation()); //TODO: Optimize so it's not sending a lot of commands
+                    //m.moveTowardsActor(parentExt,targetTower.getLocation());
                 }else{
                     this.setState(0);
                     this.move(parentExt);
@@ -472,9 +462,7 @@ public class Minion extends Actor {
     public void stopMoving(ATBPExtension parentExt){ //Stops moving
         this.travelTime = 0f;
         this.movementLine = new Line2D.Float(this.location,this.location);
-        for(User u : room.getUserList()){
-            ExtensionCommands.moveActor(parentExt,u,this.id,this.location,this.location,1.75f,false);
-        }
+        ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,this.location,1.75f,false);
     }
 
     public String getType(){

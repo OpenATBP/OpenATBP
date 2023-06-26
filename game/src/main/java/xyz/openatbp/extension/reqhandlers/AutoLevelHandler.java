@@ -33,16 +33,18 @@ public class AutoLevelHandler extends BaseClientRequestHandler {
                 else if(categoryPoints+1 == 4) works = spentPoints+1>=6; //Can't get a fourth level without spending 6 points
                 if(works){
                     System.out.println("Works!");
-                    ExtensionCommands.updateActorData(parentExt,sender,ChampionData.useSpellPoint(sender,"category"+category,parentExt));
+                    ExtensionCommands.updateActorData(parentExt,sender.getLastJoinedRoom(),ChampionData.useSpellPoint(sender,"category"+category,parentExt));
                 }else{
                     System.out.println("not working!");
-                    for(int g = 0; g < buildPath.length; g++){
-                        category = buildPath[g];
-                        if(categoryPoints+1 < 3) works = true;
-                        else if(categoryPoints+1 == 3) works = spentPoints+1>=4; //Can't get a third level without spending 4 points
-                        else if(categoryPoints+1 == 4) works = spentPoints+1>=6; //Can't get a fourth level without spending 6 points
-                        if(works){
-                            ExtensionCommands.updateActorData(parentExt,sender,ChampionData.useSpellPoint(sender,"category"+category,parentExt));
+                    for (int j : buildPath) {
+                        category = j;
+                        if (categoryPoints + 1 < 3) works = true;
+                        else if (categoryPoints + 1 == 3)
+                            works = spentPoints + 1 >= 4; //Can't get a third level without spending 4 points
+                        else if (categoryPoints + 1 == 4)
+                            works = spentPoints + 1 >= 6; //Can't get a fourth level without spending 6 points
+                        if (works) {
+                            ExtensionCommands.updateActorData(parentExt, sender.getLastJoinedRoom(), ChampionData.useSpellPoint(sender, "category" + category, parentExt));
                             break;
                         }
                     }

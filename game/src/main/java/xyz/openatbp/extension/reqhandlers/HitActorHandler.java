@@ -31,7 +31,7 @@ public class HitActorHandler extends BaseClientRequestHandler {
                 actor.setTarget(target);
                 if(actor.withinRange(target) && actor.canAttack()){
 
-                    ExtensionCommands.moveActor(parentExt,sender,actor.getId(),location,location,(float) actor.getSpeed(),false);
+                    ExtensionCommands.moveActor(parentExt,sender.getLastJoinedRoom(),actor.getId(),location,location,(float) actor.getSpeed(),false);
                     actor.setLocation(location);
                     actor.setCanMove(false);
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(actor),250,TimeUnit.MILLISECONDS);
@@ -42,11 +42,11 @@ public class HitActorHandler extends BaseClientRequestHandler {
                     float targetDistance = (float)target.getLocation().distance(location)-attackRange;
                     Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
                     actor.setPath(newPath);
-                    ExtensionCommands.moveActor(parentExt,sender, actor.getId(),location, newPath.getP2(), (float) actor.getSpeed(),true);
+                    ExtensionCommands.moveActor(parentExt,sender.getLastJoinedRoom(), actor.getId(),location, newPath.getP2(), (float) actor.getSpeed(),true);
                 }else if(actor.withinRange(target)){
                     trace("Failed to attack!");
                     trace("Attack cooldown: " + actor.getAttackCooldown());
-                    ExtensionCommands.moveActor(parentExt,sender,actor.getId(),location,location, (float) actor.getSpeed(),false);
+                    ExtensionCommands.moveActor(parentExt,sender.getLastJoinedRoom(),actor.getId(),location,location, (float) actor.getSpeed(),false);
                     actor.setLocation(location);
                 }
             }else{

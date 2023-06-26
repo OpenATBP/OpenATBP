@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public abstract class Actor {
-    public enum AttackType{ PHYSICAL, SPELL};
+    public enum AttackType{ PHYSICAL, SPELL}
     protected double currentHealth;
     protected double maxHealth;
     protected Point2D location;
@@ -37,7 +37,7 @@ public abstract class Actor {
     protected double attackRange;
     protected Map<ActorState, Boolean> states = Champion.getBlankStates();
     protected String displayName = "FuzyBDragon";
-    protected Map<String, Double> stats; //TODO: Maybe change to ISFSObject
+    protected Map<String, Double> stats;
     protected Map<String, Double> tempStats = new HashMap<>();
     protected Map<String, Champion.FinalBuffHandler> buffHandlers = new HashMap<>();
 
@@ -75,9 +75,7 @@ public abstract class Actor {
     }
 
     public void stopMoving(){
-        for(User u : room.getUserList()){
-            ExtensionCommands.moveActor(parentExt,u,this.id,this.location,this.location, (float) this.speed, false);
-        }
+        ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,this.location, (float) this.speed, false);
     }
 
     public void setSpeed(float speed){
@@ -97,14 +95,8 @@ public abstract class Actor {
         ExtensionCommands.updateActorState(this.parentExt,this.room,this.id,state,enabled);
     }
 
-    @Deprecated
     public double getStat(String stat){
-        return this.parentExt.getActorStats(this.avatar).get(stat).asDouble();
-    }
-
-    public double getNewStat(String stat){
-        if(this.stats != null) return this.stats.get(stat);
-        else return -1d;
+        return this.stats.get(stat);
     }
 
     public double getTempStat(String stat){
@@ -112,7 +104,7 @@ public abstract class Actor {
         return this.tempStats.get(stat);
     }
 
-    public boolean setTempStat(String stat, double delta){ //TODO: Should maybe make this private/protected
+    public boolean setTempStat(String stat, double delta){
         try{
             System.out.println("Subtracting " + stat + " by " + delta);
             if(this.tempStats.containsKey(stat)){
@@ -133,10 +125,6 @@ public abstract class Actor {
             e.printStackTrace();
             return true;
         }
-    }
-
-    public void updateTempStat(String stat, double delta){
-        this.tempStats.put(stat,delta);
     }
 
     public void handleEffect(String stat, double delta, int duration, String fxId){
@@ -197,7 +185,7 @@ public abstract class Actor {
         switch(state){
             case POLYMORPH:
                 UserActor ua = (UserActor) this;
-                ExtensionCommands.swapActorAsset(parentExt,ua.getUser(), this.id,"flambit");
+                ExtensionCommands.swapActorAsset(parentExt,this.room, this.id,"flambit");
                 double speedChange = this.getPlayerStat("speed")*-0.3;
                 ua.setTempStat("speed",speedChange);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.FinalBuffHandler(this,ActorState.POLYMORPH,speedChange),duration,TimeUnit.MILLISECONDS);
@@ -226,9 +214,7 @@ public abstract class Actor {
         updateData.putInt("currentHealth", (int) this.currentHealth);
         updateData.putDouble("pHealth", this.getPHealth());
         updateData.putInt("maxHealth", (int) this.maxHealth);
-        for(User u : this.room.getUserList()){
-            ExtensionCommands.updateActorData(parentExt,u,updateData);
-        }
+        ExtensionCommands.updateActorData(parentExt,this.room,updateData);
         return this.currentHealth<=0;
     }
     public abstract void attack(Actor a);

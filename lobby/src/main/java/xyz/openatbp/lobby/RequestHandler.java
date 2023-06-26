@@ -39,36 +39,6 @@ public class RequestHandler {
         return objectNode;
     }
 
-    @Deprecated public static JsonNode handleAvatarChange(JsonNode obj){ //Hardcoded avatar change
-        ObjectNode objectNode = objectMapper.createObjectNode();
-        ArrayNode playerObjArray = objectMapper.createArrayNode();
-        ObjectNode playerObj = objectMapper.createObjectNode();
-        playerObj.put("name", "Spooky Umbrella");
-        playerObj.put("player", (float)0001);
-        playerObj.put("teg_id", "SpookyUmbrella");
-        playerObj.put("avatar", obj.get("name").asText());
-        playerObj.put("is_ready",false);
-        playerObjArray.add(playerObj);
-        objectNode.set("players",playerObjArray);
-        objectNode.put("team","BLUE");
-        return objectNode;
-    }
-
-    @Deprecated public static JsonNode handleReady(){ //Hardcoded ready up
-        ObjectNode objectNode = objectMapper.createObjectNode();
-        ArrayNode playerObjArray = objectMapper.createArrayNode();
-        ObjectNode playerObj = objectMapper.createObjectNode();
-        playerObj.put("name", "Spooky Umbrella");
-        playerObj.put("player", (float)0001);
-        playerObj.put("teg_id", "SpookyUmbrella");
-        playerObj.put("avatar", "lich");
-        playerObj.put("is_ready",true);
-        playerObjArray.add(playerObj);
-        objectNode.set("players",playerObjArray);
-        objectNode.put("team","BLUE");
-        return objectNode;
-    }
-
     public static JsonNode handleQueueUpdate(int size){ //Updates the amount of players in a queue (GUI)
         ObjectNode objectNode = objectMapper.createObjectNode();
         objectNode.put("size", size);

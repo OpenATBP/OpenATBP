@@ -16,7 +16,7 @@ public class SpellPointHandler extends BaseClientRequestHandler {
         if(category != null){ //If there is a category that means the player is trying to use a skill point
             ISFSObject data = ChampionData.useSpellPoint(sender,params.getUtfString("category"),parentExt);
             if(data != null){
-                ExtensionCommands.updateActorData(parentExt,sender,data);
+                ExtensionCommands.updateActorData(parentExt,sender.getLastJoinedRoom(),data);
             }
         }
         else parentExt.send("cmd_update_actor_data",ChampionData.resetSpellPoints(sender,parentExt),sender);

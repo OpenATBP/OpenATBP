@@ -176,9 +176,7 @@ public class RoomHandler implements Runnable{
     public void addMinion(int team, int type, int wave, int lane){
         Minion m = new Minion(parentExt,room, team, type, wave,lane);
         minions.add(m);
-        for(User u : room.getUserList()){
-            ExtensionCommands.createActor(parentExt,u,m.creationObject());
-        }
+        ExtensionCommands.createActor(parentExt,this.room,m.creationObject());
         m.move(parentExt);
     }
 
@@ -447,9 +445,7 @@ public class RoomHandler implements Runnable{
         ISFSObject pointData = new SFSObject();
         pointData.putInt("teamA",blueScore);
         pointData.putInt("teamB",purpleScore);
-        for(User u : room.getUserList()){
-            parentExt.send("cmd_update_score",pointData,u);
-        }
+        ExtensionCommands.updateScores(this.parentExt,this.room,blueScore,purpleScore);
         if(earner != null){
             earner.addGameStat("score",points);
         }

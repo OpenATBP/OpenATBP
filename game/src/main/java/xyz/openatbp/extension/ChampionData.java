@@ -177,8 +177,7 @@ public class ChampionData {
     public static ArrayNode getItemStats(ATBPExtension parentExt, String item){
         System.out.println(item);
         JsonNode itemObj = parentExt.itemDefinitions.get(item).get("junk").get("mods");
-        ArrayNode mods = (ArrayNode) itemObj.get("mod");
-        return mods;
+        return (ArrayNode) itemObj.get("mod");
     }
 
     private static ArrayList<JsonNode> getItemPointVal(ArrayNode mods, int category){
@@ -191,7 +190,6 @@ public class ChampionData {
         return stats;
     }
 
-    @Deprecated
     public static void levelUpCharacter(ATBPExtension parentExt, UserActor ua){
         User user = ua.getUser();
         Map<String, Double> playerStats = ua.getStats();
@@ -226,7 +224,7 @@ public class ChampionData {
             else if(categoryPoints+1 == 4) works = spentPoints+1>=6; //Can't get a fourth level without spending 6 points
             if(works){
                 System.out.println("Auto Leveling!");
-                ExtensionCommands.updateActorData(parentExt,user,useSpellPoint(user,"category"+category,parentExt));
+                ExtensionCommands.updateActorData(parentExt,ua.getRoom(),useSpellPoint(user,"category"+category,parentExt));
             }else{
                 System.out.println("CategoryPoints: " + categoryPoints);
                 System.out.println("SpentPoints: " + spentPoints);
@@ -236,7 +234,7 @@ public class ChampionData {
                     else if(categoryPoints+1 == 3) works = spentPoints+1>=4; //Can't get a third level without spending 4 points
                     else if(categoryPoints+1 == 4) works = spentPoints+1>=6; //Can't get a fourth level without spending 6 points
                     if(works){
-                        ExtensionCommands.updateActorData(parentExt,user,useSpellPoint(user,"category"+category,parentExt));
+                        ExtensionCommands.updateActorData(parentExt,ua.getRoom(),useSpellPoint(user,"category"+category,parentExt));
                         break;
                     }
                 }
@@ -244,7 +242,7 @@ public class ChampionData {
         }else{
             toUpdate.putInt("availableSpellPoints",spellPoints);
         }
-        ExtensionCommands.updateActorData(parentExt,user,toUpdate);
+        ExtensionCommands.updateActorData(parentExt,ua.getRoom(),toUpdate);
     }
 
     public static int[] getBuildPath(String actor, String backpack){

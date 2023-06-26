@@ -55,7 +55,7 @@ public class UserActor extends Actor {
         this.avatar = u.getVariable("player").getSFSObjectValue().getUtfString("avatar");
         this.displayName = u.getVariable("player").getSFSObjectValue().getUtfString("name");
         ISFSObject playerLoc = player.getVariable("location").getSFSObjectValue();
-        float x = playerLoc.getSFSObject("p1").getFloat("x"); //TODO: Hard coded for testing
+        float x = playerLoc.getSFSObject("p1").getFloat("x");
         float z = playerLoc.getSFSObject("p1").getFloat("z");
         this.location = new Point2D.Float(x,z);
         this.originalLocation = location;
@@ -81,7 +81,7 @@ public class UserActor extends Actor {
     }
 
     protected Point2D getRelativePoint(boolean external){ //Gets player's current location based on time
-        double currentTime = -1;
+        double currentTime;
         if(external) currentTime = this.timeTraveled + 0.1;
         else currentTime = this.timeTraveled;
         Point2D rPoint = new Point2D.Float();
@@ -227,7 +227,7 @@ public class UserActor extends Actor {
             if(a.getActorType() == ActorType.PLAYER) this.addDamageGameStat((UserActor) a, newDamage,type);
             this.handleDamageTakenStat(type,newDamage);
             System.out.println(this.id + " is being attacked! User");
-            ExtensionCommands.damageActor(parentExt,player,this.id,newDamage);
+            ExtensionCommands.damageActor(parentExt,this.room,this.id,newDamage);
             this.processHitData(a,attackData,newDamage);
             if(this.hasTempStat("healthRegen")) this.tempStats.remove("healthRegen");
             this.changeHealth(newDamage*-1);
@@ -273,7 +273,7 @@ public class UserActor extends Actor {
 
     public void autoAttack(Actor a){
         Point2D location = this.location;
-        ExtensionCommands.moveActor(parentExt,this.player,this.id,location,location, (float) this.speed,false);
+        ExtensionCommands.moveActor(parentExt,this.room,this.id,location,location, (float) this.speed,false);
         this.setLocation(location);
         this.setCanMove(false);
         SmartFoxServer.getInstance().getTaskScheduler().schedule(new HitActorHandler.MovementStopper(this),250,TimeUnit.MILLISECONDS);
@@ -287,10 +287,8 @@ public class UserActor extends Actor {
 
     @Override
     public void die(Actor a) {
-        for(User u : this.room.getUserList()){
-            Point2D location = this.getRelativePoint(false);
-            ExtensionCommands.moveActor(parentExt,u,this.id,location,location,2f,false);
-        }
+        Point2D location = this.getRelativePoint(false);
+        ExtensionCommands.moveActor(parentExt,this.room,this.id,location,location,2f,false);
         this.setHealth(0, (int) this.maxHealth);
         this.target = null;
         ExtensionCommands.knockOutActor(parentExt,player, String.valueOf(player.getId()),a.getId(),this.deathTime);
@@ -407,7 +405,7 @@ public class UserActor extends Actor {
                 if(newPath.getP2().distance(this.destination) > 0.1f){
                     System.out.println("Distance: " + newPath.getP2().distance(this.destination));
                     this.setPath(newPath);
-                    ExtensionCommands.moveActor(parentExt,this.player, this.id,currentPoint, movementLine.getP2(), (float) this.speed,true);
+                    ExtensionCommands.moveActor(parentExt,this.room, this.id,currentPoint, movementLine.getP2(), (float) this.speed,true);
                 }
             }
         }else{
@@ -483,7 +481,7 @@ public class UserActor extends Actor {
     public void setState(ActorState[] states, boolean stateBool){
         for(ActorState s : states){
             this.states.put(s,stateBool);
-            ExtensionCommands.updateActorState(parentExt,player,id,s,stateBool);
+            ExtensionCommands.updateActorState(parentExt,this.room,id,s,stateBool);
         }
     }
 
@@ -525,24 +523,11 @@ public class UserActor extends Actor {
         this.timeTraveled = 0f;
         this.setHealth((int) this.maxHealth, (int) this.maxHealth);
         this.dead = false;
-        for(User u : this.room.getUserList()){
-            ExtensionCommands.snapActor(this.parentExt,u,this.id,this.location,respawnPoint,false);
-            ExtensionCommands.respawnActor(this.parentExt,u,this.id);
-            ExtensionCommands.createActorFX(this.parentExt,u,this.id,"statusEffect_speed",5000,this.id+"_respawnSpeed",true,"Bip01 Footsteps",true,false,this.team);
-        }
+        ExtensionCommands.snapActor(this.parentExt,this.room,this.id,this.location,respawnPoint,false);
+        ExtensionCommands.respawnActor(this.parentExt,this.room,this.id);
+        ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_speed",5000,this.id+"_respawnSpeed",true,"Bip01 Footsteps",true,false,this.team);
         this.handleEffect("speed",2d,5000,"fountainSpeed");
-        ExtensionCommands.createActorFX(this.parentExt,this.player,this.id,"champion_respawn_effect",1000,this.id+"_respawn",true,"Bip001",false,false,this.team);
-    }
-
-    @Deprecated
-    public void giveStatBuff(String stat, double value, int duration){
-        double currentStat = stats.get(stat);
-        stats.put(stat,currentStat+value);
-        ISFSObject updateData = new SFSObject();
-        updateData.putUtfString("id",this.id);
-        updateData.putDouble(stat,currentStat+value);
-        ExtensionCommands.updateActorData(parentExt,player,updateData);
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new StatChanger(stat,value),duration,TimeUnit.MILLISECONDS);
+        ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"champion_respawn_effect",1000,this.id+"_respawn",true,"Bip001",false,false,this.team);
     }
 
     public void addXP(int xp){
@@ -739,31 +724,9 @@ public class UserActor extends Actor {
         @Override
         public void run() {
             System.out.println("Running projectile!");
-            for(User u : room.getUserList()){
-                ExtensionCommands.createProjectileFX(parentExt,u,projectile,id,target.getId(),"Bip001","Bip001",0.5f);
-            }
+            ExtensionCommands.createProjectileFX(parentExt,room,projectile,id,target.getId(),"Bip001","Bip001",0.5f);
             SmartFoxServer.getInstance().getTaskScheduler().schedule(attackRunnable,500,TimeUnit.MILLISECONDS);
             currentAutoAttack = null;
-        }
-    }
-
-    @Deprecated
-    protected class StatChanger implements Runnable {
-        double value;
-        String stat;
-
-        StatChanger(String stat, double value){
-            this.value = value;
-            this.stat = stat;
-        }
-        @Override
-        public void run() {
-            double currentStat = (double) stats.get(stat);
-            stats.put(stat,currentStat-value);
-            ISFSObject updateData = new SFSObject();
-            updateData.putUtfString("id",id);
-            updateData.putDouble(stat,currentStat-value);
-            ExtensionCommands.updateActorData(parentExt,player,updateData);
         }
     }
 

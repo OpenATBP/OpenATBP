@@ -40,17 +40,4 @@ public abstract class AbilityRunnable implements Runnable{
     protected abstract void spellW();
     protected abstract void spellE();
     protected abstract void spellPassive();
-
-    protected String getAbilityString(int ability){
-        switch(ability){
-            case 1:
-                return "q";
-            case 2:
-                return "w";
-            case 3:
-                return "e";
-            default:
-                return "passive";
-        }
-    }
 }

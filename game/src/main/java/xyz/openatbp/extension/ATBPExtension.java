@@ -96,6 +96,7 @@ public class ATBPExtension extends SFSExtension {
         File path = new File(getCurrentFolder() + "/definitions");
         File[] files = path.listFiles();
         ObjectMapper mapper = new XmlMapper();
+        assert files != null;
         for(File f : files){
             if(f.getName().contains("xml")){
                 JsonNode node = mapper.readTree(f);
@@ -108,6 +109,7 @@ public class ATBPExtension extends SFSExtension {
         File path = new File(getCurrentFolder()+"/data/items");
         File[] files = path.listFiles();
         ObjectMapper mapper = new ObjectMapper();
+        assert files != null;
         for(File f : files){
             JsonNode node = mapper.readTree(f);
             itemDefinitions.put(f.getName().replace(".json",""),node);
@@ -133,18 +135,18 @@ public class ATBPExtension extends SFSExtension {
         JsonNode node = mapper.readTree(practiceMap);
         ArrayNode colliders = (ArrayNode) node.get("SceneColliders").get("collider");
         mapColliders = new ArrayList[colliders.size()];
-        mapPaths = new ArrayList(colliders.size());
+        mapPaths = new ArrayList<>(colliders.size());
         for(int i = 0; i < colliders.size(); i++){ //Reads all colliders and makes a list of their vertices
             Path2D path = new Path2D.Float();
             ArrayNode vertices = (ArrayNode) colliders.get(i).get("vertex");
-            ArrayList<Vector<Float>> vecs = new ArrayList(vertices.size());
+            ArrayList<Vector<Float>> vecs = new ArrayList<>(vertices.size());
             for(int g = 0; g < vertices.size(); g++){
                 if(g == 0){
                     path.moveTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
                 }else{ //Draws lines from each vertex to make a shape
                     path.lineTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
                 }
-                Vector<Float> vertex = new Vector<Float>(2);
+                Vector<Float> vertex = new Vector<>(2);
                 vertex.add(0, (float) vertices.get(g).get("x").asDouble());
                 vertex.add(1, (float) vertices.get(g).get("z").asDouble());
                 vecs.add(vertex);
@@ -157,18 +159,18 @@ public class ATBPExtension extends SFSExtension {
         node = mapper.readTree(mainMap);
         colliders = (ArrayNode) node.get("SceneColliders").get("collider");
         mainMapColliders = new ArrayList[colliders.size()];
-        mainMapPaths = new ArrayList(colliders.size());
+        mainMapPaths = new ArrayList<>(colliders.size());
         for(int i = 0; i < colliders.size(); i++){
             Path2D path = new Path2D.Float();
             ArrayNode vertices = (ArrayNode) colliders.get(i).get("vertex");
-            ArrayList<Vector<Float>> vecs = new ArrayList(vertices.size());
+            ArrayList<Vector<Float>> vecs = new ArrayList<>(vertices.size());
             for(int g = 0; g < vertices.size(); g++){
                 if(g == 0){
                     path.moveTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
                 }else{
                     path.lineTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
                 }
-                Vector<Float> vertex = new Vector<Float>(2);
+                Vector<Float> vertex = new Vector<>(2);
                 vertex.add(0, (float) vertices.get(g).get("x").asDouble());
                 vertex.add(1, (float) vertices.get(g).get("z").asDouble());
                 vecs.add(vertex);
@@ -185,7 +187,7 @@ public class ATBPExtension extends SFSExtension {
     }
 
     public ArrayList<Path2D> getMapPaths(String map){
-        if(map.equalsIgnoreCase("practice")) return mainMapPaths;
+        if(map.equalsIgnoreCase("practice")) return mapPaths;
         else return mainMapPaths;
     }
 
@@ -270,14 +272,14 @@ public class ATBPExtension extends SFSExtension {
         for(int i = 0; i < colliders.size(); i++){ //Reads all colliders and makes a list of their vertices
             Path2D path = new Path2D.Float();
             ArrayNode vertices = (ArrayNode) colliders.get(i).get("vertex");
-            ArrayList<Vector<Float>> vecs = new ArrayList(vertices.size());
+            ArrayList<Vector<Float>> vecs = new ArrayList<>(vertices.size());
             for(int g = 0; g < vertices.size(); g++){
                 if(g == 0){
                     path.moveTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
                 }else{ //Draws lines from each vertex to make a shape
                     path.lineTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
                 }
-                Vector<Float> vertex = new Vector<Float>(2);
+                Vector<Float> vertex = new Vector<>(2);
                 vertex.add(0, (float) vertices.get(g).get("x").asDouble());
                 vertex.add(1, (float) vertices.get(g).get("z").asDouble());
                 vecs.add(vertex);

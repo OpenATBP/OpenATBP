@@ -37,7 +37,7 @@ public class GameManager {
             userData.putInt("team", 0); //Change up team data
             userData.putUtfString("tid", playerInfo.getUtfString("tegid"));
             userData.putUtfString("backpack", playerInfo.getUtfString("backpack"));
-            userData.putInt("elo", 1700); //Database
+            userData.putInt("elo", parentExt.getElo(playerInfo.getUtfString("tegid")));
             for(int g = 0; g < users.size(); g++){
                 parentExt.send("cmd_add_user",userData,users.get(g));
             }
@@ -106,6 +106,8 @@ public class GameManager {
     }
 
     public static void initializeGame(ArrayList<User> users, ATBPExtension parentExt) throws SFSVariableException {
+        int blueNum = 0;
+        int purpleNum = 0;
         for(int i = 0; i < users.size(); i++){ //Initialize character
             User sender = users.get(i);
             initializeMap(sender,parentExt);
@@ -114,9 +116,22 @@ public class GameManager {
             actorData.putUtfString("id", String.valueOf(sender.getId()));
             actorData.putUtfString("actor", playerInfo.getUtfString("avatar"));
             ISFSObject spawnPoint = new SFSObject();
-            spawnPoint.putFloat("x", (float) 36.90);
-            spawnPoint.putFloat("y", (float) 0);
-            spawnPoint.putFloat("z", (float) 2.3);
+            int team = Integer.parseInt(playerInfo.getUtfString("team"));
+            float px = 0f;
+            float pz = 0f;
+            if(team == 0){
+                px = (float) MapData.PURPLE_SPAWNS[purpleNum].getX();
+                pz = (float) MapData.PURPLE_SPAWNS[purpleNum].getY();
+                purpleNum++;
+            }
+            if(team == 1){
+                px = (float) MapData.PURPLE_SPAWNS[blueNum].getX()*-1;
+                pz = (float) MapData.PURPLE_SPAWNS[blueNum].getY();
+                blueNum++;
+            }
+            spawnPoint.putFloat("x", px);
+            spawnPoint.putFloat("y", 0f);
+            spawnPoint.putFloat("z", pz);
             spawnPoint.putFloat("rotation", 0);
             actorData.putSFSObject("spawn_point", spawnPoint);
             sender.getVariable("location").getSFSObjectValue().putSFSObject("p1",spawnPoint);
@@ -156,6 +171,10 @@ public class GameManager {
 
             }
         }
+        Point2D guardianLoc = new Point2D.Float(MapData.L2_GUARDIAN1_X*-1,MapData.L2_GUARDIAN1_Z);
+        Point2D guardianLoc2 = new Point2D.Float(MapData.L2_GUARDIAN1_X,MapData.L2_GUARDIAN1_Z);
+        ExtensionCommands.moveActor(parentExt,users.get(0).getLastJoinedRoom(),"gumball0",guardianLoc,new Point2D.Float((float) (guardianLoc.getX()+0.01f), (float) guardianLoc.getY()),0.01f,true);
+        ExtensionCommands.moveActor(parentExt,users.get(0).getLastJoinedRoom(),"gumball1",guardianLoc2,new Point2D.Float((float) (guardianLoc2.getX()-0.01f), (float) guardianLoc2.getY()),0.01f,true);
         try{ //Sets all the room variables once the game is about to begin
             setRoomVariables(users.get(0).getLastJoinedRoom());
         }catch(SFSVariableException e){
@@ -199,13 +218,8 @@ public class GameManager {
         spawnTowers(user,parentExt);
         spawnAltars(user,parentExt,room);
         spawnHealth(user,parentExt,room);
-
-        Point2D guardianLoc = new Point2D.Float(MapData.L2_GUARDIAN1_X*-1,MapData.L2_GUARDIAN1_Z);
-        Point2D guardianLoc2 = new Point2D.Float(MapData.L2_GUARDIAN1_X,MapData.L2_GUARDIAN1_Z);
         parentExt.send("cmd_create_actor",MapData.getGuardianActorData(0,room),user);
         parentExt.send("cmd_create_actor",MapData.getGuardianActorData(1,room),user);
-        ExtensionCommands.moveActor(parentExt,user,"gumball0",guardianLoc,new Point2D.Float((float) (guardianLoc.getX()+0.01f), (float) guardianLoc.getY()),0.01f,true);
-        ExtensionCommands.moveActor(parentExt,user,"gumball1",guardianLoc2,new Point2D.Float((float) (guardianLoc2.getX()-0.01f), (float) guardianLoc2.getY()),0.01f,true);
 
     }
 

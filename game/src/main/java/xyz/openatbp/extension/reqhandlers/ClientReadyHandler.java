@@ -6,7 +6,6 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.GameManager;
 
 import java.util.ArrayList;

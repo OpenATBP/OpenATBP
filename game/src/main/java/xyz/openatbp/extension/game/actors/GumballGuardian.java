@@ -12,7 +12,7 @@ import xyz.openatbp.extension.game.Champion;
 import java.awt.geom.Point2D;
 import java.util.concurrent.TimeUnit;
 
-public class GumballGuardian extends Tower { //TODO: Last left off - test the guardians
+public class GumballGuardian extends Tower {
 
     public GumballGuardian(ATBPExtension parentExt, Room room, String id, int team, Point2D location){
         super(parentExt,room,id,team,location);
@@ -43,10 +43,8 @@ public class GumballGuardian extends Tower { //TODO: Last left off - test the gu
     @Override
     public void attack(Actor a) {
         this.attackCooldown = 800;
-        for(User u : this.room.getUserList()){
-            String projectileName = "gumballGuardian_projectile";
-            ExtensionCommands.createProjectileFX(this.parentExt,u,projectileName,this.id,a.getId(),"emitNode","Bip01",0.6f);
-        }
+        String projectileName = "gumballGuardian_projectile";
+        ExtensionCommands.createProjectileFX(this.parentExt,this.room,projectileName,this.id,a.getId(),"emitNode","Bip01",0.6f);
         SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,1000,"basicAttack"),600, TimeUnit.MILLISECONDS);
     }
 

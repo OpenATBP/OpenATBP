@@ -27,20 +27,6 @@ public class ExtensionCommands {
         @param highlight - Should the effect be highlighted based on the team of the actor?
         @param team - Int value of the team such as blue(1) or purple(0)
      */
-    public static void createActorFX(ATBPExtension parentExt, User u, String id, String bundle, int duration, String fxId, boolean parent, String emit, boolean orient, boolean highlight, int team){
-        System.out.println("Creating actor FX!");
-        ISFSObject data2 = new SFSObject();
-        data2.putUtfString("id",id);
-        data2.putUtfString("bundle",bundle);
-        data2.putInt("duration",duration);
-        data2.putUtfString("fx_id",fxId);
-        data2.putBool("parent",parent);
-        data2.putUtfString("emit",emit);
-        data2.putBool("orient",orient);
-        data2.putBool("highlight",highlight);
-        data2.putInt("team",team);
-        parentExt.send("cmd_create_actor_fx",data2,u);
-    }
 
     public static void createActorFX(ATBPExtension parentExt, Room room, String id, String bundle, int duration, String fxId, boolean parent, String emit, boolean orient, boolean highlight, int team){
         for(User u : room.getUserList()){
@@ -58,8 +44,10 @@ public class ExtensionCommands {
             parentExt.send("cmd_create_actor_fx",data2,u);
         }
     }
-    public static void updateActorData(ATBPExtension parentExt, User u, ISFSObject data){
-        parentExt.send("cmd_update_actor_data",data,u);
+    public static void updateActorData(ATBPExtension parentExt, Room room, ISFSObject data){
+        for(User u : room.getUserList()){
+            parentExt.send("cmd_update_actor_data",data,u);
+        }
     }
 
     public static void updateActorData(ATBPExtension parentExt, Room room, String id, HashMap<String, Double> values){
@@ -123,17 +111,19 @@ public class ExtensionCommands {
      * @param speed - Movement speed of actor
      * @param orient - Should the actor face in the direction of their path?
      */
-    public static void moveActor(ATBPExtension parentExt, User u, String id, Point2D p, Point2D d, float speed, boolean orient){
+    public static void moveActor(ATBPExtension parentExt, Room room, String id, Point2D p, Point2D d, float speed, boolean orient){
         //System.out.println(id + " moving!");
-        ISFSObject data = new SFSObject();
-        data.putUtfString("i",id);
-        data.putFloat("px",(float)p.getX());
-        data.putFloat("pz",(float)p.getY());
-        data.putFloat("dx",(float) d.getX());
-        data.putFloat("dz",(float) d.getY());
-        data.putFloat("s",speed);
-        data.putBool("o",orient);
-        parentExt.send("cmd_move_actor",data,u);
+        for(User u : room.getUserList()){
+            ISFSObject data = new SFSObject();
+            data.putUtfString("i",id);
+            data.putFloat("px",(float)p.getX());
+            data.putFloat("pz",(float)p.getY());
+            data.putFloat("dx",(float) d.getX());
+            data.putFloat("dz",(float) d.getY());
+            data.putFloat("s",speed);
+            data.putBool("o",orient);
+            parentExt.send("cmd_move_actor",data,u);
+        }
     }
 
     /**
@@ -144,23 +134,26 @@ public class ExtensionCommands {
      * @param rotation - Rotation float for how it should be facing
      * @param team - Team int value
      */
-    public static void createActor(ATBPExtension parentExt, User u, String id, String actor, Point2D spawn, float rotation, int team){
-        System.out.println("Creating actor: " + id);
-        ISFSObject data = new SFSObject();
-        data.putUtfString("id",id);
-        data.putUtfString("actor",actor);
-        ISFSObject spawnPoint = new SFSObject();
-        spawnPoint.putFloat("x", (float) spawn.getX());
-        spawnPoint.putFloat("y",0f);
-        spawnPoint.putFloat("z", (float) spawn.getY());
-        data.putSFSObject("spawn_point",spawnPoint);
-        data.putFloat("rotation",rotation);
-        data.putInt("team",team);
-        parentExt.send("cmd_create_actor",data,u);
+    public static void createActor(ATBPExtension parentExt, Room room, String id, String actor, Point2D spawn, float rotation, int team){
+        for(User u : room.getUserList()){
+            ISFSObject data = new SFSObject();
+            data.putUtfString("id",id);
+            data.putUtfString("actor",actor);
+            ISFSObject spawnPoint = new SFSObject();
+            spawnPoint.putFloat("x", (float) spawn.getX());
+            spawnPoint.putFloat("y",0f);
+            spawnPoint.putFloat("z", (float) spawn.getY());
+            data.putSFSObject("spawn_point",spawnPoint);
+            data.putFloat("rotation",rotation);
+            data.putInt("team",team);
+            parentExt.send("cmd_create_actor",data,u);
+        }
     }
 
-    public static void createActor(ATBPExtension parentExt, User u, ISFSObject data){
-        parentExt.send("cmd_create_actor",data,u);
+    public static void createActor(ATBPExtension parentExt, Room room, ISFSObject data){
+        for(User u : room.getUserList()){
+            parentExt.send("cmd_create_actor",data,u);
+        }
     }
 
     /**
@@ -172,17 +165,19 @@ public class ExtensionCommands {
      * @param crit - Does the attack crit?
      * @param orient - Should the player face the target?
      */
-    public static void attackActor(ATBPExtension parentExt, User u, String id, String target, float x, float z, boolean crit, boolean orient){
-        ISFSObject data = new SFSObject();
-        data.putUtfString("id", id);
-        data.putUtfString("target_id",target);
-        data.putFloat("dest_x",x);
-        data.putFloat("dest_y",0f);
-        data.putFloat("dest_z",z);
-        data.putUtfString("attack_type","basic");
-        data.putBool("crit",crit);
-        data.putBool("orient",orient);
-        parentExt.send("cmd_attack_actor",data,u);
+    public static void attackActor(ATBPExtension parentExt, Room room, String id, String target, float x, float z, boolean crit, boolean orient){
+        for(User u : room.getUserList()){
+            ISFSObject data = new SFSObject();
+            data.putUtfString("id", id);
+            data.putUtfString("target_id",target);
+            data.putFloat("dest_x",x);
+            data.putFloat("dest_y",0f);
+            data.putFloat("dest_z",z);
+            data.putUtfString("attack_type","basic");
+            data.putBool("crit",crit);
+            data.putBool("orient",orient);
+            parentExt.send("cmd_attack_actor",data,u);
+        }
     }
 
     /**
@@ -190,11 +185,14 @@ public class ExtensionCommands {
      * @param target - ID of the target of the damage
      * @param damage - Damage the target is taking
      */
-    public static void damageActor(ATBPExtension parentExt, User u, String target, int damage){
-        ISFSObject data = new SFSObject();
-        data.putUtfString("target_id",target);
-        data.putInt("damage",damage);
-        parentExt.send("cmd_damage_actor",data,u);
+    public static void damageActor(ATBPExtension parentExt, Room room, String target, int damage){
+        for(User u : room.getUserList()){
+            ISFSObject data = new SFSObject();
+            data.putUtfString("target_id",target);
+            data.putInt("damage",damage);
+            parentExt.send("cmd_damage_actor",data,u);
+        }
+
     }
 
     /**
@@ -206,15 +204,17 @@ public class ExtensionCommands {
      * @param hit - Target location
      * @param time - Time for projectile to be spawned
      */
-    public static void createProjectileFX(ATBPExtension parentExt, User u, String fxName, String attackerId, String targetId, String emit, String hit, float time){
-        ISFSObject data = new SFSObject();
-        data.putUtfString("name", fxName);
-        data.putUtfString("attacker", attackerId);
-        data.putUtfString("target",targetId);
-        data.putUtfString("emit",emit);
-        data.putUtfString("hit",hit);
-        data.putFloat("time",time);
-        parentExt.send("cmd_create_projectile_fx",data,u);
+    public static void createProjectileFX(ATBPExtension parentExt, Room room, String fxName, String attackerId, String targetId, String emit, String hit, float time){
+        for(User u : room.getUserList()){
+            ISFSObject data = new SFSObject();
+            data.putUtfString("name", fxName);
+            data.putUtfString("attacker", attackerId);
+            data.putUtfString("target",targetId);
+            data.putUtfString("emit",emit);
+            data.putUtfString("hit",hit);
+            data.putFloat("time",time);
+            parentExt.send("cmd_create_projectile_fx",data,u);
+        }
     }
 
     /**
@@ -233,20 +233,24 @@ public class ExtensionCommands {
      *
      * @param tower - Tower identifier to show what tower is being attacked.
      */
-    public static void towerAttacked(ATBPExtension parentExt, User u, int tower){
-        ISFSObject data = new SFSObject();
-        data.putInt("tower",tower);
-        parentExt.send("cmd_tower_under_attack",data,u);
+    public static void towerAttacked(ATBPExtension parentExt, Room room, int tower){
+        for(User u : room.getUserList()){
+            ISFSObject data = new SFSObject();
+            data.putInt("tower",tower);
+            parentExt.send("cmd_tower_under_attack",data,u);
+        }
     }
 
     /**
      *
      * @param tower - Tower identifier to show what tower is destroyed.
      */
-    public static void towerDown(ATBPExtension parentExt, User u, int tower){
-        ISFSObject data = new SFSObject();
-        data.putInt("tower",tower);
-        parentExt.send("cmd_tower_down",data,u);
+    public static void towerDown(ATBPExtension parentExt, Room room, int tower){
+        for(User u : room.getUserList()){
+            ISFSObject data = new SFSObject();
+            data.putInt("tower",tower);
+            parentExt.send("cmd_tower_down",data,u);
+        }
     }
 
     /**
@@ -255,6 +259,17 @@ public class ExtensionCommands {
      * @param attackerId - ID of actor being knocked out
      * @param deathTime - Respawn time for the knocked out actor
      */
+    public static void knockOutActor(ATBPExtension parentExt, Room room, String id, String attackerId, int deathTime){
+        for(User u : room.getUserList()){
+            ISFSObject data = new SFSObject();
+            data.putUtfString("id",id);
+            data.putUtfString("attackerId",attackerId);
+            data.putInt("deathTime",deathTime*1000);
+            System.out.println("Death Time: " + deathTime);
+            parentExt.send("cmd_knockout_actor",data,u);
+        }
+    }
+
     public static void knockOutActor(ATBPExtension parentExt, User u, String id, String attackerId, int deathTime){
         ISFSObject data = new SFSObject();
         data.putUtfString("id",id);
@@ -268,11 +283,13 @@ public class ExtensionCommands {
      *
      * @param id - ID of actor being destroyed
      */
-    public static void destroyActor(ATBPExtension parentExt, User u, String id){
-        System.out.println("Destroying: " + id);
-        ISFSObject data = new SFSObject();
-        data.putUtfString("id",id);
-        parentExt.send("cmd_destroy_actor",data,u);
+    public static void destroyActor(ATBPExtension parentExt, Room room, String id){
+        for(User u : room.getUserList()){
+            System.out.println("Destroying: " + id);
+            ISFSObject data = new SFSObject();
+            data.putUtfString("id",id);
+            parentExt.send("cmd_destroy_actor",data,u);
+        }
     }
 
     /**
@@ -324,11 +341,13 @@ public class ExtensionCommands {
      * @param teamA - New score for purple team
      * @param teamB - New score for blue team
      */
-    public static void updateScores(ATBPExtension parentExt, User u, int teamA, int teamB){
-        ISFSObject data = new SFSObject();
-        data.putInt("teamA",teamA);
-        data.putInt("teamB",teamB);
-        parentExt.send("cmd_update_score",data,u);
+    public static void updateScores(ATBPExtension parentExt, Room room, int teamA, int teamB){
+        for(User u : room.getUserList()){
+            ISFSObject data = new SFSObject();
+            data.putInt("teamA",teamA);
+            data.putInt("teamB",teamB);
+            parentExt.send("cmd_update_score",data,u);
+        }
     }
 
     /**
@@ -336,11 +355,14 @@ public class ExtensionCommands {
      * @param id - ID of actor being changed
      * @param bundle - File name (minus extension) for asset bundle
      */
-    public static void swapActorAsset(ATBPExtension parentExt, User u, String id, String bundle){
-        ISFSObject data = new SFSObject();
-        data.putUtfString("actor_id",id);
-        data.putUtfString("bundle",bundle);
-        parentExt.send("cmd_swap_asset",data,u);
+    public static void swapActorAsset(ATBPExtension parentExt, Room room, String id, String bundle){
+        for(User u : room.getUserList()){
+            ISFSObject data = new SFSObject();
+            data.putUtfString("actor_id",id);
+            data.putUtfString("bundle",bundle);
+            parentExt.send("cmd_swap_asset",data,u);
+        }
+
     }
 
     /**
@@ -348,21 +370,24 @@ public class ExtensionCommands {
      * @param winningTeam - double value for what the winning team is
      * @throws JsonProcessingException
      */
-    public static void gameOver(ATBPExtension parentExt, User u, double winningTeam) throws JsonProcessingException {
-        System.out.println("Calling game over!");
-        ObjectMapper objectMapper = new ObjectMapper();
-        ObjectNode node = objectMapper.createObjectNode();
-        node.set("teamA", GameManager.getTeamData(parentExt,0,u.getLastJoinedRoom()));
+    public static void gameOver(ATBPExtension parentExt, Room room, double winningTeam) throws JsonProcessingException {
+        for(User u : room.getUserList()){
+            System.out.println("Calling game over!");
+            ObjectMapper objectMapper = new ObjectMapper();
+            ObjectNode node = objectMapper.createObjectNode();
+            node.set("teamA", GameManager.getTeamData(parentExt,0,u.getLastJoinedRoom()));
 
-        node.set("teamB", GameManager.getTeamData(parentExt,1,u.getLastJoinedRoom()));
-        node.set("gloalTeamData", GameManager.getGlobalTeamData(u.getLastJoinedRoom()));
-        node.put("winner",winningTeam);
-        ISFSObject data = new SFSObject();
-        String objectAsText;
-        objectAsText = objectMapper.writeValueAsString(node);
-        System.out.println(objectAsText);
-        data.putUtfString("game_results",objectAsText);
-        parentExt.send("cmd_game_over", data, u);
+            node.set("teamB", GameManager.getTeamData(parentExt,1,u.getLastJoinedRoom()));
+            node.set("gloalTeamData", GameManager.getGlobalTeamData(u.getLastJoinedRoom()));
+            node.put("winner",winningTeam);
+            ISFSObject data = new SFSObject();
+            String objectAsText;
+            objectAsText = objectMapper.writeValueAsString(node);
+            System.out.println(objectAsText);
+            data.putUtfString("game_results",objectAsText);
+            parentExt.send("cmd_game_over", data, u);
+        }
+
     }
 
     /**
@@ -414,10 +439,12 @@ public class ExtensionCommands {
      *
      * @param id - ID of player/actor respawning
      */
-    public static void respawnActor(ATBPExtension parentExt, User u, String id){
-        ISFSObject data = new SFSObject();
-        data.putUtfString("id",id);
-        parentExt.send("cmd_respawn_actor",data,u);
+    public static void respawnActor(ATBPExtension parentExt, Room room, String id){
+        for(User u : room.getUserList()){
+            ISFSObject data = new SFSObject();
+            data.putUtfString("id",id);
+            parentExt.send("cmd_respawn_actor",data,u);
+        }
     }
 
     /**
@@ -427,7 +454,6 @@ public class ExtensionCommands {
      * @param cooldown - Cooldown of ability
      * @param gCooldown - Cooldown till player can use another ability
      */
-    //TODO: Note to remove the hard coding after testing
     public static void actorAbilityResponse(ATBPExtension parentExt, User u, String id, boolean canCast, int cooldown, int gCooldown){
         ISFSObject data = new SFSObject();
         data.putUtfString("id",id);
@@ -444,13 +470,6 @@ public class ExtensionCommands {
      * @param state - ActorState of what state is being affected
      * @param enabled - Boolean of whether the state is active or not
      */
-    public static void updateActorState(ATBPExtension parentExt, User u, String id, ActorState state, boolean enabled){
-        ISFSObject data = new SFSObject();
-        data.putUtfString("id", String.valueOf(u.getId()));
-        data.putInt("state",state.ordinal());
-        data.putBool("enable", enabled);
-        parentExt.send("cmd_update_actor_state",data,u);
-    }
 
     public static void updateActorState(ATBPExtension parentExt, Room r, String id, ActorState state, boolean enabled){
         for(User u : r.getUserList()){
@@ -471,21 +490,22 @@ public class ExtensionCommands {
      * @param speed - Speed of projectile
      */
     public static void createProjectile(ATBPExtension parentExt, Room room, UserActor owner, String id, Point2D loc, Point2D dest, float speed){
-        for(User u : room.getUserList()){
-            ExtensionCommands.createActor(parentExt,u, owner.getId() + id, id,loc,0f,owner.getTeam());
-            ExtensionCommands.moveActor(parentExt,u, owner.getId()+id,loc,dest,speed,true);
-        }
+        ExtensionCommands.createActor(parentExt,room, owner.getId() + id, id,loc,0f,owner.getTeam());
+        ExtensionCommands.moveActor(parentExt,room, owner.getId()+id,loc,dest,speed,true);
     }
 
-    public static void snapActor(ATBPExtension parentExt, User u, String id, Point2D location, Point2D dest, boolean orient){
-        ISFSObject data = new SFSObject();
-        data.putUtfString("i",id);
-        data.putFloat("px",(float)location.getX());
-        data.putFloat("pz",(float)location.getY());
-        data.putFloat("dx",(float)dest.getX());
-        data.putFloat("dz",(float)dest.getY());
-        data.putBool("o",orient);
-        parentExt.send("cmd_snap_actor",data,u);
+    public static void snapActor(ATBPExtension parentExt, Room room, String id, Point2D location, Point2D dest, boolean orient){
+        for(User u : room.getUserList()){
+            ISFSObject data = new SFSObject();
+            data.putUtfString("i",id);
+            data.putFloat("px",(float)location.getX());
+            data.putFloat("pz",(float)location.getY());
+            data.putFloat("dx",(float)dest.getX());
+            data.putFloat("dz",(float)dest.getY());
+            data.putBool("o",orient);
+            parentExt.send("cmd_snap_actor",data,u);
+        }
+
     }
 
     public static void handleDeathRecap(ATBPExtension parentExt, User u, String id, String killerId, HashMap<Actor, ISFSObject> aggressors) throws JsonProcessingException {

@@ -9,7 +9,6 @@ import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MapData;
 import xyz.openatbp.extension.game.ActorType;
-import xyz.openatbp.extension.game.actors.Actor;
 
 import java.awt.geom.Point2D;
 
@@ -40,29 +39,26 @@ public class Base extends Actor {
 
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
-        if(!this.unlocked) this.currentHealth-=this.currentHealth;
+        if(!this.unlocked) return false;
         this.currentHealth-=damage;
         double oppositeTeam = 0;
         if(this.team == 0) oppositeTeam = 1;
         if(this.currentHealth <= 0) this.parentExt.getRoomHandler(this.room.getId()).gameOver((int) oppositeTeam);
-        for(User u : room.getUserList()){
-            if(this.currentHealth <= 0){
 
-                try{
-                    ExtensionCommands.gameOver(parentExt,u,oppositeTeam);
-                }catch(Exception e){
-                    e.printStackTrace();
-                }
+        if(this.currentHealth <= 0){
+            try{
+                ExtensionCommands.gameOver(parentExt,this.room,oppositeTeam);
+            }catch(Exception e){
+                e.printStackTrace();
             }
-            ISFSObject updateData = new SFSObject();
-            updateData.putUtfString("id", this.id);
-            updateData.putInt("currentHealth", (int) currentHealth);
-            updateData.putDouble("pHealth", getPHealth());
-            updateData.putInt("maxHealth", (int) maxHealth);
-            ExtensionCommands.updateActorData(parentExt,u,updateData);
         }
-        if(currentHealth > 0) return false;
-        else return true;
+        ISFSObject updateData = new SFSObject();
+        updateData.putUtfString("id", this.id);
+        updateData.putInt("currentHealth", (int) currentHealth);
+        updateData.putDouble("pHealth", getPHealth());
+        updateData.putInt("maxHealth", (int) maxHealth);
+        ExtensionCommands.updateActorData(parentExt,this.room,updateData);
+        return !(currentHealth > 0);
     }
 
     @Override

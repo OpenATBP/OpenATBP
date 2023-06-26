@@ -56,7 +56,7 @@ public class FlamePrincess extends UserActor {
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
         super.useAbility(ability,spellData,cooldown,gCooldown,castDelay,dest);
         if(ultUses == 3 && !passiveEnabled && System.currentTimeMillis()-lastPassiveUsage >= 10000){
-            ExtensionCommands.createActorFX(parentExt,player,id,"flame_princess_passive_flames",1000*60,"flame_passive",true,"",false,false,team);
+            ExtensionCommands.createActorFX(parentExt,room,id,"flame_princess_passive_flames",1000*60,"flame_passive",true,"",false,false,team);
             passiveEnabled = true;
         }
         switch(ability){
@@ -84,14 +84,14 @@ public class FlamePrincess extends UserActor {
                     this.setState(ActorState.TRANSFORMED, true);
                     ExtensionCommands.playSound(this.parentExt,this.player,"vo/vo_flame_princess_flame_form",this.getLocation());
                     ExtensionCommands.playSound(this.parentExt,this.player,"sfx_flame_princess_flame_form",this.getLocation());
-                    ExtensionCommands.swapActorAsset(this.parentExt,this.player,this.id,"flame_ult");
+                    ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,"flame_ult");
                     ExtensionCommands.createActorFX(this.parentExt,this.player.getLastJoinedRoom(),this.id,"flame_princess_ultimate_aoe",5000,"flame_e",true,"",true,false,this.team);
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),duration, TimeUnit.MILLISECONDS);
                 }else{
                     if(ultUses>0){
                         //TODO: Fix so FP can dash and still get health packs
                         ultUses--;
-                        ExtensionCommands.moveActor(parentExt,player,id,getLocation(),Champion.getDashPoint(parentExt,this,dest),20f,true);
+                        ExtensionCommands.moveActor(parentExt,room,id,getLocation(),Champion.getDashPoint(parentExt,this,dest),20f,true);
                         double time = dest.distance(getLocation())/20f;
                         this.canMove = false;
                         SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(true),(int)Math.floor(time*1000),TimeUnit.MILLISECONDS);
@@ -112,9 +112,8 @@ public class FlamePrincess extends UserActor {
     public void attack(Actor a){
         super.attack(a);
         boolean crit = Math.random() < this.getPlayerStat("criticalChance");
-        for(User u : room.getUserList()){
-            ExtensionCommands.attackActor(parentExt,u,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
-        }
+        ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
+
         currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,new PassiveAttack(a),"flame_princess_projectile"),500,TimeUnit.MILLISECONDS);
     }
 
@@ -155,8 +154,8 @@ public class FlamePrincess extends UserActor {
         protected void spellE() {
             if(!ultFinished && ultStarted){
                 setState(ActorState.TRANSFORMED, false);
-                ExtensionCommands.removeFx(parentExt,player,"flame_e");
-                ExtensionCommands.swapActorAsset(parentExt,player,id,avatar);
+                ExtensionCommands.removeFx(parentExt,room,"flame_e");
+                ExtensionCommands.swapActorAsset(parentExt,room,id,avatar);
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"e",true, getReducedCooldown(cooldown), (int) gCooldown);
                 ultStarted = false;
                 ultFinished = true;

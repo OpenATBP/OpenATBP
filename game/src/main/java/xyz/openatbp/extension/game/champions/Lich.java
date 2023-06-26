@@ -131,7 +131,7 @@ public class Lich extends UserActor {
             this.destination = Lich.this.destination;
             this.originalLocation = this.location;
             this.speed = 2.95f;
-            ExtensionCommands.createActor(parentExt,player,this.id,this.avatar,this.location,0f,this.team);
+            ExtensionCommands.createActor(parentExt,room,this.id,this.avatar,this.location,0f,this.team);
         }
 
         @Override
@@ -155,7 +155,7 @@ public class Lich extends UserActor {
             this.destination = Lich.this.location;
             if(getRelativePoint().distance(this.destination) > 3) this.location = getRelativePoint();
             if(this.location.distance(this.destination) > 3){
-                ExtensionCommands.moveActor(parentExt,player,this.id,this.location,this.destination,(float)this.speed,true);
+                ExtensionCommands.moveActor(parentExt,room,this.id,this.location,this.destination,(float)this.speed,true);
             }
         }
 

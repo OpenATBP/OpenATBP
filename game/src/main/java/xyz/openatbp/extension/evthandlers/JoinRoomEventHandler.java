@@ -4,8 +4,6 @@ import com.smartfoxserver.v2.core.ISFSEvent;
 import com.smartfoxserver.v2.core.SFSEventParam;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
-import com.smartfoxserver.v2.entities.data.ISFSObject;
-import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseServerEventHandler;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.GameManager;
@@ -21,7 +19,7 @@ public class JoinRoomEventHandler extends BaseServerEventHandler {
         ArrayList<User> users = (ArrayList<User>) room.getUserList();
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         int maxPlayers = room.getMaxUsers();
-        if(true) maxPlayers = 1; //Remove after testing
+        //if(true) maxPlayers = 1; //Remove after testing
         if(GameManager.playersLoaded(users, maxPlayers)){ //If all players have loaded into the room
             System.out.println("Last to join is " + sender.getName());
             GameManager.addPlayer(users,parentExt); //Add users to the game

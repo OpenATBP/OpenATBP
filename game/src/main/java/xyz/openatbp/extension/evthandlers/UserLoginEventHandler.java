@@ -4,16 +4,14 @@ import com.smartfoxserver.bitswarm.sessions.ISession;
 import com.smartfoxserver.v2.core.ISFSEvent;
 import com.smartfoxserver.v2.core.SFSConstants;
 import com.smartfoxserver.v2.core.SFSEventParam;
-import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
-import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.exceptions.SFSException;
 import com.smartfoxserver.v2.extensions.BaseServerEventHandler;
 
 public class UserLoginEventHandler extends BaseServerEventHandler {
 
     @Override
-    public void handleServerEvent(ISFSEvent isfsEvent) throws SFSException {
+    public void handleServerEvent(ISFSEvent isfsEvent) {
         ISession session = (ISession) isfsEvent.getParameter(SFSEventParam.SESSION);
 
         ISFSObject loginData = (ISFSObject) isfsEvent.getParameter(SFSEventParam.LOGIN_IN_DATA); //Given from the Lobby Server

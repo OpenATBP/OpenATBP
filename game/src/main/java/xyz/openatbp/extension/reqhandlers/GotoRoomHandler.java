@@ -1,10 +1,7 @@
 package xyz.openatbp.extension.reqhandlers;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.api.CreateRoomSettings;
-import com.smartfoxserver.v2.config.ZoneSettings;
 import com.smartfoxserver.v2.entities.Room;
-import com.smartfoxserver.v2.entities.SFSRoom;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
@@ -62,10 +59,10 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
                 settings.setMaxUsers(1);
                 settings.setGroupId("Practice");
             }else if(params.getUtfString("room_id").contains("pve")){
-                settings.setMaxUsers(3);
+                settings.setMaxUsers(2); //TODO: Testing value
                 settings.setGroupId("PVE");
             }else{
-                settings.setMaxUsers(6);
+                settings.setMaxUsers(1); //TODO: Testing value
                 settings.setGroupId("PVP");
             }
             try {

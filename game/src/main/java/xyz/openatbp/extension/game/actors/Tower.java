@@ -51,9 +51,7 @@ public class Tower extends Actor {
         else if(a.getActorType() == ActorType.MINION) damage*=0.5;
         this.changeHealth(this.getMitigatedDamage(damage,this.getAttackType(attackData),a)*-1);
         boolean notify = System.currentTimeMillis()-this.lastHit >= 1000*5;
-        for(User u : room.getUserList()){
-            if(notify) ExtensionCommands.towerAttacked(parentExt,u,this.getTowerNum());
-        }
+        if(notify) ExtensionCommands.towerAttacked(parentExt,this.room,this.getTowerNum());
         if(this.currentHealth <= 0) this.die(a);
         if(notify) this.triggerNotification();
         return false;
@@ -62,16 +60,14 @@ public class Tower extends Actor {
     @Override
     public void attack(Actor a) {
         this.attackCooldown = this.getPlayerStat("attackSpeed");
-        for(User u : this.room.getUserList()){
-            String projectileName = "tower_projectile_blue";
-            String effectName = "tower_shoot_blue";
-            if(this.team == 0){
-                projectileName = "tower_projectile_purple";
-                effectName = "tower_shoot_purple";
-            }
-            ExtensionCommands.createProjectileFX(this.parentExt,u,projectileName,this.id,a.getId(),"emitNode","Bip01",0.6f);
-            ExtensionCommands.createActorFX(this.parentExt,u,this.id,effectName,600,this.id+"_attackFx",false,"emitNode",false,false,this.team);
+        String projectileName = "tower_projectile_blue";
+        String effectName = "tower_shoot_blue";
+        if(this.team == 0){
+            projectileName = "tower_projectile_purple";
+            effectName = "tower_shoot_purple";
         }
+        ExtensionCommands.createProjectileFX(this.parentExt,this.room,projectileName,this.id,a.getId(),"emitNode","Bip01",0.6f);
+        ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,effectName,600,this.id+"_attackFx",false,"emitNode",false,false,this.team);
         SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),600, TimeUnit.MILLISECONDS);
     }
 
@@ -83,10 +79,10 @@ public class Tower extends Actor {
                 ua.addGameStat("towers",1);
             }
             this.destroyed = true;
+            ExtensionCommands.towerDown(parentExt,this.room, this.getTowerNum());
+            ExtensionCommands.knockOutActor(parentExt,this.room,this.id,a.getId(),100);
+            ExtensionCommands.destroyActor(parentExt,this.room,this.id);
             for(User u : room.getUserList()){
-                ExtensionCommands.towerDown(parentExt,u, this.getTowerNum());
-                ExtensionCommands.knockOutActor(parentExt,u,this.id,a.getId(),100);
-                ExtensionCommands.destroyActor(parentExt,u,this.id);
                 String actorId = "tower2a";
                 if(this.getTowerNum() == 0 || this.getTowerNum() == 3 ){
                     actorId = "tower1a";
@@ -183,18 +179,6 @@ public class Tower extends Actor {
 
     public void triggerNotification(){ //Resets the hit timer so players aren't spammed by the tower being attacked
         this.lastHit = System.currentTimeMillis();
-    }
-
-    public long getLastHit(){
-        return this.lastHit;
-    }
-
-    public void destroy(){
-        this.destroyed = true;
-    }
-
-    public boolean isDestroyed(){
-        return this.destroyed;
     }
 
     private boolean canAttack(){

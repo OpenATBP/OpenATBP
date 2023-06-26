@@ -104,9 +104,7 @@ public abstract class Projectile {
     public void destroy(){
         System.out.println(this.owner.getRoom());
         if(!destroyed){
-            for(User u : this.owner.getRoom().getUserList()){
-                ExtensionCommands.destroyActor(this.parentExt, u, this.id);
-            }
+            ExtensionCommands.destroyActor(this.parentExt, owner.getRoom(), this.id);
         }
         this.destroyed = true;
     }

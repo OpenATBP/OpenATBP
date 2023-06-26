@@ -16,8 +16,8 @@ import java.util.concurrent.TimeUnit;
 
 public class Monster extends Actor {
 
-    enum AggroState{PASSIVE, ATTACKED};
-    enum MonsterType{SMALL,BIG};
+    enum AggroState{PASSIVE, ATTACKED}
+    enum MonsterType{SMALL,BIG}
 
     private AggroState state = AggroState.PASSIVE;
     private final Point2D startingLocation;
@@ -27,7 +27,7 @@ public class Monster extends Actor {
     private Line2D movementLine;
     private boolean dead = false;
 
-    public Monster(ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName){ //TODO: Make all startingLocation(s) uniform
+    public Monster(ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName){
         this.startingLocation = new Point2D.Float(startingLocation[0],startingLocation[1]);
         this.type = MonsterType.BIG;
         this.attackCooldown = 0;
@@ -117,9 +117,8 @@ public class Monster extends Actor {
             if(movementLine != null){
                 movementLine.setLine(this.location, movementLine.getP2());
                 this.travelTime = 0f;
-                for(User u : this.room.getUserList()){
-                    ExtensionCommands.moveActor(this.parentExt,u,this.id,this.location,movementLine.getP2(),(float)this.getPlayerStat("speed"),true);
-                }
+                ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,movementLine.getP2(),(float)this.getPlayerStat("speed"),true);
+
             }
         }
         return returnVal;
@@ -133,9 +132,7 @@ public class Monster extends Actor {
         if(this.attackCooldown == 0){
             this.attackCooldown = this.getPlayerStat("attackSpeed");
             int attackDamage = (int) this.getPlayerStat("attackDamage");
-            for(User u : room.getUserList()){
-                ExtensionCommands.attackActor(parentExt,u,this.id,a.getId(),(float) a.getLocation().getX(), (float) a.getLocation().getY(), false, true);
-            }
+            ExtensionCommands.attackActor(parentExt,this.room,this.id,a.getId(),(float) a.getLocation().getX(), (float) a.getLocation().getY(), false, true);
             if(this.type == MonsterType.SMALL) SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedRangedAttack(this,a),300,TimeUnit.MILLISECONDS); // Small camps are ranged
             else SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,attackDamage,"basicAttack"),500, TimeUnit.MILLISECONDS); //Melee damage
         }else if(attackCooldown == 300){ //Deprecated (changed from internal delay of attacks to using task schedulers)
@@ -146,9 +143,8 @@ public class Monster extends Actor {
     public void rangedAttack(Actor a){ //Called when ranged attacks take place to spawn projectile and deal damage after projectile hits
         String fxId = "gnome_projectile";
         int attackDamage = (int) this.getPlayerStat("attackDamage");
-        for(User u : room.getUserList()){
-            ExtensionCommands.createProjectileFX(this.parentExt,u,fxId,this.id,a.getId(),"Bip001","Bip001",0.5f);
-        }
+        ExtensionCommands.createProjectileFX(this.parentExt,this.room,fxId,this.id,a.getId(),"Bip001","Bip001",0.5f);
+
         SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,attackDamage,"basicAttack"),500, TimeUnit.MILLISECONDS);
     }
 
@@ -159,10 +155,8 @@ public class Monster extends Actor {
             this.currentHealth = -1;
             RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getId());
             int scoreValue = parentExt.getActorStats(this.id).get("valueScore").asInt();
-            for(User u : room.getUserList()){ //Handles death animation
-                ExtensionCommands.knockOutActor(parentExt,u,this.id,a.getId(),45);
-                ExtensionCommands.destroyActor(parentExt,u,this.id);
-            }
+            ExtensionCommands.knockOutActor(parentExt,this.room,this.id,a.getId(),45);
+            ExtensionCommands.destroyActor(parentExt,this.room,this.id);
             if(a.getActorType() == ActorType.PLAYER){ //Adds score + party xp when killed by player
                 UserActor ua = (UserActor) a;
                 ua.addGameStat("jungleMobs",1);
@@ -258,25 +252,22 @@ public class Monster extends Actor {
         if(this.movementLine == null){
             this.movementLine = rawMovementLine;
             this.travelTime = 0f;
-            for(User u : room.getUserList()){
-                ExtensionCommands.moveActor(parentExt,u,this.id,this.location,movementLine.getP2(), (float) this.getPlayerStat("speed"), true);
-            }
+            ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,movementLine.getP2(), (float) this.getPlayerStat("speed"), true);
+
         }
         if(this.movementLine.getP2().distance(rawMovementLine.getP2()) > 0.1f){
             this.movementLine = rawMovementLine;
             this.travelTime = 0f;
-            for(User u : room.getUserList()){
-                ExtensionCommands.moveActor(parentExt,u,this.id,this.location,movementLine.getP2(), (float) this.getPlayerStat("speed"), true);
-            }
+            ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,movementLine.getP2(), (float) this.getPlayerStat("speed"), true);
+
         }
     }
 
     public void move(Point2D dest){
         this.movementLine = new Line2D.Float(this.location,dest);
         this.travelTime = 0f;
-        for(User u : room.getUserList()){
-            ExtensionCommands.moveActor(parentExt,u,this.id,this.location,dest,(float)this.getPlayerStat("speed"), true);
-        }
+        ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,dest,(float)this.getPlayerStat("speed"), true);
+
     }
 
     public boolean canAttack(){

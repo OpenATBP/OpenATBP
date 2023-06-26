@@ -25,33 +25,13 @@ import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 
 public class Champion {
-
-    @Deprecated
-    public static void updateHealth(ATBPExtension parentExt, User u, int health){
-        ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
-        double currentHealth = stats.getInt("currentHealth");
-        double maxHealth = stats.getInt("maxHealth");
-        currentHealth+=health;
-        if(currentHealth>maxHealth) currentHealth = maxHealth;
-        double pHealth = currentHealth/maxHealth;
-        ISFSObject updateData = new SFSObject();
-        updateData.putUtfString("id", String.valueOf(u.getId()));
-        updateData.putInt("maxHealth",(int)maxHealth);
-        updateData.putInt("currentHealth",(int)currentHealth);
-        updateData.putDouble("pHealth",pHealth);
-        ExtensionCommands.updateActorData(parentExt,u,updateData);
-        stats.putInt("currentHealth",(int)currentHealth);
-        stats.putDouble("pHealth",pHealth);
-    }
     public static void updateServerHealth(ATBPExtension parentExt, Actor a){
         ISFSObject data = new SFSObject();
         data.putUtfString("id",a.getId());
         data.putInt("maxHealth",a.getMaxHealth());
         data.putInt("currentHealth",a.getHealth());
         data.putDouble("pHealth",a.getPHealth());
-        for(User u : a.getRoom().getUserList()){
-            ExtensionCommands.updateActorData(parentExt,u,data);
-        }
+        ExtensionCommands.updateActorData(parentExt,a.getRoom(),data);
     }
 
     public static UserActor getCharacterClass(User u, ATBPExtension parentExt){
@@ -275,7 +255,6 @@ public class Champion {
     public static class DelayedRangedAttack implements Runnable {
         Actor attacker;
         Actor target;
-        int damage;
 
         public DelayedRangedAttack(Actor a, Actor t){
             this.attacker = a;
@@ -310,40 +289,6 @@ public class Champion {
         String fxName;
         boolean isState = false;
 
-        public FinalBuffHandler(Actor a, Buff buff, double delta){
-            switch(buff.ordinal()){
-                case 0:
-                    this.buff = "health_pack";
-                    break;
-                case 1:
-                    this.buff = "attack_altar";
-                    break;
-                case 2:
-                    this.buff = "defense_altar";
-                    break;
-                case 3:
-                    this.buff = "keeoth";
-                    break;
-                case 4:
-                    this.buff = "ooze";
-                    break;
-                case 5:
-                    this.buff = "dc1";
-                    break;
-                case 6:
-                    this.buff = "dc2";
-                    break;
-                case 7:
-                    this.buff = "polymorph";
-                    break;
-            }
-            this.delta = delta;
-            this.a = a;
-            this.isState = true;
-            this.started = System.currentTimeMillis();
-            a.setBuffHandler(this.buff,this);
-        }
-
         public FinalBuffHandler(Actor a, ActorState state, double delta){
             this.a = a;
             this.delta = delta;
@@ -373,7 +318,7 @@ public class Champion {
 
         @Override
         public void run() {
-            if(this.isState){
+            if(!this.isState){
                 if(this.duration > 0){
                     int runTime = (int) Math.floor(duration - (System.currentTimeMillis()-started));
                     double statChange = this.getDelta();
@@ -397,9 +342,7 @@ public class Champion {
                 switch(this.buff){
                     case "polymorph":
                         a.setState(ActorState.POLYMORPH,false);
-                        for(User u : a.getRoom().getUserList()){
-                            ExtensionCommands.swapActorAsset(a.getParentExt(),u,a.getId(),a.getAvatar());
-                        }
+                        ExtensionCommands.swapActorAsset(a.getParentExt(),a.getRoom(),a.getId(),a.getAvatar());
                         a.setTempStat("speed",delta*-1);
                         break;
                 }
