@@ -165,8 +165,9 @@ public class Monster extends Actor {
             }
             if(a.getActorType() == ActorType.PLAYER){ //Adds score + party xp when killed by player
                 UserActor ua = (UserActor) a;
+                ua.addGameStat("jungleMobs",1);
                 if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(2);
-                roomHandler.addScore(a.getTeam(),scoreValue);
+                roomHandler.addScore(ua,a.getTeam(),scoreValue);
                 roomHandler.handleXPShare((UserActor)a,this.parentExt.getActorXP(this.id));
             }
             roomHandler.handleSpawnDeath(this);

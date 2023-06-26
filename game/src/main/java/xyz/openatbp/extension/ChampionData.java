@@ -8,6 +8,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 //TODO: More clearly separate this from Champion.class and make functions void (or move into UserActor functions)
@@ -439,5 +440,22 @@ public class ChampionData {
                 break;
         }
         return buildPath;
+    }
+
+    public static int getEloGain(UserActor ua, List<UserActor> players, double result){
+        double myElo = ua.getUser().getVariable("player").getSFSObjectValue().getInt("elo");
+        double teamCount = 0;
+        double teamElo = 0;
+        for(UserActor u : players){
+            if(u.getTeam() != ua.getTeam()){
+                double enemyElo = u.getUser().getVariable("player").getSFSObjectValue().getInt("elo");
+                teamCount++;
+                teamElo+=enemyElo;
+            }
+        }
+        double averageEnemyElo = Math.round(teamElo/teamCount);
+        double myProb = 1f/(1 + Math.pow(10,(averageEnemyElo-myElo)/400));
+        double eloGain = 20*(result-myProb);
+        return (int) Math.round(eloGain);
     }
 }

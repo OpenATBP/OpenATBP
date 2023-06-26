@@ -376,8 +376,8 @@ public class RoomHandler implements Runnable{
             String altarId = "altar_"+i;
             if(Math.abs(altarStatus[i]) >= 6 && altarStatus[i] != 10){
                 altarStatus[i]=10; //Locks altar
-                if(i == 1) addScore(team,15);
-                else addScore(team,10);
+                if(i == 1) addScore(null,team,15);
+                else addScore(null,team,10);
                 cooldowns.put(altarId+"__"+"altar",180);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,altarId,"fx_altar_lock",1000*60*3,"fx_altar_lock"+i,false,"Bip01",false,true,team);
                 int altarNum = -1;
@@ -436,7 +436,7 @@ public class RoomHandler implements Runnable{
         double dist = Math.sqrt(Math.pow(px-altar2_x,2) + Math.pow(pz-altar2_y,2));
         return dist<=2;
     }
-    public void addScore(int team, int points){
+    public void addScore(UserActor earner,int team, int points){
         ISFSObject scoreObject = room.getVariable("score").getSFSObjectValue();
         int blueScore = scoreObject.getInt("blue");
         int purpleScore = scoreObject.getInt("purple");
@@ -450,7 +450,9 @@ public class RoomHandler implements Runnable{
         for(User u : room.getUserList()){
             parentExt.send("cmd_update_score",pointData,u);
         }
-
+        if(earner != null){
+            earner.addGameStat("score",points);
+        }
     }
 
     private void handleCooldowns(){ //Cooldown keys structure is id__cooldownType__value. Example for a buff cooldown could be lich__buff__attackDamage
@@ -615,15 +617,15 @@ public class RoomHandler implements Runnable{
         }
     }
 
-    public void handleAssistXP (Actor a, Set<String> ids, int xp){
+    public void handleAssistXP (Actor a, Set<String> ids, double xp){ //TODO: I don't think this is working ! ! ! >:(
         if(a.getActorType() == ActorType.PLAYER){
             UserActor user = (UserActor) a;
-            user.addXP(xp);
+            user.addXP((int) xp);
         }
         for(String id : ids){
             if(!id.equalsIgnoreCase(a.getId())){
                 UserActor player = this.getPlayer(id);
-                if(player != null) player.addXP(xp/2);
+                if(player != null) player.addXP((int)Math.round(xp/2)); //<-- classic dividing an integer hehe haha hehe
             }
         }
     }
@@ -704,7 +706,9 @@ public class RoomHandler implements Runnable{
             for(UserActor ua : this.players){
                 String tegID = (String) ua.getUser().getSession().getProperty("tegid");
                 Document data = playerData.find(eq("user.TEGid",tegID)).first();
-                if(data != null){
+                if(data != null){ //TODO: Complete all of these values
+                    ObjectMapper mapper = new ObjectMapper();
+                    JsonNode dataObj = mapper.readTree(data.toJson());
                     int wins = 0;
                     int points = 0;
                     int kills = (int) ua.getStat("kills");
@@ -717,14 +721,45 @@ public class RoomHandler implements Runnable{
                     int largestSpree = 0;
                     int largestMulti = 0;
                     int score = 0;
+
+                    double win;
+                    if(winningTeam == -1) win = 0.5d;
+                    else if(ua.getTeam() == winningTeam) win = 1d;
+                    else win = 0d;
+                    int eloGain = ChampionData.getEloGain(ua,this.players,win);
                     if(ua.getTeam() == winningTeam) wins++;
+
+                    int currentRankProgress = dataObj.get("player").get("rankProgress").asInt();
+                    int rankIncrease = 0;
+                    if(currentRankProgress >= 90){
+                        currentRankProgress = 0;
+                        rankIncrease++;
+                    }
+                    else currentRankProgress+=10;
+
                     if(ua.hasGameStat("score")) score+=ua.getGameStat("score");
+                    if(ua.hasGameStat("towers")) towers+=ua.getGameStat("towers");
+                    if(ua.hasGameStat("minions")) minions+=ua.getGameStat("minions");
+                    if(ua.hasGameStat("jungleMobs")) jungleMobs+=ua.getGameStat("jungleMobs");
+
+                    if(ua.hasGameStat("spree")){
+                        int currentSpree = dataObj.get("player").get("largestSpree").asInt();
+                        double gameSpree = ua.getGameStat("spree");
+                        if(gameSpree > currentSpree) largestSpree = (int)gameSpree;
+                    }
+
+                    if(ua.hasGameStat("largestMulti")){
+                        int currentMulti = dataObj.get("player").get("largestMulti").asInt();
+                        double gameMulti = ua.getGameStat("largestMulti");
+                        if(gameMulti > currentMulti) largestMulti = (int)gameMulti;
+                    }
+
                     Bson updates = Updates.combine(
                             Updates.inc("playsPVP",1),
-                            Updates.inc("player.elo",20),
-                            Updates.inc("player.rankProgress",10),
+                            Updates.inc("player.elo",eloGain),
+                            Updates.set("player.rankProgress",currentRankProgress),
                             Updates.inc("player.winsPVP",wins),
-                            Updates.inc("player.points",points),
+                            Updates.inc("player.points",points), //Always zero I have no idea what this is for?
                             Updates.inc("player.coins",100),
                             Updates.inc("player.kills",kills),
                             Updates.inc("player.deaths",deaths),
@@ -733,13 +768,14 @@ public class RoomHandler implements Runnable{
                             Updates.inc("player.minions",minions),
                             Updates.inc("player.jungleMobs",jungleMobs),
                             Updates.inc("player.altars",altars),
-                            Updates.inc("player.scoreTotal",score)
-
+                            Updates.inc("player.scoreTotal",score),
+                            Updates.inc("player.rank",rankIncrease),
+                            Updates.set("player.largestSpree",largestSpree),
+                            Updates.set("player.largestMulti",largestMulti)
                     );
                     UpdateOptions options = new UpdateOptions().upsert(true);
                     System.out.println(playerData.updateOne(data,updates,options));
-                    ObjectMapper mapper = new ObjectMapper();
-                    JsonNode dataObj = mapper.readTree(data.toJson());
+
                 }
             }
         }catch (Exception e){

@@ -78,6 +78,10 @@ public class Tower extends Actor {
     @Override
     public void die(Actor a) {
         if(!this.destroyed){
+            if(a.getActorType() == ActorType.PLAYER){
+                UserActor ua = (UserActor) a;
+                ua.addGameStat("towers",1);
+            }
             this.destroyed = true;
             for(User u : room.getUserList()){
                 ExtensionCommands.towerDown(parentExt,u, this.getTowerNum());
@@ -92,7 +96,7 @@ public class Tower extends Actor {
                 ExtensionCommands.removeFx(parentExt,u,this.id+"_ring");
                 ExtensionCommands.removeFx(parentExt,u,this.id+"_target");
                 if(this.target != null && this.target.getActorType() == ActorType.PLAYER) ExtensionCommands.removeFx(parentExt,u,this.id+"_aggro");
-                this.parentExt.getRoomHandler(this.room.getId()).addScore(a.getTeam(),50);
+                this.parentExt.getRoomHandler(this.room.getId()).addScore(null,a.getTeam(),50);
             }
             if(this.getTowerNum() == 0 || this.getTowerNum() == 3) parentExt.getRoomHandler(room.getId()).getOpposingTeamBase(this.team).unlock();
         }
@@ -211,4 +215,5 @@ public class Tower extends Actor {
         ExtensionCommands.createWorldFX(this.parentExt, user.getUser(),user.getId(),"tower_danger_alert",this.id+"_aggro",10*60*1000,(float) this.location.getX(),(float)this.location.getY(),true,this.team,0f);
         ExtensionCommands.playSound(this.parentExt,user.getUser(),"sfx_turret_has_you_targeted",this.location);
     }
+
 }

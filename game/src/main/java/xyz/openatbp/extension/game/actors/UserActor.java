@@ -43,6 +43,8 @@ public class UserActor extends Actor {
     protected boolean moonActivated = false;
     protected Map<String,Double> endGameStats = new HashMap<>();
     protected int killingSpree = 0;
+    protected int multiKill = 0;
+    protected long lastKilled = System.currentTimeMillis();
 
     //TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt){
@@ -304,6 +306,7 @@ public class UserActor extends Actor {
                 UserActor ua = (UserActor) a;
                 ua.increaseStat("kills",1);
                 if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(5);
+                this.parentExt.getRoomHandler(this.room.getId()).addScore(ua,ua.getTeam(),25);
             }
             Set<String> assistIds = new HashSet<>(2);
             for(Actor actor : this.aggressors.keySet()){
@@ -353,7 +356,11 @@ public class UserActor extends Actor {
     }
 
     public void increaseStat(String key, double num){
-        if(key.equalsIgnoreCase("kills")) this.killingSpree+=num;
+        if(key.equalsIgnoreCase("kills")){
+            this.killingSpree+=num;
+            this.multiKill++;
+            this.lastKilled = System.currentTimeMillis();
+        }
         this.stats.put(key,this.stats.get(key)+num);
         ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,key,this.getPlayerStat(key));
     }
@@ -435,6 +442,16 @@ public class UserActor extends Actor {
             for(Actor a : this.aggressors.keySet()){
                 ISFSObject damageData = this.aggressors.get(a);
                 if(System.currentTimeMillis() > damageData.getLong("lastAttacked") + 10000) this.aggressors.remove(a);
+            }
+
+            if(System.currentTimeMillis() - this.lastKilled >= 10000){
+                if(this.multiKill != 0){
+                    if(this.hasGameStat("largestMulti")){
+                        double largestMulti = this.getGameStat("largestMulti");
+                        if(this.multiKill > largestMulti) this.setGameStat("largestMulti",this.multiKill);
+                    }else this.setGameStat("largestMulti",this.multiKill);
+                    this.multiKill = 0;
+                }
             }
         }
     }

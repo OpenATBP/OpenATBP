@@ -8,6 +8,7 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import static com.mongodb.client.model.Filters.eq;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.entities.Room;
@@ -297,5 +298,20 @@ public class ATBPExtension extends SFSExtension {
 
     public MongoCollection<Document> getPlayerDatabase(){
         return this.playerDatabase;
+    }
+
+    public int getElo(String tegID){
+        try{
+            Document playerData = this.playerDatabase.find(eq("user.TEGid",tegID)).first();
+            if(playerData != null){
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode data = mapper.readTree(playerData.toJson());
+                return data.get("player").get("elo").asInt();
+            }else return -1;
+        }catch(Exception e){
+            e.printStackTrace();
+            return -1;
+        }
+
     }
 }

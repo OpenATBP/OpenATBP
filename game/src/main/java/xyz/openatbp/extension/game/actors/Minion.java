@@ -342,6 +342,10 @@ public class Minion extends Actor {
     public void die(Actor a) { //TODO: Actor voice line plays after each kill (last hit or not)
         if(this.dead) return;
         this.dead = true;
+        if(a.getActorType() == ActorType.PLAYER){
+            UserActor ua = (UserActor) a;
+            ua.addGameStat("minions",1);
+        }
         this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,aggressors.keySet(), this.xpWorth);
         for(User u : this.getRoomUsers()){
             ExtensionCommands.knockOutActor(parentExt,u,this.id,a.getId(),30);
@@ -350,7 +354,7 @@ public class Minion extends Actor {
         if(a.getActorType() == ActorType.PLAYER){
             UserActor ua = (UserActor) a;
             if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(2);
-            this.parentExt.getRoomHandler(this.room.getId()).addScore(a.getTeam(),1);
+            this.parentExt.getRoomHandler(this.room.getId()).addScore(ua,a.getTeam(),1);
         }
     }
 

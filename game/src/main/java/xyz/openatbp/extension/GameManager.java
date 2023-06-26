@@ -283,8 +283,8 @@ public class GameManager {
                 player.put("assists", ua.getStat("assists"));
                 player.put("playerName",ua.getAvatar());
                 player.put("myElo",(double)playerVar.getInt("elo"));
-                player.put("coins",100);
-                player.put("prestigePoints",50);
+                player.put("coins",100); //Just going to have this be a flat amount for now
+                player.put("prestigePoints",10); //Just going to have this be a flat amount for now
                 node.set(String.valueOf(u.getId()),player);
             }
         }
