@@ -1,5 +1,5 @@
 <config>
-    <StreamedAssetURL>http://127.0.0.1:8000/</StreamedAssetURL>
+    <StreamedAssetURL>http://127.0.0.1:8000</StreamedAssetURL>
     <Zone>Champions</Zone>
     <AspenEnabled>False</AspenEnabled>
     <AspenConfigURL></AspenConfigURL>
