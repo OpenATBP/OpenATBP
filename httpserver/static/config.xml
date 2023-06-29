@@ -1,8 +1,6 @@
 <config>
     <StreamedAssetURL>http://127.0.0.1:8000</StreamedAssetURL>
     <Zone>Champions</Zone>
-    <AspenEnabled>False</AspenEnabled>
-    <AspenConfigURL></AspenConfigURL>
     <Debug>True</Debug>
     <DebugConsole>True</DebugConsole>
     <LobbyIP>127.0.0.1</LobbyIP>
@@ -10,16 +8,12 @@
     <LobbyPolicyPort>843</LobbyPolicyPort>
     <Language>English</Language>
     <FacadeURL>http://127.0.0.1:8000</FacadeURL>
-    <Profiler>False</Profiler>
-    <LobbyVersion>1</LobbyVersion>
-    <PingLimit></PingLimit>
     <ShowPromo>False</ShowPromo>
-    <PromoImageURL></PromoImageURL>
-    <PromoURL></PromoURL>
-    <DevLogin>False</DevLogin>
-    <DevMaps>True</DevMaps>
-    <PresenceURL></PresenceURL>
+    <PresenceURL>http://www.cartoonnetwork.com/presence/</PresenceURL>
     <PresenceUpdateDelay>10000</PresenceUpdateDelay>
     <DirectPresence>False</DirectPresence>
-    <GuestModeOnly>False</GuestModeOnly>
+    <DevLogin>True</DevLogin>
+    <DevMaps>True</DevMaps>
+    <guestModeOnly>False</guestModeOnly>
+    <aspenEnabled>False</aspenEnabled>
 </config>

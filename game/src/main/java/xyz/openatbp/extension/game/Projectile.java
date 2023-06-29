@@ -24,6 +24,7 @@ public abstract class Projectile {
     private float hitbox;
     protected ATBPExtension parentExt;
     protected boolean destroyed = false;
+    protected Line2D path;
 
     public Projectile(ATBPExtension parentExt, UserActor owner, Line2D path, float speed, float hitboxRadius, String id){
         this.parentExt = parentExt;
@@ -34,6 +35,7 @@ public abstract class Projectile {
         this.hitbox = hitboxRadius;
         this.location = path.getP1();
         this.id = id;
+        this.path = path;
     }
 
     public Point2D getLocation(){ //Gets projectile's current location based on time

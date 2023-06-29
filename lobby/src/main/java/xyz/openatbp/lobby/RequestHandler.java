@@ -56,9 +56,12 @@ public class RequestHandler {
             roomId+="practice";
         }
         objectNode.put("room_id", roomId);
-        String team = "-1";
-        if(index<=2) team="0";
+        String team;
+        System.out.println("Player is on index " + index);
+        if(index % 2 == 0) team = "0";
         else team = "1";
+        //if(index<=2) team="0";
+        //else team = "1";
         objectNode.put("team", team); //Change based on players
         objectNode.put("password", "");
         return objectNode;

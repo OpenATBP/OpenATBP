@@ -106,7 +106,6 @@ public abstract class Actor {
 
     public boolean setTempStat(String stat, double delta){
         try{
-            System.out.println("Subtracting " + stat + " by " + delta);
             if(this.tempStats.containsKey(stat)){
                 double tempStat = this.tempStats.get(stat);
                 double newStat = tempStat + delta;

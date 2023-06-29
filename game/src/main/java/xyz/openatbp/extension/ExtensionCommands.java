@@ -595,4 +595,22 @@ public class ExtensionCommands {
         data.putUtfString("name",name);
         parentExt.send("cmd_remove_status_icon",data,u);
     }
+
+    public static void scaleActor(ATBPExtension parentExt, Room room, String id, float scale){
+        System.out.println("Scaling " + id + " to " + scale);
+        ISFSObject data = new SFSObject();
+        data.putUtfString("id",id);
+        data.putFloat("scale",scale);
+        parentExt.send("cmd_scale_actor",data,room.getUserList());
+    }
+
+    public static void actorAnimate(ATBPExtension parentExt, Room room, String id, String animation, int duration, boolean loop){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("id",id);
+        data.putUtfString("animation",animation);
+        data.putInt("duration",duration);
+        data.putBool("loop",loop);
+        parentExt.send("cmd_actor_animate",data,room.getUserList());
+    }
+
 }

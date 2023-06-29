@@ -2,6 +2,7 @@ package xyz.openatbp.extension.game;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
+import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
@@ -11,13 +12,12 @@ import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.Tower;
 import xyz.openatbp.extension.game.champions.FlamePrincess;
+import xyz.openatbp.extension.game.champions.Gunter;
 import xyz.openatbp.extension.game.champions.Lich;
 import xyz.openatbp.extension.game.actors.UserActor;
 
-import java.awt.geom.Ellipse2D;
-import java.awt.geom.Line2D;
-import java.awt.geom.Path2D;
-import java.awt.geom.Point2D;
+import java.awt.*;
+import java.awt.geom.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +42,8 @@ public class Champion {
                 return new FlamePrincess(u,parentExt);
             case "lich":
                 return new Lich(u,parentExt);
+            case "gunter":
+                return new Gunter(u,parentExt);
         }
         return new UserActor(u, parentExt);
     }
@@ -170,6 +172,28 @@ public class Champion {
         return hitActor;
     }
 
+    public static List<Actor> getUsersInBox(RoomHandler room, Point2D start, double width, double height){
+        Rectangle2D box = new Rectangle2D.Double(start.getX()+(width/2),start.getY(),width,height);
+        List<Actor> affectedActors = new ArrayList<>();
+        for(Actor a : room.getActors()){
+            if(box.contains(a.getLocation())) affectedActors.add(a);
+        }
+        return affectedActors;
+    }
+
+    public static List<Actor> getActorsAlongLine(RoomHandler room, Line2D line, double range){
+        Point2D[] allPoints = findAllPoints(line);
+        List<Actor> affectedActors = new ArrayList<>();
+        for(Actor a : room.getActors()){
+            for(Point2D p : allPoints){
+                if(a.getLocation().distance(p) <= range){
+                    affectedActors.add(a);
+                    break;
+                }
+            }
+        }
+        return affectedActors;
+    }
     public static Line2D getMaxRangeLine(Line2D projectileLine, float spellRange){
         float remainingRange = (float) (spellRange-projectileLine.getP1().distance(projectileLine.getP2()));
         if(projectileLine.getP1().distance(projectileLine.getP2()) >= spellRange-0.01) return projectileLine;
@@ -181,6 +205,17 @@ public class Champion {
         float y = slope*x + intercept;
         Point2D newPoint = new Point2D.Float(x,y);
         return new Line2D.Float(projectileLine.getP1(),newPoint);
+    }
+
+    public static Line2D extendLine(Line2D projectileLine, float distance){
+        float slope = (float)((projectileLine.getP2().getY() - projectileLine.getP1().getY())/(projectileLine.getP2().getX()-projectileLine.getP1().getX()));
+        float intercept = (float)(projectileLine.getP2().getY()-(slope*projectileLine.getP2().getX()));
+        float deltaX = (float) (projectileLine.getX2()-projectileLine.getX1());
+        float x = (float)projectileLine.getP2().getX()+(distance);
+        if (deltaX < 0) x = (float)projectileLine.getX2()-distance;
+        float y = slope*x + intercept;
+        Point2D newPoint = new Point2D.Float(x,y);
+        return new Line2D.Float(projectileLine.getP2(),newPoint);
     }
 
     public static Line2D getDistanceLine(Line2D movementLine, float distance){
@@ -207,6 +242,37 @@ public class Champion {
         }
         return states;
     }
+
+    public static List<Actor> getActorsWithinCone(RoomHandler roomHandler, Point2D tip, Point2D direction, float length, float width){ //TODO: Needs to be more accurate
+        Point2D midpoint = Champion.getDistanceLine(new Line2D.Float(tip,direction),length).getP2();
+        Point2D directPoint = new Point2D.Double((tip.getX()-midpoint.getX())/Math.abs(tip.getX()-midpoint.getX()),(tip.getY()-midpoint.getY())/Math.abs(tip.getY()-midpoint.getY()));
+        Point2D orthogonalPoint = new Point2D.Double(directPoint.getY()*-1,directPoint.getX());
+        Point2D bPoint = new Point2D.Double((width/2)*orthogonalPoint.getX() + midpoint.getX(), (width/2)*orthogonalPoint.getY() + midpoint.getY());
+        Point2D cPoint = new Point2D.Double(((width*-1)/2)*orthogonalPoint.getX() + midpoint.getX(), ((width*-1)/2)*orthogonalPoint.getY() + midpoint.getY());
+        ATBPExtension parentExt = roomHandler.getActors().get(0).getParentExt();
+        Room room = roomHandler.getActors().get(0).getRoom();
+        List<Actor> affectedUsers = new ArrayList<>();
+        for(Actor a : roomHandler.getActors()){
+            if(isPointInsideTriangle(tip,bPoint,cPoint,a.getLocation())) affectedUsers.add(a);
+        }
+        return affectedUsers;
+    }
+
+    private static boolean isPointInsideTriangle(Point2D vertex1, Point2D vertex2, Point2D vertex3, Point2D point) {
+        double areaOfTriangle = calculateTriangleArea(vertex1, vertex2, vertex3);
+        double area1 = calculateTriangleArea(point, vertex2, vertex3);
+        double area2 = calculateTriangleArea(vertex1, point, vertex3);
+        double area3 = calculateTriangleArea(vertex1, vertex2, point);
+
+        return areaOfTriangle == area1 + area2 + area3;
+    }
+
+    private static double calculateTriangleArea(Point2D vertex1, Point2D vertex2, Point2D vertex3) {
+        return Math.abs((vertex1.getX() * (vertex2.getY() - vertex3.getY()) +
+                vertex2.getX() * (vertex3.getY() - vertex1.getY()) +
+                vertex3.getX() * (vertex1.getY() - vertex2.getY())) / 2.0);
+    }
+
 
     public static class DelayedAttack implements Runnable{
 

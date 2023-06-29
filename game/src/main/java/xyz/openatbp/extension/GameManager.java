@@ -31,10 +31,11 @@ public class GameManager {
             ISFSObject userData = new SFSObject();
             User player = users.get(i);
             ISFSObject playerInfo = player.getVariable("player").getSFSObjectValue();
+            int team = Integer.parseInt(playerInfo.getUtfString("team"));
             userData.putInt("id", player.getId());
             userData.putUtfString("name", playerInfo.getUtfString("name"));
             userData.putUtfString("champion", playerInfo.getUtfString("avatar"));
-            userData.putInt("team", 0); //Change up team data
+            userData.putInt("team", team); //Change up team data
             userData.putUtfString("tid", playerInfo.getUtfString("tegid"));
             userData.putUtfString("backpack", playerInfo.getUtfString("backpack"));
             userData.putInt("elo", parentExt.getElo(playerInfo.getUtfString("tegid")));
@@ -42,20 +43,6 @@ public class GameManager {
                 parentExt.send("cmd_add_user",userData,users.get(g));
             }
 
-        }
-        if(users.size() < 3){ //Testing method just adds fake users to the game to run properly
-            for(int i = 0; i < users.size(); i++){
-                ISFSObject userData = new SFSObject();
-                User player = users.get(i);
-                userData.putInt("id", 100);
-                userData.putUtfString("name", "Fake User");
-                userData.putUtfString("champion", "magicman");
-                userData.putInt("team", 0); //Change up team data
-                userData.putUtfString("tid", "fakeuser");
-                userData.putUtfString("backpack", "belt_champions");
-                userData.putInt("elo", 1700); //Database
-                parentExt.send("cmd_add_user",userData,player);
-            }
         }
 
     }

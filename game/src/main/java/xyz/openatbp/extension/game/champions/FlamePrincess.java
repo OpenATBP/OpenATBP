@@ -38,12 +38,12 @@ public class FlamePrincess extends UserActor {
         if(this.ultStarted && !this.ultFinished && msRan-lastUltUsage == 1000){
             lastUltUsage = msRan;
             for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(this.room.getId()),this.location,2)){
-                if(a.getTeam() != this.team){ //TODO: Set so FP doesn't target her team or self
+                if(a.getTeam() != this.team){
                     JsonNode attackData = this.parentExt.getAttackData(this.avatar,"spell3");
-                    if(a.getActorType() != ActorType.PLAYER) a.damaged(this,75,attackData);
-                    else{
+                    if(a.getActorType() != ActorType.PLAYER) a.damaged(this,this.getSpellDamage(attackData),attackData);
+                    else{ //Redundant?
                         UserActor userActor = (UserActor) a;
-                        userActor.damaged(this,75,attackData);
+                        userActor.damaged(this,this.getSpellDamage(attackData),attackData);
                     }
                 }else{
                     System.out.println(a.getId() + " is on your team!");
@@ -61,13 +61,9 @@ public class FlamePrincess extends UserActor {
         }
         switch(ability){
             case 1: //Q
-                double x = dest.getX();
-                double z = dest.getY();
-                Point2D endLocation = new Point2D.Double(x,z);
-                Line2D skillShotLine = new Line2D.Float(this.location,endLocation);
+                Line2D skillShotLine = new Line2D.Float(this.location,dest);
                 Line2D maxRangeLine = Champion.getMaxRangeLine(skillShotLine,8f);
-                ExtensionCommands.createProjectile(parentExt,this.room,this,"projectile_flame_cone", maxRangeLine.getP1(), maxRangeLine.getP2(), 8f);
-                this.parentExt.getRoomHandler(this.room.getId()).addProjectile(new FlameProjectile(this.parentExt,this,maxRangeLine,8f,0.5f,this.id+"projectile_flame_cone"));
+                this.fireProjectile(new FlameProjectile(this.parentExt,this,maxRangeLine,8f,0.5f,this.id+"projectile_flame_cone"),"projectile_flame_cone",dest,8f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),"q",true,getReducedCooldown(cooldown),gCooldown);
                 break;
             case 2: //W
@@ -86,6 +82,7 @@ public class FlamePrincess extends UserActor {
                     ExtensionCommands.playSound(this.parentExt,this.player,"sfx_flame_princess_flame_form",this.getLocation());
                     ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,"flame_ult");
                     ExtensionCommands.createActorFX(this.parentExt,this.player.getLastJoinedRoom(),this.id,"flame_princess_ultimate_aoe",5000,"flame_e",true,"",true,false,this.team);
+                    ExtensionCommands.scaleActor(parentExt,room,id,1.5f);
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),duration, TimeUnit.MILLISECONDS);
                 }else{
                     if(ultUses>0){
@@ -110,10 +107,7 @@ public class FlamePrincess extends UserActor {
 
     @Override
     public void attack(Actor a){
-        super.attack(a);
-        boolean crit = Math.random() < this.getPlayerStat("criticalChance");
-        ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
-
+        this.handleAttack(a);
         currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,new PassiveAttack(a),"flame_princess_projectile"),500,TimeUnit.MILLISECONDS);
     }
 
@@ -155,8 +149,9 @@ public class FlamePrincess extends UserActor {
             if(!ultFinished && ultStarted){
                 setState(ActorState.TRANSFORMED, false);
                 ExtensionCommands.removeFx(parentExt,room,"flame_e");
-                ExtensionCommands.swapActorAsset(parentExt,room,id,avatar);
-                ExtensionCommands.actorAbilityResponse(parentExt,player,"e",true, getReducedCooldown(cooldown), (int) gCooldown);
+                ExtensionCommands.swapActorAsset(parentExt,room,id,avatar.split("_")[0]);
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"e",true, getReducedCooldown(cooldown), gCooldown);
+                ExtensionCommands.scaleActor(parentExt,room,id,0.6667f);
                 ultStarted = false;
                 ultFinished = true;
                 ultUses = 3;
@@ -178,15 +173,27 @@ public class FlamePrincess extends UserActor {
 
     private class FlameProjectile extends Projectile {
 
+        private boolean hitPlayer = false;
+
         public FlameProjectile(ATBPExtension parentExt,UserActor owner, Line2D path, float speed, float hitboxRadius, String id) {
             super(parentExt,owner, path, speed, hitboxRadius, id);
         }
 
         @Override
         public void hit(Actor victim){
+            if(this.hitPlayer) return;
+            this.hitPlayer = true;
+            JsonNode attackData = parentExt.getAttackData(avatar,"spell1");
+            victim.damaged(FlamePrincess.this,getSpellDamage(attackData),attackData);
             //ExtensionCommands.moveActor(parentExt,player,this.id,this.location,this.location,this.speed,false);
             ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_projectile_large_explosion",200,"flame_explosion",false,"",false,false,team);
             ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_cone_of_flames",300,"flame_cone",false,"",true,false,team);
+            for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),Champion.extendLine(path,7f),4f)){
+                if(!a.getId().equalsIgnoreCase(victim.getId()) && a.getTeam() != team && a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE){
+                    double newDamage = (double)getSpellDamage(attackData)*1.2d;
+                    a.damaged(FlamePrincess.this,(int)Math.round(newDamage),attackData);
+                }
+            }
             SmartFoxServer.getInstance().getTaskScheduler().schedule(new DelayedProjectile(), 300, TimeUnit.MILLISECONDS);
         }
 

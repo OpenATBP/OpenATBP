@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class Lich extends UserActor {
+public class Lich extends UserActor{
 
     private Skully skully;
     private long lastSkullySpawn;
@@ -30,19 +30,19 @@ public class Lich extends UserActor {
     }
 
     @Override
-    public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
-        if(skully == null && System.currentTimeMillis()-lastSkullySpawn > 40000){
+    public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest) {
+        if (skully == null && System.currentTimeMillis() - lastSkullySpawn > 40000) {
             this.spawnSkully();
         }
-        switch(ability){
+        switch (ability) {
             case 1: //Q
                 double statIncrease = this.speed * 0.25;
-                this.handleEffect("speed",statIncrease,6000,"lich_trail");
+                this.handleEffect("speed", statIncrease, 6000, "lich_trail");
                 qActivated = true;
                 slimePath = new ArrayList<>();
                 slimedEnemies = new HashMap<>();
-                ExtensionCommands.createActorFX(parentExt,room,id,"lichking_deathmist",6000,"lich_trail",true, "",true,false,team);
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new TrailHandler(),6000,TimeUnit.MILLISECONDS);
+                ExtensionCommands.createActorFX(parentExt, room, id, "lichking_deathmist", 6000, "lich_trail", true, "", true, false, team);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new TrailHandler(), 6000, TimeUnit.MILLISECONDS);
                 break;
             case 2: //W
                 break;
@@ -51,12 +51,6 @@ public class Lich extends UserActor {
             case 4: //Passive
                 break;
         }
-    }
-
-    @Override
-    public void attack(Actor a){
-        super.attack(a);
-        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,new Champion.DelayedAttack(this.parentExt,this,a,50,"basicAttack"),"lich_projectile"),500, TimeUnit.MILLISECONDS);
     }
 
     @Override

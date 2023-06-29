@@ -18,6 +18,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
 
     @Override
     public void handleClientRequest(User sender, ISFSObject params){ //Called when player is trying to join a match
+        trace(params.getDump());
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         List<UserVariable> userVariables = new ArrayList<>();
         ISFSObject playerInfo = new SFSObject(); //Player info from champ select
@@ -27,6 +28,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
         playerInfo.putUtfString("name", (String) sender.getSession().getProperty("name"));
         playerInfo.putUtfString("tegid", (String) sender.getSession().getProperty("tegid"));
         playerInfo.putInt("elo", parentExt.getElo((String)sender.getSession().getProperty("tegid")));
+        playerInfo.putUtfString("team",params.getUtfString("team"));
         SFSUserVariable playerVar = new SFSUserVariable("player",playerInfo);
         ISFSObject location = new SFSObject(); //Will need to be changed when we get actual spawn points made
         location.putFloat("x",0);
@@ -62,7 +64,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
                 settings.setMaxUsers(2); //TODO: Testing value
                 settings.setGroupId("PVE");
             }else{
-                settings.setMaxUsers(1); //TODO: Testing value
+                settings.setMaxUsers(2); //TODO: Testing value
                 settings.setGroupId("PVP");
             }
             try {

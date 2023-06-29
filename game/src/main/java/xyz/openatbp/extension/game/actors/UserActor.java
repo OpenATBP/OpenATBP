@@ -13,6 +13,8 @@ import xyz.openatbp.extension.MapData;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.Projectile;
+import xyz.openatbp.extension.game.champions.FlamePrincess;
 import xyz.openatbp.extension.reqhandlers.HitActorHandler;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
@@ -266,7 +268,19 @@ public class UserActor extends Actor {
     @Override
     public void attack(Actor a) {
         if(attackCooldown == 0){
-            System.out.println("Attack is handled through individual character classes :(");
+            boolean crit = Math.random() < this.getPlayerStat("criticalChance");
+            ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
+            attackCooldown = this.getPlayerStat("attackSpeed");
+            Champion.DelayedAttack delayedAttack = new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack");
+            String projectileFx = this.parentExt.getActorData(this.getAvatar()).get("scriptData").get("projectileAsset").asText();
+            this.currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,delayedAttack,projectileFx),500,TimeUnit.MILLISECONDS);
+        }
+    }
+
+    protected void handleAttack(Actor a){ //To be used if you're not using the standard DelayedAttack Runnable
+        if(attackCooldown == 0){
+            boolean crit = Math.random() < this.getPlayerStat("criticalChance");
+            ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
             attackCooldown = this.getPlayerStat("attackSpeed");
         }
     }
@@ -694,6 +708,26 @@ public class UserActor extends Actor {
 
     public boolean hasGameStat(String stat){
         return this.endGameStats.containsKey(stat);
+    }
+
+    public int getSpellDamage(JsonNode attackData){
+        try{
+            return (int)Math.round(attackData.get("damage").asDouble() + (this.getPlayerStat("spellDamage")*attackData.get("damageRatio").asDouble()));
+        }catch(Exception e){
+            e.printStackTrace();
+            return attackData.get("damage").asInt();
+        }
+    }
+
+    public void fireProjectile(Projectile projectile, String id, Point2D dest, float range){
+        double x = dest.getX();
+        double z = dest.getY();
+        Point2D endLocation = new Point2D.Double(x,z);
+        Line2D skillShotLine = new Line2D.Float(this.location,endLocation);
+        Line2D maxRangeLine = Champion.getMaxRangeLine(skillShotLine,range);
+        double speed = parentExt.getActorStats(id).get("speed").asDouble();
+        ExtensionCommands.createProjectile(parentExt,this.room,this,id, maxRangeLine.getP1(), maxRangeLine.getP2(), (float)speed);
+        this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
     }
 
     protected class MovementStopper implements Runnable {

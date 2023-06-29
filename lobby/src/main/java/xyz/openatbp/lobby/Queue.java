@@ -134,8 +134,10 @@ public class Queue {
         this.inGame = true;
         for(int i = 0; i < players.size(); i++){
             Packet out = new Packet();
-            if(i <= 2) this.players.get(i).setTeam("PURPLE");
+            if(i % 2 == 0) this.players.get(i).setTeam("PURPLE");
             else this.players.get(i).setTeam("BLUE");
+            //if(i <= 2) this.players.get(i).setTeam("PURPLE"); TODO: Commented out for testing purposes
+            //else this.players.get(i).setTeam("BLUE");
             out.send(this.players.get(i).getOutputStream(),"match_found",RequestHandler.handleMatchFound());
         }
         this.updateTeam();
