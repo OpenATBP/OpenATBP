@@ -12,7 +12,7 @@
     <PresenceURL>http://www.cartoonnetwork.com/presence/</PresenceURL>
     <PresenceUpdateDelay>10000</PresenceUpdateDelay>
     <DirectPresence>False</DirectPresence>
-    <DevLogin>True</DevLogin>
+    <DevLogin>False</DevLogin>
     <DevMaps>True</DevMaps>
     <guestModeOnly>False</guestModeOnly>
     <aspenEnabled>False</aspenEnabled>
