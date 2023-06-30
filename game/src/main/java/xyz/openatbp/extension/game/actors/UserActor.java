@@ -301,7 +301,7 @@ public class UserActor extends Actor {
         ExtensionCommands.moveActor(parentExt,this.room,this.id,location,location,2f,false);
         this.setHealth(0, (int) this.maxHealth);
         this.target = null;
-        ExtensionCommands.knockOutActor(parentExt,player, String.valueOf(player.getId()),a.getId(),this.deathTime);
+        ExtensionCommands.knockOutActor(parentExt,room, String.valueOf(player.getId()),a.getId(),this.deathTime);
         if(this.nailDamage > 0) this.nailDamage/=2;
         try{
             ExtensionCommands.handleDeathRecap(parentExt,player,this.id,a.getId(), (HashMap<Actor, ISFSObject>) this.aggressors);
