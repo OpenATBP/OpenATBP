@@ -318,18 +318,5 @@ public class ATBPExtension extends SFSExtension {
         }
 
     }
-    @Override
-    public void send(String cmdName, ISFSObject params, User recipients){
-        super.send(cmdName,params,recipients);
-        System.out.println("Sending " + cmdName + " to " + recipients.getId() + " with params " + params.getDump());
-    }
-
-    @Override
-    public void send(String cmdName, ISFSObject params, List<User> recipients){
-        super.send(cmdName,params,recipients);
-        for(User u : recipients){
-            System.out.println("Sending " + cmdName + " to " + u.getId() + " with params " + params.getDump());
-        }
-    }
 
 }

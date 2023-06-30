@@ -68,7 +68,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
                 settings.setMaxUsers(2); //TODO: Testing value
                 settings.setGroupId("PVE");
             }else{
-                settings.setMaxUsers(2); //TODO: Testing value
+                settings.setMaxUsers(1); //TODO: Testing value
                 settings.setGroupId("PVP");
             }
             try {

@@ -3,8 +3,10 @@ package xyz.openatbp.extension.game.champions;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
+import com.smartfoxserver.v2.entities.data.ISFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -31,10 +33,10 @@ public class Lich extends UserActor{
 
     @Override
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest) {
-        if (skully == null && System.currentTimeMillis() - lastSkullySpawn > 40000) {
+        if (skully == null && System.currentTimeMillis() - lastSkullySpawn > getReducedCooldown(40000)) {
             this.spawnSkully();
         }
-        switch (ability) {
+        switch (ability) { //TODO: Last left off - Q is broken and maybe healthRegen?
             case 1: //Q
                 double statIncrease = this.speed * 0.25;
                 this.handleEffect("speed", statIncrease, 6000, "lich_trail");
@@ -54,6 +56,18 @@ public class Lich extends UserActor{
     }
 
     @Override
+    public void attack(Actor a){
+        this.handleAttack(a);
+        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new PassiveAttack(this,a),"lich_projectile"),500,TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public void die(Actor a){
+        super.die(a);
+        if(this.skully != null) this.setSkullyTarget(a);
+    }
+
+    @Override
     public void update(int msRan){
         super.update(msRan);
         if(this.skully != null) skully.update(msRan);
@@ -66,14 +80,14 @@ public class Lich extends UserActor{
                         if(slimedEnemies.containsKey(a.getId())){
                             if(System.currentTimeMillis() - slimedEnemies.get(a.getId()) >= 1000){
                                 System.out.println(a.getId() + " getting slimed!");
-                                a.damaged(this,20,attackData);
+                                a.damaged(this,getSpellDamage(attackData),attackData);
                                 a.handleEffect("speed",a.getPlayerStat("speed")*-0.3,1500,"lich_slow");
                                 slimedEnemies.put(a.getId(),System.currentTimeMillis());
                                 break;
                             }
                         }else{
                             System.out.println(a.getId() + " getting slimed!");
-                            a.damaged(this,20,attackData);
+                            a.damaged(this,getSpellDamage(attackData),attackData);
                             a.handleEffect("speed",a.getPlayerStat("speed")*-0.3,1500,"lich_slow");
                             slimedEnemies.put(a.getId(),System.currentTimeMillis());
                             break;
@@ -85,15 +99,18 @@ public class Lich extends UserActor{
         }
     }
 
-    @Override
-    public void setPath(Point2D start, Point2D end){
-        super.setPath(start,end);
-        if(skully != null) skully.lichUpdated = true;
-    }
-
     private void spawnSkully(){
         skully = new Skully();
         lastSkullySpawn = System.currentTimeMillis();
+    }
+
+    public void setSkullyTarget(Actor a){
+        this.skully.setTarget(a);
+    }
+
+    private void handleSkullyDeath(){
+        ExtensionCommands.actorAbilityResponse(parentExt,player,"passive",true,getReducedCooldown(40000),2);
+        this.skully = null;
     }
 
     private class TrailHandler implements Runnable {
@@ -107,11 +124,12 @@ public class Lich extends UserActor{
 
     private class Skully extends Actor {
 
-        private Point2D destination;
-        private Point2D originalLocation;
+        private Line2D movementLine;
         private float timeTraveled = 0f;
         private Actor target;
-        private boolean lichUpdated = true;
+        private Point2D lastLichLocation;
+        private Point2D lastTargetLocation;
+        private long timeOfBirth;
 
         Skully(){
             this.room = Lich.this.room;
@@ -122,9 +140,13 @@ public class Lich extends UserActor{
             this.avatar = "skully";
             this.id = "skully_"+Lich.this.id;
             this.team = Lich.this.team;
-            this.destination = Lich.this.destination;
-            this.originalLocation = this.location;
+            movementLine = new Line2D.Float(this.location,this.location);
             this.speed = 2.95f;
+            this.attackRange = 2f;
+            this.lastLichLocation = Lich.this.getRelativePoint(false);
+            this.timeOfBirth = System.currentTimeMillis();
+            this.actorType = ActorType.COMPANION;
+            this.stats = this.initializeStats();
             ExtensionCommands.createActor(parentExt,room,this.id,this.avatar,this.location,0f,this.team);
         }
 
@@ -135,30 +157,58 @@ public class Lich extends UserActor{
 
         @Override
         public void attack(Actor a) {
-
+            ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),false,true);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new PassiveAttack(this,a),300,TimeUnit.MILLISECONDS);
+            this.attackCooldown = 1000;
         }
 
         @Override
         public void die(Actor a) {
-
+            ExtensionCommands.knockOutActor(parentExt,room,this.id,a.getId(),40000);
+            Lich.this.handleSkullyDeath();
+            ExtensionCommands.destroyActor(parentExt,room,this.id);
         }
 
         @Override
         public void update(int msRan) {
-            this.timeTraveled = 0.1f;
-            this.destination = Lich.this.location;
-            if(getRelativePoint().distance(this.destination) > 3) this.location = getRelativePoint();
-            if(this.location.distance(this.destination) > 3){
-                ExtensionCommands.moveActor(parentExt,room,this.id,this.location,this.destination,(float)this.speed,true);
+            if(System.currentTimeMillis() - timeOfBirth >= 20*1000){
+                this.die(this);
+            }
+            this.location = this.getRelativePoint();
+            if(this.attackCooldown > 0) this.reduceAttackCooldown();
+            if(this.target == null){
+                Point2D lichLocation = Lich.this.getRelativePoint(false);
+
+                if(this.location.distance(lichLocation) > 3 && this.lastLichLocation.distance(lichLocation) > 0.01){
+                    float deltaDistance = (float) (this.location.distance(lichLocation)-3f);
+                    this.timeTraveled = 0.1f;
+                    this.movementLine = Champion.getDistanceLine(new Line2D.Float(this.location,lichLocation),deltaDistance);
+                    this.lastLichLocation = lichLocation;
+                    ExtensionCommands.moveActor(parentExt,room,this.id,this.movementLine.getP1(),this.movementLine.getP2(), (float) this.speed,true);
+                }else{
+                    this.timeTraveled+=0.1f;
+                }
+            }else{
+                if(this.withinRange(this.target) && this.attackCooldown <= 0){
+                    this.attack(this.target);
+                }else if(!this.withinRange(this.target)){
+                    if(this.target.getLocation().distance(this.lastTargetLocation) > 0.01f){
+                        this.lastTargetLocation = this.target.getLocation();
+                        this.movementLine = new Line2D.Float(this.location,this.target.getLocation());
+                        this.timeTraveled = 0.1f;
+                        ExtensionCommands.moveActor(parentExt,room,this.id,this.movementLine.getP1(),this.movementLine.getP2(), (float) this.speed,true);
+                    }
+                }
             }
         }
 
         public Point2D getRelativePoint(){ //Gets player's current location based on time
             Point2D rPoint = new Point2D.Float();
-            float x2 = (float) destination.getX();
-            float y2 = (float) destination.getY();
-            float x1 = (float) location.getX();
-            float y1 = (float) location.getY();
+            if(movementLine == null) return this.location;
+            float x2 = (float) movementLine.getX2();
+            float y2 = (float) movementLine.getY2();
+            float x1 = (float) movementLine.getX1();
+            float y1 = (float) movementLine.getY1();
             Line2D movementLine = new Line2D.Double(x1,y1,x2,y2);
             double dist = movementLine.getP1().distance(movementLine.getP2());
             double time = dist/1.75f;
@@ -169,7 +219,52 @@ public class Lich extends UserActor{
             float y = (float)(y1+(currentDist/dist)*(y2-y1));
             rPoint.setLocation(x,y);
             if(dist != 0) return rPoint;
-            else return location;
+            else return this.location;
+        }
+
+        public void setTarget(Actor a){
+            this.target = a;
+            this.lastTargetLocation = a.getLocation();
+            this.movementLine = new Line2D.Float(this.location,a.getLocation());
+            this.timeTraveled = 0.1f;
+            ExtensionCommands.moveActor(parentExt,room,this.id,this.location,a.getLocation(), (float) this.speed,true);
+        }
+
+        public void resetTarget(){
+            this.target = null;
+            this.movementLine = new Line2D.Float(this.location,Lich.this.getRelativePoint(false));
+            this.timeTraveled = 0.1f;
+        }
+    }
+
+    private class PassiveAttack implements Runnable {
+
+        Actor attacker;
+        Actor target;
+
+        PassiveAttack(Actor attacker, Actor target){
+            this.attacker = attacker;
+            this.target = target;
+        }
+
+        @Override
+        public void run() {
+            if(attacker.getClass() == Lich.class){
+                JsonNode attackData = parentExt.getAttackData("lich","basicAttack");
+                if(this.target.damaged(this.attacker, (int) this.attacker.getPlayerStat("attackDamage"),attackData)){
+                    Lich.this.skully.resetTarget();
+                }else{
+                    Lich.this.setSkullyTarget(this.target);
+                }
+            }else if(attacker.getClass() == Skully.class){
+                JsonNode attackData = parentExt.getAttackData("lich","spell4");
+                double damage = 25d + (Lich.this.getPlayerStat("attackDamage")*0.8);
+                if(this.target.damaged(Lich.this,(int)damage,attackData)){
+                    Lich.this.increaseStat("spellDamage",1);
+                    Skully me = (Skully) this.attacker;
+                    me.resetTarget();
+                }
+            }
         }
     }
 }

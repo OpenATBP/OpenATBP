@@ -56,11 +56,10 @@ public class RoomHandler implements Runnable{
         this.guardians = new GumballGuardian[]{new GumballGuardian(parentExt, room, 0),new GumballGuardian(parentExt,room,1)};
         for(User u : room.getUserList()){
             players.add(Champion.getCharacterClass(u,parentExt));
-            //ExtensionCommands.createActor(this.parentExt,u,"testMonster","bot_finn",new Point2D.Float(0f,0f),0f,2);
             //ExtensionCommands.createActor(this.parentExt,u,"testMonster2","bot_jake",new Point2D.Float(0f,0f),0f,2);
             //ExtensionCommands.createActor(this.parentExt,u,"testMonster3","bot_iceking",new Point2D.Float(0f,0f),0f,2);
-
         }
+        //ExtensionCommands.createActor(this.parentExt,room,"testMonster","bot_finn",new Point2D.Float(0f,0f),0f,2);
         this.activeProjectiles = new ArrayList<>();
         this.campMonsters = new ArrayList<>();
         //this.campMonsters = GameManager.initializeCamps(parentExt,room);
