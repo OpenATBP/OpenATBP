@@ -45,24 +45,13 @@ gradle-app.setting
 # Local libraries
 lib/*
 
+# Config files
+config.properties
+config.js
+
 # Node Modules
 /httpserver/node_modules
 
-# Key/secret files
-mongosecrets.js
-Secrets.java
-
-# Config files
-# It's fine if these are in the repo, but we want to prevent
-# any local changes from being committed by listing them below
-config.properties
-config.js
-crossdomain.xml
-config.xml
-
 # Game assets
-/httpserver/static/assets
-/httpserver/static/definitions
-/httpserver/static/English.txt
-/httpserver/static/*.unity3d
-/httpserver/static/*.png
+/httpserver/static/*
+!/httpserver/static/index.html

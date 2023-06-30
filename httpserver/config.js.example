@@ -3,6 +3,7 @@ config.httpserver = {};
 config.sockpol = {};
 
 config.httpserver.port = 8000;
+config.httpserver.mongouri = "mongodb://admin:password@127.0.0.1:27017";
 
 config.sockpol.enable = true;
 config.sockpol.port = 843;

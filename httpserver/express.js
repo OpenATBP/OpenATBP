@@ -1,15 +1,27 @@
+const fs = require('fs');
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
 
-const config = require('./config.js');
-const secrets = require('./mongosecrets.js');
 const getRequest = require('./get-requests.js');
 const postRequest = require('./post-requests.js');
 
-console.log("Using MongoDB URI: " + secrets.uri);
+let config;
+try {
+  config = require('./config.js');
+} catch(e) {
+  if (e instanceof Error && e.code === "MODULE_NOT_FOUND") {
+    console.log("FATAL: Could not find config.js. If this is your first time running the server,");
+    console.log("copy config.js.example to config.js. You can then edit it to add your MongoDB URI");
+    console.log("as well as customize other options. Once finished, restart the server.");
+  }
+  else
+    throw e;
+  process.exit(1);
+}
+
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const client = new MongoClient(secrets.uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+const client = new MongoClient(config.httpserver.mongouri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 var onlinePlayers = [];
 
@@ -95,9 +107,16 @@ function createNewUser(username,authpass){ //Creates new user in web server and 
 
 client.connect(err => {
   if(err){
-    console.log("MongoDB connect failed:" + err);
+    console.log("FATAL: MongoDB connect failed:" + err);
     process.exit(1);
   }
+
+  if(!fs.existsSync("static/crossdomain.xml") || !fs.existsSync("static/config.xml")) {
+    console.log("Copying default crossdomain.xml/config.xml");
+    fs.copyFileSync("crossdomain.xml.example", "static/crossdomain.xml");
+    fs.copyFileSync("config.xml.example", "static/config.xml");
+  }
+
   const collection = client.db("openatbp").collection("players");
   const shopCollection = client.db("openatbp").collection("shop");
 
@@ -226,8 +245,7 @@ client.connect(err => {
     }).catch(console.error);
   });
 
-
-  const server = app.listen(config.httpserver.port, () => {
+  app.listen(config.httpserver.port, () => {
     console.log(`App running on port ${config.httpserver.port}!`);
     if (config.sockpol.enable) {
       const sockpol = require('./socketpolicy.js');
