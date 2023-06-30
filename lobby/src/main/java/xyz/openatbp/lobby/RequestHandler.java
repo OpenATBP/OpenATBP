@@ -45,7 +45,7 @@ public class RequestHandler {
         return objectNode;
     }
 
-    public static JsonNode handleGameReady(String partyLeader, int index, String type){ //When the game is ready, sends players to the game server.
+    public static JsonNode handleGameReady(String partyLeader, String teamStr, String type){ //When the game is ready, sends players to the game server.
         ObjectNode objectNode = objectMapper.createObjectNode();
         objectNode.put("countdown", 5);
         objectNode.put("ip", Config.getString("sfs2x.ip"));
@@ -57,12 +57,9 @@ public class RequestHandler {
         }
         objectNode.put("room_id", roomId);
         String team;
-        System.out.println("Player is on index " + index);
-        if(index % 2 == 0) team = "0";
-        else team = "1";
         //if(index<=2) team="0";
         //else team = "1";
-        objectNode.put("team", team); //Change based on players
+        objectNode.put("team", teamStr); //Change based on players
         objectNode.put("password", "");
         return objectNode;
     }

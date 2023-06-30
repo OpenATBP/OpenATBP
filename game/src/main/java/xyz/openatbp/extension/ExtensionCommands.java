@@ -11,6 +11,7 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.actors.UserActor;
 
+import javax.print.attribute.standard.MediaSize;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -611,6 +612,18 @@ public class ExtensionCommands {
         data.putInt("duration",duration);
         data.putBool("loop",loop);
         parentExt.send("cmd_actor_animate",data,room.getUserList());
+    }
+
+    public static void addUser(ATBPExtension parentExt, Room room, int id, String name, String champion, int team, String tid, String backpack, int elo){
+        ISFSObject data = new SFSObject();
+        data.putInt("id",id);
+        data.putUtfString("name",name);
+        data.putUtfString("champion",champion);
+        data.putInt("team",team);
+        data.putUtfString("tid",tid);
+        data.putUtfString("backpack",backpack);
+        data.putInt("elo",elo);
+        parentExt.send("cmd_add_user",data,room.getUserList());
     }
 
 }

@@ -19,7 +19,7 @@ public class Base extends Actor {
         this.currentHealth = 3500;
         this.maxHealth = 3500;
         this.team = team;
-        if(team == 0){
+        if(team == 1){
             id = "base_purple";
             location = new Point2D.Float(MapData.L2_BASE1_X*-1,0f);
         }

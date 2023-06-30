@@ -34,7 +34,7 @@ public class GumballGuardian extends Tower {
         this.id = "gumball"+team;
         this.currentHealth = 99999;
         this.maxHealth = 99999;
-        if(team == 1) this.location = new Point2D.Float(MapData.L2_GUARDIAN1_X,MapData.L2_GUARDIAN1_Z);
+        if(team == 0) this.location = new Point2D.Float(MapData.L2_GUARDIAN1_X,MapData.L2_GUARDIAN1_Z);
         else this.location = new Point2D.Float(MapData.L2_GUARDIAN1_X*-1,MapData.L2_GUARDIAN1_Z);
         this.stats = this.initializeStats();
         ExtensionCommands.createWorldFX(parentExt,room,this.id,"fx_target_ring_6",this.id+"_ring",15*60*1000,(float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);

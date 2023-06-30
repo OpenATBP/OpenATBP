@@ -12,6 +12,8 @@ import static com.mongodb.client.model.Filters.eq;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.entities.Room;
+import com.smartfoxserver.v2.entities.User;
+import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.extensions.SFSExtension;
 import org.bson.Document;
 import xyz.openatbp.extension.evthandlers.*;
@@ -245,6 +247,7 @@ public class ATBPExtension extends SFSExtension {
     }
 
     public void startScripts(Room room){ //Creates a new task scheduler for a room
+        System.out.println("Starting script for room!");
         RoomHandler handler = new RoomHandler(this,room);
         roomHandlers.put(room.getId(),handler);
         roomTasks.put(room.getId(),SmartFoxServer.getInstance().getTaskScheduler().scheduleAtFixedRate(handler,100,100,TimeUnit.MILLISECONDS));
@@ -315,4 +318,18 @@ public class ATBPExtension extends SFSExtension {
         }
 
     }
+    @Override
+    public void send(String cmdName, ISFSObject params, User recipients){
+        super.send(cmdName,params,recipients);
+        System.out.println("Sending " + cmdName + " to " + recipients.getId() + " with params " + params.getDump());
+    }
+
+    @Override
+    public void send(String cmdName, ISFSObject params, List<User> recipients){
+        super.send(cmdName,params,recipients);
+        for(User u : recipients){
+            System.out.println("Sending " + cmdName + " to " + u.getId() + " with params " + params.getDump());
+        }
+    }
+
 }

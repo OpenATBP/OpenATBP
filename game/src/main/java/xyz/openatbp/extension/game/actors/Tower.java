@@ -14,8 +14,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class Tower extends Actor {
-    private final int[] PURPLE_TOWER_NUM = {2,1,0};
-    private final int[] BLUE_TOWER_NUM = {5,4,3};
+    private final int[] BLUE_TOWER_NUM = {2,1,0};
+    private final int[] PURPLE_TOWER_NUM = {5,4,3};
     private long lastHit;
     private boolean destroyed = false;
     private Actor target;
@@ -32,7 +32,7 @@ public class Tower extends Actor {
         this.actorType = ActorType.TOWER;
         this.attackCooldown = 500;
         this.avatar = "tower1";
-        if(team == 1) this.avatar = "tower2";
+        if(team == 0) this.avatar = "tower2";
         this.displayName = parentExt.getDisplayName(this.avatar);
         this.stats = this.initializeStats();
         ExtensionCommands.createWorldFX(parentExt,room,this.id,"fx_target_ring_6",this.id+"_ring",15*60*1000,(float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
@@ -62,7 +62,7 @@ public class Tower extends Actor {
         this.attackCooldown = this.getPlayerStat("attackSpeed");
         String projectileName = "tower_projectile_blue";
         String effectName = "tower_shoot_blue";
-        if(this.team == 0){
+        if(this.team == 1){
             projectileName = "tower_projectile_purple";
             effectName = "tower_shoot_purple";
         }

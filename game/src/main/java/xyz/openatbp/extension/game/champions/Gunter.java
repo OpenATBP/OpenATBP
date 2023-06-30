@@ -22,7 +22,6 @@ public class Gunter extends UserActor{
 
     private boolean ultActivated = false;
     private Point2D ultPoint;
-    private long ultStarted = -1;
     public Gunter(User u, ATBPExtension parentExt){
         super(u,parentExt);
     }
@@ -32,7 +31,6 @@ public class Gunter extends UserActor{
         super.update(msRan);
         if(ultActivated && ultPoint != null){
             JsonNode spellData = parentExt.getAttackData(getAvatar(),"spell3");
-            ultStarted = System.currentTimeMillis();
             Line2D ogLine = new Line2D.Float(this.getRelativePoint(false),this.ultPoint);
             List<Actor> affectedActors = Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),Champion.getDistanceLine(ogLine,7f),4f);
             for(Actor a : affectedActors){
@@ -71,7 +69,6 @@ public class Gunter extends UserActor{
                 break;
             case 3: //TODO: Last left off - actually make this do damage
                 this.ultActivated = true;
-                this.ultStarted = System.currentTimeMillis();
                 this.ultPoint = dest;
                 ExtensionCommands.createActorFX(parentExt,room,this.id,"gunter_powered_up",2500,this.id+"_gunterPower",true,"Bip01",true,false,team);
                 ExtensionCommands.createActorFX(parentExt,room,this.id,"gunter_bottle_cone",2500,this.id+"gunterUlt",true,"Bip01",true,false,team);
@@ -131,7 +128,6 @@ public class Gunter extends UserActor{
             setCanMove(true);
             ultActivated = false;
             ultPoint = null;
-            ultStarted = -1;
         }
         @Override
         protected void spellPassive() {

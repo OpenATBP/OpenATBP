@@ -11,6 +11,7 @@ import com.smartfoxserver.v2.exceptions.SFSCreateRoomException;
 import com.smartfoxserver.v2.exceptions.SFSJoinRoomException;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.MapData;
 
 import java.util.*;
 
@@ -19,23 +20,26 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
     @Override
     public void handleClientRequest(User sender, ISFSObject params){ //Called when player is trying to join a match
         trace(params.getDump());
+        int team = 0;
+        if(params.getUtfString("team").equalsIgnoreCase("purple")) team = 1;
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         List<UserVariable> userVariables = new ArrayList<>();
         ISFSObject playerInfo = new SFSObject(); //Player info from champ select
         playerInfo.putUtfString("avatar",params.getUtfString("avatar"));
         playerInfo.putUtfString("backpack",params.getUtfString("belt"));
-        playerInfo.putUtfString("team",params.getUtfString("team"));
+        playerInfo.putInt("team",team);
         playerInfo.putUtfString("name", (String) sender.getSession().getProperty("name"));
         playerInfo.putUtfString("tegid", (String) sender.getSession().getProperty("tegid"));
         playerInfo.putInt("elo", parentExt.getElo((String)sender.getSession().getProperty("tegid")));
-        playerInfo.putUtfString("team",params.getUtfString("team"));
         SFSUserVariable playerVar = new SFSUserVariable("player",playerInfo);
         ISFSObject location = new SFSObject(); //Will need to be changed when we get actual spawn points made
-        location.putFloat("x",0);
-        location.putFloat("z", 0);
+        float x = (float) MapData.PURPLE_SPAWNS[0].getX();
+        if(team == 0) x*=-1;
+        location.putFloat("x",x);
+        location.putFloat("z", (float) MapData.PURPLE_SPAWNS[0].getY());
         ISFSObject p1 = new SFSObject();
-        p1.putFloat("x", 0);
-        p1.putFloat("z", 0);
+        p1.putFloat("x", x);
+        p1.putFloat("z", (float) MapData.PURPLE_SPAWNS[0].getY());
         location.putSFSObject("p1",p1);
         location.putFloat("time",0);
         location.putFloat("speed",0);

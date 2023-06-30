@@ -52,7 +52,7 @@ public class UserActor extends Actor {
     public UserActor(User u, ATBPExtension parentExt){
         this.parentExt = parentExt;
         this.id = String.valueOf(u.getId());
-        this.team = Integer.parseInt(u.getVariable("player").getSFSObjectValue().getUtfString("team"));
+        this.team = u.getVariable("player").getSFSObjectValue().getInt("team");
         player = u;
         this.avatar = u.getVariable("player").getSFSObjectValue().getUtfString("avatar");
         this.displayName = u.getVariable("player").getSFSObjectValue().getUtfString("name");
@@ -72,10 +72,6 @@ public class UserActor extends Actor {
         this.attackRange = this.stats.get("attackRange");
         this.actorType = ActorType.PLAYER;
         this.backpack = u.getVariable("player").getSFSObjectValue().getUtfString("backpack");
-    }
-
-    public UserActor() {
-
     }
 
     public void setAutoAttackEnabled(boolean enabled){
@@ -530,7 +526,7 @@ public class UserActor extends Actor {
 
     public void respawn(){
         Point2D respawnPoint = MapData.PURPLE_SPAWNS[parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id,this.team)];
-        if(this.team == 1) respawnPoint.setLocation(respawnPoint.getX()*-1,respawnPoint.getY());
+        if(this.team == 0) respawnPoint.setLocation(respawnPoint.getX()*-1,respawnPoint.getY());
         this.location = respawnPoint;
         this.originalLocation = respawnPoint;
         this.destination = respawnPoint;

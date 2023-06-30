@@ -186,13 +186,21 @@ public class Champion {
         List<Actor> affectedActors = new ArrayList<>();
         for(Actor a : room.getActors()){
             for(Point2D p : allPoints){
-                if(a.getLocation().distance(p) <= range){
+                if(a.getLocation().distance(p) <= range && facingEntity(line.getP1(),line.getP2())){
                     affectedActors.add(a);
                     break;
                 }
             }
         }
         return affectedActors;
+    }
+
+    private static boolean facingEntity(Point2D p1, Point2D p2){ // Returns true if the point is in the same direction
+        double deltaX = p2.getX()-p1.getX();
+        //Negative = left Positive = right
+        if(Double.isNaN(deltaX)) return false;
+        if(deltaX>0 && p2.getX()>p1.getX()) return true;
+        else return deltaX < 0 && p2.getX() < p1.getX();
     }
     public static Line2D getMaxRangeLine(Line2D projectileLine, float spellRange){
         float remainingRange = (float) (spellRange-projectileLine.getP1().distance(projectileLine.getP2()));
@@ -241,36 +249,6 @@ public class Champion {
             states.put(s,false);
         }
         return states;
-    }
-
-    public static List<Actor> getActorsWithinCone(RoomHandler roomHandler, Point2D tip, Point2D direction, float length, float width){ //TODO: Needs to be more accurate
-        Point2D midpoint = Champion.getDistanceLine(new Line2D.Float(tip,direction),length).getP2();
-        Point2D directPoint = new Point2D.Double((tip.getX()-midpoint.getX())/Math.abs(tip.getX()-midpoint.getX()),(tip.getY()-midpoint.getY())/Math.abs(tip.getY()-midpoint.getY()));
-        Point2D orthogonalPoint = new Point2D.Double(directPoint.getY()*-1,directPoint.getX());
-        Point2D bPoint = new Point2D.Double((width/2)*orthogonalPoint.getX() + midpoint.getX(), (width/2)*orthogonalPoint.getY() + midpoint.getY());
-        Point2D cPoint = new Point2D.Double(((width*-1)/2)*orthogonalPoint.getX() + midpoint.getX(), ((width*-1)/2)*orthogonalPoint.getY() + midpoint.getY());
-        ATBPExtension parentExt = roomHandler.getActors().get(0).getParentExt();
-        Room room = roomHandler.getActors().get(0).getRoom();
-        List<Actor> affectedUsers = new ArrayList<>();
-        for(Actor a : roomHandler.getActors()){
-            if(isPointInsideTriangle(tip,bPoint,cPoint,a.getLocation())) affectedUsers.add(a);
-        }
-        return affectedUsers;
-    }
-
-    private static boolean isPointInsideTriangle(Point2D vertex1, Point2D vertex2, Point2D vertex3, Point2D point) {
-        double areaOfTriangle = calculateTriangleArea(vertex1, vertex2, vertex3);
-        double area1 = calculateTriangleArea(point, vertex2, vertex3);
-        double area2 = calculateTriangleArea(vertex1, point, vertex3);
-        double area3 = calculateTriangleArea(vertex1, vertex2, point);
-
-        return areaOfTriangle == area1 + area2 + area3;
-    }
-
-    private static double calculateTriangleArea(Point2D vertex1, Point2D vertex2, Point2D vertex3) {
-        return Math.abs((vertex1.getX() * (vertex2.getY() - vertex3.getY()) +
-                vertex2.getX() * (vertex3.getY() - vertex1.getY()) +
-                vertex3.getX() * (vertex1.getY() - vertex2.getY())) / 2.0);
     }
 
 

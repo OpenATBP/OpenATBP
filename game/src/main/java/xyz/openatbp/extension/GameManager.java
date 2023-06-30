@@ -19,6 +19,7 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public class GameManager {
 
@@ -26,30 +27,26 @@ public class GameManager {
     public static final String[] SPAWNS = {"bh1","bh2","bh3","ph1","ph2","ph3","keeoth","ooze","hugwolf","gnomes","owls","grassbear"};
     private static ObjectMapper objectMapper = new ObjectMapper();
 
-    public static void addPlayer(ArrayList<User> users, ATBPExtension parentExt){ //Sends player info to client
-        for(int i = 0; i < users.size(); i++){
-            ISFSObject userData = new SFSObject();
-            User player = users.get(i);
-            ISFSObject playerInfo = player.getVariable("player").getSFSObjectValue();
-            int team = Integer.parseInt(playerInfo.getUtfString("team"));
-            userData.putInt("id", player.getId());
-            userData.putUtfString("name", playerInfo.getUtfString("name"));
-            userData.putUtfString("champion", playerInfo.getUtfString("avatar"));
-            userData.putInt("team", team); //Change up team data
-            userData.putUtfString("tid", playerInfo.getUtfString("tegid"));
-            userData.putUtfString("backpack", playerInfo.getUtfString("backpack"));
-            userData.putInt("elo", parentExt.getElo(playerInfo.getUtfString("tegid")));
-            for(int g = 0; g < users.size(); g++){
-                parentExt.send("cmd_add_user",userData,users.get(g));
-            }
+    public static void addPlayer(Room room, ATBPExtension parentExt){ //Sends player info to client
+        System.out.println("Adding player!");
+        for(User user : room.getUserList()){
+            ISFSObject playerInfo = user.getVariable("player").getSFSObjectValue();
+            int id = user.getId();
+            String name = playerInfo.getUtfString("name");
+            String champion = playerInfo.getUtfString("avatar");
+            int team = playerInfo.getInt("team");
+            String backpack = playerInfo.getUtfString("backpack");
+            String tid = playerInfo.getUtfString("tegid");
+            int elo = parentExt.getElo(tid);
+            ExtensionCommands.addUser(parentExt,room,id,name,champion,team,tid,backpack,elo);
 
         }
 
     }
 
-    public static void loadPlayers(ArrayList<User> users, ATBPExtension parentExt, Room room){ //Loads the map for everyone
+    public static void loadPlayers(Room room, ATBPExtension parentExt){ //Loads the map for everyone
         String groupID = room.getGroupId();
-        for(int i = 0; i < users.size(); i++){
+        for(User u : room.getUserList()){
             ISFSObject data = new SFSObject();
             if(groupID.equals("Practice")){
                 data.putUtfString("set","AT_1L_Arena");
@@ -60,10 +57,9 @@ public class GameManager {
             data.putInt("roomId", room.getId());
             data.putUtfString("roomName", room.getName());
             data.putInt("capacity", 2);
-            data.putInt("botCount", 0);
-            parentExt.send("cmd_load_room", data, users.get(i));
+            data.putInt("botCount", 4);
+            parentExt.send("cmd_load_room", data, u);
         }
-
     }
 
     public static boolean playersLoaded(ArrayList<User> users, int gameSize){
@@ -92,40 +88,38 @@ public class GameManager {
         }
     }
 
-    public static void initializeGame(ArrayList<User> users, ATBPExtension parentExt) throws SFSVariableException {
+    public static void initializeGame(Room room, ATBPExtension parentExt) throws SFSVariableException {
         int blueNum = 0;
         int purpleNum = 0;
-        for(int i = 0; i < users.size(); i++){ //Initialize character
-            User sender = users.get(i);
-            initializeMap(sender,parentExt);
-            ISFSObject actorData = new SFSObject();
-            ISFSObject playerInfo = sender.getVariable("player").getSFSObjectValue();
-            actorData.putUtfString("id", String.valueOf(sender.getId()));
-            actorData.putUtfString("actor", playerInfo.getUtfString("avatar"));
-            ISFSObject spawnPoint = new SFSObject();
-            int team = Integer.parseInt(playerInfo.getUtfString("team"));
+        initializeMap(room,parentExt);
+        // ExtensionCommands.addUser(parentExt,room,101,"Fake user 1","finn",0,"finn",backpack,0);
+        ExtensionCommands.createActor(parentExt,room,"101","finn",new Point2D.Float((float) (MapData.PURPLE_SPAWNS[1].getX()*-1), (float) MapData.PURPLE_SPAWNS[1].getY()),0f,0);
+        ExtensionCommands.createActor(parentExt,room,"102","jake",new Point2D.Float((float) (MapData.PURPLE_SPAWNS[2].getX()*-1),(float) MapData.PURPLE_SPAWNS[2].getY()),0f,0);
+        ExtensionCommands.createActor(parentExt,room,"103","magicman",MapData.PURPLE_SPAWNS[1], 0f,1);
+        ExtensionCommands.createActor(parentExt,room,"104","iceking",MapData.PURPLE_SPAWNS[2],0f,1);
+
+        for(User u : room.getUserList()){
+            ISFSObject playerInfo = u.getVariable("player").getSFSObjectValue();
+            int team = playerInfo.getInt("team");
             float px = 0f;
             float pz = 0f;
-            if(team == 0){
+            if(team == 1){
                 px = (float) MapData.PURPLE_SPAWNS[purpleNum].getX();
                 pz = (float) MapData.PURPLE_SPAWNS[purpleNum].getY();
                 purpleNum++;
             }
-            if(team == 1){
+            if(team == 0){
                 px = (float) MapData.PURPLE_SPAWNS[blueNum].getX()*-1;
                 pz = (float) MapData.PURPLE_SPAWNS[blueNum].getY();
                 blueNum++;
             }
-            spawnPoint.putFloat("x", px);
-            spawnPoint.putFloat("y", 0f);
-            spawnPoint.putFloat("z", pz);
-            spawnPoint.putFloat("rotation", 0);
-            actorData.putSFSObject("spawn_point", spawnPoint);
-            sender.getVariable("location").getSFSObjectValue().putSFSObject("p1",spawnPoint);
+            String id = String.valueOf(u.getId());
+            String actor = playerInfo.getUtfString("avatar");
+            Point2D location = new Point2D.Float(px,pz);
+            ExtensionCommands.createActor(parentExt,room,id,actor,location,0f,team);
 
             ISFSObject updateData = new SFSObject();
-            updateData.putUtfString("id", String.valueOf(sender.getId()));
-            System.out.println("Here!");
+            updateData.putUtfString("id", String.valueOf(u.getId()));
             int champMaxHealth = parentExt.getActorStats(playerInfo.getUtfString("avatar")).get("health").asInt();
             updateData.putInt("currentHealth", champMaxHealth);
             updateData.putInt("maxHealth", champMaxHealth);
@@ -149,28 +143,22 @@ public class GameManager {
                 updateData.putDouble(k,actorStats.get(k).asDouble());
             }
             UserVariable userStat = new SFSUserVariable("stats",updateData);
-            sender.setVariable(userStat);
-            for(int g = 0; g < users.size(); g++){ //Send characters
-                User user = users.get(g);
-                parentExt.send("cmd_create_actor", actorData, user);
-
-                parentExt.send("cmd_update_actor_data", updateData, user);
-
-            }
+            u.setVariable(userStat);
+            ExtensionCommands.updateActorData(parentExt,room,updateData);
         }
         Point2D guardianLoc = new Point2D.Float(MapData.L2_GUARDIAN1_X*-1,MapData.L2_GUARDIAN1_Z);
         Point2D guardianLoc2 = new Point2D.Float(MapData.L2_GUARDIAN1_X,MapData.L2_GUARDIAN1_Z);
-        ExtensionCommands.moveActor(parentExt,users.get(0).getLastJoinedRoom(),"gumball0",guardianLoc,new Point2D.Float((float) (guardianLoc.getX()+0.01f), (float) guardianLoc.getY()),0.01f,true);
-        ExtensionCommands.moveActor(parentExt,users.get(0).getLastJoinedRoom(),"gumball1",guardianLoc2,new Point2D.Float((float) (guardianLoc2.getX()-0.01f), (float) guardianLoc2.getY()),0.01f,true);
+        ExtensionCommands.moveActor(parentExt,room,"gumball1",guardianLoc,new Point2D.Float((float) (guardianLoc.getX()+0.01f), (float) guardianLoc.getY()),0.01f,true);
+        ExtensionCommands.moveActor(parentExt,room,"gumball0",guardianLoc2,new Point2D.Float((float) (guardianLoc2.getX()-0.01f), (float) guardianLoc2.getY()),0.01f,true);
         try{ //Sets all the room variables once the game is about to begin
-            setRoomVariables(users.get(0).getLastJoinedRoom());
+            setRoomVariables(room);
         }catch(SFSVariableException e){
             System.out.println(e);
         }
 
-        for(int i = 0; i < users.size(); i++){
+        for(User u : room.getUserList()){
             ISFSObject data = new SFSObject();
-            parentExt.send("cmd_match_starting", data, users.get(i)); //Starts the game for everyone
+            parentExt.send("cmd_match_starting", data, u); //Starts the game for everyone
         }
 
     }
@@ -197,50 +185,53 @@ public class GameManager {
 
     }
 
-    private static void initializeMap(User user, ATBPExtension parentExt){
-        String room = user.getLastJoinedRoom().getGroupId();
-        parentExt.send("cmd_create_actor",MapData.getBaseActorData(0,room),user);
-        parentExt.send("cmd_create_actor",MapData.getBaseActorData(1,room),user);
+    private static void initializeMap(Room room, ATBPExtension parentExt){
+        String roomStr = room.getGroupId();
+        ExtensionCommands.createActor(parentExt,room,MapData.getBaseActorData(0,roomStr));
+        ExtensionCommands.createActor(parentExt,room,MapData.getBaseActorData(1,roomStr));
 
-        spawnTowers(user,parentExt);
-        spawnAltars(user,parentExt,room);
-        spawnHealth(user,parentExt,room);
-        parentExt.send("cmd_create_actor",MapData.getGuardianActorData(0,room),user);
-        parentExt.send("cmd_create_actor",MapData.getGuardianActorData(1,room),user);
+        spawnTowers(room,parentExt);
+        spawnAltars(room,parentExt);
+        spawnHealth(room,parentExt);
+
+        ExtensionCommands.createActor(parentExt,room,MapData.getGuardianActorData(0,roomStr));
+        ExtensionCommands.createActor(parentExt,room,MapData.getGuardianActorData(1,roomStr));
 
     }
 
-    private static void spawnTowers(User user, ATBPExtension parentExt){
-        String room = user.getLastJoinedRoom().getGroupId();
-        parentExt.send("cmd_create_actor",MapData.getTowerActorData(0,1,room),user);
-        parentExt.send("cmd_create_actor",MapData.getTowerActorData(0,2,room),user);
-        parentExt.send("cmd_create_actor",MapData.getTowerActorData(1,1,room),user);
-        parentExt.send("cmd_create_actor",MapData.getTowerActorData(1,2,room),user);
-        if(!room.equalsIgnoreCase("practice")){
-            parentExt.send("cmd_create_actor",MapData.getTowerActorData(0,3,room),user);
-            parentExt.send("cmd_create_actor",MapData.getTowerActorData(1,3,room),user);
+    private static void spawnTowers(Room room, ATBPExtension parentExt){
+        String roomStr = room.getGroupId();
+
+        ExtensionCommands.createActor(parentExt,room,MapData.getTowerActorData(0,1,roomStr));
+        ExtensionCommands.createActor(parentExt,room,MapData.getTowerActorData(0,2,roomStr));
+        ExtensionCommands.createActor(parentExt,room,MapData.getTowerActorData(1,1,roomStr));
+        ExtensionCommands.createActor(parentExt,room,MapData.getTowerActorData(1,2,roomStr));
+
+        if(!roomStr.equalsIgnoreCase("practice")){
+            ExtensionCommands.createActor(parentExt,room,MapData.getTowerActorData(0,3,roomStr));
+            ExtensionCommands.createActor(parentExt,room,MapData.getTowerActorData(1,3,roomStr));
         }
     }
 
-    private static void spawnAltars(User user, ATBPExtension parentExt, String room){
-        parentExt.send("cmd_create_actor",MapData.getAltarActorData(1,room),user);
-        parentExt.send("cmd_create_actor",MapData.getAltarActorData(2,room),user);
-        if(!room.equalsIgnoreCase("practice")){
-            parentExt.send("cmd_create_actor",MapData.getAltarActorData(0,room),user);
+    private static void spawnAltars(Room room, ATBPExtension parentExt){
+        ExtensionCommands.createActor(parentExt,room,MapData.getAltarActorData(1,room.getGroupId()));
+        ExtensionCommands.createActor(parentExt,room,MapData.getAltarActorData(2,room.getGroupId()));
+        if(!room.getGroupId().equalsIgnoreCase("practice")){
+            ExtensionCommands.createActor(parentExt,room,MapData.getAltarActorData(0,room.getGroupId()));
         }
     }
 
-    private static void spawnHealth(User user, ATBPExtension parentExt, String room){
-        if(room.equalsIgnoreCase("practice")){
-            parentExt.send("cmd_create_actor",MapData.getHealthActorData(0,room,-1),user);
-            parentExt.send("cmd_create_actor",MapData.getHealthActorData(1,room,-1),user);
+    private static void spawnHealth(Room room, ATBPExtension parentExt){
+        if(room.getGroupId().equalsIgnoreCase("practice")){
+            ExtensionCommands.createActor(parentExt,room,MapData.getHealthActorData(0,room.getGroupId(),-1));
+            ExtensionCommands.createActor(parentExt,room,MapData.getHealthActorData(1,room.getGroupId(),-1));
         }else{
-            parentExt.send("cmd_create_actor",MapData.getHealthActorData(0,room,0),user);
-            parentExt.send("cmd_create_actor",MapData.getHealthActorData(0,room,1),user);
-            parentExt.send("cmd_create_actor",MapData.getHealthActorData(0,room,2),user);
-            parentExt.send("cmd_create_actor",MapData.getHealthActorData(1,room,0),user);
-            parentExt.send("cmd_create_actor",MapData.getHealthActorData(1,room,1),user);
-            parentExt.send("cmd_create_actor",MapData.getHealthActorData(1,room,2),user);
+            ExtensionCommands.createActor(parentExt,room,MapData.getHealthActorData(0,room.getGroupId(),0));
+            ExtensionCommands.createActor(parentExt,room,MapData.getHealthActorData(0,room.getGroupId(),1));
+            ExtensionCommands.createActor(parentExt,room,MapData.getHealthActorData(0,room.getGroupId(),2));
+            ExtensionCommands.createActor(parentExt,room,MapData.getHealthActorData(1,room.getGroupId(),0));
+            ExtensionCommands.createActor(parentExt,room,MapData.getHealthActorData(1,room.getGroupId(),1));
+            ExtensionCommands.createActor(parentExt,room,MapData.getHealthActorData(1,room.getGroupId(),2));
         }
     }
 

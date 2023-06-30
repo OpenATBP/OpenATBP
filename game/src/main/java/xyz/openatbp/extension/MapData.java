@@ -59,9 +59,9 @@ public class MapData {
             x = L2_BASE1_X;
             z = L2_BASE1_Z;
         }
-        if(team == 0) x*=-1;
+        if(team == 1) x*=-1;
         String actor;
-        if(team == 1){
+        if(team == 0){
             actor = "base_blue";
         }else{
             actor = "base_purple";
@@ -100,9 +100,9 @@ public class MapData {
                 z = L2_TOWER2_Z;
             }
         }
-        if(team == 0) x*=-1;
+        if(team == 1) x*=-1;
         String id = "error";
-        if(team == 1){
+        if(team == 0){
             id = "blue_tower"+tower;
         }else{
             id = "purple_tower"+tower;
@@ -147,9 +147,9 @@ public class MapData {
                     z = L2_TOWER2_Z;
                 }
             }
-            if(team == 0) x*=-1;
+            if(team == 1) x*=-1;
             String id = "error";
-            if(team == 1){
+            if(team == 0){
                 id = "blue_tower"+tower;
             }else{
                 id = "purple_tower"+tower;
@@ -220,7 +220,7 @@ public class MapData {
                 x = L2_LEFT_HEALTH[0];
                 z = L2_LEFT_HEALTH[1];
             }
-            if(team == 0){
+            if(team == 1){
                 x*=-1;
             }
         }
@@ -248,7 +248,7 @@ public class MapData {
             x = L2_GUARDIAN1_X;
             z = L2_GUARDIAN1_Z;
         }
-        if(team == 0) x*=-1;
+        if(team == 1) x*=-1;
         ISFSObject guardian = new SFSObject();
         ISFSObject guardianSpawn = new SFSObject();
         guardian.putUtfString("id","gumball"+team);
@@ -258,7 +258,6 @@ public class MapData {
         guardianSpawn.putFloat("z", z);
         guardian.putSFSObject("spawn_point", guardianSpawn);
         float rotation = 0f;
-        if(team == 1) rotation = 0f;
         guardian.putFloat("rotation", rotation);
         guardian.putInt("team", team);
         return guardian;
