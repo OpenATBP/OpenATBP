@@ -83,7 +83,7 @@ public class MapData {
         float x = 0;
         float z = 0;
         float towerDifference = 0;
-        String towerID = "tower"+(team+1);
+        String towerID = "tower"+(2-team);
         if(room.equalsIgnoreCase("practice")){
             towerDifference = L1_TOWER1_X-L1_TOWER2_X;
             x = (L1_TOWER1_X-(towerDifference*(tower-1)));

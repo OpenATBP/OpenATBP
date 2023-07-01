@@ -243,6 +243,43 @@ public class Champion {
         return new Line2D.Float(movementLine.getP1(),newPoint);
     }
 
+    public static Point2D getTeleportPoint(ATBPExtension parentExt, User user, Point2D location, Point2D dest){
+        ArrayList<Path2D> colliderPaths = parentExt.getMapPaths("main");
+        for(int i = 0; i < colliderPaths.size(); i++){
+            if(colliderPaths.get(i).contains(dest)){
+                System.out.println("Point clashes at i: " + i);
+                Path2D path = colliderPaths.get(i);
+                Rectangle2D bounds = path.getBounds2D();
+                Point2D topRight = new Point2D.Double(bounds.getMaxX(),bounds.getMaxY());
+                Point2D topLeft = new Point2D.Double(bounds.getMinX(),bounds.getMaxY());
+                Point2D bottomLeft = new Point2D.Double(bounds.getMinX(),bounds.getMinY());
+                Point2D bottomRight = new Point2D.Double(bounds.getMaxX(),bounds.getMinY());
+
+                double closestDistance = 1000d;
+                Point2D closestPoint = new Point2D.Double(location.getX(),location.getY());
+
+                for(double g = bottomLeft.getY(); g < topLeft.getY(); g+=(topLeft.getY()/10)){
+                    Point2D testPoint = new Point2D.Double(topLeft.getX(),g);
+                    if(testPoint.distance(dest) < closestDistance){
+                        closestDistance = testPoint.distance(dest);
+                        closestPoint = testPoint;
+                    }
+                }
+
+                for(double g = bottomRight.getY(); g < topRight.getY(); g+=(topRight.getY()/10)){
+                    Point2D testPoint = new Point2D.Double(topRight.getX(),g);
+                    if(testPoint.distance(dest) < closestDistance){
+                        closestDistance = testPoint.distance(dest);
+                        closestPoint = testPoint;
+                    }
+                }
+
+                return closestPoint;
+            }
+        }
+        return dest;
+    }
+
     public static HashMap<ActorState, Boolean> getBlankStates(){
         HashMap<ActorState, Boolean> states = new HashMap<>(ActorState.values().length);
         for(ActorState s : ActorState.values()){
@@ -339,7 +376,15 @@ public class Champion {
             this.buff = state.name().toLowerCase();
             this.isState = true;
             this.started = System.currentTimeMillis();
-            a.setBuffHandler(buff,this);
+        }
+
+        public FinalBuffHandler(Actor a, ActorState state, double delta, String fxName){
+            this.a = a;
+            this.delta = delta;
+            this.buff = state.name().toLowerCase();
+            this.isState = true;
+            this.fxName = fxName;
+            this.started = System.currentTimeMillis();
         }
 
         public FinalBuffHandler(Actor a, String buff, double delta){
@@ -347,7 +392,6 @@ public class Champion {
             this.buff = buff;
             this.delta = delta;
             this.started = System.currentTimeMillis();
-            a.setBuffHandler(buff,this);
         }
 
         public FinalBuffHandler(Actor a, String buff, double delta, String fxName){
@@ -357,13 +401,13 @@ public class Champion {
             this.delta = delta;
             this.fxName = fxName;
             this.started = System.currentTimeMillis();
-            a.setBuffHandler(buff,this);
         }
 
         @Override
         public void run() {
             if(!this.isState){
                 if(this.duration > 0){
+                    System.out.println("Remaining duration = " + this.duration + " for " + a.getId());
                     int runTime = (int) Math.floor(duration - (System.currentTimeMillis()-started));
                     double statChange = this.getDelta();
                     if(modifiedDelta != 0 && modifiedDelta > delta){
@@ -383,13 +427,43 @@ public class Champion {
                 }
                 if(this.fxName != null) this.handleIcons();
             }else{
+                System.out.println("Buff is a state!");
                 switch(this.buff){
                     case "polymorph":
-                        a.setState(ActorState.POLYMORPH,false);
-                        ExtensionCommands.swapActorAsset(a.getParentExt(),a.getRoom(),a.getId(),a.getAvatar());
-                        a.setTempStat("speed",delta*-1);
+                        this.handleBuffRun("speed",ActorState.POLYMORPH);
+                        if(duration == 0) ExtensionCommands.swapActorAsset(a.getParentExt(),a.getRoom(),a.getId(),a.getAvatar());
+                        break;
+                    case "slowed":
+                        this.handleBuffRun("speed", ActorState.SLOWED);
+                        break;
+                    case "charmed":
+                        a.setState(ActorState.CHARMED,false);
+                        a.removeBuffHandler(this.buff);
                         break;
                 }
+            }
+        }
+
+        private void handleBuffRun(String stat, ActorState state){
+            if(duration > 0){
+                int runTime = (int) Math.floor(duration - (System.currentTimeMillis()-started));
+                double statChange = this.getDelta();
+                if(modifiedDelta != 0 && modifiedDelta > delta){
+                    a.setTempStat(stat, delta*-1);
+                    statChange = modifiedDelta - delta;
+                }
+                System.out.println("State Buff running for " + runTime);
+                if(this.fxName != null){
+                    ExtensionCommands.createActorFX(a.getParentExt(),a.getRoom(),a.getId(),fxName,runTime,a.getId()+"_"+fxName,true,"Bip01",true,true,a.getTeam());
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinalBuffHandler(a,state,statChange,fxName),runTime,TimeUnit.MILLISECONDS);
+                }else{
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinalBuffHandler(a,state,statChange),runTime,TimeUnit.MILLISECONDS);
+                }
+            }else{
+                System.out.println("State Buff ended");
+                a.setTempStat(stat,delta*-1);
+                a.setState(state,false);
+                a.removeBuffHandler(this.buff);
             }
         }
 

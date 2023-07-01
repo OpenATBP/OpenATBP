@@ -41,7 +41,7 @@ public class FlamePrincess extends UserActor {
                 if(a.getTeam() != this.team){
                     JsonNode attackData = this.parentExt.getAttackData(this.avatar,"spell3");
                     if(a.getActorType() != ActorType.PLAYER) a.damaged(this,this.getSpellDamage(attackData),attackData);
-                    else{ //Redundant?
+                    else if (a.getActorType() == ActorType.PLAYER){ //Redundant?
                         UserActor userActor = (UserActor) a;
                         userActor.damaged(this,this.getSpellDamage(attackData),attackData);
                     }
@@ -139,7 +139,7 @@ public class FlamePrincess extends UserActor {
                 double newDamage = u.getMitigatedDamage(50d,AttackType.SPELL,FlamePrincess.this);
                 handleSpellVamp(newDamage);
                 userActor.damaged(FlamePrincess.this,50,parentExt.getAttackData(avatar,"spell2"));
-                userActor.handleEffect(ActorState.POLYMORPH,-1d,3000);
+                userActor.handleEffect(ActorState.POLYMORPH,-1d,3000,null);
             }
             System.out.println("Ability done!");
         }

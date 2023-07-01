@@ -661,9 +661,9 @@ public class RoomHandler implements Runnable{
     }
 
     public void handleFountain(){
-        Point2D purpleCenter = new Point2D.Float(-50.16f,0f);
-        List<Actor> purpleTeam = Champion.getEnemyActorsInRadius(this,1,purpleCenter,4f);
-        for(Actor a : purpleTeam){
+        Point2D blueCenter = new Point2D.Float(50.16f,0f);
+        List<Actor> blueTeam = Champion.getEnemyActorsInRadius(this,1,blueCenter,4f);
+        for(Actor a : blueTeam){
             if(a.getActorType() == ActorType.PLAYER){
                 UserActor ua = (UserActor) a;
                 if(ua.getHealth() < ua.getMaxHealth()){
@@ -673,9 +673,9 @@ public class RoomHandler implements Runnable{
                 ua.handleEffect("speed",2d,5000,"fountainSpeed");
             }
         }
-        Point2D blueCenter = new Point2D.Float(-50.16f, 0f);
-        List<Actor> blueTeam = Champion.getEnemyActorsInRadius(this,0,blueCenter,4f);
-        for(Actor a : blueTeam){ //I can optimize but that's future me's problem
+        Point2D purpleCenter = new Point2D.Float(-50.16f, 0f);
+        List<Actor> purpleTeam = Champion.getEnemyActorsInRadius(this,0,purpleCenter,4f);
+        for(Actor a : purpleTeam){ //I can optimize but that's future me's problem
             if(a.getActorType() == ActorType.PLAYER){
                 UserActor ua = (UserActor) a;
                 if(ua.getHealth() < ua.getMaxHealth()){
@@ -697,6 +697,7 @@ public class RoomHandler implements Runnable{
     public void gameOver(int winningTeam){
         try{
             this.gameOver = true;
+            ExtensionCommands.gameOver(parentExt,this.room,winningTeam);
             MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
             for(UserActor ua : this.players){
                 String tegID = (String) ua.getUser().getSession().getProperty("tegid");
@@ -770,7 +771,7 @@ public class RoomHandler implements Runnable{
                     );
                     UpdateOptions options = new UpdateOptions().upsert(true);
                     System.out.println(playerData.updateOne(data,updates,options));
-
+                    parentExt.stopScript(room.getId());
                 }
             }
         }catch (Exception e){

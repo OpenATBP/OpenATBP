@@ -165,8 +165,6 @@ public class ChampionData {
 
     public static String[] getBackpackInventory(ATBPExtension parentExt,String backpack){
         JsonNode pack = parentExt.getDefinition(backpack).get("junk");
-        System.out.println(backpack);
-        System.out.println(pack.toString());
         String[] itemNames = new String[5];
         for(int i = 0; i < 5; i++){
             itemNames[i] = pack.get("slot"+(i+1)).get("junk_id").asText();
@@ -175,7 +173,6 @@ public class ChampionData {
     }
 
     public static ArrayNode getItemStats(ATBPExtension parentExt, String item){
-        System.out.println(item);
         JsonNode itemObj = parentExt.itemDefinitions.get(item).get("junk").get("mods");
         return (ArrayNode) itemObj.get("mod");
     }

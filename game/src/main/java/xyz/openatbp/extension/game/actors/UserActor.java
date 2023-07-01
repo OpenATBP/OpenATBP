@@ -26,11 +26,9 @@ import java.util.concurrent.TimeUnit;
 public class UserActor extends Actor {
 
     protected User player;
-    protected boolean canMove = true;
     protected Point2D destination;
-    private Point2D originalLocation;
-    private float timeTraveled = 0;
-    protected double attackCooldown;
+    protected Point2D originalLocation;
+    protected float timeTraveled = 0;
     protected Actor target;
     protected ScheduledFuture<?> currentAutoAttack = null;
     protected boolean autoAttackEnabled = false;
@@ -137,7 +135,7 @@ public class UserActor extends Actor {
             this.timeTraveled = 0f;
             this.speed = this.getPlayerStat("speed");
         }else if(stat.contains("healthRegen")){
-            if(this.tempStats.get("healthRegen") < 0) this.tempStats.put("healthRegen",0d);
+            if(this.hasTempStat("healthRegen") && this.getTempStat("healthRegen") <= 0) this.tempStats.remove("healthRegen");
         }
         parentExt.trace("Temp Stat Set!1");
         ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,stat,this.getPlayerStat(stat));
@@ -253,20 +251,16 @@ public class UserActor extends Actor {
 
     }
 
-    public boolean canAttack(){
-        return this.attackCooldown == 0;
-    }
-
     public double getAttackCooldown(){
         return this.attackCooldown;
     }
 
     @Override
     public void attack(Actor a) {
-        if(attackCooldown == 0){
+        if(this.attackCooldown == 0){
             boolean crit = Math.random() < this.getPlayerStat("criticalChance");
             ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
-            attackCooldown = this.getPlayerStat("attackSpeed");
+            this.attackCooldown = this.getPlayerStat("attackSpeed");
             Champion.DelayedAttack delayedAttack = new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack");
             String projectileFx = this.parentExt.getActorData(this.getAvatar()).get("scriptData").get("projectileAsset").asText();
             this.currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,delayedAttack,projectileFx),500,TimeUnit.MILLISECONDS);
@@ -274,10 +268,10 @@ public class UserActor extends Actor {
     }
 
     protected void handleAttack(Actor a){ //To be used if you're not using the standard DelayedAttack Runnable
-        if(attackCooldown == 0){
+        if(this.attackCooldown == 0){
             boolean crit = Math.random() < this.getPlayerStat("criticalChance");
             ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
-            attackCooldown = this.getPlayerStat("attackSpeed");
+            this.attackCooldown = this.getPlayerStat("attackSpeed");
         }
     }
 
@@ -292,7 +286,7 @@ public class UserActor extends Actor {
 
     public void reduceAttackCooldown(){
         this.attackCooldown-=100;
-        if(attackCooldown < 0) this.attackCooldown = 0;
+        if(this.attackCooldown < 0) this.attackCooldown = 0;
     }
 
     @Override
@@ -405,6 +399,7 @@ public class UserActor extends Actor {
         if(this.attackCooldown > 0) this.reduceAttackCooldown();
         if(this.target != null && this.target.getHealth() > 0 && this.autoAttackEnabled){
             if(this.withinRange(target) && this.canAttack()){
+                if(this.canAttack()) System.out.println(id + " attackCooldown is " + this.attackCooldown);
                 this.autoAttack(target);
                 System.out.println("Auto attacking!");
             }else if(!this.withinRange(target)){
@@ -447,11 +442,14 @@ public class UserActor extends Actor {
                     }
                 }
             }
+            List<Actor> actorsToRemove = new ArrayList<Actor>(this.aggressors.keySet().size());
             for(Actor a : this.aggressors.keySet()){
                 ISFSObject damageData = this.aggressors.get(a);
-                if(System.currentTimeMillis() > damageData.getLong("lastAttacked") + 10000) this.aggressors.remove(a);
+                if(System.currentTimeMillis() > damageData.getLong("lastAttacked") + 10000) actorsToRemove.add(a);
             }
-
+            for(Actor a : actorsToRemove){
+                this.aggressors.remove(a);
+            }
             if(System.currentTimeMillis() - this.lastKilled >= 10000){
                 if(this.multiKill != 0){
                     if(this.hasGameStat("largestMulti")){
@@ -480,10 +478,6 @@ public class UserActor extends Actor {
             ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),abilityString,true,getReducedCooldown(cooldown),gCooldown);
         }
     }
-
-    public boolean canMove(){
-        return canMove;
-    }
     public void setCanMove(boolean canMove){
         this.canMove = canMove;
     }
@@ -497,6 +491,10 @@ public class UserActor extends Actor {
 
     public void setTarget(Actor a){
         this.target = a;
+        if(this.states.get(ActorState.CHARMED)){
+            this.setPath(getRelativePoint(false),a.getLocation());
+            ExtensionCommands.moveActor(parentExt,room,id,this.location,this.destination, (float) getPlayerStat("speed"),true);
+        }
     }
 
     public boolean isState(ActorState state){
@@ -536,7 +534,7 @@ public class UserActor extends Actor {
         ExtensionCommands.snapActor(this.parentExt,this.room,this.id,this.location,respawnPoint,false);
         ExtensionCommands.respawnActor(this.parentExt,this.room,this.id);
         ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_speed",5000,this.id+"_respawnSpeed",true,"Bip01 Footsteps",true,false,this.team);
-        this.handleEffect("speed",2d,5000,"fountainSpeed");
+        //this.handleEffect("speed",2d,5000,"fountainSpeed");
         ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"champion_respawn_effect",1000,this.id+"_respawn",true,"Bip001",false,false,this.team);
     }
 

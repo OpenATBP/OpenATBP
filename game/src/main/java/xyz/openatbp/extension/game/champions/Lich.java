@@ -6,9 +6,8 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.game.ActorType;
+import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
-import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
@@ -25,6 +24,9 @@ public class Lich extends UserActor{
     private boolean qActivated = false;
     private List<Point2D> slimePath = null;
     private HashMap<String, Long> slimedEnemies = null;
+    private boolean ultStarted = false;
+    private int ultTeleportsRemaining = 0;
+    private Point2D ultLocation;
 
     public Lich(User u, ATBPExtension parentExt){
         super(u,parentExt);
@@ -36,7 +38,7 @@ public class Lich extends UserActor{
         if (skully == null && System.currentTimeMillis() - lastSkullySpawn > getReducedCooldown(40000)) {
             this.spawnSkully();
         }
-        switch (ability) { //TODO: Last left off - Q is broken and maybe healthRegen?
+        switch (ability) {
             case 1: //Q
                 double statIncrease = this.speed * 0.25;
                 this.handleEffect("speed", statIncrease, 6000, "lich_trail");
@@ -45,10 +47,34 @@ public class Lich extends UserActor{
                 slimedEnemies = new HashMap<>();
                 ExtensionCommands.createActorFX(parentExt, room, id, "lichking_deathmist", 6000, "lich_trail", true, "", true, false, team);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new TrailHandler(), 6000, TimeUnit.MILLISECONDS);
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 break;
             case 2: //W
+                this.stopMoving();
+                Line2D fireLine = new Line2D.Float(this.getRelativePoint(false),dest);
+                Line2D newLine = Champion.getMaxRangeLine(fireLine,8f);
+                this.fireProjectile(new LichCharm(parentExt,this,newLine,9f,0.5f,this.id+"projectile_lich_charm"),"projectile_lich_charm",dest,8f);
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"w",true,getReducedCooldown(cooldown),gCooldown);
                 break;
             case 3: //E
+                if(!this.ultStarted){
+                    this.canMove = false;
+                    this.stopMoving();
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new LichAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),1000,TimeUnit.MILLISECONDS);
+                }
+                else{
+                    if(this.ultTeleportsRemaining > 0){
+                        Point2D testLocation = Champion.getTeleportPoint(parentExt,player,this.location,ultLocation);
+                        ExtensionCommands.snapActor(parentExt,room,this.id,testLocation,testLocation,false);
+                        this.setLocation(testLocation);
+                        if(this.skully != null){
+                            this.skully.setLocation(testLocation);
+                            ExtensionCommands.snapActor(parentExt,room,this.skully.getId(),testLocation,testLocation,false);
+                        }
+                        ExtensionCommands.createActorFX(parentExt,room,this.id,"lich_teleport",500,this.id+"_lichTeleport",true,"Bip01",true,false,team);
+                        this.ultTeleportsRemaining--;
+                    }
+                }
                 break;
             case 4: //Passive
                 break;
@@ -68,6 +94,13 @@ public class Lich extends UserActor{
     }
 
     @Override
+    public boolean damaged(Actor a, int damage, JsonNode attackData){
+        boolean returnVal = super.damaged(a,damage,attackData);
+        if(!returnVal && this.skully != null && this.skully.getTarget() == null) this.setSkullyTarget(a);
+        return returnVal;
+    }
+
+    @Override
     public void update(int msRan){
         super.update(msRan);
         if(this.skully != null) skully.update(msRan);
@@ -81,14 +114,14 @@ public class Lich extends UserActor{
                             if(System.currentTimeMillis() - slimedEnemies.get(a.getId()) >= 1000){
                                 System.out.println(a.getId() + " getting slimed!");
                                 a.damaged(this,getSpellDamage(attackData),attackData);
-                                a.handleEffect("speed",a.getPlayerStat("speed")*-0.3,1500,"lich_slow");
+                                a.handleEffect(ActorState.SLOWED,a.getPlayerStat("speed")*-0.3,1500,"lich_slow");
                                 slimedEnemies.put(a.getId(),System.currentTimeMillis());
                                 break;
                             }
                         }else{
                             System.out.println(a.getId() + " getting slimed!");
                             a.damaged(this,getSpellDamage(attackData),attackData);
-                            a.handleEffect("speed",a.getPlayerStat("speed")*-0.3,1500,"lich_slow");
+                            a.handleEffect(ActorState.SLOWED,a.getPlayerStat("speed")*-0.3,1500,"lich_slow");
                             slimedEnemies.put(a.getId(),System.currentTimeMillis());
                             break;
                         }
@@ -96,6 +129,16 @@ public class Lich extends UserActor{
                 }
             }
             if(this.slimePath.size() > 150) this.slimePath.remove(this.slimePath.size()-1);
+        }
+
+        if(this.ultStarted){
+            JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(),"spell3");
+            for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(this.room.getId()),ultLocation,3f)){
+                if(a.getTeam() != this.team && a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER){
+                    double damage = getSpellDamage(spellData)/10d;
+                    a.damaged(this,(int)Math.round(damage),spellData);
+                }
+            }
         }
     }
 
@@ -235,6 +278,10 @@ public class Lich extends UserActor{
             this.movementLine = new Line2D.Float(this.location,Lich.this.getRelativePoint(false));
             this.timeTraveled = 0.1f;
         }
+
+        public Actor getTarget(){
+            return this.target;
+        }
     }
 
     private class PassiveAttack implements Runnable {
@@ -265,6 +312,71 @@ public class Lich extends UserActor{
                     me.resetTarget();
                 }
             }
+        }
+    }
+
+    private class LichCharm extends Projectile {
+
+        public LichCharm(ATBPExtension parentExt, UserActor owner, Line2D path, float speed, float hitboxRadius, String id) {
+            super(parentExt, owner, path, speed, hitboxRadius, id);
+        }
+
+        @Override
+        protected void hit(Actor victim) {
+            JsonNode spellData = parentExt.getAttackData(avatar,"spell2");
+            victim.damaged(Lich.this,getSpellDamage(spellData),spellData);
+            victim.handleCharm(Lich.this,2000);destroy();
+        }
+        @Override
+        public void destroy(){
+            super.destroy();
+            ExtensionCommands.createWorldFX(parentExt,room,this.id,"lich_charm_explosion",id+"_charmExplosion",500,(float)this.location.getX(),(float)this.location.getY(),false,team,0f);
+        }
+    }
+
+    private class LichAbilityRunnable extends AbilityRunnable{
+
+        private boolean ultCasted = false;
+
+        public LichAbilityRunnable(int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {
+            super(ability, spellData, cooldown, gCooldown, dest);
+        }
+
+        public LichAbilityRunnable(JsonNode spellData, int cooldown, int gCooldown, Point2D dest){
+            super(3,spellData,cooldown,gCooldown,dest);
+            this.ultCasted = true;
+        }
+
+        @Override
+        protected void spellQ() {
+
+        }
+
+        @Override
+        protected void spellW() {
+
+        }
+
+        @Override
+        protected void spellE() {
+            if(this.ultCasted){ //Handle end of ult
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"e",true,getReducedCooldown(cooldown),gCooldown);
+                Lich.this.ultTeleportsRemaining = 0;
+                Lich.this.ultStarted = false;
+                ultLocation = null;
+            }else{
+                Lich.this.ultStarted = true;
+                Lich.this.ultTeleportsRemaining = 1;
+                Lich.this.ultLocation = dest;
+                canMove = true;
+                ExtensionCommands.createWorldFX(parentExt,room,id,"lich_death_puddle",id+"_lichPool",5000,(float)dest.getX(),(float)dest.getY(),false,team,0f);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new LichAbilityRunnable(spellData,cooldown,gCooldown,dest),5000,TimeUnit.MILLISECONDS);
+            }
+        }
+
+        @Override
+        protected void spellPassive() {
+
         }
     }
 }

@@ -227,6 +227,7 @@ public class Minion extends Actor {
         else if(id.contains("creep")) this.state = AggroState.MINION;
         else if(id.contains("base")) this.state = AggroState.BASE;
         else this.state = AggroState.PLAYER;
+        //this.moveTowardsActor(parentExt,parentExt.getRoomHandler(room.getId()).getActor(id).getLocation());
         //this.stopMoving(parentExt);
     }
 
@@ -299,10 +300,6 @@ public class Minion extends Actor {
             }
         }
         return returnVal;
-    }
-
-    public boolean canAttack(){
-        return attackCooldown==0;
     }
 
     @Override
@@ -448,8 +445,6 @@ public class Minion extends Actor {
                         }
                         if(targetBase.getHealth() > 0){
                             this.attack(targetBase);
-                        }else{ //Handles base death and ends game
-                            parentExt.stopScript(room.getId());
                         }
                     }
                 }else if(targetBase != null){
@@ -565,5 +560,10 @@ public class Minion extends Actor {
             stats.put(k,actorStats.get(k).asDouble());
         }
         return stats;
+    }
+
+    @Override
+    public void setTarget(Actor a) {
+        this.setTarget(parentExt,a.getId());
     }
 }

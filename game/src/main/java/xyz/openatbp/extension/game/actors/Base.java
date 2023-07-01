@@ -41,13 +41,13 @@ public class Base extends Actor {
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         if(!this.unlocked) return false;
         this.currentHealth-=damage;
-        double oppositeTeam = 0;
+        int oppositeTeam = 0;
         if(this.team == 0) oppositeTeam = 1;
-        if(this.currentHealth <= 0) this.parentExt.getRoomHandler(this.room.getId()).gameOver((int) oppositeTeam);
+        if(this.currentHealth <= 0) this.parentExt.getRoomHandler(this.room.getId()).gameOver(oppositeTeam);
 
         if(this.currentHealth <= 0){
             try{
-                ExtensionCommands.gameOver(parentExt,this.room,oppositeTeam);
+                parentExt.getRoomHandler(this.room.getId()).gameOver(oppositeTeam);
             }catch(Exception e){
                 e.printStackTrace();
             }
@@ -73,6 +73,11 @@ public class Base extends Actor {
 
     @Override
     public void update(int msRan) {
+
+    }
+
+    @Override
+    public void setTarget(Actor a) {
 
     }
 

@@ -14,8 +14,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class Tower extends Actor {
-    private final int[] BLUE_TOWER_NUM = {2,1,0};
-    private final int[] PURPLE_TOWER_NUM = {5,4,3};
+    private final int[] PURPLE_TOWER_NUM = {2,1,0};
+    private final int[] BLUE_TOWER_NUM = {5,4,3};
     private long lastHit;
     private boolean destroyed = false;
     private Actor target;
@@ -157,6 +157,12 @@ public class Tower extends Actor {
         }
     }
 
+    @Override
+    public void setTarget(Actor a) {
+        if(this.target != null) this.resetTarget(this.target);
+        this.target = a;
+    }
+
     public String getId(){
         return this.id;
     }
@@ -181,7 +187,7 @@ public class Tower extends Actor {
         this.lastHit = System.currentTimeMillis();
     }
 
-    private boolean canAttack(){
+    public boolean canAttack(){
         return this.attackCooldown == 0;
     }
 

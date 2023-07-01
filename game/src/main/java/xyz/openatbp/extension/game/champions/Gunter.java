@@ -98,6 +98,12 @@ public class Gunter extends UserActor{
         }
     }
 
+    @Override
+    public boolean canUseAbility(){
+        if(ultActivated) return false;
+        else return super.canUseAbility();
+    }
+
     private class GunterAbilityRunnable extends AbilityRunnable {
 
         public GunterAbilityRunnable(int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {

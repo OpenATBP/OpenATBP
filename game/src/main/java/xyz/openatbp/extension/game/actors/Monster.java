@@ -7,6 +7,7 @@ import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 
@@ -75,12 +76,10 @@ public class Monster extends Actor {
                 }
                 return false;
             }
-            System.out.println("Raw damage before sword: " + damage);
             if(a.getActorType() == ActorType.PLAYER){
                 UserActor ua = (UserActor) a;
                 if(ua.hasBackpackItem("junk_1_demon_blood_sword") && ua.getStat("sp_category1") > 0) damage*=1.3;
             }
-            System.out.println("Raw damage after sword: " + damage);
             AttackType attackType = this.getAttackType(attackData);
             int newDamage = this.getMitigatedDamage(damage,attackType,a);
             if(a.getActorType() == ActorType.PLAYER) this.addDamageGameStat((UserActor) a,newDamage,attackType);
@@ -149,6 +148,15 @@ public class Monster extends Actor {
     }
 
     @Override
+    public void setTarget(Actor a) {
+        if(this.state == AggroState.PASSIVE) this.setAggroState(AggroState.ATTACKED,a);
+        this.target = (UserActor) a;
+        this.movementLine = new Line2D.Float(this.location,a.getLocation());
+        this.travelTime = 0f;
+        this.moveTowardsActor(a.getLocation());
+    }
+
+    @Override
     public void die(Actor a) { //Called when monster dies
         if(!this.dead){ //No double deaths
             this.dead = true;
@@ -199,16 +207,19 @@ public class Monster extends Actor {
             }
             else if(this.target != null){ //Chasing player
                 if(this.withinRange(this.target) && this.canAttack()){
+                    System.out.println("Monster attacking player!");
                     this.attack(this.target);
                 }else if(!this.withinRange(this.target) && this.canMove){
+                    System.out.println("Monster not in range of player!");
                     this.travelTime+=0.1f;
                     this.moveTowardsActor(this.target.getLocation());
                 }else if(this.withinRange(this.target)){
+                    System.out.println("Monster can't attack!");
                     if(this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f) this.stopMoving();
                 }
             }
         }
-        if(!this.canAttack()) reduceAttackCooldown();
+        if(this.attackCooldown != 0) this.reduceAttackCooldown();
     }
 
     @Override
@@ -268,9 +279,5 @@ public class Monster extends Actor {
         this.travelTime = 0f;
         ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,dest,(float)this.getPlayerStat("speed"), true);
 
-    }
-
-    public boolean canAttack(){
-        return attackCooldown == 0;
     }
 }

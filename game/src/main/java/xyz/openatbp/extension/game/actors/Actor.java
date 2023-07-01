@@ -128,7 +128,7 @@ public abstract class Actor {
 
     public void handleEffect(String stat, double delta, int duration, String fxId){
         if(!this.buffHandlers.containsKey(stat)){
-            System.out.println("Effect increased!");
+            System.out.println(stat + " increased! for " + this.id + " by " + delta);
             this.setTempStat(stat,delta);
         }
         else{
@@ -138,32 +138,35 @@ public abstract class Actor {
                 else this.setTempStat(stat,delta-currentTempStat);
             }
             if(delta != currentTempStat) this.buffHandlers.get(stat).setDelta(this.getTempStat(stat));
-            if(fxId.equalsIgnoreCase("fountainSpeed")) this.buffHandlers.get(stat).setDuration(duration);
-            else this.buffHandlers.get(stat).extendBuff(duration);
+            this.buffHandlers.get(stat).setDuration(duration);
             if(stat.equalsIgnoreCase("armor") && fxId.contains("altar")){ //Only armor to prevent multiple icons from appearing
                 UserActor ua = (UserActor) this;
                 ExtensionCommands.addStatusIcon(this.parentExt,ua.getUser(),"altar_buff_defense","altar1_description","icon_altar_armor",1000*60);
             }
             return;
         }
+        Champion.FinalBuffHandler buffHandler = new Champion.FinalBuffHandler(this,stat,delta);
         switch(stat){
             case "speed":
                 if(delta > 0){
                     System.out.println("Starting buff handler!");
-                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.FinalBuffHandler(this,stat,delta,"statusEffect_speed"),duration,TimeUnit.MILLISECONDS);
+                    buffHandler = new Champion.FinalBuffHandler(this,stat,delta,"statusEffect_speed");
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_speed",duration,this.id+"_"+fxId,true,"Bip01",true,false,this.team);
+                }else{
+                    buffHandler = new Champion.FinalBuffHandler(this,stat,delta,"statusEffect_speed");
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_speed",duration,this.id+"_"+fxId,true,"Bip01",true,false,this.team);
                 }
                 break;
             case "healthRegen":
                 ExtensionCommands.createActorFX(parentExt,this.room,this.id,"fx_health_regen",duration,this.id+"_"+fxId,true,"Bip01",false,false,this.team);
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.FinalBuffHandler(this,stat,delta,"fx_health_regen"),duration,TimeUnit.MILLISECONDS);
+                buffHandler = new Champion.FinalBuffHandler(this,stat,delta,"fx_health_regen");
                 break;
             case "attackDamage":
                 if(fxId.contains("altar")){ //Keeping the altar buff handling in the RoomHandler to declutter the Actor class for now
                     UserActor ua = (UserActor) this;
                     ExtensionCommands.addStatusIcon(this.parentExt,ua.getUser(),"altar_buff_offense","altar2_description","icon_altar_attack",1000*60);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"altar_buff_offense",duration,this.id+"_"+fxId,true,"Bip01",true,true, ua.getTeam());
-                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.FinalBuffHandler(this,stat,delta,"altar_buff_offense"),duration,TimeUnit.MILLISECONDS);
+                    buffHandler = new Champion.FinalBuffHandler(this,stat,delta,"altar_buff_offense");
                 }
                 break;
             case "armor":
@@ -171,24 +174,59 @@ public abstract class Actor {
                     UserActor ua = (UserActor) this;
                     ExtensionCommands.addStatusIcon(this.parentExt,ua.getUser(),"altar_buff_defense","altar1_description","icon_altar_armor",1000*60);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"altar_buff_defense",duration,this.id+"_"+fxId,true,"Bip01",true,true, ua.getTeam());
-                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.FinalBuffHandler(this,stat,delta,"altar_buff_defense"),duration,TimeUnit.MILLISECONDS);
+                    buffHandler = new Champion.FinalBuffHandler(this,stat,delta,"altar_buff_defense");
                 }
                 break;
             default:
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.FinalBuffHandler(this,stat,delta),duration,TimeUnit.MILLISECONDS);
+                buffHandler = new Champion.FinalBuffHandler(this,stat,delta);
+                this.setBuffHandler(stat,buffHandler);
+
                 break;
         }
+        this.setBuffHandler(stat,buffHandler);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(buffHandler,duration,TimeUnit.MILLISECONDS);
     }
 
-    public void handleEffect(ActorState state, double delta, int duration){
+    public void handleEffect(ActorState state, double delta, int duration, String fxName){
+        Champion.FinalBuffHandler buffHandler = null;
         switch(state){
             case POLYMORPH:
                 UserActor ua = (UserActor) this;
                 ExtensionCommands.swapActorAsset(parentExt,this.room, this.id,"flambit");
                 double speedChange = this.getPlayerStat("speed")*-0.3;
                 ua.setTempStat("speed",speedChange);
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.FinalBuffHandler(this,ActorState.POLYMORPH,speedChange),duration,TimeUnit.MILLISECONDS);
+                buffHandler = new Champion.FinalBuffHandler(this,ActorState.POLYMORPH,speedChange);
                 break;
+            case SLOWED:
+                if(this.buffHandlers.containsKey("slowed")){
+                    double currentStat = this.getTempStat("speed");
+                    if(delta < currentStat){
+                        double diff = currentStat-delta;
+                        this.setTempStat("speed",diff);
+                    }
+                    if(delta != currentStat)this.buffHandlers.get("slowed").setDelta(this.getTempStat("speed"));
+                    this.buffHandlers.get("slowed").setDuration(duration);
+                    return;
+                }else{
+                    this.setTempStat("speed",delta);
+                    buffHandler = new Champion.FinalBuffHandler(this,ActorState.SLOWED,delta);
+                }
+                break;
+        }
+        if(buffHandler != null){
+            this.setState(state,true);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(buffHandler,duration,TimeUnit.MILLISECONDS);
+            this.setBuffHandler(state.name().toLowerCase(),buffHandler);
+        }
+    }
+
+    public void handleCharm(UserActor charmer, int duration){
+        if(!this.states.get(ActorState.CHARMED)){
+            Champion.FinalBuffHandler buffHandler = new Champion.FinalBuffHandler(this,ActorState.CHARMED,0f);
+            this.setState(ActorState.CHARMED,true);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(buffHandler,duration,TimeUnit.MILLISECONDS);
+            this.setBuffHandler("charmed",buffHandler);
+            this.setTarget(charmer);
         }
     }
 
@@ -259,7 +297,6 @@ public abstract class Actor {
             if(attackType == AttackType.PHYSICAL){
                 modifier = 100/(100+armor);
             }else modifier = 100/(100+spellResist);
-            System.out.println(this.id + " damaged for " + rawDamage + " raw damage but took: " + Math.round(rawDamage*modifier) + " damage!");
             return (int) Math.round(rawDamage*modifier);
         }catch(Exception e){
             e.printStackTrace();
@@ -306,4 +343,24 @@ public abstract class Actor {
         if(type == AttackType.PHYSICAL) ua.addGameStat("damageDealtPhysical",value);
         else ua.addGameStat("damageDealtSpell",value);
     }
+
+    public boolean canMove(){
+        for(ActorState s : this.states.keySet()){
+            if(s == ActorState.ROOTED || s == ActorState.STUNNED || s == ActorState.FEARED || s == ActorState.CHARMED || s == ActorState.AIRBORNE){
+                if(this.states.get(s)) return true;
+            }
+        }
+        return this.canMove;
+    }
+
+    public boolean canAttack(){
+        for(ActorState s : this.states.keySet()){
+            if(s == ActorState.STUNNED || s == ActorState.FEARED || s == ActorState.CHARMED || s == ActorState.AIRBORNE || s == ActorState.POLYMORPH){
+                if(this.states.get(s)) return false;
+            }
+        }
+        return this.attackCooldown == 0;
+    }
+
+    public abstract void setTarget(Actor a);
 }
