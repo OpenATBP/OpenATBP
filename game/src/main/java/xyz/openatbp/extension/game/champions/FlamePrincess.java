@@ -39,7 +39,7 @@ public class FlamePrincess extends UserActor {
             lastUltUsage = msRan;
             for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(this.room.getId()),this.location,2)){
                 if(a.getTeam() != this.team){
-                    JsonNode attackData = this.parentExt.getAttackData(this.avatar,"spell3");
+                    JsonNode attackData = this.parentExt.getAttackData(getAvatar(),"spell3");
                     if(a.getActorType() != ActorType.PLAYER) a.damaged(this,this.getSpellDamage(attackData),attackData);
                     else if (a.getActorType() == ActorType.PLAYER){ //Redundant?
                         UserActor userActor = (UserActor) a;
@@ -74,7 +74,7 @@ public class FlamePrincess extends UserActor {
                 break;
             case 3: //E TODO: FP does not return to form when skin is used also she needs to be scaled up
                 if(!ultStarted && ultUses == 3){
-                    int duration = Champion.getSpellData(parentExt,this.avatar,ability).get("spellDuration").asInt();
+                    int duration = Champion.getSpellData(parentExt,getAvatar(),ability).get("spellDuration").asInt();
                     ultStarted = true;
                     ultFinished = false;
                     this.setState(ActorState.TRANSFORMED, true);
@@ -138,7 +138,7 @@ public class FlamePrincess extends UserActor {
                 userActor.setState(ActorState.POLYMORPH, true);
                 double newDamage = u.getMitigatedDamage(50d,AttackType.SPELL,FlamePrincess.this);
                 handleSpellVamp(newDamage);
-                userActor.damaged(FlamePrincess.this,50,parentExt.getAttackData(avatar,"spell2"));
+                userActor.damaged(FlamePrincess.this,50,parentExt.getAttackData(getAvatar(),"spell2"));
                 userActor.handleEffect(ActorState.POLYMORPH,-1d,3000,null);
             }
             System.out.println("Ability done!");
@@ -149,7 +149,7 @@ public class FlamePrincess extends UserActor {
             if(!ultFinished && ultStarted){
                 setState(ActorState.TRANSFORMED, false);
                 ExtensionCommands.removeFx(parentExt,room,"flame_e");
-                ExtensionCommands.swapActorAsset(parentExt,room,id,avatar.split("_")[0]);
+                ExtensionCommands.swapActorAsset(parentExt,room,id,getAvatar());
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"e",true, getReducedCooldown(cooldown), gCooldown);
                 ExtensionCommands.scaleActor(parentExt,room,id,0.6667f);
                 ultStarted = false;
@@ -183,7 +183,7 @@ public class FlamePrincess extends UserActor {
         public void hit(Actor victim){
             if(this.hitPlayer) return;
             this.hitPlayer = true;
-            JsonNode attackData = parentExt.getAttackData(avatar,"spell1");
+            JsonNode attackData = parentExt.getAttackData(getAvatar(),"spell1");
             victim.damaged(FlamePrincess.this,getSpellDamage(attackData),attackData);
             //ExtensionCommands.moveActor(parentExt,player,this.id,this.location,this.location,this.speed,false);
             ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_projectile_large_explosion",200,"flame_explosion",false,"",false,false,team);
@@ -216,7 +216,7 @@ public class FlamePrincess extends UserActor {
 
         @Override
         public void run() {
-            target.damaged(FlamePrincess.this,(int)getPlayerStat("attackDamage"), parentExt.getAttackData(avatar,"basicAttack"));
+            target.damaged(FlamePrincess.this,(int)getPlayerStat("attackDamage"), parentExt.getAttackData(getAvatar(),"basicAttack"));
             if(FlamePrincess.this.passiveEnabled && (target.getClass() != Tower.class && target.getClass() != Base.class)){
                 FlamePrincess.this.passiveEnabled = false;
                 ExtensionCommands.removeFx(parentExt,room,"flame_passive");

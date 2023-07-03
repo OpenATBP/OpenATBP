@@ -16,6 +16,7 @@ public class UserDisconnect extends BaseServerEventHandler {
         String roomID = user.getSession().getProperty("room_id").toString(); //Can probably find a better way to handle room names
         if(roomID.length() >= 10) roomID = roomID.substring(0,10);
         Room room = user.getZone().getRoomByName(roomID);
+        parentExt.getRoomHandler(room.getId()).handlePlayerDC(user);
         if(room.isEmpty()){ //If there is no one left in the room, delete the room
             parentExt.getApi().removeRoom(room);
         }

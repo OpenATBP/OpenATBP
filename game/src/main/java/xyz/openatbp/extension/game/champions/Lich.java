@@ -109,7 +109,7 @@ public class Lich extends UserActor{
             for(Point2D slime : this.slimePath){
                 for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
                     if(a.getTeam() != this.team && a.getLocation().distance(slime) < 0.5){
-                        JsonNode attackData = this.parentExt.getAttackData(this.avatar,"spell1");
+                        JsonNode attackData = this.parentExt.getAttackData(getAvatar(),"spell1");
                         if(slimedEnemies.containsKey(a.getId())){
                             if(System.currentTimeMillis() - slimedEnemies.get(a.getId()) >= 1000){
                                 System.out.println(a.getId() + " getting slimed!");
@@ -144,7 +144,6 @@ public class Lich extends UserActor{
 
     private void spawnSkully(){
         skully = new Skully();
-        lastSkullySpawn = System.currentTimeMillis();
     }
 
     public void setSkullyTarget(Actor a){
@@ -154,6 +153,7 @@ public class Lich extends UserActor{
     private void handleSkullyDeath(){
         ExtensionCommands.actorAbilityResponse(parentExt,player,"passive",true,getReducedCooldown(40000),2);
         this.skully = null;
+        this.lastSkullySpawn = System.currentTimeMillis();
     }
 
     private class TrailHandler implements Runnable {
@@ -323,7 +323,7 @@ public class Lich extends UserActor{
 
         @Override
         protected void hit(Actor victim) {
-            JsonNode spellData = parentExt.getAttackData(avatar,"spell2");
+            JsonNode spellData = parentExt.getAttackData(getAvatar(),"spell2");
             victim.damaged(Lich.this,getSpellDamage(spellData),spellData);
             victim.handleCharm(Lich.this,2000);destroy();
         }

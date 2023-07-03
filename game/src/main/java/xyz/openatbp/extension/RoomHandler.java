@@ -650,11 +650,11 @@ public class RoomHandler implements Runnable{
         int purple = 0;
         for(UserActor ua : this.players){
             if(ua.getId().equalsIgnoreCase(id)){
-                if(ua.getTeam() == 0) return purple;
-                else return blue;
+                if(ua.getTeam() == 0) return blue;
+                else return purple;
             }else{
-                if(ua.getTeam() == 0) purple++;
-                else blue++;
+                if(ua.getTeam() == 0) blue++;
+                else purple++;
             }
         }
         return -1;
@@ -751,7 +751,7 @@ public class RoomHandler implements Runnable{
                     }
 
                     Bson updates = Updates.combine(
-                            Updates.inc("playsPVP",1),
+                            Updates.inc("player.playsPVP",1),
                             Updates.inc("player.elo",eloGain),
                             Updates.set("player.rankProgress",currentRankProgress),
                             Updates.inc("player.winsPVP",wins),
@@ -775,6 +775,52 @@ public class RoomHandler implements Runnable{
                 }
             }
         }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public void handlePlayerDC(User user){
+        if(this.players.size() == 1) return;
+        try{
+            UserActor player = this.getPlayer(String.valueOf(user.getId()));
+            MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
+            Document data = playerData.find(eq("user.TEGid",(String)user.getSession().getProperty("tegid"))).first();
+            if(data != null){
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode dataObj = mapper.readTree(data.toJson());
+                double disconnects = dataObj.get("player").get("disconnects").asInt();
+                double playsPVP = dataObj.get("player").get("playsPVP").asInt();
+                double dcPercent = disconnects/playsPVP;
+                double elo = dataObj.get("player").get("elo").asInt();
+                double newElo = elo*(1-dcPercent);
+
+                Bson updates = Updates.combine(
+                        Updates.inc("player.disconnects",1),
+                        Updates.set("player.elo",newElo)
+                );
+                UpdateOptions options = new UpdateOptions().upsert(true);
+                System.out.println(playerData.updateOne(data,updates,options));
+            }
+            int team = player.getTeam();
+            this.players.removeIf(p -> p.getId().equalsIgnoreCase(String.valueOf(user.getId())));
+            int teamMembersLeft = 0;
+            for(UserActor p : players){
+                if(p.getTeam() == team){
+                    teamMembersLeft++;
+                    break;
+                }
+            }
+            int oppositeTeam = 0;
+            if(team == 0) oppositeTeam = 1;
+            if(teamMembersLeft == 0) this.gameOver(oppositeTeam);
+            else{
+                for(UserActor p : this.players){
+                    if(p.getTeam() == team){
+                        p.handleDCBuff(true);
+                    }else p.handleDCBuff(false);
+                }
+            }
+        }catch(Exception e){
             e.printStackTrace();
         }
     }

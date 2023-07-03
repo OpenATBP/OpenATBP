@@ -14,7 +14,6 @@ import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.Projectile;
-import xyz.openatbp.extension.game.champions.FlamePrincess;
 import xyz.openatbp.extension.reqhandlers.HitActorHandler;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
@@ -45,6 +44,7 @@ public class UserActor extends Actor {
     protected int killingSpree = 0;
     protected int multiKill = 0;
     protected long lastKilled = System.currentTimeMillis();
+    protected int dcBuff = 0;
 
     //TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt){
@@ -192,7 +192,13 @@ public class UserActor extends Actor {
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         try{
             if(this.dead) return true;
+
             Actor.AttackType type = this.getAttackType(attackData);
+            if(this.states.get(ActorState.BRUSH)){
+                Runnable runnable = () -> UserActor.this.setState(ActorState.REVEALED,false);
+                this.setState(ActorState.REVEALED,true);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(runnable,3000,TimeUnit.MILLISECONDS);
+            }
             if(!moonActivated && this.hasBackpackItem("junk_3_battle_moon") && this.getStat("sp_category3") > 0 && type == AttackType.PHYSICAL){
                 int timer = (int) (130 - (10*getPlayerStat("sp_category3")));
                 if(moonTimer > timer){
@@ -384,16 +390,25 @@ public class UserActor extends Actor {
             }
         }
         if(insideBrush){
-            if(!this.states.get(ActorState.INVISIBLE)){
+            if(!this.states.get(ActorState.BRUSH)){
                 System.out.println("Inside brush!");
-                this.states.put(ActorState.INVISIBLE,true);
-                ExtensionCommands.updateActorState(this.parentExt,this.room,this.id,ActorState.INVISIBLE,true);
+                this.setState(ActorState.BRUSH, true);
+                this.setState(ActorState.INVISIBLE,true);
+                this.setState(ActorState.REVEALED, false);
+            }else{
+                if(parentExt.isBrushOccupied(parentExt.getRoomHandler(room.getId()),this)){
+                    System.out.println("Someone else is in the bush!");
+                    this.setState(ActorState.REVEALED, true);
+                }else if(this.states.get(ActorState.REVEALED)){
+                    this.setState(ActorState.REVEALED, false);
+                }
             }
         }else{
-            if(this.states.get(ActorState.INVISIBLE)){
+            if(this.states.get(ActorState.BRUSH)){
                 System.out.println("Outside brush!");
-                this.states.put(ActorState.INVISIBLE,false);
-                ExtensionCommands.updateActorState(this.parentExt,this.room,this.id,ActorState.INVISIBLE,false);
+                this.setState(ActorState.INVISIBLE, false);
+                this.setState(ActorState.BRUSH, false);
+                this.setState(ActorState.REVEALED, true);
             }
         }
         if(this.attackCooldown > 0) this.reduceAttackCooldown();
@@ -525,6 +540,7 @@ public class UserActor extends Actor {
     public void respawn(){
         Point2D respawnPoint = MapData.PURPLE_SPAWNS[parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id,this.team)];
         if(this.team == 0) respawnPoint.setLocation(respawnPoint.getX()*-1,respawnPoint.getY());
+        System.out.println("Respawning at: " + respawnPoint.getX() + "," + respawnPoint.getY() + " for team " + this.team);
         this.location = respawnPoint;
         this.originalLocation = respawnPoint;
         this.destination = respawnPoint;
@@ -630,7 +646,7 @@ public class UserActor extends Actor {
         stats.put("kills",0d);
         stats.put("deaths",0d);
         stats.put("assists",0d);
-        JsonNode actorStats = this.parentExt.getActorStats(this.avatar);
+        JsonNode actorStats = this.parentExt.getActorStats(this.getAvatar());
         for (Iterator<String> it = actorStats.fieldNames(); it.hasNext(); ) {
             String k = it.next();
             stats.put(k,actorStats.get(k).asDouble());
@@ -668,8 +684,19 @@ public class UserActor extends Actor {
     }
     @Override
     public double getPlayerStat(String stat){
-        if(stat.equalsIgnoreCase("attackDamage")) return super.getPlayerStat(stat) + this.nailDamage;
-        else return super.getPlayerStat(stat);
+        if(stat.equalsIgnoreCase("attackDamage")){
+            if(this.dcBuff == 2) return (super.getPlayerStat(stat) + this.nailDamage) * 1.2f;
+            return super.getPlayerStat(stat) + this.nailDamage;
+        }else if(stat.equalsIgnoreCase("armor")){
+            if(this.dcBuff >= 1) return super.getPlayerStat(stat) * 1.2f;
+        }else if(stat.equalsIgnoreCase("spellResist")){
+            if(this.dcBuff >= 1) return super.getPlayerStat(stat) * 1.2f;
+        }else if(stat.equalsIgnoreCase("speed")){
+            if(this.dcBuff >= 1) return super.getPlayerStat(stat) * 1.15f;
+        }else if(stat.equalsIgnoreCase("spellDamage")){
+            if(this.dcBuff == 2) return super.getPlayerStat(stat) * 1.2f;
+        }
+        return super.getPlayerStat(stat);
     }
 
     public boolean getState(ActorState state){
@@ -722,6 +749,41 @@ public class UserActor extends Actor {
         double speed = parentExt.getActorStats(id).get("speed").asDouble();
         ExtensionCommands.createProjectile(parentExt,this.room,this,id, maxRangeLine.getP1(), maxRangeLine.getP2(), (float)speed);
         this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
+    }
+
+    public void handleDCBuff(boolean affected){
+        if(affected) this.dcBuff++;
+        else if(this.dcBuff != 0){
+            if(this.dcBuff == 1){
+                String[] stats = {"armor","spellResist","speed"};
+                ExtensionCommands.removeStatusIcon(parentExt,player,"DC Buff #1");
+                ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,this.getPlayerStats(stats));
+            }
+            else if(this.dcBuff == 2){
+                String[] stats = {"attackDamage","spellDamage"};
+                ExtensionCommands.removeStatusIcon(parentExt,player,"DC Buff #2");
+                ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,this.getPlayerStats(stats));
+            }
+            this.dcBuff--;
+            return;
+        }
+        if(this.dcBuff == 1){
+            String[] stats = {"armor","spellResist","speed"};
+            ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,this.getPlayerStats(stats));
+            ExtensionCommands.addStatusIcon(parentExt,player,"DC Buff #1","Some coward left the battle! Here's something to help even the playing field!", "icon_parity",0);
+        }else{
+            String[] stats = {"attackDamage","spellDamage"};
+            ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,this.getPlayerStats(stats));
+            ExtensionCommands.addStatusIcon(parentExt,player,"DC Buff #2","You're the last one left, finish the mission", "icon_parity2",0);
+        }
+    }
+
+    private HashMap<String, Double> getPlayerStats(String[] stats){
+        HashMap<String, Double> playerStats = new HashMap<>(stats.length);
+        for(String s : stats){
+            playerStats.put(s,this.getPlayerStat(s));
+        }
+        return playerStats;
     }
 
     protected class MovementStopper implements Runnable {

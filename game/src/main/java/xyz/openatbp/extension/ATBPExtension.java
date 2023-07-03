@@ -17,6 +17,8 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.extensions.SFSExtension;
 import org.bson.Document;
 import xyz.openatbp.extension.evthandlers.*;
+import xyz.openatbp.extension.game.actors.Actor;
+import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.reqhandlers.*;
 
 import java.awt.geom.*;
@@ -302,6 +304,29 @@ public class ATBPExtension extends SFSExtension {
 
     public Path2D getBrush(int num){
         return this.brushPaths.get(num);
+    }
+
+    public int getBrushNum(Point2D loc){
+        for(int i = 0; i < this.brushPaths.size(); i++){
+            Path2D p = this.brushPaths.get(i);
+            if(p.contains(loc)) return i;
+        }
+        return -1;
+    }
+
+    public boolean isBrushOccupied(RoomHandler room, UserActor a){
+        try{
+            int brushNum = this.getBrushNum(a.getLocation());
+            if(brushNum == -1) return false;
+            Path2D brush = this.brushPaths.get(brushNum);
+            for(UserActor ua : room.getPlayers()){
+                if(ua.getTeam() != a.getTeam() && brush.contains(ua.getLocation())) return true;
+            }
+            return false;
+        }catch(Exception e){
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public MongoCollection<Document> getPlayerDatabase(){
