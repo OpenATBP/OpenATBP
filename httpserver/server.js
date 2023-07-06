@@ -5,15 +5,18 @@ const app = express();
 
 const getRequest = require('./get-requests.js');
 const postRequest = require('./post-requests.js');
+const SocketPolicyServer = require('./socket-policy.js');
+
+const shopData = require('./shop.json');
 
 let config;
 try {
   config = require('./config.js');
 } catch(e) {
   if (e instanceof Error && e.code === "MODULE_NOT_FOUND") {
-    console.log("FATAL: Could not find config.js. If this is your first time running the server,");
-    console.log("copy config.js.example to config.js. You can then edit it to add your MongoDB URI");
-    console.log("as well as customize other options. Once finished, restart the server.");
+    console.error("FATAL: Could not find config.js. If this is your first time running the server,");
+    console.error("copy config.js.example to config.js. You can then edit it to add your MongoDB URI");
+    console.error("as well as customize other options. Once finished, restart the server.");
   }
   else
     throw e;
@@ -41,84 +44,24 @@ var onlineChecker = setInterval(() => {
   }
 }, 11000);
 
-function createNewUser(username,authpass){ //Creates new user in web server and database
-  return new Promise((fulfill,reject) => {
-    const collection = client.db("openatbp").collection("players");
-    var playerNumber = "";
-    var newNumber = 0;
-    collection.findOne({"playerNum":"true"}).then((data) => { //AuthID correlates to user id. This grabs the new player id from the database and makes it uniform to at least 4 digits
-      console.log(data);
-      for(var i = 0; i <= 4-data.num.length; i++){
-        if(i != 4-data.num.length){
-          playerNumber+="0";
-        }else{
-          playerNumber+=(parseInt(data.num)+1)
-          newNumber = parseInt(data.num)+1;
-        }
-      }
-      console.log(playerNumber);
-      collection.updateOne({"playerNum":"true"}, {$set: {num: `${newNumber}`}}, {upsert:true}).then(() => { //Tells the database that we have one new user
-        console.log("Successfully updated!");
-        var token = Math.random().toString(36).slice(2,10);
-        var playerFile = {
-          user: {
-            "TEGid": username.replace("%20"," ").replace(" ", ""),
-            "dname": `${username.replace("%20"," ")}`,
-            "authid": `${playerNumber}`,
-            "authpass": `${authpass}`
-          },
-          player: {
-            "playsPVP": 1.0,
-            "tier": 0.0,
-            "elo": 0.0,
-            "disconnects": 0.0,
-            "playsBots": 0.0,
-            "rank" :1.0,
-            "rankProgress": 0.0,
-            "winsPVP": 0.0,
-            "winsBots": 0.0,
-            "points": 0.0,
-            "coins": 500,
-            "kills": 0,
-            "deaths": 0,
-            "assists": 0,
-            "towers": 0,
-            "minions": 0,
-            "jungleMobs": 0,
-            "altars": 0,
-            "largestSpree": 0,
-            "largestMulti": 0,
-            "scoreHighest": 0,
-            "scoreTotal": 0
-          },
-          inventory: [],
-          authToken: token,
-          friends: []
-        };
-        collection.insertOne(playerFile).then(() => { //Creates new user in the db
-          fulfill(playerFile.user);
-        }).catch((err) => {
-          reject(err);
-        });
-      }).catch(console.error);
-    }).catch(console.error);
-  });
-}
-
 client.connect(err => {
   if(err){
-    console.log("FATAL: MongoDB connect failed:" + err);
+    console.error("FATAL: MongoDB connect failed: " + err);
     process.exit(1);
   }
 
+  const collection = client.db("openatbp").collection("players");
+
   if(!fs.existsSync("static/crossdomain.xml") || !fs.existsSync("static/config.xml")) {
-    console.log("Copying default crossdomain.xml/config.xml");
+    console.info("Copying default crossdomain.xml/config.xml");
     fs.copyFileSync("crossdomain.xml.example", "static/crossdomain.xml");
     fs.copyFileSync("config.xml.example", "static/config.xml");
   }
 
-  const collection = client.db("openatbp").collection("players");
-  const shopCollection = client.db("openatbp").collection("shop");
+  if(!fs.existsSync("static/CNChampions.unity3d") || !fs.existsSync("static/assets")) {
+    console.warn("WARN: Asset files missing from static folder - the game will not work properly.");
+    console.warn("Please run 'npm run postinstall' to automatically download and extract them.")
+  }
 
   app.use(express.static('static'));
   app.use(bodyParser.urlencoded({extended:false}));
@@ -139,9 +82,7 @@ client.connect(err => {
   });
 
   app.get('/service/shop/inventory', (req,res) => {
-    getRequest.handleShop(shopCollection).then((data) => {
-      res.send(data);
-    }).catch(console.error);
+    res.send(getRequest.handleShop(shopData));
   });
 
   app.get('/service/data/config/champions/',(req,res) => {
@@ -160,25 +101,21 @@ client.connect(err => {
     }).catch(console.error);
   });
 
-  app.get('/service/presence/roster/*', (req,res) => {
-    var userNameSplit = req.url.split("/");
-    var userName = userNameSplit[userNameSplit.length-1];
+  app.get('/service/presence/roster/:username', (req,res) => {
     var friendsList = [];
     for(var p of onlinePlayers){
-      if(p.username == userName){
+      if(p.username == req.params.username){
         friendsList = p.friends;
         break;
       }
     }
-    getRequest.handlePlayerFriends(userName,onlinePlayers,friendsList).then((data) => {
+    getRequest.handlePlayerFriends(req.params.username,onlinePlayers,friendsList).then((data) => {
       res.send(data);
     }).catch(console.error);
   });
 
-  app.get('/service/authenticate/user/*', (req,res) => {
-    var userNameSplit = req.url.split("/");
-    var userName = userNameSplit[userNameSplit.length-1];
-    getRequest.handleBrowserLogin(userName,collection).then((data) => {
+  app.get('/service/authenticate/user/:username', (req,res) => {
+    getRequest.handleBrowserLogin(req.params.username,collection).then((data) => {
       res.send(JSON.stringify(data));
     }).catch(console.error);
   });
@@ -232,15 +169,13 @@ client.connect(err => {
 
   app.post('/service/shop/purchase', (req,res) => {
     console.log(req.body);
-    postRequest.handlePurchase(req.query.authToken,req.body.data.item,collection,shopCollection).then((data) => {
+    postRequest.handlePurchase(req.query.authToken,req.body.data.item,collection, shopData).then((data) => {
       res.send(data);
     }).catch(console.error);
   });
 
-  app.post('/service/authenticate/user/*', (req,res) => {
-    var userNameSplit = req.url.split("/");
-    var userName = userNameSplit[userNameSplit.length-1];
-    createNewUser(userName,req.body.password).then((data) => {
+  app.post('/service/authenticate/user/:username', (req,res) => {
+    createNewUser(req.params.username,req.body.password, collection).then((data) => {
       res.send(JSON.stringify(data));
     }).catch(console.error);
   });
@@ -253,9 +188,13 @@ client.connect(err => {
   });
 
   app.listen(config.httpserver.port, () => {
-    console.log(`App running on port ${config.httpserver.port}!`);
+    console.info(`App running on port ${config.httpserver.port}!`);
     if (config.sockpol.enable) {
-      const sockpol = require('./socketpolicy.js');
+      const policyContent = fs.readFileSync(config.sockpol.file, 'utf8');
+      const sockpol = new SocketPolicyServer(config.sockpol.port, policyContent);
+      sockpol.start(() => {
+        console.info(`Socket policy running on port ${config.sockpol.port}!`);
+      });
     }
   });
 });
