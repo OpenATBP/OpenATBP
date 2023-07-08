@@ -32,8 +32,14 @@ class ClientWorker implements Runnable {
                     if(request.getType().equalsIgnoreCase("handshake")){ //Sends when client loads up the game
                         request.send(clientOut,"handshake",RequestHandler.handleHandshake(request.getPayload()));
                     }else if(request.getType().equalsIgnoreCase("login")){ // Sends when client logs in
-                        players.add(new Player(socket,request.getPayload())); //Adds logged player in to server's player list
-                        request.send(clientOut,"login", RequestHandler.handleLogin(request.getPayload()));
+                        int guestNum = this.getGuestNum();
+                        if(request.getPayload().get("name").asText().contains("Guest")){
+                            players.add(new Player(socket,guestNum)); //Adds logged player in to server's player list
+                            System.out.println("Guest joined! " + guestNum);
+                        }else{
+                            players.add(new Player(socket,request.getPayload())); //Adds logged player in to server's player list
+                        }
+                        request.send(clientOut,"login", RequestHandler.handleLogin(request.getPayload(),guestNum));
                     }else if(request.getType().equalsIgnoreCase("auto_join")){ //Sends when client presses on quick match
                         JsonNode payload = request.getPayload();
                         Player requestingPlayer = this.findPlayer(socket.getRemoteSocketAddress().toString());
@@ -203,5 +209,13 @@ class ClientWorker implements Runnable {
             if(queues.get(i).findPlayer(conn)) return queues.get(i);
         }
         return null;
+    }
+
+    private int getGuestNum(){
+        int guestNum = 0;
+        for(Player p : players){
+            if(p.getUsername().contains("Guest")) guestNum++;
+        }
+        return guestNum;
     }
 }

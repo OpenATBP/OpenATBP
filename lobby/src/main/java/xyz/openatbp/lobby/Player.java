@@ -30,6 +30,15 @@ public class Player {
         this.ready = false;
     }
 
+    public Player(Socket conn, int guestNum){
+        this.conn = conn;
+        this.pid = (float) guestNum;
+        this.name = "Guest";
+        this.avatar = "unassigned";
+        this.tegid = "Guest";
+        this.ready = false;
+    }
+
     @Deprecated public JsonNode toObject(){ //Turns Player obj to Json Object
         ObjectNode playerObj = objectMapper.createObjectNode();
         playerObj.put("name",this.name);

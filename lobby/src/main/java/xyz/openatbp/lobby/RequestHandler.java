@@ -18,9 +18,14 @@ public class RequestHandler {
         return objectNode;
     }
 
-    public static JsonNode handleLogin(JsonNode obj){ //Gives client login info when user logs in
+    public static JsonNode handleLogin(JsonNode obj, int guestNum){ //Gives client login info when user logs in
         ObjectNode objectNode = objectMapper.createObjectNode();
-        objectNode.put("player",(float)obj.get("auth_id").asDouble());
+        if(obj.get("name").asText().contains("Guest")){
+            System.out.println("Handling guest!");
+            objectNode.put("player",(double)guestNum);
+        }else{
+            objectNode.put("player",(float)obj.get("auth_id").asDouble());
+        }
         objectNode.put("teg_id",obj.get("teg_id").asText());
         objectNode.put("name", obj.get("name").asText());
         return objectNode;
@@ -45,16 +50,22 @@ public class RequestHandler {
         return objectNode;
     }
 
-    public static JsonNode handleGameReady(String partyLeader, String teamStr, String type){ //When the game is ready, sends players to the game server.
+    public static JsonNode handleGameReady(Player partyLeader, String teamStr, String type){ //When the game is ready, sends players to the game server.
         ObjectNode objectNode = objectMapper.createObjectNode();
         objectNode.put("countdown", 5);
         objectNode.put("ip", Config.getString("sfs2x.ip"));
         objectNode.put("port", Config.getString("sfs2x.port"));
         objectNode.put("policy_port", Config.getString("sockpol.port"));
-        String roomId = "" + partyLeader + "_";
-        if(type.equalsIgnoreCase("m_moba_practice")){
-            roomId+="practice";
+        String[] split = type.split("_");
+        StringBuilder newString = new StringBuilder();
+        if(partyLeader.getUsername().equalsIgnoreCase("guest")){
+            newString.append("Guest").append(partyLeader.getPid());
+        }else{
+            for(int i = 0; i < partyLeader.getUsername().length(); i+=2){
+                newString.append(partyLeader.getUsername().charAt(i));
+            }
         }
+        String roomId = split[split.length-1] + "_" + newString;
         objectNode.put("room_id", roomId);
         String team;
         //if(index<=2) team="0";
