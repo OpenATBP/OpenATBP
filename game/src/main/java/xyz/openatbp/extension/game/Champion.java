@@ -288,6 +288,53 @@ public class Champion {
         return states;
     }
 
+    public static Line2D getColliderLine(ATBPExtension parentExt, Room room, Line2D movementLine){
+        boolean intersects = false;
+        int mapPathIndex = -1;
+        float closestDistance = 100000;
+        ArrayList<Vector<Float>>[] colliders = parentExt.getColliders(room.getGroupId()); //Gets all collision object vertices
+        ArrayList<Path2D> mapPaths = parentExt.getMapPaths(room.getGroupId()); //Gets all created paths for the collision objects
+        Point2D intersectionPoint = new Point2D.Float(-1,-1);
+        for(int i = 0; i < mapPaths.size(); i++){ //Search through all colliders
+            if(mapPaths.get(i).intersects(movementLine.getBounds())){ //If the player's movement intersects a collider
+                ArrayList<Vector<Float>> collider = colliders[i];
+                for(int g = 0; g < collider.size(); g++){ //Check all vertices in the collider
+
+                    Vector<Float> v = collider.get(g);
+                    Vector<Float> v2;
+                    if(g+1 == collider.size()){ //If it's the final vertex, loop to the beginning
+                        v2 = collider.get(0);
+                    }else{
+                        v2 = collider.get(g+1);
+                    }
+
+
+                    Line2D colliderLine = new Line2D.Float(v.get(0),v.get(1),v2.get(0),v2.get(1)); //Draws a line segment for the sides of the collider
+                    if(movementLine.intersectsLine(colliderLine)){ //If the player movement intersects a side
+                        intersects = true;
+                        Point2D intPoint = getIntersectionPoint(movementLine,colliderLine);
+                        float dist = (float)movementLine.getP1().distance(intPoint);
+                        if(dist<closestDistance){ //If the player intersects two objects, this chooses the closest one.
+                            mapPathIndex = i;
+                            closestDistance = dist;
+                            intersectionPoint = intPoint;
+                        }
+
+                    }
+                }
+            }
+        }
+        float destx = (float)movementLine.getX2();
+        float destz = (float)movementLine.getY2();
+        if(intersects){ //If the player hits an object, find where they should end up
+            Point2D finalPoint = collidePlayer(new Line2D.Double(movementLine.getX1(),movementLine.getY1(),intersectionPoint.getX(),intersectionPoint.getY()),mapPaths.get(mapPathIndex));
+            destx = (float)finalPoint.getX();
+            destz = (float)finalPoint.getY();
+        }
+        Point2D finalPoint = new Point2D.Float(destx,destz);
+        return new Line2D.Float(movementLine.getP1(),finalPoint);
+    }
+
 
     public static class DelayedAttack implements Runnable{
 

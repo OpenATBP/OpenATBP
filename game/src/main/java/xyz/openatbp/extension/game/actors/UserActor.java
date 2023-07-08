@@ -436,15 +436,16 @@ public class UserActor extends Actor {
                 if(this.canAttack()) System.out.println(id + " attackCooldown is " + this.attackCooldown);
                 this.autoAttack(target);
                 System.out.println("Auto attacking!");
-            }else if(!this.withinRange(target)){
+            }else if(!this.withinRange(target) && this.canMove()){
                 double attackRange = this.getPlayerStat("attackRange");
                 Line2D movementLine = new Line2D.Float(currentPoint,target.getLocation());
                 float targetDistance = (float)(target.getLocation().distance(currentPoint)-attackRange);
                 Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
-                if(newPath.getP2().distance(this.destination) > 0.1f){
-                    System.out.println("Distance: " + newPath.getP2().distance(this.destination));
-                    this.setPath(newPath);
-                    ExtensionCommands.moveActor(parentExt,this.room, this.id,currentPoint, movementLine.getP2(), (float) this.speed,true);
+                Line2D finalPath = Champion.getColliderLine(parentExt,room,newPath);
+                if(finalPath.getP2().distance(this.destination) > 0.1f){
+                    System.out.println("Distance: " + finalPath.getP2().distance(this.destination));
+                    this.setPath(finalPath);
+                    ExtensionCommands.moveActor(parentExt,this.room, this.id,currentPoint, finalPath.getP2(), (float) this.speed,true);
                 }
             }
         }else{

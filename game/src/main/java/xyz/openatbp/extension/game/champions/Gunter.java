@@ -106,6 +106,18 @@ public class Gunter extends UserActor{
         else return super.canUseAbility();
     }
 
+    @Override
+    public boolean canAttack(){
+        if(this.ultActivated) return false;
+        else return super.canAttack();
+    }
+
+    @Override
+    public boolean canMove(){
+        if(this.ultActivated) return false;
+        else return super.canMove;
+    }
+
     private class GunterAbilityRunnable extends AbilityRunnable {
 
         public GunterAbilityRunnable(int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {
