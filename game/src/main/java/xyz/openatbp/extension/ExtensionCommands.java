@@ -490,7 +490,7 @@ public class ExtensionCommands {
      * @param dest - Ending location of projectile
      * @param speed - Speed of projectile
      */
-    public static void createProjectile(ATBPExtension parentExt, Room room, UserActor owner, String id, Point2D loc, Point2D dest, float speed){
+    public static void createProjectile(ATBPExtension parentExt, Room room, Actor owner, String id, Point2D loc, Point2D dest, float speed){
         ExtensionCommands.createActor(parentExt,room, owner.getId() + id, id,loc,0f,owner.getTeam());
         ExtensionCommands.moveActor(parentExt,room, owner.getId()+id,loc,dest,speed,true);
     }
@@ -518,7 +518,7 @@ public class ExtensionCommands {
         for(Actor a : aggressors.keySet()){ //Loops through each player in the set
             ObjectNode playerObj = mapper.createObjectNode();
             playerObj.put("name",a.getDisplayName());
-            playerObj.put("playerPortrait",a.getAvatar());
+            playerObj.put("playerPortrait",a.getPortrait());
             for(String k : aggressors.get(a).getKeys()){ //Loops through each different attack
                 if(k.contains("attack")){
                     ISFSObject attackData = aggressors.get(a).getSFSObject(k);

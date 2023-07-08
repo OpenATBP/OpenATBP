@@ -26,7 +26,7 @@ public class Monster extends Actor {
     private float travelTime;
     private final MonsterType type;
     private Line2D movementLine;
-    private boolean dead = false;
+    protected boolean dead = false;
 
     public Monster(ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName){
         this.startingLocation = new Point2D.Float(startingLocation[0],startingLocation[1]);
@@ -106,8 +106,23 @@ public class Monster extends Actor {
     }
 
     public void setAggroState(AggroState state, Actor a){
-        this.state = state;
-        if(state == AggroState.ATTACKED) this.target = (UserActor) a;
+        if(this.state == AggroState.ATTACKED && state == AggroState.PASSIVE){
+            double closestDistance = 1000;
+            UserActor closestPlayer = null;
+            for(UserActor ua : parentExt.getRoomHandler(this.room.getId()).getPlayers()){
+                if(ua.getLocation().distance(this.location) < closestDistance){
+                    closestPlayer = ua;
+                    closestDistance = ua.getLocation().distance(this.location);
+                }
+            }
+            if(closestDistance <= 10){
+                this.target = closestPlayer;
+            }
+        }else{
+            this.state = state;
+            if(state == AggroState.ATTACKED) this.target = (UserActor) a;
+        }
+
     }
     @Override
     public boolean setTempStat(String stat, double delta) {
@@ -134,13 +149,11 @@ public class Monster extends Actor {
             ExtensionCommands.attackActor(parentExt,this.room,this.id,a.getId(),(float) a.getLocation().getX(), (float) a.getLocation().getY(), false, true);
             if(this.type == MonsterType.SMALL) SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedRangedAttack(this,a),300,TimeUnit.MILLISECONDS); // Small camps are ranged
             else SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,attackDamage,"basicAttack"),500, TimeUnit.MILLISECONDS); //Melee damage
-        }else if(attackCooldown == 300){ //Deprecated (changed from internal delay of attacks to using task schedulers)
-            reduceAttackCooldown();
-        }else if(attackCooldown == 100 || attackCooldown == 200) reduceAttackCooldown(); //Deprecated (see above) im scared to remove for now
+        }
     }
 
     public void rangedAttack(Actor a){ //Called when ranged attacks take place to spawn projectile and deal damage after projectile hits
-        String fxId = "gnome_projectile";
+        String fxId = "gnome_projectile"; //TODO: Change for owls
         int attackDamage = (int) this.getPlayerStat("attackDamage");
         ExtensionCommands.createProjectileFX(this.parentExt,this.room,fxId,this.id,a.getId(),"Bip001","Bip001",0.5f);
 
@@ -187,6 +200,7 @@ public class Monster extends Actor {
                 Champion.updateServerHealth(this.parentExt,this);
             }
         }
+        if(this.target != null && this.target.getHealth() <= 0) this.setAggroState(AggroState.PASSIVE,null);
         if(this.movementLine != null) this.location = this.getRelativePoint(); //Sets location variable to its actual location using *math*
         else this.movementLine = new Line2D.Float(this.location,this.location);
         if(this.state == AggroState.PASSIVE){
@@ -219,7 +233,7 @@ public class Monster extends Actor {
                 }
             }
         }
-        if(this.attackCooldown != 0) this.reduceAttackCooldown();
+        if(this.attackCooldown > 0) this.reduceAttackCooldown();
     }
 
     @Override

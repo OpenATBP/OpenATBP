@@ -35,15 +35,14 @@ public class FlamePrincess extends UserActor {
     public void update(int msRan){
         super.update(msRan);
         if(this.ultStarted && lastUltUsage == -1) lastUltUsage = msRan;
-        if(this.ultStarted && !this.ultFinished && msRan-lastUltUsage == 1000){
+        if(this.ultStarted && !this.ultFinished){
             lastUltUsage = msRan;
             for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(this.room.getId()),this.location,2)){
                 if(a.getTeam() != this.team){
                     JsonNode attackData = this.parentExt.getAttackData(getAvatar(),"spell3");
-                    if(a.getActorType() != ActorType.PLAYER) a.damaged(this,this.getSpellDamage(attackData),attackData);
-                    else if (a.getActorType() == ActorType.PLAYER){ //Redundant?
-                        UserActor userActor = (UserActor) a;
-                        userActor.damaged(this,this.getSpellDamage(attackData),attackData);
+                    double damage = (double) this.getSpellDamage(attackData) / 10;
+                    if(a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE){
+                        a.damaged(this,(int)damage,attackData);
                     }
                 }else{
                     System.out.println(a.getId() + " is on your team!");

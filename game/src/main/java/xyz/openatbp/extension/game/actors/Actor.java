@@ -148,14 +148,14 @@ public abstract class Actor {
         Champion.FinalBuffHandler buffHandler = new Champion.FinalBuffHandler(this,stat,delta);
         switch(stat){
             case "speed":
-                if(delta > 0){
-                    System.out.println("Starting buff handler!");
-                    buffHandler = new Champion.FinalBuffHandler(this,stat,delta,"statusEffect_speed");
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_speed",duration,this.id+"_"+fxId,true,"Bip01",true,false,this.team);
-                }else{
-                    buffHandler = new Champion.FinalBuffHandler(this,stat,delta,"statusEffect_speed");
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_speed",duration,this.id+"_"+fxId,true,"Bip01",true,false,this.team);
+                String fxName = fxId;
+                if(delta > 0 && !fxId.contains("goo")) fxName = "statusEffect_speed";
+                if(fxId.contains("goo") && this.getActorType() == ActorType.PLAYER){
+                    UserActor ua = (UserActor) this;
+                    ExtensionCommands.addStatusIcon(parentExt,ua.getUser(),"Ooze Buff","Oozed","icon_buff_goomonster",60000);
                 }
+                buffHandler = new Champion.FinalBuffHandler(this,stat,delta,fxName);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,fxName,duration,this.id+"_"+fxId,true,"Bip01",true,false,this.team);
                 break;
             case "healthRegen":
                 ExtensionCommands.createActorFX(parentExt,this.room,this.id,"fx_health_regen",duration,this.id+"_"+fxId,true,"Bip01",false,false,this.team);
@@ -359,7 +359,12 @@ public abstract class Actor {
                 if(this.states.get(s)) return false;
             }
         }
+        if(this.attackCooldown < 0) this.attackCooldown = 0;
         return this.attackCooldown == 0;
+    }
+
+    public String getPortrait(){
+        return this.avatar;
     }
 
     public abstract void setTarget(Actor a);

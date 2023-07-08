@@ -490,10 +490,16 @@ public class Champion {
         }
 
         private void handleIcons(){
+            System.out.println("Handling icons: " + this.fxName);
             if(this.fxName.contains("altar")){
                 UserActor ua = (UserActor) this.a;
                 String altarType = this.fxName.split("_")[2];
                 ExtensionCommands.removeStatusIcon(ua.getParentExt(),ua.getUser(),"altar_buff_"+altarType);
+            }else if(this.fxName.contains("goo")){
+                if(this.a.getActorType() == ActorType.PLAYER){
+                    UserActor ua = (UserActor) this.a;
+                    ExtensionCommands.removeStatusIcon(ua.getParentExt(),ua.getUser(),"Ooze Buff");
+                }
             }
         }
     }

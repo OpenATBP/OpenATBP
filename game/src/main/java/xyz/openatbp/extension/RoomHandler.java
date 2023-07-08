@@ -16,6 +16,7 @@ import org.bson.conversions.Bson;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.*;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.game.champions.GooMonster;
 
 import java.awt.geom.Point2D;
 import java.util.*;
@@ -81,7 +82,7 @@ public class RoomHandler implements Runnable{
                     if(s.length()>3){
                         int spawnRate = 45; //Mob spawn rate
                         if(s.equalsIgnoreCase("keeoth")) spawnRate = 120;
-                        else if(s.equalsIgnoreCase("ooze")) spawnRate = 90;
+                        else if(s.equalsIgnoreCase("ooze")) spawnRate = 15; //TODO: Reset to 90
                         if(spawns.getInt(s) == spawnRate){ //Mob timers will be set to 0 when killed or health when taken
                             spawnMonster(s);
                             spawns.putInt(s,spawns.getInt(s)+1);
@@ -319,7 +320,7 @@ public class RoomHandler implements Runnable{
                         x = MapData.L2_OOZE[0];
                         z = MapData.L2_OOZE[1];
                         actor = "ooze_monster";
-                        campMonsters.add(new Monster(parentExt,room,MapData.L2_OOZE,actor));
+                        campMonsters.add(new GooMonster(parentExt,room,MapData.L2_OOZE,actor));
                         break;
                 }
                 monsterObject.putUtfString("id",actor);
