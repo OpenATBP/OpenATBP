@@ -110,10 +110,4 @@ public class Keeoth extends Monster {
         if(this.abilityCooldown == 0) return a.getLocation().distance(this.location) <= 5;
         return super.withinRange(a);
     }
-
-    @Override
-    public boolean damaged(Actor a, int damage, JsonNode attackData) {
-        this.die(a);
-        return true;
-    }
 }

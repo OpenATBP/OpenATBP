@@ -538,8 +538,9 @@ public class UserActor extends Actor {
     }
 
     public void respawn(){
-        Point2D respawnPoint = MapData.PURPLE_SPAWNS[parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id,this.team)];
-        if(this.team == 0) respawnPoint.setLocation(respawnPoint.getX()*-1,respawnPoint.getY());
+        int teamNumber = parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id,this.team);
+        Point2D respawnPoint = MapData.PURPLE_SPAWNS[teamNumber];
+        if(this.team == 1 && respawnPoint.getX() < 0) respawnPoint = new Point2D.Double(respawnPoint.getX()*-1,respawnPoint.getY());
         System.out.println("Respawning at: " + respawnPoint.getX() + "," + respawnPoint.getY() + " for team " + this.team);
         this.location = respawnPoint;
         this.originalLocation = respawnPoint;

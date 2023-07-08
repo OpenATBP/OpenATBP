@@ -93,26 +93,27 @@ public class GameManager {
         int purpleNum = 0;
         initializeMap(room,parentExt);
         // ExtensionCommands.addUser(parentExt,room,101,"Fake user 1","finn",0,"finn",backpack,0);
-        ExtensionCommands.createActor(parentExt,room,"101","finn",new Point2D.Float((float) (MapData.PURPLE_SPAWNS[1].getX()*-1), (float) MapData.PURPLE_SPAWNS[1].getY()),0f,0);
-        ExtensionCommands.createActor(parentExt,room,"102","jake",new Point2D.Float((float) (MapData.PURPLE_SPAWNS[2].getX()*-1),(float) MapData.PURPLE_SPAWNS[2].getY()),0f,0);
-        ExtensionCommands.createActor(parentExt,room,"103","magicman",MapData.PURPLE_SPAWNS[1], 0f,1);
-        ExtensionCommands.createActor(parentExt,room,"104","iceking",MapData.PURPLE_SPAWNS[2],0f,1);
+        ExtensionCommands.createActor(parentExt,room,"101","finn",new Point2D.Float((float) (MapData.PURPLE_SPAWNS[1].getX()*-1), (float) MapData.PURPLE_SPAWNS[1].getY()),0f,1);
+        ExtensionCommands.createActor(parentExt,room,"102","jake",new Point2D.Float((float) (MapData.PURPLE_SPAWNS[2].getX()*-1),(float) MapData.PURPLE_SPAWNS[2].getY()),0f,1);
+        ExtensionCommands.createActor(parentExt,room,"103","magicman",MapData.PURPLE_SPAWNS[1], 0f,0);
+        ExtensionCommands.createActor(parentExt,room,"104","iceking",MapData.PURPLE_SPAWNS[2],0f,0);
 
         for(User u : room.getUserList()){
             ISFSObject playerInfo = u.getVariable("player").getSFSObjectValue();
             int team = playerInfo.getInt("team");
             float px = 0f;
             float pz = 0f;
-            if(team == 1){
+            if(team == 0){
                 px = (float) MapData.PURPLE_SPAWNS[purpleNum].getX();
                 pz = (float) MapData.PURPLE_SPAWNS[purpleNum].getY();
                 purpleNum++;
             }
-            if(team == 0){
+            if(team == 1){
                 px = (float) MapData.PURPLE_SPAWNS[blueNum].getX()*-1;
                 pz = (float) MapData.PURPLE_SPAWNS[blueNum].getY();
                 blueNum++;
             }
+            System.out.println("Original spawn is " + px + "," + pz);
             String id = String.valueOf(u.getId());
             String actor = playerInfo.getUtfString("avatar");
             Point2D location = new Point2D.Float(px,pz);
@@ -148,8 +149,8 @@ public class GameManager {
         }
         Point2D guardianLoc = new Point2D.Float(MapData.L2_GUARDIAN1_X*-1,MapData.L2_GUARDIAN1_Z);
         Point2D guardianLoc2 = new Point2D.Float(MapData.L2_GUARDIAN1_X,MapData.L2_GUARDIAN1_Z);
-        ExtensionCommands.moveActor(parentExt,room,"gumball1",guardianLoc,new Point2D.Float((float) (guardianLoc.getX()+0.01f), (float) guardianLoc.getY()),0.01f,true);
-        ExtensionCommands.moveActor(parentExt,room,"gumball0",guardianLoc2,new Point2D.Float((float) (guardianLoc2.getX()-0.01f), (float) guardianLoc2.getY()),0.01f,true);
+        ExtensionCommands.moveActor(parentExt,room,"gumball0",guardianLoc,new Point2D.Float((float) (guardianLoc.getX()+0.01f), (float) guardianLoc.getY()),0.01f,true);
+        ExtensionCommands.moveActor(parentExt,room,"gumball1",guardianLoc2,new Point2D.Float((float) (guardianLoc2.getX()-0.01f), (float) guardianLoc2.getY()),0.01f,true);
         try{ //Sets all the room variables once the game is about to begin
             setRoomVariables(room);
         }catch(SFSVariableException e){

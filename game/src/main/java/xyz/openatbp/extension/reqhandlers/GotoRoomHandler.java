@@ -20,8 +20,8 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
     @Override
     public void handleClientRequest(User sender, ISFSObject params){ //Called when player is trying to join a match
         trace(params.getDump());
-        int team = 0;
-        if(params.getUtfString("team").equalsIgnoreCase("purple")) team = 1;
+        int team = 1;
+        if(params.getUtfString("team").equalsIgnoreCase("purple")) team = 0;
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         List<UserVariable> userVariables = new ArrayList<>();
         ISFSObject playerInfo = new SFSObject(); //Player info from champ select
@@ -34,7 +34,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
         SFSUserVariable playerVar = new SFSUserVariable("player",playerInfo);
         ISFSObject location = new SFSObject(); //Will need to be changed when we get actual spawn points made
         float x = (float) MapData.PURPLE_SPAWNS[0].getX();
-        if(team == 0) x*=-1;
+        if(team == 1) x*=-1;
         location.putFloat("x",x);
         location.putFloat("z", (float) MapData.PURPLE_SPAWNS[0].getY());
         ISFSObject p1 = new SFSObject();

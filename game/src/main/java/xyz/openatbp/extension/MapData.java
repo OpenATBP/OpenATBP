@@ -9,6 +9,8 @@ import java.awt.geom.Rectangle2D;
 import java.util.HashMap;
 import java.util.Vector;
 
+//PURPLE NEGATIVE X, BLUE POSITIVE X
+
 public class MapData {
     public static final float L1_BASE_X = (float) 42.0;
     public static final float L1_BASE_Z = (float) 0.6;
@@ -59,9 +61,9 @@ public class MapData {
             x = L2_BASE1_X;
             z = L2_BASE1_Z;
         }
-        if(team == 1) x*=-1;
+        if(team == 0) x*=-1;
         String actor;
-        if(team == 0){
+        if(team == 1){
             actor = "base_blue";
         }else{
             actor = "base_purple";
@@ -83,7 +85,7 @@ public class MapData {
         float x = 0;
         float z = 0;
         float towerDifference = 0;
-        String towerID = "tower"+(2-team);
+        String towerID = "tower"+(1+team);
         if(room.equalsIgnoreCase("practice")){
             towerDifference = L1_TOWER1_X-L1_TOWER2_X;
             x = (L1_TOWER1_X-(towerDifference*(tower-1)));
@@ -100,9 +102,9 @@ public class MapData {
                 z = L2_TOWER2_Z;
             }
         }
-        if(team == 1) x*=-1;
+        if(team == 0) x*=-1;
         String id = "error";
-        if(team == 0){
+        if(team == 1){
             id = "blue_tower"+tower;
         }else{
             id = "purple_tower"+tower;
@@ -147,9 +149,9 @@ public class MapData {
                     z = L2_TOWER2_Z;
                 }
             }
-            if(team == 1) x*=-1;
+            if(team == 0) x*=-1;
             String id = "error";
-            if(team == 0){
+            if(team == 1){
                 id = "blue_tower"+tower;
             }else{
                 id = "purple_tower"+tower;
@@ -220,7 +222,7 @@ public class MapData {
                 x = L2_LEFT_HEALTH[0];
                 z = L2_LEFT_HEALTH[1];
             }
-            if(team == 1){
+            if(team == 0){
                 x*=-1;
             }
         }
@@ -248,7 +250,7 @@ public class MapData {
             x = L2_GUARDIAN1_X;
             z = L2_GUARDIAN1_Z;
         }
-        if(team == 1) x*=-1;
+        if(team == 0) x*=-1;
         ISFSObject guardian = new SFSObject();
         ISFSObject guardianSpawn = new SFSObject();
         guardian.putUtfString("id","gumball"+team);

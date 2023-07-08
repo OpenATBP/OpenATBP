@@ -443,10 +443,7 @@ public class RoomHandler implements Runnable{
         else purpleScore+=points;
         scoreObject.putInt("blue",blueScore);
         scoreObject.putInt("purple",purpleScore);
-        ISFSObject pointData = new SFSObject();
-        pointData.putInt("teamA",blueScore);
-        pointData.putInt("teamB",purpleScore);
-        ExtensionCommands.updateScores(this.parentExt,this.room,blueScore,purpleScore);
+        ExtensionCommands.updateScores(this.parentExt,this.room,purpleScore,blueScore);
         if(earner != null){
             earner.addGameStat("score",points);
         }
@@ -652,10 +649,10 @@ public class RoomHandler implements Runnable{
         int purple = 0;
         for(UserActor ua : this.players){
             if(ua.getId().equalsIgnoreCase(id)){
-                if(ua.getTeam() == 0) return blue;
+                if(ua.getTeam() == 1) return blue;
                 else return purple;
             }else{
-                if(ua.getTeam() == 0) blue++;
+                if(ua.getTeam() == 1) blue++;
                 else purple++;
             }
         }
@@ -663,7 +660,7 @@ public class RoomHandler implements Runnable{
     }
 
     public void handleFountain(){
-        Point2D blueCenter = new Point2D.Float(50.16f,0f);
+        Point2D blueCenter = new Point2D.Float(-50.16f,0f);
         List<Actor> blueTeam = Champion.getEnemyActorsInRadius(this,1,blueCenter,4f);
         for(Actor a : blueTeam){
             if(a.getActorType() == ActorType.PLAYER){
@@ -675,7 +672,7 @@ public class RoomHandler implements Runnable{
                 ua.handleEffect("speed",2d,5000,"fountainSpeed");
             }
         }
-        Point2D purpleCenter = new Point2D.Float(-50.16f, 0f);
+        Point2D purpleCenter = new Point2D.Float(50.16f, 0f);
         List<Actor> purpleTeam = Champion.getEnemyActorsInRadius(this,0,purpleCenter,4f);
         for(Actor a : purpleTeam){ //I can optimize but that's future me's problem
             if(a.getActorType() == ActorType.PLAYER){

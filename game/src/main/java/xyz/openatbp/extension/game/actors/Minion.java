@@ -64,11 +64,11 @@ public class Minion extends Actor {
         this.currentHealth = this.maxHealth;
         float x = (float) blueBotX[0]; //Bot Lane
         float y = (float) blueBotY[0];
-        if(team == 1) x = (float) blueBotX[blueBotX.length-1];
+        if(team == 0) x = (float) blueBotX[blueBotX.length-1];
         if(lane == 0){ //Top Lane
             x = (float) blueTopX[0];
             y = (float) blueTopY[0];
-            if(team == 1) x = (float) blueTopX[blueTopX.length-1];
+            if(team == 0) x = (float) blueTopX[blueTopX.length-1];
         }
         this.speed = 1.75f;
         this.location = new Point2D.Float(x,y);
@@ -78,7 +78,7 @@ public class Minion extends Actor {
         this.parentExt = parentExt;
         this.lane = lane;
         this.actorType = ActorType.MINION;
-        if(team == 1){
+        if(team == 0){
             if(lane == 0) pathIndex = blueTopX.length-1;
             else pathIndex = blueBotX.length-1;
         }
@@ -113,7 +113,7 @@ public class Minion extends Actor {
     public ISFSObject creationObject(){ //Object fed to the extension command to spawn the minion
         ISFSObject minion = new SFSObject();
         String actorName = "creep";
-        if(this.team == 0) actorName+="1";
+        if(this.team == 1) actorName+="1";
         if(this.type != MinionType.MELEE) actorName+="_";
         minion.putUtfString("id",this.id);
         minion.putUtfString("actor",actorName + getType());
@@ -172,8 +172,8 @@ public class Minion extends Actor {
                     index = i;
                 }
             }
-            if(Math.abs(shortestDistance) < 0.01 && ((this.team == 1 && index+1 != pathX.length) || (this.team == 0 && index-1 != 0))){
-                if(this.team == 0) index++;
+            if(Math.abs(shortestDistance) < 0.01 && ((this.team == 0 && index+1 != pathX.length) || (this.team == 1 && index-1 != 0))){
+                if(this.team == 1) index++;
                 else index--;
             }
         }
@@ -210,7 +210,7 @@ public class Minion extends Actor {
     public void arrived(){ //Ran when the minion arrives at a point on the path
         this.travelTime = 0;
         this.location = this.movementLine.getP2();
-        if(this.team == 0) this.pathIndex++;
+        if(this.team == 1) this.pathIndex++;
         else this.pathIndex--;
     }
 
@@ -266,7 +266,7 @@ public class Minion extends Actor {
             case 0:
                 int index = findPathIndex();
                 if(this.state != AggroState.PLAYER){
-                    if(this.team == 1) index--;
+                    if(this.team == 0) index--;
                     else index++;
                     if(index < 0) index = 0;
                     if(index >= pathX.length) index = pathX.length-1;
@@ -320,8 +320,8 @@ public class Minion extends Actor {
     @Override
     public void rangedAttack(Actor a){
         String fxId = "minion_projectile_";
-        if(this.team == 0) fxId+="blue";
-        else fxId+="purple";
+        if(this.team == 0) fxId+="purple";
+        else fxId+="blue";
         ExtensionCommands.createProjectileFX(parentExt,this.room,fxId,this.getId(),a.getId(),"Bip001","Bip001",(float)0.5);
 
         SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),500, TimeUnit.MILLISECONDS);
