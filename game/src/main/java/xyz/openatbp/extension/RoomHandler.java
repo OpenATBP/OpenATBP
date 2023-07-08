@@ -17,6 +17,7 @@ import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.*;
 import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.game.champions.GooMonster;
+import xyz.openatbp.extension.game.champions.Keeoth;
 
 import java.awt.geom.Point2D;
 import java.util.*;
@@ -81,8 +82,8 @@ public class RoomHandler implements Runnable{
                 for(String s : GameManager.SPAWNS){ //Check all mob/health spawns for how long it's been since dead
                     if(s.length()>3){
                         int spawnRate = 45; //Mob spawn rate
-                        if(s.equalsIgnoreCase("keeoth")) spawnRate = 120;
-                        else if(s.equalsIgnoreCase("ooze")) spawnRate = 15; //TODO: Reset to 90
+                        if(s.equalsIgnoreCase("keeoth")) spawnRate = 15;
+                        else if(s.equalsIgnoreCase("ooze")) spawnRate = 90;
                         if(spawns.getInt(s) == spawnRate){ //Mob timers will be set to 0 when killed or health when taken
                             spawnMonster(s);
                             spawns.putInt(s,spawns.getInt(s)+1);
@@ -314,7 +315,7 @@ public class RoomHandler implements Runnable{
                     case "keeoth":
                         x = MapData.L2_KEEOTH[0];
                         z = MapData.L2_KEEOTH[1];
-                        campMonsters.add(new Monster(parentExt,room,MapData.L2_KEEOTH,actor));
+                        campMonsters.add(new Keeoth(parentExt,room,MapData.L2_KEEOTH,actor));
                         break;
                     case "ooze":
                         x = MapData.L2_OOZE[0];

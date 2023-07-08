@@ -42,6 +42,7 @@ public class FlamePrincess extends UserActor {
                     JsonNode attackData = this.parentExt.getAttackData(getAvatar(),"spell3");
                     double damage = (double) this.getSpellDamage(attackData) / 10;
                     if(a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE){
+                        handleSpellVamp(damage);
                         a.damaged(this,(int)damage,attackData);
                     }
                 }else{
@@ -183,6 +184,7 @@ public class FlamePrincess extends UserActor {
             if(this.hitPlayer) return;
             this.hitPlayer = true;
             JsonNode attackData = parentExt.getAttackData(getAvatar(),"spell1");
+            handleSpellVamp(getSpellDamage(attackData));
             victim.damaged(FlamePrincess.this,getSpellDamage(attackData),attackData);
             //ExtensionCommands.moveActor(parentExt,player,this.id,this.location,this.location,this.speed,false);
             ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_projectile_large_explosion",200,"flame_explosion",false,"",false,false,team);
@@ -190,6 +192,7 @@ public class FlamePrincess extends UserActor {
             for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),Champion.extendLine(path,7f),4f)){
                 if(!a.getId().equalsIgnoreCase(victim.getId()) && a.getTeam() != team && a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE){
                     double newDamage = (double)getSpellDamage(attackData)*1.2d;
+                    handleSpellVamp(newDamage);
                     a.damaged(FlamePrincess.this,(int)Math.round(newDamage),attackData);
                 }
             }
@@ -215,6 +218,7 @@ public class FlamePrincess extends UserActor {
 
         @Override
         public void run() {
+            FlamePrincess.this.handleLifeSteal();
             target.damaged(FlamePrincess.this,(int)getPlayerStat("attackDamage"), parentExt.getAttackData(getAvatar(),"basicAttack"));
             if(FlamePrincess.this.passiveEnabled && (target.getClass() != Tower.class && target.getClass() != Base.class)){
                 FlamePrincess.this.passiveEnabled = false;

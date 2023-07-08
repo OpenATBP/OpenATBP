@@ -177,6 +177,14 @@ public abstract class Actor {
                     buffHandler = new Champion.FinalBuffHandler(this,stat,delta,"altar_buff_defense");
                 }
                 break;
+            case "lifeSteal":
+                if(fxId.contains("keeoth")){
+                    UserActor ua = (UserActor) this;
+                    ExtensionCommands.addStatusIcon(parentExt,ua.getUser(),"Keeoth Buff", "Keeoth Buff", "icon_buff_keeoth",60000);
+                }
+                buffHandler = new Champion.FinalBuffHandler(this,stat,delta,fxId);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,fxId,duration,this.id+"_"+fxId,true,"Bip01",true,false,this.team);
+                break;
             default:
                 buffHandler = new Champion.FinalBuffHandler(this,stat,delta);
                 this.setBuffHandler(stat,buffHandler);

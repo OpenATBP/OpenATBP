@@ -317,6 +317,8 @@ public class Champion {
                 }else if(ua.hasBackpackItem("junk_4_grob_gob_glob_grod") && ua.getStat("sp_category4") > 0){
                     if(!this.target.hasTempStat("spellDamage")) this.target.handleEffect("spellDamage",this.target.getPlayerStat("spellDamage")*-0.1,3000,"grob_gob");
                 }
+                if(this.attack.contains("basic")) ua.handleLifeSteal();
+                else if(this.attack.contains("spell")) ua.handleSpellVamp(this.damage);
             }
             if(this.target.getActorType() == ActorType.PLAYER){
                 UserActor user = (UserActor) this.target;
@@ -499,6 +501,11 @@ public class Champion {
                 if(this.a.getActorType() == ActorType.PLAYER){
                     UserActor ua = (UserActor) this.a;
                     ExtensionCommands.removeStatusIcon(ua.getParentExt(),ua.getUser(),"Ooze Buff");
+                }
+            }else if(this.fxName.contains("keeoth")){
+                if(this.a.getActorType() == ActorType.PLAYER){
+                    UserActor ua = (UserActor) this.a;
+                    ExtensionCommands.removeStatusIcon(ua.getParentExt(),ua.getUser(),"Keeoth Buff");
                 }
             }
         }

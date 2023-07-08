@@ -37,6 +37,7 @@ public class Gunter extends UserActor{
                 System.out.println(a.getId() + " is in the ult!");
                 if(a.getTeam() != this.team && a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE){
                     double damage = (double)getSpellDamage(spellData)/10;
+                    handleSpellVamp(damage);
                     a.damaged(this,(int)Math.round(damage),spellData);
                 }
             }
@@ -93,6 +94,7 @@ public class Gunter extends UserActor{
             if(actor.getTeam() != this.team && !a.getId().equalsIgnoreCase(actor.getId())){
                 System.out.println("Shattering " + actor.getId());
                 JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(),"spell4");
+                handleSpellVamp(getSpellDamage(spellData));
                 actor.damaged(this,getSpellDamage(spellData),spellData);
             }
         }
@@ -119,6 +121,7 @@ public class Gunter extends UserActor{
             List<Actor> affectedActors = Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),loc,4f);
             for(Actor a : affectedActors){
                 if(a.getTeam() != team){
+                    handleSpellVamp(getSpellDamage(spellData));
                     a.damaged(Gunter.this,getSpellDamage(spellData),spellData);
                 }
             }
@@ -150,6 +153,7 @@ public class Gunter extends UserActor{
         @Override
         protected void hit(Actor victim) {
             JsonNode spellData = parentExt.getAttackData(getAvatar(),"spell2");
+            handleSpellVamp(getSpellDamage(spellData));
             if(victim.damaged(Gunter.this,getSpellDamage(spellData),spellData)){
                 shatter(victim);
             }
@@ -172,6 +176,7 @@ public class Gunter extends UserActor{
         @Override
         public void run() {
             JsonNode attackData = parentExt.getAttackData(getAvatar(),"basicAttack");
+            Gunter.this.handleLifeSteal();
             if(this.target.damaged(Gunter.this,(int)getPlayerStat("attackDamage"),attackData)){
                 shatter(this.target);
             }

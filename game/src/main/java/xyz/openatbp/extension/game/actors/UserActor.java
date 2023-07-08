@@ -264,7 +264,7 @@ public class UserActor extends Actor {
     @Override
     public void attack(Actor a) {
         if(this.attackCooldown == 0){
-            boolean crit = Math.random() < this.getPlayerStat("criticalChance");
+            boolean crit = Math.random() < this.getPlayerStat("criticalChance")/100;
             ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
             this.attackCooldown = this.getPlayerStat("attackSpeed");
             Champion.DelayedAttack delayedAttack = new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack");
@@ -672,10 +672,16 @@ public class UserActor extends Actor {
         return (int) Math.round(cooldown*ratio);
     }
 
-    protected void handleSpellVamp(double damage){
+    public void handleSpellVamp(double damage){
         double percentage = this.getPlayerStat("spellVamp")/100;
         int healing = (int) Math.round(damage*percentage);
         this.changeHealth(healing);
+    }
+
+    public void handleLifeSteal(){
+        double damage = this.getPlayerStat("attackDamage");
+        double lifesteal = this.getPlayerStat("lifeSteal")/100;
+        this.changeHealth((int)Math.round(damage*lifesteal));
     }
 
     public void addNailStacks(int damage){

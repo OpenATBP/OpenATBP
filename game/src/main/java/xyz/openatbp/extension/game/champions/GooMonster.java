@@ -30,7 +30,7 @@ public class GooMonster extends Monster {
 
     public GooMonster(ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName) {
         super(parentExt, room, startingLocation, monsterName);
-        this.abilityCooldown = 8000;
+        this.abilityCooldown = 5000;
         this.usingAbility = false;
         this.puddleActivated = false;
         this.puddleStarted = -1;
@@ -87,17 +87,14 @@ public class GooMonster extends Monster {
             this.usingAbility = true;
             ExtensionCommands.createActorFX(parentExt,room,id,"goo_monster_spell_glob",1250,id+"_glob",true,"fxNode",true,false,team);
             ExtensionCommands.actorAnimate(parentExt,room,id,"spell",1250,false);
-            Runnable oozeAttack = new Runnable() {
-                @Override
-                public void run() {
-                    puddleActivated = true;
-                    puddleLocation = a.getLocation();
-                    abilityCooldown = 8000;
-                    usingAbility = false;
-                    canMove = true;
-                    puddleStarted = System.currentTimeMillis();
-                    ExtensionCommands.createWorldFX(parentExt,room,id,"goo_monster_puddle",id+"_puddle",3000,(float)puddleLocation.getX(),(float)puddleLocation.getY(),false,team,0f);
-                }
+            Runnable oozeAttack = () -> {
+                puddleActivated = true;
+                puddleLocation = a.getLocation();
+                abilityCooldown = 8000;
+                usingAbility = false;
+                canMove = true;
+                puddleStarted = System.currentTimeMillis();
+                ExtensionCommands.createWorldFX(parentExt,room,id,"goo_monster_puddle",id+"_puddle",3000,(float)puddleLocation.getX(),(float)puddleLocation.getY(),false,team,0f);
             };
             SmartFoxServer.getInstance().getTaskScheduler().schedule(oozeAttack,1250, TimeUnit.MILLISECONDS);
         }else if(!this.usingAbility){
@@ -125,11 +122,5 @@ public class GooMonster extends Monster {
     @Override
     public String getPortrait(){
         return "goomonster";
-    }
-
-    @Override
-    public boolean damaged(Actor a, int damage, JsonNode attackData) {
-        this.die(a);
-        return true;
     }
 }

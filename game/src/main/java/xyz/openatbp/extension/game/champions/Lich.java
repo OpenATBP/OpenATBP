@@ -113,6 +113,7 @@ public class Lich extends UserActor{
                         if(slimedEnemies.containsKey(a.getId())){
                             if(System.currentTimeMillis() - slimedEnemies.get(a.getId()) >= 1000){
                                 System.out.println(a.getId() + " getting slimed!");
+                                handleSpellVamp(getSpellDamage(attackData));
                                 a.damaged(this,getSpellDamage(attackData),attackData);
                                 a.handleEffect(ActorState.SLOWED,a.getPlayerStat("speed")*-0.3,1500,"lich_slow");
                                 slimedEnemies.put(a.getId(),System.currentTimeMillis());
@@ -120,6 +121,7 @@ public class Lich extends UserActor{
                             }
                         }else{
                             System.out.println(a.getId() + " getting slimed!");
+                            handleSpellVamp(getSpellDamage(attackData));
                             a.damaged(this,getSpellDamage(attackData),attackData);
                             a.handleEffect(ActorState.SLOWED,a.getPlayerStat("speed")*-0.3,1500,"lich_slow");
                             slimedEnemies.put(a.getId(),System.currentTimeMillis());
@@ -136,6 +138,7 @@ public class Lich extends UserActor{
             for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(this.room.getId()),ultLocation,3f)){
                 if(a.getTeam() != this.team && a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER){
                     double damage = getSpellDamage(spellData)/10d;
+                    handleSpellVamp(damage);
                     a.damaged(this,(int)Math.round(damage),spellData);
                 }
             }
@@ -298,6 +301,7 @@ public class Lich extends UserActor{
         public void run() {
             if(attacker.getClass() == Lich.class){
                 JsonNode attackData = parentExt.getAttackData("lich","basicAttack");
+                Lich.this.handleLifeSteal();
                 if(this.target.damaged(this.attacker, (int) this.attacker.getPlayerStat("attackDamage"),attackData)){
                     Lich.this.skully.resetTarget();
                 }else{
@@ -324,6 +328,7 @@ public class Lich extends UserActor{
         @Override
         protected void hit(Actor victim) {
             JsonNode spellData = parentExt.getAttackData(getAvatar(),"spell2");
+            handleSpellVamp(getSpellDamage(spellData));
             victim.damaged(Lich.this,getSpellDamage(spellData),spellData);
             victim.handleCharm(Lich.this,2000);destroy();
         }
