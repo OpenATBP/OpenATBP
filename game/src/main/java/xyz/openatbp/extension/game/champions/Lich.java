@@ -45,12 +45,14 @@ public class Lich extends UserActor{
                 qActivated = true;
                 slimePath = new ArrayList<>();
                 slimedEnemies = new HashMap<>();
+                ExtensionCommands.playSound(parentExt,room,id,"sfx_lich_trail",this.location);
                 ExtensionCommands.createActorFX(parentExt, room, id, "lichking_deathmist", 6000, "lich_trail", true, "", true, false, team);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new TrailHandler(), 6000, TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 break;
             case 2: //W
                 this.stopMoving();
+                ExtensionCommands.playSound(parentExt,room,this.id,"sfx_lich_charm_shot",this.location);
                 Line2D fireLine = new Line2D.Float(this.getRelativePoint(false),dest);
                 Line2D newLine = Champion.getMaxRangeLine(fireLine,8f);
                 this.fireProjectile(new LichCharm(parentExt,this,newLine,9f,0.5f,this.id+"projectile_lich_charm"),"projectile_lich_charm",dest,8f);
@@ -60,6 +62,7 @@ public class Lich extends UserActor{
                 if(!this.ultStarted){
                     this.canMove = false;
                     this.stopMoving();
+                    ExtensionCommands.playSound(parentExt,room,this.id,"sfx_lich_death_pool",this.location);
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new LichAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),1000,TimeUnit.MILLISECONDS);
                 }
                 else{
@@ -335,6 +338,7 @@ public class Lich extends UserActor{
         @Override
         public void destroy(){
             super.destroy();
+            ExtensionCommands.playSound(parentExt,room,this.id,"sfx_lich_charm_shot_hit",this.location);
             ExtensionCommands.createWorldFX(parentExt,room,this.id,"lich_charm_explosion",id+"_charmExplosion",500,(float)this.location.getX(),(float)this.location.getY(),false,team,0f);
         }
     }
@@ -374,6 +378,7 @@ public class Lich extends UserActor{
                 Lich.this.ultTeleportsRemaining = 1;
                 Lich.this.ultLocation = dest;
                 canMove = true;
+                ExtensionCommands.playSound(parentExt,room,"","sfx_lich_well",dest);
                 ExtensionCommands.createWorldFX(parentExt,room,id,"lich_death_puddle",id+"_lichPool",5000,(float)dest.getX(),(float)dest.getY(),false,team,0f);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new LichAbilityRunnable(spellData,cooldown,gCooldown,dest),5000,TimeUnit.MILLISECONDS);
             }

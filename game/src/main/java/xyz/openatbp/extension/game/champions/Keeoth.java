@@ -45,6 +45,9 @@ public class Keeoth extends Monster {
                     u.handleEffect("criticalChance",35,60000,"jungle_buff_keeoth");
                     double healthChange = (double)u.getHealth() * 0.3d;
                     u.changeHealth((int)healthChange);
+                    ExtensionCommands.playSound(parentExt,u.getUser(),"global","announcer/you_keeoth");
+                }else{
+                    ExtensionCommands.playSound(parentExt,u.getUser(),"global","announcer/enemy_keeoth");
                 }
             }
         }
@@ -63,6 +66,7 @@ public class Keeoth extends Monster {
             ExtensionCommands.createWorldFX(parentExt,room,id+"2","fx_target_ring_1",id+"_ring2",1250,(float)playerLoc.getX(),(float)playerLoc.getY(),true,team,0f);
             ExtensionCommands.actorAnimate(parentExt,room,id,"spell",1250,false);
             Runnable keeothSpecial = () -> {
+                ExtensionCommands.playSound(parentExt,room,"","sfx_keeoth_explosion",playerLoc);
                 ExtensionCommands.createWorldFX(parentExt,room,id,"keeoth_explosion",id+"_explosion",1000,(float) playerLoc.getX(), (float)playerLoc.getY(),true,team,0f);
                 usingAbility = false;
                 canMove = true;

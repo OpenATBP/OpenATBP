@@ -62,7 +62,7 @@ public class GumballGuardian extends Tower {
     public void targetPlayer(UserActor user){
         ExtensionCommands.setTarget(this.parentExt,user.getUser(),this.id,user.getId());
         ExtensionCommands.createWorldFX(this.parentExt,user.getUser(),user.getId(),"tower_danger_alert",this.id+"_aggro",1000*60*15,(float)this.location.getX(),(float)this.location.getY(),false,this.team,0f);
-        ExtensionCommands.playSound(this.parentExt,user.getUser(),"sfx_turret_has_you_targeted",this.location);
+        ExtensionCommands.playSound(this.parentExt,user.getUser(),user.getId(),"sfx_turret_has_you_targeted",this.location);
     }
 
 }

@@ -56,7 +56,7 @@ public class Gunter extends UserActor{
                 double time = dest.distance(getRelativePoint(false))/20f;
                 int runtime = (int)Math.floor(time*1000);
                 this.setCanMove(false);
-                ExtensionCommands.playSound(parentExt,player,"sfx_gunter_slide",this.location);
+                ExtensionCommands.playSound(parentExt,this.room,this.id,"sfx_gunter_slide",this.location);
                 ExtensionCommands.createActorFX(parentExt,room,this.id,"gunter_slide_trail",runtime,this.id+"_gunterTrail",true,"Bip01",true,false,team);
                 ExtensionCommands.createActorFX(parentExt,room,this.id,"gunter_slide_snow",runtime,this.id+"_gunterTrail",true,"Bip01",true,false,team);
                 this.setLocation(dashLocation);
@@ -77,7 +77,7 @@ public class Gunter extends UserActor{
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new GunterAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),2500,TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAnimate(parentExt,room,this.id,"spell3b",2500,true);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,player,"e",true,getReducedCooldown(cooldown),gCooldown);
-                ExtensionCommands.playSound(parentExt, (ArrayList<User>) room.getUserList(),"sfx_gunter_bottles_ultimate",this.location);
+                ExtensionCommands.playSound(parentExt,room,this.id,"sfx_gunter_bottles_ultimate",this.location);
                 break;
         }
     }
@@ -88,7 +88,7 @@ public class Gunter extends UserActor{
     }
 
     public void shatter(Actor a){
-        ExtensionCommands.playSound(parentExt,player,"sfx_gunter_slide_shatter",a.getLocation());
+        ExtensionCommands.playSound(parentExt,room,"","sfx_gunter_slide_shatter",a.getLocation());
         ExtensionCommands.createWorldFX(parentExt,room,id,"gunter_belly_slide_bottles",a.getId()+"_shattered",500,(float)a.getLocation().getX(),(float)a.getLocation().getY(),false,team,0f);
         for(Actor actor : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),a.getLocation(), 2f)){
             if(actor.getTeam() != this.team && !a.getId().equalsIgnoreCase(actor.getId())){
@@ -117,7 +117,7 @@ public class Gunter extends UserActor{
             setCanMove(true);
             Point2D loc = getRelativePoint(false);
             ExtensionCommands.createWorldFX(parentExt,room,id+"_slide","gunter_belly_slide_bottles",id+"_slideBottles",500,(float)loc.getX(),(float)loc.getY(),false,team,0f);
-            ExtensionCommands.playSound(parentExt,player,"sfx_gunter_slide_shatter",loc);
+            ExtensionCommands.playSound(parentExt,room,id,"sfx_gunter_slide_shatter",loc);
             List<Actor> affectedActors = Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),loc,4f);
             for(Actor a : affectedActors){
                 if(a.getTeam() != team){
@@ -157,12 +157,12 @@ public class Gunter extends UserActor{
             if(victim.damaged(Gunter.this,getSpellDamage(spellData),spellData)){
                 shatter(victim);
             }
-            ExtensionCommands.playSound(parentExt,player,"sfx_gunter_bottle_shatter",this.location);
             destroy();
         }
         @Override
         public void destroy(){
             super.destroy();
+            ExtensionCommands.playSound(parentExt,room,"","sfx_gunter_bottle_shatter",this.location);
             ExtensionCommands.createWorldFX(parentExt,room,this.id,"gunter_bottle_shatter",this.id+"_bottleShatter",500,(float)this.location.getX(),(float)this.location.getY(),false,team,0f);
         }
     }

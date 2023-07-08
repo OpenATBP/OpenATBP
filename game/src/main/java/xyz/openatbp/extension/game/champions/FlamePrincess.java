@@ -63,10 +63,12 @@ public class FlamePrincess extends UserActor {
             case 1: //Q
                 Line2D skillShotLine = new Line2D.Float(this.location,dest);
                 Line2D maxRangeLine = Champion.getMaxRangeLine(skillShotLine,8f);
+                ExtensionCommands.playSound(parentExt,room,this.id,"sfx_flame_princess_projectile_throw",this.location);
                 this.fireProjectile(new FlameProjectile(this.parentExt,this,maxRangeLine,8f,0.5f,this.id+"projectile_flame_cone"),"projectile_flame_cone",dest,8f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),"q",true,getReducedCooldown(cooldown),gCooldown);
                 break;
             case 2: //W
+                ExtensionCommands.playSound(parentExt,room,this.id,"sfx_flame_princess_projectile_throw",this.location);
                 ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"fx_target_ring_2","flame_w",1000, (float) dest.getX(),(float) dest.getY(),true,this.team,0f);
                 ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"flame_princess_polymorph_fireball","flame_w_polymorph",1000, (float) dest.getX(),(float) dest.getY(),false,this.team,0f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),"w",true,getReducedCooldown(cooldown),gCooldown);
@@ -78,8 +80,8 @@ public class FlamePrincess extends UserActor {
                     ultStarted = true;
                     ultFinished = false;
                     this.setState(ActorState.TRANSFORMED, true);
-                    ExtensionCommands.playSound(this.parentExt,this.player,"vo/vo_flame_princess_flame_form",this.getLocation());
-                    ExtensionCommands.playSound(this.parentExt,this.player,"sfx_flame_princess_flame_form",this.getLocation());
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_flame_princess_flame_form",this.getLocation());
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_flame_princess_flame_form",this.getLocation());
                     ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,"flame_ult");
                     ExtensionCommands.createActorFX(this.parentExt,this.player.getLastJoinedRoom(),this.id,"flame_princess_ultimate_aoe",5000,"flame_e",true,"",true,false,this.team);
                     ExtensionCommands.scaleActor(parentExt,room,id,1.5f);
@@ -130,6 +132,7 @@ public class FlamePrincess extends UserActor {
 
         @Override
         protected void spellW() {
+            ExtensionCommands.playSound(parentExt,room,"","sfx_flame_princess_projectile_explode",this.dest);
             RoomHandler roomHandler = parentExt.getRoomHandler(player.getLastJoinedRoom().getId());
             List<Actor> affectedUsers = Champion.getActorsInRadius(roomHandler,this.dest,2).stream().filter(a -> a.getClass() == UserActor.class).collect(Collectors.toList());
             for(Actor u : affectedUsers){
@@ -187,6 +190,7 @@ public class FlamePrincess extends UserActor {
             handleSpellVamp(getSpellDamage(attackData));
             victim.damaged(FlamePrincess.this,getSpellDamage(attackData),attackData);
             //ExtensionCommands.moveActor(parentExt,player,this.id,this.location,this.location,this.speed,false);
+            ExtensionCommands.playSound(parentExt,room,"","sfx_flame_princess_cone_of_flame",victim.getLocation());
             ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_projectile_large_explosion",200,"flame_explosion",false,"",false,false,team);
             ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_cone_of_flames",300,"flame_cone",false,"",true,false,team);
             for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),Champion.extendLine(path,7f),4f)){
@@ -219,6 +223,7 @@ public class FlamePrincess extends UserActor {
         @Override
         public void run() {
             FlamePrincess.this.handleLifeSteal();
+            ExtensionCommands.playSound(parentExt,room,target.getId(),"sfx_flame_princess_passive_ignite",target.getLocation());
             target.damaged(FlamePrincess.this,(int)getPlayerStat("attackDamage"), parentExt.getAttackData(getAvatar(),"basicAttack"));
             if(FlamePrincess.this.passiveEnabled && (target.getClass() != Tower.class && target.getClass() != Base.class)){
                 FlamePrincess.this.passiveEnabled = false;

@@ -73,6 +73,13 @@ public class RoomHandler implements Runnable{
         mSecondsRan+=100;
         if(mSecondsRan % 1000 == 0){ // Handle every second
             try{
+                secondsRan++;
+                if(secondsRan == (60*7) + 30){
+                    ExtensionCommands.playSound(parentExt,room,"global","announcer/time_half",new Point2D.Float(0f,0f));
+                }else if(secondsRan == (60*13)){
+                    ExtensionCommands.playSound(parentExt,room,"global","announcer/time_low",new Point2D.Float(0f,0f));
+                    ExtensionCommands.playSound(parentExt,room,"music","music/music_time_low",new Point2D.Float(0f,0f));
+                }
                 if(room.getUserList().size() == 0) parentExt.stopScript(room.getId()); //If no one is in the room, stop running.
                 else{
                     handleAltars();
@@ -83,7 +90,7 @@ public class RoomHandler implements Runnable{
                     if(s.length()>3){
                         int spawnRate = 45; //Mob spawn rate
                         if(s.equalsIgnoreCase("keeoth")) spawnRate = 15;
-                        else if(s.equalsIgnoreCase("ooze")) spawnRate = 90;
+                        else if(s.equalsIgnoreCase("ooze")) spawnRate = 15;
                         if(spawns.getInt(s) == spawnRate){ //Mob timers will be set to 0 when killed or health when taken
                             spawnMonster(s);
                             spawns.putInt(s,spawns.getInt(s)+1);
@@ -102,7 +109,6 @@ public class RoomHandler implements Runnable{
                     }
                 }
                 handleCooldowns();
-                secondsRan++;
 
                 int minionWave = secondsRan/30;
                 if(minionWave != this.currentMinionWave){
@@ -198,7 +204,7 @@ public class RoomHandler implements Runnable{
                             Point2D healthLoc = getHealthLocation(getHealthNum(s));
                             ExtensionCommands.removeFx(parentExt,room,s+"_fx");
                             ExtensionCommands.createActorFX(parentExt,room,String.valueOf(u.getId()),"picked_up_health_cyclops",2000,s+"_fx2",true,"",false,false,team);
-                            ExtensionCommands.playSound(parentExt,u.getUser(),"sfx_health_picked_up",healthLoc);
+                            ExtensionCommands.playSound(parentExt,u.getRoom(),"","sfx_health_picked_up",healthLoc);
                             if(!u.hasTempStat("healthRegen")) u.changeHealth(100);
                             u.handleEffect("healthRegen",20d,5000,"cyclopsTears");
                             //Champion.giveBuff(parentExt,u.getUser(), Buff.HEALTH_PACK);
@@ -320,7 +326,7 @@ public class RoomHandler implements Runnable{
                     case "ooze":
                         x = MapData.L2_OOZE[0];
                         z = MapData.L2_OOZE[1];
-                        actor = "ooze_monster";
+                        actor = "goomonster";
                         campMonsters.add(new GooMonster(parentExt,room,MapData.L2_OOZE,actor));
                         break;
                 }
@@ -368,12 +374,18 @@ public class RoomHandler implements Runnable{
                 if(altarStatus[i]>0) altarChange[i]=-1;
                 else if(altarStatus[i]<0) altarChange[i]=1;
             }
-            if(Math.abs(altarStatus[i]) <= 5) altarStatus[i]+=altarChange[i];
+            int altarStat = Math.abs(altarStatus[i]);
+            if(altarStat <= 5) altarStatus[i]+=altarChange[i];
+            if(altarStat > 0 && altarStat < 6){
+                String sound = "sfx_altar_"+altarStat;
+                ExtensionCommands.playSound(parentExt,room,"",sound,getAltarLocation(i));
+            }
             int team = 2;
             if(altarStatus[i]>0) team = 0;
             else team = 1;
             String altarId = "altar_"+i;
             if(Math.abs(altarStatus[i]) >= 6 && altarStatus[i] != 10){
+                ExtensionCommands.playSound(parentExt,room,"","sfx_altar_locked",getAltarLocation(i));
                 altarStatus[i]=10; //Locks altar
                 if(i == 1) addScore(null,team,15);
                 else addScore(null,team,10);
@@ -435,15 +447,41 @@ public class RoomHandler implements Runnable{
         double dist = Math.sqrt(Math.pow(px-altar2_x,2) + Math.pow(pz-altar2_y,2));
         return dist<=2;
     }
+
+    private Point2D getAltarLocation(int altar){
+        double altar_x = 0d;
+        double altar_y = 0d;
+        if(altar == 0){
+            altar_x = MapData.L2_TOP_ALTAR[0];
+            altar_y = MapData.L2_TOP_ALTAR[1];
+        }else if(altar == 2){
+            altar_x = MapData.L2_BOT_ALTAR[0];
+            altar_y = MapData.L2_BOT_ALTAR[1];
+        }
+        return new Point2D.Double(altar_x,altar_y);
+    }
     public void addScore(UserActor earner,int team, int points){
         ISFSObject scoreObject = room.getVariable("score").getSFSObjectValue();
         int blueScore = scoreObject.getInt("blue");
         int purpleScore = scoreObject.getInt("purple");
-        if(team == 0) blueScore+=points;
-        else purpleScore+=points;
-        scoreObject.putInt("blue",blueScore);
-        scoreObject.putInt("purple",purpleScore);
-        ExtensionCommands.updateScores(this.parentExt,this.room,purpleScore,blueScore);
+        int newBlueScore = blueScore;
+        int newPurpleScore = purpleScore;
+        if(team == 1) newBlueScore+=points;
+        else newPurpleScore+=points;
+        scoreObject.putInt("blue",newBlueScore);
+        scoreObject.putInt("purple",newPurpleScore);
+        ExtensionCommands.updateScores(this.parentExt,this.room,newPurpleScore,newBlueScore);
+        if(newBlueScore > newPurpleScore && blueScore <= purpleScore){
+            for(UserActor player : this.players){
+                if(player.getTeam() == 1) ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/gained_point_lead",new Point2D.Float(0f,0f));
+                else ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/lost_point_lead",new Point2D.Float(0f,0f));
+            }
+        }else if(newPurpleScore > newBlueScore && blueScore >= purpleScore){
+            for(UserActor player : this.players){
+                if(player.getTeam() == 0) ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/gained_point_lead",new Point2D.Float(0f,0f));
+                else ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/lost_point_lead",new Point2D.Float(0f,0f));
+            }
+        }
         if(earner != null){
             earner.addGameStat("score",points);
         }
@@ -699,6 +737,13 @@ public class RoomHandler implements Runnable{
             ExtensionCommands.gameOver(parentExt,this.room,winningTeam);
             MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
             for(UserActor ua : this.players){
+                if(ua.getTeam() == winningTeam){
+                    ExtensionCommands.playSound(parentExt,ua.getUser(),"global","announcer/victory");
+                    ExtensionCommands.playSound(parentExt,ua.getUser(),"music","music/music_victory");
+                }else{
+                    ExtensionCommands.playSound(parentExt,ua.getUser(),"global","announcer/defeat");
+                    ExtensionCommands.playSound(parentExt,ua.getUser(),"music","music/music_defeat");
+                }
                 String tegID = (String) ua.getUser().getSession().getProperty("tegid");
                 Document data = playerData.find(eq("user.TEGid",tegID)).first();
                 if(data != null){ //TODO: Complete all of these values

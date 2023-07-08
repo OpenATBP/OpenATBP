@@ -14,6 +14,7 @@ import java.awt.geom.Point2D;
 
 public class Base extends Actor {
     private boolean unlocked = false;
+    private long lastHit = -1;
 
     public Base(ATBPExtension parentExt, Room room, int team){
         this.currentHealth = 3500;
@@ -41,6 +42,12 @@ public class Base extends Actor {
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         if(!this.unlocked) return false;
         this.currentHealth-=damage;
+        if(System.currentTimeMillis() - this.lastHit >= 15000){
+            this.lastHit = System.currentTimeMillis();
+            for(UserActor ua : parentExt.getRoomHandler(room.getId()).getPlayers()){
+                if(ua.getTeam() == this.team) ExtensionCommands.playSound(parentExt, ua.getUser(), "global", "announcer/base_under_attack",new Point2D.Float(0,0));
+            }
+        }
         int oppositeTeam = 0;
         if(this.team == 0) oppositeTeam = 1;
         if(this.currentHealth <= 0) this.parentExt.getRoomHandler(this.room.getId()).gameOver(oppositeTeam);

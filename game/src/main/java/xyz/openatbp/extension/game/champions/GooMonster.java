@@ -73,7 +73,12 @@ public class GooMonster extends Monster {
         if(!this.dead && a.getActorType() == ActorType.PLAYER){
             UserActor ua = (UserActor) a;
             for(UserActor u : parentExt.getRoomHandler(this.room.getId()).getPlayers()){
-                if(u.getTeam() == ua.getTeam()) u.handleEffect("speed",u.getPlayerStat("speed")*0.1d,60000,"jungle_buff_goo");
+                if(u.getTeam() == ua.getTeam()){
+                    u.handleEffect("speed",u.getPlayerStat("speed")*0.1d,60000,"jungle_buff_goo");
+                    ExtensionCommands.playSound(parentExt,u.getUser(),"global","announcer/you_goomonster");
+                }else{
+                    ExtensionCommands.playSound(parentExt,u.getUser(),"global","announcer/enemy_goomonster");
+                }
             }
         }
         super.die(a);
@@ -85,6 +90,7 @@ public class GooMonster extends Monster {
         this.canMove = false;
         if(!this.usingAbility && this.abilityCooldown <= 0){
             this.usingAbility = true;
+            ExtensionCommands.playSound(parentExt,room,id,"sfx/sfx_goo_monster_growl",this.location);
             ExtensionCommands.createActorFX(parentExt,room,id,"goo_monster_spell_glob",1250,id+"_glob",true,"fxNode",true,false,team);
             ExtensionCommands.actorAnimate(parentExt,room,id,"spell",1250,false);
             Runnable oozeAttack = () -> {
@@ -94,6 +100,7 @@ public class GooMonster extends Monster {
                 usingAbility = false;
                 canMove = true;
                 puddleStarted = System.currentTimeMillis();
+                ExtensionCommands.playSound(parentExt,room,"","sfx/sfx_goo_monster_puddle",puddleLocation);
                 ExtensionCommands.createWorldFX(parentExt,room,id,"goo_monster_puddle",id+"_puddle",3000,(float)puddleLocation.getX(),(float)puddleLocation.getY(),false,team,0f);
             };
             SmartFoxServer.getInstance().getTaskScheduler().schedule(oozeAttack,1250, TimeUnit.MILLISECONDS);

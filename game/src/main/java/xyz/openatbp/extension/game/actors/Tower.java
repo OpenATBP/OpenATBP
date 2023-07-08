@@ -52,7 +52,10 @@ public class Tower extends Actor {
         this.changeHealth(this.getMitigatedDamage(damage,this.getAttackType(attackData),a)*-1);
         boolean notify = System.currentTimeMillis()-this.lastHit >= 1000*5;
         if(notify) ExtensionCommands.towerAttacked(parentExt,this.room,this.getTowerNum());
-        if(this.currentHealth <= 0) this.die(a);
+        if(this.currentHealth <= 0){
+            this.destroyed = true;
+            this.die(a);
+        }
         if(notify) this.triggerNotification();
         return false;
     }
@@ -78,7 +81,6 @@ public class Tower extends Actor {
                 UserActor ua = (UserActor) a;
                 ua.addGameStat("towers",1);
             }
-            this.destroyed = true;
             ExtensionCommands.towerDown(parentExt,this.room, this.getTowerNum());
             ExtensionCommands.knockOutActor(parentExt,this.room,this.id,a.getId(),100);
             ExtensionCommands.destroyActor(parentExt,this.room,this.id);
@@ -94,7 +96,26 @@ public class Tower extends Actor {
                 if(this.target != null && this.target.getActorType() == ActorType.PLAYER) ExtensionCommands.removeFx(parentExt,u,this.id+"_aggro");
                 this.parentExt.getRoomHandler(this.room.getId()).addScore(null,a.getTeam(),50);
             }
-            if(this.getTowerNum() == 0 || this.getTowerNum() == 3) parentExt.getRoomHandler(room.getId()).getOpposingTeamBase(this.team).unlock();
+            if(this.getTowerNum() == 0 || this.getTowerNum() == 3){
+                parentExt.getRoomHandler(room.getId()).getOpposingTeamBase(this.team).unlock();
+                for(UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
+                    if(ua.getTeam() == this.team){
+                        ExtensionCommands.playSound(parentExt,ua.getUser(),"global","announcer/base_tower_down");
+                    }else{
+                        ExtensionCommands.playSound(parentExt,ua.getUser(),"global","announcer/you_destroyed_tower");
+                    }
+                    ExtensionCommands.playSound(parentExt,ua.getUser(),"music","music/music_towerdown");
+                }
+            }else{
+                for(UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
+                    if(ua.getTeam() == this.team){
+                        ExtensionCommands.playSound(parentExt,ua.getUser(),"global","announcer/you_destroyed_tower");
+                        ExtensionCommands.playSound(parentExt,ua.getUser(),"global","announcer/your_tower_down");
+                    }else{
+                        ExtensionCommands.playSound(parentExt,ua.getUser(),"global","announcer/you_destroyed_tower");
+                    }
+                }
+            }
         }
     }
 
@@ -203,7 +224,7 @@ public class Tower extends Actor {
     public void targetPlayer(UserActor user){
         ExtensionCommands.setTarget(this.parentExt,user.getUser(),this.id,user.getId());
         ExtensionCommands.createWorldFX(this.parentExt, user.getUser(),user.getId(),"tower_danger_alert",this.id+"_aggro",10*60*1000,(float) this.location.getX(),(float)this.location.getY(),true,this.team,0f);
-        ExtensionCommands.playSound(this.parentExt,user.getUser(),"sfx_turret_has_you_targeted",this.location);
+        ExtensionCommands.playSound(this.parentExt,user.getUser(),user.getId(),"sfx_turret_has_you_targeted",this.location);
     }
 
 }

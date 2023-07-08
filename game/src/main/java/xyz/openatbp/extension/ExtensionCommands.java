@@ -261,6 +261,7 @@ public class ExtensionCommands {
      * @param deathTime - Respawn time for the knocked out actor
      */
     public static void knockOutActor(ATBPExtension parentExt, Room room, String id, String attackerId, int deathTime){
+        System.out.println(attackerId + " knocked out " + id);
         for(User u : room.getUserList()){
             ISFSObject data = new SFSObject();
             data.putUtfString("id",id);
@@ -413,26 +414,37 @@ public class ExtensionCommands {
      *
      * @param name - String of sound effect name
      * @param source - Point2D of where the sound is coming from
+     * @param id - global; music; null; or player id
      */
-    public static void playSound(ATBPExtension parentExt, ArrayList<User> users, String name, Point2D source){
-        for(User u : users){
+    public static void playSound(ATBPExtension parentExt, Room room, String id, String name, Point2D source){
+        if(id == null) id = "";
+        for(User u : room.getUserList()){
             ISFSObject data = new SFSObject();
             data.putUtfString("name",name);
-            data.putUtfString("id", String.valueOf(u.getId()));
+            data.putUtfString("id", id);
             data.putFloat("x",(float)source.getX());
             data.putFloat("y",0f);
             data.putFloat("z",(float)source.getY());
             parentExt.send("cmd_play_sound",data,u);
         }
     }
-
-    public static void playSound(ATBPExtension parentExt, User u, String name, Point2D source){
+    public static void playSound(ATBPExtension parentExt, User u, String id, String name, Point2D source){
         ISFSObject data = new SFSObject();
         data.putUtfString("name",name);
-        data.putUtfString("id", String.valueOf(u.getId()));
+        data.putUtfString("id", id);
         data.putFloat("x",(float)source.getX());
         data.putFloat("y",0f);
         data.putFloat("z",(float)source.getY());
+        parentExt.send("cmd_play_sound",data,u);
+    }
+
+    public static void playSound(ATBPExtension parentExt, User u, String id, String name){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("name",name);
+        data.putUtfString("id", id);
+        data.putFloat("x",0f);
+        data.putFloat("y",0f);
+        data.putFloat("z",0f);
         parentExt.send("cmd_play_sound",data,u);
     }
 

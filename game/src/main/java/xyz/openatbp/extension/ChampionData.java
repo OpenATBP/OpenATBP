@@ -453,4 +453,61 @@ public class ChampionData {
         double eloGain = 20*(result-myProb);
         return (int) Math.round(eloGain);
     }
+
+    public static String getKOSoundEffect(boolean enemy, boolean ally, int multiKill, int killingSpree){
+        if(multiKill > 1){
+            String koSound = "announcer/ko_";
+            switch(multiKill){
+                case 2:
+                    koSound+="double";
+                    break;
+                case 3:
+                    koSound+="triple";
+                    break;
+                case 4:
+                    koSound+="quad";
+                    break;
+                default:
+                    koSound+="penta";
+                    break;
+            }
+            if(ally) koSound+="_ally";
+            else if(enemy) koSound+="_enemy";
+            return koSound;
+        }else if(killingSpree > 1){
+            int spreeToAdd = killingSpree - 1;
+            String koSound = "announcer/kill"+spreeToAdd+"_";
+            if(!enemy && !ally) koSound+="you_";
+            else if(enemy) koSound+="enemy_";
+            else koSound+="ally_";
+            switch(spreeToAdd){
+                case 1:
+                    koSound+="is_awesome";
+                    break;
+                case 2:
+                    koSound+="is_math";
+                    break;
+                case 3:
+                    koSound+="is_spicy";
+                    break;
+                case 4:
+                    koSound+="is_tops";
+                    break;
+                case 5:
+                    koSound+="is_animal";
+                    break;
+                case 6:
+                    koSound+="is_god";
+                    break;
+                default:
+                    koSound+="is_demon";
+                    break;
+            }
+            return koSound;
+        }else{
+            if(!enemy && !ally) return "announcer/you_defeated_enemy";
+            if(enemy) return "announcer/ally_defeated";
+            return "announcer/ally_defeated_enemy";
+        }
+    }
 }

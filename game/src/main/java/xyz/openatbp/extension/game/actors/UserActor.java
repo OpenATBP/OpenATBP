@@ -212,7 +212,7 @@ public class UserActor extends Actor {
                         UserActor ua = (UserActor) a;
                         users.add(ua.getUser());
                     }
-                    ExtensionCommands.playSound(this.parentExt,users,"sfx_junk_battle_moon",this.getRelativePoint(false));
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_junk_battle_moon",this.getRelativePoint(false));
                     return false;
                 }
             }else if(moonActivated && type == AttackType.PHYSICAL){
@@ -222,7 +222,7 @@ public class UserActor extends Actor {
                     UserActor ua = (UserActor) a;
                     users.add(ua.getUser());
                 }
-                ExtensionCommands.playSound(this.parentExt,users,"sfx_junk_battle_moon",this.getRelativePoint(false));
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_junk_battle_moon",this.getRelativePoint(false));
                 return false;
             }
             int newDamage = this.getMitigatedDamage(damage,type,a);
@@ -315,6 +315,13 @@ public class UserActor extends Actor {
                 ua.increaseStat("kills",1);
                 if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(5);
                 this.parentExt.getRoomHandler(this.room.getId()).addScore(ua,ua.getTeam(),25);
+            }else{
+                for(UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
+                    String sound = "announcer/you_are_defeated";
+                    if(ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) sound = "announcer/ally_defeated";
+                    else if(ua.getTeam() != this.team) sound = "announcer/enemy_defeated";
+                    ExtensionCommands.playSound(parentExt,ua.getUser(),"global",sound,new Point2D.Float(0,0));
+                }
             }
             Set<String> assistIds = new HashSet<>(2);
             for(Actor actor : this.aggressors.keySet()){
@@ -368,6 +375,18 @@ public class UserActor extends Actor {
             this.killingSpree+=num;
             this.multiKill++;
             this.lastKilled = System.currentTimeMillis();
+            if(this.multiKill > 1){
+                for(UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
+                    if(ua.getTeam() == this.team){
+                        boolean ally = !ua.getId().equalsIgnoreCase(this.id);
+                        String sound = ChampionData.getKOSoundEffect(false,ally,this.multiKill,this.killingSpree);
+                        ExtensionCommands.playSound(parentExt,ua.getUser(),"global",sound,new Point2D.Float(0,0));
+                    }else{
+                        String sound = ChampionData.getKOSoundEffect(true,false,this.multiKill,this.killingSpree);
+                        ExtensionCommands.playSound(parentExt,ua.getUser(),"global",sound,new Point2D.Float(0,0));
+                    }
+                }
+            }
         }
         this.stats.put(key,this.stats.get(key)+num);
         ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,key,this.getPlayerStat(key));
@@ -548,6 +567,7 @@ public class UserActor extends Actor {
         this.timeTraveled = 0f;
         this.setHealth((int) this.maxHealth, (int) this.maxHealth);
         this.dead = false;
+        ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx/sfx_champion_respawn",this.location);
         ExtensionCommands.snapActor(this.parentExt,this.room,this.id,this.location,respawnPoint,false);
         ExtensionCommands.respawnActor(this.parentExt,this.room,this.id);
         ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_speed",5000,this.id+"_respawnSpeed",true,"Bip01 Footsteps",true,false,this.team);
@@ -569,6 +589,7 @@ public class UserActor extends Actor {
             if(level != this.level){
                 this.level = level;
                 updateData.put("level", (double) this.level);
+                ExtensionCommands.playSound(parentExt,this.player,this.id,"sfx_level_up_beam");
                 ChampionData.levelUpCharacter(this.parentExt,this);
 
             }

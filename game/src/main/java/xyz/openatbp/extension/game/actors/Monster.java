@@ -72,7 +72,7 @@ public class Monster extends Actor {
             if(this.location.distance(this.startingLocation) > 0.01f && this.state == AggroState.PASSIVE){ //Prevents damage when walking back from being de-aggro
                 if(a.getActorType() == ActorType.PLAYER){ //Plays attack-miss sound when trying to damage invulnerable monster
                     UserActor player = (UserActor) a;
-                    ExtensionCommands.playSound(parentExt,player.getUser(),"sfx_attack_miss",this.location);
+                    ExtensionCommands.playSound(parentExt,player.getUser(),player.getId(),"sfx_attack_miss",this.location);
                 }
                 return false;
             }

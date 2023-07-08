@@ -566,4 +566,9 @@ public class Minion extends Actor {
     public void setTarget(Actor a) {
         this.setTarget(parentExt,a.getId());
     }
+
+    @Override
+    public String getPortrait(){
+        return this.getAvatar();
+    }
 }

@@ -161,7 +161,8 @@ public class GameManager {
             ISFSObject data = new SFSObject();
             parentExt.send("cmd_match_starting", data, u); //Starts the game for everyone
         }
-
+        ExtensionCommands.playSound(parentExt,room,"music","music/music_main2",new Point2D.Float(0,0));
+        ExtensionCommands.playSound(parentExt,room,"global","announcer/welcome",new Point2D.Float(0,0));
     }
 
     private static void setRoomVariables(Room room) throws SFSVariableException {
