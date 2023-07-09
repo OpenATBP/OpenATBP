@@ -93,10 +93,12 @@ public class GameManager {
         int purpleNum = 0;
         initializeMap(room,parentExt);
         // ExtensionCommands.addUser(parentExt,room,101,"Fake user 1","finn",0,"finn",backpack,0);
-        ExtensionCommands.createActor(parentExt,room,"101","finn",new Point2D.Float((float) (MapData.PURPLE_SPAWNS[1].getX()*-1), (float) MapData.PURPLE_SPAWNS[1].getY()),0f,1);
-        ExtensionCommands.createActor(parentExt,room,"102","jake",new Point2D.Float((float) (MapData.PURPLE_SPAWNS[2].getX()*-1),(float) MapData.PURPLE_SPAWNS[2].getY()),0f,1);
-        ExtensionCommands.createActor(parentExt,room,"103","magicman",MapData.PURPLE_SPAWNS[1], 0f,0);
-        ExtensionCommands.createActor(parentExt,room,"104","iceking",MapData.PURPLE_SPAWNS[2],0f,0);
+        if(room.getUserList().size() < 6){
+            ExtensionCommands.createActor(parentExt,room,"101","finn",new Point2D.Float((float) (MapData.PURPLE_SPAWNS[1].getX()*-1), (float) MapData.PURPLE_SPAWNS[1].getY()),0f,1);
+            ExtensionCommands.createActor(parentExt,room,"102","jake",new Point2D.Float((float) (MapData.PURPLE_SPAWNS[2].getX()*-1),(float) MapData.PURPLE_SPAWNS[2].getY()),0f,1);
+            ExtensionCommands.createActor(parentExt,room,"103","magicman",MapData.PURPLE_SPAWNS[1], 0f,0);
+            ExtensionCommands.createActor(parentExt,room,"104","iceking",MapData.PURPLE_SPAWNS[2],0f,0);
+        }
 
         for(User u : room.getUserList()){
             ISFSObject playerInfo = u.getVariable("player").getSFSObjectValue();
