@@ -41,7 +41,6 @@ public class Base extends Actor {
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         if(!this.unlocked) return false;
-        this.currentHealth-=damage;
         if(System.currentTimeMillis() - this.lastHit >= 15000){
             this.lastHit = System.currentTimeMillis();
             for(UserActor ua : parentExt.getRoomHandler(room.getId()).getPlayers()){

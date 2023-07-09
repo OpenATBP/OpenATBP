@@ -108,6 +108,8 @@ class ClientWorker implements Runnable {
                         queues.add(new Queue(requestingPlayer,payload.get("act").asText(),payload.get("vs").asBoolean(),true)); //Adds a new queue that is a premade
                     }else if(request.getType().equalsIgnoreCase("join_team")){ //Called when accepting an invite
                         Player requestingPlayer = this.findPlayer(socket.getRemoteSocketAddress().toString());
+                        assert requestingPlayer != null;
+                        requestingPlayer.setTeam(request.getPayload().get("name").asText());
                         for(int i = 0; i < queues.size(); i++){
                             if(queues.get(i).getPartyLeader().getUsername().equalsIgnoreCase(request.getPayload().get("name").asText())){ //Finds queue/team correlated with the invite request
                                 request.send(requestingPlayer.getOutputStream(), "invite_verified", RequestHandler.handleInviteAccept());

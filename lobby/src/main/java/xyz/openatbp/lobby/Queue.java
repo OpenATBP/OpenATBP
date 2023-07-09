@@ -22,22 +22,20 @@ public class Queue {
     }
 
     public Queue(ArrayList<Player> players, String type, boolean pvp){ //Called when a new queue is created by a team joining matchmaking
-        this.players = new ArrayList<Player>();
+        this.players = new ArrayList<>();
         this.inGame = false;
-        for(int i = 0; i < players.size(); i++){
-            this.players.add(players.get(i));
-        }
+        this.players.addAll(players);
         this.type = type;
         this.pvp = pvp;
         this.inGame = false;
         this.premade = false;
-        if(players.size() == 2){
+        if(players.size() == 6){
             this.queueFull();
         }
     }
 
     public Queue(Player p, String type, boolean pvp){ //Called when a new queue is created by quick match
-        this.players = new ArrayList<Player>();
+        this.players = new ArrayList<>();
         this.players.add(p);
         this.inGame = false;
         this.type = type;
@@ -54,7 +52,7 @@ public class Queue {
     }
 
     public Queue(Player p, String type, boolean pvp, boolean team){ //Called when a new team is created
-        this.players = new ArrayList<Player>();
+        this.players = new ArrayList<>();
         this.players.add(p);
         this.inGame = false;
         this.type = type;
@@ -98,7 +96,8 @@ public class Queue {
         System.out.println("Add player - Queue size: " + this.getSize());
         if(!premade){ //If it's not team-building, updates the queue status to clients
             this.queueUpdate();
-            if(players.size() == 2) this.queueFull(); //Queue is full
+            if(players.size() == 6) this.queueFull(); //Queue is full
+            else if(players.size() == 2 && this.type.contains("3p")) this.queueFull();
         }else{
             this.updatePremade(); //Updates premade team when user joins
         }
@@ -160,7 +159,7 @@ public class Queue {
     public ArrayNode getPlayerObjects(String team){
         ArrayNode playerObjs = objectMapper.createArrayNode();
         for(Player p : this.players){
-            if(p.getTeam().equalsIgnoreCase(team)){
+            if(p.getTeam() != null && p.getTeam().equalsIgnoreCase(team)){
                 ObjectNode playerObj = objectMapper.createObjectNode();
                 playerObj.put("name", p.getName());
                 playerObj.put("player", p.getPid());

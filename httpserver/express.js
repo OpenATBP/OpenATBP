@@ -245,6 +245,13 @@ client.connect(err => {
     }).catch(console.error);
   });
 
+  app.post('/service/friend/request', (req,res) => {
+    console.log(req.body);
+    postRequest.handleFriendRequest(req.query.authToken,req.body.toUserId,collection).then((dat) => {
+      res.send(dat);
+    }).catch(console.error);
+  });
+
   app.listen(config.httpserver.port, () => {
     console.log(`App running on port ${config.httpserver.port}!`);
     if (config.sockpol.enable) {

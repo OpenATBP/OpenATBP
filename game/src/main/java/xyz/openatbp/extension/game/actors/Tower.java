@@ -53,7 +53,6 @@ public class Tower extends Actor {
         boolean notify = System.currentTimeMillis()-this.lastHit >= 1000*5;
         if(notify) ExtensionCommands.towerAttacked(parentExt,this.room,this.getTowerNum());
         if(this.currentHealth <= 0){
-            this.destroyed = true;
             this.die(a);
         }
         if(notify) this.triggerNotification();
@@ -76,7 +75,9 @@ public class Tower extends Actor {
 
     @Override
     public void die(Actor a) {
+        this.currentHealth = 0;
         if(!this.destroyed){
+            this.destroyed = true;
             if(a.getActorType() == ActorType.PLAYER){
                 UserActor ua = (UserActor) a;
                 ua.addGameStat("towers",1);

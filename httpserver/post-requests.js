@@ -46,5 +46,14 @@ module.exports = {
         reject(er);
       });
     });
+  },
+  handleFriendRequest: function(username, newFriend, collection){
+    return new Promise(function(resolve, reject) {
+      collection.updateOne({"authToken":username},{ $push: {friends: newFriend}}).then(() => {
+        resolve(JSON.stringify({}));
+      }).catch((err) => {
+        reject(err);
+      });
+    });
   }
 };

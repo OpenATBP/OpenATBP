@@ -89,8 +89,8 @@ public class RoomHandler implements Runnable{
                 for(String s : GameManager.SPAWNS){ //Check all mob/health spawns for how long it's been since dead
                     if(s.length()>3){
                         int spawnRate = 45; //Mob spawn rate
-                        if(s.equalsIgnoreCase("keeoth")) spawnRate = 15;
-                        else if(s.equalsIgnoreCase("ooze")) spawnRate = 15;
+                        if(s.equalsIgnoreCase("keeoth")) spawnRate = 120;
+                        else if(s.equalsIgnoreCase("ooze")) spawnRate = 90;
                         if(spawns.getInt(s) == spawnRate){ //Mob timers will be set to 0 when killed or health when taken
                             spawnMonster(s);
                             spawns.putInt(s,spawns.getInt(s)+1);

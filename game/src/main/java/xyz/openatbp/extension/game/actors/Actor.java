@@ -372,7 +372,7 @@ public abstract class Actor {
     }
 
     public String getPortrait(){
-        return this.avatar;
+        return this.getAvatar();
     }
 
     public abstract void setTarget(Actor a);

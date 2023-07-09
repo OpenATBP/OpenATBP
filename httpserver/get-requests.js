@@ -63,7 +63,7 @@ module.exports = {
               friends.push({
                 user_id: name,
                 name: p.name,
-                avatar: "lich.png",
+                avatar: "",
                 options: {
                   location: p.location,
                   game: "ATBP",
