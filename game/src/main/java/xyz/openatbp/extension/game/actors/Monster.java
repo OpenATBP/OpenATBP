@@ -96,7 +96,6 @@ public class Monster extends Actor {
                     }
                 }
             }
-            if(returnVal) this.die(a);
             return returnVal;
         }catch(Exception e){
             e.printStackTrace();
@@ -136,6 +135,11 @@ public class Monster extends Actor {
             }
         }
         return returnVal;
+    }
+
+    @Override
+    public void handleKill(Actor a, JsonNode attackData) {
+
     }
 
     @Override
@@ -191,6 +195,7 @@ public class Monster extends Actor {
 
     @Override
     public void update(int msRan) {
+        this.handleDamageQueue();
         if(this.dead) return;
         if(msRan % 1000*60 == 0){ //Every second it checks average player level and scales accordingly
             int averagePLevel = parentExt.getRoomHandler(this.room.getId()).getAveragePlayerLevel();

@@ -13,9 +13,7 @@ import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 
 import java.awt.geom.Point2D;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public abstract class Actor {
@@ -40,6 +38,7 @@ public abstract class Actor {
     protected Map<String, Double> stats;
     protected Map<String, Double> tempStats = new HashMap<>();
     protected Map<String, Champion.FinalBuffHandler> buffHandlers = new HashMap<>();
+    protected List<ISFSObject> damageQueue = new ArrayList<>();
 
 
     public double getPHealth(){
@@ -166,7 +165,7 @@ public abstract class Actor {
                     UserActor ua = (UserActor) this;
                     ExtensionCommands.addStatusIcon(this.parentExt,ua.getUser(),"altar_buff_offense","altar2_description","icon_altar_attack",1000*60);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"altar_buff_offense",duration,this.id+"_"+fxId,true,"Bip01",true,true, ua.getTeam());
-                    buffHandler = new Champion.FinalBuffHandler(this,stat,delta,"altar_buff_offense");
+                    buffHandler = new Champion.FinalBuffHandler(this,stat,delta,fxId);
                 }
                 break;
             case "armor":
@@ -174,7 +173,7 @@ public abstract class Actor {
                     UserActor ua = (UserActor) this;
                     ExtensionCommands.addStatusIcon(this.parentExt,ua.getUser(),"altar_buff_defense","altar1_description","icon_altar_armor",1000*60);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"altar_buff_defense",duration,this.id+"_"+fxId,true,"Bip01",true,true, ua.getTeam());
-                    buffHandler = new Champion.FinalBuffHandler(this,stat,delta,"altar_buff_defense");
+                    buffHandler = new Champion.FinalBuffHandler(this,stat,delta,fxId);
                 }
                 break;
             case "lifeSteal":
@@ -251,6 +250,9 @@ public abstract class Actor {
     }
     public String getDisplayName(){ return this.displayName;}
 
+    public abstract void handleKill(Actor a, JsonNode attackData);
+
+    @Deprecated
     public boolean damaged(Actor a, int damage, JsonNode attackData){
         this.currentHealth-=damage;
         if(this.currentHealth <= 0) this.currentHealth = 0;
@@ -261,6 +263,29 @@ public abstract class Actor {
         updateData.putInt("maxHealth", (int) this.maxHealth);
         ExtensionCommands.updateActorData(parentExt,this.room,updateData);
         return this.currentHealth<=0;
+    }
+
+    public void addToDamageQueue(Actor attacker, double damage, JsonNode attackData){
+        ISFSObject data = new SFSObject();
+        data.putClass("attacker",attacker);
+        data.putDouble("damage",damage);
+        data.putClass("attackData",attackData);
+        this.damageQueue.add(data);
+    }
+
+    public void handleDamageQueue(){
+        if(this.currentHealth <= 0) return;
+        for(ISFSObject data : this.damageQueue){
+            Actor damager = (Actor) data.getClass("attacker");
+            double damage = data.getDouble("damage");
+            JsonNode attackData = (JsonNode) data.getClass("attackData");
+            if(this.damaged(damager,(int)damage,attackData)){
+                damager.handleKill(this,attackData);
+                this.die(damager);
+                return;
+            }
+        }
+        this.damageQueue = new ArrayList<>();
     }
     public abstract void attack(Actor a);
     public abstract void die(Actor a);

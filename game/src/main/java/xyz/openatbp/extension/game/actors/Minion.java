@@ -303,6 +303,11 @@ public class Minion extends Actor {
     }
 
     @Override
+    public void handleKill(Actor a, JsonNode attackData) {
+
+    }
+
+    @Override
     public void attack(Actor a){
         if(attackCooldown == 0 && this.state != AggroState.MOVING){
             this.stopMoving(parentExt);
@@ -348,6 +353,8 @@ public class Minion extends Actor {
 
     @Override
     public void update(int msRan) {
+        this.handleDamageQueue();
+        if(this.dead) return;
         this.location = getRelativePoint();
         if(this.attackCooldown > 0) this.reduceAttackCooldown();
         RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getId());
@@ -482,12 +489,8 @@ public class Minion extends Actor {
             int newDamage = this.getMitigatedDamage(damage,type,a);
             if(a.getActorType() == ActorType.PLAYER) this.addDamageGameStat((UserActor) a,newDamage,type);
             this.changeHealth(newDamage*-1);
-            if(currentHealth <= 0){ //Minion dies
-                this.die(a);
-                return true;
-            }else{
-                return false;
-            }
+            //Minion dies
+            return currentHealth <= 0;
         }catch(Exception e){
             e.printStackTrace();
             return false;

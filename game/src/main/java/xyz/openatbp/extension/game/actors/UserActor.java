@@ -247,7 +247,6 @@ public class UserActor extends Actor {
                     }
                 }
                 this.dead = true;
-                this.die(a);
                 return true;
             }
         }catch(Exception e){
@@ -339,6 +338,11 @@ public class UserActor extends Actor {
             this.originalLocation = respawnPoint;
             this.destination = respawnPoint;
             this.timeTraveled = 0f;
+
+            for(String buff : this.buffHandlers.keySet()){
+                this.buffHandlers.get(buff).cancel(this.getTempStat(buff));
+            }
+            this.buffHandlers = new HashMap<>();
             this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,assistIds,50); //TODO: Not sure if this is the correct xp value
         }catch(Exception e){
             e.printStackTrace();
@@ -402,6 +406,7 @@ public class UserActor extends Actor {
 
     @Override
     public void update(int msRan) {
+        this.handleDamageQueue();
         if(this.dead) return;
         float x = (float) this.getOriginalLocation().getX();
         float z = (float) this.getOriginalLocation().getY();
@@ -421,15 +426,6 @@ public class UserActor extends Actor {
                 ExtensionCommands.changeBrush(parentExt,room,this.id, parentExt.getBrushNum(this.location));
                 this.setState(ActorState.BRUSH, true);
                 this.setState(ActorState.REVEALED, false);
-            }else{
-                /*
-                if(parentExt.isBrushOccupied(parentExt.getRoomHandler(room.getId()),this)){
-                    if(!this.states.get(ActorState.REVEALED)) this.setState(ActorState.REVEALED, true);
-                }else if(this.states.get(ActorState.REVEALED)){
-                    this.setState(ActorState.REVEALED, false);
-                }
-
-                 */
             }
         }else{
             if(this.states.get(ActorState.BRUSH)){
@@ -460,7 +456,13 @@ public class UserActor extends Actor {
         }else{
             if(this.target != null){
                 System.out.println("Target: " + this.target.getId());
-                if(this.target.getHealth() <= 0) this.target = null;
+                if(this.target.getHealth() <= 0){
+                    this.target = null;
+                    if(this.currentAutoAttack != null){
+                        this.currentAutoAttack.cancel(true);
+                        this.currentAutoAttack = null;
+                    }
+                }
             }
         }
         if(msRan % 1000 == 0){
@@ -478,10 +480,10 @@ public class UserActor extends Actor {
                         UserActor enemyFP = this.parentExt.getRoomHandler(this.room.getId()).getEnemyCharacter("flame",this.team);
                         JsonNode attackData = this.parentExt.getAttackData("flame","spell2");
                         int damage = (int) (50 + (enemyFP.getPlayerStat("spellDamage"))*0.3);
-                        if(a.getActorType() != ActorType.PLAYER && a.getActorType() != ActorType.TOWER) a.damaged(enemyFP,damage,attackData);
+                        if(a.getActorType() != ActorType.PLAYER && a.getActorType() != ActorType.TOWER) a.addToDamageQueue(enemyFP,damage,attackData);
                         else if(a.getActorType() == ActorType.PLAYER){
                             UserActor ua = (UserActor) a;
-                            ua.damaged(enemyFP,damage,attackData);
+                            ua.addToDamageQueue(enemyFP,damage,attackData);
                         }
                     }
                 }
@@ -727,6 +729,11 @@ public class UserActor extends Actor {
             if(this.dcBuff == 2) return super.getPlayerStat(stat) * 1.2f;
         }
         return super.getPlayerStat(stat);
+    }
+
+    @Override
+    public void handleKill(Actor a, JsonNode attackData) {
+
     }
 
     public boolean getState(ActorState state){

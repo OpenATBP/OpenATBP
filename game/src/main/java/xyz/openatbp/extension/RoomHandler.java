@@ -169,6 +169,9 @@ public class RoomHandler implements Runnable{
                 g.update(mSecondsRan);
             }
             towers.removeIf(t -> (t.getHealth()<=0));
+
+            bases[0].update(mSecondsRan);
+            bases[1].update(mSecondsRan);
             if(this.room.getUserList().size() == 0) parentExt.stopScript(this.room.getId());
         }catch(Exception e){
             e.printStackTrace();

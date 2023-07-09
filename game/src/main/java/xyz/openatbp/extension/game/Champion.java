@@ -368,6 +368,7 @@ public class Champion {
                 if(this.attack.contains("basic")) ua.handleLifeSteal();
                 else if(this.attack.contains("spell")) ua.handleSpellVamp(this.damage);
             }
+            /*
             if(this.target.getActorType() == ActorType.PLAYER){
                 UserActor user = (UserActor) this.target;
                 if(user.damaged(attacker,damage,attackData) && this.attacker.getActorType() == ActorType.TOWER){
@@ -379,7 +380,10 @@ public class Champion {
                 Tower t = (Tower) attacker;
                 t.resetTarget(target);
             }
+
+             */
             if(attacker.getActorType() == ActorType.MONSTER && !attacker.getId().contains("_")) attacker.setCanMove(true);
+            this.target.addToDamageQueue(this.attacker,this.damage,attackData);
         }
     }
 
@@ -419,6 +423,7 @@ public class Champion {
         long started;
         String fxName;
         boolean isState = false;
+        boolean cancelled = false;
 
         public FinalBuffHandler(Actor a, ActorState state, double delta){
             this.a = a;
@@ -455,6 +460,9 @@ public class Champion {
 
         @Override
         public void run() {
+            if(this.cancelled){
+                return;
+            }
             if(!this.isState){
                 if(this.duration > 0){
                     System.out.println("Remaining duration = " + this.duration + " for " + a.getId());
@@ -543,7 +551,8 @@ public class Champion {
             System.out.println("Handling icons: " + this.fxName);
             if(this.fxName.contains("altar")){
                 UserActor ua = (UserActor) this.a;
-                String altarType = this.fxName.split("_")[2];
+                String altarType = this.fxName.split("_")[0];
+                if(altarType.equalsIgnoreCase("attack")) altarType = "offense";
                 ExtensionCommands.removeStatusIcon(ua.getParentExt(),ua.getUser(),"altar_buff_"+altarType);
             }else if(this.fxName.contains("goo")){
                 if(this.a.getActorType() == ActorType.PLAYER){
@@ -557,6 +566,29 @@ public class Champion {
                 }
             }
         }
+
+        public void cancel(double delta){
+            this.cancelled = true;
+            if(this.fxName != null){
+                this.handleIcons();
+                ExtensionCommands.removeFx(a.getParentExt(), a.getRoom(), a.getId()+"_"+fxName);
+            }
+            if(this.isState){
+                if(this.buff.equalsIgnoreCase("polymorph")){
+                    ExtensionCommands.swapActorAsset(a.getParentExt(),a.getRoom(),a.getId(),a.getAvatar());
+                    a.setState(ActorState.POLYMORPH,false);
+                    a.setTempStat("speed",delta*-1);
+                }else if(this.buff.equalsIgnoreCase("slowed")) {
+                    a.setState(ActorState.SLOWED, false);
+                    a.setTempStat("speed",delta*-1);
+                }else{
+                    a.setState(ActorState.valueOf(this.buff),false);
+                }
+            }else{
+                a.setTempStat(this.buff,delta*-1);
+            }
+        }
+
     }
 
 }

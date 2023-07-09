@@ -52,11 +52,9 @@ public class Tower extends Actor {
         this.changeHealth(this.getMitigatedDamage(damage,this.getAttackType(attackData),a)*-1);
         boolean notify = System.currentTimeMillis()-this.lastHit >= 1000*5;
         if(notify) ExtensionCommands.towerAttacked(parentExt,this.room,this.getTowerNum());
-        if(this.currentHealth <= 0){
-            this.die(a);
-        }
         if(notify) this.triggerNotification();
-        return false;
+        return this.currentHealth <= 0;
+
     }
 
     @Override
@@ -87,9 +85,7 @@ public class Tower extends Actor {
             ExtensionCommands.destroyActor(parentExt,this.room,this.id);
             for(User u : room.getUserList()){
                 String actorId = "tower2a";
-                if(this.getTowerNum() == 0 || this.getTowerNum() == 3 ){
-                    actorId = "tower1a";
-                }
+                if(this.team == 0) actorId = "tower1a";
                 ExtensionCommands.createWorldFX(parentExt,u,String.valueOf(u.getId()),actorId,this.id+"_destroyed",1000*60*15,(float)this.location.getX(),(float)this.location.getY(),false,this.team,0f);
                 ExtensionCommands.createWorldFX(parentExt,u,String.valueOf(u.getId()),"tower_destroyed_explosion",this.id+"_destroyed_explosion",1000,(float)this.location.getX(),(float)this.location.getY(),false,this.team,0f);
                 ExtensionCommands.removeFx(parentExt,u,this.id+"_ring");
@@ -123,6 +119,8 @@ public class Tower extends Actor {
     @Override
     public void update(int msRan) {
         if(!this.destroyed){
+            this.handleDamageQueue();
+            if(this.destroyed) return;
             List<Actor> nearbyActors = Champion.getEnemyActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.team,this.location, (float) this.getPlayerStat("attackRange"));
             if(this.target == null){
                 if(this.attackCooldown > this.getPlayerStat("attackSpeed")) this.reduceAttackCooldown();
@@ -188,6 +186,12 @@ public class Tower extends Actor {
     public String getId(){
         return this.id;
     }
+
+    @Override
+    public void handleKill(Actor a, JsonNode attackData) {
+        this.resetTarget(a);
+    }
+
     public int getTowerNum(){ //Gets tower number for the client to process correctly
         /*
         0 - Purple Base Tower

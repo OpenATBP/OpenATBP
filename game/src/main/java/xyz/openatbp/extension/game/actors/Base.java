@@ -32,10 +32,16 @@ public class Base extends Actor {
         this.avatar = id;
         this.actorType = ActorType.BASE;
         this.room = room;
+        this.stats = this.initializeStats();
     }
 
     public int getTeam(){
         return this.team;
+    }
+
+    @Override
+    public void handleKill(Actor a, JsonNode attackData) {
+
     }
 
     @Override
@@ -46,17 +52,6 @@ public class Base extends Actor {
             this.lastHit = System.currentTimeMillis();
             for(UserActor ua : parentExt.getRoomHandler(room.getId()).getPlayers()){
                 if(ua.getTeam() == this.team) ExtensionCommands.playSound(parentExt, ua.getUser(), "global", "announcer/base_under_attack",new Point2D.Float(0,0));
-            }
-        }
-        int oppositeTeam = 0;
-        if(this.team == 0) oppositeTeam = 1;
-        if(this.currentHealth <= 0) this.parentExt.getRoomHandler(this.room.getId()).gameOver(oppositeTeam);
-
-        if(this.currentHealth <= 0){
-            try{
-                parentExt.getRoomHandler(this.room.getId()).gameOver(oppositeTeam);
-            }catch(Exception e){
-                e.printStackTrace();
             }
         }
         ISFSObject updateData = new SFSObject();
@@ -75,12 +70,20 @@ public class Base extends Actor {
 
     @Override
     public void die(Actor a) {
-
+        if(this.currentHealth <= 0){
+            try{
+                int oppositeTeam = 0;
+                if(this.team == 0) oppositeTeam = 1;
+                parentExt.getRoomHandler(this.room.getId()).gameOver(oppositeTeam);
+            }catch(Exception e){
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
     public void update(int msRan) {
-
+        this.handleDamageQueue();
     }
 
     @Override

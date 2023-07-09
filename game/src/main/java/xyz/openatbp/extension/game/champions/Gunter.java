@@ -38,7 +38,7 @@ public class Gunter extends UserActor{
                 if(a.getTeam() != this.team && a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE){
                     double damage = (double)getSpellDamage(spellData)/10;
                     handleSpellVamp(damage);
-                    a.damaged(this,(int)Math.round(damage),spellData);
+                    a.addToDamageQueue(this,Math.round(damage),spellData);
                 }
             }
         }else if(ultActivated){
@@ -95,7 +95,7 @@ public class Gunter extends UserActor{
                 System.out.println("Shattering " + actor.getId());
                 JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(),"spell4");
                 handleSpellVamp(getSpellDamage(spellData));
-                actor.damaged(this,getSpellDamage(spellData),spellData);
+                actor.addToDamageQueue(this,getSpellDamage(spellData),spellData);
             }
         }
     }
@@ -118,6 +118,12 @@ public class Gunter extends UserActor{
         else return super.canMove;
     }
 
+    @Override
+    public void handleKill(Actor a, JsonNode attackData){
+        if(attackData.has("spellName") && attackData.get("spellName").asText().contains("spell_1")) this.shatter(a);
+        else if(attackData.has("attackName") && attackData.get("attackName").asText().contains("Basic")) this.shatter(a);
+    }
+
     private class GunterAbilityRunnable extends AbilityRunnable {
 
         public GunterAbilityRunnable(int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {
@@ -134,7 +140,7 @@ public class Gunter extends UserActor{
             for(Actor a : affectedActors){
                 if(a.getTeam() != team){
                     handleSpellVamp(getSpellDamage(spellData));
-                    a.damaged(Gunter.this,getSpellDamage(spellData),spellData);
+                    a.addToDamageQueue(Gunter.this,getSpellDamage(spellData),spellData);
                 }
             }
         }
@@ -166,9 +172,7 @@ public class Gunter extends UserActor{
         protected void hit(Actor victim) {
             JsonNode spellData = parentExt.getAttackData(getAvatar(),"spell2");
             handleSpellVamp(getSpellDamage(spellData));
-            if(victim.damaged(Gunter.this,getSpellDamage(spellData),spellData)){
-                shatter(victim);
-            }
+            victim.addToDamageQueue(Gunter.this,getSpellDamage(spellData),spellData);
             destroy();
         }
         @Override
@@ -189,9 +193,7 @@ public class Gunter extends UserActor{
         public void run() {
             JsonNode attackData = parentExt.getAttackData(getAvatar(),"basicAttack");
             Gunter.this.handleLifeSteal();
-            if(this.target.damaged(Gunter.this,(int)getPlayerStat("attackDamage"),attackData)){
-                shatter(this.target);
-            }
+            this.target.addToDamageQueue(Gunter.this,(int)getPlayerStat("attackDamage"),attackData);
         }
     }
 }

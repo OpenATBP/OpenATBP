@@ -86,8 +86,8 @@ public class Keeoth extends Monster {
                         for(Actor actor : Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),playerLoc,2.5f)){
                             if(actor.getActorType() == ActorType.PLAYER){
                                 double dist = actor.getLocation().distance(playerLoc);
-                                if(dist > 1) actor.damaged(Keeoth.this,150,newAttackData);
-                                else actor.damaged(Keeoth.this,450,newAttackData);
+                                if(dist > 1) actor.addToDamageQueue(Keeoth.this,150,newAttackData);
+                                else actor.addToDamageQueue(Keeoth.this,450,newAttackData);
                             }
                         }
                     }catch(Exception e){
