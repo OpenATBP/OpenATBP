@@ -84,7 +84,7 @@ public class Queue {
 
     private int findPlayerIndex(Player p){ // Returns index of player in arraylist
         for(int i = 0; i < this.players.size(); i++){
-            if(this.players.get(i).getUsername().equalsIgnoreCase(p.getUsername())){
+            if(this.players.get(i).getUsername().equalsIgnoreCase(p.getUsername()) && this.players.get(i).getPid() == p.getPid()){
                 return i;
             }
         }

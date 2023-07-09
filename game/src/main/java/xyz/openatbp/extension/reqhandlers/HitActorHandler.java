@@ -8,6 +8,8 @@ import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.game.ActorState;
+import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -26,6 +28,10 @@ public class HitActorHandler extends BaseClientRequestHandler {
         if(actor != null){
             String targetId = params.getUtfString("target_id");
             Actor target = handler.getActor(targetId);
+            if(target.getActorType() == ActorType.PLAYER){
+                UserActor ua = (UserActor) target;
+                if(ua.getState(ActorState.INVISIBLE) && !ua.getState(ActorState.REVEALED)) return;
+            }
             Point2D location = new Point2D.Float(params.getFloat("x"),params.getFloat("z"));
             if(target != null){
                 actor.setTarget(target);

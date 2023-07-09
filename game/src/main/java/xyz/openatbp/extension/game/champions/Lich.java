@@ -41,12 +41,11 @@ public class Lich extends UserActor{
         switch (ability) {
             case 1: //Q
                 double statIncrease = this.speed * 0.25;
-                this.handleEffect("speed", statIncrease, 6000, "lich_trail");
+                this.handleEffect("speed", statIncrease, 6000, "lichking_deathmist");
                 qActivated = true;
                 slimePath = new ArrayList<>();
                 slimedEnemies = new HashMap<>();
                 ExtensionCommands.playSound(parentExt,room,id,"sfx_lich_trail",this.location);
-                ExtensionCommands.createActorFX(parentExt, room, id, "lichking_deathmist", 6000, "lich_trail", true, "", true, false, team);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new TrailHandler(), 6000, TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 break;
@@ -149,7 +148,8 @@ public class Lich extends UserActor{
     }
 
     private void spawnSkully(){
-        skully = new Skully();
+        this.skully = new Skully();
+        this.parentExt.getRoomHandler(this.room.getId()).addCompanion(this.skully);
     }
 
     public void setSkullyTarget(Actor a){
@@ -158,6 +158,7 @@ public class Lich extends UserActor{
 
     private void handleSkullyDeath(){
         ExtensionCommands.actorAbilityResponse(parentExt,player,"passive",true,getReducedCooldown(40000),2);
+        this.parentExt.getRoomHandler(this.room.getId()).removeCompanion(this.skully);
         this.skully = null;
         this.lastSkullySpawn = System.currentTimeMillis();
     }

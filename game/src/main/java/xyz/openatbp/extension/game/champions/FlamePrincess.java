@@ -134,7 +134,7 @@ public class FlamePrincess extends UserActor {
         protected void spellW() {
             ExtensionCommands.playSound(parentExt,room,"","sfx_flame_princess_projectile_explode",this.dest);
             RoomHandler roomHandler = parentExt.getRoomHandler(player.getLastJoinedRoom().getId());
-            List<Actor> affectedUsers = Champion.getActorsInRadius(roomHandler,this.dest,2).stream().filter(a -> a.getClass() == UserActor.class).collect(Collectors.toList());
+            List<Actor> affectedUsers = Champion.getActorsInRadius(roomHandler,this.dest,2).stream().filter(a -> a.getActorType() == ActorType.PLAYER && a.getTeam() != FlamePrincess.this.team).collect(Collectors.toList());
             for(Actor u : affectedUsers){
                 UserActor userActor = (UserActor) u;
                 System.out.println("Hit: " + u.getAvatar());

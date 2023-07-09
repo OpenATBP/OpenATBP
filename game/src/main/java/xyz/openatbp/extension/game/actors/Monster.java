@@ -191,6 +191,7 @@ public class Monster extends Actor {
 
     @Override
     public void update(int msRan) {
+        if(this.dead) return;
         if(msRan % 1000*60 == 0){ //Every second it checks average player level and scales accordingly
             int averagePLevel = parentExt.getRoomHandler(this.room.getId()).getAveragePlayerLevel();
             if(averagePLevel != level){

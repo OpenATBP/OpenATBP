@@ -331,6 +331,14 @@ public class UserActor extends Actor {
                     assistIds.add(ua.getId());
                 }
             }
+            int teamNumber = parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id,this.team);
+            Point2D respawnPoint = MapData.PURPLE_SPAWNS[teamNumber];
+            if(this.team == 1 && respawnPoint.getX() < 0) respawnPoint = new Point2D.Double(respawnPoint.getX()*-1,respawnPoint.getY());
+            System.out.println("Respawning at: " + respawnPoint.getX() + "," + respawnPoint.getY() + " for team " + this.team);
+            this.location = respawnPoint;
+            this.originalLocation = respawnPoint;
+            this.destination = respawnPoint;
+            this.timeTraveled = 0f;
             this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,assistIds,50); //TODO: Not sure if this is the correct xp value
         }catch(Exception e){
             e.printStackTrace();
@@ -410,24 +418,25 @@ public class UserActor extends Actor {
         }
         if(insideBrush){
             if(!this.states.get(ActorState.BRUSH)){
-                System.out.println("Inside brush!");
+                ExtensionCommands.changeBrush(parentExt,room,this.id, parentExt.getBrushNum(this.location));
                 this.setState(ActorState.BRUSH, true);
-                this.setState(ActorState.INVISIBLE,true);
                 this.setState(ActorState.REVEALED, false);
             }else{
+                /*
                 if(parentExt.isBrushOccupied(parentExt.getRoomHandler(room.getId()),this)){
-                    System.out.println("Someone else is in the bush!");
-                    this.setState(ActorState.REVEALED, true);
+                    if(!this.states.get(ActorState.REVEALED)) this.setState(ActorState.REVEALED, true);
                 }else if(this.states.get(ActorState.REVEALED)){
                     this.setState(ActorState.REVEALED, false);
                 }
+
+                 */
             }
         }else{
             if(this.states.get(ActorState.BRUSH)){
                 System.out.println("Outside brush!");
-                this.setState(ActorState.INVISIBLE, false);
                 this.setState(ActorState.BRUSH, false);
                 this.setState(ActorState.REVEALED, true);
+                ExtensionCommands.changeBrush(parentExt,room,this.id, -1);
             }
         }
         if(this.attackCooldown > 0) this.reduceAttackCooldown();
@@ -558,18 +567,10 @@ public class UserActor extends Actor {
     }
 
     public void respawn(){
-        int teamNumber = parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id,this.team);
-        Point2D respawnPoint = MapData.PURPLE_SPAWNS[teamNumber];
-        if(this.team == 1 && respawnPoint.getX() < 0) respawnPoint = new Point2D.Double(respawnPoint.getX()*-1,respawnPoint.getY());
-        System.out.println("Respawning at: " + respawnPoint.getX() + "," + respawnPoint.getY() + " for team " + this.team);
-        this.location = respawnPoint;
-        this.originalLocation = respawnPoint;
-        this.destination = respawnPoint;
-        this.timeTraveled = 0f;
         this.setHealth((int) this.maxHealth, (int) this.maxHealth);
         this.dead = false;
+        ExtensionCommands.snapActor(this.parentExt,this.room,this.id,this.location,this.location,false);
         ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx/sfx_champion_respawn",this.location);
-        ExtensionCommands.snapActor(this.parentExt,this.room,this.id,this.location,respawnPoint,false);
         ExtensionCommands.respawnActor(this.parentExt,this.room,this.id);
         ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_speed",5000,this.id+"_respawnSpeed",true,"Bip01 Footsteps",true,false,this.team);
         //this.handleEffect("speed",2d,5000,"fountainSpeed");

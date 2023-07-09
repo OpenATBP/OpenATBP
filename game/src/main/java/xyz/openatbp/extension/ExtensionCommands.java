@@ -13,6 +13,7 @@ import xyz.openatbp.extension.game.actors.UserActor;
 
 import javax.print.attribute.standard.MediaSize;
 import java.awt.geom.Point2D;
+import java.lang.management.OperatingSystemMXBean;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -636,6 +637,18 @@ public class ExtensionCommands {
         data.putUtfString("backpack",backpack);
         data.putInt("elo",elo);
         parentExt.send("cmd_add_user",data,room.getUserList());
+    }
+
+    public static void abortGame(ATBPExtension parentExt, Room room){
+        ISFSObject data = new SFSObject();
+        parentExt.send("cmd_game_aborted",data,room.getUserList());
+    }
+
+    public static void changeBrush(ATBPExtension parentExt, Room room, String id, int brushId){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("id",id);
+        data.putInt("brushId",brushId);
+        parentExt.send("cmd_brush_changed",data,room.getUserList());
     }
 
 }

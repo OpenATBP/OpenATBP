@@ -149,7 +149,7 @@ public abstract class Actor {
         switch(stat){
             case "speed":
                 String fxName = fxId;
-                if(delta > 0 && !fxId.contains("goo")) fxName = "statusEffect_speed";
+                if(delta > 0 && !fxId.contains("goo") && !fxId.contains("lich")) fxName = "statusEffect_speed";
                 if(fxId.contains("goo") && this.getActorType() == ActorType.PLAYER){
                     UserActor ua = (UserActor) this;
                     ExtensionCommands.addStatusIcon(parentExt,ua.getUser(),"Ooze Buff","Oozed","icon_buff_goomonster",60000);
@@ -355,7 +355,7 @@ public abstract class Actor {
     public boolean canMove(){
         for(ActorState s : this.states.keySet()){
             if(s == ActorState.ROOTED || s == ActorState.STUNNED || s == ActorState.FEARED || s == ActorState.CHARMED || s == ActorState.AIRBORNE){
-                if(this.states.get(s)) return true;
+                if(this.states.get(s)) return false;
             }
         }
         return this.canMove;

@@ -30,6 +30,7 @@ public class RoomHandler implements Runnable{
     private ArrayList<UserActor> players;
     private List<Projectile> activeProjectiles;
     private List<Monster> campMonsters;
+    private List<Actor> companions;
     private Base[] bases = new Base[2];
     private int mSecondsRan = 0;
     private int secondsRan = 0;
@@ -64,6 +65,7 @@ public class RoomHandler implements Runnable{
         //ExtensionCommands.createActor(this.parentExt,room,"testMonster","bot_finn",new Point2D.Float(0f,0f),0f,2);
         this.activeProjectiles = new ArrayList<>();
         this.campMonsters = new ArrayList<>();
+        this.companions = new ArrayList<>();
         //this.campMonsters = GameManager.initializeCamps(parentExt,room);
 
     }
@@ -79,6 +81,14 @@ public class RoomHandler implements Runnable{
                 }else if(secondsRan == (60*13)){
                     ExtensionCommands.playSound(parentExt,room,"global","announcer/time_low",new Point2D.Float(0f,0f));
                     ExtensionCommands.playSound(parentExt,room,"music","music/music_time_low",new Point2D.Float(0f,0f));
+                }else if(secondsRan == 15*60){
+                    ISFSObject scoreObject = room.getVariable("score").getSFSObjectValue();
+                    int blueScore = scoreObject.getInt("blue");
+                    int purpleScore = scoreObject.getInt("purple");
+                    if(blueScore > purpleScore) this.gameOver(1);
+                    else if(purpleScore > blueScore) this.gameOver(0);
+                    else this.gameOver(-1);
+                    return;
                 }
                 if(room.getUserList().size() == 0) parentExt.stopScript(room.getId()); //If no one is in the room, stop running.
                 else{
@@ -99,10 +109,10 @@ public class RoomHandler implements Runnable{
                         }
                     }else{
                         int time = spawns.getInt(s);
-                        if((this.secondsRan < 91 && time == 90) || (this.secondsRan > 91 && time == 60)){
+                        if((this.secondsRan <= 91 && time == 90) || (this.secondsRan > 91 && time == 60)){
                             spawnHealth(s);
                         }
-                        else if((this.secondsRan < 91 && time < 90) || (this.secondsRan > 91 && time < 60)){
+                        else if((this.secondsRan <= 91 && time < 90) || (this.secondsRan > 91 && time < 60)){
                             time++;
                             spawns.putInt(s,time);
                         }
@@ -150,7 +160,7 @@ public class RoomHandler implements Runnable{
             for(Monster m : campMonsters){
                 m.update(mSecondsRan);
             }
-            //campMonsters.removeIf(m -> (m.getHealth()<=0));
+            campMonsters.removeIf(m -> (m.getHealth()<=0));
             for(Tower t : towers){
                 t.update(mSecondsRan);
                 if(t.getHealth() <= 0 && (t.getTowerNum() == 0 || t.getTowerNum() == 3)) bases[t.getTeam()].unlock();
@@ -815,9 +825,9 @@ public class RoomHandler implements Runnable{
                     );
                     UpdateOptions options = new UpdateOptions().upsert(true);
                     System.out.println(playerData.updateOne(data,updates,options));
-                    parentExt.stopScript(room.getId());
                 }
             }
+            parentExt.stopScript(room.getId());
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -867,5 +877,13 @@ public class RoomHandler implements Runnable{
         }catch(Exception e){
             e.printStackTrace();
         }
+    }
+
+    public void addCompanion(Actor a){
+        this.companions.add(a);
+    }
+
+    public void removeCompanion(Actor a){
+        this.companions.remove(a);
     }
 }

@@ -15,7 +15,7 @@ import java.util.Map;
 
 public class ChampionData {
 
-    private static final int[] XP_LEVELS = {100,200,300,400,500,600,700,800,900};
+    private static final int[] XP_LEVELS = {100,200,300,400,500,600,700,800,900,1000};
 
     public static int getXPLevel(int xp){
         for(int i = 0; i < XP_LEVELS.length; i++){
@@ -27,36 +27,6 @@ public class ChampionData {
     public static int getLevelXP(int level){
         if(level == 0) return 0;
         return XP_LEVELS[level-1];
-    }
-
-    @Deprecated
-    public static ISFSObject addXP(UserActor a, int xp, ATBPExtension parentExt){
-        User user = a.getUser();
-        int level = user.getVariable("stats").getSFSObjectValue().getInt("level");
-        int currentXp = user.getVariable("stats").getSFSObjectValue().getInt("xp")+xp;
-        if(hasLeveledUp(user,xp)){
-            level++;
-            levelUpCharacter(parentExt, a);
-        }
-        double levelCap2 = XP_LEVELS[level-1];
-        double newXP = levelCap2-currentXp;
-        double pLevel = (100-newXP)/100;
-        user.getVariable("stats").getSFSObjectValue().putInt("level",level);
-        user.getVariable("stats").getSFSObjectValue().putDouble("pLevel",pLevel);
-        user.getVariable("stats").getSFSObjectValue().putInt("xp",currentXp);
-        ISFSObject toUpdate = new SFSObject();
-        toUpdate.putInt("level",level);
-        toUpdate.putDouble("pLevel",pLevel);
-        toUpdate.putInt("xp",currentXp);
-        toUpdate.putUtfString("id", String.valueOf(user.getId()));
-        return toUpdate;
-    }
-    @Deprecated
-    public static boolean hasLeveledUp(User user, int xp){
-        int level = user.getVariable("stats").getSFSObjectValue().getInt("level");
-        int currentXp = user.getVariable("stats").getSFSObjectValue().getInt("xp")+xp;
-        int levelCap = XP_LEVELS[level-1];
-        return currentXp>=levelCap;
     }
 
     public static ISFSObject useSpellPoint(User user, String category, ATBPExtension parentExt){ //TODO: Switch to using UserActor stats

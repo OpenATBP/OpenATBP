@@ -6,6 +6,8 @@ import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.extensions.BaseServerEventHandler;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
 
 public class UserDisconnect extends BaseServerEventHandler {
 
@@ -16,7 +18,12 @@ public class UserDisconnect extends BaseServerEventHandler {
         String roomID = user.getSession().getProperty("room_id").toString(); //Can probably find a better way to handle room names
         if(roomID.length() >= 10) roomID = roomID.substring(0,10);
         Room room = user.getZone().getRoomByName(roomID);
-        parentExt.getRoomHandler(room.getId()).handlePlayerDC(user);
+        RoomHandler roomHandler = parentExt.getRoomHandler(room.getId());
+        if(roomHandler != null){
+            roomHandler.handlePlayerDC(user);
+        }else{
+            ExtensionCommands.abortGame(parentExt,room);
+        }
         if(room.isEmpty()){ //If there is no one left in the room, delete the room
             parentExt.getApi().removeRoom(room);
         }
