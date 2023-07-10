@@ -66,9 +66,10 @@ public class Tower extends Actor {
             projectileName = "tower_projectile_purple";
             effectName = "tower_shoot_purple";
         }
-        ExtensionCommands.createProjectileFX(this.parentExt,this.room,projectileName,this.id,a.getId(),"emitNode","Bip01",0.6f);
+        float time = (float) (a.getLocation().distance(this.location) / 10f);
+        ExtensionCommands.createProjectileFX(this.parentExt,this.room,projectileName,this.id,a.getId(),"emitNode","Bip01",time);
         ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,effectName,600,this.id+"_attackFx",false,"emitNode",false,false,this.team);
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),600, TimeUnit.MILLISECONDS);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),(int)time, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -129,12 +130,12 @@ public class Tower extends Actor {
                 double distance = 1000;
                 Actor potentialTarget = null;
                 for(Actor a : nearbyActors){
-                    if(hasMinion && a.getActorType() == ActorType.MINION){
+                    if(hasMinion && (a.getActorType() == ActorType.MINION || a.getActorType() == ActorType.COMPANION)){
                         if(a.getLocation().distance(this.location)<distance){//If minions exist in range, it only focuses on finding the closest minion
                             potentialTarget = a;
                             distance = a.getLocation().distance(this.location);
                         }
-                    }else if(!hasMinion && a.getActorType() == ActorType.MINION){ //If minions have not been found yet but it just found one, sets the first target to be searched
+                    }else if(!hasMinion && (a.getActorType() == ActorType.MINION || a.getActorType() == ActorType.COMPANION)){ //If minions have not been found yet but it just found one, sets the first target to be searched
                         hasMinion = true;
                         potentialTarget = a;
                         distance = a.getLocation().distance(this.location);

@@ -235,6 +235,7 @@ public class Lich extends UserActor{
             if(System.currentTimeMillis() - timeOfBirth >= 20*1000){
                 this.die(this);
             }
+            this.handleDamageQueue();
             this.location = this.getRelativePoint();
             if(this.attackCooldown > 0) this.reduceAttackCooldown();
             if(this.target == null){

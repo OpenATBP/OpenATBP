@@ -651,4 +651,16 @@ public class ExtensionCommands {
         parentExt.send("cmd_brush_changed",data,room.getUserList());
     }
 
+    public static void knockBackActor(ATBPExtension parentExt, Room room, String id, Point2D loc, Point2D dest, float speed, boolean orient){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("i",id);
+        data.putFloat("px",(float)loc.getX());
+        data.putFloat("pz",(float)loc.getY());
+        data.putFloat("dx",(float)dest.getX());
+        data.putFloat("dz",(float)dest.getY());
+        data.putFloat("s",speed);
+        data.putBool("o",orient);
+        parentExt.send("cmd_knockback_actor",data,room.getUserList());
+    }
+
 }

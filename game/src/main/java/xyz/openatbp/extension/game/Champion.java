@@ -11,6 +11,7 @@ import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.Tower;
+import xyz.openatbp.extension.game.champions.BubbleGum;
 import xyz.openatbp.extension.game.champions.FlamePrincess;
 import xyz.openatbp.extension.game.champions.Gunter;
 import xyz.openatbp.extension.game.champions.Lich;
@@ -44,6 +45,8 @@ public class Champion {
                 return new Lich(u,parentExt);
             case "gunter":
                 return new Gunter(u,parentExt);
+            case "princessbubblegum":
+                return new BubbleGum(u,parentExt);
         }
         return new UserActor(u, parentExt);
     }
@@ -53,9 +56,9 @@ public class Champion {
         return actorDef.get("MonoBehaviours").get("ActorData").get("spell"+spell);
     }
 
-    public static Point2D getDashPoint(ATBPExtension parentExt, UserActor player, Point2D dest){
-        String room = player.getUser().getLastJoinedRoom().getGroupId();
-        Line2D movementLine = new Line2D.Float(player.getLocation(),dest);
+    public static Point2D getDashPoint(ATBPExtension parentExt, Actor actor, Point2D dest){
+        String room = actor.getRoom().getGroupId();
+        Line2D movementLine = new Line2D.Float(actor.getLocation(),dest);
         ArrayList<Vector<Float>>[] colliders = parentExt.getColliders(room); //Gets all collision object vertices
         ArrayList<Path2D> mapPaths = parentExt.getMapPaths(room); //Gets all created paths for the collision objects
         for(int i = 0; i < mapPaths.size(); i++){
@@ -132,10 +135,9 @@ public class Champion {
     public static List<Actor> getActorsInRadius(RoomHandler room, Point2D center, float radius){
         List<Actor> actors = room.getActors();
         List<Actor> affectedActors = new ArrayList<>(actors.size());
-        Ellipse2D circle = new Ellipse2D.Double(center.getX()-radius,center.getY()-radius,radius*2,radius*2);
         for(Actor a : actors){
             Point2D location = a.getLocation();
-            if(circle.contains(location)) affectedActors.add(a);
+            if(location.distance(center) <= radius/2) affectedActors.add(a);
         }
         return affectedActors;
     }
@@ -216,14 +218,10 @@ public class Champion {
     }
 
     public static Line2D extendLine(Line2D projectileLine, float distance){
-        float slope = (float)((projectileLine.getP2().getY() - projectileLine.getP1().getY())/(projectileLine.getP2().getX()-projectileLine.getP1().getX()));
-        float intercept = (float)(projectileLine.getP2().getY()-(slope*projectileLine.getP2().getX()));
-        float deltaX = (float) (projectileLine.getX2()-projectileLine.getX1());
-        float x = (float)projectileLine.getP2().getX()+(distance);
-        if (deltaX < 0) x = (float)projectileLine.getX2()-distance;
-        float y = slope*x + intercept;
-        Point2D newPoint = new Point2D.Float(x,y);
-        return new Line2D.Float(projectileLine.getP2(),newPoint);
+        double angle = Math.atan2(projectileLine.getY2() - projectileLine.getY1(),projectileLine.getX2() - projectileLine.getX1());
+        double extendedX = projectileLine.getX2() + distance * Math.cos(angle);
+        double extendedY = projectileLine.getY2() + distance * Math.sin(angle);
+        return new Line2D.Double(projectileLine.getP1(),new Point2D.Double(extendedX,extendedY));
     }
 
     public static Line2D getDistanceLine(Line2D movementLine, float distance){
@@ -496,6 +494,10 @@ public class Champion {
                         break;
                     case "charmed":
                         a.setState(ActorState.CHARMED,false);
+                        a.removeBuffHandler(this.buff);
+                        break;
+                    default:
+                        a.setState(ActorState.valueOf(this.buff.toUpperCase()),false);
                         a.removeBuffHandler(this.buff);
                         break;
                 }

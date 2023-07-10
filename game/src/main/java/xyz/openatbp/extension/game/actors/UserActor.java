@@ -580,6 +580,7 @@ public class UserActor extends Actor {
     }
 
     public void addXP(int xp){
+        System.out.println("Getting raw xp of " + xp);
         if(this.level != 10){
             if(this.hasBackpackItem("junk_5_glasses_of_nerdicon") && this.getStat("sp_category5") > 0){
                 double multiplier = 1+((5*this.getStat("sp_category5"))/100);
@@ -841,6 +842,7 @@ public class UserActor extends Actor {
         Actor target;
         Runnable attackRunnable;
         String projectile;
+        String emitNode;
 
         public RangedAttack(Actor target, Runnable attackRunnable, String projectile){
             this.target = target;
@@ -848,11 +850,21 @@ public class UserActor extends Actor {
             this.projectile = projectile;
         }
 
+        public RangedAttack(Actor target, Runnable attackRunnable, String projectile, String emitNode){
+            this.target = target;
+            this.attackRunnable = attackRunnable;
+            this.projectile = projectile;
+            this.emitNode = emitNode;
+        }
+
         @Override
         public void run() {
             System.out.println("Running projectile!");
-            ExtensionCommands.createProjectileFX(parentExt,room,projectile,id,target.getId(),"Bip001","Bip001",0.5f);
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(attackRunnable,500,TimeUnit.MILLISECONDS);
+            String emit = "Bip01";
+            if(this.emitNode != null) emit = this.emitNode;
+            float time = (float) (target.getLocation().distance(location) / 10f);
+            ExtensionCommands.createProjectileFX(parentExt,room,projectile,id,target.getId(),emit,"targetNode",time);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(attackRunnable,(int)time,TimeUnit.MILLISECONDS);
             currentAutoAttack = null;
         }
     }

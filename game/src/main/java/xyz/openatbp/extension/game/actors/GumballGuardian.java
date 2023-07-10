@@ -44,8 +44,9 @@ public class GumballGuardian extends Tower {
     public void attack(Actor a) {
         this.attackCooldown = 800;
         String projectileName = "gumballGuardian_projectile";
-        ExtensionCommands.createProjectileFX(this.parentExt,this.room,projectileName,this.id,a.getId(),"emitNode","Bip01",0.6f);
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,1000,"basicAttack"),600, TimeUnit.MILLISECONDS);
+        float time = (float) (a.getLocation().distance(this.location) / 10f);
+        ExtensionCommands.createProjectileFX(this.parentExt,this.room,projectileName,this.id,a.getId(),"emitNode","Bip01",time);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,1000,"basicAttack"),(int)time, TimeUnit.MILLISECONDS);
     }
 
     @Override

@@ -159,9 +159,10 @@ public class Monster extends Actor {
     public void rangedAttack(Actor a){ //Called when ranged attacks take place to spawn projectile and deal damage after projectile hits
         String fxId = "gnome_projectile"; //TODO: Change for owls
         int attackDamage = (int) this.getPlayerStat("attackDamage");
-        ExtensionCommands.createProjectileFX(this.parentExt,this.room,fxId,this.id,a.getId(),"Bip001","Bip001",0.5f);
+        float time = (float) (a.getLocation().distance(this.location) / 10f);
+        ExtensionCommands.createProjectileFX(this.parentExt,this.room,fxId,this.id,a.getId(),"Bip001","Bip001",time);
 
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,attackDamage,"basicAttack"),500, TimeUnit.MILLISECONDS);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,attackDamage,"basicAttack"),(int)time, TimeUnit.MILLISECONDS);
     }
 
     @Override

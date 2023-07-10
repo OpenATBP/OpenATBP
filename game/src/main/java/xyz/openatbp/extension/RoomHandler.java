@@ -193,6 +193,10 @@ public class RoomHandler implements Runnable{
         return null;
     }
 
+    public List<Actor> getCompanions(){
+        return this.companions;
+    }
+
     public void addMinion(int team, int type, int wave, int lane){
         Minion m = new Minion(parentExt,room, team, type, wave,lane);
         minions.add(m);
@@ -586,7 +590,8 @@ public class RoomHandler implements Runnable{
         Collections.addAll(actors, bases);
         actors.addAll(players);
         actors.addAll(campMonsters);
-        actors.removeIf(a -> a.getHealth() <= 0 && a.getActorType() == ActorType.PLAYER);
+        actors.addAll(companions);
+        actors.removeIf(a -> a.getHealth() <= 0);
         return actors;
     }
 

@@ -82,6 +82,7 @@ public class Minion extends Actor {
             if(lane == 0) pathIndex = blueTopX.length-1;
             else pathIndex = blueBotX.length-1;
         }
+        System.out.println(id + " spawning at " + x + "," + y);
         this.movementLine = new Line2D.Float(this.location,this.location);
         aggressors = new HashMap<>(3);
         this.stats = this.initializeStats();
@@ -90,7 +91,7 @@ public class Minion extends Actor {
     public void move(ATBPExtension parentExt){ // Moves the minion along the defined path
         Actor newTarget = this.getNewTarget();
         if(newTarget != null && this.movementLine != null){
-            this.setTarget(this.parentExt, newTarget.getId());
+            this.setTarget(newTarget);
             return;
         }
         double[] pathX;
@@ -221,12 +222,12 @@ public class Minion extends Actor {
     public String getTarget(){
         return this.target;
     }
-    public void setTarget(ATBPExtension parentExt, String id){ //Sets what the minion is targeting. Also changes state
-        this.target = id;
-        if(id.contains("tower")) this.state = AggroState.TOWER;
-        else if(id.contains("creep")) this.state = AggroState.MINION;
-        else if(id.contains("base")) this.state = AggroState.BASE;
-        else this.state = AggroState.PLAYER;
+    public void setTarget(Actor a){ //Sets what the minion is targeting. Also changes state
+        this.target = a.getId();
+        if(a.getActorType() == ActorType.TOWER) this.state = AggroState.TOWER;
+        else if(a.getActorType() == ActorType.MINION || a.getActorType() == ActorType.COMPANION) this.state = AggroState.MINION;
+        else if(a.getActorType() == ActorType.BASE) this.state = AggroState.BASE;
+        else if(a.getActorType() == ActorType.PLAYER) this.state = AggroState.PLAYER;
         //this.moveTowardsActor(parentExt,parentExt.getRoomHandler(room.getId()).getActor(id).getLocation());
         //this.stopMoving(parentExt);
     }
@@ -304,7 +305,8 @@ public class Minion extends Actor {
 
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
-
+        Actor target = this.getNewTarget();
+        if(target != null) this.setTarget(target);
     }
 
     @Override
@@ -327,9 +329,10 @@ public class Minion extends Actor {
         String fxId = "minion_projectile_";
         if(this.team == 0) fxId+="purple";
         else fxId+="blue";
-        ExtensionCommands.createProjectileFX(parentExt,this.room,fxId,this.getId(),a.getId(),"Bip001","Bip001",(float)0.5);
+        float time = (float) (a.getLocation().distance(this.location) / 10f);
+        ExtensionCommands.createProjectileFX(parentExt,this.room,fxId,this.getId(),a.getId(),"Bip001","Bip001",time);
 
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),500, TimeUnit.MILLISECONDS);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),(int)time, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -367,7 +370,7 @@ public class Minion extends Actor {
             if(this.type == MinionType.SUPER) xp+=5;
             if(xpWorth != xp) xpWorth = xp;
         }
-        switch(this.getState()){
+        switch(this.getState()){ //TODO: Rework minion targeting
             case 0: // MOVING
                 if(this.movementLine == null){
                     this.move(this.parentExt);
@@ -380,7 +383,7 @@ public class Minion extends Actor {
                     this.addTravelTime(0.1f);
                 }
                 Actor newTarget = this.getNewTarget();
-                if(newTarget != null) this.setTarget(this.parentExt, newTarget.getId());
+                if(newTarget != null) this.setTarget(newTarget);
                 break;
             case 1: //PLAYER TARGET TODO: Ranged minions still move towards you when in range for some reason
                 UserActor target = roomHandler.getPlayer(this.getTarget());
@@ -395,7 +398,7 @@ public class Minion extends Actor {
                 }
                 break;
             case 2: // MINION TARGET
-                Minion targetMinion = roomHandler.findMinion(this.getTarget());
+                Actor targetMinion = roomHandler.getActor(this.target);
                 if(targetMinion != null && this.withinAttackRange(targetMinion.getLocation())){
                     if(this.canAttack()){
                         if(!this.isAttacking()){
@@ -537,6 +540,12 @@ public class Minion extends Actor {
                 }
             }
         }
+        for(Actor c : roomHandler.getCompanions()){
+            if(this.getTeam() != c.getTeam() && this.nearEntity(c.getLocation())){
+                this.moveTowardsActor(parentExt,c.getLocation());
+                return c;
+            }
+        }
         for(Tower t: roomHandler.getTowers()){
             if(t.getTeam() != this.getTeam() && this.nearEntity(t.getLocation())){ //Minion prioritizes towers over players
                 this.moveTowardsActor(parentExt,t.getLocation());
@@ -564,11 +573,6 @@ public class Minion extends Actor {
             stats.put(k,actorStats.get(k).asDouble());
         }
         return stats;
-    }
-
-    @Override
-    public void setTarget(Actor a) {
-        this.setTarget(parentExt,a.getId());
     }
 
     @Override

@@ -133,6 +133,7 @@ public abstract class Actor {
         else{
             double currentTempStat = this.getTempStat(stat);
             if(delta > currentTempStat){
+                System.out.println("Delta: " + delta + " vs " + currentTempStat);
                 if(fxId.contains("altar"))this.setTempStat(stat,delta);
                 else this.setTempStat(stat,delta-currentTempStat);
             }
@@ -219,12 +220,13 @@ public abstract class Actor {
                     buffHandler = new Champion.FinalBuffHandler(this,ActorState.SLOWED,delta);
                 }
                 break;
+            default:
+                buffHandler = new Champion.FinalBuffHandler(this,state,delta);
+                break;
         }
-        if(buffHandler != null){
-            this.setState(state,true);
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(buffHandler,duration,TimeUnit.MILLISECONDS);
-            this.setBuffHandler(state.name().toLowerCase(),buffHandler);
-        }
+        this.setState(state,true);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(buffHandler,duration,TimeUnit.MILLISECONDS);
+        this.setBuffHandler(state.name().toLowerCase(),buffHandler);
     }
 
     public void handleCharm(UserActor charmer, int duration){
@@ -252,7 +254,6 @@ public abstract class Actor {
 
     public abstract void handleKill(Actor a, JsonNode attackData);
 
-    @Deprecated
     public boolean damaged(Actor a, int damage, JsonNode attackData){
         this.currentHealth-=damage;
         if(this.currentHealth <= 0) this.currentHealth = 0;

@@ -7,12 +7,14 @@ import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.GameManager;
 import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
 public class MoveActorHandler extends BaseClientRequestHandler {
@@ -75,6 +77,10 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                 Point2D finalPoint = collidePlayer(new Line2D.Double(movementLine.getX1(),movementLine.getY1(),intersectionPoint.getX(),intersectionPoint.getY()),mapPaths.get(mapPathIndex));
                 destx = (float)finalPoint.getX();
                 destz = (float)finalPoint.getY();
+                if(insideCollider(finalPoint,mapPaths)){
+                    destx = (float)movementLine.getX2();
+                    destz = (float)movementLine.getY2();
+                }
             }
             // trace("X: " + movementLine.getX2());
             //trace("Y:" + movementLine.getY2());
@@ -146,6 +152,13 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             }
         }
         return p;
+    }
+
+    private boolean insideCollider(Point2D point, List<Path2D> colliders){
+        for(Path2D collider : colliders){
+            if(collider.contains(point)) return true;
+        }
+        return false;
     }
 
 }
