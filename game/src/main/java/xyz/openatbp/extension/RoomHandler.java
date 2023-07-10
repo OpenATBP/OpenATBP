@@ -200,8 +200,6 @@ public class RoomHandler implements Runnable{
     public void addMinion(int team, int type, int wave, int lane){
         Minion m = new Minion(parentExt,room, team, type, wave,lane);
         minions.add(m);
-        ExtensionCommands.createActor(parentExt,this.room,m.creationObject());
-        m.move(parentExt);
     }
 
     public Base getOpposingTeamBase(int team){

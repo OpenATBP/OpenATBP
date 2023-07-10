@@ -241,6 +241,7 @@ public class BubbleGum extends UserActor {
         private long timeOfBirth;
         private Actor target;
         private boolean dead = false;
+        private String iconName;
 
         Turret(Point2D location, int turretNum){
             this.room = BubbleGum.this.room;
@@ -258,6 +259,8 @@ public class BubbleGum extends UserActor {
             this.stats = this.initializeStats();
             this.setStat("attackDamage",BubbleGum.this.getStat("attackDamage"));
             this.timeOfBirth = System.currentTimeMillis();
+            this.iconName = "Turret #" + turretNum;
+            ExtensionCommands.addStatusIcon(parentExt,player,iconName,"Turret placed!","icon_pb_s2",60000f);
             ExtensionCommands.createActor(parentExt,room,this.id,this.avatar,this.location,0f,this.team);
             ExtensionCommands.playSound(parentExt,room,this.id,"sfx_bubblegum_turret_spawn",this.location);
             ExtensionCommands.createWorldFX(parentExt,room,this.id,"fx_target_ring_3",this.id+"_ring", 60000, (float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
@@ -275,13 +278,16 @@ public class BubbleGum extends UserActor {
             float time = (float) (a.getLocation().distance(this.location) / 10f);
             ExtensionCommands.playSound(parentExt,room,this.id,"sfx_bubblegum_turret_shoot",this.location);
             ExtensionCommands.createProjectileFX(parentExt,room,"bubblegum_turret_projectile",this.id,a.getId(),"Bip01","targetNode",time);
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,BubbleGum.this,a,10+(int)this.getPlayerStat("attackDamage"),"spell2"),(int)time,TimeUnit.MILLISECONDS);
+            Actor attacker = this;
+            if(a.getActorType() == ActorType.PLAYER) attacker = BubbleGum.this;
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,attacker,a,10+(int)this.getPlayerStat("attackDamage"),"spell2"),(int)time*1000,TimeUnit.MILLISECONDS);
             this.attackCooldown = this.getPlayerStat("attackSpeed");
         }
 
         @Override
         public void die(Actor a) {
             this.dead = true;
+            ExtensionCommands.removeStatusIcon(parentExt,player,iconName);
             ExtensionCommands.removeFx(parentExt,room,this.id+"_ring");
             ExtensionCommands.destroyActor(parentExt,room,this.id);
             this.parentExt.getRoomHandler(this.room.getId()).removeCompanion(this);

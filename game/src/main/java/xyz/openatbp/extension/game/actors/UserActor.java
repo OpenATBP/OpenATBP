@@ -863,8 +863,9 @@ public class UserActor extends Actor {
             String emit = "Bip01";
             if(this.emitNode != null) emit = this.emitNode;
             float time = (float) (target.getLocation().distance(location) / 10f);
+            System.out.println(time);
             ExtensionCommands.createProjectileFX(parentExt,room,projectile,id,target.getId(),emit,"targetNode",time);
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(attackRunnable,(int)time,TimeUnit.MILLISECONDS);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(attackRunnable,(int)time*1000,TimeUnit.MILLISECONDS);
             currentAutoAttack = null;
         }
     }

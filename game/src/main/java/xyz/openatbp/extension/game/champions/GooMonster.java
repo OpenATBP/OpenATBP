@@ -117,7 +117,7 @@ public class GooMonster extends Monster {
         int attackDamage = (int) this.getPlayerStat("attackDamage");
         float time = (float) (a.getLocation().distance(this.location) / 10f);
         ExtensionCommands.createProjectileFX(parentExt,room,"goo_projectile",this.id,a.getId(),"Bip01 R Hand", "Bip01",time);
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,this,a,attackDamage,"basicAttack"),(int)time,TimeUnit.MILLISECONDS);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,this,a,attackDamage,"basicAttack"),(int)time*1000,TimeUnit.MILLISECONDS);
     }
     @Override
     public boolean canAttack(){

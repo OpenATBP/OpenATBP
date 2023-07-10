@@ -22,7 +22,7 @@ public class Monster extends Actor {
 
     private AggroState state = AggroState.PASSIVE;
     private final Point2D startingLocation;
-    private UserActor target;
+    private Actor target;
     private float travelTime;
     private final MonsterType type;
     private Line2D movementLine;
@@ -86,10 +86,10 @@ public class Monster extends Actor {
             boolean returnVal = super.damaged(a,newDamage,attackData);
             if(this.state == AggroState.PASSIVE && this.target == null){ //If being attacked while minding own business, it will target player
                 state = AggroState.ATTACKED;
-                target = (UserActor) a;
+                target = a;
                 this.travelTime = 0f;
                 this.moveTowardsActor(this.target.getLocation());
-                ExtensionCommands.setTarget(parentExt,target.getUser(),this.id, target.getId());
+                if(target.getActorType() == ActorType.PLAYER) ExtensionCommands.setTarget(parentExt,((UserActor)target).getUser(),this.id, target.getId());
                 if(this.type == MonsterType.SMALL){ //Gets all mini monsters like gnomes and owls to all target player when one is hit
                     for(Monster m : parentExt.getRoomHandler(this.room.getId()).getCampMonsters(this.id)){
                         m.setAggroState(AggroState.ATTACKED,a);
@@ -162,7 +162,7 @@ public class Monster extends Actor {
         float time = (float) (a.getLocation().distance(this.location) / 10f);
         ExtensionCommands.createProjectileFX(this.parentExt,this.room,fxId,this.id,a.getId(),"Bip001","Bip001",time);
 
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,attackDamage,"basicAttack"),(int)time, TimeUnit.MILLISECONDS);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,attackDamage,"basicAttack"),(int)time*1000, TimeUnit.MILLISECONDS);
     }
 
     @Override

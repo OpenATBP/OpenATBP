@@ -68,7 +68,10 @@ public class Minion extends Actor {
         if(lane == 0){ //Top Lane
             x = (float) blueTopX[0];
             y = (float) blueTopY[0];
-            if(team == 0) x = (float) blueTopX[blueTopX.length-1];
+            if(team == 0){
+                x = (float) blueTopX[blueTopX.length-1];
+                y = (float) blueTopY[blueTopY.length-1];
+            }
         }
         this.speed = 1.75f;
         this.location = new Point2D.Float(x,y);
@@ -86,6 +89,8 @@ public class Minion extends Actor {
         this.movementLine = new Line2D.Float(this.location,this.location);
         aggressors = new HashMap<>(3);
         this.stats = this.initializeStats();
+        ExtensionCommands.createActor(parentExt,this.room,this.creationObject());
+        this.move(parentExt);
     }
 
     public void move(ATBPExtension parentExt){ // Moves the minion along the defined path
@@ -118,6 +123,7 @@ public class Minion extends Actor {
         if(this.type != MinionType.MELEE) actorName+="_";
         minion.putUtfString("id",this.id);
         minion.putUtfString("actor",actorName + getType());
+        System.out.println("Minion x:" + location.getX() + " Minion y: " + location.getY());
         ISFSObject spawnPoint = new SFSObject();
         spawnPoint.putFloat("x", (float) location.getX());
         spawnPoint.putFloat("y",0f);
@@ -332,7 +338,7 @@ public class Minion extends Actor {
         float time = (float) (a.getLocation().distance(this.location) / 10f);
         ExtensionCommands.createProjectileFX(parentExt,this.room,fxId,this.getId(),a.getId(),"Bip001","Bip001",time);
 
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),(int)time, TimeUnit.MILLISECONDS);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),(int)time*1000, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -485,8 +491,8 @@ public class Minion extends Actor {
                 aggressors.put(a.getId(),0);
             }
             if(a.getActorType() == ActorType.TOWER){
-                if(this.type == MinionType.SUPER) damage = (int) Math.round(damage*0.05);
-                else damage = (int) Math.round(damage*0.25);
+                if(this.type == MinionType.SUPER) damage = (int) Math.round(damage*0.25);
+                else damage = (int) Math.round(damage*0.75);
             }
             AttackType type = this.getAttackType(attackData);
             int newDamage = this.getMitigatedDamage(damage,type,a);
@@ -556,7 +562,7 @@ public class Minion extends Actor {
             int health = u.getHealth();
             int userTeam = u.getTeam();
             Point2D currentPoint = u.getCurrentLocation();
-            if(this.getTeam() != userTeam && health > 0 && !u.getState(ActorState.INVISIBLE) && this.nearEntity(currentPoint) && this.facingEntity(currentPoint)){
+            if(this.getTeam() != userTeam && health > 0 && (!u.getState(ActorState.INVISIBLE) && u.getState(ActorState.REVEALED)) && this.nearEntity(currentPoint) && this.facingEntity(currentPoint)){
                 if(this.getTarget() == null){ //This will probably always be true.
                     ExtensionCommands.setTarget(parentExt,u.getUser(),this.getId(), u.getId());
                     return u;
