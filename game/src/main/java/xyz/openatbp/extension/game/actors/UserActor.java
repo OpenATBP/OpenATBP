@@ -296,6 +296,8 @@ public class UserActor extends Actor {
 
     @Override
     public void die(Actor a) {
+        if(this.dead) return;
+        this.dead = true;
         Point2D location = this.getRelativePoint(false);
         ExtensionCommands.moveActor(parentExt,this.room,this.id,location,location,2f,false);
         this.setHealth(0, (int) this.maxHealth);
@@ -406,8 +408,8 @@ public class UserActor extends Actor {
 
     @Override
     public void update(int msRan) {
-        this.handleDamageQueue();
         if(this.dead) return;
+        this.handleDamageQueue();
         float x = (float) this.getOriginalLocation().getX();
         float z = (float) this.getOriginalLocation().getY();
         Point2D currentPoint = this.getLocation();

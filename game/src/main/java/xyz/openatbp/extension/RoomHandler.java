@@ -853,7 +853,7 @@ public class RoomHandler implements Runnable{
 
                 Bson updates = Updates.combine(
                         Updates.inc("player.disconnects",1),
-                        Updates.set("player.elo",newElo)
+                        Updates.set("player.elo",(int)newElo)
                 );
                 UpdateOptions options = new UpdateOptions().upsert(true);
                 System.out.println(playerData.updateOne(data,updates,options));
