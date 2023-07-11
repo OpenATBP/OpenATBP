@@ -824,7 +824,7 @@ public class UserActor extends Actor {
             String[] stats = {"armor","spellResist","speed"};
             ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,this.getPlayerStats(stats));
             ExtensionCommands.addStatusIcon(parentExt,player,"DC Buff #1","Some coward left the battle! Here's something to help even the playing field!", "icon_parity",0);
-        }else{
+        }else if (this.dcBuff == 2){
             String[] stats = {"attackDamage","spellDamage"};
             ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,this.getPlayerStats(stats));
             ExtensionCommands.addStatusIcon(parentExt,player,"DC Buff #2","You're the last one left, finish the mission", "icon_parity2",0);
