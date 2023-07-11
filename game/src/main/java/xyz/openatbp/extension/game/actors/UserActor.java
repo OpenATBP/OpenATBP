@@ -408,8 +408,8 @@ public class UserActor extends Actor {
 
     @Override
     public void update(int msRan) {
-        if(this.dead) return;
         this.handleDamageQueue();
+        if(this.dead) return;
         float x = (float) this.getOriginalLocation().getX();
         float z = (float) this.getOriginalLocation().getY();
         Point2D currentPoint = this.getLocation();
@@ -816,6 +816,11 @@ public class UserActor extends Actor {
             ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,this.getPlayerStats(stats));
             ExtensionCommands.addStatusIcon(parentExt,player,"DC Buff #2","You're the last one left, finish the mission", "icon_parity2",0);
         }
+    }
+
+    @Override
+    public String getAvatar(){
+        return this.avatar.split("_")[0];
     }
 
     private HashMap<String, Double> getPlayerStats(String[] stats){

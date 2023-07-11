@@ -145,7 +145,6 @@ public class Tower extends Actor {
                                 potentialTarget = a;
                                 distance = a.getLocation().distance(this.location);
                             }
-                            ExtensionCommands.createActorFX(this.parentExt,this.room,this.target.getId(),"tower_current_target_indicator",10*60*1000,this.id+"_target",true,"displayBar",false,true,this.team);
                         }
                     }
                     if(potentialTarget != null){
