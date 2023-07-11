@@ -119,22 +119,34 @@ public class Tower extends Actor {
 
     @Override
     public void update(int msRan) {
-        if(!this.destroyed){
-            this.handleDamageQueue();
-            if(this.destroyed) return;
-            List<Actor> nearbyActors = Champion.getEnemyActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.team,this.location, (float) this.getPlayerStat("attackRange"));
-            if(this.target == null){
-                if(this.attackCooldown > this.getPlayerStat("attackSpeed")) this.reduceAttackCooldown();
-                else this.attackCooldown = this.getPlayerStat("attackSpeed");
-                boolean hasMinion = false;
-                double distance = 1000;
-                Actor potentialTarget = null;
-                for(Actor a : nearbyActors){
-                    if(hasMinion && (a.getActorType() == ActorType.MINION || a.getActorType() == ActorType.COMPANION)){
-                        if(a.getLocation().distance(this.location)<distance){//If minions exist in range, it only focuses on finding the closest minion
+        try{
+            if(!this.destroyed){
+                this.handleDamageQueue();
+                if(this.destroyed) return;
+                List<Actor> nearbyActors = Champion.getEnemyActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.team,this.location, (float) this.getPlayerStat("attackRange"));
+                if(this.target == null){
+                    if(this.attackCooldown > this.getPlayerStat("attackSpeed")) this.reduceAttackCooldown();
+                    else this.attackCooldown = this.getPlayerStat("attackSpeed");
+                    boolean hasMinion = false;
+                    double distance = 1000;
+                    Actor potentialTarget = null;
+                    for(Actor a : nearbyActors){
+                        if(hasMinion && a.getActorType() == ActorType.MINION){
+                            if(a.getLocation().distance(this.location)<distance){//If minions exist in range, it only focuses on finding the closest minion
+                                potentialTarget = a;
+                                distance = a.getLocation().distance(this.location);
+                            }
+                        }else if(!hasMinion && a.getActorType() == ActorType.MINION){ //If minions have not been found yet but it just found one, sets the first target to be searched
+                            hasMinion = true;
                             potentialTarget = a;
                             distance = a.getLocation().distance(this.location);
+                        }else if(!hasMinion && a.getActorType() == ActorType.PLAYER){ //If potential target is a player and no minion has been found, starts processing closest player
+                            if(a.getLocation().distance(this.location) < distance){
+                                potentialTarget = a;
+                                distance = a.getLocation().distance(this.location);
+                            }
                         }
+<<<<<<< HEAD
                     }else if(!hasMinion && (a.getActorType() == ActorType.MINION || a.getActorType() == ActorType.COMPANION)){ //If minions have not been found yet but it just found one, sets the first target to be searched
                         hasMinion = true;
                         potentialTarget = a;
@@ -143,39 +155,43 @@ public class Tower extends Actor {
                         if(a.getLocation().distance(this.location) < distance){
                             potentialTarget = a;
                             distance = a.getLocation().distance(this.location);
+=======
+                    }
+                    if(potentialTarget != null){
+                        this.target = potentialTarget;
+                        if(this.target.getActorType() == ActorType.PLAYER){
+                            UserActor user = (UserActor) this.target;
+                            this.targetPlayer(user);
+>>>>>>> master
                         }
+                        ExtensionCommands.createActorFX(this.parentExt,this.room,this.target.getId(),"tower_current_target_indicator",10*60*1000,this.id+"_target",true,"displayBar",false,true,this.team);
                     }
-                }
-                if(potentialTarget != null){
-                    this.target = potentialTarget;
-                    if(this.target.getActorType() == ActorType.PLAYER){
-                        UserActor user = (UserActor) this.target;
-                        this.targetPlayer(user);
+                }else{
+                    if(this.target.getHealth() <= 0){
+                        this.resetTarget(this.target);
+                        return;
                     }
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.target.getId(),"tower_current_target_indicator",10*60*1000,this.id+"_target",true,"displayBar",false,true,this.team);
-                }
-            }else{
-                if(this.target.getHealth() <= 0){
-                    this.resetTarget(this.target);
-                    return;
-                }
-                if(this.attackCooldown > 0) this.reduceAttackCooldown();
-                System.out.println("Targeting " + target.getId());
-                if(nearbyActors.size() == 0){
-                    if(this.target.getActorType() == ActorType.PLAYER){
-                        UserActor ua = (UserActor) this.target;
-                        ExtensionCommands.removeFx(this.parentExt,ua.getUser(),this.id+"_aggro");
-                        ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_target");
+                    if(this.attackCooldown > 0) this.reduceAttackCooldown();
+                    System.out.println("Targeting " + target.getId());
+                    if(nearbyActors.size() == 0){
+                        if(this.target.getActorType() == ActorType.PLAYER){
+                            UserActor ua = (UserActor) this.target;
+                            ExtensionCommands.removeFx(this.parentExt,ua.getUser(),this.id+"_aggro");
+                            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_target");
+                        }
+                        this.target = null;
                     }
-                    this.target = null;
-                }
-                else{
-                    if(this.target.getLocation().distance(this.location) <= this.getPlayerStat("attackRange")){
-                        if(this.canAttack()) this.attack(this.target);
-                    }else this.resetTarget(this.target);
+                    else{
+                        if(this.target.getLocation().distance(this.location) <= this.getPlayerStat("attackRange")){
+                            if(this.canAttack()) this.attack(this.target);
+                        }else this.resetTarget(this.target);
+                    }
                 }
             }
+        }catch(Exception e){
+            e.printStackTrace();
         }
+
     }
 
     @Override

@@ -255,10 +255,11 @@ public class Monster extends Actor {
     }
 
     public Point2D getRelativePoint(){ //Gets player's current location based on time
+        if(this.movementLine == null) return this.location;
         if(this.travelTime == 0 && this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f) this.travelTime+=0.1f; //Prevents any stagnation in movement
         Point2D rPoint = new Point2D.Float();
         Point2D destination;
-        if(this.state == AggroState.PASSIVE) destination = startingLocation;
+        if(this.state == AggroState.PASSIVE || this.target == null) destination = startingLocation;
         else destination = target.getLocation();
         float x2 = (float) destination.getX();
         float y2 = (float) destination.getY();
