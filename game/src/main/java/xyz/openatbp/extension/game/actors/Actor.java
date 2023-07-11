@@ -283,7 +283,7 @@ public abstract class Actor {
             if(this.damaged(damager,(int)damage,attackData)){
                 damager.handleKill(this,attackData);
                 this.die(damager);
-                return;
+                break;
             }
         }
         this.damageQueue = new ArrayList<>();

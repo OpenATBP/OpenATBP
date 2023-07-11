@@ -406,30 +406,18 @@ public class RoomHandler implements Runnable{
                 else addScore(null,team,10);
                 cooldowns.put(altarId+"__"+"altar",180);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,altarId,"fx_altar_lock",1000*60*3,"fx_altar_lock"+i,false,"Bip01",false,true,team);
-                int altarNum = -1;
+                int altarNum;
                 if(i == 0) altarNum = 1;
                 else if(i == 1) altarNum = 0;
-                else if(i == 2) altarNum = i;
+                else altarNum = i;
                 ExtensionCommands.updateAltar(this.parentExt,this.room,altarNum,team,true);
                 for(UserActor u : this.players){
                     if(u.getTeam() == team){
-                        String buffName;
-                        String buffDescription;
-                        String icon;
-                        String bundle;
                         try{
                             if(i == 1){
-                                buffName = "altar_buff_offense";
-                                buffDescription = "altar2_description";
-                                icon = "icon_altar_attack";
-                                bundle = "altar_buff_offense";
                                 u.handleEffect("attackDamage",u.getPlayerStat("attackDamage")*0.25,1000*60,"attack_altar");
                                 u.handleEffect("spellDamage",u.getPlayerStat("spellDamage")*0.25,1000*60,"attack_altar");
                             }else{
-                                buffName = "altar_buff_defense";
-                                buffDescription = "altar1_description";
-                                icon = "icon_altar_armor";
-                                bundle = "altar_buff_defense";
                                 u.handleEffect("armor",u.getPlayerStat("armor")*0.5,1000*60,"defense_altar");
                                 u.handleEffect("spellResist",u.getPlayerStat("spellResist")*0.5,1000*60,"defense_altar");
                             }
