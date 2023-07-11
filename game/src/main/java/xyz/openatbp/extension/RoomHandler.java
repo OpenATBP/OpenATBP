@@ -25,7 +25,7 @@ import java.util.*;
 public class RoomHandler implements Runnable{
     private ATBPExtension parentExt;
     private Room room;
-    private ArrayList<Minion> minions;
+    private ArrayList<NewMinion> minions;
     private ArrayList<Tower> towers;
     private ArrayList<UserActor> players;
     private List<Projectile> activeProjectiles;
@@ -133,7 +133,7 @@ public class RoomHandler implements Runnable{
                     }else if(minionNum == 5){
                         for(int i = 0; i < 2; i++){ //i = lane
                             for(int g = 0; g < 2; g++){
-                                if(!this.hasSuperMinion(i,g) && this.canSpawnSupers(g)) this.addMinion(g,minionNum,minionWave,i);
+                                if(!this.hasSuperMinion(i,g) && this.canSpawnSupers(g)) this.addMinion(g, minionNum,minionWave,i);
                             }
                         }
                     }
@@ -153,7 +153,7 @@ public class RoomHandler implements Runnable{
             }
             activeProjectiles.removeIf(Projectile::isDestroyed);
             handleHealth();
-            for(Minion m : minions){ //Handles minion behavior
+            for(NewMinion m : minions){ //Handles minion behavior
                 m.update(mSecondsRan);
             }
             minions.removeIf(m -> (m.getHealth()<=0));
@@ -186,8 +186,8 @@ public class RoomHandler implements Runnable{
         return null;
     }
 
-    public Minion findMinion(String id){
-        for(Minion m : minions){
+    public NewMinion findMinion(String id){
+        for(NewMinion m : minions){
             if(m.getId().equalsIgnoreCase(id)) return m;
         }
         return null;
@@ -197,8 +197,8 @@ public class RoomHandler implements Runnable{
         return this.companions;
     }
 
-    public void addMinion(int team, int type, int wave, int lane){
-        Minion m = new Minion(parentExt,room, team, type, wave,lane);
+    public void addMinion(int team, int minionNum, int wave, int lane){
+        NewMinion m = new NewMinion(parentExt,room, team, minionNum, wave,lane);
         minions.add(m);
     }
 
@@ -553,8 +553,8 @@ public class RoomHandler implements Runnable{
         this.activeProjectiles.add(p);
     }
 
-    public Minion getMinion(String id){
-        for(Minion m : minions){
+    public NewMinion getMinion(String id){
+        for(NewMinion m : minions){
             if(m.getId().equalsIgnoreCase(id)) return m;
         }
         return  null;
@@ -575,8 +575,8 @@ public class RoomHandler implements Runnable{
     }
 
     private boolean hasSuperMinion(int lane, int team){
-        for(Minion m : minions){
-            if(m.getTeam() == team && m.getLane() == lane && m.getType().equalsIgnoreCase("super") && m.getHealth() > 0) return true;
+        for(NewMinion m : minions){
+            if(m.getTeam() == team && m.getLane() == lane && m.getType() == NewMinion.MinionType.SUPER && m.getHealth() > 0) return true;
         }
         return false;
     }
@@ -600,7 +600,7 @@ public class RoomHandler implements Runnable{
         return null;
     }
 
-    public List<Minion> getMinions(){
+    public List<NewMinion> getMinions(){
         return this.minions;
     }
 

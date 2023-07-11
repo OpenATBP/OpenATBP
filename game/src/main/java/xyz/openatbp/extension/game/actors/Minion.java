@@ -537,7 +537,7 @@ public class Minion extends Actor {
                 return opposingBase;
             }
         }
-        for(Minion minion : roomHandler.getMinions()){ // Check other minions
+        for(NewMinion minion : roomHandler.getMinions()){ // Check other minions
             if(this.getTeam() != minion.getTeam() && this.getLane() == minion.getLane()){
                 if(this.nearEntity(minion.getLocation()) && this.facingEntity(minion.getLocation())){
                     if(this.getTarget() == null){
