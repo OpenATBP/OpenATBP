@@ -107,7 +107,6 @@ public class Tower extends Actor {
             }else{
                 for(UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
                     if(ua.getTeam() == this.team){
-                        ExtensionCommands.playSound(parentExt,ua.getUser(),"global","announcer/you_destroyed_tower");
                         ExtensionCommands.playSound(parentExt,ua.getUser(),"global","announcer/your_tower_down");
                     }else{
                         ExtensionCommands.playSound(parentExt,ua.getUser(),"global","announcer/you_destroyed_tower");

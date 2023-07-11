@@ -118,8 +118,9 @@ public class Monster extends Actor {
                 this.target = closestPlayer;
             }
         }else{
+            System.out.println(this.id + " is set to attack " + a.getId());
             this.state = state;
-            if(state == AggroState.ATTACKED) this.target = (UserActor) a;
+            if(state == AggroState.ATTACKED) this.target = a;
         }
 
     }
