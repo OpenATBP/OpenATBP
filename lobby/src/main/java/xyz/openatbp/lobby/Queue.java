@@ -182,7 +182,7 @@ public class Queue {
     private void queueUpdate(){ //Updates the client with queue information
         for(int i = 0; i < players.size(); i++){
             Packet out = new Packet();
-            out.send(players.get(i).getOutputStream(), "queue_update", RequestHandler.handleQueueUpdate(this.players.size()));
+            out.send(players.get(i).getOutputStream(), "queue_update", RequestHandler.handleQueueUpdate(this.players.size())); //TODO: Giving null output stream
         }
     }
 

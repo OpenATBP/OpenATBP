@@ -53,11 +53,13 @@ public class GameManager {
             }else{
                 data.putUtfString("set", "AT_2L_Arena");
             }
+            int maxUsers = room.getMaxUsers();
+            int userSize = room.getUserList().size();
             data.putUtfString("soundtrack", "music_main1");
             data.putInt("roomId", room.getId());
             data.putUtfString("roomName", room.getName());
-            data.putInt("capacity", 2);
-            data.putInt("botCount", 4);
+            data.putInt("capacity", maxUsers);
+            data.putInt("botCount", maxUsers-userSize);
             parentExt.send("cmd_load_room", data, u);
         }
     }

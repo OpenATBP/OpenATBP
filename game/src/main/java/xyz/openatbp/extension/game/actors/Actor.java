@@ -275,7 +275,10 @@ public abstract class Actor {
     }
 
     public void handleDamageQueue(){
-        if(this.currentHealth <= 0) return;
+        if(this.currentHealth <= 0){
+            if(this.damageQueue.size() > 0) this.damageQueue = new ArrayList<>();
+            return;
+        }
         for(ISFSObject data : this.damageQueue){
             Actor damager = (Actor) data.getClass("attacker");
             double damage = data.getDouble("damage");
@@ -283,7 +286,8 @@ public abstract class Actor {
             if(this.damaged(damager,(int)damage,attackData)){
                 damager.handleKill(this,attackData);
                 this.die(damager);
-                break;
+                this.damageQueue = new ArrayList<>();
+                return;
             }
         }
         this.damageQueue = new ArrayList<>();

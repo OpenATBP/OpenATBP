@@ -577,6 +577,14 @@ public class UserActor extends Actor {
 
     public void respawn(){
         this.setHealth((int) this.maxHealth, (int) this.maxHealth);
+        int teamNumber = parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id,this.team);
+        Point2D respawnPoint = MapData.PURPLE_SPAWNS[teamNumber];
+        if(this.team == 1 && respawnPoint.getX() < 0) respawnPoint = new Point2D.Double(respawnPoint.getX()*-1,respawnPoint.getY());
+        System.out.println("Respawning at: " + respawnPoint.getX() + "," + respawnPoint.getY() + " for team " + this.team);
+        this.location = respawnPoint;
+        this.originalLocation = respawnPoint;
+        this.destination = respawnPoint;
+        this.timeTraveled = 0f;
         this.dead = false;
         ExtensionCommands.snapActor(this.parentExt,this.room,this.id,this.location,this.location,false);
         ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx/sfx_champion_respawn",this.location);
