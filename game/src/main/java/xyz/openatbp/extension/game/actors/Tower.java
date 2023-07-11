@@ -136,7 +136,7 @@ public class Tower extends Actor {
                                 potentialTarget = a;
                                 distance = a.getLocation().distance(this.location);
                             }
-                        }else if(!hasMinion && a.getActorType() == ActorType.MINION){ //If minions have not been found yet but it just found one, sets the first target to be searched
+                        }else if(!hasMinion && (a.getActorType() == ActorType.MINION || a.getActorType() == ActorType.COMPANION)){ //If minions have not been found yet but it just found one, sets the first target to be searched
                             hasMinion = true;
                             potentialTarget = a;
                             distance = a.getLocation().distance(this.location);
@@ -145,24 +145,14 @@ public class Tower extends Actor {
                                 potentialTarget = a;
                                 distance = a.getLocation().distance(this.location);
                             }
+                            ExtensionCommands.createActorFX(this.parentExt,this.room,this.target.getId(),"tower_current_target_indicator",10*60*1000,this.id+"_target",true,"displayBar",false,true,this.team);
                         }
-<<<<<<< HEAD
-                    }else if(!hasMinion && (a.getActorType() == ActorType.MINION || a.getActorType() == ActorType.COMPANION)){ //If minions have not been found yet but it just found one, sets the first target to be searched
-                        hasMinion = true;
-                        potentialTarget = a;
-                        distance = a.getLocation().distance(this.location);
-                    }else if(!hasMinion && a.getActorType() == ActorType.PLAYER){ //If potential target is a player and no minion has been found, starts processing closest player
-                        if(a.getLocation().distance(this.location) < distance){
-                            potentialTarget = a;
-                            distance = a.getLocation().distance(this.location);
-=======
                     }
                     if(potentialTarget != null){
                         this.target = potentialTarget;
                         if(this.target.getActorType() == ActorType.PLAYER){
                             UserActor user = (UserActor) this.target;
                             this.targetPlayer(user);
->>>>>>> master
                         }
                         ExtensionCommands.createActorFX(this.parentExt,this.room,this.target.getId(),"tower_current_target_indicator",10*60*1000,this.id+"_target",true,"displayBar",false,true,this.team);
                     }
