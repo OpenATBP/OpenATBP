@@ -246,7 +246,6 @@ public class UserActor extends Actor {
                         return false;
                     }
                 }
-                this.dead = true;
                 return true;
             }
         }catch(Exception e){
@@ -296,61 +295,66 @@ public class UserActor extends Actor {
 
     @Override
     public void die(Actor a) {
-        if(this.dead) return;
-        this.dead = true;
-        Point2D location = this.getRelativePoint(false);
-        ExtensionCommands.moveActor(parentExt,this.room,this.id,location,location,2f,false);
-        this.setHealth(0, (int) this.maxHealth);
-        this.target = null;
-        ExtensionCommands.knockOutActor(parentExt,room, String.valueOf(player.getId()),a.getId(),this.deathTime);
-        if(this.nailDamage > 0) this.nailDamage/=2;
         try{
-            ExtensionCommands.handleDeathRecap(parentExt,player,this.id,a.getId(), (HashMap<Actor, ISFSObject>) this.aggressors);
-            this.increaseStat("deaths",1);
-            if(this.hasGameStat("spree")){
-                if(this.killingSpree > this.getGameStat("spree")) this.endGameStats.put("spree", (double) this.killingSpree);
-                this.killingSpree = 0;
-            }
-            if(a.getActorType() == ActorType.PLAYER){
-                UserActor ua = (UserActor) a;
-                ua.increaseStat("kills",1);
-                if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(5);
-                this.parentExt.getRoomHandler(this.room.getId()).addScore(ua,ua.getTeam(),25);
-            }else{
-                for(UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
-                    String sound = "announcer/you_are_defeated";
-                    if(ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) sound = "announcer/ally_defeated";
-                    else if(ua.getTeam() != this.team) sound = "announcer/enemy_defeated";
-                    ExtensionCommands.playSound(parentExt,ua.getUser(),"global",sound,new Point2D.Float(0,0));
+            if(this.dead) return;
+            this.dead = true;
+            Point2D location = this.getRelativePoint(false);
+            ExtensionCommands.moveActor(parentExt,this.room,this.id,location,location,2f,false);
+            this.setHealth(0, (int) this.maxHealth);
+            this.target = null;
+            ExtensionCommands.knockOutActor(parentExt,room, String.valueOf(player.getId()),a.getId(),this.deathTime);
+            if(this.nailDamage > 0) this.nailDamage/=2;
+            try{
+                ExtensionCommands.handleDeathRecap(parentExt,player,this.id,a.getId(), (HashMap<Actor, ISFSObject>) this.aggressors);
+                this.increaseStat("deaths",1);
+                if(this.hasGameStat("spree")){
+                    if(this.killingSpree > this.getGameStat("spree")) this.endGameStats.put("spree", (double) this.killingSpree);
+                    this.killingSpree = 0;
                 }
-            }
-            Set<String> assistIds = new HashSet<>(2);
-            for(Actor actor : this.aggressors.keySet()){
-                if(actor.getActorType() == ActorType.PLAYER && !actor.getId().equalsIgnoreCase(a.getId())){
-                    UserActor ua = (UserActor) actor;
-                    ua.increaseStat("assists",1);
-                    assistIds.add(ua.getId());
+                if(a.getActorType() == ActorType.PLAYER){
+                    UserActor ua = (UserActor) a;
+                    ua.increaseStat("kills",1);
+                    if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(5);
+                    this.parentExt.getRoomHandler(this.room.getId()).addScore(ua,ua.getTeam(),25);
+                }else{
+                    for(UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
+                        String sound = "announcer/you_are_defeated";
+                        if(ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) sound = "announcer/ally_defeated";
+                        else if(ua.getTeam() != this.team) sound = "announcer/enemy_defeated";
+                        ExtensionCommands.playSound(parentExt,ua.getUser(),"global",sound,new Point2D.Float(0,0));
+                    }
                 }
-            }
-            int teamNumber = parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id,this.team);
-            Point2D respawnPoint = MapData.PURPLE_SPAWNS[teamNumber];
-            if(this.team == 1 && respawnPoint.getX() < 0) respawnPoint = new Point2D.Double(respawnPoint.getX()*-1,respawnPoint.getY());
-            System.out.println("Respawning at: " + respawnPoint.getX() + "," + respawnPoint.getY() + " for team " + this.team);
-            this.location = respawnPoint;
-            this.originalLocation = respawnPoint;
-            this.destination = respawnPoint;
-            this.timeTraveled = 0f;
+                Set<String> assistIds = new HashSet<>(2);
+                for(Actor actor : this.aggressors.keySet()){
+                    if(actor.getActorType() == ActorType.PLAYER && !actor.getId().equalsIgnoreCase(a.getId())){
+                        UserActor ua = (UserActor) actor;
+                        ua.increaseStat("assists",1);
+                        assistIds.add(ua.getId());
+                    }
+                }
+                int teamNumber = parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id,this.team);
+                Point2D respawnPoint = MapData.PURPLE_SPAWNS[teamNumber];
+                if(this.team == 1 && respawnPoint.getX() < 0) respawnPoint = new Point2D.Double(respawnPoint.getX()*-1,respawnPoint.getY());
+                System.out.println("Respawning at: " + respawnPoint.getX() + "," + respawnPoint.getY() + " for team " + this.team);
+                this.location = respawnPoint;
+                this.originalLocation = respawnPoint;
+                this.destination = respawnPoint;
+                this.timeTraveled = 0f;
 
-            for(String buff : this.buffHandlers.keySet()){
-                this.buffHandlers.get(buff).cancel(this.getTempStat(buff));
+                for(String buff : this.buffHandlers.keySet()){
+                    this.buffHandlers.get(buff).cancel(this.getTempStat(buff));
+                }
+                this.buffHandlers = new HashMap<>();
+                this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,assistIds,50); //TODO: Not sure if this is the correct xp value
+            }catch(Exception e){
+                e.printStackTrace();
             }
-            this.buffHandlers = new HashMap<>();
-            this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,assistIds,50); //TODO: Not sure if this is the correct xp value
+            this.addGameStat("timeDead",this.deathTime);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.RespawnCharacter(this),this.deathTime, TimeUnit.SECONDS);
         }catch(Exception e){
             e.printStackTrace();
         }
-        this.addGameStat("timeDead",this.deathTime);
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.RespawnCharacter(this),this.deathTime, TimeUnit.SECONDS);
+
     }
 /*
     Acceptable Keys:
