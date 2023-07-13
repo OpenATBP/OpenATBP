@@ -3,11 +3,9 @@ package xyz.openatbp.extension.game.actors;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
-import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
-import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 
@@ -118,7 +116,6 @@ public class Monster extends Actor {
                 this.target = closestPlayer;
             }
         }else{
-            System.out.println(this.id + " is set to attack " + a.getId());
             this.state = state;
             if(state == AggroState.ATTACKED) this.target = a;
         }
@@ -229,14 +226,11 @@ public class Monster extends Actor {
             }
             else if(this.target != null){ //Chasing player
                 if(this.withinRange(this.target) && this.canAttack()){
-                    System.out.println("Monster attacking player!");
                     this.attack(this.target);
                 }else if(!this.withinRange(this.target) && this.canMove){
-                    System.out.println("Monster not in range of player!");
                     this.travelTime+=0.1f;
                     this.moveTowardsActor(this.target.getLocation());
                 }else if(this.withinRange(this.target)){
-                    System.out.println("Monster can't attack!");
                     if(this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f) this.stopMoving();
                 }
             }

@@ -267,6 +267,7 @@ public abstract class Actor {
     }
 
     public void addToDamageQueue(Actor attacker, double damage, JsonNode attackData){
+        if(this.currentHealth <= 0) return;
         ISFSObject data = new SFSObject();
         data.putClass("attacker",attacker);
         data.putDouble("damage",damage);
@@ -275,22 +276,21 @@ public abstract class Actor {
     }
 
     public void handleDamageQueue(){
+        List<ISFSObject> queue = new ArrayList<>(this.damageQueue);
+        this.damageQueue = new ArrayList<>();
         if(this.currentHealth <= 0){
-            if(this.damageQueue.size() > 0) this.damageQueue = new ArrayList<>();
             return;
         }
-        for(ISFSObject data : this.damageQueue){
+        for(ISFSObject data : queue){
             Actor damager = (Actor) data.getClass("attacker");
             double damage = data.getDouble("damage");
             JsonNode attackData = (JsonNode) data.getClass("attackData");
             if(this.damaged(damager,(int)damage,attackData)){
                 damager.handleKill(this,attackData);
                 this.die(damager);
-                this.damageQueue = new ArrayList<>();
                 return;
             }
         }
-        this.damageQueue = new ArrayList<>();
     }
     public abstract void attack(Actor a);
     public abstract void die(Actor a);

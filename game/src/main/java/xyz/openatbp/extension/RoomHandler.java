@@ -738,6 +738,7 @@ public class RoomHandler implements Runnable{
     public void gameOver(int winningTeam){
         try{
             this.gameOver = true;
+            this.room.setProperty("state",2);
             ExtensionCommands.gameOver(parentExt,this.room,winningTeam);
             MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
             for(UserActor ua : this.players){

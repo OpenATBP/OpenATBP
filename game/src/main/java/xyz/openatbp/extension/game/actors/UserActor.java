@@ -161,7 +161,6 @@ public class UserActor extends Actor {
     public void cancelAuto(){
         this.target = null;
         if(this.currentAutoAttack != null){
-            System.out.println("Auto canceled!");
             this.currentAutoAttack.cancel(false);
             this.currentAutoAttack = null;
         }
@@ -228,7 +227,6 @@ public class UserActor extends Actor {
             int newDamage = this.getMitigatedDamage(damage,type,a);
             if(a.getActorType() == ActorType.PLAYER) this.addDamageGameStat((UserActor) a, newDamage,type);
             this.handleDamageTakenStat(type,newDamage);
-            System.out.println(this.id + " is being attacked! User");
             ExtensionCommands.damageActor(parentExt,this.room,this.id,newDamage);
             this.processHitData(a,attackData,newDamage);
             if(this.hasTempStat("healthRegen")) this.tempStats.remove("healthRegen");
@@ -336,7 +334,6 @@ public class UserActor extends Actor {
                 int teamNumber = parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id,this.team);
                 Point2D respawnPoint = MapData.PURPLE_SPAWNS[teamNumber];
                 if(this.team == 1 && respawnPoint.getX() < 0) respawnPoint = new Point2D.Double(respawnPoint.getX()*-1,respawnPoint.getY());
-                System.out.println("Respawning at: " + respawnPoint.getX() + "," + respawnPoint.getY() + " for team " + this.team);
                 this.location = respawnPoint;
                 this.originalLocation = respawnPoint;
                 this.destination = respawnPoint;
@@ -436,7 +433,6 @@ public class UserActor extends Actor {
             }
         }else{
             if(this.states.get(ActorState.BRUSH)){
-                System.out.println("Outside brush!");
                 this.setState(ActorState.BRUSH, false);
                 this.setState(ActorState.REVEALED, true);
                 ExtensionCommands.changeBrush(parentExt,room,this.id, -1);
@@ -445,9 +441,7 @@ public class UserActor extends Actor {
         if(this.attackCooldown > 0) this.reduceAttackCooldown();
         if(this.target != null && this.target.getHealth() > 0 && this.autoAttackEnabled){
             if(this.withinRange(target) && this.canAttack()){
-                if(this.canAttack()) System.out.println(id + " attackCooldown is " + this.attackCooldown);
                 this.autoAttack(target);
-                System.out.println("Auto attacking!");
             }else if(!this.withinRange(target) && this.canMove()){
                 double attackRange = this.getPlayerStat("attackRange");
                 Line2D movementLine = new Line2D.Float(currentPoint,target.getLocation());
@@ -455,14 +449,12 @@ public class UserActor extends Actor {
                 Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
                 Line2D finalPath = Champion.getColliderLine(parentExt,room,newPath);
                 if(finalPath.getP2().distance(this.destination) > 0.1f){
-                    System.out.println("Distance: " + finalPath.getP2().distance(this.destination));
                     this.setPath(finalPath);
                     ExtensionCommands.moveActor(parentExt,this.room, this.id,currentPoint, finalPath.getP2(), (float) this.speed,true);
                 }
             }
         }else{
             if(this.target != null){
-                System.out.println("Target: " + this.target.getId());
                 if(this.target.getHealth() <= 0){
                     this.target = null;
                     if(this.currentAutoAttack != null){
@@ -516,7 +508,6 @@ public class UserActor extends Actor {
     }
 
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
-        System.out.println("Ability sent to x:" + dest.getX() + " y:" + dest.getY());
         if(castDelay > 0){
             this.stopMoving(castDelay);
             SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(true),castDelay,TimeUnit.MILLISECONDS);
@@ -524,7 +515,6 @@ public class UserActor extends Actor {
             this.stopMoving();
         }
         if(this.getClass() == UserActor.class){
-            System.out.println("Base useAbility method used!");
             String abilityString = "q";
             if(ability == 2) abilityString = "w";
             else if(ability == 3) abilityString = "e";
@@ -595,14 +585,12 @@ public class UserActor extends Actor {
     }
 
     public void addXP(int xp){
-        System.out.println("Getting raw xp of " + xp);
         if(this.level != 10){
             if(this.hasBackpackItem("junk_5_glasses_of_nerdicon") && this.getStat("sp_category5") > 0){
                 double multiplier = 1+((5*this.getStat("sp_category5"))/100);
                 xp*=multiplier;
             }
             this.xp+=xp; //TODO: Backpack modifiers
-            System.out.println("Current xp for " + this.id + ":" + this.xp);
             HashMap<String, Double> updateData = new HashMap<>(3);
             updateData.put("xp", (double) this.xp);
             int level = ChampionData.getXPLevel(this.xp);
@@ -627,8 +615,6 @@ public class UserActor extends Actor {
         double lastLevelXP = ChampionData.getLevelXP(this.level-1);
         double currentLevelXP = ChampionData.getLevelXP(this.level);
         double delta = currentLevelXP - lastLevelXP;
-        System.out.println("My xp: " + this.xp + " Current Level XP: " + currentLevelXP + " Next Level XP: " + lastLevelXP);
-        System.out.println((this.xp-lastLevelXP)/delta);
         return (this.xp-lastLevelXP)/delta;
     }
 
@@ -879,11 +865,9 @@ public class UserActor extends Actor {
 
         @Override
         public void run() {
-            System.out.println("Running projectile!");
             String emit = "Bip01";
             if(this.emitNode != null) emit = this.emitNode;
             float time = (float) (target.getLocation().distance(location) / 10f);
-            System.out.println(time);
             ExtensionCommands.createProjectileFX(parentExt,room,projectile,id,target.getId(),emit,"targetNode",time);
             SmartFoxServer.getInstance().getTaskScheduler().schedule(attackRunnable,(int)time*1000,TimeUnit.MILLISECONDS);
             currentAutoAttack = null;

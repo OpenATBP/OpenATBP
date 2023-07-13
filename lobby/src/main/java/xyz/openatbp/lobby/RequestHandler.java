@@ -45,8 +45,9 @@ public class RequestHandler {
     }
 
     public static JsonNode handleQueueUpdate(int size){ //Updates the amount of players in a queue (GUI)
+        int newSize = Math.min(size, 3);
         ObjectNode objectNode = objectMapper.createObjectNode();
-        objectNode.put("size", size);
+        objectNode.put("size", newSize);
         return objectNode;
     }
 

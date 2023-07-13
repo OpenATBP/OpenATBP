@@ -85,7 +85,6 @@ public class Minion extends Actor {
             if(lane == 0) pathIndex = blueTopX.length-1;
             else pathIndex = blueBotX.length-1;
         }
-        System.out.println(id + " spawning at " + x + "," + y);
         this.movementLine = new Line2D.Float(this.location,this.location);
         aggressors = new HashMap<>(3);
         this.stats = this.initializeStats();
@@ -123,7 +122,6 @@ public class Minion extends Actor {
         if(this.type != MinionType.MELEE) actorName+="_";
         minion.putUtfString("id",this.id);
         minion.putUtfString("actor",actorName + getType());
-        System.out.println("Minion x:" + location.getX() + " Minion y: " + location.getY());
         ISFSObject spawnPoint = new SFSObject();
         spawnPoint.putFloat("x", (float) location.getX());
         spawnPoint.putFloat("y",0f);
@@ -436,7 +434,6 @@ public class Minion extends Actor {
                         if(targetTower.getHealth() > 0){
                             this.attack(targetTower);
                         }else{ //Handles tower death and resets minion on tower kill
-                            System.out.println("Tower dead!");
                             if(targetTower.getTowerNum() == 0 || targetTower.getTowerNum() == 3) roomHandler.getOpposingTeamBase(this.team).unlock();
                             this.setState(0);
                             this.move(parentExt);
