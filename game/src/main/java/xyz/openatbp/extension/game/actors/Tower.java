@@ -69,11 +69,12 @@ public class Tower extends Actor {
         float time = (float) (a.getLocation().distance(this.location) / 10f);
         ExtensionCommands.createProjectileFX(this.parentExt,this.room,projectileName,this.id,a.getId(),"emitNode","Bip01",time);
         ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,effectName,600,this.id+"_attackFx",false,"emitNode",false,false,this.team);
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),(int)time*1000, TimeUnit.MILLISECONDS);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),(int)(time*1000), TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void die(Actor a) {
+        System.out.println(this.id + " has died! " + this.destroyed);
         this.currentHealth = 0;
         if(!this.destroyed){
             this.destroyed = true;
@@ -160,7 +161,6 @@ public class Tower extends Actor {
                         return;
                     }
                     if(this.attackCooldown > 0) this.reduceAttackCooldown();
-                    System.out.println("Targeting " + target.getId());
                     if(nearbyActors.size() == 0){
                         if(this.target.getActorType() == ActorType.PLAYER){
                             UserActor ua = (UserActor) this.target;

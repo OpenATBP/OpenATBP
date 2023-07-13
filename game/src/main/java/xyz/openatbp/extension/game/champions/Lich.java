@@ -86,8 +86,7 @@ public class Lich extends UserActor{
     @Override
     public void attack(Actor a){
         this.handleAttack(a);
-        float time = (float) (a.getLocation().distance(location) / 10f);
-        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new PassiveAttack(this,a),"lich_projectile"),(int)time,TimeUnit.MILLISECONDS);
+        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new PassiveAttack(this,a),"lich_projectile"),500,TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -115,7 +114,6 @@ public class Lich extends UserActor{
                         JsonNode attackData = this.parentExt.getAttackData(getAvatar(),"spell1");
                         if(slimedEnemies.containsKey(a.getId())){
                             if(System.currentTimeMillis() - slimedEnemies.get(a.getId()) >= 1000){
-                                System.out.println(a.getId() + " getting slimed!");
                                 handleSpellVamp(getSpellDamage(attackData));
                                 a.addToDamageQueue(this,getSpellDamage(attackData),attackData);
                                 a.handleEffect(ActorState.SLOWED,a.getPlayerStat("speed")*-0.3,1500,"lich_slow");
@@ -123,7 +121,6 @@ public class Lich extends UserActor{
                                 break;
                             }
                         }else{
-                            System.out.println(a.getId() + " getting slimed!");
                             handleSpellVamp(getSpellDamage(attackData));
                             a.addToDamageQueue(this,getSpellDamage(attackData),attackData);
                             a.handleEffect(ActorState.SLOWED,a.getPlayerStat("speed")*-0.3,1500,"lich_slow");
@@ -226,6 +223,7 @@ public class Lich extends UserActor{
 
         @Override
         public void die(Actor a) {
+            System.out.println(this.id + " has died! ");
             ExtensionCommands.knockOutActor(parentExt,room,this.id,a.getId(),40000);
             Lich.this.handleSkullyDeath();
             ExtensionCommands.destroyActor(parentExt,room,this.id);

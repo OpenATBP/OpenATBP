@@ -50,7 +50,7 @@ public class Base extends Actor {
         this.currentHealth-=getMitigatedDamage(damage,AttackType.PHYSICAL,a);
         if(System.currentTimeMillis() - this.lastHit >= 15000){
             this.lastHit = System.currentTimeMillis();
-            for(UserActor ua : parentExt.getRoomHandler(room.getId()).getPlayers()){
+            for(UserActor ua : parentExt.getRoomHandler(room.getId()).getPlayers()){ //TODO: Playing for enemy team?
                 if(ua.getTeam() == this.team) ExtensionCommands.playSound(parentExt, ua.getUser(), "global", "announcer/base_under_attack",new Point2D.Float(0,0));
             }
         }

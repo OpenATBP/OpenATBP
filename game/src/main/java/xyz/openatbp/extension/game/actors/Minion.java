@@ -341,8 +341,10 @@ public class Minion extends Actor {
 
     @Override
     public void die(Actor a) { //TODO: Actor voice line plays after each kill (last hit or not)
+        System.out.println(this.id + " has died! " + this.dead);
         this.currentHealth = 0;
         if(this.dead) return;
+        this.stopMoving();
         this.dead = true;
         if(a.getActorType() == ActorType.PLAYER){
             UserActor ua = (UserActor) a;

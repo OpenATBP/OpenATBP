@@ -45,8 +45,6 @@ public class FlamePrincess extends UserActor {
                         handleSpellVamp(damage);
                         a.addToDamageQueue(this,damage,attackData);
                     }
-                }else{
-                    System.out.println(a.getId() + " is on your team!");
                 }
             }
         }
@@ -95,7 +93,6 @@ public class FlamePrincess extends UserActor {
                         this.canMove = false;
                         SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(true),(int)Math.floor(time*1000),TimeUnit.MILLISECONDS);
                         if(ultUses == 0){
-                            System.out.println("Time: " + time);
                             SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),(int)Math.floor(time*1000),TimeUnit.MILLISECONDS);
                         }
                         setLocation(dest);
@@ -110,8 +107,7 @@ public class FlamePrincess extends UserActor {
     @Override
     public void attack(Actor a){
         this.handleAttack(a);
-        float time = (float) (a.getLocation().distance(location) / 10f);
-        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,new PassiveAttack(a),"flame_princess_projectile"),(int)time,TimeUnit.MILLISECONDS);
+        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,new PassiveAttack(a),"flame_princess_projectile"),500,TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -138,14 +134,12 @@ public class FlamePrincess extends UserActor {
             List<Actor> affectedUsers = Champion.getActorsInRadius(roomHandler,this.dest,2).stream().filter(a -> a.getActorType() == ActorType.PLAYER && a.getTeam() != FlamePrincess.this.team).collect(Collectors.toList());
             for(Actor u : affectedUsers){
                 UserActor userActor = (UserActor) u;
-                System.out.println("Hit: " + u.getAvatar());
                 userActor.setState(ActorState.POLYMORPH, true);
                 double newDamage = u.getMitigatedDamage(50d,AttackType.SPELL,FlamePrincess.this);
                 handleSpellVamp(newDamage);
                 userActor.addToDamageQueue(FlamePrincess.this,50,parentExt.getAttackData(getAvatar(),"spell2"));
                 userActor.handleEffect(ActorState.POLYMORPH,-1d,3000,null);
             }
-            System.out.println("Ability done!");
         }
 
         @Override
@@ -161,7 +155,6 @@ public class FlamePrincess extends UserActor {
                 ultUses = 3;
                 lastUltUsage = -1;
             }else if(ultFinished){
-                System.out.println("Ability already ended!");
                 ultStarted = false;
                 ultFinished = false;
                 ultUses = 3;

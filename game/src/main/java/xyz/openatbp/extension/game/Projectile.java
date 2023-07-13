@@ -71,7 +71,6 @@ public abstract class Projectile {
         }
         Actor hitActor = this.checkPlayerCollision(roomHandler);
         if(hitActor != null){
-            System.out.println("Hit w/ projectile: " + hitActor.getAvatar());
             this.hit(hitActor);
         }
     }
@@ -104,7 +103,6 @@ public abstract class Projectile {
     }
 
     public void destroy(){
-        System.out.println(this.owner.getRoom());
         if(!destroyed){
             ExtensionCommands.destroyActor(this.parentExt, owner.getRoom(), this.id);
         }

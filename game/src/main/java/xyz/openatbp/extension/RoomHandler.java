@@ -289,11 +289,7 @@ public class RoomHandler implements Runnable{
 
     private void spawnMonster(String monster){
         System.out.println("Spawning: " + monster);
-        ArrayList<User> users = (ArrayList<User>) room.getUserList();
         String map = room.getGroupId();
-        for(User u : users){
-            ISFSObject monsterObject = new SFSObject();
-            ISFSObject monsterSpawn = new SFSObject();
             float x = 0;
             float z = 0;
             String actor = monster;
@@ -311,15 +307,7 @@ public class RoomHandler implements Runnable{
                         z = (float)MapData.OWLS[i].getY();
                         campMonsters.add(new Monster(parentExt,room,MapData.OWLS[i],actor));
                     }
-                    monsterObject.putUtfString("id",actor);
-                    monsterObject.putUtfString("actor",actor);
-                    monsterObject.putFloat("rotation",0);
-                    monsterSpawn.putFloat("x",x);
-                    monsterSpawn.putFloat("y",0);
-                    monsterSpawn.putFloat("z",z);
-                    monsterObject.putSFSObject("spawn_point",monsterSpawn);
-                    monsterObject.putInt("team",2);
-                    parentExt.send("cmd_create_actor",monsterObject,u);
+                    ExtensionCommands.createActor(this.parentExt,this.room,actor,actor,new Point2D.Float(x,z),0f,2);
                 }
             }else if(monster.length()>3){
                 switch(monster){
@@ -345,25 +333,14 @@ public class RoomHandler implements Runnable{
                         campMonsters.add(new GooMonster(parentExt,room,MapData.L2_OOZE,actor));
                         break;
                 }
-                monsterObject.putUtfString("id",actor);
-                monsterObject.putUtfString("actor",actor);
-                monsterObject.putFloat("rotation",0);
-                monsterSpawn.putFloat("x",x);
-                monsterSpawn.putFloat("y",0);
-                monsterSpawn.putFloat("z",z);
-                monsterObject.putSFSObject("spawn_point",monsterSpawn);
-                monsterObject.putInt("team",2);
-                parentExt.send("cmd_create_actor",monsterObject,u);
+                ExtensionCommands.createActor(this.parentExt,this.room,actor,actor,new Point2D.Float(x,z),0f,2);
             }
-        }
     }
     private void spawnHealth(String id){
         int healthNum = getHealthNum(id);
         Point2D healthLocation = getHealthLocation(healthNum);
-        for(User u : room.getUserList()){
-            int effectTime = (15*60-secondsRan)*1000;
-            ExtensionCommands.createWorldFX(parentExt,u, String.valueOf(u.getId()),"pickup_health_cyclops",id+"_fx",effectTime,(float)healthLocation.getX(),(float)healthLocation.getY(),false,2,0f);
-        }
+        int effectTime = (15*60-secondsRan)*1000;
+        ExtensionCommands.createWorldFX(parentExt,this.room, "","pickup_health_cyclops",id+"_fx",effectTime,(float)healthLocation.getX(),(float)healthLocation.getY(),false,2,0f);
         room.getVariable("spawns").getSFSObjectValue().putInt(id,91);
     }
 
@@ -390,8 +367,8 @@ public class RoomHandler implements Runnable{
                 else if(altarStatus[i]<0) altarChange[i]=1;
             }
             int altarStat = Math.abs(altarStatus[i]);
-            if(altarStat <= 5) altarStatus[i]+=altarChange[i];
-            if(altarStat > 0 && altarStat < 6){
+            if(altarStat <= 4) altarStatus[i]+=altarChange[i];
+            if(altarStat > 0 && altarStat < 5){
                 String sound = "sfx_altar_"+altarStat;
                 ExtensionCommands.playSound(parentExt,room,"",sound,getAltarLocation(i));
             }
@@ -399,7 +376,7 @@ public class RoomHandler implements Runnable{
             if(altarStatus[i]>0) team = 0;
             else team = 1;
             String altarId = "altar_"+i;
-            if(Math.abs(altarStatus[i]) >= 6 && altarStatus[i] != 10){
+            if(Math.abs(altarStatus[i]) >= 5 && altarStatus[i] != 10){
                 ExtensionCommands.playSound(parentExt,room,"","sfx_altar_locked",getAltarLocation(i));
                 altarStatus[i]=10; //Locks altar
                 if(i == 1) addScore(null,team,15);
@@ -428,7 +405,7 @@ public class RoomHandler implements Runnable{
                         }
                     }
                 }
-            }else if(Math.abs(altarStatus[i])<=5 && altarStatus[i]!=0){
+            }else if(Math.abs(altarStatus[i])<=4 && altarStatus[i]!=0){
                 int stage = Math.abs(altarStatus[i]);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,altarId,"fx_altar_"+stage,1000,"fx_altar_"+stage+i,false,"Bip01",false,true,team);
             }

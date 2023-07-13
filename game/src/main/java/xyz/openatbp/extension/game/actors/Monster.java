@@ -160,7 +160,7 @@ public class Monster extends Actor {
         float time = (float) (a.getLocation().distance(this.location) / 10f);
         ExtensionCommands.createProjectileFX(this.parentExt,this.room,fxId,this.id,a.getId(),"Bip001","Bip001",time);
 
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,attackDamage,"basicAttack"),(int)time*1000, TimeUnit.MILLISECONDS);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,attackDamage,"basicAttack"),(int)(time*1000), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -174,8 +174,10 @@ public class Monster extends Actor {
 
     @Override
     public void die(Actor a) { //Called when monster dies
+        System.out.println(this.id + " has died! " + this.dead);
         if(!this.dead){ //No double deaths
             this.dead = true;
+            this.stopMoving();
             this.currentHealth = -1;
             RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getId());
             int scoreValue = parentExt.getActorStats(this.id).get("valueScore").asInt();

@@ -200,6 +200,7 @@ public class Queue {
     }
 
     private void gameReady(){ //Sends all players into the game
+        this.state = State.IN_GAME;
         for (Player player : players) {
             Packet out = new Packet();
             out.send(player.getOutputStream(), "game_ready", RequestHandler.handleGameReady(players.get(0), player.getTeam(), this.type));

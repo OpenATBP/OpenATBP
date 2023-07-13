@@ -34,15 +34,12 @@ public class Gunter extends UserActor{
             Line2D ogLine = new Line2D.Float(this.getRelativePoint(false),this.ultPoint);
             List<Actor> affectedActors = Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),Champion.getDistanceLine(ogLine,7f),4f);
             for(Actor a : affectedActors){
-                System.out.println(a.getId() + " is in the ult!");
                 if(a.getTeam() != this.team && a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE){
                     double damage = (double)getSpellDamage(spellData)/10;
                     handleSpellVamp(damage);
                     a.addToDamageQueue(this,Math.round(damage),spellData);
                 }
             }
-        }else if(ultActivated){
-            System.out.println("Ult activated!");
         }
     }
     @Override
@@ -84,8 +81,7 @@ public class Gunter extends UserActor{
     @Override
     public void attack(Actor a){
         this.handleAttack(a);
-        float time = (float) (a.getLocation().distance(location) / 10f);
-        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new PassiveAttack(a),"gunter_bottle_projectile"),(int)time, TimeUnit.MILLISECONDS);
+        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new PassiveAttack(a),"gunter_bottle_projectile"),500, TimeUnit.MILLISECONDS);
     }
 
     public void shatter(Actor a){
@@ -93,7 +89,6 @@ public class Gunter extends UserActor{
         ExtensionCommands.createWorldFX(parentExt,room,id,"gunter_belly_slide_bottles",a.getId()+"_shattered",500,(float)a.getLocation().getX(),(float)a.getLocation().getY(),false,team,0f);
         for(Actor actor : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),a.getLocation(), 2f)){
             if(actor.getTeam() != this.team && !a.getId().equalsIgnoreCase(actor.getId())){
-                System.out.println("Shattering " + actor.getId());
                 JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(),"spell4");
                 handleSpellVamp(getSpellDamage(spellData));
                 actor.addToDamageQueue(this,getSpellDamage(spellData),spellData);

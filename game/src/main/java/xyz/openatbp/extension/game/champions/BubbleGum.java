@@ -274,7 +274,6 @@ public class BubbleGum extends UserActor {
 
         @Override
         public void attack(Actor a) {
-            System.out.println("Attacking " + a.getId());
             float time = (float) (a.getLocation().distance(this.location) / 10f);
             ExtensionCommands.playSound(parentExt,room,this.id,"sfx_bubblegum_turret_shoot",this.location);
             ExtensionCommands.createProjectileFX(parentExt,room,"bubblegum_turret_projectile",this.id,a.getId(),"Bip01","targetNode",time);
@@ -304,7 +303,6 @@ public class BubbleGum extends UserActor {
             }
             if(this.attackCooldown > 0) this.reduceAttackCooldown();
             if(this.target != null && this.target.getHealth() > 0){
-                System.out.println("PB turret is targeting " + this.target.getId());
                 if(this.withinRange(this.target) && this.canAttack()) this.attack(this.target);
                 else if(!this.withinRange(this.target)){
                     this.target = null;

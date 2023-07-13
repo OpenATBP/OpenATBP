@@ -89,7 +89,6 @@ public abstract class Actor {
 
 
     public void setState(ActorState state, boolean enabled){
-        System.out.println(state.toString() + " set to: " + enabled);
         this.states.put(state,enabled);
         ExtensionCommands.updateActorState(this.parentExt,this.room,this.id,state,enabled);
     }
@@ -133,7 +132,6 @@ public abstract class Actor {
         else{
             double currentTempStat = this.getTempStat(stat);
             if(delta > currentTempStat){
-                System.out.println("Delta: " + delta + " vs " + currentTempStat);
                 if(fxId.contains("altar"))this.setTempStat(stat,delta);
                 else this.setTempStat(stat,delta-currentTempStat);
             }

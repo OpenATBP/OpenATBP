@@ -265,8 +265,7 @@ public class UserActor extends Actor {
             this.attackCooldown = this.getPlayerStat("attackSpeed");
             Champion.DelayedAttack delayedAttack = new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack");
             String projectileFx = this.parentExt.getActorData(this.getAvatar()).get("scriptData").get("projectileAsset").asText();
-            float time = (float) (a.getLocation().distance(location) / 10f);
-            this.currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,delayedAttack,projectileFx),(int)time,TimeUnit.MILLISECONDS);
+            this.currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,delayedAttack,projectileFx),500,TimeUnit.MILLISECONDS);
         }
     }
 
@@ -294,6 +293,7 @@ public class UserActor extends Actor {
 
     @Override
     public void die(Actor a) {
+        System.out.println(this.id + " has died! " + this.dead);
         try{
             if(this.dead) return;
             this.dead = true;
@@ -411,7 +411,10 @@ public class UserActor extends Actor {
     @Override
     public void update(int msRan) {
         this.handleDamageQueue();
-        if(this.dead) return;
+        if(this.dead){
+            if(this.currentHealth > 0) this.respawn();
+            else return;
+        }
         float x = (float) this.getOriginalLocation().getX();
         float z = (float) this.getOriginalLocation().getY();
         Point2D currentPoint = this.getLocation();
@@ -869,7 +872,7 @@ public class UserActor extends Actor {
             if(this.emitNode != null) emit = this.emitNode;
             float time = (float) (target.getLocation().distance(location) / 10f);
             ExtensionCommands.createProjectileFX(parentExt,room,projectile,id,target.getId(),emit,"targetNode",time);
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(attackRunnable,(int)time*1000,TimeUnit.MILLISECONDS);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(attackRunnable,(int)(time*1000),TimeUnit.MILLISECONDS);
             currentAutoAttack = null;
         }
     }
