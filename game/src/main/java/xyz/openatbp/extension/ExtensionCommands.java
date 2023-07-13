@@ -32,7 +32,6 @@ public class ExtensionCommands {
 
     public static void createActorFX(ATBPExtension parentExt, Room room, String id, String bundle, int duration, String fxId, boolean parent, String emit, boolean orient, boolean highlight, int team){
         for(User u : room.getUserList()){
-            System.out.println("Creating actor FX!");
             ISFSObject data2 = new SFSObject();
             data2.putUtfString("id",id);
             data2.putUtfString("bundle",bundle);
@@ -80,7 +79,6 @@ public class ExtensionCommands {
             boolean dub = true;
             for(String k : intVals){
                 if(key.contains(k) || key.equalsIgnoreCase(k)){
-                    System.out.println("Putting in Int val:" + k);
                     int val = (int) Math.floor(value);
                     data.putInt(key, val);
                     dub = false;
@@ -89,7 +87,7 @@ public class ExtensionCommands {
             }
             if(dub) data.putDouble(key,value);
             for(User u : room.getUserList()){
-                System.out.println("Sending: " + data.toJson());
+                System.out.println("Sending: " + data.toJson() + " to " + u.getId());
                 parentExt.send("cmd_update_actor_data",data,u);
             }
         }catch(Exception e){
@@ -262,13 +260,11 @@ public class ExtensionCommands {
      * @param deathTime - Respawn time for the knocked out actor
      */
     public static void knockOutActor(ATBPExtension parentExt, Room room, String id, String attackerId, int deathTime){
-        System.out.println(attackerId + " knocked out " + id);
         for(User u : room.getUserList()){
             ISFSObject data = new SFSObject();
             data.putUtfString("id",id);
             data.putUtfString("attackerId",attackerId);
             data.putInt("deathTime",deathTime*1000);
-            System.out.println("Death Time: " + deathTime);
             parentExt.send("cmd_knockout_actor",data,u);
         }
     }
@@ -278,7 +274,6 @@ public class ExtensionCommands {
         data.putUtfString("id",id);
         data.putUtfString("attackerId",attackerId);
         data.putInt("deathTime",deathTime*1000);
-        System.out.println("Death Time: " + deathTime);
         parentExt.send("cmd_knockout_actor",data,u);
     }
 
@@ -386,7 +381,6 @@ public class ExtensionCommands {
             ISFSObject data = new SFSObject();
             String objectAsText;
             objectAsText = objectMapper.writeValueAsString(node);
-            System.out.println(objectAsText);
             data.putUtfString("game_results",objectAsText);
             parentExt.send("cmd_game_over", data, u);
         }
@@ -474,7 +468,6 @@ public class ExtensionCommands {
         data.putBool("canCast",canCast);
         data.putInt("cooldown",cooldown);
         data.putInt("gCooldown",gCooldown);
-        System.out.println(data.getDump());
         parentExt.send("cmd_actor_ability_response",data,u);
     }
 
@@ -523,7 +516,6 @@ public class ExtensionCommands {
     }
 
     public static void handleDeathRecap(ATBPExtension parentExt, User u, String id, String killerId, HashMap<Actor, ISFSObject> aggressors) throws JsonProcessingException {
-        System.out.println(aggressors.toString());
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode data = mapper.createObjectNode();
         data.put("killerId",killerId);

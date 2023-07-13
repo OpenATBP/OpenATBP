@@ -75,6 +75,9 @@ public class RoomHandler implements Runnable{
         mSecondsRan+=100;
         if(mSecondsRan % 1000 == 0){ // Handle every second
             try{
+                if(secondsRan % 60 == 0){
+                    this.printActors();
+                }
                 secondsRan++;
                 if(secondsRan == (60*7) + 30){
                     ExtensionCommands.playSound(parentExt,room,"global","announcer/time_half",new Point2D.Float(0f,0f));
@@ -123,7 +126,6 @@ public class RoomHandler implements Runnable{
                 int minionWave = secondsRan/30;
                 if(minionWave != this.currentMinionWave){
                     int minionNum = secondsRan % 10;
-                    System.out.println("Minion num: " + minionNum);
                     if(minionNum == 5) this.currentMinionWave = minionWave;
                     if(minionNum <= 4){
                         this.addMinion(1,minionNum,minionWave,0);
@@ -589,10 +591,6 @@ public class RoomHandler implements Runnable{
         String mons = a.getId().split("_")[0];
         if(a.getActorType() == ActorType.MONSTER){
             campMonsters.remove((Monster) a);
-            System.out.println("New monster list: \n");
-            for(Monster m : campMonsters){
-                System.out.println(m.getId() + "\n");
-            }
         }
 
         for(String s : GameManager.SPAWNS){
@@ -857,5 +855,11 @@ public class RoomHandler implements Runnable{
 
     public void removeCompanion(Actor a){
         this.companions.remove(a);
+    }
+
+    public void printActors(){
+        for(Actor a : this.getActors()){
+            System.out.println("ROOM: " + this.room.getId() + " |  TYPE: " + a.getActorType().toString() + " | ID: " + a.getId() + " | " + a.getHealth());
+        }
     }
 }
