@@ -589,9 +589,6 @@ public class RoomHandler implements Runnable{
     public void handleSpawnDeath(Actor a){
         System.out.println("The room has killed " + a.getId());
         String mons = a.getId().split("_")[0];
-        if(a.getActorType() == ActorType.MONSTER){
-            campMonsters.remove((Monster) a);
-        }
 
         for(String s : GameManager.SPAWNS){
             if(s.contains(mons)){
