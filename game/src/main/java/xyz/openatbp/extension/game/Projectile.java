@@ -25,6 +25,8 @@ public abstract class Projectile {
     protected ATBPExtension parentExt;
     protected boolean destroyed = false;
     protected Line2D path;
+    protected long startTime;
+    protected double estimatedDuration;
 
     public Projectile(ATBPExtension parentExt, UserActor owner, Line2D path, float speed, float hitboxRadius, String id){
         this.parentExt = parentExt;
@@ -36,6 +38,8 @@ public abstract class Projectile {
         this.location = path.getP1();
         this.id = id;
         this.path = path;
+        this.startTime = System.currentTimeMillis();
+        this.estimatedDuration = (path.getP1().distance(path.getP2()) / speed)*1000f;
     }
 
     public Point2D getLocation(){ //Gets projectile's current location based on time
@@ -65,7 +69,7 @@ public abstract class Projectile {
     public void update(RoomHandler roomHandler){
         if(destroyed) return;
         this.updateTimeTraveled();
-        if(this.destination.distance(this.getLocation()) <= 0.01){
+        if(this.destination.distance(this.getLocation()) <= 0.01 || System.currentTimeMillis() - this.startTime > this.estimatedDuration){
             this.destroy();
 
         }
@@ -103,6 +107,7 @@ public abstract class Projectile {
     }
 
     public void destroy(){
+        System.out.println("Projectile: " + id + " is being destroyed! " + this.destroyed);
         if(!destroyed){
             ExtensionCommands.destroyActor(this.parentExt, owner.getRoom(), this.id);
         }

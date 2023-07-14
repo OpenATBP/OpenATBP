@@ -20,8 +20,9 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
     public void handleClientRequest(User sender, ISFSObject params) {
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         UserActor player = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId()).getPlayer(String.valueOf(sender.getId()));
+        int spellNum = getAbilityNum(params.getUtfString("id"));
         trace(params.getDump());
-        if(player.canUseAbility()){
+        if(player.canUseAbility(spellNum)){
             String userId = String.valueOf(sender.getId());
             String ability = params.getUtfString("id");
             float x = params.getFloat("x");
@@ -36,7 +37,6 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
             GameManager.sendAllUsers(parentExt, specialAttackData,"cmd_special_attack", sender.getLastJoinedRoom());
             Point2D newLocation = new Point2D.Float(x,z);
             String playerActor = player.getAvatar();
-            int spellNum = getAbilityNum(params.getUtfString("id"));
             JsonNode spellData = getSpellData(playerActor,spellNum);
             int cooldown = spellData.get("spellCoolDown").asInt();
             int gCooldown = spellData.get("spellGlobalCoolDown").asInt();

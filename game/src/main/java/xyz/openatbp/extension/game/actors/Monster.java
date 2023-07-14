@@ -181,15 +181,25 @@ public class Monster extends Actor {
             this.currentHealth = -1;
             RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getId());
             int scoreValue = parentExt.getActorStats(this.id).get("valueScore").asInt();
-            ExtensionCommands.knockOutActor(parentExt,this.room,this.id,a.getId(),45);
-            ExtensionCommands.destroyActor(parentExt,this.room,this.id);
-            if(a.getActorType() == ActorType.PLAYER){ //Adds score + party xp when killed by player
-                UserActor ua = (UserActor) a;
-                ua.addGameStat("jungleMobs",1);
-                if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(2);
-                roomHandler.addScore(ua,a.getTeam(),scoreValue);
-                roomHandler.handleXPShare((UserActor)a,this.parentExt.getActorXP(this.id));
+            if(a.getActorType() == ActorType.PLAYER || a.getActorType() == ActorType.COMPANION){ //Adds score + party xp when killed by player
+                UserActor ua = null;
+                if(a.getActorType() == ActorType.COMPANION){
+                    int team = 0;
+                    if(a.getTeam() == 0) team = 1;
+                    if(a.getId().contains("skully")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyCharacter("lich",team);
+                    else if(a.getId().contains("turret")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyCharacter("princessbubblegum",team);
+                }else ua = (UserActor) a;
+                if(ua != null){
+                    ua.addGameStat("jungleMobs",1);
+                    if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(2);
+                    roomHandler.addScore(ua,a.getTeam(),scoreValue);
+                    roomHandler.handleXPShare(ua,this.parentExt.getActorXP(this.id));
+                    ExtensionCommands.knockOutActor(parentExt,this.room,this.id,ua.getId(),45);
+                }
+            }else{
+                ExtensionCommands.knockOutActor(parentExt,this.room,this.id,a.getId(),45);
             }
+            ExtensionCommands.destroyActor(parentExt,this.room, this.id);
             roomHandler.handleSpawnDeath(this);
         }
     }

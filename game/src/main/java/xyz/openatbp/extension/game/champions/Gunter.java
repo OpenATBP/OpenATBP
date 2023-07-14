@@ -45,7 +45,7 @@ public class Gunter extends UserActor{
     @Override
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
         super.useAbility(ability,spellData,cooldown,gCooldown,castDelay,dest);
-
+        this.canCast[ability-1] = false;
         switch(ability){
             case 1:
                 Point2D dashLocation = Champion.getDashPoint(parentExt,this,dest);
@@ -64,6 +64,8 @@ public class Gunter extends UserActor{
                 Line2D maxRangeLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),7f);
                 this.fireProjectile(new BottleProjectile(this.parentExt,this,maxRangeLine,11f,0.5f,this.id+"projectile_gunter_bottle"),"projectile_gunter_bottle",dest,8f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,player,"w",true,getReducedCooldown(cooldown),gCooldown);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new GunterAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
+
                 break;
             case 3: //TODO: Last left off - actually make this do damage
                 this.ultActivated = true;
@@ -97,9 +99,9 @@ public class Gunter extends UserActor{
     }
 
     @Override
-    public boolean canUseAbility(){
+    public boolean canUseAbility(int ability){
         if(ultActivated) return false;
-        else return super.canUseAbility();
+        else return super.canUseAbility(ability);
     }
 
     @Override
@@ -128,11 +130,12 @@ public class Gunter extends UserActor{
 
         @Override
         protected void spellQ() {
+            canCast[0] = true;
             setCanMove(true);
             Point2D loc = getRelativePoint(false);
             ExtensionCommands.createWorldFX(parentExt,room,id+"_slide","gunter_belly_slide_bottles",id+"_slideBottles",500,(float)loc.getX(),(float)loc.getY(),false,team,0f);
             ExtensionCommands.playSound(parentExt,room,id,"sfx_gunter_slide_shatter",loc);
-            List<Actor> affectedActors = Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),loc,4f);
+            List<Actor> affectedActors = Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),loc,2f);
             for(Actor a : affectedActors){
                 if(a.getTeam() != team){
                     handleSpellVamp(getSpellDamage(spellData));
@@ -143,11 +146,12 @@ public class Gunter extends UserActor{
 
         @Override
         protected void spellW() {
-
+            canCast[1] = true;
         }
 
         @Override
         protected void spellE() {
+            canCast[2] = true;
             setCanMove(true);
             ultActivated = false;
             ultPoint = null;

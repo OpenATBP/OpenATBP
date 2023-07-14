@@ -5,6 +5,7 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.GameManager;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.Champion;
@@ -23,7 +24,9 @@ public class MoveActorHandler extends BaseClientRequestHandler {
 
         //trace(params.getDump());
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
+
         RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId());
+        if(roomHandler == null && (int)sender.getLastJoinedRoom().getProperty("state") != 2) ExtensionCommands.abortGame(parentExt,sender.getLastJoinedRoom());
         UserActor user = roomHandler.getPlayer(String.valueOf(sender.getId()));
         if(user != null && user.canMove()){
             user.cancelAuto();

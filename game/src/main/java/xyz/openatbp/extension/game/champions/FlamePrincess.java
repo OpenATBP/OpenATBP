@@ -59,18 +59,21 @@ public class FlamePrincess extends UserActor {
         }
         switch(ability){
             case 1: //Q
+                this.canCast[0] = false;
                 Line2D skillShotLine = new Line2D.Float(this.location,dest);
                 Line2D maxRangeLine = Champion.getMaxRangeLine(skillShotLine,8f);
                 ExtensionCommands.playSound(parentExt,room,this.id,"sfx_flame_princess_projectile_throw",this.location);
                 this.fireProjectile(new FlameProjectile(this.parentExt,this,maxRangeLine,8f,0.5f,this.id+"projectile_flame_cone"),"projectile_flame_cone",dest,8f);
-                ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),"q",true,getReducedCooldown(cooldown),gCooldown);
+                ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),"q",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
                 break;
             case 2: //W
+                this.canCast[1] = false;
                 ExtensionCommands.playSound(parentExt,room,this.id,"sfx_flame_princess_projectile_throw",this.location);
                 ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"fx_target_ring_2","flame_w",1000, (float) dest.getX(),(float) dest.getY(),true,this.team,0f);
                 ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"flame_princess_polymorph_fireball","flame_w_polymorph",1000, (float) dest.getX(),(float) dest.getY(),false,this.team,0f);
-                ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),"w",true,getReducedCooldown(cooldown),gCooldown);
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest), 500, TimeUnit.MILLISECONDS);
+                ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),"w",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest), castDelay, TimeUnit.MILLISECONDS);
                 break;
             case 3: //E TODO: FP does not return to form when skin is used also she needs to be scaled up
                 if(!ultStarted && ultUses == 3){
@@ -113,7 +116,8 @@ public class FlamePrincess extends UserActor {
     @Override
     public void setCanMove(boolean canMove){
         if(ultStarted && !canMove) this.canMove = true;
-        else this.canMove = canMove;
+        if(!this.canMove()) this.canMove = false;
+        else super.setCanMove(canMove);
     }
 
     private class FlameAbilityRunnable extends AbilityRunnable {
@@ -124,7 +128,7 @@ public class FlamePrincess extends UserActor {
 
         @Override
         protected void spellQ() {
-
+            canCast[0] = true;
         }
 
         @Override
@@ -140,6 +144,7 @@ public class FlamePrincess extends UserActor {
                 userActor.addToDamageQueue(FlamePrincess.this,50,parentExt.getAttackData(getAvatar(),"spell2"));
                 userActor.handleEffect(ActorState.POLYMORPH,-1d,3000,null);
             }
+            canCast[1] = true;
         }
 
         @Override
@@ -148,7 +153,7 @@ public class FlamePrincess extends UserActor {
                 setState(ActorState.TRANSFORMED, false);
                 ExtensionCommands.removeFx(parentExt,room,"flame_e");
                 ExtensionCommands.swapActorAsset(parentExt,room,id,getAvatar());
-                ExtensionCommands.actorAbilityResponse(parentExt,player,"e",true, getReducedCooldown(cooldown), gCooldown);
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"e",canUseAbility(2), getReducedCooldown(cooldown), gCooldown);
                 ExtensionCommands.scaleActor(parentExt,room,id,0.6667f);
                 ultStarted = false;
                 ultFinished = true;

@@ -38,6 +38,7 @@ public class Lich extends UserActor{
         if (skully == null && System.currentTimeMillis() - lastSkullySpawn > getReducedCooldown(40000)) {
             this.spawnSkully();
         }
+        this.canCast[ability-1] = false;
         switch (ability) {
             case 1: //Q
                 double statIncrease = this.speed * 0.25;
@@ -48,6 +49,7 @@ public class Lich extends UserActor{
                 ExtensionCommands.playSound(parentExt,room,id,"sfx_lich_trail",this.location);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new TrailHandler(), 6000, TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"q",true,getReducedCooldown(cooldown),gCooldown);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new LichAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
                 break;
             case 2: //W
                 this.stopMoving();
@@ -56,6 +58,8 @@ public class Lich extends UserActor{
                 Line2D newLine = Champion.getMaxRangeLine(fireLine,8f);
                 this.fireProjectile(new LichCharm(parentExt,this,newLine,9f,0.5f,this.id+"projectile_lich_charm"),"projectile_lich_charm",dest,8f);
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"w",true,getReducedCooldown(cooldown),gCooldown);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new LichAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
+
                 break;
             case 3: //E
                 if(!this.ultStarted){
@@ -323,7 +327,11 @@ public class Lich extends UserActor{
             }else if(attacker.getClass() == Skully.class){
                 JsonNode attackData = parentExt.getAttackData("lich","spell4");
                 double damage = 25d + (Lich.this.getPlayerStat("attackDamage")*0.8);
-                this.target.addToDamageQueue(Lich.this,(int)damage,attackData);
+                Actor attacker = this.attacker;
+                if(this.target.getActorType() == ActorType.PLAYER){
+                    attacker = Lich.this;
+                }
+                this.target.addToDamageQueue(attacker,(int)damage,attackData);
             }
         }
     }
@@ -364,12 +372,12 @@ public class Lich extends UserActor{
 
         @Override
         protected void spellQ() {
-
+            canCast[0] = true;
         }
 
         @Override
         protected void spellW() {
-
+            canCast[1] = true;
         }
 
         @Override
@@ -380,6 +388,7 @@ public class Lich extends UserActor{
                 Lich.this.ultStarted = false;
                 ultLocation = null;
             }else{
+                canCast[2] = true;
                 Lich.this.ultStarted = true;
                 Lich.this.ultTeleportsRemaining = 1;
                 Lich.this.ultLocation = dest;

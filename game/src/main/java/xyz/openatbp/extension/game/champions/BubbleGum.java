@@ -67,9 +67,9 @@ public class BubbleGum extends UserActor {
                 potionSpawn = -1;
                 potionLocation = null;
             }else{
-                List<Actor> affectedActors = Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),potionLocation,4f);
+                List<Actor> affectedActors = Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),potionLocation,2f);
                 for(Actor a : affectedActors){
-                    if(a.getTeam() != this.team){
+                    if(a.getTeam() != this.team && a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER){
                         JsonNode spellData = this.parentExt.getAttackData("princessbubblegum","spell1");
                         double damage = this.getSpellDamage(spellData)/10f;
                         a.addToDamageQueue(this,damage,spellData);
@@ -94,7 +94,7 @@ public class BubbleGum extends UserActor {
                 ExtensionCommands.playSound(parentExt,room,id,voiceLinePotion,this.location);
                 ExtensionCommands.createWorldFX(parentExt,room,id,"fx_target_ring_2",id+"_potionArea",3000+castDelay,(float)dest.getX(),(float)dest.getY(),true,this.team,0f);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new PBAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
-                ExtensionCommands.actorAbilityResponse(parentExt,player,"q",true,getReducedCooldown(cooldown),gCooldown);
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"q",this.canUseAbility(0),getReducedCooldown(cooldown),gCooldown);
                 break;
             case 2: //W
                 this.stopMoving();
@@ -102,15 +102,20 @@ public class BubbleGum extends UserActor {
                 if(this.avatar.contains("young")) voiceLine = "vo/vo_bubblegum_young_turret";
                 ExtensionCommands.playSound(parentExt,room,id,voiceLine,this.location);
                 this.spawnTurret(dest);
-                ExtensionCommands.actorAbilityResponse(parentExt,player,"w",true,getReducedCooldown(cooldown),gCooldown);
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"w",this.canUseAbility(1),getReducedCooldown(cooldown),gCooldown);
                 break;
             case 3: //E
                 if(!this.bombPlaced){
+                    this.canCast[2] = false;
                     this.stopMoving();
                     ExtensionCommands.createWorldFX(parentExt,room,id,"fx_target_ring_3",id+"_bombArea",4000, (float)dest.getX(), (float)dest.getY(),true,this.team,0f);
                     ExtensionCommands.createWorldFX(parentExt,room,id,"bubblegum_bomb_trap",this.id+"_bomb",4000,(float)dest.getX(),(float)dest.getY(),false,this.team,0f);
                     this.bombLocation = dest;
-                    this.bombPlaced = true;
+                    Runnable bombDelay = () -> {
+                        bombPlaced = true;
+                        canCast[2] = true;
+                    };
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(bombDelay, 750, TimeUnit.MILLISECONDS);
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new PBAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),4000,TimeUnit.MILLISECONDS);
                 }else{
                     this.useBomb(cooldown,gCooldown);
@@ -120,7 +125,7 @@ public class BubbleGum extends UserActor {
     }
 
     protected void useBomb(int cooldown, int gCooldown){
-        for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.bombLocation,6f)){
+        for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.bombLocation,3f)){
             if((a.getTeam() != this.team || a.getId().equalsIgnoreCase(this.id)) && a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER){
                 a.stopMoving();
                 Line2D originalLine = new Line2D.Double(this.bombLocation,a.getLocation());
@@ -186,6 +191,7 @@ public class BubbleGum extends UserActor {
 
         @Override
         protected void spellQ() {
+            canCast[0] = true;
             potionActivated = true;
             potionLocation = dest;
             potionSpawn = System.currentTimeMillis();
@@ -195,7 +201,7 @@ public class BubbleGum extends UserActor {
 
         @Override
         protected void spellW() {
-
+            canCast[1] = true;
         }
 
         @Override
@@ -257,6 +263,7 @@ public class BubbleGum extends UserActor {
             this.timeOfBirth = System.currentTimeMillis();
             this.actorType = ActorType.COMPANION;
             this.stats = this.initializeStats();
+            this.attackCooldown = this.getPlayerStat("attackSpeed");
             this.setStat("attackDamage",BubbleGum.this.getStat("attackDamage"));
             this.timeOfBirth = System.currentTimeMillis();
             this.iconName = "Turret #" + turretNum;

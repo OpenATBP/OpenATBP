@@ -134,7 +134,7 @@ public class Champion {
         List<Actor> affectedActors = new ArrayList<>(actors.size());
         for(Actor a : actors){
             Point2D location = a.getLocation();
-            if(location.distance(center) <= radius/2) affectedActors.add(a);
+            if(location.distance(center) <= radius) affectedActors.add(a);
         }
         return affectedActors;
     }

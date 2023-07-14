@@ -45,6 +45,7 @@ public class UserActor extends Actor {
     protected int multiKill = 0;
     protected long lastKilled = System.currentTimeMillis();
     protected int dcBuff = 0;
+    protected boolean[] canCast = {true,true,true};
 
     //TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt){
@@ -519,13 +520,27 @@ public class UserActor extends Actor {
         }
         if(this.getClass() == UserActor.class){
             String abilityString = "q";
-            if(ability == 2) abilityString = "w";
-            else if(ability == 3) abilityString = "e";
-            ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),abilityString,true,getReducedCooldown(cooldown),gCooldown);
+            int abilityIndex = 0;
+            if(ability == 2){
+                abilityString = "w";
+                abilityIndex = 1;
+            }
+            else if(ability == 3){
+                abilityString = "e";
+                abilityIndex = 2;
+            }
+            ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),abilityString,this.canCast[abilityIndex],getReducedCooldown(cooldown),gCooldown);
+            if(this.canCast[abilityIndex]){
+                this.canCast[abilityIndex] = false;
+                int finalAbilityIndex = abilityIndex;
+                Runnable castReset = () -> {canCast[finalAbilityIndex] = true;};
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(castReset,getReducedCooldown(cooldown),TimeUnit.MILLISECONDS);
+            }
         }
     }
     public void setCanMove(boolean canMove){
         this.canMove = canMove;
+        if(this.canMove && this.states.get(ActorState.CHARMED)) ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,this.destination, (float) this.getPlayerStat("speed"),true);
     }
 
     public void setState(ActorState[] states, boolean stateBool){
@@ -539,7 +554,7 @@ public class UserActor extends Actor {
         this.target = a;
         if(this.states.get(ActorState.CHARMED)){
             this.setPath(getRelativePoint(false),a.getLocation());
-            ExtensionCommands.moveActor(parentExt,room,id,this.location,this.destination, (float) getPlayerStat("speed"),true);
+            if(this.canMove) ExtensionCommands.moveActor(parentExt,room,id,this.location,this.destination, (float) getPlayerStat("speed"),true);
         }
     }
 
@@ -547,12 +562,12 @@ public class UserActor extends Actor {
         return this.states.get(state);
     }
 
-    public boolean canUseAbility(){
+    public boolean canUseAbility(int ability){
         ActorState[] hinderingStates = {ActorState.POLYMORPH, ActorState.AIRBORNE, ActorState.CHARMED, ActorState.FEARED, ActorState.SILENCED, ActorState.STUNNED};
         for(ActorState s : hinderingStates){
             if(this.states.get(s)) return false;
         }
-        return true;
+        return this.canCast[ability-1];
     }
 
     public Line2D getMovementLine(){
@@ -566,6 +581,13 @@ public class UserActor extends Actor {
         if(delay > 0){
             SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(true),delay,TimeUnit.MILLISECONDS);
         }
+    }
+    @Override
+    public void stopMoving(){
+        super.stopMoving();
+        this.timeTraveled = 0f;
+        this.destination = this.location;
+        this.originalLocation = this.location;
     }
 
     public void respawn(){
@@ -831,6 +853,11 @@ public class UserActor extends Actor {
             playerStats.put(s,this.getPlayerStat(s));
         }
         return playerStats;
+    }
+
+    public void destroy(){
+        this.dead = true;
+        ExtensionCommands.destroyActor(this.parentExt,this.room,this.id);
     }
 
     protected class MovementStopper implements Runnable {

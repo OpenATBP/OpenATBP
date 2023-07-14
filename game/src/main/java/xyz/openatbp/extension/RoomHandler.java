@@ -295,7 +295,7 @@ public class RoomHandler implements Runnable{
             float x = 0;
             float z = 0;
             String actor = monster;
-            if(monster.equalsIgnoreCase("gnomes") || monster.equalsIgnoreCase("owls")){
+            if(monster.equalsIgnoreCase("gnomes") || monster.equalsIgnoreCase("ironowls")){
                 char[] abc = {'a','b','c'};
                 for(int i = 0; i < 3; i++){ //Gnomes and owls have three different mobs so need to be spawned in triplets
                     if(monster.equalsIgnoreCase("gnomes")){
@@ -309,7 +309,9 @@ public class RoomHandler implements Runnable{
                         z = (float)MapData.OWLS[i].getY();
                         campMonsters.add(new Monster(parentExt,room,MapData.OWLS[i],actor));
                     }
-                    ExtensionCommands.createActor(this.parentExt,this.room,actor,actor,new Point2D.Float(x,z),0f,2);
+                    Point2D spawnLoc = new Point2D.Float(x,z);
+                    ExtensionCommands.createActor(this.parentExt,this.room,actor,actor,spawnLoc,0f,2);
+                    ExtensionCommands.moveActor(this.parentExt,this.room,actor,spawnLoc,spawnLoc,5f,false);
                 }
             }else if(monster.length()>3){
                 switch(monster){
@@ -335,7 +337,9 @@ public class RoomHandler implements Runnable{
                         campMonsters.add(new GooMonster(parentExt,room,MapData.L2_OOZE,actor));
                         break;
                 }
-                ExtensionCommands.createActor(this.parentExt,this.room,actor,actor,new Point2D.Float(x,z),0f,2);
+                Point2D spawnLoc = new Point2D.Float(x,z);
+                ExtensionCommands.createActor(this.parentExt,this.room,actor,actor,spawnLoc,0f,2);
+                ExtensionCommands.moveActor(this.parentExt,this.room,actor,spawnLoc,spawnLoc,5f,false);
             }
     }
     private void spawnHealth(String id){
@@ -379,6 +383,7 @@ public class RoomHandler implements Runnable{
             else team = 1;
             String altarId = "altar_"+i;
             if(Math.abs(altarStatus[i]) >= 5 && altarStatus[i] != 10){
+                ExtensionCommands.createActorFX(this.parentExt,this.room,altarId,"fx_altar_5",500,"fx_altar_"+5+i,false,"Bip01",false,true,team);
                 ExtensionCommands.playSound(parentExt,room,"","sfx_altar_locked",getAltarLocation(i));
                 altarStatus[i]=10; //Locks altar
                 if(i == 1) addScore(null,team,15);
@@ -606,11 +611,15 @@ public class RoomHandler implements Runnable{
                 }
                 else {
                     for(Monster m : campMonsters){
-                        if(!m.getId().equalsIgnoreCase(a.getId()) && m.getId().contains(mons)) return;
+                        if(!m.getId().equalsIgnoreCase(a.getId()) && m.getId().contains(mons) && m.getHealth() > 0){
+                            return;
+                        }
                     }
                     room.getVariable("spawns").getSFSObjectValue().putInt(s,0);
                     return;
                 }
+            }else{
+                System.out.println("Failed! " + s + " vs " + mons);
             }
         }
     }
@@ -744,6 +753,8 @@ public class RoomHandler implements Runnable{
                     else if(ua.getTeam() == winningTeam) win = 1d;
                     else win = 0d;
                     int eloGain = ChampionData.getEloGain(ua,this.players,win);
+                    int currentElo = dataObj.get("player").get("elo").asInt();
+                    if(currentElo + eloGain < 0) eloGain = currentElo*-1;
                     if(ua.getTeam() == winningTeam) wins++;
 
                     int currentRankProgress = dataObj.get("player").get("rankProgress").asInt();
@@ -804,6 +815,7 @@ public class RoomHandler implements Runnable{
         if(this.players.size() == 1) return;
         try{
             UserActor player = this.getPlayer(String.valueOf(user.getId()));
+            player.destroy();
             MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
             Document data = playerData.find(eq("user.TEGid",(String)user.getSession().getProperty("tegid"))).first();
             if(data != null){

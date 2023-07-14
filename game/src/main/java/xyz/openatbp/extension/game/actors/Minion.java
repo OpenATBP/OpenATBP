@@ -12,6 +12,7 @@ import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.champions.Lich;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
@@ -346,18 +347,24 @@ public class Minion extends Actor {
         if(this.dead) return;
         this.stopMoving();
         this.dead = true;
-        if(a.getActorType() == ActorType.PLAYER){
-            UserActor ua = (UserActor) a;
-            ua.addGameStat("minions",1);
+        if(a.getActorType() == ActorType.PLAYER || a.getActorType() == ActorType.COMPANION){
+            UserActor ua = null;
+            if(a.getActorType() == ActorType.COMPANION){
+                if(a.getId().contains("skully")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyCharacter("lich",this.team);
+                else if(a.getId().contains("turret")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyCharacter("princessbubblegum",this.team);
+            }else ua = (UserActor) a;
+            if(ua != null ){
+                ua.addGameStat("minions",1);
+                if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(2);
+                this.parentExt.getRoomHandler(this.room.getId()).addScore(ua,a.getTeam(),1);
+                ExtensionCommands.knockOutActor(parentExt,this.room,this.id,ua.getId(),30);
+            }
+        }else{
+            ExtensionCommands.knockOutActor(parentExt,this.room,this.id,a.getId(),30);
         }
-        this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,aggressors.keySet(), this.xpWorth);
-        ExtensionCommands.knockOutActor(parentExt,this.room,this.id,a.getId(),30);
         ExtensionCommands.destroyActor(parentExt,this.room,this.id);
-        if(a.getActorType() == ActorType.PLAYER){
-            UserActor ua = (UserActor) a;
-            if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(2);
-            this.parentExt.getRoomHandler(this.room.getId()).addScore(ua,a.getTeam(),1);
-        }
+        this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,aggressors.keySet(), this.xpWorth);
+
     }
 
     @Override
