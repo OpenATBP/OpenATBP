@@ -38,7 +38,6 @@ public class Lich extends UserActor{
         if (skully == null && System.currentTimeMillis() - lastSkullySpawn > getReducedCooldown(40000)) {
             this.spawnSkully();
         }
-        this.canCast[ability-1] = false;
         switch (ability) {
             case 1: //Q
                 double statIncrease = this.speed * 0.25;
@@ -85,6 +84,7 @@ public class Lich extends UserActor{
             case 4: //Passive
                 break;
         }
+        this.canCast[ability-1] = false;
     }
 
     @Override

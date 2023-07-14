@@ -27,6 +27,10 @@ public class MoveActorHandler extends BaseClientRequestHandler {
 
         RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId());
         if(roomHandler == null && (int)sender.getLastJoinedRoom().getProperty("state") != 2) ExtensionCommands.abortGame(parentExt,sender.getLastJoinedRoom());
+        if(roomHandler == null){
+            System.out.println(sender.getId() + " tried to move in room " + sender.getLastJoinedRoom().getId() + " but failed!");
+            return;
+        }
         UserActor user = roomHandler.getPlayer(String.valueOf(sender.getId()));
         if(user != null && user.canMove()){
             user.cancelAuto();

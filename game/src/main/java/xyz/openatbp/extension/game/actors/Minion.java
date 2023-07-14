@@ -358,6 +358,7 @@ public class Minion extends Actor {
                 if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(2);
                 this.parentExt.getRoomHandler(this.room.getId()).addScore(ua,a.getTeam(),1);
                 ExtensionCommands.knockOutActor(parentExt,this.room,this.id,ua.getId(),30);
+                ExtensionCommands.playSound(this.parentExt,ua.getUser(),ua.getId(),"sfx_gems_get",this.location);
             }
         }else{
             ExtensionCommands.knockOutActor(parentExt,this.room,this.id,a.getId(),30);

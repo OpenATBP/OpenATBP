@@ -80,7 +80,8 @@ public class BubbleGum extends UserActor {
                 }
             }
         }
-        for(Turret t : this.turrets){
+        ArrayList<Turret> turrets = new ArrayList<>(this.turrets); //To remove concurrent exceptions
+        for(Turret t : turrets){
             t.update(msRan);
         }
     }

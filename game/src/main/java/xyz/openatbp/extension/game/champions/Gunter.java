@@ -45,7 +45,6 @@ public class Gunter extends UserActor{
     @Override
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
         super.useAbility(ability,spellData,cooldown,gCooldown,castDelay,dest);
-        this.canCast[ability-1] = false;
         switch(ability){
             case 1:
                 Point2D dashLocation = Champion.getDashPoint(parentExt,this,dest);
@@ -81,6 +80,7 @@ public class Gunter extends UserActor{
                 ExtensionCommands.playSound(parentExt,room,this.id,"sfx_gunter_bottles_ultimate",this.location);
                 break;
         }
+        this.canCast[ability-1] = false;
     }
     @Override
     public void attack(Actor a){

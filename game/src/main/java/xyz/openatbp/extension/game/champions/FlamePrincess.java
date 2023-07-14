@@ -59,20 +59,20 @@ public class FlamePrincess extends UserActor {
         }
         switch(ability){
             case 1: //Q
-                this.canCast[0] = false;
                 Line2D skillShotLine = new Line2D.Float(this.location,dest);
                 Line2D maxRangeLine = Champion.getMaxRangeLine(skillShotLine,8f);
                 ExtensionCommands.playSound(parentExt,room,this.id,"sfx_flame_princess_projectile_throw",this.location);
                 this.fireProjectile(new FlameProjectile(this.parentExt,this,maxRangeLine,8f,0.5f,this.id+"projectile_flame_cone"),"projectile_flame_cone",dest,8f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),"q",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
+                this.canCast[0] = false;
                 break;
             case 2: //W
-                this.canCast[1] = false;
                 ExtensionCommands.playSound(parentExt,room,this.id,"sfx_flame_princess_projectile_throw",this.location);
                 ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"fx_target_ring_2","flame_w",1000, (float) dest.getX(),(float) dest.getY(),true,this.team,0f);
                 ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"flame_princess_polymorph_fireball","flame_w_polymorph",1000, (float) dest.getX(),(float) dest.getY(),false,this.team,0f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),"w",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
+                this.canCast[1] = false;
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest), castDelay, TimeUnit.MILLISECONDS);
                 break;
             case 3: //E TODO: FP does not return to form when skin is used also she needs to be scaled up
