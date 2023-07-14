@@ -92,9 +92,11 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                     destz = (float)movementLine.getX2();
                 }
             }
+            Point2D testPoint = new Point2D.Float(destx,destz);
             if(insideCollider(movementLine.getP1(), mapPaths)){
-                destx = (float) movementLine.getX1();
-                destz = (float) movementLine.getY1();
+                Point2D newPoint = this.getOutsidePoint(new Line2D.Float(movementLine.getP1(),testPoint),mapPaths);
+                destx = (float) newPoint.getX();
+                destz = (float) newPoint.getY();
             }
             // trace("X: " + movementLine.getX2());
             //trace("Y:" + movementLine.getY2());
@@ -174,6 +176,16 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             if(collider.contains(point)) return true;
         }
         return false;
+    }
+
+    private Point2D getOutsidePoint(Line2D line, ArrayList<Path2D> colliders){
+        Point2D[] allPoints = findAllPoints(new Line2D.Float(line.getP2(),line.getP1()));
+        for(Path2D collider: colliders){
+            for(int i = allPoints.length-1; i >= 0; i--){
+                if(!collider.contains(allPoints[i])) return allPoints[i];
+            }
+        }
+        return line.getP2();
     }
 
 }

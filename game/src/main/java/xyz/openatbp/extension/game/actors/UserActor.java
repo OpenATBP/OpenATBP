@@ -728,6 +728,7 @@ public class UserActor extends Actor {
     public void handleSpellVamp(double damage){
         double percentage = this.getPlayerStat("spellVamp")/100;
         int healing = (int) Math.round(damage*percentage);
+        System.out.println(this.id + " healing for " + healing + " from spell vamp at " + percentage);
         this.changeHealth(healing);
     }
 

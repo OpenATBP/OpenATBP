@@ -69,7 +69,6 @@ public class Gunter extends UserActor{
 
                 break;
             case 3: //TODO: Last left off - actually make this do damage
-                this.ultActivated = true;
                 this.ultPoint = dest;
                 ExtensionCommands.createActorFX(parentExt,room,this.id,"gunter_powered_up",2500,this.id+"_gunterPower",true,"Bip01",true,false,team);
                 ExtensionCommands.createActorFX(parentExt,room,this.id,"gunter_bottle_cone",2500,this.id+"gunterUlt",true,"Bip01",true,false,team);
@@ -77,6 +76,7 @@ public class Gunter extends UserActor{
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new GunterAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),2500,TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAnimate(parentExt,room,this.id,"spell3b",2500,true);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,player,"e",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
+                this.ultActivated = true;
                 ExtensionCommands.playSound(parentExt,room,this.id,"sfx_gunter_bottles_ultimate",this.location);
                 break;
         }
@@ -120,6 +120,7 @@ public class Gunter extends UserActor{
 
     @Override
     public void handleKill(Actor a, JsonNode attackData){
+        System.out.println(attackData.toString());
         if(attackData.has("spellName") && attackData.get("spellName").asText().contains("spell_1")) this.shatter(a);
         else if(attackData.has("attackName") && attackData.get("attackName").asText().contains("Basic")) this.shatter(a);
     }
