@@ -80,10 +80,17 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                 Point2D finalPoint = collidePlayer(new Line2D.Double(movementLine.getX1(),movementLine.getY1(),intersectionPoint.getX(),intersectionPoint.getY()),mapPaths.get(mapPathIndex));
                 destx = (float)finalPoint.getX();
                 destz = (float)finalPoint.getY();
-                if(insideCollider(finalPoint,mapPaths)){
+                if(insideCollider(finalPoint,mapPaths) && !insideCollider(movementLine.getP2(), mapPaths)){
                     destx = (float)movementLine.getX2();
                     destz = (float)movementLine.getY2();
+                }else if(insideCollider(finalPoint,mapPaths)){
+                    destx = (float)movementLine.getX1();
+                    destz = (float)movementLine.getX2();
                 }
+            }
+            if(insideCollider(movementLine.getP1(), mapPaths)){
+                destx = (float) movementLine.getX1();
+                destz = (float) movementLine.getY1();
             }
             // trace("X: " + movementLine.getX2());
             //trace("Y:" + movementLine.getY2());
@@ -144,9 +151,10 @@ public class MoveActorHandler extends BaseClientRequestHandler {
 
     //Returns a point where the player is no longer colliding with an object so that they can move freely and don't clip inside an object
     private Point2D collidePlayer(Line2D movementLine, Path2D collider){
+        if(collider.contains(movementLine.getP1())) return movementLine.getP1();
         Point2D[] points = findAllPoints(movementLine);
         Point2D p = movementLine.getP1();
-        for(int i = points.length-2; i>0; i--){ //Searchs all points in the movement line to see how close it can move without crashing into the collider
+        for(int i = points.length-4; i>0; i--){ //Searchs all points in the movement line to see how close it can move without crashing into the collider
             Point2D p2 = new Point2D.Double(points[i].getX(),points[i].getY());
             Line2D line = new Line2D.Double(movementLine.getP1(),p2);
             if(collider.intersects(line.getBounds())){

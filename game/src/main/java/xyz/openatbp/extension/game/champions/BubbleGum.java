@@ -94,7 +94,7 @@ public class BubbleGum extends UserActor {
                 ExtensionCommands.playSound(parentExt,room,id,voiceLinePotion,this.location);
                 ExtensionCommands.createWorldFX(parentExt,room,id,"fx_target_ring_2",id+"_potionArea",3000+castDelay,(float)dest.getX(),(float)dest.getY(),true,this.team,0f);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new PBAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
-                ExtensionCommands.actorAbilityResponse(parentExt,player,"q",this.canUseAbility(0),getReducedCooldown(cooldown),gCooldown);
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"q",this.canUseAbility(1),getReducedCooldown(cooldown),gCooldown);
                 break;
             case 2: //W
                 this.stopMoving();
@@ -102,7 +102,7 @@ public class BubbleGum extends UserActor {
                 if(this.avatar.contains("young")) voiceLine = "vo/vo_bubblegum_young_turret";
                 ExtensionCommands.playSound(parentExt,room,id,voiceLine,this.location);
                 this.spawnTurret(dest);
-                ExtensionCommands.actorAbilityResponse(parentExt,player,"w",this.canUseAbility(1),getReducedCooldown(cooldown),gCooldown);
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"w",this.canUseAbility(2),getReducedCooldown(cooldown),gCooldown);
                 break;
             case 3: //E
                 if(!this.bombPlaced){

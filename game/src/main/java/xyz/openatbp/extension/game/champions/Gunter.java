@@ -57,13 +57,15 @@ public class Gunter extends UserActor{
                 ExtensionCommands.createActorFX(parentExt,room,this.id,"gunter_slide_trail",runtime,this.id+"_gunterTrail",true,"Bip01",true,false,team);
                 ExtensionCommands.createActorFX(parentExt,room,this.id,"gunter_slide_snow",runtime,this.id+"_gunterTrail",true,"Bip01",true,false,team);
                 this.setLocation(dashLocation);
+                Runnable castReset = () -> {canCast[0] = true;};
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new GunterAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),runtime,TimeUnit.MILLISECONDS);
-                ExtensionCommands.actorAbilityResponse(this.parentExt,player,"q",true,getReducedCooldown(cooldown),gCooldown);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(castReset,250,TimeUnit.MILLISECONDS);
+                ExtensionCommands.actorAbilityResponse(this.parentExt,player,"q",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
                 break;
             case 2:
                 Line2D maxRangeLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),7f);
                 this.fireProjectile(new BottleProjectile(this.parentExt,this,maxRangeLine,11f,0.5f,this.id+"projectile_gunter_bottle"),"projectile_gunter_bottle",dest,8f);
-                ExtensionCommands.actorAbilityResponse(this.parentExt,player,"w",true,getReducedCooldown(cooldown),gCooldown);
+                ExtensionCommands.actorAbilityResponse(this.parentExt,player,"w",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new GunterAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
 
                 break;
@@ -75,7 +77,7 @@ public class Gunter extends UserActor{
                 this.setCanMove(false);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new GunterAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),2500,TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAnimate(parentExt,room,this.id,"spell3b",2500,true);
-                ExtensionCommands.actorAbilityResponse(this.parentExt,player,"e",true,getReducedCooldown(cooldown),gCooldown);
+                ExtensionCommands.actorAbilityResponse(this.parentExt,player,"e",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
                 ExtensionCommands.playSound(parentExt,room,this.id,"sfx_gunter_bottles_ultimate",this.location);
                 break;
         }
@@ -130,7 +132,6 @@ public class Gunter extends UserActor{
 
         @Override
         protected void spellQ() {
-            canCast[0] = true;
             setCanMove(true);
             Point2D loc = getRelativePoint(false);
             ExtensionCommands.createWorldFX(parentExt,room,id+"_slide","gunter_belly_slide_bottles",id+"_slideBottles",500,(float)loc.getX(),(float)loc.getY(),false,team,0f);

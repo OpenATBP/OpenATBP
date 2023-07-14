@@ -48,7 +48,7 @@ public class Lich extends UserActor{
                 slimedEnemies = new HashMap<>();
                 ExtensionCommands.playSound(parentExt,room,id,"sfx_lich_trail",this.location);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new TrailHandler(), 6000, TimeUnit.MILLISECONDS);
-                ExtensionCommands.actorAbilityResponse(parentExt,player,"q",true,getReducedCooldown(cooldown),gCooldown);
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"q",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new LichAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
                 break;
             case 2: //W
@@ -57,7 +57,7 @@ public class Lich extends UserActor{
                 Line2D fireLine = new Line2D.Float(this.getRelativePoint(false),dest);
                 Line2D newLine = Champion.getMaxRangeLine(fireLine,8f);
                 this.fireProjectile(new LichCharm(parentExt,this,newLine,9f,0.5f,this.id+"projectile_lich_charm"),"projectile_lich_charm",dest,8f);
-                ExtensionCommands.actorAbilityResponse(parentExt,player,"w",true,getReducedCooldown(cooldown),gCooldown);
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"w",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new LichAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
 
                 break;
@@ -168,6 +168,7 @@ public class Lich extends UserActor{
     @Override
     public void handleKill(Actor a, JsonNode attackData){
         if(this.skully != null) this.skully.resetTarget();
+        if(attackData.has("spellType") && (attackData.get("spellType").asText().equalsIgnoreCase("spell1") || attackData.get("spellType").asText().equalsIgnoreCase("passive"))) this.increaseStat("spellDamage",1);
     }
 
     private class TrailHandler implements Runnable {
