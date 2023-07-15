@@ -332,12 +332,12 @@ public class UserActor extends Actor {
                         ExtensionCommands.playSound(parentExt,ua.getUser(),"global",sound,new Point2D.Float(0,0));
                     }
                 }
-                Set<String> assistIds = new HashSet<>(2);
+                Set<UserActor> assistIds = new HashSet<>(2);
                 for(Actor actor : this.aggressors.keySet()){
                     if(actor.getActorType() == ActorType.PLAYER && !actor.getId().equalsIgnoreCase(a.getId())){
                         UserActor ua = (UserActor) actor;
                         ua.increaseStat("assists",1);
-                        assistIds.add(ua.getId());
+                        assistIds.add(ua);
                     }
                 }
                 int teamNumber = parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id,this.team);
