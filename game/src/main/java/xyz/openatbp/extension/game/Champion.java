@@ -349,6 +349,7 @@ public class Champion {
         @Override
         public void run() {
             if(this.target.getHealth() <= 0) return;
+            if(this.attack.equalsIgnoreCase("basicAttack") && !this.attacker.canMove()) this.attacker.setCanMove(true);
             JsonNode attackData;
             if(this.attacker.getActorType() == ActorType.MINION) attackData = this.parentExt.getAttackData(this.attacker.getAvatar().replace("0",""),this.attack);
             else attackData = this.parentExt.getAttackData(this.attacker.getAvatar(),this.attack);

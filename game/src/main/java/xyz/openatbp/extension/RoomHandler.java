@@ -25,7 +25,7 @@ import java.util.*;
 public class RoomHandler implements Runnable{
     private ATBPExtension parentExt;
     private Room room;
-    private ArrayList<NewMinion> minions;
+    private ArrayList<Minion> minions;
     private ArrayList<Tower> towers;
     private ArrayList<UserActor> players;
     private List<Projectile> activeProjectiles;
@@ -136,7 +136,7 @@ public class RoomHandler implements Runnable{
                 if(minionWave != this.currentMinionWave){
                     int minionNum = secondsRan % 10;
                     if(minionNum == 5) this.currentMinionWave = minionWave;
-                    if(minionNum <= 4){
+                    if(minionNum <= 0){
                         this.addMinion(1,minionNum,minionWave,0);
                         this.addMinion(0,minionNum,minionWave,0);
                         this.addMinion(1,minionNum,minionWave,1);
@@ -164,7 +164,7 @@ public class RoomHandler implements Runnable{
             }
             activeProjectiles.removeIf(Projectile::isDestroyed);
             handleHealth();
-            for(NewMinion m : minions){ //Handles minion behavior
+            for(Minion m : minions){ //Handles minion behavior
                 m.update(mSecondsRan);
             }
             minions.removeIf(m -> (m.getHealth()<=0));
@@ -197,8 +197,8 @@ public class RoomHandler implements Runnable{
         return null;
     }
 
-    public NewMinion findMinion(String id){
-        for(NewMinion m : minions){
+    public Minion findMinion(String id){
+        for(Minion m : minions){
             if(m.getId().equalsIgnoreCase(id)) return m;
         }
         return null;
@@ -209,7 +209,7 @@ public class RoomHandler implements Runnable{
     }
 
     public void addMinion(int team, int minionNum, int wave, int lane){
-        NewMinion m = new NewMinion(parentExt,room, team, minionNum, wave,lane);
+        Minion m = new Minion(parentExt,room, team, minionNum, wave,lane);
         minions.add(m);
     }
 
@@ -535,8 +535,8 @@ public class RoomHandler implements Runnable{
         this.activeProjectiles.add(p);
     }
 
-    public NewMinion getMinion(String id){
-        for(NewMinion m : minions){
+    public Minion getMinion(String id){
+        for(Minion m : minions){
             if(m.getId().equalsIgnoreCase(id)) return m;
         }
         return  null;
@@ -557,8 +557,8 @@ public class RoomHandler implements Runnable{
     }
 
     private boolean hasSuperMinion(int lane, int team){
-        for(NewMinion m : minions){
-            if(m.getTeam() == team && m.getLane() == lane && m.getType() == NewMinion.MinionType.SUPER && m.getHealth() > 0) return true;
+        for(Minion m : minions){
+            if(m.getTeam() == team && m.getLane() == lane && m.getType() == Minion.MinionType.SUPER && m.getHealth() > 0) return true;
         }
         return false;
     }
@@ -582,7 +582,7 @@ public class RoomHandler implements Runnable{
         return null;
     }
 
-    public List<NewMinion> getMinions(){
+    public List<Minion> getMinions(){
         return this.minions;
     }
 
@@ -644,15 +644,14 @@ public class RoomHandler implements Runnable{
         }
     }
 
-    public void handleAssistXP (Actor a, Set<String> ids, double xp){ //TODO: I don't think this is working ! ! ! >:(
+    public void handleAssistXP (Actor a, Set<UserActor> actors, double xp){ //TODO: I don't think this is working ! ! ! >:(
         if(a.getActorType() == ActorType.PLAYER){
             UserActor user = (UserActor) a;
             user.addXP((int) xp);
         }
-        for(String id : ids){
-            if(!id.equalsIgnoreCase(a.getId())){
-                UserActor player = this.getPlayer(id);
-                if(player != null) player.addXP((int)Math.round(xp/2)); //<-- classic dividing an integer hehe haha hehe
+        for(UserActor actor : actors){
+            if(!actor.getId().equalsIgnoreCase(a.getId()) && actor.getActorType() == ActorType.PLAYER){
+                actor.addXP((int)Math.round(xp/2)); //<-- classic dividing an integer hehe haha hehe
             }
         }
     }

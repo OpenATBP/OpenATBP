@@ -70,7 +70,7 @@ public abstract class Actor {
     }
 
     public boolean withinRange(Actor a){
-        return a.getLocation().distance(this.location) <= this.attackRange;
+        return a.getLocation().distance(this.location) <= this.getPlayerStat("attackRange");
     }
 
     public void stopMoving(){
