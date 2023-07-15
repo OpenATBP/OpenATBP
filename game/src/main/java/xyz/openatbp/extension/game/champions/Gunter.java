@@ -84,8 +84,7 @@ public class Gunter extends UserActor{
     }
     @Override
     public void attack(Actor a){
-        this.handleAttack(a);
-        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new PassiveAttack(a),"gunter_bottle_projectile"),500, TimeUnit.MILLISECONDS);
+        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new PassiveAttack(a,this.handleAttack(a)),"gunter_bottle_projectile"),500, TimeUnit.MILLISECONDS);
     }
 
     public void shatter(Actor a){
@@ -121,7 +120,7 @@ public class Gunter extends UserActor{
     @Override
     public void handleKill(Actor a, JsonNode attackData){
         System.out.println(attackData.toString());
-        if(attackData.has("spellName") && attackData.get("spellName").asText().contains("spell_1")) this.shatter(a);
+        if(attackData.has("spellName") && attackData.get("spellName").asText().contains("spell_2")) this.shatter(a);
         else if(attackData.has("attackName") && attackData.get("attackName").asText().contains("Basic")) this.shatter(a);
     }
 
@@ -188,14 +187,17 @@ public class Gunter extends UserActor{
     private class PassiveAttack implements Runnable {
 
         Actor target;
+        boolean crit;
 
-        PassiveAttack(Actor target){ this.target = target;}
+        PassiveAttack(Actor target, boolean crit){ this.target = target; this.crit = crit;}
 
         @Override
         public void run() {
             JsonNode attackData = parentExt.getAttackData(getAvatar(),"basicAttack");
             Gunter.this.handleLifeSteal();
-            this.target.addToDamageQueue(Gunter.this,(int)getPlayerStat("attackDamage"),attackData);
+            double damage = getPlayerStat("attackDamage");
+            if(crit) damage*=2;
+            this.target.addToDamageQueue(Gunter.this,damage,attackData);
         }
     }
 }

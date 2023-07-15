@@ -89,8 +89,7 @@ public class Lich extends UserActor{
 
     @Override
     public void attack(Actor a){
-        this.handleAttack(a);
-        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new PassiveAttack(this,a),"lich_projectile"),500,TimeUnit.MILLISECONDS);
+        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new PassiveAttack(this,a,this.handleAttack(a)),"lich_projectile"),500,TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -222,7 +221,7 @@ public class Lich extends UserActor{
         @Override
         public void attack(Actor a) {
             ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),false,true);
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(new PassiveAttack(this,a),300,TimeUnit.MILLISECONDS);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new PassiveAttack(this,a,false),300,TimeUnit.MILLISECONDS);
             this.attackCooldown = 1000;
         }
 
@@ -312,10 +311,12 @@ public class Lich extends UserActor{
 
         Actor attacker;
         Actor target;
+        boolean crit;
 
-        PassiveAttack(Actor attacker, Actor target){
+        PassiveAttack(Actor attacker, Actor target, boolean crit){
             this.attacker = attacker;
             this.target = target;
+            this.crit = crit;
         }
 
         @Override
@@ -323,7 +324,9 @@ public class Lich extends UserActor{
             if(attacker.getClass() == Lich.class){
                 JsonNode attackData = parentExt.getAttackData("lich","basicAttack");
                 Lich.this.handleLifeSteal();
-                this.target.addToDamageQueue(this.attacker, (int) this.attacker.getPlayerStat("attackDamage"),attackData);
+                double damage = this.attacker.getPlayerStat("attackDamage");
+                if(crit) damage*=2;
+                this.target.addToDamageQueue(this.attacker, damage,attackData);
                 Lich.this.setSkullyTarget(this.target);
             }else if(attacker.getClass() == Skully.class){
                 JsonNode attackData = parentExt.getAttackData("lich","spell4");

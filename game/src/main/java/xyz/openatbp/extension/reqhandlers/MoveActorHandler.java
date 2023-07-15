@@ -89,7 +89,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                     destz = (float)movementLine.getY2();
                 }else if(insideCollider(finalPoint,mapPaths)){
                     destx = (float)movementLine.getX1();
-                    destz = (float)movementLine.getX2();
+                    destz = (float)movementLine.getY1();
                 }
             }
             Point2D testPoint = new Point2D.Float(destx,destz);

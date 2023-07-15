@@ -569,7 +569,7 @@ public class Champion {
             }
             if(this.isState){
                 if(this.buff.equalsIgnoreCase("polymorph")){
-                    ExtensionCommands.swapActorAsset(a.getParentExt(),a.getRoom(),a.getId(),a.getAvatar());
+                    ExtensionCommands.swapActorAsset(a.getParentExt(),a.getRoom(),a.getId(),a.getSkinAssetBundle());
                     a.setState(ActorState.POLYMORPH,false);
                     a.setTempStat("speed",delta*-1);
                 }else if(this.buff.equalsIgnoreCase("slowed")) {

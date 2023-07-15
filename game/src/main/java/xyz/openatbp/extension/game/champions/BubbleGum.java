@@ -42,8 +42,7 @@ public class BubbleGum extends UserActor {
 
     @Override
     public void attack(Actor a){
-        this.handleAttack(a);
-        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new PassiveAttack(this,a),"bubblegum_projectile","weapon_holder"),500, TimeUnit.MILLISECONDS);
+        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new PassiveAttack(this,a,this.handleAttack(a)),"bubblegum_projectile","weapon_holder"),500, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -222,16 +221,20 @@ public class BubbleGum extends UserActor {
 
         Actor attacker;
         Actor target;
+        boolean crit;
 
-        PassiveAttack(Actor a, Actor t){
+        PassiveAttack(Actor a, Actor t, boolean crit){
             this.attacker = a;
             this.target = t;
+            this.crit = crit;
         }
 
         @Override
         public void run() {
             JsonNode attackData = parentExt.getAttackData("princessbubblegum","basicAttack");
-            this.target.addToDamageQueue(this.attacker,this.attacker.getPlayerStat("attackDamage"),attackData);
+            double damage = this.attacker.getPlayerStat("attackDamage");
+            if(crit) damage*=2;
+            this.target.addToDamageQueue(this.attacker,damage,attackData);
             if(this.target.getActorType() == ActorType.PLAYER){
                 gumStacks++;
                 lastGum = System.currentTimeMillis();

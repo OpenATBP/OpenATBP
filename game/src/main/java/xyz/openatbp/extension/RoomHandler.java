@@ -39,6 +39,7 @@ public class RoomHandler implements Runnable{
     private int currentMinionWave = 0;
     private GumballGuardian[] guardians;
     private boolean gameOver = false;
+    private HashMap<String, Long> destroyedIds = new HashMap<>();
     public RoomHandler(ATBPExtension parentExt, Room room){
         this.parentExt = parentExt;
         this.room = room;
@@ -73,6 +74,14 @@ public class RoomHandler implements Runnable{
     public void run() {
         if(this.gameOver) return;
         mSecondsRan+=100;
+        List<String> keysToRemove = new ArrayList<>(this.destroyedIds.size());
+        Set<String> keys = this.destroyedIds.keySet();
+        for(String k : keys){
+            if(System.currentTimeMillis() - this.destroyedIds.get(k) >= 1000) keysToRemove.add(k);
+        }
+        for(String k : keysToRemove){
+            this.destroyedIds.remove(k);
+        }
         if(mSecondsRan % 1000 == 0){ // Handle every second
             try{
                 if(secondsRan % 60 == 0){
@@ -475,7 +484,8 @@ public class RoomHandler implements Runnable{
     }
 
     private void handleCooldowns(){ //Cooldown keys structure is id__cooldownType__value. Example for a buff cooldown could be lich__buff__attackDamage
-        for(String key : cooldowns.keySet()){
+        Set<String> keys = new HashSet<>(cooldowns.keySet());
+        for(String key : keys){
             String[] keyVal = key.split("__");
             String id = keyVal[0];
             String cooldown = keyVal[1];
@@ -870,5 +880,13 @@ public class RoomHandler implements Runnable{
         for(Actor a : this.getActors()){
             System.out.println("ROOM: " + this.room.getId() + " |  TYPE: " + a.getActorType().toString() + " | ID: " + a.getId() + " | " + a.getHealth());
         }
+    }
+
+    public void addDestroyedId(String id){
+        this.destroyedIds.put(id,System.currentTimeMillis());
+    }
+
+    public boolean hasDestroyedId(String id){
+        return this.destroyedIds.containsKey(id);
     }
 }

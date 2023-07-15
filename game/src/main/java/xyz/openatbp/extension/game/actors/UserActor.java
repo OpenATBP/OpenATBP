@@ -261,7 +261,10 @@ public class UserActor extends Actor {
     @Override
     public void attack(Actor a) {
         if(this.attackCooldown == 0){
-            boolean crit = Math.random() < this.getPlayerStat("criticalChance")/100;
+            double critChance = this.getPlayerStat("criticalChance")/100d;
+            double random = Math.random();
+            boolean crit = random < critChance;
+            System.out.println("Crit: " + critChance + " vs " + random + " | " + crit);
             ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
             this.attackCooldown = this.getPlayerStat("attackSpeed");
             Champion.DelayedAttack delayedAttack = new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack");
@@ -270,12 +273,17 @@ public class UserActor extends Actor {
         }
     }
 
-    protected void handleAttack(Actor a){ //To be used if you're not using the standard DelayedAttack Runnable
+    protected boolean handleAttack(Actor a){ //To be used if you're not using the standard DelayedAttack Runnable
         if(this.attackCooldown == 0){
-            boolean crit = Math.random() < this.getPlayerStat("criticalChance");
+            double critChance = this.getPlayerStat("criticalChance")/100d;
+            double random = Math.random();
+            boolean crit = random < critChance;
+            System.out.println("Crit: " + critChance + " vs " + random + " | " + crit);
             ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
             this.attackCooldown = this.getPlayerStat("attackSpeed");
+            return crit;
         }
+        return false;
     }
 
     public void autoAttack(Actor a){
@@ -841,11 +849,6 @@ public class UserActor extends Actor {
             ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,this.getPlayerStats(stats));
             ExtensionCommands.addStatusIcon(parentExt,player,"DC Buff #2","You're the last one left, finish the mission", "icon_parity2",0);
         }
-    }
-
-    @Override
-    public String getAvatar(){
-        return this.avatar.split("_")[0];
     }
 
     private HashMap<String, Double> getPlayerStats(String[] stats){

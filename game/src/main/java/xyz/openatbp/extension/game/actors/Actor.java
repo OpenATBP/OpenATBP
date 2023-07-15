@@ -135,6 +135,10 @@ public abstract class Actor {
                 if(fxId.contains("altar"))this.setTempStat(stat,delta);
                 else this.setTempStat(stat,delta-currentTempStat);
             }
+            if(this.buffHandlers.get(stat) == null){
+                this.handleEffect(stat,delta,duration,fxId);
+                return;
+            }
             if(delta != currentTempStat) this.buffHandlers.get(stat).setDelta(this.getTempStat(stat));
             this.buffHandlers.get(stat).setDuration(duration);
             if(stat.equalsIgnoreCase("armor") && fxId.contains("altar")){ //Only armor to prevent multiple icons from appearing
@@ -401,6 +405,10 @@ public abstract class Actor {
 
     public String getPortrait(){
         return this.getAvatar();
+    }
+
+    public String getSkinAssetBundle(){
+        return this.parentExt.getActorData(this.avatar).get("assetBundle").asText();
     }
 
     public abstract void setTarget(Actor a);

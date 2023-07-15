@@ -69,8 +69,8 @@ public class FlamePrincess extends UserActor {
                 break;
             case 2: //W
                 ExtensionCommands.playSound(parentExt,room,this.id,"sfx_flame_princess_projectile_throw",this.location);
-                ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"fx_target_ring_2","flame_w",1000, (float) dest.getX(),(float) dest.getY(),true,this.team,0f);
-                ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"flame_princess_polymorph_fireball","flame_w_polymorph",1000, (float) dest.getX(),(float) dest.getY(),false,this.team,0f);
+                ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"fx_target_ring_2","flame_w",castDelay, (float) dest.getX(),(float) dest.getY(),true,this.team,0f);
+                ExtensionCommands.createWorldFX(this.parentExt,this.player.getLastJoinedRoom(), this.id,"flame_princess_polymorph_fireball","flame_w_polymorph",castDelay, (float) dest.getX(),(float) dest.getY(),false,this.team,0f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),"w",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
                 this.canCast[1] = false;
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest), castDelay, TimeUnit.MILLISECONDS);
@@ -109,15 +109,14 @@ public class FlamePrincess extends UserActor {
 
     @Override
     public void attack(Actor a){
-        this.handleAttack(a);
-        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,new PassiveAttack(a),"flame_princess_projectile"),500,TimeUnit.MILLISECONDS);
+        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,new PassiveAttack(a,this.handleAttack(a)),"flame_princess_projectile"),500,TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void setCanMove(boolean canMove){
         if(ultStarted && !canMove) this.canMove = true;
-        if(!this.canMove()) this.canMove = false;
         else super.setCanMove(canMove);
+        System.out.println("FP Move set to " + this.canMove);
     }
 
     private class FlameAbilityRunnable extends AbilityRunnable {
@@ -135,14 +134,16 @@ public class FlamePrincess extends UserActor {
         protected void spellW() {
             ExtensionCommands.playSound(parentExt,room,"","sfx_flame_princess_projectile_explode",this.dest);
             RoomHandler roomHandler = parentExt.getRoomHandler(player.getLastJoinedRoom().getId());
-            List<Actor> affectedUsers = Champion.getActorsInRadius(roomHandler,this.dest,2).stream().filter(a -> a.getActorType() == ActorType.PLAYER && a.getTeam() != FlamePrincess.this.team).collect(Collectors.toList());
-            for(Actor u : affectedUsers){
-                UserActor userActor = (UserActor) u;
-                userActor.setState(ActorState.POLYMORPH, true);
-                double newDamage = u.getMitigatedDamage(50d,AttackType.SPELL,FlamePrincess.this);
+            List<Actor> affectedUsers = Champion.getActorsInRadius(roomHandler,this.dest,2).stream().filter(a -> a.getTeam() != FlamePrincess.this.team).collect(Collectors.toList());
+            for(Actor a : affectedUsers){
+                if(a.getActorType() == ActorType.PLAYER){
+                    UserActor userActor = (UserActor) a;
+                    userActor.setState(ActorState.POLYMORPH, true);
+                    userActor.handleEffect(ActorState.POLYMORPH,-1d,3000,null);
+                }
+                double newDamage = getSpellDamage(spellData);
                 handleSpellVamp(newDamage);
-                userActor.addToDamageQueue(FlamePrincess.this,50,parentExt.getAttackData(getAvatar(),"spell2"));
-                userActor.handleEffect(ActorState.POLYMORPH,-1d,3000,null);
+                a.addToDamageQueue(FlamePrincess.this,newDamage,parentExt.getAttackData(getAvatar(),"spell2"));
             }
             canCast[1] = true;
         }
@@ -152,7 +153,7 @@ public class FlamePrincess extends UserActor {
             if(!ultFinished && ultStarted){
                 setState(ActorState.TRANSFORMED, false);
                 ExtensionCommands.removeFx(parentExt,room,"flame_e");
-                ExtensionCommands.swapActorAsset(parentExt,room,id,getAvatar());
+                ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"e",canUseAbility(2), getReducedCooldown(cooldown), gCooldown);
                 ExtensionCommands.scaleActor(parentExt,room,id,0.6667f);
                 ultStarted = false;
@@ -214,16 +215,20 @@ public class FlamePrincess extends UserActor {
     private class PassiveAttack implements Runnable {
 
         Actor target;
+        boolean crit;
 
-        PassiveAttack(Actor target){
+        PassiveAttack(Actor target, boolean crit){
             this.target = target;
+            this.crit = crit;
         }
 
         @Override
         public void run() {
+            double damage = getPlayerStat("attackDamage");
+            if(crit) damage*=2;
             FlamePrincess.this.handleLifeSteal();
             ExtensionCommands.playSound(parentExt,room,target.getId(),"sfx_flame_princess_passive_ignite",target.getLocation());
-            target.addToDamageQueue(FlamePrincess.this,getPlayerStat("attackDamage"), parentExt.getAttackData(getAvatar(),"basicAttack"));
+            target.addToDamageQueue(FlamePrincess.this,damage, parentExt.getAttackData(getAvatar(),"basicAttack"));
             if(FlamePrincess.this.passiveEnabled && (target.getActorType() != ActorType.TOWER && target.getActorType() != ActorType.BASE)){
                 FlamePrincess.this.passiveEnabled = false;
                 ExtensionCommands.removeFx(parentExt,room,"flame_passive");
