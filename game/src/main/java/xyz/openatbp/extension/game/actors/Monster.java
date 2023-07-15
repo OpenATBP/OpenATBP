@@ -3,11 +3,9 @@ package xyz.openatbp.extension.game.actors;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
-import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
-import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 
@@ -119,7 +117,7 @@ public class Monster extends Actor {
             }
         }else{
             this.state = state;
-            if(state == AggroState.ATTACKED) this.target = (UserActor) a;
+            if(state == AggroState.ATTACKED) this.target = a;
         }
 
     }
@@ -162,7 +160,7 @@ public class Monster extends Actor {
         float time = (float) (a.getLocation().distance(this.location) / 10f);
         ExtensionCommands.createProjectileFX(this.parentExt,this.room,fxId,this.id,a.getId(),"Bip001","Bip001",time);
 
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,attackDamage,"basicAttack"),(int)time*1000, TimeUnit.MILLISECONDS);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,attackDamage,"basicAttack"),(int)(time*1000), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -176,20 +174,32 @@ public class Monster extends Actor {
 
     @Override
     public void die(Actor a) { //Called when monster dies
+        System.out.println(this.id + " has died! " + this.dead);
         if(!this.dead){ //No double deaths
             this.dead = true;
+            this.stopMoving();
             this.currentHealth = -1;
             RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getId());
             int scoreValue = parentExt.getActorStats(this.id).get("valueScore").asInt();
-            ExtensionCommands.knockOutActor(parentExt,this.room,this.id,a.getId(),45);
-            ExtensionCommands.destroyActor(parentExt,this.room,this.id);
-            if(a.getActorType() == ActorType.PLAYER){ //Adds score + party xp when killed by player
-                UserActor ua = (UserActor) a;
-                ua.addGameStat("jungleMobs",1);
-                if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(2);
-                roomHandler.addScore(ua,a.getTeam(),scoreValue);
-                roomHandler.handleXPShare((UserActor)a,this.parentExt.getActorXP(this.id));
+            if(a.getActorType() == ActorType.PLAYER || a.getActorType() == ActorType.COMPANION){ //Adds score + party xp when killed by player
+                UserActor ua = null;
+                if(a.getActorType() == ActorType.COMPANION){
+                    int team = 0;
+                    if(a.getTeam() == 0) team = 1;
+                    if(a.getId().contains("skully")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyCharacter("lich",team);
+                    else if(a.getId().contains("turret")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyCharacter("princessbubblegum",team);
+                }else ua = (UserActor) a;
+                if(ua != null){
+                    ua.addGameStat("jungleMobs",1);
+                    if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(2);
+                    roomHandler.addScore(ua,a.getTeam(),scoreValue);
+                    roomHandler.handleXPShare(ua,this.parentExt.getActorXP(this.id));
+                    ExtensionCommands.knockOutActor(parentExt,this.room,this.id,ua.getId(),45);
+                }
+            }else{
+                ExtensionCommands.knockOutActor(parentExt,this.room,this.id,a.getId(),45);
             }
+            ExtensionCommands.destroyActor(parentExt,this.room, this.id);
             roomHandler.handleSpawnDeath(this);
         }
     }
@@ -228,14 +238,11 @@ public class Monster extends Actor {
             }
             else if(this.target != null){ //Chasing player
                 if(this.withinRange(this.target) && this.canAttack()){
-                    System.out.println("Monster attacking player!");
                     this.attack(this.target);
                 }else if(!this.withinRange(this.target) && this.canMove){
-                    System.out.println("Monster not in range of player!");
                     this.travelTime+=0.1f;
                     this.moveTowardsActor(this.target.getLocation());
                 }else if(this.withinRange(this.target)){
-                    System.out.println("Monster can't attack!");
                     if(this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f) this.stopMoving();
                 }
             }
@@ -255,10 +262,11 @@ public class Monster extends Actor {
     }
 
     public Point2D getRelativePoint(){ //Gets player's current location based on time
+        if(this.movementLine == null) return this.location;
         if(this.travelTime == 0 && this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f) this.travelTime+=0.1f; //Prevents any stagnation in movement
         Point2D rPoint = new Point2D.Float();
         Point2D destination;
-        if(this.state == AggroState.PASSIVE) destination = startingLocation;
+        if(this.state == AggroState.PASSIVE || this.target == null) destination = startingLocation;
         else destination = target.getLocation();
         float x2 = (float) destination.getX();
         float y2 = (float) destination.getY();

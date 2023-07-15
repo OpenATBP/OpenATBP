@@ -93,11 +93,8 @@ public class Champion {
             Point2D p2 = new Point2D.Double(points[i].getX(),points[i].getY());
             Line2D line = new Line2D.Double(movementLine.getP1(),p2);
             if(collider.intersects(line.getBounds())){
-                System.out.println("Intersects!");
                 p = p2;
                 break;
-            }else{
-                System.out.println("Does not intersect!");
             }
         }
         return p;
@@ -137,7 +134,7 @@ public class Champion {
         List<Actor> affectedActors = new ArrayList<>(actors.size());
         for(Actor a : actors){
             Point2D location = a.getLocation();
-            if(location.distance(center) <= radius/2) affectedActors.add(a);
+            if(location.distance(center) <= radius) affectedActors.add(a);
         }
         return affectedActors;
     }
@@ -245,7 +242,6 @@ public class Champion {
         ArrayList<Path2D> colliderPaths = parentExt.getMapPaths("main");
         for(int i = 0; i < colliderPaths.size(); i++){
             if(colliderPaths.get(i).contains(dest)){
-                System.out.println("Point clashes at i: " + i);
                 Path2D path = colliderPaths.get(i);
                 Rectangle2D bounds = path.getBounds2D();
                 Point2D topRight = new Point2D.Double(bounds.getMaxX(),bounds.getMaxY());
@@ -477,13 +473,11 @@ public class Champion {
                         SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinalBuffHandler(a,buff,statChange),runTime,TimeUnit.MILLISECONDS);
                     }
                 }else{
-                    System.out.println("Buff ended");
                     a.setTempStat(buff,delta*-1);
                     a.removeBuffHandler(this.buff);
                 }
                 if(this.fxName != null) this.handleIcons();
             }else{
-                System.out.println("Buff is a state!");
                 switch(this.buff){
                     case "polymorph":
                         this.handleBuffRun("speed",ActorState.POLYMORPH);
@@ -512,7 +506,6 @@ public class Champion {
                     a.setTempStat(stat, delta*-1);
                     statChange = modifiedDelta - delta;
                 }
-                System.out.println("State Buff running for " + runTime);
                 if(this.fxName != null){
                     ExtensionCommands.createActorFX(a.getParentExt(),a.getRoom(),a.getId(),fxName,runTime,a.getId()+"_"+fxName,true,"Bip01",true,true,a.getTeam());
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinalBuffHandler(a,state,statChange,fxName),runTime,TimeUnit.MILLISECONDS);
@@ -520,7 +513,6 @@ public class Champion {
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinalBuffHandler(a,state,statChange),runTime,TimeUnit.MILLISECONDS);
                 }
             }else{
-                System.out.println("State Buff ended");
                 a.setTempStat(stat,delta*-1);
                 a.setState(state,false);
                 a.removeBuffHandler(this.buff);
@@ -577,7 +569,7 @@ public class Champion {
             }
             if(this.isState){
                 if(this.buff.equalsIgnoreCase("polymorph")){
-                    ExtensionCommands.swapActorAsset(a.getParentExt(),a.getRoom(),a.getId(),a.getAvatar());
+                    ExtensionCommands.swapActorAsset(a.getParentExt(),a.getRoom(),a.getId(),a.getSkinAssetBundle());
                     a.setState(ActorState.POLYMORPH,false);
                     a.setTempStat("speed",delta*-1);
                 }else if(this.buff.equalsIgnoreCase("slowed")) {

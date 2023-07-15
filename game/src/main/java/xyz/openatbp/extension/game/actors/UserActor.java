@@ -45,6 +45,7 @@ public class UserActor extends Actor {
     protected int multiKill = 0;
     protected long lastKilled = System.currentTimeMillis();
     protected int dcBuff = 0;
+    protected boolean[] canCast = {true,true,true};
 
     //TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt){
@@ -161,7 +162,6 @@ public class UserActor extends Actor {
     public void cancelAuto(){
         this.target = null;
         if(this.currentAutoAttack != null){
-            System.out.println("Auto canceled!");
             this.currentAutoAttack.cancel(false);
             this.currentAutoAttack = null;
         }
@@ -228,7 +228,6 @@ public class UserActor extends Actor {
             int newDamage = this.getMitigatedDamage(damage,type,a);
             if(a.getActorType() == ActorType.PLAYER) this.addDamageGameStat((UserActor) a, newDamage,type);
             this.handleDamageTakenStat(type,newDamage);
-            System.out.println(this.id + " is being attacked! User");
             ExtensionCommands.damageActor(parentExt,this.room,this.id,newDamage);
             this.processHitData(a,attackData,newDamage);
             if(this.hasTempStat("healthRegen")) this.tempStats.remove("healthRegen");
@@ -246,7 +245,6 @@ public class UserActor extends Actor {
                         return false;
                     }
                 }
-                this.dead = true;
                 return true;
             }
         }catch(Exception e){
@@ -263,7 +261,10 @@ public class UserActor extends Actor {
     @Override
     public void attack(Actor a) {
         if(this.attackCooldown == 0){
-            boolean crit = Math.random() < this.getPlayerStat("criticalChance")/100;
+            double critChance = this.getPlayerStat("criticalChance")/100d;
+            double random = Math.random();
+            boolean crit = random < critChance;
+            System.out.println("Crit: " + critChance + " vs " + random + " | " + crit);
             ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
             this.attackCooldown = this.getPlayerStat("attackSpeed");
             Champion.DelayedAttack delayedAttack = new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack");
@@ -272,12 +273,17 @@ public class UserActor extends Actor {
         }
     }
 
-    protected void handleAttack(Actor a){ //To be used if you're not using the standard DelayedAttack Runnable
+    protected boolean handleAttack(Actor a){ //To be used if you're not using the standard DelayedAttack Runnable
         if(this.attackCooldown == 0){
-            boolean crit = Math.random() < this.getPlayerStat("criticalChance");
+            double critChance = this.getPlayerStat("criticalChance")/100d;
+            double random = Math.random();
+            boolean crit = random < critChance;
+            System.out.println("Crit: " + critChance + " vs " + random + " | " + crit);
             ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
             this.attackCooldown = this.getPlayerStat("attackSpeed");
+            return crit;
         }
+        return false;
     }
 
     public void autoAttack(Actor a){
@@ -296,59 +302,66 @@ public class UserActor extends Actor {
 
     @Override
     public void die(Actor a) {
-        Point2D location = this.getRelativePoint(false);
-        ExtensionCommands.moveActor(parentExt,this.room,this.id,location,location,2f,false);
-        this.setHealth(0, (int) this.maxHealth);
-        this.target = null;
-        ExtensionCommands.knockOutActor(parentExt,room, String.valueOf(player.getId()),a.getId(),this.deathTime);
-        if(this.nailDamage > 0) this.nailDamage/=2;
+        System.out.println(this.id + " has died! " + this.dead);
         try{
-            ExtensionCommands.handleDeathRecap(parentExt,player,this.id,a.getId(), (HashMap<Actor, ISFSObject>) this.aggressors);
-            this.increaseStat("deaths",1);
-            if(this.hasGameStat("spree")){
-                if(this.killingSpree > this.getGameStat("spree")) this.endGameStats.put("spree", (double) this.killingSpree);
-                this.killingSpree = 0;
-            }
-            if(a.getActorType() == ActorType.PLAYER){
-                UserActor ua = (UserActor) a;
-                ua.increaseStat("kills",1);
-                if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(5);
-                this.parentExt.getRoomHandler(this.room.getId()).addScore(ua,ua.getTeam(),25);
-            }else{
-                for(UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
-                    String sound = "announcer/you_are_defeated";
-                    if(ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) sound = "announcer/ally_defeated";
-                    else if(ua.getTeam() != this.team) sound = "announcer/enemy_defeated";
-                    ExtensionCommands.playSound(parentExt,ua.getUser(),"global",sound,new Point2D.Float(0,0));
+            if(this.dead) return;
+            this.dead = true;
+            Point2D location = this.getRelativePoint(false);
+            ExtensionCommands.moveActor(parentExt,this.room,this.id,location,location,2f,false);
+            this.setHealth(0, (int) this.maxHealth);
+            this.target = null;
+            ExtensionCommands.knockOutActor(parentExt,room, String.valueOf(player.getId()),a.getId(),this.deathTime);
+            if(this.nailDamage > 0) this.nailDamage/=2;
+            try{
+                ExtensionCommands.handleDeathRecap(parentExt,player,this.id,a.getId(), (HashMap<Actor, ISFSObject>) this.aggressors);
+                this.increaseStat("deaths",1);
+                if(this.hasGameStat("spree")){
+                    if(this.killingSpree > this.getGameStat("spree")) this.endGameStats.put("spree", (double) this.killingSpree);
+                    this.killingSpree = 0;
                 }
-            }
-            Set<String> assistIds = new HashSet<>(2);
-            for(Actor actor : this.aggressors.keySet()){
-                if(actor.getActorType() == ActorType.PLAYER && !actor.getId().equalsIgnoreCase(a.getId())){
-                    UserActor ua = (UserActor) actor;
-                    ua.increaseStat("assists",1);
-                    assistIds.add(ua.getId());
+                if(a.getActorType() == ActorType.PLAYER){
+                    UserActor ua = (UserActor) a;
+                    ua.increaseStat("kills",1);
+                    if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(5);
+                    this.parentExt.getRoomHandler(this.room.getId()).addScore(ua,ua.getTeam(),25);
+                }else{
+                    for(UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
+                        String sound = "announcer/you_are_defeated";
+                        if(ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) sound = "announcer/ally_defeated";
+                        else if(ua.getTeam() != this.team) sound = "announcer/enemy_defeated";
+                        ExtensionCommands.playSound(parentExt,ua.getUser(),"global",sound,new Point2D.Float(0,0));
+                    }
                 }
-            }
-            int teamNumber = parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id,this.team);
-            Point2D respawnPoint = MapData.PURPLE_SPAWNS[teamNumber];
-            if(this.team == 1 && respawnPoint.getX() < 0) respawnPoint = new Point2D.Double(respawnPoint.getX()*-1,respawnPoint.getY());
-            System.out.println("Respawning at: " + respawnPoint.getX() + "," + respawnPoint.getY() + " for team " + this.team);
-            this.location = respawnPoint;
-            this.originalLocation = respawnPoint;
-            this.destination = respawnPoint;
-            this.timeTraveled = 0f;
+                Set<String> assistIds = new HashSet<>(2);
+                for(Actor actor : this.aggressors.keySet()){
+                    if(actor.getActorType() == ActorType.PLAYER && !actor.getId().equalsIgnoreCase(a.getId())){
+                        UserActor ua = (UserActor) actor;
+                        ua.increaseStat("assists",1);
+                        assistIds.add(ua.getId());
+                    }
+                }
+                int teamNumber = parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id,this.team);
+                Point2D respawnPoint = MapData.PURPLE_SPAWNS[teamNumber];
+                if(this.team == 1 && respawnPoint.getX() < 0) respawnPoint = new Point2D.Double(respawnPoint.getX()*-1,respawnPoint.getY());
+                this.location = respawnPoint;
+                this.originalLocation = respawnPoint;
+                this.destination = respawnPoint;
+                this.timeTraveled = 0f;
 
-            for(String buff : this.buffHandlers.keySet()){
-                this.buffHandlers.get(buff).cancel(this.getTempStat(buff));
+                for(String buff : this.buffHandlers.keySet()){
+                    this.buffHandlers.get(buff).cancel(this.getTempStat(buff));
+                }
+                this.buffHandlers = new HashMap<>();
+                this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,assistIds,50); //TODO: Not sure if this is the correct xp value
+            }catch(Exception e){
+                e.printStackTrace();
             }
-            this.buffHandlers = new HashMap<>();
-            this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,assistIds,50); //TODO: Not sure if this is the correct xp value
+            this.addGameStat("timeDead",this.deathTime);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.RespawnCharacter(this),this.deathTime, TimeUnit.SECONDS);
         }catch(Exception e){
             e.printStackTrace();
         }
-        this.addGameStat("timeDead",this.deathTime);
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.RespawnCharacter(this),this.deathTime, TimeUnit.SECONDS);
+
     }
 /*
     Acceptable Keys:
@@ -407,7 +420,10 @@ public class UserActor extends Actor {
     @Override
     public void update(int msRan) {
         this.handleDamageQueue();
-        if(this.dead) return;
+        if(this.dead){
+            if(this.currentHealth > 0) this.respawn();
+            else return;
+        }
         float x = (float) this.getOriginalLocation().getX();
         float z = (float) this.getOriginalLocation().getY();
         Point2D currentPoint = this.getLocation();
@@ -429,7 +445,6 @@ public class UserActor extends Actor {
             }
         }else{
             if(this.states.get(ActorState.BRUSH)){
-                System.out.println("Outside brush!");
                 this.setState(ActorState.BRUSH, false);
                 this.setState(ActorState.REVEALED, true);
                 ExtensionCommands.changeBrush(parentExt,room,this.id, -1);
@@ -438,9 +453,7 @@ public class UserActor extends Actor {
         if(this.attackCooldown > 0) this.reduceAttackCooldown();
         if(this.target != null && this.target.getHealth() > 0 && this.autoAttackEnabled){
             if(this.withinRange(target) && this.canAttack()){
-                if(this.canAttack()) System.out.println(id + " attackCooldown is " + this.attackCooldown);
                 this.autoAttack(target);
-                System.out.println("Auto attacking!");
             }else if(!this.withinRange(target) && this.canMove()){
                 double attackRange = this.getPlayerStat("attackRange");
                 Line2D movementLine = new Line2D.Float(currentPoint,target.getLocation());
@@ -448,14 +461,12 @@ public class UserActor extends Actor {
                 Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
                 Line2D finalPath = Champion.getColliderLine(parentExt,room,newPath);
                 if(finalPath.getP2().distance(this.destination) > 0.1f){
-                    System.out.println("Distance: " + finalPath.getP2().distance(this.destination));
                     this.setPath(finalPath);
                     ExtensionCommands.moveActor(parentExt,this.room, this.id,currentPoint, finalPath.getP2(), (float) this.speed,true);
                 }
             }
         }else{
             if(this.target != null){
-                System.out.println("Target: " + this.target.getId());
                 if(this.target.getHealth() <= 0){
                     this.target = null;
                     if(this.currentAutoAttack != null){
@@ -509,7 +520,6 @@ public class UserActor extends Actor {
     }
 
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
-        System.out.println("Ability sent to x:" + dest.getX() + " y:" + dest.getY());
         if(castDelay > 0){
             this.stopMoving(castDelay);
             SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(true),castDelay,TimeUnit.MILLISECONDS);
@@ -517,15 +527,28 @@ public class UserActor extends Actor {
             this.stopMoving();
         }
         if(this.getClass() == UserActor.class){
-            System.out.println("Base useAbility method used!");
             String abilityString = "q";
-            if(ability == 2) abilityString = "w";
-            else if(ability == 3) abilityString = "e";
-            ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),abilityString,true,getReducedCooldown(cooldown),gCooldown);
+            int abilityIndex = 0;
+            if(ability == 2){
+                abilityString = "w";
+                abilityIndex = 1;
+            }
+            else if(ability == 3){
+                abilityString = "e";
+                abilityIndex = 2;
+            }
+            ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),abilityString,this.canCast[abilityIndex],getReducedCooldown(cooldown),gCooldown);
+            if(this.canCast[abilityIndex]){
+                this.canCast[abilityIndex] = false;
+                int finalAbilityIndex = abilityIndex;
+                Runnable castReset = () -> {canCast[finalAbilityIndex] = true;};
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(castReset,getReducedCooldown(cooldown),TimeUnit.MILLISECONDS);
+            }
         }
     }
     public void setCanMove(boolean canMove){
         this.canMove = canMove;
+        if(this.canMove && this.states.get(ActorState.CHARMED)) ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,this.destination, (float) this.getPlayerStat("speed"),true);
     }
 
     public void setState(ActorState[] states, boolean stateBool){
@@ -539,7 +562,7 @@ public class UserActor extends Actor {
         this.target = a;
         if(this.states.get(ActorState.CHARMED)){
             this.setPath(getRelativePoint(false),a.getLocation());
-            ExtensionCommands.moveActor(parentExt,room,id,this.location,this.destination, (float) getPlayerStat("speed"),true);
+            if(this.canMove) ExtensionCommands.moveActor(parentExt,room,id,this.location,this.destination, (float) getPlayerStat("speed"),true);
         }
     }
 
@@ -547,12 +570,12 @@ public class UserActor extends Actor {
         return this.states.get(state);
     }
 
-    public boolean canUseAbility(){
+    public boolean canUseAbility(int ability){
         ActorState[] hinderingStates = {ActorState.POLYMORPH, ActorState.AIRBORNE, ActorState.CHARMED, ActorState.FEARED, ActorState.SILENCED, ActorState.STUNNED};
         for(ActorState s : hinderingStates){
             if(this.states.get(s)) return false;
         }
-        return true;
+        return this.canCast[ability-1];
     }
 
     public Line2D getMovementLine(){
@@ -567,9 +590,24 @@ public class UserActor extends Actor {
             SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(true),delay,TimeUnit.MILLISECONDS);
         }
     }
+    @Override
+    public void stopMoving(){
+        super.stopMoving();
+        this.timeTraveled = 0f;
+        this.destination = this.location;
+        this.originalLocation = this.location;
+    }
 
     public void respawn(){
         this.setHealth((int) this.maxHealth, (int) this.maxHealth);
+        int teamNumber = parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id,this.team);
+        Point2D respawnPoint = MapData.PURPLE_SPAWNS[teamNumber];
+        if(this.team == 1 && respawnPoint.getX() < 0) respawnPoint = new Point2D.Double(respawnPoint.getX()*-1,respawnPoint.getY());
+        System.out.println("Respawning at: " + respawnPoint.getX() + "," + respawnPoint.getY() + " for team " + this.team);
+        this.location = respawnPoint;
+        this.originalLocation = respawnPoint;
+        this.destination = respawnPoint;
+        this.timeTraveled = 0f;
         this.dead = false;
         ExtensionCommands.snapActor(this.parentExt,this.room,this.id,this.location,this.location,false);
         ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx/sfx_champion_respawn",this.location);
@@ -580,14 +618,12 @@ public class UserActor extends Actor {
     }
 
     public void addXP(int xp){
-        System.out.println("Getting raw xp of " + xp);
         if(this.level != 10){
             if(this.hasBackpackItem("junk_5_glasses_of_nerdicon") && this.getStat("sp_category5") > 0){
                 double multiplier = 1+((5*this.getStat("sp_category5"))/100);
                 xp*=multiplier;
             }
             this.xp+=xp; //TODO: Backpack modifiers
-            System.out.println("Current xp for " + this.id + ":" + this.xp);
             HashMap<String, Double> updateData = new HashMap<>(3);
             updateData.put("xp", (double) this.xp);
             int level = ChampionData.getXPLevel(this.xp);
@@ -612,8 +648,6 @@ public class UserActor extends Actor {
         double lastLevelXP = ChampionData.getLevelXP(this.level-1);
         double currentLevelXP = ChampionData.getLevelXP(this.level);
         double delta = currentLevelXP - lastLevelXP;
-        System.out.println("My xp: " + this.xp + " Current Level XP: " + currentLevelXP + " Next Level XP: " + lastLevelXP);
-        System.out.println((this.xp-lastLevelXP)/delta);
         return (this.xp-lastLevelXP)/delta;
     }
 
@@ -702,6 +736,7 @@ public class UserActor extends Actor {
     public void handleSpellVamp(double damage){
         double percentage = this.getPlayerStat("spellVamp")/100;
         int healing = (int) Math.round(damage*percentage);
+        System.out.println(this.id + " healing for " + healing + " from spell vamp at " + percentage);
         this.changeHealth(healing);
     }
 
@@ -809,7 +844,7 @@ public class UserActor extends Actor {
             String[] stats = {"armor","spellResist","speed"};
             ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,this.getPlayerStats(stats));
             ExtensionCommands.addStatusIcon(parentExt,player,"DC Buff #1","Some coward left the battle! Here's something to help even the playing field!", "icon_parity",0);
-        }else{
+        }else if (this.dcBuff == 2){
             String[] stats = {"attackDamage","spellDamage"};
             ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,this.getPlayerStats(stats));
             ExtensionCommands.addStatusIcon(parentExt,player,"DC Buff #2","You're the last one left, finish the mission", "icon_parity2",0);
@@ -822,6 +857,11 @@ public class UserActor extends Actor {
             playerStats.put(s,this.getPlayerStat(s));
         }
         return playerStats;
+    }
+
+    public void destroy(){
+        this.dead = true;
+        ExtensionCommands.destroyActor(this.parentExt,this.room,this.id);
     }
 
     protected class MovementStopper implements Runnable {
@@ -859,13 +899,11 @@ public class UserActor extends Actor {
 
         @Override
         public void run() {
-            System.out.println("Running projectile!");
             String emit = "Bip01";
             if(this.emitNode != null) emit = this.emitNode;
             float time = (float) (target.getLocation().distance(location) / 10f);
-            System.out.println(time);
             ExtensionCommands.createProjectileFX(parentExt,room,projectile,id,target.getId(),emit,"targetNode",time);
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(attackRunnable,(int)time*1000,TimeUnit.MILLISECONDS);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(attackRunnable,(int)(time*1000),TimeUnit.MILLISECONDS);
             currentAutoAttack = null;
         }
     }

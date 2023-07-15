@@ -89,7 +89,6 @@ public abstract class Actor {
 
 
     public void setState(ActorState state, boolean enabled){
-        System.out.println(state.toString() + " set to: " + enabled);
         this.states.put(state,enabled);
         ExtensionCommands.updateActorState(this.parentExt,this.room,this.id,state,enabled);
     }
@@ -133,9 +132,12 @@ public abstract class Actor {
         else{
             double currentTempStat = this.getTempStat(stat);
             if(delta > currentTempStat){
-                System.out.println("Delta: " + delta + " vs " + currentTempStat);
                 if(fxId.contains("altar"))this.setTempStat(stat,delta);
                 else this.setTempStat(stat,delta-currentTempStat);
+            }
+            if(this.buffHandlers.get(stat) == null){
+                this.handleEffect(stat,delta,duration,fxId);
+                return;
             }
             if(delta != currentTempStat) this.buffHandlers.get(stat).setDelta(this.getTempStat(stat));
             this.buffHandlers.get(stat).setDuration(duration);
@@ -267,6 +269,7 @@ public abstract class Actor {
     }
 
     public void addToDamageQueue(Actor attacker, double damage, JsonNode attackData){
+        if(this.currentHealth <= 0) return;
         ISFSObject data = new SFSObject();
         data.putClass("attacker",attacker);
         data.putDouble("damage",damage);
@@ -275,8 +278,12 @@ public abstract class Actor {
     }
 
     public void handleDamageQueue(){
-        if(this.currentHealth <= 0) return;
-        for(ISFSObject data : this.damageQueue){
+        List<ISFSObject> queue = new ArrayList<>(this.damageQueue);
+        this.damageQueue = new ArrayList<>();
+        if(this.currentHealth <= 0){
+            return;
+        }
+        for(ISFSObject data : queue){
             Actor damager = (Actor) data.getClass("attacker");
             double damage = data.getDouble("damage");
             JsonNode attackData = (JsonNode) data.getClass("attackData");
@@ -286,7 +293,6 @@ public abstract class Actor {
                 return;
             }
         }
-        this.damageQueue = new ArrayList<>();
     }
     public abstract void attack(Actor a);
     public abstract void die(Actor a);
@@ -399,6 +405,10 @@ public abstract class Actor {
 
     public String getPortrait(){
         return this.getAvatar();
+    }
+
+    public String getSkinAssetBundle(){
+        return this.parentExt.getActorData(this.avatar).get("assetBundle").asText();
     }
 
     public abstract void setTarget(Actor a);

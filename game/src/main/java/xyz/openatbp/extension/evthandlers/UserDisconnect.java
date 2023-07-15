@@ -19,9 +19,10 @@ public class UserDisconnect extends BaseServerEventHandler {
         if(roomID.length() >= 10) roomID = roomID.substring(0,10);
         Room room = user.getZone().getRoomByName(roomID);
         RoomHandler roomHandler = parentExt.getRoomHandler(room.getId());
+        int roomState = (int) room.getProperty("state");
         if(roomHandler != null){
             roomHandler.handlePlayerDC(user);
-        }else{
+        }else if(roomState != 2){
             ExtensionCommands.abortGame(parentExt,room);
         }
         if(room.isEmpty()){ //If there is no one left in the room, delete the room

@@ -15,6 +15,7 @@ public class RoomCreatedEventHandler extends BaseServerEventHandler {
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         Room room = (Room) event.getParameter(SFSEventParam.ROOM);
         User owner = room.getOwner();
+        room.setProperty("state",0);
         parentExt.getApi().joinRoom(owner, room); //Triggers the JoinRoom event for the first player
     }
 }

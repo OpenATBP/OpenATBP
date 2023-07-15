@@ -5,6 +5,7 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.GameManager;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.Champion;
@@ -23,7 +24,13 @@ public class MoveActorHandler extends BaseClientRequestHandler {
 
         //trace(params.getDump());
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
+
         RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId());
+        if(roomHandler == null && (int)sender.getLastJoinedRoom().getProperty("state") != 2) ExtensionCommands.abortGame(parentExt,sender.getLastJoinedRoom());
+        if(roomHandler == null){
+            System.out.println(sender.getId() + " tried to move in room " + sender.getLastJoinedRoom().getId() + " but failed!");
+            return;
+        }
         UserActor user = roomHandler.getPlayer(String.valueOf(sender.getId()));
         if(user != null && user.canMove()){
             user.cancelAuto();
@@ -77,10 +84,22 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                 Point2D finalPoint = collidePlayer(new Line2D.Double(movementLine.getX1(),movementLine.getY1(),intersectionPoint.getX(),intersectionPoint.getY()),mapPaths.get(mapPathIndex));
                 destx = (float)finalPoint.getX();
                 destz = (float)finalPoint.getY();
-                if(insideCollider(finalPoint,mapPaths)){
+                if(insideCollider(finalPoint,mapPaths) && !insideCollider(movementLine.getP2(), mapPaths)){
+                    System.out.println("Test case 1");
                     destx = (float)movementLine.getX2();
                     destz = (float)movementLine.getY2();
+                }else if(insideCollider(finalPoint,mapPaths)){
+                    System.out.println("Test case 2");
+                    destx = (float)movementLine.getX1();
+                    destz = (float)movementLine.getY1();
                 }
+            }
+            Point2D testPoint = new Point2D.Float(destx,destz);
+            if(insideCollider(movementLine.getP1(), mapPaths)){
+                System.out.println("Test case 2");
+                Point2D newPoint = this.getOutsidePoint(new Line2D.Float(movementLine.getP1(),testPoint),mapPaths);
+                destx = (float) newPoint.getX();
+                destz = (float) newPoint.getY();
             }
             // trace("X: " + movementLine.getX2());
             //trace("Y:" + movementLine.getY2());
@@ -141,6 +160,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
 
     //Returns a point where the player is no longer colliding with an object so that they can move freely and don't clip inside an object
     private Point2D collidePlayer(Line2D movementLine, Path2D collider){
+        if(collider.contains(movementLine.getP1())) return movementLine.getP1();
         Point2D[] points = findAllPoints(movementLine);
         Point2D p = movementLine.getP1();
         for(int i = points.length-2; i>0; i--){ //Searchs all points in the movement line to see how close it can move without crashing into the collider
@@ -159,6 +179,16 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             if(collider.contains(point)) return true;
         }
         return false;
+    }
+
+    private Point2D getOutsidePoint(Line2D line, ArrayList<Path2D> colliders){
+        Point2D[] allPoints = findAllPoints(new Line2D.Float(line.getP2(),line.getP1()));
+        for(Path2D collider: colliders){
+            for(int i = allPoints.length-1; i >= 0; i--){
+                if(!collider.contains(allPoints[i])) return allPoints[i];
+            }
+        }
+        return line.getP2();
     }
 
 }

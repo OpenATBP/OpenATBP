@@ -16,4 +16,5 @@
     <DevMaps>True</DevMaps>
     <guestModeOnly>False</guestModeOnly>
     <aspenEnabled>False</aspenEnabled>
+    <PingLimit>2000</PingLimit>
 </config>

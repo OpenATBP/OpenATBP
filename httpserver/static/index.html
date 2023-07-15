@@ -88,7 +88,7 @@
 				LoginModule.showLoginWindow = function(){
 					var userName = prompt("Enter name");
 					if(userName != null){
-						try{fetch(`service/authenticate/user/${userName}`,{ //If user exists, requests the user information to authenticate
+						try{fetch(`service/authenticate/user/${userName.replace("%20","").replace(" ","")}`,{ //If user exists, requests the user information to authenticate
 									Method: "GET",
 									Body: JSON.stringify({"username":userName}),
 									Mode: 'cors',

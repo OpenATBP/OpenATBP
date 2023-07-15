@@ -257,14 +257,16 @@ public class ATBPExtension extends SFSExtension {
 
     public void startScripts(Room room){ //Creates a new task scheduler for a room
         System.out.println("Starting script for room!");
-        RoomHandler handler = new RoomHandler(this,room);
-        roomHandlers.put(room.getId(),handler);
-        roomTasks.put(room.getId(),SmartFoxServer.getInstance().getTaskScheduler().scheduleAtFixedRate(handler,100,100,TimeUnit.MILLISECONDS));
+        if(!this.roomHandlers.containsKey(room.getId())){
+            RoomHandler handler = new RoomHandler(this,room);
+            roomHandlers.put(room.getId(),handler);
+            roomTasks.put(room.getId(),SmartFoxServer.getInstance().getTaskScheduler().scheduleAtFixedRate(handler,100,100,TimeUnit.MILLISECONDS));
+        }
     }
 
     public void stopScript(int roomId){ //Stops a task scheduler when room is deleted
         trace("Stopping script!");
-        roomTasks.get(roomId).cancel(true);
+        roomTasks.get(roomId).cancel(true); //TODO: Returning null after game ends
         roomTasks.remove(roomId);
         roomHandlers.remove(roomId);
     }

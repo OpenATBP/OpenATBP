@@ -12,6 +12,7 @@ import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.champions.Lich;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
@@ -85,7 +86,6 @@ public class Minion extends Actor {
             if(lane == 0) pathIndex = blueTopX.length-1;
             else pathIndex = blueBotX.length-1;
         }
-        System.out.println(id + " spawning at " + x + "," + y);
         this.movementLine = new Line2D.Float(this.location,this.location);
         aggressors = new HashMap<>(3);
         this.stats = this.initializeStats();
@@ -123,7 +123,6 @@ public class Minion extends Actor {
         if(this.type != MinionType.MELEE) actorName+="_";
         minion.putUtfString("id",this.id);
         minion.putUtfString("actor",actorName + getType());
-        System.out.println("Minion x:" + location.getX() + " Minion y: " + location.getY());
         ISFSObject spawnPoint = new SFSObject();
         spawnPoint.putFloat("x", (float) location.getX());
         spawnPoint.putFloat("y",0f);
@@ -343,21 +342,30 @@ public class Minion extends Actor {
 
     @Override
     public void die(Actor a) { //TODO: Actor voice line plays after each kill (last hit or not)
+        System.out.println(this.id + " has died! " + this.dead);
         this.currentHealth = 0;
         if(this.dead) return;
+        this.stopMoving();
         this.dead = true;
-        if(a.getActorType() == ActorType.PLAYER){
-            UserActor ua = (UserActor) a;
-            ua.addGameStat("minions",1);
+        if(a.getActorType() == ActorType.PLAYER || a.getActorType() == ActorType.COMPANION){
+            UserActor ua = null;
+            if(a.getActorType() == ActorType.COMPANION){
+                if(a.getId().contains("skully")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyCharacter("lich",this.team);
+                else if(a.getId().contains("turret")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyCharacter("princessbubblegum",this.team);
+            }else ua = (UserActor) a;
+            if(ua != null ){
+                ua.addGameStat("minions",1);
+                if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(2);
+                this.parentExt.getRoomHandler(this.room.getId()).addScore(ua,a.getTeam(),1);
+                ExtensionCommands.knockOutActor(parentExt,this.room,this.id,ua.getId(),30);
+                ExtensionCommands.playSound(this.parentExt,ua.getUser(),ua.getId(),"sfx_gems_get",this.location);
+            }
+        }else{
+            ExtensionCommands.knockOutActor(parentExt,this.room,this.id,a.getId(),30);
         }
-        this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,aggressors.keySet(), this.xpWorth);
-        ExtensionCommands.knockOutActor(parentExt,this.room,this.id,a.getId(),30);
         ExtensionCommands.destroyActor(parentExt,this.room,this.id);
-        if(a.getActorType() == ActorType.PLAYER){
-            UserActor ua = (UserActor) a;
-            if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(2);
-            this.parentExt.getRoomHandler(this.room.getId()).addScore(ua,a.getTeam(),1);
-        }
+        this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,aggressors.keySet(), this.xpWorth);
+
     }
 
     @Override
@@ -436,7 +444,6 @@ public class Minion extends Actor {
                         if(targetTower.getHealth() > 0){
                             this.attack(targetTower);
                         }else{ //Handles tower death and resets minion on tower kill
-                            System.out.println("Tower dead!");
                             if(targetTower.getTowerNum() == 0 || targetTower.getTowerNum() == 3) roomHandler.getOpposingTeamBase(this.team).unlock();
                             this.setState(0);
                             this.move(parentExt);

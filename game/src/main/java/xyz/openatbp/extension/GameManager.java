@@ -24,7 +24,7 @@ import java.util.Map;
 public class GameManager {
 
     //bh1 = Blue Health 1 ph1 = Purple Health 1. Numbers refer to top,bottom,and outside respectively.
-    public static final String[] SPAWNS = {"bh1","bh2","bh3","ph1","ph2","ph3","keeoth","ooze","hugwolf","gnomes","owls","grassbear"};
+    public static final String[] SPAWNS = {"bh1","bh2","bh3","ph1","ph2","ph3","keeoth","ooze","hugwolf","gnomes","ironowls","grassbear"};
     private static ObjectMapper objectMapper = new ObjectMapper();
 
     public static void addPlayer(Room room, ATBPExtension parentExt){ //Sends player info to client
@@ -53,11 +53,13 @@ public class GameManager {
             }else{
                 data.putUtfString("set", "AT_2L_Arena");
             }
+            int maxUsers = room.getMaxUsers();
+            int userSize = room.getUserList().size();
             data.putUtfString("soundtrack", "music_main1");
             data.putInt("roomId", room.getId());
             data.putUtfString("roomName", room.getName());
-            data.putInt("capacity", 2);
-            data.putInt("botCount", 4);
+            data.putInt("capacity", maxUsers);
+            data.putInt("botCount", maxUsers-userSize);
             parentExt.send("cmd_load_room", data, u);
         }
     }

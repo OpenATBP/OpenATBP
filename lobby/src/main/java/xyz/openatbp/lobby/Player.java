@@ -17,6 +17,7 @@ public class Player {
     private boolean ready;
     private Socket conn;
     private String team;
+    private Queue queue;
 
     private static ObjectMapper objectMapper = new ObjectMapper();
 
@@ -95,6 +96,7 @@ public class Player {
         this.avatar = "unassigned";
         this.ready = false;
         this.team = null;
+        this.queue = null;
     }
     public String getTeam(){
         return this.team;
@@ -103,4 +105,14 @@ public class Player {
     public void setTeam(String team){
         this.team = team;
     }
+
+    public void setQueue(Queue q){
+        this.queue = q;
+    }
+
+    public Queue getQueue(){
+        return this.queue;
+    }
+
+    public String getAddress(){return this.conn.getRemoteSocketAddress().toString();}
 }

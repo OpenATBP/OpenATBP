@@ -47,7 +47,8 @@ public class Lich extends UserActor{
                 slimedEnemies = new HashMap<>();
                 ExtensionCommands.playSound(parentExt,room,id,"sfx_lich_trail",this.location);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new TrailHandler(), 6000, TimeUnit.MILLISECONDS);
-                ExtensionCommands.actorAbilityResponse(parentExt,player,"q",true,getReducedCooldown(cooldown),gCooldown);
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"q",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new LichAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
                 break;
             case 2: //W
                 this.stopMoving();
@@ -55,7 +56,9 @@ public class Lich extends UserActor{
                 Line2D fireLine = new Line2D.Float(this.getRelativePoint(false),dest);
                 Line2D newLine = Champion.getMaxRangeLine(fireLine,8f);
                 this.fireProjectile(new LichCharm(parentExt,this,newLine,9f,0.5f,this.id+"projectile_lich_charm"),"projectile_lich_charm",dest,8f);
-                ExtensionCommands.actorAbilityResponse(parentExt,player,"w",true,getReducedCooldown(cooldown),gCooldown);
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"w",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new LichAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
+
                 break;
             case 3: //E
                 if(!this.ultStarted){
@@ -81,12 +84,12 @@ public class Lich extends UserActor{
             case 4: //Passive
                 break;
         }
+        this.canCast[ability-1] = false;
     }
 
     @Override
     public void attack(Actor a){
-        this.handleAttack(a);
-        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new PassiveAttack(this,a),"lich_projectile"),500,TimeUnit.MILLISECONDS);
+        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new PassiveAttack(this,a,this.handleAttack(a)),"lich_projectile"),500,TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -114,7 +117,6 @@ public class Lich extends UserActor{
                         JsonNode attackData = this.parentExt.getAttackData(getAvatar(),"spell1");
                         if(slimedEnemies.containsKey(a.getId())){
                             if(System.currentTimeMillis() - slimedEnemies.get(a.getId()) >= 1000){
-                                System.out.println(a.getId() + " getting slimed!");
                                 handleSpellVamp(getSpellDamage(attackData));
                                 a.addToDamageQueue(this,getSpellDamage(attackData),attackData);
                                 a.handleEffect(ActorState.SLOWED,a.getPlayerStat("speed")*-0.3,1500,"lich_slow");
@@ -122,7 +124,6 @@ public class Lich extends UserActor{
                                 break;
                             }
                         }else{
-                            System.out.println(a.getId() + " getting slimed!");
                             handleSpellVamp(getSpellDamage(attackData));
                             a.addToDamageQueue(this,getSpellDamage(attackData),attackData);
                             a.handleEffect(ActorState.SLOWED,a.getPlayerStat("speed")*-0.3,1500,"lich_slow");
@@ -166,6 +167,7 @@ public class Lich extends UserActor{
     @Override
     public void handleKill(Actor a, JsonNode attackData){
         if(this.skully != null) this.skully.resetTarget();
+        if(attackData.has("spellType") && (attackData.get("spellType").asText().equalsIgnoreCase("spell1") || attackData.get("spellType").asText().equalsIgnoreCase("passive"))) this.increaseStat("spellDamage",1);
     }
 
     private class TrailHandler implements Runnable {
@@ -219,12 +221,13 @@ public class Lich extends UserActor{
         @Override
         public void attack(Actor a) {
             ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),false,true);
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(new PassiveAttack(this,a),300,TimeUnit.MILLISECONDS);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new PassiveAttack(this,a,false),300,TimeUnit.MILLISECONDS);
             this.attackCooldown = 1000;
         }
 
         @Override
         public void die(Actor a) {
+            System.out.println(this.id + " has died! ");
             ExtensionCommands.knockOutActor(parentExt,room,this.id,a.getId(),40000);
             Lich.this.handleSkullyDeath();
             ExtensionCommands.destroyActor(parentExt,room,this.id);
@@ -308,10 +311,12 @@ public class Lich extends UserActor{
 
         Actor attacker;
         Actor target;
+        boolean crit;
 
-        PassiveAttack(Actor attacker, Actor target){
+        PassiveAttack(Actor attacker, Actor target, boolean crit){
             this.attacker = attacker;
             this.target = target;
+            this.crit = crit;
         }
 
         @Override
@@ -319,12 +324,18 @@ public class Lich extends UserActor{
             if(attacker.getClass() == Lich.class){
                 JsonNode attackData = parentExt.getAttackData("lich","basicAttack");
                 Lich.this.handleLifeSteal();
-                this.target.addToDamageQueue(this.attacker, (int) this.attacker.getPlayerStat("attackDamage"),attackData);
+                double damage = this.attacker.getPlayerStat("attackDamage");
+                if(crit) damage*=2;
+                this.target.addToDamageQueue(this.attacker, damage,attackData);
                 Lich.this.setSkullyTarget(this.target);
             }else if(attacker.getClass() == Skully.class){
                 JsonNode attackData = parentExt.getAttackData("lich","spell4");
                 double damage = 25d + (Lich.this.getPlayerStat("attackDamage")*0.8);
-                this.target.addToDamageQueue(Lich.this,(int)damage,attackData);
+                Actor attacker = this.attacker;
+                if(this.target.getActorType() == ActorType.PLAYER){
+                    attacker = Lich.this;
+                }
+                this.target.addToDamageQueue(attacker,(int)damage,attackData);
             }
         }
     }
@@ -365,12 +376,12 @@ public class Lich extends UserActor{
 
         @Override
         protected void spellQ() {
-
+            canCast[0] = true;
         }
 
         @Override
         protected void spellW() {
-
+            canCast[1] = true;
         }
 
         @Override
@@ -381,6 +392,7 @@ public class Lich extends UserActor{
                 Lich.this.ultStarted = false;
                 ultLocation = null;
             }else{
+                canCast[2] = true;
                 Lich.this.ultStarted = true;
                 Lich.this.ultTeleportsRemaining = 1;
                 Lich.this.ultLocation = dest;

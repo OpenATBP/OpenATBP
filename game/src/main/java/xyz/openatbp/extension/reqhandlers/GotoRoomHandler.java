@@ -83,7 +83,9 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
         }
         requestedRoom.setPassword("");
         try {
-            if(!createdRoom) parentExt.getApi().joinRoom(sender, requestedRoom); //If you did not create the room, join the existing one.
+            if(!createdRoom){
+                if((int)requestedRoom.getProperty("state") == 0) parentExt.getApi().joinRoom(sender, requestedRoom); //If you did not create the room, join the existing one.
+            }
         } catch (SFSJoinRoomException e) {
             throw new RuntimeException(e);
         }

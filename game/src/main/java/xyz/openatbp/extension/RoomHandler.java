@@ -39,6 +39,7 @@ public class RoomHandler implements Runnable{
     private int currentMinionWave = 0;
     private GumballGuardian[] guardians;
     private boolean gameOver = false;
+    private HashMap<String, Long> destroyedIds = new HashMap<>();
     public RoomHandler(ATBPExtension parentExt, Room room){
         this.parentExt = parentExt;
         this.room = room;
@@ -73,8 +74,19 @@ public class RoomHandler implements Runnable{
     public void run() {
         if(this.gameOver) return;
         mSecondsRan+=100;
+        List<String> keysToRemove = new ArrayList<>(this.destroyedIds.size());
+        Set<String> keys = this.destroyedIds.keySet();
+        for(String k : keys){
+            if(System.currentTimeMillis() - this.destroyedIds.get(k) >= 1000) keysToRemove.add(k);
+        }
+        for(String k : keysToRemove){
+            this.destroyedIds.remove(k);
+        }
         if(mSecondsRan % 1000 == 0){ // Handle every second
             try{
+                if(secondsRan % 60 == 0){
+                    this.printActors();
+                }
                 secondsRan++;
                 if(secondsRan == (60*7) + 30){
                     ExtensionCommands.playSound(parentExt,room,"global","announcer/time_half",new Point2D.Float(0f,0f));
@@ -123,7 +135,6 @@ public class RoomHandler implements Runnable{
                 int minionWave = secondsRan/30;
                 if(minionWave != this.currentMinionWave){
                     int minionNum = secondsRan % 10;
-                    System.out.println("Minion num: " + minionNum);
                     if(minionNum == 5) this.currentMinionWave = minionWave;
                     if(minionNum <= 4){
                         this.addMinion(1,minionNum,minionWave,0);
@@ -289,15 +300,11 @@ public class RoomHandler implements Runnable{
 
     private void spawnMonster(String monster){
         System.out.println("Spawning: " + monster);
-        ArrayList<User> users = (ArrayList<User>) room.getUserList();
         String map = room.getGroupId();
-        for(User u : users){
-            ISFSObject monsterObject = new SFSObject();
-            ISFSObject monsterSpawn = new SFSObject();
             float x = 0;
             float z = 0;
             String actor = monster;
-            if(monster.equalsIgnoreCase("gnomes") || monster.equalsIgnoreCase("owls")){
+            if(monster.equalsIgnoreCase("gnomes") || monster.equalsIgnoreCase("ironowls")){
                 char[] abc = {'a','b','c'};
                 for(int i = 0; i < 3; i++){ //Gnomes and owls have three different mobs so need to be spawned in triplets
                     if(monster.equalsIgnoreCase("gnomes")){
@@ -311,15 +318,9 @@ public class RoomHandler implements Runnable{
                         z = (float)MapData.OWLS[i].getY();
                         campMonsters.add(new Monster(parentExt,room,MapData.OWLS[i],actor));
                     }
-                    monsterObject.putUtfString("id",actor);
-                    monsterObject.putUtfString("actor",actor);
-                    monsterObject.putFloat("rotation",0);
-                    monsterSpawn.putFloat("x",x);
-                    monsterSpawn.putFloat("y",0);
-                    monsterSpawn.putFloat("z",z);
-                    monsterObject.putSFSObject("spawn_point",monsterSpawn);
-                    monsterObject.putInt("team",2);
-                    parentExt.send("cmd_create_actor",monsterObject,u);
+                    Point2D spawnLoc = new Point2D.Float(x,z);
+                    ExtensionCommands.createActor(this.parentExt,this.room,actor,actor,spawnLoc,0f,2);
+                    ExtensionCommands.moveActor(this.parentExt,this.room,actor,spawnLoc,spawnLoc,5f,false);
                 }
             }else if(monster.length()>3){
                 switch(monster){
@@ -345,25 +346,16 @@ public class RoomHandler implements Runnable{
                         campMonsters.add(new GooMonster(parentExt,room,MapData.L2_OOZE,actor));
                         break;
                 }
-                monsterObject.putUtfString("id",actor);
-                monsterObject.putUtfString("actor",actor);
-                monsterObject.putFloat("rotation",0);
-                monsterSpawn.putFloat("x",x);
-                monsterSpawn.putFloat("y",0);
-                monsterSpawn.putFloat("z",z);
-                monsterObject.putSFSObject("spawn_point",monsterSpawn);
-                monsterObject.putInt("team",2);
-                parentExt.send("cmd_create_actor",monsterObject,u);
+                Point2D spawnLoc = new Point2D.Float(x,z);
+                ExtensionCommands.createActor(this.parentExt,this.room,actor,actor,spawnLoc,0f,2);
+                ExtensionCommands.moveActor(this.parentExt,this.room,actor,spawnLoc,spawnLoc,5f,false);
             }
-        }
     }
     private void spawnHealth(String id){
         int healthNum = getHealthNum(id);
         Point2D healthLocation = getHealthLocation(healthNum);
-        for(User u : room.getUserList()){
-            int effectTime = (15*60-secondsRan)*1000;
-            ExtensionCommands.createWorldFX(parentExt,u, String.valueOf(u.getId()),"pickup_health_cyclops",id+"_fx",effectTime,(float)healthLocation.getX(),(float)healthLocation.getY(),false,2,0f);
-        }
+        int effectTime = (15*60-secondsRan)*1000;
+        ExtensionCommands.createWorldFX(parentExt,this.room, "","pickup_health_cyclops",id+"_fx",effectTime,(float)healthLocation.getX(),(float)healthLocation.getY(),false,2,0f);
         room.getVariable("spawns").getSFSObjectValue().putInt(id,91);
     }
 
@@ -390,8 +382,8 @@ public class RoomHandler implements Runnable{
                 else if(altarStatus[i]<0) altarChange[i]=1;
             }
             int altarStat = Math.abs(altarStatus[i]);
-            if(altarStat <= 5) altarStatus[i]+=altarChange[i];
-            if(altarStat > 0 && altarStat < 6){
+            if(altarStat <= 4) altarStatus[i]+=altarChange[i];
+            if(altarStat > 0 && altarStat < 5){
                 String sound = "sfx_altar_"+altarStat;
                 ExtensionCommands.playSound(parentExt,room,"",sound,getAltarLocation(i));
             }
@@ -399,37 +391,26 @@ public class RoomHandler implements Runnable{
             if(altarStatus[i]>0) team = 0;
             else team = 1;
             String altarId = "altar_"+i;
-            if(Math.abs(altarStatus[i]) >= 6 && altarStatus[i] != 10){
+            if(Math.abs(altarStatus[i]) >= 5 && altarStatus[i] != 10){
+                ExtensionCommands.createActorFX(this.parentExt,this.room,altarId,"fx_altar_5",500,"fx_altar_"+5+i,false,"Bip01",false,true,team);
                 ExtensionCommands.playSound(parentExt,room,"","sfx_altar_locked",getAltarLocation(i));
                 altarStatus[i]=10; //Locks altar
                 if(i == 1) addScore(null,team,15);
                 else addScore(null,team,10);
                 cooldowns.put(altarId+"__"+"altar",180);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,altarId,"fx_altar_lock",1000*60*3,"fx_altar_lock"+i,false,"Bip01",false,true,team);
-                int altarNum = -1;
+                int altarNum;
                 if(i == 0) altarNum = 1;
                 else if(i == 1) altarNum = 0;
-                else if(i == 2) altarNum = i;
+                else altarNum = i;
                 ExtensionCommands.updateAltar(this.parentExt,this.room,altarNum,team,true);
                 for(UserActor u : this.players){
                     if(u.getTeam() == team){
-                        String buffName;
-                        String buffDescription;
-                        String icon;
-                        String bundle;
                         try{
                             if(i == 1){
-                                buffName = "altar_buff_offense";
-                                buffDescription = "altar2_description";
-                                icon = "icon_altar_attack";
-                                bundle = "altar_buff_offense";
                                 u.handleEffect("attackDamage",u.getPlayerStat("attackDamage")*0.25,1000*60,"attack_altar");
                                 u.handleEffect("spellDamage",u.getPlayerStat("spellDamage")*0.25,1000*60,"attack_altar");
                             }else{
-                                buffName = "altar_buff_defense";
-                                buffDescription = "altar1_description";
-                                icon = "icon_altar_armor";
-                                bundle = "altar_buff_defense";
                                 u.handleEffect("armor",u.getPlayerStat("armor")*0.5,1000*60,"defense_altar");
                                 u.handleEffect("spellResist",u.getPlayerStat("spellResist")*0.5,1000*60,"defense_altar");
                             }
@@ -440,7 +421,7 @@ public class RoomHandler implements Runnable{
                         }
                     }
                 }
-            }else if(Math.abs(altarStatus[i])<=5 && altarStatus[i]!=0){
+            }else if(Math.abs(altarStatus[i])<=4 && altarStatus[i]!=0){
                 int stage = Math.abs(altarStatus[i]);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,altarId,"fx_altar_"+stage,1000,"fx_altar_"+stage+i,false,"Bip01",false,true,team);
             }
@@ -503,7 +484,8 @@ public class RoomHandler implements Runnable{
     }
 
     private void handleCooldowns(){ //Cooldown keys structure is id__cooldownType__value. Example for a buff cooldown could be lich__buff__attackDamage
-        for(String key : cooldowns.keySet()){
+        Set<String> keys = new HashSet<>(cooldowns.keySet());
+        for(String key : keys){
             String[] keyVal = key.split("__");
             String id = keyVal[0];
             String cooldown = keyVal[1];
@@ -622,13 +604,6 @@ public class RoomHandler implements Runnable{
     public void handleSpawnDeath(Actor a){
         System.out.println("The room has killed " + a.getId());
         String mons = a.getId().split("_")[0];
-        if(a.getActorType() == ActorType.MONSTER){
-            campMonsters.remove((Monster) a);
-            System.out.println("New monster list: \n");
-            for(Monster m : campMonsters){
-                System.out.println(m.getId() + "\n");
-            }
-        }
 
         for(String s : GameManager.SPAWNS){
             if(s.contains(mons)){
@@ -646,11 +621,15 @@ public class RoomHandler implements Runnable{
                 }
                 else {
                     for(Monster m : campMonsters){
-                        if(!m.getId().equalsIgnoreCase(a.getId()) && m.getId().contains(mons)) return;
+                        if(!m.getId().equalsIgnoreCase(a.getId()) && m.getId().contains(mons) && m.getHealth() > 0){
+                            return;
+                        }
                     }
                     room.getVariable("spawns").getSFSObjectValue().putInt(s,0);
                     return;
                 }
+            }else{
+                System.out.println("Failed! " + s + " vs " + mons);
             }
         }
     }
@@ -750,6 +729,7 @@ public class RoomHandler implements Runnable{
     public void gameOver(int winningTeam){
         try{
             this.gameOver = true;
+            this.room.setProperty("state",2);
             ExtensionCommands.gameOver(parentExt,this.room,winningTeam);
             MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
             for(UserActor ua : this.players){
@@ -783,6 +763,8 @@ public class RoomHandler implements Runnable{
                     else if(ua.getTeam() == winningTeam) win = 1d;
                     else win = 0d;
                     int eloGain = ChampionData.getEloGain(ua,this.players,win);
+                    int currentElo = dataObj.get("player").get("elo").asInt();
+                    if(currentElo + eloGain < 0) eloGain = currentElo*-1;
                     if(ua.getTeam() == winningTeam) wins++;
 
                     int currentRankProgress = dataObj.get("player").get("rankProgress").asInt();
@@ -843,6 +825,7 @@ public class RoomHandler implements Runnable{
         if(this.players.size() == 1) return;
         try{
             UserActor player = this.getPlayer(String.valueOf(user.getId()));
+            player.destroy();
             MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
             Document data = playerData.find(eq("user.TEGid",(String)user.getSession().getProperty("tegid"))).first();
             if(data != null){
@@ -856,7 +839,7 @@ public class RoomHandler implements Runnable{
 
                 Bson updates = Updates.combine(
                         Updates.inc("player.disconnects",1),
-                        Updates.set("player.elo",newElo)
+                        Updates.set("player.elo",(int)newElo)
                 );
                 UpdateOptions options = new UpdateOptions().upsert(true);
                 System.out.println(playerData.updateOne(data,updates,options));
@@ -891,5 +874,19 @@ public class RoomHandler implements Runnable{
 
     public void removeCompanion(Actor a){
         this.companions.remove(a);
+    }
+
+    public void printActors(){
+        for(Actor a : this.getActors()){
+            System.out.println("ROOM: " + this.room.getId() + " |  TYPE: " + a.getActorType().toString() + " | ID: " + a.getId() + " | " + a.getHealth());
+        }
+    }
+
+    public void addDestroyedId(String id){
+        this.destroyedIds.put(id,System.currentTimeMillis());
+    }
+
+    public boolean hasDestroyedId(String id){
+        return this.destroyedIds.containsKey(id);
     }
 }

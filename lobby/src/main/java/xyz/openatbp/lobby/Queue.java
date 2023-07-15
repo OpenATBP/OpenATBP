@@ -7,27 +7,22 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
 
 public class Queue {
+    public enum State{MATCHMAKING, CHAMP_SELECT, IN_GAME, TEAM_BUILDING};
     private ArrayList<Player> players;
     private String type;
-    private boolean inGame;
+    private State state;
     private boolean pvp;
     private static ObjectMapper objectMapper = new ObjectMapper();
 
     private boolean premade;
     private Player partyLeader;
 
-    @Deprecated public Queue(){
-        this.players = new ArrayList<Player>();
-        this.inGame = false;
-    }
-
     public Queue(ArrayList<Player> players, String type, boolean pvp){ //Called when a new queue is created by a team joining matchmaking
         this.players = new ArrayList<>();
-        this.inGame = false;
+        this.state = State.MATCHMAKING;
         this.players.addAll(players);
         this.type = type;
         this.pvp = pvp;
-        this.inGame = false;
         this.premade = false;
         if(players.size() == 6){
             this.queueFull();
@@ -37,7 +32,7 @@ public class Queue {
     public Queue(Player p, String type, boolean pvp){ //Called when a new queue is created by quick match
         this.players = new ArrayList<>();
         this.players.add(p);
-        this.inGame = false;
+        this.state = State.MATCHMAKING;
         this.type = type;
         this.pvp = pvp;
         this.premade = false;
@@ -54,10 +49,11 @@ public class Queue {
     public Queue(Player p, String type, boolean pvp, boolean team){ //Called when a new team is created
         this.players = new ArrayList<>();
         this.players.add(p);
-        this.inGame = false;
+        this.state = State.MATCHMAKING;
         this.type = type;
         this.pvp = pvp;
         this.premade = team;
+        if(this.premade) this.state = State.TEAM_BUILDING;
         this.partyLeader = p;
         System.out.println("New queue - Queue size: " + this.getSize());
     }
@@ -67,8 +63,8 @@ public class Queue {
     }
 
     public boolean findPlayer(Player p){ //Returns if a player is in the queue or not based on Player object
-        for(int i = 0; i < this.players.size(); i++){
-            if(this.players.get(i).getUsername().equalsIgnoreCase(p.getUsername())){
+        for (Player player : this.players) {
+            if (player.getUsername().equalsIgnoreCase(p.getUsername())) {
                 return true;
             }
         }
@@ -76,8 +72,8 @@ public class Queue {
     }
 
     public boolean findPlayer(String conn){ // Returns if a player is in the queue based on socket address
-        for(int i = 0; i < this.players.size(); i++){
-            if(this.players.get(i).isAddress(conn)) return true;
+        for (Player player : this.players) {
+            if (player.isAddress(conn)) return true;
         }
         return false;
     }
@@ -110,18 +106,18 @@ public class Queue {
     }
 
     public void removePlayer(Player p){ //Removes a player from the player arraylist
-        this.players.remove(this.findPlayerIndex(p));
-        if(players.size()>0 && !inGame && !premade) this.queueUpdate(); //Updates queue if it's not premade or in game
-        else if(!inGame && premade) this.updateTeam(); //Updates pre-made team
-        else if(inGame){
+        this.players.remove(p);
+        if(players.size()>0 && this.state == State.MATCHMAKING) this.queueUpdate(); //Updates queue if it's not premade or in game
+        else if(this.state == State.TEAM_BUILDING) this.updateTeam(); //Updates pre-made team
+        else if(this.state == State.CHAMP_SELECT){
             this.disbandTeam(); //Disbands the team if we're past matchmaking
         }
     }
 
     private void disbandTeam() { //WHAT THE CABBAGE?!
-        for(int i = 0; i < players.size(); i++){
+        for (Player player : players) {
             Packet out = new Packet();
-            out.send(players.get(i).getOutputStream(), "team_disband", RequestHandler.handleDisband());
+            out.send(player.getOutputStream(), "team_disband", RequestHandler.handleDisband());
         }
     }
 
@@ -130,13 +126,17 @@ public class Queue {
     }
 
     public void queueFull(){ //Sends everyone to champ select
-        this.inGame = true;
+        this.state = State.CHAMP_SELECT;
         for(int i = 0; i < players.size(); i++){
             Packet out = new Packet();
-            if(i % 2 == 0) this.players.get(i).setTeam("BLUE");
-            else this.players.get(i).setTeam("PURPLE");
-            //if(i <= 2) this.players.get(i).setTeam("PURPLE"); TODO: Commented out for testing purposes
-            //else this.players.get(i).setTeam("BLUE");
+            if(players.size() < 6){
+                if(i % 2 == 0) this.players.get(i).setTeam("BLUE");
+                else this.players.get(i).setTeam("PURPLE");
+            }else{
+                if(i <= 2) this.players.get(i).setTeam("PURPLE");
+                else this.players.get(i).setTeam("BLUE");
+            }
+
             out.send(this.players.get(i).getOutputStream(),"match_found",RequestHandler.handleMatchFound());
         }
         this.updateTeam();
@@ -144,13 +144,13 @@ public class Queue {
 
     public ArrayNode getPlayerObjects(){ //Returns all players in an array of json objects
         ArrayNode playerObjs = objectMapper.createArrayNode();
-        for(int i = 0; i < players.size(); i++){
+        for (Player player : players) {
             ObjectNode playerObj = objectMapper.createObjectNode();
-            playerObj.put("name", players.get(i).getName());
-            playerObj.put("player", players.get(i).getPid());
-            playerObj.put("teg_id", players.get(i).getUsername());
-            playerObj.put("avatar", players.get(i).getAvatar());
-            playerObj.put("is_ready",players.get(i).isReady());
+            playerObj.put("name", player.getName());
+            playerObj.put("player", player.getPid());
+            playerObj.put("teg_id", player.getUsername());
+            playerObj.put("avatar", player.getAvatar());
+            playerObj.put("is_ready", player.isReady());
             playerObjs.add(playerObj);
         }
         return playerObjs;
@@ -182,7 +182,7 @@ public class Queue {
     private void queueUpdate(){ //Updates the client with queue information
         for(int i = 0; i < players.size(); i++){
             Packet out = new Packet();
-            out.send(players.get(i).getOutputStream(), "queue_update", RequestHandler.handleQueueUpdate(this.players.size()));
+            out.send(players.get(i).getOutputStream(), "queue_update", RequestHandler.handleQueueUpdate(this.players.size())); //TODO: Giving null output stream
         }
     }
 
@@ -204,16 +204,17 @@ public class Queue {
     }
 
     private void gameReady(){ //Sends all players into the game
-        for(int i = 0; i < players.size(); i++){
+        this.state = State.IN_GAME;
+        for (Player player : players) {
             Packet out = new Packet();
-            out.send(players.get(i).getOutputStream(),"game_ready", RequestHandler.handleGameReady(players.get(0),players.get(i).getTeam(), this.type));
+            out.send(player.getOutputStream(), "game_ready", RequestHandler.handleGameReady(players.get(0), player.getTeam(), this.type));
         }
     }
 
     private int getReadyPlayers(){ //Returns amount of ready players
         int ready = 0;
-        for(int i = 0; i < players.size(); i++){
-            if(players.get(i).isReady()) ready++;
+        for (Player player : players) {
+            if (player.isReady()) ready++;
         }
         return ready;
     }
@@ -224,9 +225,9 @@ public class Queue {
     }
 
     private void updatePremade(){ //Updates the client on a premade team
-        for(int i = 0; i < players.size(); i++){
+        for (Player player : players) {
             Packet out = new Packet();
-            out.send(players.get(i).getOutputStream(), "team_update", RequestHandler.handleTeamJoin(this));
+            out.send(player.getOutputStream(), "team_update", RequestHandler.handleTeamJoin(this));
         }
     }
 
@@ -234,8 +235,8 @@ public class Queue {
         return premade;
     }
 
-    public boolean isInGame(){ //Returns if queue is ingame/champ select
-        return inGame;
+    public State getState(){
+        return this.state;
     }
 
 }
