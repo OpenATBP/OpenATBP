@@ -34,7 +34,7 @@ public class Gunter extends UserActor{
             Line2D ogLine = new Line2D.Float(this.getRelativePoint(false),this.ultPoint);
             List<Actor> affectedActors = Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),Champion.getDistanceLine(ogLine,7f),4f);
             for(Actor a : affectedActors){
-                if(a.getTeam() != this.team && a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE){
+                if(a.getTeam() != this.team){
                     double damage = (double)getSpellDamage(spellData)/10;
                     handleSpellVamp(damage);
                     a.addToDamageQueue(this,Math.round(damage),spellData);
@@ -47,9 +47,9 @@ public class Gunter extends UserActor{
         super.useAbility(ability,spellData,cooldown,gCooldown,castDelay,dest);
         switch(ability){
             case 1:
-                Point2D dashLocation = Champion.getDashPoint(parentExt,this,dest);
+                Point2D dashLocation = Champion.getTeleportPoint(parentExt,this.player,this.location,dest);
                 ExtensionCommands.moveActor(parentExt,room,id,getRelativePoint(false),dashLocation,20f,true);
-                double time = dest.distance(getRelativePoint(false))/20f;
+                double time = dashLocation.distance(getRelativePoint(false))/20f;
                 int runtime = (int)Math.floor(time*1000);
                 this.setCanMove(false);
                 ExtensionCommands.playSound(parentExt,this.room,this.id,"sfx_gunter_slide",this.location);

@@ -85,15 +85,18 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                 destx = (float)finalPoint.getX();
                 destz = (float)finalPoint.getY();
                 if(insideCollider(finalPoint,mapPaths) && !insideCollider(movementLine.getP2(), mapPaths)){
+                    System.out.println("Test case 1");
                     destx = (float)movementLine.getX2();
                     destz = (float)movementLine.getY2();
                 }else if(insideCollider(finalPoint,mapPaths)){
+                    System.out.println("Test case 2");
                     destx = (float)movementLine.getX1();
                     destz = (float)movementLine.getY1();
                 }
             }
             Point2D testPoint = new Point2D.Float(destx,destz);
             if(insideCollider(movementLine.getP1(), mapPaths)){
+                System.out.println("Test case 2");
                 Point2D newPoint = this.getOutsidePoint(new Line2D.Float(movementLine.getP1(),testPoint),mapPaths);
                 destx = (float) newPoint.getX();
                 destz = (float) newPoint.getY();
@@ -160,7 +163,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
         if(collider.contains(movementLine.getP1())) return movementLine.getP1();
         Point2D[] points = findAllPoints(movementLine);
         Point2D p = movementLine.getP1();
-        for(int i = points.length-4; i>0; i--){ //Searchs all points in the movement line to see how close it can move without crashing into the collider
+        for(int i = points.length-2; i>0; i--){ //Searchs all points in the movement line to see how close it can move without crashing into the collider
             Point2D p2 = new Point2D.Double(points[i].getX(),points[i].getY());
             Line2D line = new Line2D.Double(movementLine.getP1(),p2);
             if(collider.intersects(line.getBounds())){
