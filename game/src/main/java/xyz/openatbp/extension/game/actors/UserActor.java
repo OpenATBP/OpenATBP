@@ -14,6 +14,7 @@ import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.Projectile;
+import xyz.openatbp.extension.game.champions.Fionna;
 import xyz.openatbp.extension.reqhandlers.HitActorHandler;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
@@ -234,6 +235,13 @@ public class UserActor extends Actor {
             this.changeHealth(newDamage*-1);
             if(this.currentHealth > 0) return false;
             else{
+                if(this.getClass() == Fionna.class){
+                    Fionna f = (Fionna) this;
+                    if(f.ultActivated()){
+                        this.setHealth(1, (int) this.maxHealth);
+                        return false;
+                    }
+                }
                 if(this.hasBackpackItem("junk_4_future_crystal") && this.getStat("sp_category4") > 0){
                     double points = (int) this.getStat("sp_category4");
                     int timer = (int) (250 - (10*points));
@@ -479,8 +487,11 @@ public class UserActor extends Actor {
         if(msRan % 1000 == 0){
             this.futureCrystalTimer++;
             this.moonTimer++;
-            if(this.currentHealth < this.maxHealth && (this.aggressors.isEmpty() || this.hasTempStat("healthRegen"))){
+
+            //TODO: Move health regen to separate function
+            if(this.currentHealth < this.maxHealth && (this.aggressors.isEmpty() || this.hasTempStat("healthRegen")) || this.getPlayerStat("healthRegen") < 0){
                 double healthRegen = this.getPlayerStat("healthRegen");
+                if(this.currentHealth + healthRegen <= 0) healthRegen = (this.currentHealth-1)*-1;
                 this.changeHealth((int)healthRegen);
             }
             int newDeath = 10+((msRan/1000)/60);

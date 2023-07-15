@@ -6,20 +6,41 @@ import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
+import xyz.openatbp.extension.game.ActorState;
+import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Point2D;
 import java.util.concurrent.TimeUnit;
 
 public class Fionna extends UserActor {
-
+    private enum SwordType{FIERCE, FEARLESS};
     private int dashesRemaining = 0;
     private boolean hitWithDash = false;
     private long dashTime = -1;
+    private SwordType swordType = SwordType.FEARLESS;
+    private boolean ultActivated = false;
 
     public Fionna(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        ExtensionCommands.createActorFX(parentExt,room,id,"fionna_sword_blue",1000*60*15,this.id+"_fearless",true,"Bip001 Prop1",true,false,this.team);
+        ExtensionCommands.createActorFX(parentExt,room,id,"fionna_health_regen",1000*60*15,this.id+"_blueRegen",true,"Bip001 Prop1",true,false,this.team);
+        ExtensionCommands.addStatusIcon(parentExt,player,"fionna_fearless","FEARLESS","icon_fionna_s2b",0f);
+    }
+
+    @Override
+    public void update(int msRan){
+        super.update(msRan);
+        if(System.currentTimeMillis() - dashTime > 3000 && this.dashesRemaining > 0){
+            this.dashTime = -1;
+            this.dashesRemaining = 0;
+            double cooldown = this.getReducedCooldown(14000d);
+            if(!this.hitWithDash) cooldown*=0.7d;
+            this.hitWithDash = false;
+            ExtensionCommands.actorAbilityResponse(parentExt,player,"q",true,(int)cooldown,0);
+        }
     }
 
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
@@ -36,17 +57,112 @@ public class Fionna extends UserActor {
                     this.canMove = false;
                     double time = dest.distance(getLocation())/20f;
                     this.dashesRemaining--;
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"sfx_fionna_dash_small",(int)(time*1000),this.id+"_dash"+dashesRemaining,true,"",true,false,this.team);
-                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new FionnaAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),(int)(time*1000), TimeUnit.MILLISECONDS);
+                    if(this.dashesRemaining == 0){
+                        this.dashTime = -1;
+                        this.canCast[0] = false;
+                        double newCooldown = 0d+cooldown;
+                        if(!this.hitWithDash) newCooldown*=0.7d;
+                        ExtensionCommands.actorAbilityResponse(parentExt,player,"q",true,(int)newCooldown,gCooldown);
+                        ExtensionCommands.actorAnimate(parentExt,room,id,"spell1c",(int)(time*1000),false);
+                    }else if(this.dashesRemaining == 1){
+                        ExtensionCommands.actorAnimate(parentExt,room,id,"spell1b",(int)(time*1000),false);
+                    }
+                    if(this.dashesRemaining != 0){
+                        ExtensionCommands.playSound(parentExt,room,this.id,"sfx_fionna_dash_small",this.location);
+                    }else{
+                        ExtensionCommands.playSound(parentExt,room,this.id,"sfx_fionna_dash_large",this.location);
+                    }
+                    ExtensionCommands.playSound(parentExt,room,this.id,"sfx_fionna_dash_wind",this.location);
+                    ExtensionCommands.createActorFX(parentExt,room,this.id,"fionna_trail",(int)(time*1000),this.id+"_dashTrail"+dashesRemaining,true,"",true,false,this.team);
+                    int gruntNum = 3-this.dashesRemaining;
+                    ExtensionCommands.playSound(parentExt,room,this.id,"fionna_grunt"+gruntNum,this.location);
+
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new FionnaAbilityRunnable(ability,spellData,cooldown,gCooldown,dashPoint),(int)(time*1000), TimeUnit.MILLISECONDS);
                 }
                 break;
             case 2:
+                if(this.swordType == SwordType.FEARLESS) this.swordType = SwordType.FIERCE;
+                else this.swordType = SwordType.FEARLESS;
+                this.handleSwordAnimation();
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"w",true,cooldown,gCooldown);
+                this.canCast[1] = false;
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new FionnaAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),250,TimeUnit.MILLISECONDS);
                 break;
             case 3:
+                this.stopMoving(500);
+                this.canCast[2] = false;
+                this.ultActivated = true;
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_fionna_invuln",this.location);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fionna_invuln_fx",6000,this.id+"_ult",true,"",true,false,this.team);
+                ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new FionnaAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),6000,TimeUnit.MILLISECONDS);
                 break;
             case 4:
                 break;
         }
+    }
+
+    @Override
+    public void attack(Actor a){
+        if(this.attackCooldown == 0){
+            this.handleAttack(a);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),500,TimeUnit.MILLISECONDS);
+        }
+    }
+
+    @Override
+    public double getPlayerStat(String stat) {
+        switch(stat){
+            case "healthRegen":
+                if(this.swordType == SwordType.FIERCE) return super.getPlayerStat(stat) - 2 - (maxHealth*0.02d);
+                else return super.getPlayerStat(stat) + (maxHealth*0.01d);
+            case "speed":
+                if(this.swordType == SwordType.FIERCE) return super.getPlayerStat(stat) + (this.getStat("speed")*0.2d);
+                break;
+            case "attackSpeed":
+                if(this.swordType == SwordType.FIERCE) return super.getPlayerStat(stat) - (this.getStat("attackSpeed")*0.2d);
+                break;
+            case "armor":
+            case "spellResist":
+                if(this.swordType == SwordType.FEARLESS) return super.getPlayerStat(stat) + (this.getStat(stat)*0.3d);
+                break;
+            case "attackDamage":
+            case "spellDamage":
+                return super.getPlayerStat(stat) + this.getPassiveAttackDamage(stat);
+        }
+        return super.getPlayerStat(stat);
+    }
+
+    private double getPassiveAttackDamage(String stat){
+        double missingPHealth = 1d-this.getPHealth();
+        double modifier = (0.8d*missingPHealth);
+        return this.getStat(stat)*modifier;
+    }
+
+    private void handleSwordAnimation(){
+        if(this.swordType == SwordType.FEARLESS){
+            ExtensionCommands.createActorFX(parentExt,room,id,"fionna_sword_blue",1000*60*15,this.id+"_fearless",true,"Bip001 Prop1",true,false,this.team);
+            ExtensionCommands.createActorFX(parentExt,room,id,"fionna_health_regen",1000*60*15,this.id+"_blueRegen",true,"Bip001 Prop1",true,false,this.team);
+            ExtensionCommands.removeFx(parentExt,room,this.id+"_fierce");
+            ExtensionCommands.removeFx(parentExt,room,this.id+"_attackUp");
+            ExtensionCommands.addStatusIcon(parentExt,player,"fionna_fearless","FEARLESS","icon_fionna_s2b",0f);
+            ExtensionCommands.removeStatusIcon(parentExt,player,"fionna_fierce");
+            ExtensionCommands.playSound(parentExt,player,this.id,"sfx_fionna_health_regen",this.location);
+
+        }else{
+            ExtensionCommands.createActorFX(parentExt,room,id,"fionna_sword_pink",1000*60*15,this.id+"_fierce",true,"Bip001 Prop1",true,false,this.team);
+            ExtensionCommands.createActorFX(parentExt,room,id,"fionna_attack_up",1000*60*15,this.id+"_attackUp",true,"Bip001 Prop1",true,false,this.team);
+            ExtensionCommands.removeFx(parentExt,room,this.id+"_fearless");
+            ExtensionCommands.removeFx(parentExt,room,this.id+"_blueRegen");
+            ExtensionCommands.addStatusIcon(parentExt,player,"fionna_fierce","FIERCE","icon_fionna_s2a",0f);
+            ExtensionCommands.removeStatusIcon(parentExt,player,"fionna_fearless");
+            ExtensionCommands.playSound(parentExt,player,this.id,"sfx_fionna_attack_up",this.location);
+
+        }
+    }
+
+    public boolean ultActivated(){
+        return this.ultActivated;
     }
 
     private class FionnaAbilityRunnable extends AbilityRunnable{
@@ -59,23 +175,33 @@ public class Fionna extends UserActor {
         protected void spellQ() {
             canMove = true;
             int dashInt = dashesRemaining+1;
-            double range = 1d;
+            float range = 1f;
             String explosionFx = "fionna_dash_explode_small";
             if(dashInt == 1){
-                range = 2d;
+                range = 2f;
                 explosionFx = "fionna_dash_explode";
+                canCast[0] = true;
             }
-            //ExtensionCommands.createWorldFX(parentExt,room,id,explosionFx,explosionFx+"_",);
+            ExtensionCommands.createWorldFX(parentExt,room,id,explosionFx,id+"_explosion"+dashInt,500,(float)dest.getX(),(float)dest.getY(),false,team,0f);
+            for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),dest,range)){
+                if(a.getTeam() != team && a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER){
+                    if(!hitWithDash) hitWithDash = true;
+                    double damage = getSpellDamage(spellData);
+                    a.addToDamageQueue(Fionna.this,damage,spellData);
+                    if(dashInt == 1) a.handleEffect(ActorState.SLOWED,0.5d,1000,"");
+                }
+            }
         }
 
         @Override
         protected void spellW() {
-
+            canCast[1] = true;
         }
 
         @Override
         protected void spellE() {
-
+            ultActivated = false;
+            canCast[2] = true;
         }
 
         @Override

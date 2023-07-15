@@ -11,10 +11,7 @@ import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.Tower;
-import xyz.openatbp.extension.game.champions.BubbleGum;
-import xyz.openatbp.extension.game.champions.FlamePrincess;
-import xyz.openatbp.extension.game.champions.Gunter;
-import xyz.openatbp.extension.game.champions.Lich;
+import xyz.openatbp.extension.game.champions.*;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.*;
@@ -47,6 +44,8 @@ public class Champion {
                 return new Gunter(u,parentExt);
             case "princessbubblegum":
                 return new BubbleGum(u,parentExt);
+            case "fionna":
+                return new Fionna(u,parentExt);
         }
         return new UserActor(u, parentExt);
     }

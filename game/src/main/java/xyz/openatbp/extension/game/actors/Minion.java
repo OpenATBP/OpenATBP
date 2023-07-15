@@ -5,6 +5,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 
@@ -209,7 +210,6 @@ public class Minion extends Actor{
                     if(this.canAttack()) this.attack(this.target);
                 }else{
                     if(this.isStopped() || this.hasArrived()) this.moveTowardsTarget();
-                    else System.out.println("Distance from dest: " + this.location.distance(movementLine.getP2()));
                     this.travelTime+=0.1f;
                 }
             }else{
@@ -237,7 +237,6 @@ public class Minion extends Actor{
 
     @Override
     public void setTarget(Actor a) {
-        System.out.println(this.id + " is now targeting " + a.getId());
         this.target = a;
         this.movementLine = new Line2D.Float(this.location,a.getLocation());
         this.travelTime = 0.1f;
@@ -255,16 +254,29 @@ public class Minion extends Actor{
 
     private Actor searchForTarget(){
         Actor closestActor = null;
+        Actor closestNonUser = null;
         double distance = 1000f;
+        double distanceNonUser = 1000f;
         for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
             if(a.getTeam() != this.team && a.getActorType() != ActorType.MONSTER && this.withinAggroRange(a.getLocation()) && this.facingEntity(a.getLocation())){
-                if(a.getLocation().distance(this.location) < distance){
-                    distance = a.getLocation().distance(this.location);
-                    closestActor = a;
+                if(a.getActorType() == ActorType.PLAYER){
+                    UserActor ua = (UserActor) a;
+                    if(!ua.getState(ActorState.REVEALED)){
+                        if(ua.getLocation().distance(this.location) < distance){
+                            distance = ua.getLocation().distance(this.location);
+                            closestActor = ua;
+                        }
+                    }
+                }else{
+                    if(a.getLocation().distance(this.location) < distanceNonUser){
+                        closestNonUser = a;
+                        distanceNonUser = a.getLocation().distance(this.location);
+                    }
                 }
             }
         }
-        return closestActor;
+        if(closestNonUser != null) return closestNonUser;
+        else return closestActor;
     }
 
     private boolean facingEntity(Point2D p){ // Returns true if the point is in the same direction as the minion is heading
