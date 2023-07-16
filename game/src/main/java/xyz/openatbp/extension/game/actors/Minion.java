@@ -3,6 +3,7 @@ package xyz.openatbp.extension.game.actors;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
+import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.ActorState;
@@ -183,10 +184,13 @@ public class Minion extends Actor{
         if(this.attackCooldown > 0) this.attackCooldown-=100;
 
         if(msRan % 1000 == 0){
+            /*
             for(UserActor k : aggressors.keySet()){
                 if(aggressors.get(k) == 10) aggressors.remove(k);
                 else aggressors.put(k,aggressors.get(k)+1);
             }
+
+             */
             int xp = 5 + ((msRan/1000)/60);
             if(this.type == MinionType.SUPER) xp+=5;
             if(xpWorth != xp) xpWorth = xp;
@@ -209,6 +213,15 @@ public class Minion extends Actor{
                     if(!this.isStopped()) this.stopMoving();
                     if(this.canAttack()) this.attack(this.target);
                 }else{
+                    if(this.target.getActorType() == ActorType.PLAYER){
+                        Actor newTarget = this.searchForTarget();
+                        if(newTarget != null && newTarget.getActorType() != ActorType.PLAYER){
+                            this.setTarget(newTarget);
+                            return;
+                        }else if(newTarget == null){
+                            this.resetTarget();
+                        }
+                    }
                     if(this.isStopped() || this.hasArrived()) this.moveTowardsTarget();
                     this.travelTime+=0.1f;
                 }
@@ -241,6 +254,10 @@ public class Minion extends Actor{
         this.movementLine = new Line2D.Float(this.location,a.getLocation());
         this.travelTime = 0.1f;
         ExtensionCommands.moveActor(parentExt,room,id, movementLine.getP1(), movementLine.getP2(), (float) this.speed, true);
+        if(this.target.getActorType() == ActorType.PLAYER){
+            UserActor ua = (UserActor) a;
+            ExtensionCommands.setTarget(this.parentExt,ua.getUser(),this.id,ua.getId());
+        }
     }
 
     @Override
@@ -261,7 +278,7 @@ public class Minion extends Actor{
             if(a.getTeam() != this.team && a.getActorType() != ActorType.MONSTER && this.withinAggroRange(a.getLocation()) && this.facingEntity(a.getLocation())){
                 if(a.getActorType() == ActorType.PLAYER){
                     UserActor ua = (UserActor) a;
-                    if(!ua.getState(ActorState.REVEALED)){
+                    if(ua.getState(ActorState.REVEALED) || !ua.getState(ActorState.BRUSH)){
                         if(ua.getLocation().distance(this.location) < distance){
                             distance = ua.getLocation().distance(this.location);
                             closestActor = ua;
@@ -269,8 +286,16 @@ public class Minion extends Actor{
                     }
                 }else{
                     if(a.getLocation().distance(this.location) < distanceNonUser){
-                        closestNonUser = a;
-                        distanceNonUser = a.getLocation().distance(this.location);
+                        if(a.getActorType() != ActorType.BASE){
+                            closestNonUser = a;
+                            distanceNonUser = a.getLocation().distance(this.location);
+                        }else{
+                            Base b = (Base) a;
+                            if(b.isUnlocked()){
+                                closestNonUser = a;
+                                distanceNonUser = a.getLocation().distance(this.location);
+                            }
+                        }
                     }
                 }
             }
@@ -356,15 +381,12 @@ public class Minion extends Actor{
         Line2D testLine;
         if(this.movementLine == null || this.isStopped()){
             System.out.println("Minion is stopped looking for index!");
-            int p1 = 0;
             int p2 = blueBotX.length-1;
             if(lane == 0) p2 = blueTopX.length-1;
             if(team == 0){
-                p1 = blueBotX.length-1;
                 p2 = 0;
-                if(lane == 0) p1 = blueTopX.length-1;
             }
-            testLine = new Line2D.Float(this.getPathPoint(p1),this.getPathPoint(p2));
+            testLine = new Line2D.Float(this.location,this.getPathPoint(p2));
         }else testLine = new Line2D.Float(this.location,this.movementLine.getP2());
         for(int i = 0; i < pathX.length; i++){
             Point2D pathPoint = new Point2D.Double(pathX[i],pathY[i]);

@@ -91,14 +91,16 @@ public class FlamePrincess extends UserActor {
                     if(ultUses>0){
                         //TODO: Fix so FP can dash and still get health packs
                         ultUses--;
-                        ExtensionCommands.moveActor(parentExt,room,id,getLocation(),Champion.getDashPoint(parentExt,this,dest),20f,true);
+                        Point2D dashPoint = Champion.getDashPoint(parentExt,this,dest);
+                        if(this.location.distance(dashPoint) < 5) dashPoint = Champion.getDashPoint(parentExt,this,Champion.getMaxRangeLine(new Line2D.Float(this.location,dashPoint),5f).getP2());
+                        ExtensionCommands.moveActor(parentExt,room,id,getLocation(),dashPoint,20f,true);
                         double time = dest.distance(getLocation())/20f;
                         this.canMove = false;
                         SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(true),(int)Math.floor(time*1000),TimeUnit.MILLISECONDS);
                         if(ultUses == 0){
-                            SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),(int)Math.floor(time*1000),TimeUnit.MILLISECONDS);
+                            SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dashPoint),(int)Math.floor(time*1000),TimeUnit.MILLISECONDS);
                         }
-                        setLocation(dest);
+                        setLocation(dashPoint);
                     }
                 }
                 break;

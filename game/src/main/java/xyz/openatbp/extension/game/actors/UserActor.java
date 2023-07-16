@@ -136,6 +136,7 @@ public class UserActor extends Actor {
             this.originalLocation = this.getRelativePoint(false);
             this.timeTraveled = 0f;
             this.speed = this.getPlayerStat("speed");
+            ExtensionCommands.moveActor(parentExt,room,id,this.originalLocation,this.destination, (float) this.speed,true);
         }else if(stat.contains("healthRegen")){
             if(this.hasTempStat("healthRegen") && this.getTempStat("healthRegen") <= 0) this.tempStats.remove("healthRegen");
         }
@@ -868,6 +869,16 @@ public class UserActor extends Actor {
             playerStats.put(s,this.getPlayerStat(s));
         }
         return playerStats;
+    }
+
+    protected void updateStatMenu(String stat){
+        ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,stat,this.getPlayerStat(stat));
+    }
+
+    protected void updateStatMenu(String[] stats){
+        for(String s : stats){
+            ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,s,this.getPlayerStat(s));
+        }
     }
 
     public void destroy(){

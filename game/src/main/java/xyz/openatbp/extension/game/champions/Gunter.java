@@ -63,6 +63,7 @@ public class Gunter extends UserActor{
                 break;
             case 2:
                 Line2D maxRangeLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),7f);
+                ExtensionCommands.playSound(this.parentExt,this.room,"","sfx_gunter_wing_it",this.location);
                 this.fireProjectile(new BottleProjectile(this.parentExt,this,maxRangeLine,11f,0.5f,this.id+"projectile_gunter_bottle"),"projectile_gunter_bottle",dest,8f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,player,"w",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new GunterAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
@@ -174,13 +175,9 @@ public class Gunter extends UserActor{
             JsonNode spellData = parentExt.getAttackData(getAvatar(),"spell2");
             handleSpellVamp(getSpellDamage(spellData));
             victim.addToDamageQueue(Gunter.this,getSpellDamage(spellData),spellData);
-            destroy();
-        }
-        @Override
-        public void destroy(){
-            super.destroy();
             ExtensionCommands.playSound(parentExt,room,"","sfx_gunter_bottle_shatter",this.location);
             ExtensionCommands.createWorldFX(parentExt,room,this.id,"gunter_bottle_shatter",this.id+"_bottleShatter",500,(float)this.location.getX(),(float)this.location.getY(),false,team,0f);
+            destroy();
         }
     }
 

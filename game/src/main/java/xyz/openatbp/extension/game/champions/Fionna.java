@@ -28,12 +28,15 @@ public class Fionna extends UserActor {
         ExtensionCommands.createActorFX(parentExt,room,id,"fionna_sword_blue",1000*60*15,this.id+"_fearless",true,"Bip001 Prop1",true,false,this.team);
         ExtensionCommands.createActorFX(parentExt,room,id,"fionna_health_regen",1000*60*15,this.id+"_blueRegen",true,"Bip001 Prop1",true,false,this.team);
         ExtensionCommands.addStatusIcon(parentExt,player,"fionna_fearless","FEARLESS","icon_fionna_s2b",0f);
+        String[] statsToUpdate = {"healthRegen","armor","spellResist","attackSpeed","speed"};
+        this.updateStatMenu(statsToUpdate);
     }
 
     @Override
     public void update(int msRan){
         super.update(msRan);
-        if(System.currentTimeMillis() - dashTime > 3000 && this.dashesRemaining > 0){
+        if(System.currentTimeMillis() - dashTime >= 3000 && this.dashesRemaining > 0){
+            ExtensionCommands.removeStatusIcon(parentExt,player,this.id+"_dash"+this.dashesRemaining);
             this.dashTime = -1;
             this.dashesRemaining = 0;
             double cooldown = this.getReducedCooldown(14000d);
@@ -69,9 +72,11 @@ public class Fionna extends UserActor {
                     }
                     if(this.dashesRemaining != 0){
                         ExtensionCommands.playSound(parentExt,room,this.id,"sfx_fionna_dash_small",this.location);
+                        ExtensionCommands.addStatusIcon(parentExt,player,this.id+"_dash"+this.dashesRemaining,this.dashesRemaining + " dashes remaining!","icon_fionna_s1",3000f);
                     }else{
                         ExtensionCommands.playSound(parentExt,room,this.id,"sfx_fionna_dash_large",this.location);
                     }
+                    if(this.dashesRemaining != 2) ExtensionCommands.removeStatusIcon(parentExt,player,this.id+"_dash"+(this.dashesRemaining+1));
                     ExtensionCommands.playSound(parentExt,room,this.id,"sfx_fionna_dash_wind",this.location);
                     ExtensionCommands.createActorFX(parentExt,room,this.id,"fionna_trail",(int)(time*1000),this.id+"_dashTrail"+dashesRemaining,true,"",true,false,this.team);
                     int gruntNum = 3-this.dashesRemaining;
@@ -92,7 +97,9 @@ public class Fionna extends UserActor {
                 this.stopMoving(500);
                 this.canCast[2] = false;
                 this.ultActivated = true;
+                ExtensionCommands.addStatusIcon(this.parentExt,this.player,"fionna_ult","fionna_spell_3_description","icon_fionna_s3",6000f);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_fionna_invuln",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"fionna_ult",this.location);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fionna_invuln_fx",6000,this.id+"_ult",true,"",true,false,this.team);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new FionnaAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),6000,TimeUnit.MILLISECONDS);
@@ -106,7 +113,7 @@ public class Fionna extends UserActor {
     public void attack(Actor a){
         if(this.attackCooldown == 0){
             this.handleAttack(a);
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),500,TimeUnit.MILLISECONDS);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),250,TimeUnit.MILLISECONDS);
         }
     }
 
@@ -157,8 +164,13 @@ public class Fionna extends UserActor {
             ExtensionCommands.addStatusIcon(parentExt,player,"fionna_fierce","FIERCE","icon_fionna_s2a",0f);
             ExtensionCommands.removeStatusIcon(parentExt,player,"fionna_fearless");
             ExtensionCommands.playSound(parentExt,player,this.id,"sfx_fionna_attack_up",this.location);
-
         }
+        String[] statsToUpdate = {"healthRegen","armor","spellResist","attackSpeed","speed"};
+        this.updateStatMenu(statsToUpdate);
+        this.originalLocation = this.location;
+        this.timeTraveled = 0f;
+        this.speed = this.getPlayerStat("speed");
+        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,this.destination, (float) this.speed,true);
     }
 
     public boolean ultActivated(){
@@ -202,6 +214,7 @@ public class Fionna extends UserActor {
         protected void spellE() {
             ultActivated = false;
             canCast[2] = true;
+            ExtensionCommands.removeStatusIcon(parentExt,player,"fionna_ult");
         }
 
         @Override

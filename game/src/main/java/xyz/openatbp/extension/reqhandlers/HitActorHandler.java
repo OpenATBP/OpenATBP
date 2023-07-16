@@ -12,6 +12,7 @@ import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.actors.Base;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
@@ -28,6 +29,10 @@ public class HitActorHandler extends BaseClientRequestHandler {
         if(actor != null){
             String targetId = params.getUtfString("target_id");
             Actor target = handler.getActor(targetId);
+            if(target.getActorType() == ActorType.BASE){
+                Base b = (Base) target;
+                if(!b.isUnlocked()) return;
+            }
             if(target.getActorType() == ActorType.PLAYER){
                 UserActor ua = (UserActor) target;
                 if(ua.getState(ActorState.INVISIBLE) && !ua.getState(ActorState.REVEALED)) return;

@@ -8,6 +8,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MapData;
+import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 
 import java.awt.geom.Point2D;
@@ -21,11 +22,11 @@ public class Base extends Actor {
         this.maxHealth = 3500;
         this.team = team;
         if(team == 0){
-            id = "base_purple";
+            this.id = "base_purple";
             location = new Point2D.Float(MapData.L2_BASE1_X*-1,0f);
         }
         else{
-            id = "base_blue";
+            this.id = "base_blue";
             location = new Point2D.Float(MapData.L2_BASE1_X,0f);
         }
         this.parentExt = parentExt;
@@ -33,6 +34,8 @@ public class Base extends Actor {
         this.actorType = ActorType.BASE;
         this.room = room;
         this.stats = this.initializeStats();
+        ExtensionCommands.updateActorState(parentExt,room,this.id, ActorState.INVINCIBLE,true);
+        ExtensionCommands.updateActorState(parentExt,room,this.id, ActorState.IMMUNITY,true);
     }
 
     public int getTeam(){
@@ -93,6 +96,8 @@ public class Base extends Actor {
 
     public void unlock(){
         unlocked = true;
+        ExtensionCommands.updateActorState(parentExt,room,this.id, ActorState.INVINCIBLE,false);
+        ExtensionCommands.updateActorState(parentExt,room,this.id, ActorState.IMMUNITY,false);
     }
 
     public boolean isUnlocked(){
