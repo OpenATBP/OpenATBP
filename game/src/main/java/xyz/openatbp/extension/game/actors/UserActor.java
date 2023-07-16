@@ -490,7 +490,7 @@ public class UserActor extends Actor {
             this.moonTimer++;
 
             //TODO: Move health regen to separate function
-            if(this.currentHealth < this.maxHealth && (this.aggressors.isEmpty() || this.getPlayerStat("healthRegen") < 0)){
+            if((this.currentHealth < this.maxHealth && this.aggressors.isEmpty()) || this.getPlayerStat("healthRegen") < 0){
                 double healthRegen = this.getPlayerStat("healthRegen");
                 if(this.currentHealth + healthRegen <= 0) healthRegen = (this.currentHealth-1)*-1;
                 this.changeHealth((int)healthRegen);
