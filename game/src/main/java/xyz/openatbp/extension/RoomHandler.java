@@ -40,6 +40,7 @@ public class RoomHandler implements Runnable{
     private GumballGuardian[] guardians;
     private boolean gameOver = false;
     private HashMap<String, Long> destroyedIds = new HashMap<>();
+    private static final boolean MONSTER_DEBUG = true;
     public RoomHandler(ATBPExtension parentExt, Room room){
         this.parentExt = parentExt;
         this.room = room;
@@ -113,6 +114,7 @@ public class RoomHandler implements Runnable{
                         int spawnRate = 45; //Mob spawn rate
                         if(s.equalsIgnoreCase("keeoth")) spawnRate = 120;
                         else if(s.equalsIgnoreCase("ooze")) spawnRate = 90;
+                        if(MONSTER_DEBUG) spawnRate = 1;
                         if(spawns.getInt(s) == spawnRate){ //Mob timers will be set to 0 when killed or health when taken
                             spawnMonster(s);
                             spawns.putInt(s,spawns.getInt(s)+1);

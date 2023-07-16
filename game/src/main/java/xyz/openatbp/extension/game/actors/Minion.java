@@ -380,7 +380,6 @@ public class Minion extends Actor{
         int index = -1;
         Line2D testLine;
         if(this.movementLine == null || this.isStopped()){
-            System.out.println("Minion is stopped looking for index!");
             int p2 = blueBotX.length-1;
             if(lane == 0) p2 = blueTopX.length-1;
             if(team == 0){

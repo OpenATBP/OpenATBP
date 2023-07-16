@@ -234,6 +234,7 @@ public class BubbleGum extends UserActor {
             JsonNode attackData = parentExt.getAttackData("princessbubblegum","basicAttack");
             double damage = this.attacker.getPlayerStat("attackDamage");
             if(crit) damage*=2;
+            BubbleGum.this.handleLifeSteal();
             this.target.addToDamageQueue(this.attacker,damage,attackData);
             if(this.target.getActorType() == ActorType.PLAYER){
                 gumStacks++;

@@ -12,6 +12,7 @@ import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -222,6 +223,10 @@ public abstract class Actor {
                     buffHandler = new Champion.FinalBuffHandler(this,ActorState.SLOWED,delta);
                 }
                 break;
+            case IMMUNITY:
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_immunity",duration,this.id+"_immunity",true,"displayBar",false,false,this.team);
+                buffHandler = new Champion.FinalBuffHandler(this,ActorState.IMMUNITY,delta,"statusEffect_immunity");
+                break;
             default:
                 buffHandler = new Champion.FinalBuffHandler(this,state,delta);
                 break;
@@ -238,6 +243,17 @@ public abstract class Actor {
             SmartFoxServer.getInstance().getTaskScheduler().schedule(buffHandler,duration,TimeUnit.MILLISECONDS);
             this.setBuffHandler("charmed",buffHandler);
             this.setTarget(charmer);
+        }
+    }
+
+    public void handleFear(UserActor feared, int duration){
+        if(!this.states.get(ActorState.FEARED)){
+            Champion.FinalBuffHandler buffHandler = new Champion.FinalBuffHandler(this,ActorState.FEARED,0f);
+            this.setState(ActorState.FEARED,true);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(buffHandler,duration,TimeUnit.MILLISECONDS);
+            this.setBuffHandler("feared",buffHandler);
+            Line2D oppositeLine = Champion.getMaxRangeLine(new Line2D.Float(feared.getLocation(),this.location),10f);
+            ExtensionCommands.moveActor(parentExt,room,id,this.location, oppositeLine.getP2(), (float) this.getPlayerStat("speed"),true);
         }
     }
 

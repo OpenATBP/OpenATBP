@@ -46,6 +46,8 @@ public class Champion {
                 return new BubbleGum(u,parentExt);
             case "fionna":
                 return new Fionna(u,parentExt);
+            case "marceline":
+                return new Marceline(u,parentExt);
         }
         return new UserActor(u, parentExt);
     }
@@ -490,6 +492,12 @@ public class Champion {
                     case "charmed":
                         a.setState(ActorState.CHARMED,false);
                         a.removeBuffHandler(this.buff);
+                        break;
+                    case "feared":
+                        a.setState(ActorState.FEARED, false);
+                        break;
+                    case "immunity":
+                        a.setState(ActorState.IMMUNITY, false);
                         break;
                     default:
                         a.setState(ActorState.valueOf(this.buff.toUpperCase()),false);

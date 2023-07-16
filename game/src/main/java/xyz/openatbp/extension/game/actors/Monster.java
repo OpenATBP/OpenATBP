@@ -6,9 +6,11 @@ import com.smartfoxserver.v2.entities.Room;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 
+import java.awt.*;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +27,7 @@ public class Monster extends Actor {
     private final MonsterType type;
     private Line2D movementLine;
     protected boolean dead = false;
+    private static final boolean MOVEMENT_DEBUG = true;
 
     public Monster(ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName){
         this.startingLocation = new Point2D.Float(startingLocation[0],startingLocation[1]);
@@ -43,6 +46,7 @@ public class Monster extends Actor {
         this.attackRange = this.stats.get("attackRange");
         this.actorType = ActorType.MONSTER;
         this.displayName = parentExt.getDisplayName(monsterName);
+        if(MOVEMENT_DEBUG) ExtensionCommands.createActor(parentExt,room,id+"_test","creep",this.location,0f,2);
     }
 
     public Monster(ATBPExtension parentExt, Room room, Point2D startingLocation, String monsterName){
@@ -218,9 +222,14 @@ public class Monster extends Actor {
                 Champion.updateServerHealth(this.parentExt,this);
             }
         }
+        if(this.states.get(ActorState.FEARED)){
+            if(this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01d) this.travelTime+=0.1f;
+            else System.out.println("Failed! Distance is " + this.movementLine.getP1().distance(this.movementLine.getP2()));
+        }
         if(this.target != null && this.target.getHealth() <= 0) this.setAggroState(AggroState.PASSIVE,null);
         if(this.movementLine != null) this.location = this.getRelativePoint(); //Sets location variable to its actual location using *math*
         else this.movementLine = new Line2D.Float(this.location,this.location);
+        if(MOVEMENT_DEBUG && this.type == MonsterType.BIG) ExtensionCommands.moveActor(parentExt,room,this.id+"_test",this.location,this.location,5f,false);
         if(this.state == AggroState.PASSIVE){
             if(this.currentHealth < this.maxHealth){
                 this.changeHealth(25);
@@ -239,11 +248,14 @@ public class Monster extends Actor {
             }
             else if(this.target != null){ //Chasing player
                 if(this.withinRange(this.target) && this.canAttack()){
+                    System.out.println("Test case 1");
                     this.attack(this.target);
-                }else if(!this.withinRange(this.target) && this.canMove){
+                }else if(!this.withinRange(this.target) && this.canMove()){
+                    System.out.println("Test case 2");
                     this.travelTime+=0.1f;
                     this.moveTowardsActor(this.target.getLocation());
-                }else if(this.withinRange(this.target)){
+                }else if(this.withinRange(this.target) && !this.states.get(ActorState.FEARED)){
+                    System.out.println("Test case 3");
                     if(this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f) this.stopMoving();
                 }
             }
@@ -252,11 +264,26 @@ public class Monster extends Actor {
     }
 
     @Override
+    public void handleFear(UserActor feared, int duration){
+        if(!this.states.get(ActorState.FEARED)){
+            Champion.FinalBuffHandler buffHandler = new Champion.FinalBuffHandler(this,ActorState.FEARED,0f);
+            this.setState(ActorState.FEARED,true);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(buffHandler,duration,TimeUnit.MILLISECONDS);
+            this.setBuffHandler("feared",buffHandler);
+            Line2D oppositeLine = Champion.getMaxRangeLine(new Line2D.Float(feared.getLocation(),this.location),5f);
+            this.movementLine = new Line2D.Float(this.location, oppositeLine.getP2());
+            this.travelTime = 0f;
+            ExtensionCommands.moveActor(parentExt,room,id,this.location, oppositeLine.getP2(), (float) this.getPlayerStat("speed"),true);
+        }
+    }
+
+    @Override
     public boolean withinRange(Actor a){
         return a.getLocation().distance(this.location) <= this.getPlayerStat("attackRange");
     }
     @Override
     public void stopMoving(){
+        if(this.states.get(ActorState.FEARED)) return;
         super.stopMoving();
         this.movementLine = new Line2D.Float(this.location,this.location);
         this.travelTime = 0f;
@@ -268,7 +295,7 @@ public class Monster extends Actor {
         Point2D rPoint = new Point2D.Float();
         Point2D destination;
         if(this.state == AggroState.PASSIVE || this.target == null) destination = startingLocation;
-        else destination = target.getLocation();
+        else destination = movementLine.getP2();
         float x2 = (float) destination.getX();
         float y2 = (float) destination.getY();
         float x1 = (float) movementLine.getX1();
@@ -287,6 +314,7 @@ public class Monster extends Actor {
     }
 
     public void moveTowardsActor(Point2D dest){ //Moves towards a specific point. TODO: Have the path stop based on collision radius
+        if(this.states.get(ActorState.FEARED)) return;
         Line2D rawMovementLine = new Line2D.Double(this.location,this.target.getLocation());
        //int dist = (int) Math.floor(rawMovementLine.getP1().distance(rawMovementLine.getP2()) - this.attackRange);
        // Line2D newPath = Champion.getDistanceLine(rawMovementLine,dist);

@@ -490,7 +490,7 @@ public class UserActor extends Actor {
             this.moonTimer++;
 
             //TODO: Move health regen to separate function
-            if(this.currentHealth < this.maxHealth && (this.aggressors.isEmpty() || this.getPlayerStat("healthRegen") < 0)){
+            if(this.currentHealth < this.maxHealth && this.aggressors.isEmpty() || this.getPlayerStat("healthRegen") < 0){
                 double healthRegen = this.getPlayerStat("healthRegen");
                 if(this.currentHealth + healthRegen <= 0) healthRegen = (this.currentHealth-1)*-1;
                 this.changeHealth((int)healthRegen);
@@ -879,6 +879,11 @@ public class UserActor extends Actor {
         for(String s : stats){
             ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,s,this.getPlayerStat(s));
         }
+    }
+
+    public void cleanseEffects(){
+        ActorState[] cleansedStats = {ActorState.STUNNED, ActorState.STUNNED, ActorState.CHARMED, ActorState.FEARED, ActorState.BLINDED, ActorState.ROOTED, ActorState.CLEANSED};
+        this.setState(cleansedStats,false);
     }
 
     public void destroy(){
