@@ -346,6 +346,13 @@ public abstract class Actor {
 
     }
 
+    public void cleanseEffects(){
+        for(ActorState state : ActorState.values()){
+            this.setState(state,false);
+        }
+        this.setCanMove(true);
+    }
+
     public void setStat(String key, double value){
         this.stats.put(key,value);
     }

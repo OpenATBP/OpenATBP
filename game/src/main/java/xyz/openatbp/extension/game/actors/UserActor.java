@@ -621,6 +621,7 @@ public class UserActor extends Actor {
         this.destination = respawnPoint;
         this.timeTraveled = 0f;
         this.dead = false;
+        this.cleanseEffects();
         ExtensionCommands.snapActor(this.parentExt,this.room,this.id,this.location,this.location,false);
         ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx/sfx_champion_respawn",this.location);
         ExtensionCommands.respawnActor(this.parentExt,this.room,this.id);
