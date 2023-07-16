@@ -490,7 +490,7 @@ public class UserActor extends Actor {
             this.moonTimer++;
 
             //TODO: Move health regen to separate function
-            if(this.currentHealth < this.maxHealth && (this.aggressors.isEmpty() || this.hasTempStat("healthRegen")) || this.getPlayerStat("healthRegen") < 0){
+            if(this.currentHealth < this.maxHealth && (this.aggressors.isEmpty() || this.getPlayerStat("healthRegen") < 0)){
                 double healthRegen = this.getPlayerStat("healthRegen");
                 if(this.currentHealth + healthRegen <= 0) healthRegen = (this.currentHealth-1)*-1;
                 this.changeHealth((int)healthRegen);
@@ -514,7 +514,7 @@ public class UserActor extends Actor {
             List<Actor> actorsToRemove = new ArrayList<Actor>(this.aggressors.keySet().size());
             for(Actor a : this.aggressors.keySet()){
                 ISFSObject damageData = this.aggressors.get(a);
-                if(System.currentTimeMillis() > damageData.getLong("lastAttacked") + 10000) actorsToRemove.add(a);
+                if(System.currentTimeMillis() > damageData.getLong("lastAttacked") + 3000) actorsToRemove.add(a);
             }
             for(Actor a : actorsToRemove){
                 this.aggressors.remove(a);
