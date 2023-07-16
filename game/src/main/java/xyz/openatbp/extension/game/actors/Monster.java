@@ -195,6 +195,7 @@ public class Monster extends Actor {
                     roomHandler.addScore(ua,a.getTeam(),scoreValue);
                     roomHandler.handleXPShare(ua,this.parentExt.getActorXP(this.id));
                     ExtensionCommands.knockOutActor(parentExt,this.room,this.id,ua.getId(),45);
+                    ExtensionCommands.playSound(this.parentExt,ua.getUser(),ua.getId(),"sfx_gems_get",this.location);
                 }
             }else{
                 ExtensionCommands.knockOutActor(parentExt,this.room,this.id,a.getId(),45);

@@ -324,6 +324,7 @@ public abstract class Actor {
         data.putInt("currentHealth",(int)this.currentHealth);
         data.putInt("maxHealth", (int) this.maxHealth);
         data.putDouble("pHealth",this.getPHealth());
+        data.putInt("health",(int)this.maxHealth);
         ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,data);
     }
 

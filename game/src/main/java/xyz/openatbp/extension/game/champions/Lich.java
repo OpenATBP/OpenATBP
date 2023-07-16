@@ -25,6 +25,7 @@ public class Lich extends UserActor{
     private List<Point2D> slimePath = null;
     private HashMap<String, Long> slimedEnemies = null;
     private boolean ultStarted = false;
+    private long ultTime = -1;
     private int ultTeleportsRemaining = 0;
     private Point2D ultLocation;
 
@@ -46,6 +47,7 @@ public class Lich extends UserActor{
                 slimePath = new ArrayList<>();
                 slimedEnemies = new HashMap<>();
                 ExtensionCommands.playSound(parentExt,room,id,"sfx_lich_trail",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_lich_trail",this.location);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new TrailHandler(), 6000, TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"q",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new LichAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
@@ -53,6 +55,7 @@ public class Lich extends UserActor{
             case 2: //W
                 this.stopMoving();
                 ExtensionCommands.playSound(parentExt,room,this.id,"sfx_lich_charm_shot",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_lich_charm_shot",this.location);
                 Line2D fireLine = new Line2D.Float(this.getRelativePoint(false),dest);
                 Line2D newLine = Champion.getMaxRangeLine(fireLine,8f);
                 this.fireProjectile(new LichCharm(parentExt,this,newLine,9f,0.5f,this.id+"projectile_lich_charm"),"projectile_lich_charm",dest,8f);
@@ -65,6 +68,7 @@ public class Lich extends UserActor{
                     this.canMove = false;
                     this.stopMoving();
                     ExtensionCommands.playSound(parentExt,room,this.id,"sfx_lich_death_pool",this.location);
+                    ExtensionCommands.playSound(parentExt,room,"","sfx_lich_well",dest);
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new LichAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),1000,TimeUnit.MILLISECONDS);
                 }
                 else{
@@ -136,14 +140,20 @@ public class Lich extends UserActor{
             if(this.slimePath.size() > 150) this.slimePath.remove(this.slimePath.size()-1);
         }
 
-        if(this.ultStarted){
+        if(this.ultStarted && System.currentTimeMillis() - this.ultTime >= 500){
+            this.ultTime = System.currentTimeMillis();
+            boolean damageDealt = false;
             JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(),"spell3");
             for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(this.room.getId()),ultLocation,3f)){
                 if(a.getTeam() != this.team && a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER){
+                    if(!damageDealt) damageDealt = true;
                     double damage = getSpellDamage(spellData)/10d;
                     handleSpellVamp(damage);
                     a.addToDamageQueue(this,Math.round(damage),spellData);
                 }
+            }
+            if(damageDealt){
+                ExtensionCommands.playSound(this.parentExt,this.room,"","sfx_lich_charm_shot_hit",this.ultLocation);
             }
         }
     }
@@ -350,15 +360,13 @@ public class Lich extends UserActor{
         protected void hit(Actor victim) {
             JsonNode spellData = parentExt.getAttackData(getAvatar(),"spell2");
             handleSpellVamp(getSpellDamage(spellData));
-            victim.addToDamageQueue(Lich.this,getSpellDamage(spellData),spellData);
-            victim.handleCharm(Lich.this,2000);destroy();
-        }
-        @Override
-        public void destroy(){
-            super.destroy();
             ExtensionCommands.playSound(parentExt,room,this.id,"sfx_lich_charm_shot_hit",this.location);
             ExtensionCommands.createWorldFX(parentExt,room,this.id,"lich_charm_explosion",id+"_charmExplosion",500,(float)this.location.getX(),(float)this.location.getY(),false,team,0f);
+            victim.addToDamageQueue(Lich.this,getSpellDamage(spellData),spellData);
+            victim.handleCharm(Lich.this,2000);
+            destroy();
         }
+
     }
 
     private class LichAbilityRunnable extends AbilityRunnable{
@@ -391,13 +399,14 @@ public class Lich extends UserActor{
                 Lich.this.ultTeleportsRemaining = 0;
                 Lich.this.ultStarted = false;
                 ultLocation = null;
+                Lich.this.ultTime = -1;
             }else{
                 canCast[2] = true;
+                Lich.this.ultTime = System.currentTimeMillis();
                 Lich.this.ultStarted = true;
                 Lich.this.ultTeleportsRemaining = 1;
                 Lich.this.ultLocation = dest;
                 canMove = true;
-                ExtensionCommands.playSound(parentExt,room,"","sfx_lich_well",dest);
                 ExtensionCommands.createWorldFX(parentExt,room,id,"lich_death_puddle",id+"_lichPool",5000,(float)dest.getX(),(float)dest.getY(),false,team,0f);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new LichAbilityRunnable(spellData,cooldown,gCooldown,dest),5000,TimeUnit.MILLISECONDS);
             }

@@ -36,10 +36,9 @@ public class Keeoth extends Monster {
 
     @Override
     public void die(Actor a){
-        if(!this.dead && a.getActorType() == ActorType.PLAYER){
-            UserActor ua = (UserActor) a;
+        if(!this.dead && (a.getActorType() == ActorType.PLAYER || a.getActorType() == ActorType.COMPANION)){
             for(UserActor u : parentExt.getRoomHandler(this.room.getId()).getPlayers()){
-                if(u.getTeam() == ua.getTeam()){
+                if(u.getTeam() == a.getTeam()){
                     u.handleEffect("lifeSteal",35,60000,"jungle_buff_keeoth");
                     u.handleEffect("spellVamp",40,60000,"jungle_buff_keeoth");
                     u.handleEffect("criticalChance",35,60000,"jungle_buff_keeoth");

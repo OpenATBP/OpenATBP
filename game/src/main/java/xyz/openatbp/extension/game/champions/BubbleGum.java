@@ -297,6 +297,7 @@ public class BubbleGum extends UserActor {
         @Override
         public void die(Actor a) {
             this.dead = true;
+            this.currentHealth = 0;
             ExtensionCommands.removeStatusIcon(parentExt,player,iconName);
             ExtensionCommands.removeFx(parentExt,room,this.id+"_ring");
             ExtensionCommands.destroyActor(parentExt,room,this.id);

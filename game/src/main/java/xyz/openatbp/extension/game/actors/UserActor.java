@@ -14,6 +14,7 @@ import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.Projectile;
+import xyz.openatbp.extension.game.champions.Fionna;
 import xyz.openatbp.extension.reqhandlers.HitActorHandler;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
@@ -135,6 +136,7 @@ public class UserActor extends Actor {
             this.originalLocation = this.getRelativePoint(false);
             this.timeTraveled = 0f;
             this.speed = this.getPlayerStat("speed");
+            ExtensionCommands.moveActor(parentExt,room,id,this.originalLocation,this.destination, (float) this.speed,true);
         }else if(stat.contains("healthRegen")){
             if(this.hasTempStat("healthRegen") && this.getTempStat("healthRegen") <= 0) this.tempStats.remove("healthRegen");
         }
@@ -234,6 +236,13 @@ public class UserActor extends Actor {
             this.changeHealth(newDamage*-1);
             if(this.currentHealth > 0) return false;
             else{
+                if(this.getClass() == Fionna.class){
+                    Fionna f = (Fionna) this;
+                    if(f.ultActivated()){
+                        this.setHealth(1, (int) this.maxHealth);
+                        return false;
+                    }
+                }
                 if(this.hasBackpackItem("junk_4_future_crystal") && this.getStat("sp_category4") > 0){
                     double points = (int) this.getStat("sp_category4");
                     int timer = (int) (250 - (10*points));
@@ -479,8 +488,11 @@ public class UserActor extends Actor {
         if(msRan % 1000 == 0){
             this.futureCrystalTimer++;
             this.moonTimer++;
-            if(this.currentHealth < this.maxHealth && (this.aggressors.isEmpty() || this.hasTempStat("healthRegen"))){
+
+            //TODO: Move health regen to separate function
+            if(this.currentHealth < this.maxHealth && (this.aggressors.isEmpty() || this.hasTempStat("healthRegen")) || this.getPlayerStat("healthRegen") < 0){
                 double healthRegen = this.getPlayerStat("healthRegen");
+                if(this.currentHealth + healthRegen <= 0) healthRegen = (this.currentHealth-1)*-1;
                 this.changeHealth((int)healthRegen);
             }
             int newDeath = 10+((msRan/1000)/60);
@@ -857,6 +869,16 @@ public class UserActor extends Actor {
             playerStats.put(s,this.getPlayerStat(s));
         }
         return playerStats;
+    }
+
+    protected void updateStatMenu(String stat){
+        ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,stat,this.getPlayerStat(stat));
+    }
+
+    protected void updateStatMenu(String[] stats){
+        for(String s : stats){
+            ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,s,this.getPlayerStat(s));
+        }
     }
 
     public void destroy(){
