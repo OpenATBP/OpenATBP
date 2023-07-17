@@ -490,7 +490,7 @@ public class UserActor extends Actor {
             this.moonTimer++;
 
             //TODO: Move health regen to separate function
-            if(this.currentHealth < this.maxHealth && this.aggressors.isEmpty() || this.getPlayerStat("healthRegen") < 0){
+            if((this.currentHealth < this.maxHealth && this.aggressors.isEmpty()) || this.getPlayerStat("healthRegen") < 0){
                 double healthRegen = this.getPlayerStat("healthRegen");
                 if(this.currentHealth + healthRegen <= 0) healthRegen = (this.currentHealth-1)*-1;
                 this.changeHealth((int)healthRegen);
@@ -621,6 +621,7 @@ public class UserActor extends Actor {
         this.destination = respawnPoint;
         this.timeTraveled = 0f;
         this.dead = false;
+        this.cleanseEffects();
         ExtensionCommands.snapActor(this.parentExt,this.room,this.id,this.location,this.location,false);
         ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx/sfx_champion_respawn",this.location);
         ExtensionCommands.respawnActor(this.parentExt,this.room,this.id);
