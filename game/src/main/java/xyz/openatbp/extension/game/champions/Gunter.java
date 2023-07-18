@@ -14,7 +14,6 @@ import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -32,7 +31,7 @@ public class Gunter extends UserActor{
         if(ultActivated && ultPoint != null){
             JsonNode spellData = parentExt.getAttackData(getAvatar(),"spell3");
             Line2D ogLine = new Line2D.Float(this.getRelativePoint(false),this.ultPoint);
-            List<Actor> affectedActors = Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),Champion.getDistanceLine(ogLine,7f),4f);
+            List<Actor> affectedActors = Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),Champion.getMaxRangeLine(ogLine,7f),4f);
             for(Actor a : affectedActors){
                 if(a.getTeam() != this.team){
                     double damage = (double)getSpellDamage(spellData)/10;

@@ -27,7 +27,7 @@ public class Monster extends Actor {
     private final MonsterType type;
     private Line2D movementLine;
     protected boolean dead = false;
-    private static final boolean MOVEMENT_DEBUG = true;
+    private static final boolean MOVEMENT_DEBUG = false;
 
     public Monster(ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName){
         this.startingLocation = new Point2D.Float(startingLocation[0],startingLocation[1]);
@@ -127,6 +127,7 @@ public class Monster extends Actor {
     }
     @Override
     public boolean setTempStat(String stat, double delta) {
+        System.out.println("Monster " + stat + " set to " + delta);
         boolean returnVal = super.setTempStat(stat,delta);
         if(stat.equalsIgnoreCase("speed")){
             if(movementLine != null){
@@ -212,6 +213,7 @@ public class Monster extends Actor {
     @Override
     public void update(int msRan) {
         this.handleDamageQueue();
+        this.handleActiveEffects();
         if(this.dead) return;
         if(msRan % 1000*60 == 0){ //Every second it checks average player level and scales accordingly
             int averagePLevel = parentExt.getRoomHandler(this.room.getId()).getAveragePlayerLevel();
@@ -248,14 +250,11 @@ public class Monster extends Actor {
             }
             else if(this.target != null){ //Chasing player
                 if(this.withinRange(this.target) && this.canAttack()){
-                    System.out.println("Test case 1");
                     this.attack(this.target);
                 }else if(!this.withinRange(this.target) && this.canMove()){
-                    System.out.println("Test case 2");
                     this.travelTime+=0.1f;
                     this.moveTowardsActor(this.target.getLocation());
                 }else if(this.withinRange(this.target) && !this.states.get(ActorState.FEARED)){
-                    System.out.println("Test case 3");
                     if(this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f) this.stopMoving();
                 }
             }

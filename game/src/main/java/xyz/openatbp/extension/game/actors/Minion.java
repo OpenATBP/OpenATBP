@@ -178,6 +178,7 @@ public class Minion extends Actor{
     @Override
     public void update(int msRan) {
         this.handleDamageQueue();
+        this.handleActiveEffects();
         if(this.dead) return;
         this.location = this.getRelativePoint();
         if(MOVEMENT_DEBUG) ExtensionCommands.moveActor(parentExt,room,id+"_test",this.location,this.location,5f,false);

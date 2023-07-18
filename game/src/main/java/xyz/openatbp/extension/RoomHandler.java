@@ -114,7 +114,7 @@ public class RoomHandler implements Runnable{
                         int spawnRate = 45; //Mob spawn rate
                         if(s.equalsIgnoreCase("keeoth")) spawnRate = 120;
                         else if(s.equalsIgnoreCase("ooze")) spawnRate = 90;
-                        if(MONSTER_DEBUG) spawnRate = 1;
+                        if(MONSTER_DEBUG) spawnRate = 10;
                         if(spawns.getInt(s) == spawnRate){ //Mob timers will be set to 0 when killed or health when taken
                             spawnMonster(s);
                             spawns.putInt(s,spawns.getInt(s)+1);
@@ -234,7 +234,7 @@ public class RoomHandler implements Runnable{
                             ExtensionCommands.createActorFX(parentExt,room,String.valueOf(u.getId()),"picked_up_health_cyclops",2000,s+"_fx2",true,"",false,false,team);
                             ExtensionCommands.playSound(parentExt,u.getRoom(),"","sfx_health_picked_up",healthLoc);
                             if(!u.hasTempStat("healthRegen")) u.changeHealth(100);
-                            u.handleEffect("healthRegen",20d,5000,"cyclopsTears");
+                            u.addEffect("healthRegen",20d,5000,"fx_health_regen",false);
                             //Champion.giveBuff(parentExt,u.getUser(), Buff.HEALTH_PACK);
                             spawns.putInt(s,0);
                             break;
@@ -410,11 +410,17 @@ public class RoomHandler implements Runnable{
                     if(u.getTeam() == team){
                         try{
                             if(i == 1){
-                                u.handleEffect("attackDamage",u.getPlayerStat("attackDamage")*0.25,1000*60,"attack_altar");
-                                u.handleEffect("spellDamage",u.getPlayerStat("spellDamage")*0.25,1000*60,"attack_altar");
+                                u.addEffect("attackDamage",u.getStat("attackDamage")*0.25d,1000*60,"altar_buff_offense",false);
+                                u.addEffect("spellDamage",u.getStat("spellDamage")*0.25d,1000*60,null,false);
+                                Champion.handleStatusIcon(parentExt,u.getUser(),"icon_altar_attack","altar2_description",1000*60);
                             }else{
-                                u.handleEffect("armor",u.getPlayerStat("armor")*0.5,1000*60,"defense_altar");
-                                u.handleEffect("spellResist",u.getPlayerStat("spellResist")*0.5,1000*60,"defense_altar");
+                                double addArmor = u.getStat("armor")*0.5d;
+                                double addMR = u.getStat("spellResist")*0.5d;
+                                if(addArmor == 0) addArmor = 5d;
+                                if(addMR == 0) addMR = 5d;
+                                u.addEffect("armor",addArmor,1000*60,"altar_buff_defense",true);
+                                u.addEffect("spellResist",addMR,1000*60,null,true);
+                                Champion.handleStatusIcon(parentExt,u.getUser(),"icon_altar_armor","altar1_description",1000*60);
                             }
                             //cooldowns.put(u.getId()+"__buff__"+buffName,60);
                             ExtensionCommands.knockOutActor(parentExt,u.getUser(),altarId,u.getId(),180);
@@ -703,7 +709,7 @@ public class RoomHandler implements Runnable{
                     ua.setHealth(ua.getMaxHealth(),ua.getMaxHealth()); //TODO: Set to not automatically fully heal
                     ExtensionCommands.createActorFX(this.parentExt,this.room,ua.getId(),"fx_health_regen",3000,ua.getId()+"_fountainRegen",true,"Bip01",false,false,ua.getTeam());
                 }
-                ua.handleEffect("speed",2d,5000,"fountainSpeed");
+                ua.addEffect("speed",2d,5000,"statusEffect_speed",false);
             }
         }
         Point2D purpleCenter = new Point2D.Float(50.16f, 0f);
@@ -715,7 +721,7 @@ public class RoomHandler implements Runnable{
                     ua.setHealth(ua.getMaxHealth(),ua.getMaxHealth());
                     ExtensionCommands.createActorFX(this.parentExt,this.room,ua.getId(),"fx_health_regen",3000,ua.getId()+"_fountainRegen",true,"Bip01",false,false,ua.getTeam());
                 }
-                ua.handleEffect("speed",2d,5000,"fountainSpeed");
+                ua.addEffect("speed",2d,5000,"statusEffect_speed",false);
             }
         }
     }

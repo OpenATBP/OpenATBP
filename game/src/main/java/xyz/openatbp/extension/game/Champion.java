@@ -331,6 +331,12 @@ public class Champion {
         return new Line2D.Float(movementLine.getP1(),finalPoint);
     }
 
+    public static void handleStatusIcon(ATBPExtension parentExt, User player, String icon, String iconDesc, float duration){
+        String iconName = icon+player.getId()+Math.random();
+        Runnable endIcon = () -> {ExtensionCommands.removeStatusIcon(parentExt,player,iconName);};
+        ExtensionCommands.addStatusIcon(parentExt,player,iconName,iconDesc,icon,duration);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(endIcon,(int)duration,TimeUnit.MILLISECONDS);
+    }
 
     public static class DelayedAttack implements Runnable{
 
@@ -358,9 +364,9 @@ public class Champion {
             if(this.attacker.getActorType() == ActorType.PLAYER){
                 UserActor ua = (UserActor) this.attacker;
                 if(ua.hasBackpackItem("junk_1_numb_chucks") && ua.getStat("sp_category1") > 0){
-                    if(!this.target.hasTempStat("attackSpeed")) this.target.handleEffect("attackSpeed",this.target.getPlayerStat("attackSpeed")*-0.1,3000,"numb_chucks");
+                    if(!this.target.hasTempStat("attackSpeed")) this.target.addEffect("attackSpeed",this.target.getPlayerStat("attackSpeed")*-0.1,3000,null,false);
                 }else if(ua.hasBackpackItem("junk_4_grob_gob_glob_grod") && ua.getStat("sp_category4") > 0){
-                    if(!this.target.hasTempStat("spellDamage")) this.target.handleEffect("spellDamage",this.target.getPlayerStat("spellDamage")*-0.1,3000,"grob_gob");
+                    if(!this.target.hasTempStat("spellDamage")) this.target.addEffect("spellDamage",this.target.getPlayerStat("spellDamage")*-0.1,3000,null,false);
                 }
                 if(this.attack.contains("basic")) ua.handleLifeSteal();
                 else if(this.attack.contains("spell")) ua.handleSpellVamp(this.damage);
@@ -410,6 +416,7 @@ public class Champion {
             deadActor.respawn();
         }
     }
+    @Deprecated
     public static class FinalBuffHandler implements Runnable {
 
         String buff;

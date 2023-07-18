@@ -41,11 +41,12 @@ public class Lich extends UserActor{
         }
         switch (ability) {
             case 1: //Q
-                double statIncrease = this.speed * 0.25;
-                this.handleEffect("speed", statIncrease, 6000, "lichking_deathmist");
+                double statIncrease = this.getStat("speed") * 0.25d;
+                this.addEffect("speed",statIncrease,6000,null,false);
                 qActivated = true;
                 slimePath = new ArrayList<>();
                 slimedEnemies = new HashMap<>();
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"lichking_deathmist",6000,this.id+"_lichTrail",true,"",true,false,this.team);
                 ExtensionCommands.playSound(parentExt,room,id,"sfx_lich_trail",this.location);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_lich_trail",this.location);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new TrailHandler(), 6000, TimeUnit.MILLISECONDS);
@@ -123,14 +124,14 @@ public class Lich extends UserActor{
                             if(System.currentTimeMillis() - slimedEnemies.get(a.getId()) >= 1000){
                                 handleSpellVamp(getSpellDamage(attackData));
                                 a.addToDamageQueue(this,getSpellDamage(attackData),attackData);
-                                a.handleEffect(ActorState.SLOWED,a.getPlayerStat("speed")*-0.3,1500,"lich_slow");
+                                a.addState(ActorState.SLOWED,0.3d,1500,null,false);
                                 slimedEnemies.put(a.getId(),System.currentTimeMillis());
                                 break;
                             }
                         }else{
                             handleSpellVamp(getSpellDamage(attackData));
                             a.addToDamageQueue(this,getSpellDamage(attackData),attackData);
-                            a.handleEffect(ActorState.SLOWED,a.getPlayerStat("speed")*-0.3,1500,"lich_slow");
+                            a.addState(ActorState.SLOWED,0.3d,1500,null,false);
                             slimedEnemies.put(a.getId(),System.currentTimeMillis());
                             break;
                         }

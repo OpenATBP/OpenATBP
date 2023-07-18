@@ -38,7 +38,7 @@ public abstract class Actor {
     protected String displayName = "FuzyBDragon";
     protected Map<String, Double> stats;
     protected Map<String, Double> tempStats = new HashMap<>();
-    protected Map<String, Champion.FinalBuffHandler> buffHandlers = new HashMap<>();
+    protected Map<String, ISFSObject> activeBuffs = new HashMap<>();
     protected List<ISFSObject> damageQueue = new ArrayList<>();
 
 
@@ -125,24 +125,194 @@ public abstract class Actor {
         }
     }
 
+    protected void handleActiveEffects(){
+        Set<String> keys = new HashSet<>(this.activeBuffs.keySet());
+        for(String k : keys){
+            ISFSObject data = this.activeBuffs.get(k);
+            if(System.currentTimeMillis() >= data.getLong("endTime")){
+                System.out.println("Effect: " + k + " is ending!");
+                if(data.containsKey("newEndTime")){
+                    if(data.containsKey("state")) this.handleStateEnd(data);
+                    else this.handleEffectEnd(k,data);
+                }else{
+                    if(data.containsKey("state")){
+                        ActorState state = (ActorState) data.getClass("state");
+                        this.setState(state,false);
+                        if(data.containsKey("delta")){
+                            this.setTempStat(data.getUtfString("stat"),data.getDouble("delta")*-1);
+                        }
+                        if(state == ActorState.POLYMORPH){
+                            UserActor ua = (UserActor) this;
+                            ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,ua.getSkinAssetBundle());
+                            if(!this.activeBuffs.containsKey(ActorState.SLOWED.toString())) this.setState(ActorState.SLOWED, false);
+                        }
+                    }else{
+                        this.setTempStat(k,data.getDouble("delta")*-1);
+                    }
+                    this.activeBuffs.remove(k);
+                }
+            }else{
+                if(data.containsKey("fxId") && System.currentTimeMillis() >= data.getLong("fxEndTime")){
+                    int fxDuration = (int)(data.getLong("endTime")-System.currentTimeMillis());
+                    System.out.println("New effect playing for " + fxDuration);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,data.getUtfString("fxId"),fxDuration,this.id+"_"+data.getUtfString("fxId"),true,"",true,false,this.team);
+                    this.activeBuffs.get(k).putLong("fxEndTime",data.getLong("endTime"));
+                }
+            }
+        }
+    }
+
+    protected void handleEffectEnd(String stat, ISFSObject data){
+        double newDelta = data.getDouble("newDelta");
+        double currentDelta = data.getDouble("delta");
+        double diff = newDelta-currentDelta;
+        this.setTempStat(stat,diff);
+        ISFSObject newData = new SFSObject();
+        newData.putDouble("delta",this.getTempStat(stat));
+        newData.putLong("endTime",data.getLong("newEndTime"));
+        newData.putBool("stacks",data.getBool("stacks"));
+        if(data.containsKey("newFxId")){
+            String fxId = data.getUtfString("newFxId");
+            newData.putUtfString("fxId",fxId);
+            newData.putLong("fxEndTime",data.getLong("newEndTime"));
+            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,fxId,(int)(data.getLong("newEndTime")-System.currentTimeMillis()),this.id+"_"+fxId,true,"",true,false,this.team);
+        }
+        this.activeBuffs.put(stat,newData);
+    }
+
+    protected void handleStateEnd(ISFSObject data){
+        ActorState state = (ActorState) data.getClass("state");
+        ISFSObject newData = new SFSObject();
+        newData.putLong("endTime",data.getLong("newEndTime"));
+        newData.putClass("state",state);
+        if(state == ActorState.SLOWED){
+            double newDelta = data.getDouble("newDelta");
+            double currentDelta = data.getDouble("delta");
+            double diff = newDelta-currentDelta;
+            this.setTempStat("speed",diff);
+        }
+        if(data.containsKey("newFxId")){
+            String fxId = data.getUtfString("newFxId");
+            newData.putUtfString("fxId",fxId);
+            newData.putLong("fxEndTime",data.getLong("newEndTime"));
+            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,fxId,(int)(data.getLong("newEndTime")-System.currentTimeMillis()),this.id+"_"+fxId,true,"",true,false,this.team);
+        }
+        this.activeBuffs.put(state.toString(),newData);
+    }
+
+    public void addEffect(String stat, double delta, int duration, String fxId, boolean stacks) {
+        ISFSObject data = new SFSObject();
+        if (!this.activeBuffs.containsKey(stat)) {
+            long endTime = System.currentTimeMillis() + duration;
+            data.putDouble("delta", delta);
+            data.putLong("endTime", endTime);
+            if (fxId != null) {
+                data.putUtfString("fxId", fxId);
+                data.putLong("fxEndTime", endTime);
+                data.putInt("fxDuration", duration);
+                ExtensionCommands.createActorFX(this.parentExt, this.room, this.id, fxId, duration, this.id + "_" + fxId, true, "", true, false, this.team);
+            }
+            data.putBool("stacks",stacks);
+            this.setTempStat(stat, delta);
+            this.activeBuffs.put(stat, data);
+        } else {
+            ISFSObject currentData = this.activeBuffs.get(stat);
+            double currentDelta = currentData.getDouble("delta");
+            if (currentDelta == delta) {
+                if(!currentData.getBool("stacks")){
+                    currentData.putLong("endTime", System.currentTimeMillis() + duration);
+                }else{
+                    this.setTempStat(stat, delta);
+                    currentData.putLong("newEndTime",System.currentTimeMillis() + duration);
+                    currentData.putDouble("newDelta",delta);
+                }
+            } else {
+                if(currentData.containsKey("newDelta")){
+                    double currentNewDelta = currentData.getDouble("newDelta");
+                    if(currentNewDelta == delta){
+                        if(stacks){
+                            this.setTempStat(stat,delta);
+                            currentData.putDouble("newDelta",currentNewDelta+delta);
+                        }
+                        currentData.putLong("newEndTime",System.currentTimeMillis() + duration);
+                    }
+                }else{
+                    this.setTempStat(stat, delta);
+                    double currentNewDelta = 0d;
+                    currentData.putDouble("newDelta", currentNewDelta+delta);
+                    currentData.putLong("newEndTime", System.currentTimeMillis() + duration);
+                }
+            }
+            this.activeBuffs.put(stat, currentData);
+        }
+    }
+
+    public void addState(ActorState state, double delta, int duration, String fxId, boolean stacks){
+        if(!this.activeBuffs.containsKey(state.toString())){
+            ISFSObject data = new SFSObject();
+            long endTime = System.currentTimeMillis()+duration;
+            data.putClass("state",state);
+            data.putLong("endTime",endTime);
+            if(fxId != null){
+                data.putUtfString("fxId",fxId);
+                data.putLong("fxEndTime",endTime);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,fxId,duration,this.id+"_"+fxId,true,"",true,false,this.team);
+            }
+            switch(state){
+                case SLOWED:
+                    data.putUtfString("stat","speed");
+                    double speedRemoval = this.getSpeed()*delta;
+                    this.setTempStat("speed",speedRemoval*-1);
+                    data.putDouble("delta",speedRemoval*-1);
+                    break;
+                case POLYMORPH:
+                    ExtensionCommands.swapActorAsset(parentExt,this.room, this.id,"flambit");
+                    data.putUtfString("stat","speed");
+                    double speedChange = this.getPlayerStat("speed")*-0.3;
+                    this.setTempStat("speed",speedChange);
+                    data.putDouble("delta",speedChange);
+                    this.setState(ActorState.SLOWED, true);
+                    break;
+            }
+            this.setState(state,true);
+            this.activeBuffs.put(state.toString(),data);
+        }else{
+            if(state == ActorState.SLOWED){
+                ISFSObject currentData = this.activeBuffs.get(state.toString());
+                double currentDelta = currentData.getDouble("delta");
+                double speedRemoval = this.getSpeed()*delta*-1;
+                if (currentDelta == speedRemoval) {
+                    currentData.putLong("endTime", System.currentTimeMillis() + duration);
+                } else {
+                    this.setTempStat("speed", speedRemoval);
+                    currentData.putDouble("newDelta", speedRemoval);
+                    currentData.putLong("newEndTime", System.currentTimeMillis() + duration);
+                }
+            }else if(stacks){
+                this.activeBuffs.get(state.toString()).putLong("endTime",System.currentTimeMillis()+duration);
+            }
+        }
+    }
+
+    @Deprecated
     public void handleEffect(String stat, double delta, int duration, String fxId){
+        /*
         if(!this.buffHandlers.containsKey(stat)){
             System.out.println(stat + " increased! for " + this.id + " by " + delta);
             this.setTempStat(stat,delta);
         }
         else{
             double currentTempStat = this.getTempStat(stat);
-            if(delta > currentTempStat){
-                if(fxId.contains("altar"))this.setTempStat(stat,delta);
-                else this.setTempStat(stat,delta-currentTempStat);
-            }
             if(this.buffHandlers.get(stat) == null){
                 this.handleEffect(stat,delta,duration,fxId);
                 return;
             }
-            if(delta != currentTempStat) this.buffHandlers.get(stat).setDelta(this.getTempStat(stat));
+            if(delta != currentTempStat){
+                this.setTempStat(stat,currentTempStat+delta);
+                this.buffHandlers.get(stat).setDelta(this.getTempStat(stat));
+            }
             this.buffHandlers.get(stat).setDuration(duration);
-            if(stat.equalsIgnoreCase("armor") && fxId.contains("altar")){ //Only armor to prevent multiple icons from appearing
+            if(stat.equalsIgnoreCase("armor") && fxId != null && fxId.contains("altar")){ //Only armor to prevent multiple icons from appearing
                 UserActor ua = (UserActor) this;
                 ExtensionCommands.addStatusIcon(this.parentExt,ua.getUser(),"altar_buff_defense","altar1_description","icon_altar_armor",1000*60);
             }
@@ -152,13 +322,13 @@ public abstract class Actor {
         switch(stat){
             case "speed":
                 String fxName = fxId;
-                if(delta > 0 && !fxId.contains("goo") && !fxId.contains("lich")) fxName = "statusEffect_speed";
-                if(fxId.contains("goo") && this.getActorType() == ActorType.PLAYER){
+                if(delta > 0 && fxId != null && !fxId.contains("goo") && !fxId.contains("lich")) fxName = "statusEffect_speed";
+                if(fxId != null && fxId.contains("goo") && this.getActorType() == ActorType.PLAYER){
                     UserActor ua = (UserActor) this;
                     ExtensionCommands.addStatusIcon(parentExt,ua.getUser(),"Ooze Buff","Oozed","icon_buff_goomonster",60000);
                 }
                 buffHandler = new Champion.FinalBuffHandler(this,stat,delta,fxName);
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,fxName,duration,this.id+"_"+fxId,true,"Bip01",true,false,this.team);
+                if(fxId != null) ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,fxName,duration,this.id+"_"+fxId,true,"Bip01",true,false,this.team);
                 break;
             case "healthRegen":
                 ExtensionCommands.createActorFX(parentExt,this.room,this.id,"fx_health_regen",duration,this.id+"_"+fxId,true,"Bip01",false,false,this.team);
@@ -196,9 +366,13 @@ public abstract class Actor {
         }
         this.setBuffHandler(stat,buffHandler);
         SmartFoxServer.getInstance().getTaskScheduler().schedule(buffHandler,duration,TimeUnit.MILLISECONDS);
+
+         */
     }
 
+    @Deprecated
     public void handleEffect(ActorState state, double delta, int duration, String fxName){
+        /*
         Champion.FinalBuffHandler buffHandler = null;
         switch(state){
             case POLYMORPH:
@@ -234,6 +408,8 @@ public abstract class Actor {
         this.setState(state,true);
         SmartFoxServer.getInstance().getTaskScheduler().schedule(buffHandler,duration,TimeUnit.MILLISECONDS);
         this.setBuffHandler(state.name().toLowerCase(),buffHandler);
+
+         */
     }
 
     public void handleCharm(UserActor charmer, int duration){
@@ -391,11 +567,11 @@ public abstract class Actor {
     }
 
     public void setBuffHandler(String buff, Champion.FinalBuffHandler handler){
-        this.buffHandlers.put(buff,handler);
+        //this.buffHandlers.put(buff,handler);
     }
 
     public void removeBuffHandler(String buff){
-        this.buffHandlers.remove(buff);
+        //this.buffHandlers.remove(buff);
     }
 
     public ATBPExtension getParentExt(){

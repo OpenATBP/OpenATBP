@@ -116,19 +116,6 @@ public class UserActor extends Actor {
     }
 
 
-
-    @Deprecated
-    public Map<String, Double> getPlayerStats(){
-        Map<String, Double> newStats = new HashMap<>();
-        for(String k : this.tempStats.keySet()){
-            newStats.put(k,this.tempStats.get(k));
-        }
-        for(String k : this.stats.keySet()){
-            if(!newStats.containsKey(k)) newStats.put(k,this.stats.get(k));
-        }
-        return newStats;
-    }
-
     @Override
     public boolean setTempStat(String stat, double delta){
         boolean returnVal = super.setTempStat(stat,delta);
@@ -140,7 +127,7 @@ public class UserActor extends Actor {
         }else if(stat.contains("healthRegen")){
             if(this.hasTempStat("healthRegen") && this.getTempStat("healthRegen") <= 0) this.tempStats.remove("healthRegen");
         }
-        parentExt.trace("Temp Stat Set!1");
+        parentExt.trace("Temp Stat for " + stat + " set to " + delta);
         ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,stat,this.getPlayerStat(stat));
         return returnVal;
     }
@@ -314,7 +301,9 @@ public class UserActor extends Actor {
         System.out.println(this.id + " has died! " + this.dead);
         try{
             if(this.dead) return;
+            if(this.currentAutoAttack != null) this.currentAutoAttack.cancel(true);
             this.dead = true;
+            this.canMove = false;
             Point2D location = this.getRelativePoint(false);
             ExtensionCommands.moveActor(parentExt,this.room,this.id,location,location,2f,false);
             this.setHealth(0, (int) this.maxHealth);
@@ -356,11 +345,7 @@ public class UserActor extends Actor {
                 this.originalLocation = respawnPoint;
                 this.destination = respawnPoint;
                 this.timeTraveled = 0f;
-
-                for(String buff : this.buffHandlers.keySet()){
-                    this.buffHandlers.get(buff).cancel(this.getTempStat(buff));
-                }
-                this.buffHandlers = new HashMap<>();
+                //Set<String> buffKeys = this.activeBuffs.keySet();
                 this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,assistIds,50); //TODO: Not sure if this is the correct xp value
             }catch(Exception e){
                 e.printStackTrace();
@@ -429,6 +414,7 @@ public class UserActor extends Actor {
     @Override
     public void update(int msRan) {
         this.handleDamageQueue();
+        this.handleActiveEffects();
         if(this.dead){
             if(this.currentHealth > 0) this.respawn();
             else return;
@@ -611,6 +597,7 @@ public class UserActor extends Actor {
     }
 
     public void respawn(){
+        this.canMove = true;
         this.setHealth((int) this.maxHealth, (int) this.maxHealth);
         int teamNumber = parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id,this.team);
         Point2D respawnPoint = MapData.PURPLE_SPAWNS[teamNumber];
@@ -626,7 +613,6 @@ public class UserActor extends Actor {
         ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx/sfx_champion_respawn",this.location);
         ExtensionCommands.respawnActor(this.parentExt,this.room,this.id);
         ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_speed",5000,this.id+"_respawnSpeed",true,"Bip01 Footsteps",true,false,this.team);
-        //this.handleEffect("speed",2d,5000,"fountainSpeed");
         ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"champion_respawn_effect",1000,this.id+"_respawn",true,"Bip001",false,false,this.team);
     }
 

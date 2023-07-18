@@ -58,7 +58,7 @@ public class GooMonster extends Monster {
                     data.putUtfString("attackType","spell");
                     JsonNode newAttackData = mapper.readTree(data.toJson());
                     for(Actor a : damagedActors){
-                        a.handleEffect(ActorState.SLOWED,a.getPlayerStat("speed")*-0.25f,1000,"goo_slow");
+                        a.addState(ActorState.SLOWED, 0.25d, 1000, null, false);
                         a.addToDamageQueue(this,4,newAttackData);
                     }
                 }catch(Exception e){
@@ -73,7 +73,7 @@ public class GooMonster extends Monster {
         if(!this.dead && (a.getActorType() == ActorType.PLAYER || a.getActorType() == ActorType.COMPANION)){
             for(UserActor u : parentExt.getRoomHandler(this.room.getId()).getPlayers()){
                 if(u.getTeam() == a.getTeam()){
-                    u.handleEffect("speed",u.getPlayerStat("speed")*0.1d,60000,"jungle_buff_goo");
+                    u.addEffect("speed",u.getPlayerStat("speed")*0.1d,60000,"jungle_buff_goo",false);
                     ExtensionCommands.playSound(parentExt,u.getUser(),"global","announcer/you_goomonster");
                 }else{
                     ExtensionCommands.playSound(parentExt,u.getUser(),"global","announcer/enemy_goomonster");

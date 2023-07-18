@@ -140,8 +140,7 @@ public class FlamePrincess extends UserActor {
             for(Actor a : affectedUsers){
                 if(a.getActorType() == ActorType.PLAYER){
                     UserActor userActor = (UserActor) a;
-                    userActor.setState(ActorState.POLYMORPH, true);
-                    userActor.handleEffect(ActorState.POLYMORPH,-1d,3000,null);
+                    userActor.addState(ActorState.POLYMORPH,0d,3000,null,false);
                 }
                 double newDamage = getSpellDamage(spellData);
                 handleSpellVamp(newDamage);

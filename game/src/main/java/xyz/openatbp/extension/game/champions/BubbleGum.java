@@ -16,6 +16,7 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -32,6 +33,7 @@ public class BubbleGum extends UserActor {
     private int turretNum = 0;
     private boolean bombPlaced;
     private Point2D bombLocation;
+    private final static boolean DEBUG = true;
 
 
     public BubbleGum(User u, ATBPExtension parentExt) {
@@ -72,9 +74,9 @@ public class BubbleGum extends UserActor {
                         JsonNode spellData = this.parentExt.getAttackData("princessbubblegum","spell1");
                         double damage = this.getSpellDamage(spellData)/10f;
                         a.addToDamageQueue(this,damage,spellData);
-                        a.handleEffect(ActorState.SLOWED,a.getStat("speed")*-0.3d,2000,"");
+                        a.addState(ActorState.SLOWED,0.3d,2000,null,false);
                     }else if(a.getId().equalsIgnoreCase(this.id)){
-                        this.handleEffect("speed",this.getStat("speed")*0.4d,2000,"");
+                        this.addEffect("speed",this.getStat("speed")*0.4d,2000,null,false);
                     }
                 }
             }
@@ -131,7 +133,7 @@ public class BubbleGum extends UserActor {
                 Line2D originalLine = new Line2D.Double(this.bombLocation,a.getLocation());
                 Line2D knockBackLine = Champion.extendLine(originalLine,6f);
                 Line2D finalLine = new Line2D.Double(a.getLocation(),Champion.getDashPoint(parentExt,a, knockBackLine.getP2()));
-                a.handleEffect(ActorState.AIRBORNE,-1d,250,"");
+                a.addState(ActorState.AIRBORNE,0d,250,null,false);
                 double speed = a.getLocation().distance(finalLine.getP2()) / 0.25f;
                 ExtensionCommands.knockBackActor(parentExt,room,a.getId(),a.getLocation(),finalLine.getP2(),(float)speed,true);
                 a.setLocation(finalLine.getP2());
@@ -236,12 +238,19 @@ public class BubbleGum extends UserActor {
             if(crit) damage*=2;
             BubbleGum.this.handleLifeSteal();
             this.target.addToDamageQueue(this.attacker,damage,attackData);
-            if(this.target.getActorType() == ActorType.PLAYER){
+            if(this.target.getActorType() == ActorType.PLAYER || DEBUG){
                 gumStacks++;
                 lastGum = System.currentTimeMillis();
-                if(gumStacks > 3) gumStacks = 3;
-                double change = 0.25 / (4-gumStacks);
-                this.target.handleEffect("attackSpeed",this.target.getStat("attackSpeed")*change,3000,"pb_passive");
+                if(gumStacks > 3){
+                    gumStacks = 3;
+                }
+                double change = 0.25d / (4-gumStacks);
+                double targetAttackSpeed = this.target.getStat("attackSpeed");
+                double getReducedSpeed = this.target.getTempStat("attackSpeed");
+                double newDamage = (targetAttackSpeed*change);
+                if(getReducedSpeed / targetAttackSpeed >= 0.25) newDamage = 0;
+                System.out.println("PB is gumming up by " + newDamage);
+                this.target.addEffect("attackSpeed",newDamage,3000,null,true);
             }
         }
     }

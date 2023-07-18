@@ -101,7 +101,7 @@ public class Marceline extends UserActor {
             if(getState(ActorState.TRANSFORMED)){
                 ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
                 setState(ActorState.TRANSFORMED, false);
-                Marceline.this.handleEffect(ActorState.IMMUNITY,0d,2000,"statusEffect_immunity");
+                Marceline.this.addState(ActorState.IMMUNITY,0d,2000,"statusEffect_immunity",false);
                 setState(ActorState.CLEANSED, true);
                 Marceline.this.cleanseEffects();
             }else{
@@ -110,7 +110,7 @@ public class Marceline extends UserActor {
                 setState(ActorState.TRANSFORMED, true);
                 double currentAttackSpeed = getPlayerStat("attackSpeed");
                 attackCooldown = 0d;
-                Marceline.this.handleEffect("attackSpeed",500-currentAttackSpeed,3000,null);
+                Marceline.this.addEffect("attackSpeed",500-currentAttackSpeed,3000,null,false);
             }
             for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),dest,3)){
                 if(a.getTeam() != team && a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE){

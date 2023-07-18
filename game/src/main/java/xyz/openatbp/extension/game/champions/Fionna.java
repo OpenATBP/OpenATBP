@@ -203,7 +203,7 @@ public class Fionna extends UserActor {
                     if(!hitWithDash) hitWithDash = true;
                     double damage = getSpellDamage(spellData);
                     a.addToDamageQueue(Fionna.this,damage,spellData);
-                    if(dashInt == 1) a.handleEffect(ActorState.SLOWED,0.5d,1000,"");
+                    if(dashInt == 1) a.addState(ActorState.SLOWED,0.5d,1000,null,false);
                 }
             }
         }
