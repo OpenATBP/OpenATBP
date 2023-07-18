@@ -18,7 +18,6 @@ public class Tower extends Actor {
     private final int[] BLUE_TOWER_NUM = {5,4,3};
     private long lastHit;
     private boolean destroyed = false;
-    private Actor target;
 
     public Tower(ATBPExtension parentExt, Room room, String id, int team, Point2D location){
         this.currentHealth = 800;

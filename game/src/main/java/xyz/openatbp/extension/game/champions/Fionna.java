@@ -12,6 +12,7 @@ import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.concurrent.TimeUnit;
 
@@ -170,10 +171,9 @@ public class Fionna extends UserActor {
         }
         String[] statsToUpdate = {"healthRegen","armor","spellResist","attackSpeed","speed"};
         this.updateStatMenu(statsToUpdate);
-        this.originalLocation = this.location;
+        this.movementLine = new Line2D.Float(this.location,this.movementLine.getP2());
         this.timeTraveled = 0f;
-        this.speed = this.getPlayerStat("speed");
-        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,this.destination, (float) this.speed,true);
+        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,this.movementLine.getP2(), (float) this.getPlayerStat("speed"),true);
     }
 
     public boolean ultActivated(){

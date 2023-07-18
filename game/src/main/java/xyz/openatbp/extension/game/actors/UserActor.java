@@ -26,10 +26,6 @@ import java.util.concurrent.TimeUnit;
 public class UserActor extends Actor {
 
     protected User player;
-    protected Point2D destination;
-    protected Point2D originalLocation;
-    protected float timeTraveled = 0;
-    protected Actor target;
     protected ScheduledFuture<?> currentAutoAttack = null;
     protected boolean autoAttackEnabled = false;
     protected int xp = 0;
@@ -61,16 +57,12 @@ public class UserActor extends Actor {
         float x = playerLoc.getSFSObject("p1").getFloat("x");
         float z = playerLoc.getSFSObject("p1").getFloat("z");
         this.location = new Point2D.Float(x,z);
-        this.originalLocation = location;
-        this.destination = location;
+        this.movementLine = new Line2D.Float(this.location,this.location);
         this.stats = this.initializeStats();
-        this.speed = this.stats.get("speed");
         this.attackCooldown = this.stats.get("attackSpeed");
         this.currentHealth = this.stats.get("health");
         this.maxHealth = this.currentHealth;
         this.room = u.getLastJoinedRoom();
-        this.attackSpeed = this.attackCooldown;
-        this.attackRange = this.stats.get("attackRange");
         this.actorType = ActorType.PLAYER;
         this.backpack = u.getVariable("player").getSFSObjectValue().getUtfString("backpack");
     }
@@ -84,15 +76,14 @@ public class UserActor extends Actor {
         if(external) currentTime = this.timeTraveled + 0.1;
         else currentTime = this.timeTraveled;
         Point2D rPoint = new Point2D.Float();
-        if(this.destination == null) this.destination = this.location;
-        float x2 = (float) this.destination.getX();
-        float y2 = (float) this.destination.getY();
-        if(this.originalLocation == null) this.originalLocation = this.location;
-        float x1 = (float) this.originalLocation.getX();
-        float y1 = (float) this.originalLocation.getY();
-        Line2D movementLine = new Line2D.Double(x1,y1,x2,y2);
-        double dist = movementLine.getP1().distance(movementLine.getP2());
-        if(dist == 0) return this.originalLocation;
+        if(this.movementLine == null) this.movementLine = new Line2D.Float(this.location,this.location);
+        float x2 = (float) this.movementLine.getX2();
+        float y2 = (float) this.movementLine.getY2();
+        float x1 = (float) this.movementLine.getX1();
+        float y1 = (float) this.movementLine.getY1();
+        double dist = this.movementLine.getP1().distance(this.movementLine.getP2());
+        if(dist == 0) return this.movementLine.getP1();
+        double speed = this.getPlayerStat("speed");
         double time = dist/speed;
         if(currentTime>time) currentTime=time;
         double currentDist = speed*currentTime;
@@ -121,10 +112,9 @@ public class UserActor extends Actor {
     public boolean setTempStat(String stat, double delta){
         boolean returnVal = super.setTempStat(stat,delta);
         if(stat.contains("speed")){
-            this.originalLocation = this.getRelativePoint(false);
+            this.movementLine = new Line2D.Float(this.location,this.movementLine.getP2());
             this.timeTraveled = 0f;
-            this.speed = this.getPlayerStat("speed");
-            ExtensionCommands.moveActor(parentExt,room,id,this.originalLocation,this.destination, (float) this.speed,true);
+            ExtensionCommands.moveActor(parentExt,room,id,this.movementLine.getP1(),this.movementLine.getP2(), (float) this.getPlayerStat("speed"),true);
         }else if(stat.contains("healthRegen")){
             if(this.hasTempStat("healthRegen") && this.getTempStat("healthRegen") <= 0) this.tempStats.remove("healthRegen");
         }
@@ -134,14 +124,12 @@ public class UserActor extends Actor {
     }
 
     public void setPath(Point2D start, Point2D end){
-        this.originalLocation = start;
-        this.destination = end;
+        this.movementLine = new Line2D.Float(start,end);
         this.timeTraveled = 0f;
     }
 
     public void setPath(Line2D path){
-        this.originalLocation = path.getP1();
-        this.destination = path.getP2();
+        this.movementLine = path;
         this.timeTraveled = 0f;
     }
 
@@ -161,7 +149,7 @@ public class UserActor extends Actor {
         return this.player;
     }
     public Point2D getOriginalLocation(){
-        return this.originalLocation;
+        return this.movementLine.getP1();
     }
 
     @Override
@@ -174,8 +162,7 @@ public class UserActor extends Actor {
     @Override
     public void setLocation(Point2D location){
         this.location = location;
-        this.originalLocation = location;
-        this.destination = location;
+        this.movementLine = new Line2D.Float(this.location,this.location);
         this.timeTraveled = 0f;
     }
 
@@ -285,7 +272,7 @@ public class UserActor extends Actor {
 
     public void autoAttack(Actor a){
         Point2D location = this.location;
-        ExtensionCommands.moveActor(parentExt,this.room,this.id,location,location, (float) this.speed,false);
+        ExtensionCommands.moveActor(parentExt,this.room,this.id,location,location, (float) this.getPlayerStat("speed"),false);
         this.setLocation(location);
         this.setCanMove(false);
         SmartFoxServer.getInstance().getTaskScheduler().schedule(new HitActorHandler.MovementStopper(this),250,TimeUnit.MILLISECONDS);
@@ -339,13 +326,6 @@ public class UserActor extends Actor {
                         assistIds.add(ua);
                     }
                 }
-                int teamNumber = parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id,this.team);
-                Point2D respawnPoint = MapData.PURPLE_SPAWNS[teamNumber];
-                if(this.team == 1 && respawnPoint.getX() < 0) respawnPoint = new Point2D.Double(respawnPoint.getX()*-1,respawnPoint.getY());
-                this.location = respawnPoint;
-                this.originalLocation = respawnPoint;
-                this.destination = respawnPoint;
-                this.timeTraveled = 0f;
                 //Set<String> buffKeys = this.activeBuffs.keySet();
                 this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,assistIds,50); //TODO: Not sure if this is the correct xp value
             }catch(Exception e){
@@ -456,9 +436,9 @@ public class UserActor extends Actor {
                 float targetDistance = (float)(target.getLocation().distance(currentPoint)-attackRange);
                 Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
                 Line2D finalPath = Champion.getColliderLine(parentExt,room,newPath);
-                if(finalPath.getP2().distance(this.destination) > 0.1f){
+                if(finalPath.getP2().distance(this.movementLine.getP2()) > 0.1f){
                     this.setPath(finalPath);
-                    ExtensionCommands.moveActor(parentExt,this.room, this.id,currentPoint, finalPath.getP2(), (float) this.speed,true);
+                    ExtensionCommands.moveActor(parentExt,this.room, this.id,currentPoint, finalPath.getP2(), (float) this.getPlayerStat("speed"),true);
                 }
             }
         }else{
@@ -547,7 +527,7 @@ public class UserActor extends Actor {
     }
     public void setCanMove(boolean canMove){
         this.canMove = canMove;
-        if(this.canMove && this.states.get(ActorState.CHARMED)) ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,this.destination, (float) this.getPlayerStat("speed"),true);
+        if(this.canMove && this.states.get(ActorState.CHARMED)) ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,this.movementLine.getP2(), (float) this.getPlayerStat("speed"),true);
     }
 
     public void setState(ActorState[] states, boolean stateBool){
@@ -561,7 +541,7 @@ public class UserActor extends Actor {
         this.target = a;
         if(this.states.get(ActorState.CHARMED)){
             this.setPath(getRelativePoint(false),a.getLocation());
-            if(this.canMove) ExtensionCommands.moveActor(parentExt,room,id,this.location,this.destination, (float) getPlayerStat("speed"),true);
+            if(this.canMove) ExtensionCommands.moveActor(parentExt,room,id,this.location,this.movementLine.getP2(), (float) getPlayerStat("speed"),true);
         }
     }
 
@@ -578,8 +558,7 @@ public class UserActor extends Actor {
     }
 
     public Line2D getMovementLine(){
-        if(this.originalLocation != null && this.destination != null)  return new Line2D.Double(this.originalLocation,this.destination);
-        else return new Line2D.Double(this.location,this.location);
+        return this.movementLine;
     }
 
     public void stopMoving(int delay){
@@ -593,8 +572,7 @@ public class UserActor extends Actor {
     public void stopMoving(){
         super.stopMoving();
         this.timeTraveled = 0f;
-        this.destination = this.location;
-        this.originalLocation = this.location;
+        this.movementLine = new Line2D.Float(this.location,this.location);
     }
 
     public void respawn(){
@@ -605,8 +583,7 @@ public class UserActor extends Actor {
         if(this.team == 1 && respawnPoint.getX() < 0) respawnPoint = new Point2D.Double(respawnPoint.getX()*-1,respawnPoint.getY());
         System.out.println("Respawning at: " + respawnPoint.getX() + "," + respawnPoint.getY() + " for team " + this.team);
         this.location = respawnPoint;
-        this.originalLocation = respawnPoint;
-        this.destination = respawnPoint;
+        this.movementLine = new Line2D.Float(respawnPoint,respawnPoint);
         this.timeTraveled = 0f;
         this.dead = false;
         this.removeEffects();
@@ -736,7 +713,6 @@ public class UserActor extends Actor {
     public void handleSpellVamp(double damage){
         double percentage = this.getPlayerStat("spellVamp")/100;
         int healing = (int) Math.round(damage*percentage);
-        System.out.println(this.id + " healing for " + healing + " from spell vamp at " + percentage);
         this.changeHealth(healing);
     }
 

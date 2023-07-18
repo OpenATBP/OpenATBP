@@ -209,8 +209,6 @@ public class Lich extends UserActor{
             this.id = "skully_"+Lich.this.id;
             this.team = Lich.this.team;
             movementLine = new Line2D.Float(this.location,this.location);
-            this.speed = 2.95f;
-            this.attackRange = 2f;
             this.lastLichLocation = Lich.this.getRelativePoint(false);
             this.timeOfBirth = System.currentTimeMillis();
             this.actorType = ActorType.COMPANION;
@@ -260,7 +258,7 @@ public class Lich extends UserActor{
                     this.timeTraveled = 0.1f;
                     this.movementLine = Champion.getDistanceLine(new Line2D.Float(this.location,lichLocation),deltaDistance);
                     this.lastLichLocation = lichLocation;
-                    ExtensionCommands.moveActor(parentExt,room,this.id,this.movementLine.getP1(),this.movementLine.getP2(), (float) this.speed,true);
+                    ExtensionCommands.moveActor(parentExt,room,this.id,this.movementLine.getP1(),this.movementLine.getP2(), (float) this.getSpeed(),true);
                 }else{
                     this.timeTraveled+=0.1f;
                 }
@@ -272,7 +270,7 @@ public class Lich extends UserActor{
                         this.lastTargetLocation = this.target.getLocation();
                         this.movementLine = new Line2D.Float(this.location,this.target.getLocation());
                         this.timeTraveled = 0.1f;
-                        ExtensionCommands.moveActor(parentExt,room,this.id,this.movementLine.getP1(),this.movementLine.getP2(), (float) this.speed,true);
+                        ExtensionCommands.moveActor(parentExt,room,this.id,this.movementLine.getP1(),this.movementLine.getP2(), (float) this.getSpeed(),true);
                     }
                 }
             }
@@ -304,7 +302,7 @@ public class Lich extends UserActor{
             this.lastTargetLocation = a.getLocation();
             this.movementLine = new Line2D.Float(this.location,a.getLocation());
             this.timeTraveled = 0.1f;
-            ExtensionCommands.moveActor(parentExt,room,this.id,this.location,a.getLocation(), (float) this.speed,true);
+            ExtensionCommands.moveActor(parentExt,room,this.id,this.location,a.getLocation(), (float) this.getSpeed(),true);
         }
 
         public void resetTarget(){

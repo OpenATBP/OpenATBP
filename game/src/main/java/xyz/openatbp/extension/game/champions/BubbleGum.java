@@ -272,8 +272,6 @@ public class BubbleGum extends UserActor {
             this.avatar = "princessbubblegum_turret";
             this.id = "turret"+turretNum + "_" + BubbleGum.this.id;
             this.team = BubbleGum.this.team;
-            this.speed = 0f;
-            this.attackRange = 3f;
             this.timeOfBirth = System.currentTimeMillis();
             this.actorType = ActorType.COMPANION;
             this.stats = this.initializeStats();

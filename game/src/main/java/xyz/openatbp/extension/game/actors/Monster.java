@@ -22,10 +22,7 @@ public class Monster extends Actor {
 
     private AggroState state = AggroState.PASSIVE;
     private final Point2D startingLocation;
-    private Actor target;
-    private float travelTime;
     private final MonsterType type;
-    private Line2D movementLine;
     protected boolean dead = false;
     private static final boolean MOVEMENT_DEBUG = false;
 
@@ -41,9 +38,7 @@ public class Monster extends Actor {
         this.stats = this.initializeStats();
         this.id = monsterName;
         this.maxHealth = this.stats.get("health");
-        this.speed = this.stats.get("speed");
         this.currentHealth = this.maxHealth;
-        this.attackRange = this.stats.get("attackRange");
         this.actorType = ActorType.MONSTER;
         this.displayName = parentExt.getDisplayName(monsterName);
         if(MOVEMENT_DEBUG) ExtensionCommands.createActor(parentExt,room,id+"_test","creep",this.location,0f,2);
@@ -61,9 +56,7 @@ public class Monster extends Actor {
         this.stats = this.initializeStats();
         this.id = monsterName;
         this.maxHealth = this.stats.get("health");
-        this.speed = this.stats.get("speed");
         this.currentHealth = this.maxHealth;
-        this.attackRange = this.stats.get("attackRange");
         this.actorType = ActorType.MONSTER;
         this.displayName = parentExt.getDisplayName(monsterName);
     }
@@ -89,7 +82,7 @@ public class Monster extends Actor {
             if(this.state == AggroState.PASSIVE && this.target == null){ //If being attacked while minding own business, it will target player
                 state = AggroState.ATTACKED;
                 target = a;
-                this.travelTime = 0f;
+                this.timeTraveled = 0f;
                 this.moveTowardsActor(this.target.getLocation());
                 if(target.getActorType() == ActorType.PLAYER) ExtensionCommands.setTarget(parentExt,((UserActor)target).getUser(),this.id, target.getId());
                 if(this.type == MonsterType.SMALL){ //Gets all mini monsters like gnomes and owls to all target player when one is hit
@@ -132,7 +125,7 @@ public class Monster extends Actor {
         if(stat.equalsIgnoreCase("speed")){
             if(movementLine != null){
                 movementLine.setLine(this.location, movementLine.getP2());
-                this.travelTime = 0f;
+                this.timeTraveled = 0f;
                 ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,movementLine.getP2(),(float)this.getPlayerStat("speed"),true);
 
             }
@@ -173,7 +166,7 @@ public class Monster extends Actor {
         if(this.state == AggroState.PASSIVE) this.setAggroState(AggroState.ATTACKED,a);
         this.target = (UserActor) a;
         this.movementLine = new Line2D.Float(this.location,a.getLocation());
-        this.travelTime = 0f;
+        this.timeTraveled = 0f;
         this.moveTowardsActor(a.getLocation());
     }
 
@@ -224,8 +217,8 @@ public class Monster extends Actor {
                 Champion.updateServerHealth(this.parentExt,this);
             }
         }
-        if(this.states.get(ActorState.FEARED)){
-            if(this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01d) this.travelTime+=0.1f;
+        if(this.states.get(ActorState.FEARED) || this.states.get(ActorState.CHARMED)){
+            if(this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01d) this.timeTraveled+=0.1f;
             else System.out.println("Failed! Distance is " + this.movementLine.getP1().distance(this.movementLine.getP2()));
         }
         if(this.target != null && this.target.getHealth() <= 0) this.setAggroState(AggroState.PASSIVE,null);
@@ -237,9 +230,9 @@ public class Monster extends Actor {
                 this.changeHealth(25);
             }
             if(this.location.distance(this.startingLocation) >= 0.01){ //Still walking from being de-agro'd
-                travelTime+=0.1f;
+                timeTraveled+=0.1f;
             }else{ //Standing still at camp
-                travelTime = 0f;
+                timeTraveled = 0f;
                 this.movementLine = null;
             }
         }else{ //Monster is pissed!!
@@ -252,28 +245,14 @@ public class Monster extends Actor {
                 if(this.withinRange(this.target) && this.canAttack()){
                     this.attack(this.target);
                 }else if(!this.withinRange(this.target) && this.canMove()){
-                    this.travelTime+=0.1f;
+                    this.timeTraveled+=0.1f;
                     this.moveTowardsActor(this.target.getLocation());
-                }else if(this.withinRange(this.target) && !this.states.get(ActorState.FEARED)){
+                }else if(this.withinRange(this.target) && !this.states.get(ActorState.FEARED) && !this.states.get(ActorState.CHARMED)){
                     if(this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f) this.stopMoving();
                 }
             }
         }
         if(this.attackCooldown > 0) this.reduceAttackCooldown();
-    }
-
-    @Override
-    public void handleFear(UserActor feared, int duration){
-        if(!this.states.get(ActorState.FEARED)){
-            Champion.FinalBuffHandler buffHandler = new Champion.FinalBuffHandler(this,ActorState.FEARED,0f);
-            this.setState(ActorState.FEARED,true);
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(buffHandler,duration,TimeUnit.MILLISECONDS);
-            this.setBuffHandler("feared",buffHandler);
-            Line2D oppositeLine = Champion.getMaxRangeLine(new Line2D.Float(feared.getLocation(),this.location),5f);
-            this.movementLine = new Line2D.Float(this.location, oppositeLine.getP2());
-            this.travelTime = 0f;
-            ExtensionCommands.moveActor(parentExt,room,id,this.location, oppositeLine.getP2(), (float) this.getPlayerStat("speed"),true);
-        }
     }
 
     @Override
@@ -285,12 +264,12 @@ public class Monster extends Actor {
         if(this.states.get(ActorState.FEARED)) return;
         super.stopMoving();
         this.movementLine = new Line2D.Float(this.location,this.location);
-        this.travelTime = 0f;
+        this.timeTraveled = 0f;
     }
 
     public Point2D getRelativePoint(){ //Gets player's current location based on time
         if(this.movementLine == null) return this.location;
-        if(this.travelTime == 0 && this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f) this.travelTime+=0.1f; //Prevents any stagnation in movement
+        if(this.timeTraveled == 0 && this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f) this.timeTraveled+=0.1f; //Prevents any stagnation in movement
         Point2D rPoint = new Point2D.Float();
         Point2D destination;
         if(this.state == AggroState.PASSIVE || this.target == null) destination = startingLocation;
@@ -302,7 +281,7 @@ public class Monster extends Actor {
         Line2D movementLine = new Line2D.Double(x1,y1,x2,y2);
         double dist = movementLine.getP1().distance(movementLine.getP2());
         double time = dist/(float)this.getPlayerStat("speed");
-        double currentTime = this.travelTime;
+        double currentTime = this.timeTraveled;
         if(currentTime>time) currentTime=time;
         double currentDist = (float)this.getPlayerStat("speed")*currentTime;
         float x = (float)(x1+(currentDist/dist)*(x2-x1));
@@ -319,13 +298,13 @@ public class Monster extends Actor {
        // Line2D newPath = Champion.getDistanceLine(rawMovementLine,dist);
         if(this.movementLine == null){
             this.movementLine = rawMovementLine;
-            this.travelTime = 0f;
+            this.timeTraveled = 0f;
             ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,movementLine.getP2(), (float) this.getPlayerStat("speed"), true);
 
         }
         if(this.movementLine.getP2().distance(rawMovementLine.getP2()) > 0.1f){
             this.movementLine = rawMovementLine;
-            this.travelTime = 0f;
+            this.timeTraveled = 0f;
             ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,movementLine.getP2(), (float) this.getPlayerStat("speed"), true);
 
         }
@@ -333,7 +312,7 @@ public class Monster extends Actor {
 
     public void move(Point2D dest){
         this.movementLine = new Line2D.Float(this.location,dest);
-        this.travelTime = 0f;
+        this.timeTraveled = 0f;
         ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,dest,(float)this.getPlayerStat("speed"), true);
 
     }

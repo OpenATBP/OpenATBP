@@ -22,24 +22,24 @@ public abstract class Actor {
     protected double currentHealth;
     protected double maxHealth;
     protected Point2D location;
+    protected Line2D movementLine;
+    protected float timeTraveled;
     protected String id;
     protected Room room;
     protected int team;
-    protected double speed;
     protected String avatar;
     protected ATBPExtension parentExt;
     protected int level = 1;
     protected boolean canMove = true;
-    protected double attackSpeed;
     protected double attackCooldown;
     protected ActorType actorType;
-    protected double attackRange;
     protected Map<ActorState, Boolean> states = Champion.getBlankStates();
     protected String displayName = "FuzyBDragon";
     protected Map<String, Double> stats;
     protected Map<String, Double> tempStats = new HashMap<>();
     protected Map<String, ISFSObject> activeBuffs = new HashMap<>();
     protected List<ISFSObject> damageQueue = new ArrayList<>();
+    protected Actor target;
 
 
     public double getPHealth(){
@@ -75,18 +75,14 @@ public abstract class Actor {
     }
 
     public void stopMoving(){
-        ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,this.location, (float) this.speed, false);
-    }
-
-    public void setSpeed(float speed){
-        this.speed = speed;
+        ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,this.location, 5f, false);
     }
 
     public void setCanMove(boolean move){
         this.canMove = move;
     }
 
-    public double getSpeed(){return this.speed;}
+    public double getSpeed(){return this.getPlayerStat("speed");}
 
 
     public void setState(ActorState state, boolean enabled){
@@ -158,6 +154,16 @@ public abstract class Actor {
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,data.getUtfString("fxId"),fxDuration,this.id+"_"+data.getUtfString("fxId"),true,"",true,false,this.team);
                     this.activeBuffs.get(k).putLong("fxEndTime",data.getLong("endTime"));
                 }
+                if(data.containsKey("state")){
+                    ActorState state = (ActorState) data.getClass("state");
+                    if(state == ActorState.CHARMED && this.target != null){
+                        if(this.location.distance(this.movementLine.getP2()) < 0.01d){
+                            this.movementLine = Champion.getColliderLine(this.parentExt,this.room,new Line2D.Float(this.location, this.target.getLocation()));
+                            this.timeTraveled = 0f;
+                            ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,this.movementLine.getP2(), (float) this.getPlayerStat("speed"),true);
+                        }
+                    }
+                }
             }
         }
     }
@@ -191,6 +197,7 @@ public abstract class Actor {
             double currentDelta = data.getDouble("delta");
             double diff = newDelta-currentDelta;
             this.setTempStat("speed",diff);
+            newData.putUtfString("stat","speed");
             //TODO: Potential issue that "delta" is not set again in newData but it seems to run fine right now? for some reason...
             newData.putDouble("delta",diff);
         }
@@ -264,17 +271,20 @@ public abstract class Actor {
             switch(state){
                 case SLOWED:
                     data.putUtfString("stat","speed");
-                    double speedRemoval = this.getSpeed()*delta;
+                    double speedRemoval = this.getStat("speed")*delta;
                     this.setTempStat("speed",speedRemoval*-1);
                     data.putDouble("delta",speedRemoval*-1);
                     break;
                 case POLYMORPH:
                     ExtensionCommands.swapActorAsset(parentExt,this.room, this.id,"flambit");
                     data.putUtfString("stat","speed");
-                    double speedChange = this.getPlayerStat("speed")*-0.3;
+                    double speedChange = this.getStat("speed")*-0.3;
                     this.setTempStat("speed",speedChange);
                     data.putDouble("delta",speedChange);
                     this.setState(ActorState.SLOWED, true);
+                    break;
+                case CHARMED:
+
                     break;
             }
             this.setState(state,true);
@@ -283,7 +293,7 @@ public abstract class Actor {
             if(state == ActorState.SLOWED){
                 ISFSObject currentData = this.activeBuffs.get(state.toString());
                 double currentDelta = currentData.getDouble("delta");
-                double speedRemoval = this.getSpeed()*delta*-1;
+                double speedRemoval = this.getStat("speed")*delta*-1;
                 if (currentDelta == speedRemoval) { //If the current effect has the same stat change, just extend the length of the state
                     currentData.putLong("endTime", System.currentTimeMillis() + duration);
                 } else { //If the change is different, adjust the current temp stat and put in the new speed diff for future handling
@@ -299,21 +309,24 @@ public abstract class Actor {
 
     public void handleCharm(UserActor charmer, int duration){
         if(!this.states.get(ActorState.CHARMED)){
-            Champion.FinalBuffHandler buffHandler = new Champion.FinalBuffHandler(this,ActorState.CHARMED,0f);
             this.setState(ActorState.CHARMED,true);
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(buffHandler,duration,TimeUnit.MILLISECONDS);
-            this.setBuffHandler("charmed",buffHandler);
             this.setTarget(charmer);
+            this.movementLine = new Line2D.Float(this.location,charmer.getLocation());
+            this.movementLine = Champion.getColliderLine(this.parentExt,this.room,this.movementLine);
+            this.timeTraveled = 0f;
+            this.addState(ActorState.CHARMED,0d,duration,null,false);
+            if(this.canMove) ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,this.movementLine.getP2(), (float) this.getSpeed(),true);
         }
     }
 
     public void handleFear(UserActor feared, int duration){
         if(!this.states.get(ActorState.FEARED)){
-            Champion.FinalBuffHandler buffHandler = new Champion.FinalBuffHandler(this,ActorState.FEARED,0f);
             this.setState(ActorState.FEARED,true);
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(buffHandler,duration,TimeUnit.MILLISECONDS);
-            this.setBuffHandler("feared",buffHandler);
             Line2D oppositeLine = Champion.getMaxRangeLine(new Line2D.Float(feared.getLocation(),this.location),10f);
+            oppositeLine = Champion.getColliderLine(this.parentExt,this.room,oppositeLine);
+            this.movementLine = new Line2D.Float(this.location,oppositeLine.getP2());
+            this.timeTraveled = 0f;
+            this.addState(ActorState.FEARED,0d,duration,null,false);
             ExtensionCommands.moveActor(parentExt,room,id,this.location, oppositeLine.getP2(), (float) this.getPlayerStat("speed"),true);
         }
     }
@@ -462,14 +475,6 @@ public abstract class Actor {
         String type = attackData.get("attackType").asText();
         if(type.equalsIgnoreCase("physical")) return AttackType.PHYSICAL;
         else return AttackType.SPELL;
-    }
-
-    public void setBuffHandler(String buff, Champion.FinalBuffHandler handler){
-        //this.buffHandlers.put(buff,handler);
-    }
-
-    public void removeBuffHandler(String buff){
-        //this.buffHandlers.remove(buff);
     }
 
     public ATBPExtension getParentExt(){
