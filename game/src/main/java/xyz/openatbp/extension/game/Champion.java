@@ -331,11 +331,11 @@ public class Champion {
         return new Line2D.Float(movementLine.getP1(),finalPoint);
     }
 
-    public static void handleStatusIcon(ATBPExtension parentExt, User player, String icon, String iconDesc, float duration){
+    public static void handleStatusIcon(ATBPExtension parentExt, UserActor player, String icon, String iconDesc, float duration){
         String iconName = icon+player.getId()+Math.random();
-        Runnable endIcon = () -> {ExtensionCommands.removeStatusIcon(parentExt,player,iconName);};
-        ExtensionCommands.addStatusIcon(parentExt,player,iconName,iconDesc,icon,duration);
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(endIcon,(int)duration,TimeUnit.MILLISECONDS);
+        Runnable endIcon = () -> {ExtensionCommands.removeStatusIcon(parentExt,player.getUser(),iconName); player.removeIconHandler(iconName);};
+        ExtensionCommands.addStatusIcon(parentExt,player.getUser(),iconName,iconDesc,icon,duration);
+        player.addIconHandler(iconName,SmartFoxServer.getInstance().getTaskScheduler().schedule(endIcon,(int)duration,TimeUnit.MILLISECONDS));
     }
 
     public static class DelayedAttack implements Runnable{

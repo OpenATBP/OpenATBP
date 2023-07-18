@@ -45,6 +45,7 @@ public class Keeoth extends Monster {
                     double healthChange = (double)u.getHealth() * 0.3d;
                     u.changeHealth((int)healthChange);
                     ExtensionCommands.playSound(parentExt,u.getUser(),"global","announcer/you_keeoth");
+                    Champion.handleStatusIcon(this.parentExt,u,"icon_buff_keeoth","keeoth_buff_desc",60000f);
                 }else{
                     ExtensionCommands.playSound(parentExt,u.getUser(),"global","announcer/enemy_keeoth");
                 }

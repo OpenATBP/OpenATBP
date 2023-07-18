@@ -412,7 +412,7 @@ public class RoomHandler implements Runnable{
                             if(i == 1){
                                 u.addEffect("attackDamage",u.getStat("attackDamage")*0.25d,1000*60,"altar_buff_offense",false);
                                 u.addEffect("spellDamage",u.getStat("spellDamage")*0.25d,1000*60,null,false);
-                                Champion.handleStatusIcon(parentExt,u.getUser(),"icon_altar_attack","altar2_description",1000*60);
+                                Champion.handleStatusIcon(parentExt,u,"icon_altar_attack","altar2_description",1000*60);
                             }else{
                                 double addArmor = u.getStat("armor")*0.5d;
                                 double addMR = u.getStat("spellResist")*0.5d;
@@ -420,7 +420,7 @@ public class RoomHandler implements Runnable{
                                 if(addMR == 0) addMR = 5d;
                                 u.addEffect("armor",addArmor,1000*60,"altar_buff_defense",true);
                                 u.addEffect("spellResist",addMR,1000*60,null,true);
-                                Champion.handleStatusIcon(parentExt,u.getUser(),"icon_altar_armor","altar1_description",1000*60);
+                                Champion.handleStatusIcon(parentExt,u,"icon_altar_armor","altar1_description",1000*60);
                             }
                             //cooldowns.put(u.getId()+"__buff__"+buffName,60);
                             ExtensionCommands.knockOutActor(parentExt,u.getUser(),altarId,u.getId(),180);

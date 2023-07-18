@@ -74,6 +74,7 @@ public class GooMonster extends Monster {
             for(UserActor u : parentExt.getRoomHandler(this.room.getId()).getPlayers()){
                 if(u.getTeam() == a.getTeam()){
                     u.addEffect("speed",u.getPlayerStat("speed")*0.1d,60000,"jungle_buff_goo",false);
+                    Champion.handleStatusIcon(this.parentExt,u,"icon_buff_goomonster","goomonster_buff_desc",60000f);
                     ExtensionCommands.playSound(parentExt,u.getUser(),"global","announcer/you_goomonster");
                 }else{
                     ExtensionCommands.playSound(parentExt,u.getUser(),"global","announcer/enemy_goomonster");

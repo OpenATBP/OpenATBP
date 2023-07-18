@@ -47,6 +47,7 @@ public class UserActor extends Actor {
     protected long lastKilled = System.currentTimeMillis();
     protected int dcBuff = 0;
     protected boolean[] canCast = {true,true,true};
+    protected Map<String, ScheduledFuture<?>> iconHandlers = new HashMap<>();
 
     //TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt){
@@ -608,7 +609,7 @@ public class UserActor extends Actor {
         this.destination = respawnPoint;
         this.timeTraveled = 0f;
         this.dead = false;
-        this.cleanseEffects();
+        this.removeEffects();
         ExtensionCommands.snapActor(this.parentExt,this.room,this.id,this.location,this.location,false);
         ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx/sfx_champion_respawn",this.location);
         ExtensionCommands.respawnActor(this.parentExt,this.room,this.id);
@@ -869,13 +870,40 @@ public class UserActor extends Actor {
     }
 
     public void cleanseEffects(){
-        ActorState[] cleansedStats = {ActorState.STUNNED, ActorState.STUNNED, ActorState.CHARMED, ActorState.FEARED, ActorState.BLINDED, ActorState.ROOTED, ActorState.CLEANSED};
+        ActorState[] cleansedStats = {ActorState.SLOWED,ActorState.STUNNED, ActorState.STUNNED, ActorState.CHARMED, ActorState.FEARED, ActorState.BLINDED, ActorState.ROOTED, ActorState.CLEANSED};
         this.setState(cleansedStats,false);
+        if(this.activeBuffs.containsKey("SLOWED")){
+            this.setTempStat("speed",this.getTempStat("speed")*-1);
+            this.activeBuffs.remove("SLOWED");
+        }
     }
 
     public void destroy(){
         this.dead = true;
         ExtensionCommands.destroyActor(this.parentExt,this.room,this.id);
+    }
+
+    public void clearIconHandlers(){
+        Set<String> iconNames = new HashSet<>(this.iconHandlers.keySet());
+        for(String i : iconNames){
+            ExtensionCommands.removeStatusIcon(this.parentExt,this.player,i);
+            this.iconHandlers.get(i).cancel(true);
+        }
+        this.iconHandlers = new HashMap<>();
+    }
+
+    @Override
+    public void removeEffects(){
+        super.removeEffects();
+        this.clearIconHandlers();
+    }
+
+    public void addIconHandler(String iconName, ScheduledFuture<?> handler){
+        this.iconHandlers.put(iconName,handler);
+    }
+
+    public void removeIconHandler(String iconName){
+        this.iconHandlers.remove(iconName);
     }
 
     protected class MovementStopper implements Runnable {

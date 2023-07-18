@@ -129,16 +129,16 @@ public abstract class Actor {
         Set<String> keys = new HashSet<>(this.activeBuffs.keySet());
         for(String k : keys){
             ISFSObject data = this.activeBuffs.get(k);
-            if(System.currentTimeMillis() >= data.getLong("endTime")){
+            if(System.currentTimeMillis() >= data.getLong("endTime")){ //Checks to see if the effect has ended
                 System.out.println("Effect: " + k + " is ending!");
-                if(data.containsKey("newEndTime")){
+                if(data.containsKey("newEndTime")){ //If the effect has been modified, run handler for restarting the effect
                     if(data.containsKey("state")) this.handleStateEnd(data);
                     else this.handleEffectEnd(k,data);
-                }else{
-                    if(data.containsKey("state")){
+                }else{ //Runs if there is no modification and actor should go back to normal
+                    if(data.containsKey("state")){ //Runs if the effect is a state
                         ActorState state = (ActorState) data.getClass("state");
                         this.setState(state,false);
-                        if(data.containsKey("delta")){
+                        if(data.containsKey("delta")){ //If the state had a stat effect, reset it
                             this.setTempStat(data.getUtfString("stat"),data.getDouble("delta")*-1);
                         }
                         if(state == ActorState.POLYMORPH){
@@ -146,7 +146,7 @@ public abstract class Actor {
                             ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,ua.getSkinAssetBundle());
                             if(!this.activeBuffs.containsKey(ActorState.SLOWED.toString())) this.setState(ActorState.SLOWED, false);
                         }
-                    }else{
+                    }else{ //Resets stat back to normal by removing what it was modified by
                         this.setTempStat(k,data.getDouble("delta")*-1);
                     }
                     this.activeBuffs.remove(k);
@@ -168,10 +168,11 @@ public abstract class Actor {
         double diff = newDelta-currentDelta;
         this.setTempStat(stat,diff);
         ISFSObject newData = new SFSObject();
-        newData.putDouble("delta",this.getTempStat(stat));
+        newData.putDouble("delta",this.getTempStat(stat)); //Sets the change of the end of the effect to the total of the temp stat
+        //TODO: Potential issue - could be messy if the same stat is impacted twice (i.e. speed and slow/polymorph)
         newData.putLong("endTime",data.getLong("newEndTime"));
         newData.putBool("stacks",data.getBool("stacks"));
-        if(data.containsKey("newFxId")){
+        if(data.containsKey("newFxId")){ //Checks to see if an effect should be run at the expiration of the effect
             String fxId = data.getUtfString("newFxId");
             newData.putUtfString("fxId",fxId);
             newData.putLong("fxEndTime",data.getLong("newEndTime"));
@@ -185,13 +186,15 @@ public abstract class Actor {
         ISFSObject newData = new SFSObject();
         newData.putLong("endTime",data.getLong("newEndTime"));
         newData.putClass("state",state);
-        if(state == ActorState.SLOWED){
+        if(state == ActorState.SLOWED){ //If the state is a slow, removes the difference between the modified stat and the original stat change
             double newDelta = data.getDouble("newDelta");
             double currentDelta = data.getDouble("delta");
             double diff = newDelta-currentDelta;
             this.setTempStat("speed",diff);
+            //TODO: Potential issue that "delta" is not set again in newData but it seems to run fine right now? for some reason...
+            newData.putDouble("delta",diff);
         }
-        if(data.containsKey("newFxId")){
+        if(data.containsKey("newFxId")){ //Checks to see if an effect should be run at the expiration of the effect
             String fxId = data.getUtfString("newFxId");
             newData.putUtfString("fxId",fxId);
             newData.putLong("fxEndTime",data.getLong("newEndTime"));
@@ -202,7 +205,7 @@ public abstract class Actor {
 
     public void addEffect(String stat, double delta, int duration, String fxId, boolean stacks) {
         ISFSObject data = new SFSObject();
-        if (!this.activeBuffs.containsKey(stat)) {
+        if (!this.activeBuffs.containsKey(stat)) { //Runs if there is no existing stat effect
             long endTime = System.currentTimeMillis() + duration;
             data.putDouble("delta", delta);
             data.putLong("endTime", endTime);
@@ -215,28 +218,28 @@ public abstract class Actor {
             data.putBool("stacks",stacks);
             this.setTempStat(stat, delta);
             this.activeBuffs.put(stat, data);
-        } else {
+        } else { //Runs if existing effect exists
             ISFSObject currentData = this.activeBuffs.get(stat);
             double currentDelta = currentData.getDouble("delta");
-            if (currentDelta == delta) {
-                if(!currentData.getBool("stacks")){
+            if (currentDelta == delta) { //Runs if proposed stat change is the same as the current change
+                if(!currentData.getBool("stacks")){ //If there is not a stacking effect, just extend the current effect's time
                     currentData.putLong("endTime", System.currentTimeMillis() + duration);
-                }else{
+                }else{ //If the effect should stack, increase the current stack and set "newDelta" for future handling
                     this.setTempStat(stat, delta);
                     currentData.putLong("newEndTime",System.currentTimeMillis() + duration);
                     currentData.putDouble("newDelta",delta);
                 }
-            } else {
-                if(currentData.containsKey("newDelta")){
+            } else { //Runs if proposed stat change is different from current change
+                if(currentData.containsKey("newDelta")){ //Checks to see if the effect has already been modified
                     double currentNewDelta = currentData.getDouble("newDelta");
-                    if(currentNewDelta == delta){
-                        if(stacks){
+                    if(currentNewDelta == delta){ //Checks to see if the modified stat change is the same as the proposed change
+                        if(stacks){ //If the effect should stack, increase the actor's stat and then change the effect's modified "delta"
                             this.setTempStat(stat,delta);
                             currentData.putDouble("newDelta",currentNewDelta+delta);
                         }
                         currentData.putLong("newEndTime",System.currentTimeMillis() + duration);
                     }
-                }else{
+                }else{ //Runs if the effect has not been modified | Increases the actor's stat and sets "newDelta" to be used later
                     this.setTempStat(stat, delta);
                     double currentNewDelta = 0d;
                     currentData.putDouble("newDelta", currentNewDelta+delta);
@@ -248,7 +251,7 @@ public abstract class Actor {
     }
 
     public void addState(ActorState state, double delta, int duration, String fxId, boolean stacks){
-        if(!this.activeBuffs.containsKey(state.toString())){
+        if(!this.activeBuffs.containsKey(state.toString())){ //Runs if there is no existing state/effect
             ISFSObject data = new SFSObject();
             long endTime = System.currentTimeMillis()+duration;
             data.putClass("state",state);
@@ -276,140 +279,22 @@ public abstract class Actor {
             }
             this.setState(state,true);
             this.activeBuffs.put(state.toString(),data);
-        }else{
+        }else{ //Runs if there is an existing effect
             if(state == ActorState.SLOWED){
                 ISFSObject currentData = this.activeBuffs.get(state.toString());
                 double currentDelta = currentData.getDouble("delta");
                 double speedRemoval = this.getSpeed()*delta*-1;
-                if (currentDelta == speedRemoval) {
+                if (currentDelta == speedRemoval) { //If the current effect has the same stat change, just extend the length of the state
                     currentData.putLong("endTime", System.currentTimeMillis() + duration);
-                } else {
+                } else { //If the change is different, adjust the current temp stat and put in the new speed diff for future handling
                     this.setTempStat("speed", speedRemoval);
                     currentData.putDouble("newDelta", speedRemoval);
                     currentData.putLong("newEndTime", System.currentTimeMillis() + duration);
                 }
-            }else if(stacks){
+            }else if(stacks){ //If the state stacks, extend the state duration
                 this.activeBuffs.get(state.toString()).putLong("endTime",System.currentTimeMillis()+duration);
             }
         }
-    }
-
-    @Deprecated
-    public void handleEffect(String stat, double delta, int duration, String fxId){
-        /*
-        if(!this.buffHandlers.containsKey(stat)){
-            System.out.println(stat + " increased! for " + this.id + " by " + delta);
-            this.setTempStat(stat,delta);
-        }
-        else{
-            double currentTempStat = this.getTempStat(stat);
-            if(this.buffHandlers.get(stat) == null){
-                this.handleEffect(stat,delta,duration,fxId);
-                return;
-            }
-            if(delta != currentTempStat){
-                this.setTempStat(stat,currentTempStat+delta);
-                this.buffHandlers.get(stat).setDelta(this.getTempStat(stat));
-            }
-            this.buffHandlers.get(stat).setDuration(duration);
-            if(stat.equalsIgnoreCase("armor") && fxId != null && fxId.contains("altar")){ //Only armor to prevent multiple icons from appearing
-                UserActor ua = (UserActor) this;
-                ExtensionCommands.addStatusIcon(this.parentExt,ua.getUser(),"altar_buff_defense","altar1_description","icon_altar_armor",1000*60);
-            }
-            return;
-        }
-        Champion.FinalBuffHandler buffHandler = new Champion.FinalBuffHandler(this,stat,delta);
-        switch(stat){
-            case "speed":
-                String fxName = fxId;
-                if(delta > 0 && fxId != null && !fxId.contains("goo") && !fxId.contains("lich")) fxName = "statusEffect_speed";
-                if(fxId != null && fxId.contains("goo") && this.getActorType() == ActorType.PLAYER){
-                    UserActor ua = (UserActor) this;
-                    ExtensionCommands.addStatusIcon(parentExt,ua.getUser(),"Ooze Buff","Oozed","icon_buff_goomonster",60000);
-                }
-                buffHandler = new Champion.FinalBuffHandler(this,stat,delta,fxName);
-                if(fxId != null) ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,fxName,duration,this.id+"_"+fxId,true,"Bip01",true,false,this.team);
-                break;
-            case "healthRegen":
-                ExtensionCommands.createActorFX(parentExt,this.room,this.id,"fx_health_regen",duration,this.id+"_"+fxId,true,"Bip01",false,false,this.team);
-                buffHandler = new Champion.FinalBuffHandler(this,stat,delta,"fx_health_regen");
-                break;
-            case "attackDamage":
-                if(fxId.contains("altar")){ //Keeping the altar buff handling in the RoomHandler to declutter the Actor class for now
-                    UserActor ua = (UserActor) this;
-                    ExtensionCommands.addStatusIcon(this.parentExt,ua.getUser(),"altar_buff_offense","altar2_description","icon_altar_attack",1000*60);
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"altar_buff_offense",duration,this.id+"_"+fxId,true,"Bip01",true,true, ua.getTeam());
-                    buffHandler = new Champion.FinalBuffHandler(this,stat,delta,fxId);
-                }
-                break;
-            case "armor":
-                if(fxId.contains("altar")){
-                    UserActor ua = (UserActor) this;
-                    ExtensionCommands.addStatusIcon(this.parentExt,ua.getUser(),"altar_buff_defense","altar1_description","icon_altar_armor",1000*60);
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"altar_buff_defense",duration,this.id+"_"+fxId,true,"Bip01",true,true, ua.getTeam());
-                    buffHandler = new Champion.FinalBuffHandler(this,stat,delta,fxId);
-                }
-                break;
-            case "lifeSteal":
-                if(fxId.contains("keeoth")){
-                    UserActor ua = (UserActor) this;
-                    ExtensionCommands.addStatusIcon(parentExt,ua.getUser(),"Keeoth Buff", "Keeoth Buff", "icon_buff_keeoth",60000);
-                }
-                buffHandler = new Champion.FinalBuffHandler(this,stat,delta,fxId);
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,fxId,duration,this.id+"_"+fxId,true,"Bip01",true,false,this.team);
-                break;
-            default:
-                buffHandler = new Champion.FinalBuffHandler(this,stat,delta);
-                this.setBuffHandler(stat,buffHandler);
-
-                break;
-        }
-        this.setBuffHandler(stat,buffHandler);
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(buffHandler,duration,TimeUnit.MILLISECONDS);
-
-         */
-    }
-
-    @Deprecated
-    public void handleEffect(ActorState state, double delta, int duration, String fxName){
-        /*
-        Champion.FinalBuffHandler buffHandler = null;
-        switch(state){
-            case POLYMORPH:
-                UserActor ua = (UserActor) this;
-                ExtensionCommands.swapActorAsset(parentExt,this.room, this.id,"flambit");
-                double speedChange = this.getPlayerStat("speed")*-0.3;
-                ua.setTempStat("speed",speedChange);
-                buffHandler = new Champion.FinalBuffHandler(this,ActorState.POLYMORPH,speedChange);
-                break;
-            case SLOWED:
-                if(this.buffHandlers.containsKey("slowed")){
-                    double currentStat = this.getTempStat("speed");
-                    if(delta < currentStat){
-                        double diff = currentStat-delta;
-                        this.setTempStat("speed",diff);
-                    }
-                    if(delta != currentStat)this.buffHandlers.get("slowed").setDelta(this.getTempStat("speed"));
-                    this.buffHandlers.get("slowed").setDuration(duration);
-                    return;
-                }else{
-                    this.setTempStat("speed",delta);
-                    buffHandler = new Champion.FinalBuffHandler(this,ActorState.SLOWED,delta);
-                }
-                break;
-            case IMMUNITY:
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_immunity",duration,this.id+"_immunity",true,"displayBar",false,false,this.team);
-                buffHandler = new Champion.FinalBuffHandler(this,ActorState.IMMUNITY,delta,"statusEffect_immunity");
-                break;
-            default:
-                buffHandler = new Champion.FinalBuffHandler(this,state,delta);
-                break;
-        }
-        this.setState(state,true);
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(buffHandler,duration,TimeUnit.MILLISECONDS);
-        this.setBuffHandler(state.name().toLowerCase(),buffHandler);
-
-         */
     }
 
     public void handleCharm(UserActor charmer, int duration){
@@ -538,10 +423,23 @@ public abstract class Actor {
 
     }
 
-    public void cleanseEffects(){
+    public void removeEffects(){
         for(ActorState state : ActorState.values()){
             this.setState(state,false);
         }
+        Set<String> effectSet = this.activeBuffs.keySet();
+        for(String s : effectSet){
+            ISFSObject data = this.activeBuffs.get(s);
+            if(data.containsKey("fxId")) ExtensionCommands.removeFx(this.parentExt,this.room,data.getUtfString("fxId"));
+            if(data.containsKey("state")){
+                if(data.containsKey("stat")){
+                    this.setTempStat(data.getUtfString("stat"),this.getTempStat(data.getUtfString("stat"))*-1);
+                }
+            }else{
+                this.setTempStat(s,this.getTempStat(s)*-1);
+            }
+        }
+        this.activeBuffs = new HashMap<>();
         this.setCanMove(true);
     }
 
