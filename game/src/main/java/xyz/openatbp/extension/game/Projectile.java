@@ -15,13 +15,13 @@ import java.util.List;
 public abstract class Projectile {
 
     private float timeTraveled = 0;
-    private Point2D destination;
+    protected Point2D destination;
     protected Point2D location;
-    private Point2D startingLocation;
+    protected Point2D startingLocation;
     protected float speed;
-    private UserActor owner;
+    protected UserActor owner;
     protected String id;
-    private float hitbox;
+    protected float hitbox;
     protected ATBPExtension parentExt;
     protected boolean destroyed = false;
     protected Line2D path;

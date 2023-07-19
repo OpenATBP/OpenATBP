@@ -31,6 +31,7 @@ public class UserActor extends Actor {
     protected int xp = 0;
     private int deathTime = 10;
     private boolean dead = false;
+    private long timeKilled;
     protected Map<Actor,ISFSObject> aggressors = new HashMap<>();
     protected String backpack;
     protected int futureCrystalTimer = 240;
@@ -291,6 +292,7 @@ public class UserActor extends Actor {
             if(this.dead) return;
             if(this.currentAutoAttack != null) this.currentAutoAttack.cancel(true);
             this.dead = true;
+            this.timeKilled = System.currentTimeMillis();
             this.canMove = false;
             Point2D location = this.getRelativePoint(false);
             ExtensionCommands.moveActor(parentExt,this.room,this.id,location,location,2f,false);
@@ -397,7 +399,7 @@ public class UserActor extends Actor {
         this.handleDamageQueue();
         this.handleActiveEffects();
         if(this.dead){
-            if(this.currentHealth > 0) this.respawn();
+            if(this.currentHealth > 0 && System.currentTimeMillis() > this.timeKilled + (deathTime* 1500L)) this.respawn();
             else return;
         }
         float x = (float) this.getOriginalLocation().getX();

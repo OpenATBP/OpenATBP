@@ -283,8 +283,8 @@ public abstract class Actor {
                     data.putDouble("delta",speedChange);
                     this.setState(ActorState.SLOWED, true);
                     break;
-                case CHARMED:
-
+                case ROOTED:
+                    this.stopMoving();
                     break;
             }
             this.setState(state,true);
@@ -438,7 +438,7 @@ public abstract class Actor {
 
     public void removeEffects(){
         for(ActorState state : ActorState.values()){
-            this.setState(state,false);
+            if(state != ActorState.TRANSFORMED) this.setState(state,false);
         }
         Set<String> effectSet = this.activeBuffs.keySet();
         for(String s : effectSet){
