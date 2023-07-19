@@ -30,7 +30,7 @@ public class UserActor extends Actor {
     protected boolean autoAttackEnabled = false;
     protected int xp = 0;
     private int deathTime = 10;
-    private boolean dead = false;
+    protected boolean dead = false;
     private long timeKilled;
     protected Map<Actor,ISFSObject> aggressors = new HashMap<>();
     protected String backpack;
@@ -285,6 +285,10 @@ public class UserActor extends Actor {
         if(this.attackCooldown < 0) this.attackCooldown = 0;
     }
 
+    protected boolean isNonStructure(Actor a){
+        return a.getTeam() != this.team && a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE;
+    }
+
     @Override
     public void die(Actor a) {
         System.out.println(this.id + " has died! " + this.dead);
@@ -502,7 +506,7 @@ public class UserActor extends Actor {
 
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
         if(castDelay > 0){
-            this.stopMoving(castDelay);
+            this.stopMoving(gCooldown);
             SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(true),castDelay,TimeUnit.MILLISECONDS);
         }else{
             this.stopMoving();

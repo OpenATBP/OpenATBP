@@ -496,6 +496,10 @@ public abstract class Actor {
         return this.canMove;
     }
 
+    public boolean getState(ActorState state){
+        return this.states.get(state);
+    }
+
     public boolean canAttack(){
         for(ActorState s : this.states.keySet()){
             if(s == ActorState.STUNNED || s == ActorState.FEARED || s == ActorState.CHARMED || s == ActorState.AIRBORNE || s == ActorState.POLYMORPH){
