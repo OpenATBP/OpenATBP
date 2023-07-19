@@ -393,6 +393,7 @@ public class Lich extends UserActor{
 
         @Override
         protected void spellE() {
+            canCast[2] = true;
             if(this.ultCasted){ //Handle end of ult
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"e",true,getReducedCooldown(cooldown),gCooldown);
                 Lich.this.ultTeleportsRemaining = 0;
@@ -400,7 +401,6 @@ public class Lich extends UserActor{
                 ultLocation = null;
                 Lich.this.ultTime = -1;
             }else{
-                canCast[2] = true;
                 Lich.this.ultTime = System.currentTimeMillis();
                 Lich.this.ultStarted = true;
                 Lich.this.ultTeleportsRemaining = 1;

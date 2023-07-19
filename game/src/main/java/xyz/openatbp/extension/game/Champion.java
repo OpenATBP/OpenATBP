@@ -360,7 +360,7 @@ public class Champion {
         public void run() {
             if(this.target.getHealth() <= 0) return;
             if(this.attacker.getState(ActorState.BLINDED)){
-                ExtensionCommands.playSound(parentExt, attacker.getRoom(),attacker.getId(),"sfx/sfx_attack_miss", attacker.getLocation());
+                if(this.attacker.getActorType() == ActorType.PLAYER) ExtensionCommands.playSound(parentExt, attacker.getRoom(),attacker.getId(),"sfx/sfx_attack_miss", attacker.getLocation());
                 return;
             }
             if(this.attack.equalsIgnoreCase("basicAttack") && !this.attacker.canMove()) this.attacker.setCanMove(true);

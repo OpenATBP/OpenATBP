@@ -77,6 +77,7 @@ public class Marceline extends UserActor {
         double lifesteal = this.getPlayerStat("lifeSteal")/100;
         if(this.passiveHits == 3){
             this.passiveHits = 0;
+            ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_marceline_crit_fangs",this.location);
             ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"marceline_crit_fangs",1000,this.id+"_passiveHit",true,"Bip001 Head",false,false,this.team);
             lifesteal = 1d;
         }
@@ -95,7 +96,12 @@ public class Marceline extends UserActor {
                 this.canCast[0] = false;
                 Line2D maxRangeLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),7f);
                 String projectileId = "projectile_marceline_dot";
-                if(this.getState(ActorState.TRANSFORMED)) projectileId = "projectile_marceline_root";
+                if(this.getState(ActorState.TRANSFORMED)){
+                    projectileId = "projectile_marceline_root";
+                    ExtensionCommands.playSound(parentExt,room,this.id,"vo/vo_marceline_projectile_beast", this.location);
+                }else{
+                    ExtensionCommands.playSound(parentExt,room,this.id,"vo/vo_marceline_projectile_human", this.location);
+                }
                 ExtensionCommands.playSound(this.parentExt,this.room,"","marceline_throw_projectile",this.location);
                 this.fireProjectile(new MarcelineProjectile(this.parentExt,this,maxRangeLine,8f,0.5f,this.id+projectileId,this.getState(ActorState.TRANSFORMED)),projectileId, dest, 7f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
@@ -123,11 +129,7 @@ public class Marceline extends UserActor {
                 this.canCast[2] = false;
                 this.stopMoving(castDelay);
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"e",true,getReducedCooldown(cooldown),gCooldown);
-                if(getState(ActorState.TRANSFORMED)){
-                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"marceline_morph_to_human",this.location);
-                }else{
-                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"marceline_morph_to_beast",this.location);
-                }
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_marceline_spell_casting",this.location);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"marceline_spell_casting",castDelay,this.id+"_transformCast",true,"",true,false,this.team);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_ring_3",castDelay,this.id+"_transformRing",false,"",false,true,this.team);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new MarcelineAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay, TimeUnit.MILLISECONDS);
@@ -150,7 +152,7 @@ public class Marceline extends UserActor {
         public void run() {
             double damage = getPlayerStat("attackDamage");
             if(crit || (wActive && getState(ActorState.TRANSFORMED))) damage*=2;
-            if(!getState(ActorState.TRANSFORMED)) passiveHits++;
+            if(!getState(ActorState.TRANSFORMED) && isNonStructure(this.target)) passiveHits++;
             Marceline.this.handleLifeSteal();
             if(wActive && getState(ActorState.TRANSFORMED)){
                 System.out.println("Marceline hit with the W");
@@ -189,6 +191,7 @@ public class Marceline extends UserActor {
             if(getState(ActorState.TRANSFORMED)){
                 ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
                 setState(ActorState.TRANSFORMED, false);
+                ExtensionCommands.playSound(parentExt,room,id,"marceline_morph_to_human",location);
                 if(healthRegenEffectActive){
                     ExtensionCommands.removeFx(parentExt,room,id+"_batRegen");
                     healthRegenEffectActive = false;
@@ -198,6 +201,7 @@ public class Marceline extends UserActor {
                 Marceline.this.addEffect("attackSpeed",500-currentAttackSpeed,3000,null,false);
 
             }else{
+                ExtensionCommands.playSound(parentExt,room,id,"marceline_morph_to_beast",location);
                 ExtensionCommands.swapActorAsset(parentExt,room,id,"marceline_bat");
                 passiveHits = 0;
                 ExtensionCommands.createActorFX(parentExt,room,id,"statusEffect_immunity",2000,id+"_ultImmunity",true,"displayBar",false,false,team);
@@ -238,14 +242,12 @@ public class Marceline extends UserActor {
         protected void hit(Actor victim) {
             if(transformed){
                 victim.addState(ActorState.ROOTED,0d,3000,null,false);
-                ExtensionCommands.playSound(parentExt,room,owner.getId(),"vo/vo_marceline_projectile_beast", owner.getLocation());
             }else{
                 qVictim = victim;
                 qHit = System.currentTimeMillis();
                 Runnable endVictim = () -> {qVictim = null; qHit = -1;};
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(endVictim,1500,TimeUnit.MILLISECONDS);
                 victim.addState(ActorState.SLOWED,0.15d,1500,null,false);
-                ExtensionCommands.playSound(parentExt,room,owner.getId(),"vo/vo_marceline_projectile_human", owner.getLocation());
             }
             JsonNode spellData = parentExt.getAttackData(avatar,"spell1");
             victim.addToDamageQueue(this.owner,getSpellDamage(spellData),spellData);

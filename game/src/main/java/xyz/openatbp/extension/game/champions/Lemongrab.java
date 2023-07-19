@@ -7,6 +7,7 @@ import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
+import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -30,7 +31,7 @@ public class Lemongrab extends UserActor {
 
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData){
-        if(!this.dead && this.unacceptableLevels < 3 && System.currentTimeMillis() - lastHit >= 2000){
+        if(!this.dead && this.unacceptableLevels < 3 && System.currentTimeMillis() - lastHit >= 2000 && this.getAttackType(attackData) == AttackType.SPELL){
             this.unacceptableLevels++;
             String iconName = "lemon"+this.unacceptableLevels;
             ExtensionCommands.removeStatusIcon(parentExt,player,lastIcon);
@@ -50,7 +51,7 @@ public class Lemongrab extends UserActor {
             ExtensionCommands.removeStatusIcon(parentExt,player,lastIcon);
             this.lastIcon = iconName;
             if(this.unacceptableLevels != 0) ExtensionCommands.addStatusIcon(parentExt,player,iconName,"UNACCEPTABLE!!!!!","icon_lemongrab_p"+this.unacceptableLevels,0f);
-            else ExtensionCommands.addStatusIcon(parentExt,player,iconName,"UNACCEPTABLE!!!!!","icon_lemongrab_passive"+this.unacceptableLevels,0f);
+            else ExtensionCommands.addStatusIcon(parentExt,player,iconName,"UNACCEPTABLE!!!!!","icon_lemongrab_passive",0f);
             this.lastHit = System.currentTimeMillis();
         }
     }
@@ -73,8 +74,8 @@ public class Lemongrab extends UserActor {
                 Line2D ogLine = new Line2D.Float(this.location,dest);
                 List<Actor> affectedActors = Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),Champion.getMaxRangeLine(ogLine,6f),4f);
                 for(Actor a : affectedActors){
-                    if(this.isNonStructure(a)){
-                        a.addState(ActorState.SLOWED,0.4d,2500,null,false);
+                    if(a.getTeam() != this.team){
+                        if(isNonStructure(a)) a.addState(ActorState.SLOWED,0.4d,2500,null,false);
                         a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
                     }
                 }
@@ -166,8 +167,10 @@ public class Lemongrab extends UserActor {
             for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),dest,2.5f)){
                 if(isNonStructure(a)){
                     a.addToDamageQueue(Lemongrab.this,damage,spellData);
-                    a.addState(ActorState.STUNNED,0d,(int)duration,null,false);
-                    ExtensionCommands.createActorFX(parentExt,room,a.getId(),"lemongrab_lemon_jail",(int)duration,a.getId()+"_jailed",true,"",true,false,team);
+                    if(a.getActorType() == ActorType.PLAYER){
+                        a.addState(ActorState.STUNNED,0d,(int)duration,null,false);
+                        ExtensionCommands.createActorFX(parentExt,room,a.getId(),"lemongrab_lemon_jail",(int)duration,a.getId()+"_jailed",true,"",true,false,team);
+                    }
                 }
             }
             unacceptableLevels = 0;

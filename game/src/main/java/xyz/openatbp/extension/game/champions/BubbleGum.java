@@ -110,6 +110,7 @@ public class BubbleGum extends UserActor {
                 if(!this.bombPlaced){
                     this.canCast[2] = false;
                     this.stopMoving();
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_bubblegum_bomb_hup",this.location);
                     ExtensionCommands.createWorldFX(parentExt,room,id,"fx_target_ring_3",id+"_bombArea",4000, (float)dest.getX(), (float)dest.getY(),true,this.team,0f);
                     ExtensionCommands.createWorldFX(parentExt,room,id,"bubblegum_bomb_trap",this.id+"_bomb",4000,(float)dest.getX(),(float)dest.getY(),false,this.team,0f);
                     this.bombLocation = dest;
