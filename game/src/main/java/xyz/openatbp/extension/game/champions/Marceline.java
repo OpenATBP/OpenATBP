@@ -185,6 +185,7 @@ public class Marceline extends UserActor {
         @Override
         protected void spellE() {
             canCast[2] = true;
+            wActive = false;
             if(getState(ActorState.TRANSFORMED)){
                 ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
                 setState(ActorState.TRANSFORMED, false);

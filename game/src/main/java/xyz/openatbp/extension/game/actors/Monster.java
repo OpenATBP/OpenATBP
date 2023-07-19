@@ -292,6 +292,7 @@ public class Monster extends Actor {
     }
 
     public void moveTowardsActor(Point2D dest){ //Moves towards a specific point. TODO: Have the path stop based on collision radius
+        if(!this.canMove()) return;
         if(this.states.get(ActorState.FEARED)) return;
         Line2D rawMovementLine = new Line2D.Double(this.location,this.target.getLocation());
        //int dist = (int) Math.floor(rawMovementLine.getP1().distance(rawMovementLine.getP2()) - this.attackRange);
