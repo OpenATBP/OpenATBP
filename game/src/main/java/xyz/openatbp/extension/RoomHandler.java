@@ -40,6 +40,7 @@ public class RoomHandler implements Runnable{
     private GumballGuardian[] guardians;
     private boolean gameOver = false;
     private HashMap<String, Long> destroyedIds = new HashMap<>();
+    private List<String> createdActorIds = new ArrayList<>();
     private static final boolean MONSTER_DEBUG = true;
     public RoomHandler(ATBPExtension parentExt, Room room){
         this.parentExt = parentExt;
@@ -891,9 +892,18 @@ public class RoomHandler implements Runnable{
 
     public void addDestroyedId(String id){
         this.destroyedIds.put(id,System.currentTimeMillis());
+        this.createdActorIds.remove(id);
     }
 
     public boolean hasDestroyedId(String id){
         return this.destroyedIds.containsKey(id);
+    }
+
+    public void addActorId(String id){
+        this.createdActorIds.add(id);
+    }
+
+    public boolean hasActorId(String id){
+        return this.createdActorIds.contains(id);
     }
 }

@@ -51,9 +51,14 @@ public class ChampionData {
             String[] inventory = getBackpackInventory(parentExt, backpack);
             int cat = Integer.parseInt(String.valueOf(category.charAt(category.length()-1))); //Gets category by looking at last number in the string
             ArrayNode itemStats = getItemStats(parentExt,inventory[cat-1]);
+            int previousValue = 0;
             for(JsonNode stat : getItemPointVal(itemStats,categoryPoints)){
+                if(stat.get("point").asInt() == categoryPoints-1){
+                    previousValue = stat.get("value").asInt();
+                }
                 if(stat.get("point").asInt() == categoryPoints){
-                    int packStat = stat.get("value").asInt();
+                    System.out.println("Leveling up! Previous value: " + previousValue + " vs " + stat.get("value").asInt());
+                    int packStat = stat.get("value").asInt() - previousValue;
                     if(stat.get("stat").asText().equalsIgnoreCase("health")){ //Health is tracked through 4 stats (health, currentHealth, maxHealth, and pHealth)
                         int maxHealth = ua.getMaxHealth();
                         double pHealth = ua.getPHealth();
@@ -110,7 +115,7 @@ public class ChampionData {
             String[] inventory = getBackpackInventory(parentExt, backpack);
             ArrayNode itemStats = getItemStats(parentExt,inventory[i]);
             for(JsonNode stat : getItemPointVal(itemStats,categoryPoints)){
-                if(stat.get("point").asInt() >= categoryPoints){
+                if(stat.get("point").asInt() == categoryPoints){
                     int packStat = stat.get("value").asInt();
                     if(stat.get("stat").asText().equalsIgnoreCase("health")){
                         double maxHealth = ua.getMaxHealth();
@@ -150,7 +155,7 @@ public class ChampionData {
     private static ArrayList<JsonNode> getItemPointVal(ArrayNode mods, int category){
         ArrayList<JsonNode> stats = new ArrayList<>();
         for(JsonNode m : mods){
-            if(m.get("point").asInt() == category){
+            if(m.get("point").asInt() == category || m.get("point").asInt() == category-1){
                 stats.add(m);
             }else if(m.get("point").asInt() > category) break;
         }

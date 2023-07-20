@@ -258,6 +258,7 @@ public abstract class Actor {
     }
 
     public void addState(ActorState state, double delta, int duration, String fxId, boolean stacks){
+        if(this.getState(ActorState.IMMUNITY) && this.isCC(state)) return;
         if(!this.activeBuffs.containsKey(state.toString())){ //Runs if there is no existing state/effect
             ISFSObject data = new SFSObject();
             long endTime = System.currentTimeMillis()+duration;
@@ -498,6 +499,14 @@ public abstract class Actor {
 
     public boolean getState(ActorState state){
         return this.states.get(state);
+    }
+
+    private boolean isCC(ActorState state){
+        ActorState[] cc = {ActorState.SLOWED, ActorState.AIRBORNE, ActorState.STUNNED, ActorState.ROOTED, ActorState.BLINDED, ActorState.SILENCED, ActorState.FEARED, ActorState.CHARMED, ActorState.POLYMORPH};
+        for(ActorState c : cc){
+            if(state == c) return true;
+        }
+        return false;
     }
 
     public boolean canAttack(){

@@ -135,6 +135,9 @@ public class ExtensionCommands {
      * @param team - Team int value
      */
     public static void createActor(ATBPExtension parentExt, Room room, String id, String actor, Point2D spawn, float rotation, int team){
+        RoomHandler handler = parentExt.getRoomHandler(room.getId());
+        if(handler != null && handler.hasActorId(id)) return;
+        else if(handler != null) handler.addActorId(id);
         for(User u : room.getUserList()){
             ISFSObject data = new SFSObject();
             data.putUtfString("id",id);
@@ -151,6 +154,9 @@ public class ExtensionCommands {
     }
 
     public static void createActor(ATBPExtension parentExt, Room room, ISFSObject data){
+        RoomHandler handler = parentExt.getRoomHandler(room.getId());
+        if(handler != null && handler.hasActorId(data.getUtfString("id"))) return;
+        else if(handler != null) handler.addActorId(data.getUtfString("id"));
         for(User u : room.getUserList()){
             parentExt.send("cmd_create_actor",data,u);
         }

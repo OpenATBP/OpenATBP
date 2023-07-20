@@ -50,6 +50,8 @@ public class Champion {
                 return new Marceline(u,parentExt);
             case "lemongrab":
                 return new Lemongrab(u,parentExt);
+            case "peppermintbutler":
+                return new PeppermintButler(u,parentExt);
         }
         return new UserActor(u, parentExt);
     }
@@ -358,12 +360,12 @@ public class Champion {
 
         @Override
         public void run() {
+            if(this.attack.equalsIgnoreCase("basicAttack") && !this.attacker.canMove()) this.attacker.setCanMove(true);
             if(this.target.getHealth() <= 0) return;
             if(this.attacker.getState(ActorState.BLINDED)){
                 if(this.attacker.getActorType() == ActorType.PLAYER) ExtensionCommands.playSound(parentExt, attacker.getRoom(),attacker.getId(),"sfx/sfx_attack_miss", attacker.getLocation());
                 return;
             }
-            if(this.attack.equalsIgnoreCase("basicAttack") && !this.attacker.canMove()) this.attacker.setCanMove(true);
             JsonNode attackData;
             if(this.attacker.getActorType() == ActorType.MINION) attackData = this.parentExt.getAttackData(this.attacker.getAvatar().replace("0",""),this.attack);
             else attackData = this.parentExt.getAttackData(this.attacker.getAvatar(),this.attack);
