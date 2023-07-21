@@ -175,6 +175,7 @@ public class ChampionData {
                 }else if(k.contains("attackSpeed")){
                     ua.increaseStat(stat, (levelStat*-1));
                 }else{
+                    System.out.println("Level up! Increasing " + stat + " by " + levelStat);
                     ua.increaseStat(stat, levelStat);
                 }
             }

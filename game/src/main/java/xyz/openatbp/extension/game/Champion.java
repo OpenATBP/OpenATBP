@@ -52,6 +52,8 @@ public class Champion {
                 return new Lemongrab(u,parentExt);
             case "peppermintbutler":
                 return new PeppermintButler(u,parentExt);
+            case "iceking":
+                return new IceKing(u,parentExt);
         }
         return new UserActor(u, parentExt);
     }
@@ -366,6 +368,8 @@ public class Champion {
                 if(this.attacker.getActorType() == ActorType.PLAYER) ExtensionCommands.playSound(parentExt, attacker.getRoom(),attacker.getId(),"sfx/sfx_attack_miss", attacker.getLocation());
                 return;
             }
+            ExtensionCommands.playSound(this.parentExt,this.attacker.getRoom(), this.target.getId(),"sfx_generic_hit",this.target.getLocation());
+            ExtensionCommands.createActorFX(this.parentExt,this.attacker.getRoom(), this.target.getId(),"_playerGotHitSparks",500,this.target.getId()+"_hit"+Math.random(),true,"",true,false, target.getTeam());
             JsonNode attackData;
             if(this.attacker.getActorType() == ActorType.MINION) attackData = this.parentExt.getAttackData(this.attacker.getAvatar().replace("0",""),this.attack);
             else attackData = this.parentExt.getAttackData(this.attacker.getAvatar(),this.attack);

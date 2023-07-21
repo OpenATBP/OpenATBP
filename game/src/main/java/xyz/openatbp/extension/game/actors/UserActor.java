@@ -170,7 +170,9 @@ public class UserActor extends Actor {
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         try{
             if(this.dead) return true;
-
+            if(a.getActorType() == ActorType.TOWER){
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_turret_shot_hits_you",this.location);
+            }
             Actor.AttackType type = this.getAttackType(attackData);
             if(this.states.get(ActorState.BRUSH)){
                 Runnable runnable = () -> UserActor.this.setState(ActorState.REVEALED,false);
@@ -439,9 +441,9 @@ public class UserActor extends Actor {
             }else if(!this.withinRange(target) && this.canMove()){
                 double attackRange = this.getPlayerStat("attackRange");
                 Line2D movementLine = new Line2D.Float(currentPoint,target.getLocation());
-                float targetDistance = (float)(target.getLocation().distance(currentPoint)-attackRange);
-                Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
-                Line2D finalPath = Champion.getColliderLine(parentExt,room,newPath);
+                //float targetDistance = (float)(target.getLocation().distance(currentPoint)-attackRange);
+                //Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
+                Line2D finalPath = Champion.getColliderLine(parentExt,room,movementLine);
                 if(finalPath.getP2().distance(this.movementLine.getP2()) > 0.1f){
                     this.setPath(finalPath);
                     ExtensionCommands.moveActor(parentExt,this.room, this.id,currentPoint, finalPath.getP2(), (float) this.getPlayerStat("speed"),true);

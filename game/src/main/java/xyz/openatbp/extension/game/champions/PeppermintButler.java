@@ -49,13 +49,15 @@ public class PeppermintButler extends UserActor {
         if(this.isStopped() && !qActive && !stopPassive && !this.getState(ActorState.TRANSFORMED)){
             timeStopped+=100;
             if(this.timeStopped >= 2000 && !this.getState(ActorState.STEALTH)){
+                this.setState(ActorState.STEALTH, true);
                 ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"passive",500,false);
                 Runnable delayAnimation = () -> {
-                    ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"passive_idle",1000*60*15,true);
-                    ExtensionCommands.playSound(this.parentExt,this.player,this.id,"sfx_pepbut_invis_hide",this.location);
-                    this.setState(ActorState.STEALTH, true);
-                    this.setState(ActorState.REVEALED, false);
-                    this.setState(ActorState.INVISIBLE, true);
+                    if(this.timeStopped >= 2000){
+                        ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"passive_idle",1000*60*15,true);
+                        ExtensionCommands.playSound(this.parentExt,this.player,this.id,"sfx_pepbut_invis_hide",this.location);
+                        this.setState(ActorState.REVEALED, false);
+                        this.setState(ActorState.INVISIBLE, true);
+                    }
                 };
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(delayAnimation,500, TimeUnit.MILLISECONDS);
                 this.updateStatMenu("healthRegen");
@@ -67,9 +69,10 @@ public class PeppermintButler extends UserActor {
                 ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"run",1,false);
                 this.setState(ActorState.STEALTH, false);
                 this.setState(ActorState.INVISIBLE, false);
-                this.setState(ActorState.REVEALED, true);
+                if(!this.getState(ActorState.BRUSH)) this.setState(ActorState.REVEALED, true);
                 this.updateStatMenu("healthRegen");
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_pepbut_invis_reveal",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_pepbut_behold",this.location);
                 ExtensionCommands.createActorFX(parentExt,room,id,"statusEffect_immunity",2000,id+"_Immunity",true,"displayBar",false,false,team);
                 this.addState(ActorState.IMMUNITY,0d,2000,null,false);
             }
@@ -93,6 +96,7 @@ public class PeppermintButler extends UserActor {
         switch (ability){
             case 1:
                 canCast[0] = false;
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_ring_3",5000,this.id+"_qRing",true,"",true,true,this.team);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"pepbut_aoe",5000,this.id+"_aoe",true,"",true,false,this.team);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_pepbut_aoe",this.location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
@@ -106,6 +110,7 @@ public class PeppermintButler extends UserActor {
                 Point2D dashLocation = Champion.getTeleportPoint(parentExt,player,this.location,dest);
                 double time = dashLocation.distance(this.location)/20d;
                 int runtime = (int)Math.floor(time*1000);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_pepbut_hoho",this.location);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_2.5",this.id+"_wRing",runtime,(float)dashLocation.getX(),(float)dashLocation.getY(),true,this.team,0f);
                 Runnable animationDelay = () -> {
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_pepbut_dig",this.location);
@@ -120,17 +125,24 @@ public class PeppermintButler extends UserActor {
                 break;
             case 3:
                 canCast[2] = false;
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_pepbut_feral",this.location);
                 Runnable delay = () -> {
                     this.attackCooldown = 0;
                     this.setState(ActorState.TRANSFORMED, true);
                     String[] statsToUpdate = {"speed","attackSpeed","attackDamage"};
                     this.updateStatMenu(statsToUpdate);
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_pepbut_feral_hiss",this.location);
                     ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,"pepbut_feral");
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"pepbut_feral_eyes",7000,this.id+"_ultEyes",true,"cryAnimationExportNode",true,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"marceline_beast_crit_hand",7000,this.id+"ultHandL",true,"Bip001 L Hand",true,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"marceline_beast_crit_hand",7000,this.id+"ultHandR",true,"Bip001 R Hand",true,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"pepbut_feral_explosion",500,this.id+"_ultExplosion",false,"",false,false,this.team);
                     this.addState(ActorState.SILENCED,0d,7000,null,true);
+                    if(this.qActive){
+                        this.qActive = false;
+                        ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_qRing");
+                        ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_aoe");
+                    }
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new PeppermintAbilityHandler(ability,spellData,cooldown,gCooldown,dest),7000,TimeUnit.MILLISECONDS);
                 };
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"e",true,getReducedCooldown(cooldown),gCooldown);

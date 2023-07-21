@@ -69,13 +69,13 @@ public abstract class Projectile {
     public void update(RoomHandler roomHandler){
         if(destroyed) return;
         this.updateTimeTraveled();
-        if(this.destination.distance(this.getLocation()) <= 0.01 || System.currentTimeMillis() - this.startTime > this.estimatedDuration){
-            this.destroy();
-
-        }
         Actor hitActor = this.checkPlayerCollision(roomHandler);
         if(hitActor != null){
             this.hit(hitActor);
+            return;
+        }
+        if(this.destination.distance(this.getLocation()) <= 0.01 || System.currentTimeMillis() - this.startTime > this.estimatedDuration){
+            this.destroy();
         }
     }
 

@@ -274,7 +274,7 @@ public class Minion extends Actor{
             if(a.getTeam() != this.team && a.getActorType() != ActorType.MONSTER && this.withinAggroRange(a.getLocation()) && this.facingEntity(a.getLocation())){
                 if(a.getActorType() == ActorType.PLAYER){
                     UserActor ua = (UserActor) a;
-                    if(ua.getState(ActorState.REVEALED) || !ua.getState(ActorState.BRUSH)){
+                    if(ua.getState(ActorState.REVEALED) && !ua.getState(ActorState.BRUSH)){
                         if(ua.getLocation().distance(this.location) < distance){
                             distance = ua.getLocation().distance(this.location);
                             closestActor = ua;
