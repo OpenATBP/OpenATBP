@@ -44,7 +44,7 @@ public class BubbleGum extends UserActor {
 
     @Override
     public void attack(Actor a){
-        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new PassiveAttack(this,a,this.handleAttack(a)),"bubblegum_projectile","weapon_holder"),500, TimeUnit.MILLISECONDS);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new PassiveAttack(this,a,this.handleAttack(a)),"bubblegum_projectile","weapon_holder"),500, TimeUnit.MILLISECONDS);
     }
 
     @Override

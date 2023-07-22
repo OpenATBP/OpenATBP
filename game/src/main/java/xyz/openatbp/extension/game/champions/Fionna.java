@@ -115,8 +115,9 @@ public class Fionna extends UserActor {
         if(this.attackCooldown == 0){
             this.handleAttack(a);
             System.out.println("Fionna attacking with " + this.getPlayerStat("attackDamage") + " damage");
-            new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack").run();
-            this.handleLifeSteal();
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),250,TimeUnit.MILLISECONDS);
+            Runnable lifeStealHandler = this::handleLifeSteal;
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(lifeStealHandler,250,TimeUnit.MILLISECONDS);
         }
     }
 

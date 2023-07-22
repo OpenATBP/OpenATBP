@@ -33,7 +33,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
         }
         UserActor user = roomHandler.getPlayer(String.valueOf(sender.getId()));
         if(user != null && user.canMove()){
-            user.cancelAuto(true);
+            user.resetTarget();
             String room = sender.getLastJoinedRoom().getGroupId();
             long timeSinceBasicAttack = sender.getVariable("stats").getSFSObjectValue().getLong("timeSinceBasicAttack");
             if ((System.currentTimeMillis() - timeSinceBasicAttack) < 500) return; //hard coded, this seems to be when the projectile should leaving during the animation

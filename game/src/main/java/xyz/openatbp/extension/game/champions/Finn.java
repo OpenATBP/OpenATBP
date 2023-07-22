@@ -29,7 +29,7 @@ public class Finn extends UserActor {
 
     @Override
     public void attack(Actor a) {
-        new PassiveAttack(a,this.handleAttack(a)).run();
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new PassiveAttack(a,this.handleAttack(a)),250, TimeUnit.MILLISECONDS);
     }
 
     @Override

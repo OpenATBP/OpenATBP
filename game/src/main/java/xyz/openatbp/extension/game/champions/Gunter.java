@@ -84,7 +84,7 @@ public class Gunter extends UserActor{
     }
     @Override
     public void attack(Actor a){
-        new RangedAttack(a, new PassiveAttack(a,this.handleAttack(a)),"gunter_bottle_projectile").run();
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new PassiveAttack(a,this.handleAttack(a)),"gunter_bottle_projectile"),500, TimeUnit.MILLISECONDS);
     }
 
     public void shatter(Actor a){

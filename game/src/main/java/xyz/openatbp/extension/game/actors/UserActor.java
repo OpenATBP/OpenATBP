@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 public class UserActor extends Actor {
 
     protected User player;
-    protected ScheduledFuture<?> currentAutoAttack = null;
     protected boolean autoAttackEnabled = false;
     protected int xp = 0;
     private int deathTime = 10;
@@ -136,14 +135,6 @@ public class UserActor extends Actor {
 
     public void updateMovementTime(){
         this.timeTraveled+=0.1f;
-    }
-
-    public void cancelAuto(boolean nullTarget){
-        if(nullTarget) this.target = null;
-        if(this.currentAutoAttack != null){
-            this.currentAutoAttack.cancel(false);
-            this.currentAutoAttack = null;
-        }
     }
 
     public User getUser(){
@@ -256,8 +247,7 @@ public class UserActor extends Actor {
             this.attackCooldown = this.getPlayerStat("attackSpeed");
             Champion.DelayedAttack delayedAttack = new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack");
             String projectileFx = this.parentExt.getActorData(this.getAvatar()).get("scriptData").get("projectileAsset").asText();
-            if(projectileFx != null && projectileFx.length() > 0) new RangedAttack(a,delayedAttack,projectileFx).run();
-            else delayedAttack.run();
+            if(projectileFx != null && projectileFx.length() > 0) SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,delayedAttack,projectileFx),500,TimeUnit.MILLISECONDS);
         }
     }
 
@@ -297,7 +287,6 @@ public class UserActor extends Actor {
         System.out.println(this.id + " has died! " + this.dead);
         try{
             if(this.dead) return;
-            if(this.currentAutoAttack != null) this.currentAutoAttack.cancel(true);
             this.dead = true;
             this.timeKilled = System.currentTimeMillis();
             this.canMove = false;
@@ -454,10 +443,6 @@ public class UserActor extends Actor {
             if(this.target != null){
                 if(this.target.getHealth() <= 0){
                     this.target = null;
-                    if(this.currentAutoAttack != null){
-                        this.currentAutoAttack.cancel(true);
-                        this.currentAutoAttack = null;
-                    }
                 }
             }
         }
@@ -537,6 +522,10 @@ public class UserActor extends Actor {
     public void setCanMove(boolean canMove){
         this.canMove = canMove;
         if(this.canMove && this.states.get(ActorState.CHARMED)) ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,this.movementLine.getP2(), (float) this.getPlayerStat("speed"),true);
+    }
+
+    public void resetTarget(){
+        this.target = null;
     }
 
     public void setState(ActorState[] states, boolean stateBool){
@@ -931,7 +920,6 @@ public class UserActor extends Actor {
             float time = (float) (target.getLocation().distance(location) / 10f);
             ExtensionCommands.createProjectileFX(parentExt,room,projectile,id,target.getId(),emit,"targetNode",time);
             SmartFoxServer.getInstance().getTaskScheduler().schedule(attackRunnable,(int)(time*1000),TimeUnit.MILLISECONDS);
-            currentAutoAttack = null;
         }
     }
 

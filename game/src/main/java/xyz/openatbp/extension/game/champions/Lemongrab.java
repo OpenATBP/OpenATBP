@@ -120,7 +120,7 @@ public class Lemongrab extends UserActor {
 
     public void attack(Actor a){
         this.handleAttack(a);
-        new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack").run();
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),250, TimeUnit.MILLISECONDS);
     }
 
     private class LemonAbilityHandler extends AbilityRunnable{
