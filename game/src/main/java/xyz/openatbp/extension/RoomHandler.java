@@ -302,7 +302,6 @@ public class RoomHandler implements Runnable{
     }
 
     private void spawnMonster(String monster){
-        System.out.println("Spawning: " + monster);
         String map = room.getGroupId();
             float x = 0;
             float z = 0;
@@ -637,8 +636,6 @@ public class RoomHandler implements Runnable{
                     room.getVariable("spawns").getSFSObjectValue().putInt(s,0);
                     return;
                 }
-            }else{
-                System.out.println("Failed! " + s + " vs " + mons);
             }
         }
     }

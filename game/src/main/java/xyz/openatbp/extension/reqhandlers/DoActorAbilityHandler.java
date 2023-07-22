@@ -21,7 +21,6 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         UserActor player = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId()).getPlayer(String.valueOf(sender.getId()));
         int spellNum = getAbilityNum(params.getUtfString("id"));
-        trace(params.getDump());
         if(player.canUseAbility(spellNum)){
             String userId = String.valueOf(sender.getId());
             String ability = params.getUtfString("id");

@@ -73,7 +73,6 @@ public class Minion extends Actor{
             if(lane == 0) pathIndex = blueTopX.length-1;
             else pathIndex = blueBotX.length-1;
         }
-        System.out.println(id + " spawning at " + x + "," + y);
         this.movementLine = new Line2D.Float(this.location,this.location);
         aggressors = new HashMap<>(3);
         this.stats = this.initializeStats();

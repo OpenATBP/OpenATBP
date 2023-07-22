@@ -8,6 +8,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -51,12 +52,16 @@ public class ChampionData {
             String[] inventory = getBackpackInventory(parentExt, backpack);
             int cat = Integer.parseInt(String.valueOf(category.charAt(category.length()-1))); //Gets category by looking at last number in the string
             ArrayNode itemStats = getItemStats(parentExt,inventory[cat-1]);
-            int previousValue = 0;
+            Map<String, Integer> previousValues = new HashMap<>();
             for(JsonNode stat : getItemPointVal(itemStats,categoryPoints)){
                 if(stat.get("point").asInt() == categoryPoints-1){
-                    previousValue = stat.get("value").asInt();
+                    previousValues.put(stat.get("stat").asText(),stat.get("value").asInt());
                 }
                 if(stat.get("point").asInt() == categoryPoints){
+                    int previousValue = 0;
+                    if(previousValues.containsKey(stat.get("stat").asText())){
+                        previousValue = previousValues.get(stat.get("stat").asText());
+                    }
                     System.out.println("Leveling up! Previous value: " + previousValue + " vs " + stat.get("value").asInt());
                     int packStat = stat.get("value").asInt() - previousValue;
                     if(stat.get("stat").asText().equalsIgnoreCase("health")){ //Health is tracked through 4 stats (health, currentHealth, maxHealth, and pHealth)
@@ -66,7 +71,6 @@ public class ChampionData {
                         maxHealth+=packStat;
                         int currentHealth = (int) Math.floor(pHealth*maxHealth);
                         ua.setHealth(currentHealth,maxHealth);
-                        previousValue = 0;
                         /*
                         stats.putInt("currentHealth",currentHealth);
                         stats.putInt("maxHealth",maxHealth);
