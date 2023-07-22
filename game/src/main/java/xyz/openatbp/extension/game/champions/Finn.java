@@ -35,7 +35,7 @@ public class Finn extends UserActor {
 
     @Override
     public double getPlayerStat(String stat) {
-        if(stat.equalsIgnoreCase("speed") && qActive) return super.getPlayerStat(stat) * 1.5d;
+        if(stat.equalsIgnoreCase("speed") && this.qActive) return super.getPlayerStat(stat) * 1.5d;
         return super.getPlayerStat(stat);
     }
 
@@ -89,6 +89,7 @@ public class Finn extends UserActor {
                 this.canCast[0] = false;
                 this.attackCooldown = 0;
                 this.qActive = true;
+                this.updateStatMenu("speed");
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_finn_shield",this.location);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"finn_shieldShimmer",3000,this.id+"_shield",true,"Bip001 Pelvis",true,false,this.team);
                 this.addEffect("armor",this.getStat("armor")*0.25d,3000,null,false);

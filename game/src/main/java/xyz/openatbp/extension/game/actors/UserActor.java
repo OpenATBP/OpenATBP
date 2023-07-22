@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 public class UserActor extends Actor {
 
     protected User player;
-    protected boolean autoAttackEnabled = false;
+    protected boolean autoAttackEnabled = true;
     protected int xp = 0;
     private int deathTime = 10;
     protected boolean dead = false;
@@ -425,7 +425,7 @@ public class UserActor extends Actor {
             }
         }
         if(this.attackCooldown > 0) this.reduceAttackCooldown();
-        if(this.target != null && this.target.getHealth() > 0 && this.autoAttackEnabled){
+        if(this.target != null && this.target.getHealth() > 0){
             if(this.withinRange(target) && this.canAttack()){
                 this.autoAttack(target);
             }else if(!this.withinRange(target) && this.canMove()){
@@ -444,6 +444,16 @@ public class UserActor extends Actor {
                 if(this.target.getHealth() <= 0){
                     this.target = null;
                 }
+            }else if(this.autoAttackEnabled){
+                Actor closestTarget = null;
+                double closestDistance = 1000;
+                for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(room.getId()),this.location,this.parentExt.getActorStats(this.avatar).get("aggroRange").asInt())){
+                    if(a.getLocation().distance(this.location) < closestDistance){
+                        closestDistance = a.getLocation().distance(this.location);
+                        closestTarget = a;
+                    }
+                }
+                this.target = closestTarget;
             }
         }
         if(msRan % 1000 == 0){
