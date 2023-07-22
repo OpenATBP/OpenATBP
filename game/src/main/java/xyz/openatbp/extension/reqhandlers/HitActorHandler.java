@@ -55,8 +55,6 @@ public class HitActorHandler extends BaseClientRequestHandler {
                     actor.setPath(newPath);
                     ExtensionCommands.moveActor(parentExt,sender.getLastJoinedRoom(), actor.getId(),location, newPath.getP2(), (float) actor.getSpeed(),true);
                 }else if(actor.withinRange(target)){
-                    trace("Failed to attack!");
-                    trace("Attack cooldown: " + actor.getAttackCooldown());
                     ExtensionCommands.moveActor(parentExt,sender.getLastJoinedRoom(),actor.getId(),location,location, (float) actor.getSpeed(),false);
                     actor.setLocation(location);
                 }
@@ -66,7 +64,6 @@ public class HitActorHandler extends BaseClientRequestHandler {
         }else{
             trace("No player found!");
         }
-        trace(params.getDump());
     }
 
     public static class MovementStopper implements Runnable {
