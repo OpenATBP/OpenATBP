@@ -51,8 +51,8 @@ public class ChampionData {
             String[] inventory = getBackpackInventory(parentExt, backpack);
             int cat = Integer.parseInt(String.valueOf(category.charAt(category.length()-1))); //Gets category by looking at last number in the string
             ArrayNode itemStats = getItemStats(parentExt,inventory[cat-1]);
-            int previousValue = 0;
             for(JsonNode stat : getItemPointVal(itemStats,categoryPoints)){
+                int previousValue = 0;
                 if(stat.get("point").asInt() == categoryPoints-1){
                     previousValue = stat.get("value").asInt();
                 }
