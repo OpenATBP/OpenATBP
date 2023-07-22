@@ -67,7 +67,7 @@ public class Marceline extends UserActor {
     @Override
     public void attack(Actor a){
         if(this.attackCooldown == 0){
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(new MarcelineAttack(a,this.handleAttack(a)),350,TimeUnit.MILLISECONDS);
+            new MarcelineAttack(a,this.handleAttack(a)).run();
         }
     }
 

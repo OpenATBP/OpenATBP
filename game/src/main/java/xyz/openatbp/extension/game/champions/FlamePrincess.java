@@ -111,7 +111,7 @@ public class FlamePrincess extends UserActor {
 
     @Override
     public void attack(Actor a){
-        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,new PassiveAttack(a,this.handleAttack(a)),"flame_princess_projectile"),500,TimeUnit.MILLISECONDS);
+        new RangedAttack(a,new PassiveAttack(a,this.handleAttack(a)),"flame_princess_projectile").run();
     }
 
     @Override

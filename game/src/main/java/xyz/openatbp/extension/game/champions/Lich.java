@@ -94,7 +94,7 @@ public class Lich extends UserActor{
 
     @Override
     public void attack(Actor a){
-        currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new PassiveAttack(this,a,this.handleAttack(a)),"lich_projectile"),500,TimeUnit.MILLISECONDS);
+        new RangedAttack(a, new PassiveAttack(this,a,this.handleAttack(a)),"lich_projectile").run();
     }
 
     @Override

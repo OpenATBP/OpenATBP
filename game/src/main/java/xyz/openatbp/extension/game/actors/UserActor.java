@@ -256,7 +256,8 @@ public class UserActor extends Actor {
             this.attackCooldown = this.getPlayerStat("attackSpeed");
             Champion.DelayedAttack delayedAttack = new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack");
             String projectileFx = this.parentExt.getActorData(this.getAvatar()).get("scriptData").get("projectileAsset").asText();
-            if(projectileFx != null && projectileFx.length() > 0) this.currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,delayedAttack,projectileFx),500,TimeUnit.MILLISECONDS);
+            if(projectileFx != null && projectileFx.length() > 0) new RangedAttack(a,delayedAttack,projectileFx).run();
+            else delayedAttack.run();
         }
     }
 
