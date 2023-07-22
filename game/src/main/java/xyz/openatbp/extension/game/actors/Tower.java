@@ -46,7 +46,13 @@ public class Tower extends Actor {
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         if(this.destroyed) return true;
-        if(this.target == null) damage*=0.25;
+        if(this.target == null){
+            if(a.getActorType() == ActorType.PLAYER){
+                UserActor ua = (UserActor) a;
+                ExtensionCommands.playSound(this.parentExt,ua.getUser(),ua.getId(),"sfx_attack_miss");
+            }
+            return false;
+        }
         else if(a.getActorType() == ActorType.MINION) damage*=0.5;
         this.changeHealth(this.getMitigatedDamage(damage,this.getAttackType(attackData),a)*-1);
         boolean notify = System.currentTimeMillis()-this.lastHit >= 1000*5;
@@ -126,7 +132,7 @@ public class Tower extends Actor {
                 List<Actor> nearbyActors = Champion.getEnemyActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.team,this.location, (float) this.getPlayerStat("attackRange"));
                 if(this.target == null){
                     if(this.attackCooldown > this.getPlayerStat("attackSpeed")) this.reduceAttackCooldown();
-                    else this.attackCooldown = this.getPlayerStat("attackSpeed");
+                    else this.attackCooldown = 500d;
                     boolean hasMinion = false;
                     double distance = 1000;
                     Actor potentialTarget = null;

@@ -69,8 +69,8 @@ public class Lemongrab extends UserActor {
                 this.canCast[0] = false;
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_lemongrab_sound_sword",this.location);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_lemongrab_sound_sword",this.location);
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"lemongrab_sonic_cone",castDelay,this.id+"_sonicCone",true,"Sword",true,false,this.team);
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"lemongrab_sonic_sword_effect",castDelay,this.id+"_sonicSword",true,"Sword",true,false,this.team);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"lemongrab_sonic_cone",750,this.id+"_sonicCone",true,"Sword",true,false,this.team);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"lemongrab_sonic_sword_effect",750,this.id+"_sonicSword",true,"Sword",true,false,this.team);
                 Line2D ogLine = new Line2D.Float(this.location,dest);
                 List<Actor> affectedActors = Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),Champion.getMaxRangeLine(ogLine,6f),4f);
                 for(Actor a : affectedActors){
@@ -90,9 +90,9 @@ public class Lemongrab extends UserActor {
                     ExtensionCommands.createWorldFX(parentExt,room,id,"lemongrab_ground_juice_aoe",id+"_wJuice",2000,(float)dest.getX(),(float)dest.getY(),false,team,0f);
                     ExtensionCommands.playSound(parentExt,room,"","sfx_lemongrab_my_juice",dest);
                 };
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(delayedJuice,1250,TimeUnit.MILLISECONDS);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(delayedJuice,350,TimeUnit.MILLISECONDS);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_lemongrab_my_juice",this.location);
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new LemonAbilityHandler(ability,spellData,cooldown,gCooldown,dest),2000,TimeUnit.MILLISECONDS);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new LemonAbilityHandler(ability,spellData,cooldown,gCooldown,dest),850,TimeUnit.MILLISECONDS);
                 break;
             case 3:
                 this.canCast[2] = false;
@@ -169,8 +169,8 @@ public class Lemongrab extends UserActor {
                     a.addToDamageQueue(Lemongrab.this,damage,spellData);
                     if(a.getActorType() == ActorType.PLAYER){
                         a.addState(ActorState.STUNNED,0d,(int)duration,null,false);
-                        ExtensionCommands.createActorFX(parentExt,room,a.getId(),"lemongrab_lemon_jail",(int)duration,a.getId()+"_jailed",true,"",true,false,team);
                     }
+                    ExtensionCommands.createActorFX(parentExt,room,a.getId(),"lemongrab_lemon_jail",(int)duration,a.getId()+"_jailed",true,"",true,false,team);
                 }
             }
             unacceptableLevels = 0;

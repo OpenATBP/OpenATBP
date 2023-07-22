@@ -7,6 +7,7 @@ import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
+import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -41,8 +42,10 @@ public class Finn extends UserActor {
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
         super.handleKill(a, attackData);
-        this.canCast[1] = true;
-        ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,0,0);
+        if(a.getActorType() == ActorType.PLAYER){
+            this.canCast[1] = true;
+            ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,0,0);
+        }
     }
 
     @Override
@@ -204,9 +207,9 @@ public class Finn extends UserActor {
                 for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),new Line2D.Float(this.originalLocation,dest),2f)){
                     if(isNonStructure(a)){
                         a.addToDamageQueue(Finn.this,handlePassive(a,getSpellDamage(spellData)),spellData);
-                        ExtensionCommands.playSound(parentExt,room,id,"sfx_finn_dash_impact",location);
                     }
                 }
+                ExtensionCommands.playSound(parentExt,room,id,"sfx_finn_dash_impact",location);
             }
         }
 

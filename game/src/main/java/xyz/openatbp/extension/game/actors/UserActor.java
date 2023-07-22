@@ -493,7 +493,7 @@ public class UserActor extends Actor {
     }
 
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
-        if(castDelay > 0){
+        if(gCooldown > 0){
             this.stopMoving(gCooldown);
             SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(true),castDelay,TimeUnit.MILLISECONDS);
         }else{

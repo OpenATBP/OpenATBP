@@ -253,7 +253,7 @@ public class RoomHandler implements Runnable{
         double px = pLoc.getX();
         double pz = pLoc.getY();
         double dist = Math.sqrt(Math.pow(px-hx,2) + Math.pow(pz-hy,2));
-        return dist<=0.5;
+        return dist<=0.7;
     }
 
     private Point2D getHealthLocation(int num){
