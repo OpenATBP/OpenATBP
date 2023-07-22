@@ -138,8 +138,8 @@ public class UserActor extends Actor {
         this.timeTraveled+=0.1f;
     }
 
-    public void cancelAuto(){
-        this.target = null;
+    public void cancelAuto(boolean nullTarget){
+        if(nullTarget) this.target = null;
         if(this.currentAutoAttack != null){
             this.currentAutoAttack.cancel(false);
             this.currentAutoAttack = null;
@@ -256,7 +256,7 @@ public class UserActor extends Actor {
             this.attackCooldown = this.getPlayerStat("attackSpeed");
             Champion.DelayedAttack delayedAttack = new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack");
             String projectileFx = this.parentExt.getActorData(this.getAvatar()).get("scriptData").get("projectileAsset").asText();
-            this.currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,delayedAttack,projectileFx),500,TimeUnit.MILLISECONDS);
+            if(projectileFx != null && projectileFx.length() > 0) this.currentAutoAttack = SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,delayedAttack,projectileFx),500,TimeUnit.MILLISECONDS);
         }
     }
 

@@ -54,6 +54,8 @@ public class Champion {
                 return new PeppermintButler(u,parentExt);
             case "iceking":
                 return new IceKing(u,parentExt);
+            case "finn":
+                return new Finn(u,parentExt);
         }
         return new UserActor(u, parentExt);
     }
@@ -193,7 +195,7 @@ public class Champion {
         List<Actor> affectedActors = new ArrayList<>();
         for(Actor a : room.getActors()){
             for(Point2D p : allPoints){
-                if(a.getLocation().distance(p) <= range && facingEntity(line.getP1(),line.getP2())){
+                if(a.getLocation().distance(p) <= range && (facingEntity(line.getP1(),line.getP2()) || line.getX1() == line.getX2())){
                     affectedActors.add(a);
                     break;
                 }

@@ -23,7 +23,7 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
         int spellNum = getAbilityNum(params.getUtfString("id"));
         trace(params.getDump());
         if(player.canUseAbility(spellNum)){
-            player.cancelAuto();
+            player.cancelAuto(false);
             String userId = String.valueOf(sender.getId());
             String ability = params.getUtfString("id");
             float x = params.getFloat("x");
