@@ -39,6 +39,7 @@ public class HitActorHandler extends BaseClientRequestHandler {
             }
             Point2D location = new Point2D.Float(params.getFloat("x"),params.getFloat("z"));
             if(target != null){
+                actor.resetIdleTime();
                 actor.setTarget(target);
                 if(actor.withinRange(target) && actor.canAttack()){
 

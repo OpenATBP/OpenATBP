@@ -44,6 +44,7 @@ public class UserActor extends Actor {
     protected int dcBuff = 0;
     protected boolean[] canCast = {true,true,true};
     protected Map<String, ScheduledFuture<?>> iconHandlers = new HashMap<>();
+    protected int idleTime = 0;
 
     //TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt){
@@ -404,6 +405,9 @@ public class UserActor extends Actor {
         if(currentPoint.getX() != x && currentPoint.getY() != z){
             this.updateMovementTime();
         }
+        if(this.location.distance(this.movementLine.getP2()) <= 0.01f){
+            this.idleTime+=100;
+        }
         boolean insideBrush = false;
         for(Path2D brush : this.parentExt.getBrushPaths()){
             if(brush.contains(currentPoint)){
@@ -444,15 +448,16 @@ public class UserActor extends Actor {
                 if(this.target.getHealth() <= 0){
                     this.target = null;
                 }
-            }else if(this.autoAttackEnabled){
+            }else if(this.autoAttackEnabled && idleTime > 2000){
                 Actor closestTarget = null;
                 double closestDistance = 1000;
                 for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(room.getId()),this.location,this.parentExt.getActorStats(this.avatar).get("aggroRange").asInt())){
-                    if(a.getLocation().distance(this.location) < closestDistance){
+                    if(a.getTeam() != this.team && a.getLocation().distance(this.location) < closestDistance){
                         closestDistance = a.getLocation().distance(this.location);
                         closestTarget = a;
                     }
                 }
+                this.idleTime = 0;
                 this.target = closestTarget;
             }
         }
@@ -500,6 +505,10 @@ public class UserActor extends Actor {
                 }
             }
         }
+    }
+
+    public void resetIdleTime(){
+        this.idleTime = 0;
     }
 
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){

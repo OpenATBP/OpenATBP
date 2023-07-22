@@ -112,35 +112,31 @@ public class Finn extends UserActor {
             case 3:
                 this.stopMoving(castDelay);
                 this.canCast[2] = false;
-                this.ultActivated = true;
-                double widthHalf = 3.675d;
-                Point2D p1 = new Point2D.Double(this.location.getX()-widthHalf,this.location.getY()+widthHalf); //BOT RIGHT
-                Point2D p2 = new Point2D.Double(this.location.getX()+widthHalf,this.location.getY()+widthHalf); //BOT LEFT
-                Point2D p3 = new Point2D.Double(this.location.getX()-widthHalf,this.location.getY()-widthHalf); //TOP RIGHT
-                Point2D p4 = new Point2D.Double(this.location.getX()+widthHalf,this.location.getY()-widthHalf); // TOP LEFT
-                float x = (float) this.location.getX();
-                float y = (float) this.location.getY();
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_finn_walls_drop",this.location);
-                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn_wall_south",this.id+"_northWall",5000,x,y,false,this.team,0f);
-                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn_wall_north",this.id+"_southWall",5000,x,y,false,this.team,0f);
-                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn_wall_west",this.id+"_eastWall",5000,x,y,false,this.team,0f);
-                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn_wall_east",this.id+"_westWall",5000,x,y,false,this.team,0f);
-                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn_wall_corner_swords",this.id+"_p1Sword",5000,x,y,false,this.team,0f);
-                /*
-                ExtensionCommands.createActor(this.parentExt,this.room,"testp1","ironowl_a",p1,0f,2);
-                ExtensionCommands.createActor(this.parentExt,this.room,"testp2","gnome_a",p2,0f,2);
-                ExtensionCommands.createActor(this.parentExt,this.room,"testp3","creep",p3,0f,2);
-                ExtensionCommands.createActor(this.parentExt,this.room,"testp4","bmo",p4,0f,2);
-
-                 */
-                Line2D northWall = new Line2D.Float(p4,p3);
-                Line2D eastWall = new Line2D.Float(p3,p1);
-                Line2D southWall = new Line2D.Float(p2,p1);
-                Line2D westWall = new Line2D.Float(p4,p2);
-                this.wallLines = new Line2D[]{northWall, eastWall, southWall, westWall};
-                this.wallsActivated = new boolean[]{true,true,true,true};
-                ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinnAbilityHandler(ability,spellData,cooldown,gCooldown,dest),5000,TimeUnit.MILLISECONDS);
+                Runnable cast = () -> {
+                    this.ultActivated = true;
+                    double widthHalf = 3.675d;
+                    Point2D p1 = new Point2D.Double(this.location.getX()-widthHalf,this.location.getY()+widthHalf); //BOT RIGHT
+                    Point2D p2 = new Point2D.Double(this.location.getX()+widthHalf,this.location.getY()+widthHalf); //BOT LEFT
+                    Point2D p3 = new Point2D.Double(this.location.getX()-widthHalf,this.location.getY()-widthHalf); //TOP RIGHT
+                    Point2D p4 = new Point2D.Double(this.location.getX()+widthHalf,this.location.getY()-widthHalf); // TOP LEFT
+                    float x = (float) this.location.getX();
+                    float y = (float) this.location.getY();
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_finn_walls_drop",this.location);
+                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn_wall_south",this.id+"_northWall",5000,x,y,false,this.team,0f);
+                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn_wall_north",this.id+"_southWall",5000,x,y,false,this.team,0f);
+                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn_wall_west",this.id+"_eastWall",5000,x,y,false,this.team,0f);
+                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn_wall_east",this.id+"_westWall",5000,x,y,false,this.team,0f);
+                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn_wall_corner_swords",this.id+"_p1Sword",5000,x,y,false,this.team,0f);
+                    Line2D northWall = new Line2D.Float(p4,p3);
+                    Line2D eastWall = new Line2D.Float(p3,p1);
+                    Line2D southWall = new Line2D.Float(p2,p1);
+                    Line2D westWall = new Line2D.Float(p4,p2);
+                    this.wallLines = new Line2D[]{northWall, eastWall, southWall, westWall};
+                    this.wallsActivated = new boolean[]{true,true,true,true};
+                    ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinnAbilityHandler(ability,spellData,cooldown,gCooldown,dest),5000,TimeUnit.MILLISECONDS);
+                };
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(cast,castDelay,TimeUnit.MILLISECONDS);
                 break;
         }
     }

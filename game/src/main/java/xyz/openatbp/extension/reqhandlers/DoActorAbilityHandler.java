@@ -22,6 +22,7 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
         UserActor player = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId()).getPlayer(String.valueOf(sender.getId()));
         int spellNum = getAbilityNum(params.getUtfString("id"));
         if(player.canUseAbility(spellNum)){
+            player.resetIdleTime();
             String userId = String.valueOf(sender.getId());
             String ability = params.getUtfString("id");
             float x = params.getFloat("x");
