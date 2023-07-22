@@ -74,7 +74,6 @@ public class PeppermintButler extends UserActor {
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_pepbut_invis_reveal",this.location);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_pepbut_behold",this.location);
                 ExtensionCommands.createActorFX(parentExt,room,id,"statusEffect_immunity",2000,id+"_Immunity",true,"displayBar",false,false,team);
-                this.addState(ActorState.IMMUNITY,0d,2000,null,false);
             }
         }
 

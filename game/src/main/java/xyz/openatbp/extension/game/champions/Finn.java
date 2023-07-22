@@ -193,6 +193,7 @@ public class Finn extends UserActor {
         protected void spellQ() {
             canCast[0] = true;
             qActive = false;
+            updateStatMenu("speed");
         }
 
         @Override

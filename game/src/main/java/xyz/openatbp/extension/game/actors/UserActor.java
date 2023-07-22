@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 public class UserActor extends Actor {
 
     protected User player;
-    protected boolean autoAttackEnabled = true;
+    protected boolean autoAttackEnabled = false;
     protected int xp = 0;
     private int deathTime = 10;
     protected boolean dead = false;
@@ -246,9 +246,12 @@ public class UserActor extends Actor {
             System.out.println("Crit: " + critChance + " vs " + random + " | " + crit);
             ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
             this.attackCooldown = this.getPlayerStat("attackSpeed");
-            Champion.DelayedAttack delayedAttack = new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack");
+            double damage = this.getPlayerStat("attackDamage");
+            if(crit) damage*=2;
+            Champion.DelayedAttack delayedAttack = new Champion.DelayedAttack(parentExt,this,a,(int)damage,"basicAttack");
             String projectileFx = this.parentExt.getActorData(this.getAvatar()).get("scriptData").get("projectileAsset").asText();
-            if(projectileFx != null && projectileFx.length() > 0) SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,delayedAttack,projectileFx),500,TimeUnit.MILLISECONDS);
+            if(projectileFx != null && projectileFx.length() > 0 && !parentExt.getActorData(this.avatar).get("attackType").asText().equalsIgnoreCase("MELEE")) SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,delayedAttack,projectileFx),500,TimeUnit.MILLISECONDS);
+            else delayedAttack.run();
         }
     }
 
