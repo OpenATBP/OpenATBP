@@ -14,7 +14,8 @@ dl.on('end', () => {
   } catch (err) {
     console.error("Extraction failed: " + err);
   } finally {
-    fs.unlink("./static/atbp-20150519-full.zip");
+    fs.rmSync("./static/atbp-20150519-full.zip");
+    console.log("Cleaned up.");
   }
 });
 
@@ -24,5 +25,5 @@ dl.on('start', () => {console.log("Downloading game assets... this may take a wh
 if(!fs.existsSync("static/CNChampions.unity3d") || !fs.existsSync("static/assets")) {
   dl.start().catch(err => console.error(err));
 } else {
-  console.log("Asset files already present, skipping download.")
+  console.log("Asset files already present, skipping download.");
 }
