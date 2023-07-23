@@ -84,7 +84,9 @@ public class Gunter extends UserActor{
     }
     @Override
     public void attack(Actor a){
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new PassiveAttack(a,this.handleAttack(a)),"gunter_bottle_projectile"),500, TimeUnit.MILLISECONDS);
+        double damage = this.getPlayerStat("attackDamage");
+        if(this.handleAttack(a)) damage*=2;
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)damage,"basicAttack"),250,TimeUnit.MILLISECONDS);
     }
 
     public void shatter(Actor a){
@@ -115,6 +117,17 @@ public class Gunter extends UserActor{
     public boolean canMove(){
         if(this.ultActivated) return false;
         else return super.canMove;
+    }
+
+    @Override
+    public void die(Actor a) {
+        super.die(a);
+        if(this.ultActivated){
+            this.ultActivated = false;
+            this.ultPoint = null;
+            ExtensionCommands.removeFx(parentExt,room,this.id+"_gunterPower");
+            ExtensionCommands.removeFx(parentExt,room,this.id+"_gunterUlt");
+        }
     }
 
     @Override
@@ -177,23 +190,6 @@ public class Gunter extends UserActor{
             ExtensionCommands.playSound(parentExt,room,"","sfx_gunter_bottle_shatter",this.location);
             ExtensionCommands.createWorldFX(parentExt,room,this.id,"gunter_bottle_shatter",this.id+"_bottleShatter",500,(float)this.location.getX(),(float)this.location.getY(),false,team,0f);
             destroy();
-        }
-    }
-
-    private class PassiveAttack implements Runnable {
-
-        Actor target;
-        boolean crit;
-
-        PassiveAttack(Actor target, boolean crit){ this.target = target; this.crit = crit;}
-
-        @Override
-        public void run() {
-            JsonNode attackData = parentExt.getAttackData(getAvatar(),"basicAttack");
-            Gunter.this.handleLifeSteal();
-            double damage = getPlayerStat("attackDamage");
-            if(crit) damage*=2;
-            this.target.addToDamageQueue(Gunter.this,damage,attackData);
         }
     }
 }

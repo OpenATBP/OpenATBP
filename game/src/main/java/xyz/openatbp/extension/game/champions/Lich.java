@@ -331,20 +331,17 @@ public class Lich extends UserActor{
         @Override
         public void run() {
             if(attacker.getClass() == Lich.class){
-                JsonNode attackData = parentExt.getAttackData("lich","basicAttack");
-                Lich.this.handleLifeSteal();
                 double damage = this.attacker.getPlayerStat("attackDamage");
                 if(crit) damage*=2;
-                this.target.addToDamageQueue(this.attacker, damage,attackData);
+                new Champion.DelayedAttack(parentExt,attacker,target,(int)damage,"basicAttack").run();
                 Lich.this.setSkullyTarget(this.target);
             }else if(attacker.getClass() == Skully.class){
-                JsonNode attackData = parentExt.getAttackData("lich","spell4");
                 double damage = 25d + (Lich.this.getPlayerStat("attackDamage")*0.8);
                 Actor attacker = this.attacker;
                 if(this.target.getActorType() == ActorType.PLAYER){
                     attacker = Lich.this;
                 }
-                this.target.addToDamageQueue(attacker,(int)damage,attackData);
+                new Champion.DelayedAttack(parentExt,attacker,target,(int)damage,"spell4").run();
             }
         }
     }

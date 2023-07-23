@@ -58,8 +58,10 @@ public class GooMonster extends Monster {
                     data.putUtfString("attackType","spell");
                     JsonNode newAttackData = mapper.readTree(data.toJson());
                     for(Actor a : damagedActors){
-                        a.addState(ActorState.SLOWED, 0.25d, 1000, null, false);
-                        a.addToDamageQueue(this,4,newAttackData);
+                        if(!a.getId().equalsIgnoreCase(this.id)){
+                            a.addState(ActorState.SLOWED, 0.25d, 1000, null, false);
+                            a.addToDamageQueue(this,4,newAttackData);
+                        }
                     }
                 }catch(Exception e){
                     e.printStackTrace();

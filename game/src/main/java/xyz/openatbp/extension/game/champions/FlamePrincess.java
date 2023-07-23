@@ -51,6 +51,14 @@ public class FlamePrincess extends UserActor {
     }
 
     @Override
+    public void die(Actor a) {
+        super.die(a);
+        if(this.ultStarted && !this.ultFinished){
+            this.ultFinished = true;
+        }
+    }
+
+    @Override
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
         super.useAbility(ability,spellData,cooldown,gCooldown,castDelay,dest);
         if(ultUses == 3 && !passiveEnabled && System.currentTimeMillis()-lastPassiveUsage >= 10000){
@@ -227,10 +235,9 @@ public class FlamePrincess extends UserActor {
         public void run() {
             double damage = getPlayerStat("attackDamage");
             if(crit) damage*=2;
-            FlamePrincess.this.handleLifeSteal();
-            ExtensionCommands.playSound(parentExt,room,target.getId(),"sfx_flame_princess_passive_ignite",target.getLocation());
-            target.addToDamageQueue(FlamePrincess.this,damage, parentExt.getAttackData(getAvatar(),"basicAttack"));
+            new Champion.DelayedAttack(parentExt,FlamePrincess.this,target,(int)damage,"basicAttack").run();
             if(FlamePrincess.this.passiveEnabled && (target.getActorType() != ActorType.TOWER && target.getActorType() != ActorType.BASE)){
+                ExtensionCommands.playSound(parentExt,room,target.getId(),"sfx_flame_princess_passive_ignite",target.getLocation());
                 FlamePrincess.this.passiveEnabled = false;
                 ExtensionCommands.removeFx(parentExt,room,"flame_passive");
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"passive",true,10000,0);

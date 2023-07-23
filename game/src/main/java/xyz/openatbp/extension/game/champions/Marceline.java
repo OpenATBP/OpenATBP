@@ -153,7 +153,6 @@ public class Marceline extends UserActor {
             double damage = getPlayerStat("attackDamage");
             if(crit || (wActive && getState(ActorState.TRANSFORMED))) damage*=2;
             if(!getState(ActorState.TRANSFORMED) && isNonStructure(this.target)) passiveHits++;
-            Marceline.this.handleLifeSteal();
             if(wActive && getState(ActorState.TRANSFORMED)){
                 System.out.println("Marceline hit with the W");
                 wActive = false;
@@ -163,7 +162,7 @@ public class Marceline extends UserActor {
             }else{
                 System.out.println("W active: " + wActive + " | " + getState(ActorState.TRANSFORMED));
             }
-            this.target.addToDamageQueue(Marceline.this,damage,parentExt.getAttackData(getAvatar(),"basicAttack"));
+            new Champion.DelayedAttack(parentExt,Marceline.this,target,(int)damage,"basicAttack").run();
             canMove = true;
         }
     }

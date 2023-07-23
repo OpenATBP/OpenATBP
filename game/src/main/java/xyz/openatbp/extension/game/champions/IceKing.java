@@ -73,7 +73,7 @@ public class IceKing extends UserActor {
 
         if(this.ultLocation != null){
             for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.ultLocation,5.5f)){
-                if(this.isNonStructure(a) || a.getId().equalsIgnoreCase(this.id)){
+                if(a.getTeam() != this.team || a.getId().equalsIgnoreCase(this.id)){
                     if(a.getId().equalsIgnoreCase(this.id)){
                         this.addEffect("speed",this.getStat("speed"),500,null,false);
                     }else{

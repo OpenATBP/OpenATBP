@@ -203,7 +203,7 @@ public class Finn extends UserActor {
             ExtensionCommands.actorAnimate(parentExt,room,id,"run",100,false);
             if(this.originalLocation != null){
                 for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),new Line2D.Float(this.originalLocation,dest),2f)){
-                    if(isNonStructure(a)){
+                    if(a.getTeam() != team){
                         a.addToDamageQueue(Finn.this,handlePassive(a,getSpellDamage(spellData)),spellData);
                     }
                 }

@@ -70,7 +70,7 @@ public class BubbleGum extends UserActor {
             }else{
                 List<Actor> affectedActors = Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),potionLocation,2f);
                 for(Actor a : affectedActors){
-                    if(a.getTeam() != this.team && a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER){
+                    if(a.getTeam() != this.team){
                         JsonNode spellData = this.parentExt.getAttackData("princessbubblegum","spell1");
                         double damage = this.getSpellDamage(spellData)/10f;
                         a.addToDamageQueue(this,damage,spellData);
@@ -220,7 +220,7 @@ public class BubbleGum extends UserActor {
         }
     }
 
-    private class PassiveAttack implements Runnable {
+    private class PassiveAttack implements Runnable { //TODO: Maybe extend DelayedAttack?
 
         Actor attacker;
         Actor target;
@@ -234,11 +234,9 @@ public class BubbleGum extends UserActor {
 
         @Override
         public void run() {
-            JsonNode attackData = parentExt.getAttackData("princessbubblegum","basicAttack");
             double damage = this.attacker.getPlayerStat("attackDamage");
             if(crit) damage*=2;
-            BubbleGum.this.handleLifeSteal();
-            this.target.addToDamageQueue(this.attacker,damage,attackData);
+            new Champion.DelayedAttack(parentExt,this.attacker,this.target,(int)damage,"basicAttack").run();
             if(this.target.getActorType() == ActorType.PLAYER || DEBUG){
                 gumStacks++;
                 lastGum = System.currentTimeMillis();
