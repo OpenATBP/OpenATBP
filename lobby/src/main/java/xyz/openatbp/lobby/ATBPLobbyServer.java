@@ -37,7 +37,6 @@ public class ATBPLobbyServer {
             ex.printStackTrace();
             System.exit(-1);
         }
-
         while (true) {
             ClientWorker worker;
             try {

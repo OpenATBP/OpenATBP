@@ -24,6 +24,7 @@ public class Queue {
         this.type = type;
         this.pvp = pvp;
         this.premade = false;
+        this.partyLeader = players.get(0);
         if(players.size() == 6){
             this.queueFull();
         }
@@ -36,6 +37,7 @@ public class Queue {
         this.type = type;
         this.pvp = pvp;
         this.premade = false;
+        this.partyLeader = p;
         System.out.println("New queue - Queue size: " + this.getSize());
         if(type.equalsIgnoreCase("m_moba_practice")){ //Sends player to champ select if practice mode
             this.queueFull();

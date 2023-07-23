@@ -8,14 +8,14 @@ import java.util.ArrayList;
 
 class ClientWorker implements Runnable {
     private final Socket socket;
-    private ArrayList<Player> players;
-    private ArrayList<Queue> queues;
+    private final ArrayList<Player> players;
+    private final ArrayList<Queue> queues;
 
     ClientWorker(Socket socket, ArrayList<Player> players, ArrayList<Queue> queues) {
         this.socket = socket;
         this.players = players;
         this.queues = queues;
-        System.out.println("New Client Worker created!");
+        System.out.println("New Client Worker created! for " + socket.getRemoteSocketAddress().toString());
     }
 
     public void run(){
@@ -25,6 +25,15 @@ class ClientWorker implements Runnable {
             DataOutputStream clientOut = new DataOutputStream(socket.getOutputStream());
 
             while(!socket.isClosed()){
+                for(Player p : players){
+                    System.out.println("Player: " + p.getUsername() + " in players list");
+                }
+                for(Queue q : queues){
+                    System.out.println(q.getPartyLeader() + " queue is active");
+                    for(Player p : q.getPlayers()){
+                        System.out.println("Queue " + q.getPartyLeader() + " has player " + p.getUsername());
+                    }
+                }
                 System.out.println("Client address " + socket.getRemoteSocketAddress());
                 Packet request = new Packet();
                 if (request.receive(clientIn)) {
