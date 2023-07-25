@@ -56,6 +56,8 @@ public class Champion {
                 return new IceKing(u,parentExt);
             case "finn":
                 return new Finn(u,parentExt);
+            case "jake":
+                return new Jake(u,parentExt);
         }
         return new UserActor(u, parentExt);
     }
@@ -195,7 +197,7 @@ public class Champion {
         List<Actor> affectedActors = new ArrayList<>();
         for(Actor a : room.getActors()){
             for(Point2D p : allPoints){
-                if(a.getLocation().distance(p) <= range && (facingEntity(line.getP1(),line.getP2()) || line.getX1() == line.getX2())){
+                if(a.getLocation().distance(p) <= range && (facingEntity(line,a.getLocation()) || line.getX1() == line.getX2())){
                     affectedActors.add(a);
                     break;
                 }
@@ -204,12 +206,12 @@ public class Champion {
         return affectedActors;
     }
 
-    private static boolean facingEntity(Point2D p1, Point2D p2){ // Returns true if the point is in the same direction
-        double deltaX = p2.getX()-p1.getX();
+    private static boolean facingEntity(Line2D movementLine, Point2D testPoint){ // Returns true if the point is in the same direction
+        double deltaX = movementLine.getX2() - movementLine.getX1();
+        double pointDelta = testPoint.getX() - movementLine.getX1();
         //Negative = left Positive = right
         if(Double.isNaN(deltaX)) return false;
-        if(deltaX>0 && p2.getX()>p1.getX()) return true;
-        else return deltaX < 0 && p2.getX() < p1.getX();
+        return (deltaX > 0 && pointDelta > 0) || (deltaX < 0 && pointDelta < 0);
     }
     public static Line2D getMaxRangeLine(Line2D projectileLine, float spellRange){
         float remainingRange = (float) (spellRange-projectileLine.getP1().distance(projectileLine.getP2()));
