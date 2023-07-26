@@ -1,7 +1,59 @@
 # OpenATBP
-A proof of concept, open-source lobby and game server for Adventure Time Battle Party.
+[![Releases Badge](https://img.shields.io/github/v/release/OpenATBP/OpenATBP?include_prereleases)](https://github.com/OpenATBP/OpenATBP/releases)
+[![Trello Badge](https://img.shields.io/badge/trello-progress_tracking-0052CC?logo=trello)](https://trello.com/b/DcrsFKB1/openatbp)
+[![Discord Badge](https://img.shields.io/discord/929861280456671324?color=687DC5&logo=discord)](https://discord.gg/AwmCCuAdT4)
+[![License Badge](https://img.shields.io/github/license/OpenATBP/OpenATBP)](https://github.com/OpenATBP/OpenATBP/blob/master/LICENSE.md)
+
+An open-source lobby, service, and game server for Adventure Time Battle Party.
+
+[![Screenshot](docs/screenshot2.png)]
 
 ## Status
-Don't expect much yet - you can get into a game and walk around as Finn.
+Currently a handful of characters have their full kits functional, and games can be played from start to finish. Collision, pathfinding, and a few other systems still need work. For the most up-to-date progress, check the [Trello board](https://trello.com/b/DcrsFKB1/openatbp). Contributions are always welcome!
 
-Almost nothing is implemented feature wise, and many things are hardcoded at the moment. Contributions are welcome!
+## Server Architecture
+Originally, Battle Party required several server-side components in order to function:
+* Web server to serve static content/streaming assets
+* Web server that provides service/API endpoints (internal name "Facade")
+* Socket policy server to sastify the Unity Web Player [security sandbox](https://docs.unity3d.com/351/Documentation/Manual/SecuritySandbox.html)
+* Lobby server for players to form parties and search for matches (internal name "DungeonServer")
+* SmartFoxServer2X with custom extension acting as the actual game server
+
+In order to simplify development and deployment, the first three components have been combined into one piece of software, which is available under the `httpserver` directory.
+
+~~More in-depth explanations of each component, how the client interacts with them, and how request/reponse packets are structed can be found in the `docs/` folder.~~
+This is unfortunately not available yet, but work is slowly being done. For now feel free to reference the `dev-general` channel in the Discord as well as decompiled client code via ILSpy/dnSpy.
+
+## Development
+
+### Prerequisites 
+*Ensure these are all installed before proceeding!*
+* Git
+* Java Development Kit 11
+* SFS2X Community Edition
+* NodeJS and NPM
+* MongoDB Server 
+
+### Setting up
+1. Clone the repository: `git clone https://github.com/OpenATBP/OpenATBP.git`
+2. Open a new terminal inside of the `httpserver` directory
+3. In this new terminal window, run the following command to install dependencies and download required asset files - this may take a while! `npm install`
+4. Copy the example config in the httpserver directory: `cp config.example.js config.js` - once copied, edit it to include the connection string URI for your MongoDB server
+5. Run httpserver using the following command: `npm run start` - if done correctly you should see `App running on port 8000!`
+6. Start SmartFoxServer2X once so it is able to generate the correct files and folders, then close it
+7. Open another terminal, this time in the root of the repository
+8. Run the following command to compile and run the lobby: `.\gradlew ATBPLobby:run` - if sucessful you should see `DungeonServer running on port 6778`
+9. Run the following commands in order to copy necessary files, then compile the game extension: `.\gradlew ATBPExtension:copySFS2XLibs`, `.\gradlew ATBPExtension:jar`
+10. Provided there weren't any errors, deploy the SmartFox extension: `.\gradlew ATBPExtension:deploy` - this will also copy the data, definition and zone file(s) if needed
+11. Edit the config.properties file located in the SFS2X extensions folder, it should be right next to the ATBPExtension jar. Include the same Mongo URI that you did in step 4.
+12. Start SmartFoxServer2X, you should see a log line indicating the extension is working: `ATBP Extension loaded`
+13. Finally, connect to http://127.0.0.1:8000 with an NPAPI compatible browser such as Pale Moon to test the game!
+
+Note that you can also run any Gradle task (`gradlew` commands) graphically through an IDE such as IntelliJ IDEA or Eclipse. 
+
+These instructions are subject to change, if you run into any problems or have questions feel free to open an issue here on Github or reach out to us on our Discord.
+
+## License
+MIT unless specified otherwise
+
+![SFS2X Logo](docs/sfs2xlogo.png)
