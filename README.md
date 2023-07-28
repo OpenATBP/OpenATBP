@@ -38,14 +38,14 @@ This is unfortunately not available yet, but work is slowly being done. For the 
 1. Clone the repository: `git clone https://github.com/OpenATBP/OpenATBP.git`
 2. Open a new terminal inside of the `httpserver` directory
 3. In this new terminal window, run the following command to install dependencies and download required asset files - this may take a while! `npm install`
-4. Copy the example config in the httpserver directory: `cp config.example.js config.js` - once copied, edit it to include the connection string URI for your MongoDB server
+4. Copy the example config in the httpserver directory: `cp config.js.example config.js` - once copied, edit it to include the connection string URI for your MongoDB server
 5. Run httpserver using the following command: `npm run start` - if done correctly you should see `App running on port 8000!`
 6. Start SmartFoxServer2X once so it can generate the correct files and folders, then close it
 7. Open another terminal, this time in the root of the repository
 8. Run the following command to compile and run the lobby: `.\gradlew ATBPLobby:run` - if successful you should see `DungeonServer running on port 6778`
 9. Run the following commands to copy necessary files, then compile the game extension: `.\gradlew ATBPExtension:copySFS2XLibs`, `.\gradlew ATBPExtension:jar`
 10. Provided there weren't any errors, deploy the SmartFox extension: `.\gradlew ATBPExtension:deploy` - this will also copy the data, definition and zone file(s) if needed
-11. Edit the config.properties file located in the SFS2X extensions folder, it should be right next to the ATBPExtension jar. Include the same Mongo URI that you did in step 4.
+11. Copy the example config in the SFS2X extension directory (SFS2X/extensions/Champions, should be right next to the jar file): `cp config.properties.example config.properties` - once copied, edit it to include the same URI string you did in step 4.
 12. Start SmartFoxServer2X, you should see a log line indicating the extension is working: `ATBP Extension loaded`
 13. Finally, connect to http://127.0.0.1:8000 with an NPAPI-compatible browser such as Pale Moon to test the game!
 

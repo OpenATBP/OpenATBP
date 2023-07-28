@@ -3,11 +3,13 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
 
+const database = require('./db-operations.js');
 const getRequest = require('./get-requests.js');
 const postRequest = require('./post-requests.js');
 const SocketPolicyServer = require('./socket-policy.js');
 
-const shopData = require('./shop.json');
+const displayNames = require('./data/names.json');
+const shopData = require('./data/shop.json');
 
 let config;
 try {
@@ -24,7 +26,7 @@ try {
 }
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const client = new MongoClient(config.httpserver.mongouri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+const mongoClient = new MongoClient(config.httpserver.mongouri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 var onlinePlayers = [];
 
@@ -44,13 +46,13 @@ var onlineChecker = setInterval(() => {
   }
 }, 11000);
 
-client.connect(err => {
+mongoClient.connect(err => {
   if(err){
     console.error("FATAL: MongoDB connect failed: " + err);
     process.exit(1);
   }
 
-  const collection = client.db("openatbp").collection("players");
+  const playerCollection = mongoClient.db("openatbp").collection("players");
 
   if(!fs.existsSync("static/crossdomain.xml") || !fs.existsSync("static/config.xml")) {
     console.info("Copying default crossdomain.xml/config.xml");
@@ -63,16 +65,21 @@ client.connect(err => {
     console.warn("Please run 'npm run postinstall' to automatically download and extract them.")
   }
 
+  app.set('view engine', 'ejs');
   app.use(express.static('static'));
   app.use(bodyParser.urlencoded({extended:false}));
   app.use(bodyParser.json());
+
+  app.get('/', (req, res) => {
+    res.render('index');
+  });
 
   app.get('/service/presence/present', (req, res) => {
     res.send(getRequest.handlePresent());
   });
 
   app.get('/service/authenticate/whoami', (req, res) => {
-    getRequest.handleWhoAmI(req.query.authToken,collection).then((data) => {
+    getRequest.handleWhoAmI(req.query.authToken,playerCollection).then((data) => {
       res.send(data);
     }).catch(console.error);
   });
@@ -90,13 +97,13 @@ client.connect(err => {
   });
 
   app.get('/service/shop/player', (req,res) => {
-    getRequest.handlePlayerInventory(req.query.authToken,collection).then((data) => {
+    getRequest.handlePlayerInventory(req.query.authToken,playerCollection).then((data) => {
       res.send(data);
     }).catch(console.error);
   });
 
   app.get('/service/data/user/champions/profile',(req,res) => {
-    getRequest.handlePlayerChampions(req.query.authToken,collection).then((data) => {
+    getRequest.handlePlayerChampions(req.query.authToken,playerCollection).then((data) => {
       res.send(data);
     }).catch(console.error);
   });
@@ -115,13 +122,13 @@ client.connect(err => {
   });
 
   app.get('/service/authenticate/user/:username', (req,res) => {
-    getRequest.handleBrowserLogin(req.params.username,collection).then((data) => {
+    getRequest.handleBrowserLogin(req.params.username,playerCollection).then((data) => {
       res.send(JSON.stringify(data));
     }).catch(console.error);
   });
 
   app.post('/service/authenticate/login', (req,res) => {
-    postRequest.handleLogin(req.body,collection).then((data) => {
+    postRequest.handleLogin(req.body,playerCollection).then((data) => {
       res.send(data);
     }).catch(console.error);
   });
@@ -157,7 +164,7 @@ client.connect(err => {
         lastChecked: Date.now(),
         friends: []
       };
-      collection.findOne({"user.TEGid": req.body.username}).then((data) => {
+      playerCollection.findOne({"user.TEGid": req.body.username}).then((data) => {
         playerObj.friends = data.friends;
         onlinePlayers.push(playerObj);
       }).catch(console.error);
@@ -169,20 +176,20 @@ client.connect(err => {
 
   app.post('/service/shop/purchase', (req,res) => {
     console.log(req.body);
-    postRequest.handlePurchase(req.query.authToken,req.body.data.item,collection, shopData).then((data) => {
+    postRequest.handlePurchase(req.query.authToken,req.body.data.item, playerCollection, shopData).then((data) => {
       res.send(data);
     }).catch(console.error);
   });
 
   app.post('/service/authenticate/user/:username', (req,res) => {
-    createNewUser(req.params.username,req.body.password, collection).then((data) => {
+    database.createNewUser(req.params.username,req.body.password, playerCollection).then((data) => {
       res.send(JSON.stringify(data));
     }).catch(console.error);
   });
 
   app.post('/service/friend/request', (req,res) => {
     console.log(req.body);
-    postRequest.handleFriendRequest(req.query.authToken,req.body.toUserId,collection).then((dat) => {
+    postRequest.handleFriendRequest(req.query.authToken,req.body.toUserId,playerCollection).then((dat) => {
       res.send(dat);
     }).catch(console.error);
   });

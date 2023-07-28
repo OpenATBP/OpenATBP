@@ -1,5 +1,5 @@
 module.exports = {
-  function createNewUser(username,authpass, collection){ //Creates new user in web server and database
+  createNewUser: function(username,authpass, collection){ //Creates new user in web server and database
     return new Promise((fulfill,reject) => {
       var playerNumber = "";
       var newNumber = 0;

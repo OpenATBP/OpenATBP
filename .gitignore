@@ -52,6 +52,11 @@ config.js
 # Node Modules
 /httpserver/node_modules
 
-# Game assets
+# Exclude game assets in static, while including files needed to render webpage
 /httpserver/static/*
-!/httpserver/static/index.html
+!/httpserver/static/css/
+!/httpserver/static/css/*
+!/httpserver/static/fonts/
+!/httpserver/static/fonts/*
+!/httpserver/static/js/
+!/httpserver/static/js/*
