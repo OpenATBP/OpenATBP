@@ -9,13 +9,14 @@ const dl = new DownloaderHelper(url, "./static/");
 dl.on('end', () => {
   console.log("Download completed, extracting...");
   try {
-    extract("./static/atbp-20150519-full.zip", { dir: path.resolve("./static/") });
-    console.log("Extraction completed.");
+    extract("./static/atbp-20150519-full.zip", { dir: path.resolve("./static/") })
+    .then(() => {
+      console.log("Extraction completed.");
+      fs.rmSync("./static/atbp-20150519-full.zip");
+      console.log("Cleaned up.");
+    });
   } catch (err) {
     console.error("Extraction failed: " + err);
-  } finally {
-    fs.rmSync("./static/atbp-20150519-full.zip");
-    console.log("Cleaned up.");
   }
 });
 
