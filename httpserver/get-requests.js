@@ -1,5 +1,3 @@
-const fs = require('fs').promises;
-
 module.exports = {
   handlePresent: function(){ // /service/presence/present
     return (JSON.stringify({}));
@@ -22,13 +20,8 @@ module.exports = {
     	"tournamentData": {}
     }));
   },
-  handleShop: function(collection){ // /service/shop/inventory RETURNS all inventory data
-    return new Promise(function(resolve, reject) {
-      collection.find({}).toArray((e,res) => {
-        if(e) reject(e);
-        resolve(JSON.stringify(res));
-      });
-    });
+  handleShop: function(shopData){ // /service/shop/inventory RETURNS all inventory data
+    return (JSON.stringify(shopData));
   },
   handleChampConfig: function(){ // /service/data/config/champions/ Not sure if this is what it should be returning or not.
     return JSON.stringify({"upperELO": 2000.0,

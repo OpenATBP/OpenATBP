@@ -1,0 +1,500 @@
+[
+  {
+    "type": "BACKPACK",
+    "id": "belt_bella_noche",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_billys_bag",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_bindle_of_bravery",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_candy_monarch",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_champions",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_enchanters",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_fridjitsu",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_hewers_haversack",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_ice_monarch",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_meta_science",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_sorcerous_satchel",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_techno_tank",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_ultimate_wizard",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_vampire_rocker",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "billy",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "billy_skin_young",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "bmo",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "bmo_skin_noir",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "bmo_skin_puhoy",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "bmo_skin_soccer",
+    "default": false,
+    "cost": 500
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "bmo_skin_sweater",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "cinnamonbun",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "cinnamonbun_skin_guy",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "finn",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "finn_skin_davey",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "finn_skin_guardian",
+    "default": false,
+    "cost": 2500
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "finn_skin_hotbod",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "finn_skin_lute",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "finn_skin_pj",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "finn_skin_wizard",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "fionna",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "fionna_skin_ballgown",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "fionna_skin_pj",
+    "default": false,
+    "cost": 500
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "flame",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "flame_skin_dungeoneering",
+    "default": false,
+    "cost": 500
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "flame_skin_queen",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "gunter",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "gunter_skin_evil",
+    "default": false,
+    "cost": 2500
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "gunter_skin_guntelina",
+    "default": false,
+    "cost": 500
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "gunter_skin_jewel_thief",
+    "default": false,
+    "cost": 2500
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "hunson",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "hunson_skin_underwear",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "iceking",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "iceking_skin_icequeen",
+    "default": false,
+    "cost": 2500
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "iceking_skin_young",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "jake",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "jake_skin_cake",
+    "default": false,
+    "cost": 2500
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "jake_skin_guardian",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "jake_skin_randy",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "jake_skin_wizard",
+    "default": false,
+    "cost": 2500
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "jake_skin_zombie",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "lemongrab",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "lemongrab_skin_2",
+    "default": false,
+    "cost": 500
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "lemongrab_skin_fat",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "lemongrab_skin_underwear",
+    "default": false,
+    "cost": 500
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "lich",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "lich_skin_skeleton",
+    "default": false,
+    "cost": 2500
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "lsp",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "lsp_skin_gummybuns",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "lsp_skin_lsprince",
+    "default": false,
+    "cost": 2500
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "lsp_skin_party",
+    "default": false,
+    "cost": 2500
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "lsp_skin_smooth",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "magicman",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "magicman_skin_mystery",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "marceline",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "marceline_skin_marshall",
+    "default": false,
+    "cost": 2500
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "marceline_skin_mohawk",
+    "default": false,
+    "cost": 2500
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "marceline_skin_young",
+    "default": false,
+    "cost": 2500
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "neptr",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "neptr_skin_racing",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "peppermintbutler",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "peppermintbutler_skin_crowley",
+    "default": false,
+    "cost": 500
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "peppermintbutler_skin_detective",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "peppermintbutler_skin_sweater",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "peppermintbutler_skin_zombie",
+    "default": false,
+    "cost": 2500
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "princessbubblegum",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "princessbubblegum_skin_hoth",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "princessbubblegum_skin_prince",
+    "default": false,
+    "cost": 2500
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "princessbubblegum_skin_warrior",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "princessbubblegum_skin_young",
+    "default": false,
+    "cost": 2500
+  },
+  {
+    "type": "DEFAULT_SKIN",
+    "id": "rattleballs",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "rattleballs_skin_cloaked",
+    "default": false,
+    "cost": 1250
+  },
+  {
+    "type": "CUSTOM_SKIN",
+    "id": "rattleballs_skin_spidotron",
+    "default": false,
+    "cost": 2500
+  }
+]

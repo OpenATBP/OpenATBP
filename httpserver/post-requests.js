@@ -1,5 +1,3 @@
-const fs = require('fs').promises;
-
 function generateRandomToken(){
   return(Math.random().toString(36).slice(2,10));
 }
@@ -23,29 +21,24 @@ module.exports = {
     //console.log(data);
     return (JSON.stringify({}));
   },
-  handleNewUser: function(username,password,collection){ //DEPRECATED
+  handlePurchase: function(token,itemToPurchase,collection,shopData){ // /service/shop/purchase?authToken={token} PROVIDES authToken RETURNS success object
     return new Promise(function(resolve, reject) {
-
-    });
-  },
-  handlePurchase: function(token,data,collection,shopCollection){ // /service.shop/purchase?authToken={token} PROVIDES authToken RETURNS success object
-    return new Promise(function(resolve, reject) {
-      shopCollection.findOne({"id":data}).then((itemInfo) => { //Finds the cost for the purchased item
-        if(itemInfo != null){
-          collection.updateOne({"authToken":token},{$inc: {"player.coins": itemInfo.cost*-1}}).then(() => { //Subtracts the coins from the player
-            collection.updateOne({"authToken":token},{ $push: {inventory: data}}).then(() => { //Adds the item to the inventory item
+      try {
+        const foundItem = shopData.find(item=>item.id === itemToPurchase);
+        if (foundItem) {
+          collection.updateOne({"authToken":token},{$inc: {"player.coins": foundItem.cost*-1}}).then(() => { //Subtracts the coins from the player
+            collection.updateOne({"authToken":token},{ $push: {inventory: itemToPurchase}}).then(() => { //Adds the item to the inventory item
               resolve(JSON.stringify({"success":"true"}));
-            }).catch((err) => {
-              reject(err);
-            });
-          }).catch((e) => {
-            reject(e);
-          });
+            })
+          })
+        } else {
+          reject(new Error("Item not found"));
         }
-      }).catch((er) => {
-        reject(er);
-      });
-    });
+      } 
+      catch(err) {
+        reject(err);
+      }
+    });    
   },
   handleFriendRequest: function(username, newFriend, collection){
     return new Promise(function(resolve, reject) {

@@ -1,0 +1,237 @@
+<zone>
+  <name>Champions</name>
+  <isCustomLogin>true</isCustomLogin>
+  <isForceLogout>true</isForceLogout>
+  <applyWordsFilterToUserName>true</applyWordsFilterToUserName>
+  <applyWordsFilterToRoomName>true</applyWordsFilterToRoomName>
+  <applyWordsFilterToPrivateMessages>true</applyWordsFilterToPrivateMessages>
+  <isFilterBuddyMessages>true</isFilterBuddyMessages>
+  <isEncrypted>false</isEncrypted>
+  <maxUsers>1000</maxUsers>
+  <maxUserVariablesAllowed>5</maxUserVariablesAllowed>
+  <maxRoomVariablesAllowed>5</maxRoomVariablesAllowed>
+  <minRoomNameChars>3</minRoomNameChars>
+  <maxRoomNameChars>10</maxRoomNameChars>
+  <maxRooms>500</maxRooms>
+  <maxRoomsCreatedPerUser>3</maxRoomsCreatedPerUser>
+  <userCountChangeUpdateInterval>1000</userCountChangeUpdateInterval>
+  <userReconnectionSeconds>0</userReconnectionSeconds>
+  <overrideMaxUserIdleTime>120</overrideMaxUserIdleTime>
+  <maxFailedLogins>4</maxFailedLogins>
+  <allowGuestUsers>true</allowGuestUsers>
+  <guestUserNamePrefix>Guest#</guestUserNamePrefix>
+  <publicRoomGroups>default</publicRoomGroups>
+  <defaultRoomGroups>default</defaultRoomGroups>
+  <defaultPlayerIdGeneratorClass></defaultPlayerIdGeneratorClass>
+  <allowInvitationsOnlyForBuddies>false</allowInvitationsOnlyForBuddies>
+  <maxUsersPerJoinInvitationRequest>5</maxUsersPerJoinInvitationRequest>
+  <geoLocationEnabled>false</geoLocationEnabled>
+  <wordsFilter active="false">
+    <useWarnings>false</useWarnings>
+    <warningsBeforeKick>3</warningsBeforeKick>
+    <kicksBeforeBan>2</kicksBeforeBan>
+    <banDuration>1440</banDuration>
+    <maxBadWordsPerMessage>0</maxBadWordsPerMessage>
+    <kicksBeforeBanMinutes>3</kicksBeforeBanMinutes>
+    <secondsBeforeBanOrKick>5</secondsBeforeBanOrKick>
+    <warningMessage>Stop swearing or you will be banned</warningMessage>
+    <kickMessage>Swearing not allowed: you are being kicked</kickMessage>
+    <banMessage>Too much swearing: you are banned</banMessage>
+    <wordsFile>config/wordsFile.txt</wordsFile>
+    <filterMode>BLACKLIST</filterMode>
+    <banMode>NAME</banMode>
+    <hideBadWordWithCharacter>*</hideBadWordWithCharacter>
+  </wordsFilter>
+  <floodFilter active="false">
+    <banDurationMinutes>1440</banDurationMinutes>
+    <maxFloodingAttempts>5</maxFloodingAttempts>
+    <secondsBeforeBan>5</secondsBeforeBan>
+    <banMode>NAME</banMode>
+    <logFloodingAttempts>true</logFloodingAttempts>
+    <banMessage>Too much flooding, you are banned</banMessage>
+  </floodFilter>
+  <rooms>
+    <room>
+      <name>lobby</name>
+      <groupId>default</groupId>
+      <password></password>
+      <maxUsers>20</maxUsers>
+      <maxSpectators>0</maxSpectators>
+      <isDynamic>false</isDynamic>
+      <isGame>false</isGame>
+      <isHidden>false</isHidden>
+      <autoRemoveMode>DEFAULT</autoRemoveMode>
+      <permissions>
+        <flags>PASSWORD_STATE_CHANGE,PUBLIC_MESSAGES</flags>
+        <maxRoomVariablesAllowed>10</maxRoomVariablesAllowed>
+      </permissions>
+      <events>USER_ENTER_EVENT,USER_EXIT_EVENT,USER_COUNT_CHANGE_EVENT,USER_VARIABLES_UPDATE_EVENT</events>
+      <badWordsFilter isActive="false"/>
+      <roomVariables/>
+      <extension>
+        <name></name>
+        <type>JAVA</type>
+        <file></file>
+        <propertiesFile></propertiesFile>
+        <reloadMode>AUTO</reloadMode>
+      </extension>
+      <mmoSettings>
+        <isActive>false</isActive>
+        <defaultAOI>100,100,0</defaultAOI>
+        <lowerMapLimit></lowerMapLimit>
+        <higherMapLimit></higherMapLimit>
+        <forceFloats>false</forceFloats>
+        <userMaxLimboSeconds>50</userMaxLimboSeconds>
+        <proximityListUpdateMillis>500</proximityListUpdateMillis>
+        <sendAOIEntryPoint>true</sendAOIEntryPoint>
+      </mmoSettings>
+      <allowOwnerInvitation>true</allowOwnerInvitation>
+    </room>
+    <room>
+      <name>notlobby</name>
+      <groupId>default</groupId>
+      <password>abc123</password>
+      <maxUsers>20</maxUsers>
+      <maxSpectators>0</maxSpectators>
+      <isDynamic>false</isDynamic>
+      <isGame>false</isGame>
+      <isHidden>false</isHidden>
+      <autoRemoveMode>DEFAULT</autoRemoveMode>
+      <permissions>
+        <flags>PASSWORD_STATE_CHANGE,PUBLIC_MESSAGES</flags>
+        <maxRoomVariablesAllowed>10</maxRoomVariablesAllowed>
+      </permissions>
+      <events>USER_ENTER_EVENT,USER_EXIT_EVENT,USER_COUNT_CHANGE_EVENT,USER_VARIABLES_UPDATE_EVENT</events>
+      <badWordsFilter isActive="false"/>
+      <roomVariables/>
+      <extension>
+        <name></name>
+        <type>JAVA</type>
+        <file></file>
+        <propertiesFile></propertiesFile>
+        <reloadMode>AUTO</reloadMode>
+      </extension>
+      <mmoSettings>
+        <isActive>false</isActive>
+        <defaultAOI>100,100,0</defaultAOI>
+        <lowerMapLimit></lowerMapLimit>
+        <higherMapLimit></higherMapLimit>
+        <forceFloats>false</forceFloats>
+        <userMaxLimboSeconds>50</userMaxLimboSeconds>
+        <proximityListUpdateMillis>500</proximityListUpdateMillis>
+        <sendAOIEntryPoint>true</sendAOIEntryPoint>
+      </mmoSettings>
+      <allowOwnerInvitation>true</allowOwnerInvitation>
+    </room>
+  </rooms>
+  <disabledSystemEvents/>
+  <privilegeManager active="false">
+    <profiles class="java.util.Arrays$ArrayList">
+      <a class="profile-array">
+        <profile id="0">
+          <name>Guest</name>
+          <deniedRequests class="java.util.Arrays$ArrayList">
+            <a class="string-array">
+              <string>CreateRoom</string>
+              <string>PrivateMessage</string>
+              <string>SetRoomVariables</string>
+              <string>SetUserVariables</string>
+              <string>ChangeRoomName</string>
+              <string>ChangeRoomPassword</string>
+              <string>ChangeRoomCapacity</string>
+              <string>InitBuddyList</string>
+              <string>AddBuddy</string>
+              <string>BlockBuddy</string>
+              <string>RemoveBuddy</string>
+              <string>SetBuddyVariables</string>
+              <string>GoOnline</string>
+              <string>BuddyMessage</string>
+              <string>ModeratorMessage</string>
+              <string>AdminMessage</string>
+              <string>KickUser</string>
+              <string>BanUser</string>
+            </a>
+          </deniedRequests>
+          <permissionFlags/>
+        </profile>
+        <profile id="1">
+          <name>Standard</name>
+          <deniedRequests class="java.util.Arrays$ArrayList">
+            <a class="string-array">
+              <string>ModeratorMessage</string>
+              <string>AdminMessage</string>
+              <string>KickUser</string>
+              <string>BanUser</string>
+            </a>
+          </deniedRequests>
+          <permissionFlags class="java.util.Arrays$ArrayList">
+            <a class="string-array">
+              <string>ExtensionCalls</string>
+            </a>
+          </permissionFlags>
+        </profile>
+        <profile id="2">
+          <name>Moderator</name>
+          <deniedRequests class="java.util.Arrays$ArrayList">
+            <a class="string-array">
+              <string>AdminMessage</string>
+            </a>
+          </deniedRequests>
+          <permissionFlags class="java.util.Arrays$ArrayList">
+            <a class="string-array">
+              <string>ExtensionCalls</string>
+              <string>SuperUser</string>
+            </a>
+          </permissionFlags>
+        </profile>
+        <profile id="3">
+          <name>Administrator</name>
+          <deniedRequests/>
+          <permissionFlags class="java.util.Arrays$ArrayList">
+            <a class="string-array">
+              <string>ExtensionCalls</string>
+              <string>SuperUser</string>
+            </a>
+          </permissionFlags>
+        </profile>
+      </a>
+    </profiles>
+  </privilegeManager>
+  <extension>
+    <name>Champions</name>
+    <type>JAVA</type>
+    <file>xyz.openatbp.extension.ATBPExtension</file>
+    <propertiesFile></propertiesFile>
+    <reloadMode>AUTO</reloadMode>
+  </extension>
+  <buddyList active="false">
+    <allowOfflineBuddyVariables>true</allowOfflineBuddyVariables>
+    <maxItemsPerList>100</maxItemsPerList>
+    <maxBuddyVariables>15</maxBuddyVariables>
+    <offlineBuddyVariablesCacheSize>500</offlineBuddyVariablesCacheSize>
+    <customStorageClass></customStorageClass>
+    <useTempBuddies>true</useTempBuddies>
+    <buddyStates class="java.util.Arrays$ArrayList">
+      <a class="string-array">
+        <string>Available</string>
+        <string>Away</string>
+        <string>Occupied</string>
+      </a>
+    </buddyStates>
+    <badWordsFilter isActive="false"/>
+  </buddyList>
+  <databaseManager active="false">
+    <driverName></driverName>
+    <connectionString></connectionString>
+    <userName></userName>
+    <password></password>
+    <testSql></testSql>
+    <maxActiveConnections>10</maxActiveConnections>
+    <maxIdleConnections>10</maxIdleConnections>
+    <exhaustedPoolAction>FAIL</exhaustedPoolAction>
+    <blockTime>3000</blockTime>
+  </databaseManager>
+  <maxFindUserResults>50</maxFindUserResults>
+  <maxFindRoomResults>50</maxFindRoomResults>
+  <allowUploads>false</allowUploads>
+</zone>

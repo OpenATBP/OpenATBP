@@ -2,16 +2,18 @@
   "name": "httpserver",
   "version": "1.0.0",
   "description": "Server to handle HTTP requests sent by the ATBP client",
-  "main": "index.js",
-  "scripts": {
-    "start": "node express.js"
-  },
-  "author": "",
+  "main": "server.js",
+  "author": "OpenATBP Contributors",
   "license": "MIT",
   "dependencies": {
     "body-parser": "^1.20.0",
+    "ejs": "^3.1.9",
     "express": "^4.18.1",
-    "fs": "0.0.1-security",
-    "mongodb": "^4.8.1"
+    "extract-zip": "^2.0.1",
+    "mongodb": "^4.8.1",
+    "node-downloader-helper": "^2.1.9"
+  },
+  "scripts": {
+    "postinstall": "node scripts/asset-downloader.js"
   }
 }
