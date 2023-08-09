@@ -152,13 +152,6 @@ public class UserActor extends Actor {
 
     public Point2D getCurrentLocation(){return this.location;}
 
-    @Override
-    public void setLocation(Point2D location){
-        this.location = location;
-        this.movementLine = new Line2D.Float(this.location,this.location);
-        this.timeTraveled = 0f;
-    }
-
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         try{
             if(this.dead) return true;
@@ -587,12 +580,6 @@ public class UserActor extends Actor {
         if(delay > 0){
             SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(true),delay,TimeUnit.MILLISECONDS);
         }
-    }
-    @Override
-    public void stopMoving(){
-        super.stopMoving();
-        this.timeTraveled = 0f;
-        this.movementLine = new Line2D.Float(this.location,this.location);
     }
 
     public void respawn(){

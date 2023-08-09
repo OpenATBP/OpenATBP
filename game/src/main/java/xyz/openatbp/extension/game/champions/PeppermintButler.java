@@ -150,10 +150,6 @@ public class PeppermintButler extends UserActor {
         }
     }
 
-    private boolean isStopped(){
-        return this.location.distance(this.movementLine.getP2()) < 0.01d;
-    }
-
     private class PeppermintAbilityHandler extends AbilityRunnable{
 
         public PeppermintAbilityHandler(int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {

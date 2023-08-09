@@ -130,14 +130,7 @@ public class BubbleGum extends UserActor {
     protected void useBomb(int cooldown, int gCooldown){
         for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.bombLocation,3f)){
             if((a.getTeam() != this.team || a.getId().equalsIgnoreCase(this.id)) && a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER){
-                a.stopMoving();
-                Line2D originalLine = new Line2D.Double(this.bombLocation,a.getLocation());
-                Line2D knockBackLine = Champion.extendLine(originalLine,6f);
-                Line2D finalLine = new Line2D.Double(a.getLocation(),Champion.getDashPoint(parentExt,a, knockBackLine.getP2()));
-                a.addState(ActorState.AIRBORNE,0d,250,null,false);
-                double speed = a.getLocation().distance(finalLine.getP2()) / 0.25f;
-                ExtensionCommands.knockBackActor(parentExt,room,a.getId(),a.getLocation(),finalLine.getP2(),(float)speed,true);
-                a.setLocation(finalLine.getP2());
+                a.knockback(this.bombLocation);
                 JsonNode spellData = parentExt.getAttackData("peebles","spell3");
                 if(a.getTeam() != this.team) a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
                 else if(a.getId().equalsIgnoreCase(this.id)){

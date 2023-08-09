@@ -63,6 +63,8 @@ public abstract class Actor {
 
     public void setLocation(Point2D location){
         this.location = location;
+        this.movementLine = new Line2D.Float(location,location);
+        this.timeTraveled = 0f;
     }
     public String getAvatar(){return this.avatar;}
     public ActorType getActorType(){return this.actorType;}
@@ -75,7 +77,13 @@ public abstract class Actor {
     }
 
     public void stopMoving(){
+        this.movementLine = new Line2D.Float(this.location,this.location);
+        this.timeTraveled = 0f;
         ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,this.location, 5f, false);
+    }
+
+    protected boolean isStopped(){
+        return this.location.distance(this.movementLine.getP2()) < 0.01d;
     }
 
     public void setCanMove(boolean move){
@@ -517,6 +525,17 @@ public abstract class Actor {
         }
         if(this.attackCooldown < 0) this.attackCooldown = 0;
         return this.attackCooldown == 0;
+    }
+
+    public void knockback(Point2D source){
+        this.stopMoving();
+        Line2D originalLine = new Line2D.Double(source,this.location);
+        Line2D knockBackLine = Champion.extendLine(originalLine,6f);
+        Line2D finalLine = new Line2D.Double(this.location,Champion.getDashPoint(parentExt,this, knockBackLine.getP2()));
+        this.addState(ActorState.AIRBORNE,0d,250,null,false);
+        double speed = this.location.distance(finalLine.getP2()) / 0.25f;
+        ExtensionCommands.knockBackActor(this.parentExt,this.room,this.id,this.location, finalLine.getP2(), (float)speed, false);
+        this.setLocation(finalLine.getP2());
     }
 
     public String getPortrait(){

@@ -226,21 +226,10 @@ public class Minion extends Actor{
         }
     }
 
-    @Override
-    public void stopMoving(){
-        super.stopMoving();
-        this.movementLine = new Line2D.Float(this.location,this.location);
-        this.timeTraveled = 0f;
-    }
-
     private void moveTowardsTarget(){
         this.timeTraveled = 0f;
         this.movementLine = new Line2D.Float(this.location,this.target.getLocation());
         ExtensionCommands.moveActor(parentExt,room,id, movementLine.getP1(), movementLine.getP2(), (float) this.getPlayerStat("speed"), true);
-    }
-
-    private boolean isStopped(){
-        return this.movementLine.getX1() == this.movementLine.getX2() && this.movementLine.getY1() == this.movementLine.getY2();
     }
 
     @Override

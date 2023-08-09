@@ -25,6 +25,7 @@ public class Monster extends Actor {
     private final MonsterType type;
     protected boolean dead = false;
     private static final boolean MOVEMENT_DEBUG = false;
+    private boolean attackRangeOverride = false;
 
     public Monster(ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName){
         this.startingLocation = new Point2D.Float(startingLocation[0],startingLocation[1]);
@@ -139,6 +140,12 @@ public class Monster extends Actor {
     }
 
     @Override
+    public void knockback(Point2D source){
+        super.knockback(source);
+        this.attackRangeOverride = true;
+    }
+
+    @Override
     public void attack(Actor a) { //TODO: Almost identical to minions - maybe move to Actor class?
         //Called when it is attacking a player
         this.stopMoving();
@@ -236,12 +243,13 @@ public class Monster extends Actor {
                 this.movementLine = null;
             }
         }else{ //Monster is pissed!!
-            if(this.location.distance(this.startingLocation) >= 10 || this.target.getHealth() <= 0){
+            if((this.location.distance(this.startingLocation) >= 10 && !this.attackRangeOverride) || this.target.getHealth() <= 0){
                 this.state = AggroState.PASSIVE; //Far from camp, heading back
                 this.move(this.startingLocation);
                 this.target = null;
             }
             else if(this.target != null){ //Chasing player
+                if(this.attackRangeOverride) this.attackRangeOverride = false;
                 if(this.withinRange(this.target) && this.canAttack()){
                     this.attack(this.target);
                 }else if(!this.withinRange(this.target) && this.canMove()){
@@ -258,13 +266,6 @@ public class Monster extends Actor {
     @Override
     public boolean withinRange(Actor a){
         return a.getLocation().distance(this.location) <= this.getPlayerStat("attackRange");
-    }
-    @Override
-    public void stopMoving(){
-        if(this.states.get(ActorState.FEARED)) return;
-        super.stopMoving();
-        this.movementLine = new Line2D.Float(this.location,this.location);
-        this.timeTraveled = 0f;
     }
 
     public Point2D getRelativePoint(){ //Gets player's current location based on time
