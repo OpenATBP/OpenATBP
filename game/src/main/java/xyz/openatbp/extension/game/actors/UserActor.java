@@ -45,6 +45,7 @@ public class UserActor extends Actor {
     protected boolean[] canCast = {true,true,true};
     protected Map<String, ScheduledFuture<?>> iconHandlers = new HashMap<>();
     protected int idleTime = 0;
+    protected static final double DASH_SPEED = 20d;
 
     //TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt){
@@ -113,9 +114,7 @@ public class UserActor extends Actor {
     public boolean setTempStat(String stat, double delta){
         boolean returnVal = super.setTempStat(stat,delta);
         if(stat.contains("speed")){
-            this.movementLine = new Line2D.Float(this.location,this.movementLine.getP2());
-            this.timeTraveled = 0f;
-            ExtensionCommands.moveActor(parentExt,room,id,this.movementLine.getP1(),this.movementLine.getP2(), (float) this.getPlayerStat("speed"),true);
+            this.move(movementLine.getP2());
         }else if(stat.contains("healthRegen")){
             if(this.hasTempStat("healthRegen") && this.getTempStat("healthRegen") <= 0) this.tempStats.remove("healthRegen");
         }
@@ -248,6 +247,16 @@ public class UserActor extends Actor {
         }
     }
 
+    public Point2D dash(Point2D dest, boolean noClip){
+        Point2D dashPoint = Champion.getDashPoint(this.parentExt,this,dest);
+        if(noClip) dashPoint = Champion.getTeleportPoint(this.parentExt,this.player,this.location,dest);
+        double time = dashPoint.distance(this.location)/DASH_SPEED;
+        this.stopMoving((int)(time*1000d));
+        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, (float) DASH_SPEED,true);
+        this.setLocation(dashPoint);
+        return dashPoint;
+    }
+
     protected boolean handleAttack(Actor a){ //To be used if you're not using the standard DelayedAttack Runnable
         if(this.attackCooldown == 0){
             double critChance = this.getPlayerStat("criticalChance")/100d;
@@ -262,11 +271,7 @@ public class UserActor extends Actor {
     }
 
     public void autoAttack(Actor a){
-        Point2D location = this.location;
-        ExtensionCommands.moveActor(parentExt,this.room,this.id,location,location, (float) this.getPlayerStat("speed"),false);
-        this.setLocation(location);
-        this.setCanMove(false);
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new HitActorHandler.MovementStopper(this),250,TimeUnit.MILLISECONDS);
+        this.stopMoving(250);
         this.attack(a);
     }
 
@@ -287,8 +292,7 @@ public class UserActor extends Actor {
             this.dead = true;
             this.timeKilled = System.currentTimeMillis();
             this.canMove = false;
-            Point2D location = this.getRelativePoint(false);
-            ExtensionCommands.moveActor(parentExt,this.room,this.id,location,location,2f,false);
+            this.stopMoving();
             this.setHealth(0, (int) this.maxHealth);
             this.target = null;
             ExtensionCommands.knockOutActor(parentExt,room, String.valueOf(player.getId()),a.getId(),this.deathTime);
@@ -435,8 +439,7 @@ public class UserActor extends Actor {
                 //Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
                 Line2D finalPath = Champion.getColliderLine(parentExt,room,movementLine);
                 if(finalPath.getP2().distance(this.movementLine.getP2()) > 0.1f){
-                    this.setPath(finalPath);
-                    ExtensionCommands.moveActor(parentExt,this.room, this.id,currentPoint, finalPath.getP2(), (float) this.getPlayerStat("speed"),true);
+                    this.move(finalPath.getP2());
                 }
             }
         }else{
@@ -536,7 +539,7 @@ public class UserActor extends Actor {
     }
     public void setCanMove(boolean canMove){
         this.canMove = canMove;
-        if(this.canMove && this.states.get(ActorState.CHARMED)) ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,this.movementLine.getP2(), (float) this.getPlayerStat("speed"),true);
+        if(this.canMove && this.states.get(ActorState.CHARMED)) this.move(this.movementLine.getP2());
     }
 
     public void resetTarget(){
@@ -554,7 +557,7 @@ public class UserActor extends Actor {
         this.target = a;
         if(this.states.get(ActorState.CHARMED)){
             this.setPath(getRelativePoint(false),a.getLocation());
-            if(this.canMove) ExtensionCommands.moveActor(parentExt,room,id,this.location,this.movementLine.getP2(), (float) getPlayerStat("speed"),true);
+            if(this.canMove) this.move(this.movementLine.getP2());
         }
     }
 

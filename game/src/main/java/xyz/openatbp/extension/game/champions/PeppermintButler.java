@@ -107,7 +107,7 @@ public class PeppermintButler extends UserActor {
                 this.stopMoving();
                 this.setCanMove(false);
                 Point2D dashLocation = Champion.getTeleportPoint(parentExt,player,this.location,dest);
-                double time = dashLocation.distance(this.location)/20d;
+                double time = dashLocation.distance(this.location)/DASH_SPEED;
                 int runtime = (int)Math.floor(time*1000);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_pepbut_hoho",this.location);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_2.5",this.id+"_wRing",runtime,(float)dashLocation.getX(),(float)dashLocation.getY(),true,this.team,0f);
@@ -115,7 +115,7 @@ public class PeppermintButler extends UserActor {
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_pepbut_dig",this.location);
                     ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell2b",runtime,true);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"pepbut_dig_rocks",runtime,this.id+"_digRocks",true,"",true,false,this.team);
-                    ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashLocation,20f,true);
+                    ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashLocation, (float) DASH_SPEED,true);
                     this.setLocation(dashLocation);
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new PeppermintAbilityHandler(ability,spellData,cooldown,gCooldown,dashLocation),runtime,TimeUnit.MILLISECONDS);
                 };

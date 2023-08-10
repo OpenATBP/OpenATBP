@@ -46,15 +46,12 @@ public class Gunter extends UserActor{
         super.useAbility(ability,spellData,cooldown,gCooldown,castDelay,dest);
         switch(ability){
             case 1:
-                Point2D dashLocation = Champion.getTeleportPoint(parentExt,this.player,this.location,dest);
-                ExtensionCommands.moveActor(parentExt,room,id,getRelativePoint(false),dashLocation,20f,true);
-                double time = dashLocation.distance(getRelativePoint(false))/20f;
+                Point2D dashLocation = this.dash(dest, true);
+                double time = dashLocation.distance(this.location)/DASH_SPEED;
                 int runtime = (int)Math.floor(time*1000);
-                this.setCanMove(false);
                 ExtensionCommands.playSound(parentExt,this.room,this.id,"sfx_gunter_slide",this.location);
                 ExtensionCommands.createActorFX(parentExt,room,this.id,"gunter_slide_trail",runtime,this.id+"_gunterTrail",true,"Bip01",true,false,team);
                 ExtensionCommands.createActorFX(parentExt,room,this.id,"gunter_slide_snow",runtime,this.id+"_gunterTrail",true,"Bip01",true,false,team);
-                this.setLocation(dashLocation);
                 Runnable castReset = () -> {canCast[0] = true;};
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new GunterAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),runtime,TimeUnit.MILLISECONDS);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(castReset,250,TimeUnit.MILLISECONDS);
@@ -81,12 +78,6 @@ public class Gunter extends UserActor{
                 break;
         }
         this.canCast[ability-1] = false;
-    }
-    @Override
-    public void attack(Actor a){
-        double damage = this.getPlayerStat("attackDamage");
-        if(this.handleAttack(a)) damage*=2;
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)damage,"basicAttack"),250,TimeUnit.MILLISECONDS);
     }
 
     public void shatter(Actor a){
@@ -145,11 +136,9 @@ public class Gunter extends UserActor{
 
         @Override
         protected void spellQ() {
-            setCanMove(true);
-            Point2D loc = getRelativePoint(false);
-            ExtensionCommands.createWorldFX(parentExt,room,id+"_slide","gunter_belly_slide_bottles",id+"_slideBottles",500,(float)loc.getX(),(float)loc.getY(),false,team,0f);
-            ExtensionCommands.playSound(parentExt,room,id,"sfx_gunter_slide_shatter",loc);
-            List<Actor> affectedActors = Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),loc,2f);
+            ExtensionCommands.createWorldFX(parentExt,room,id+"_slide","gunter_belly_slide_bottles",id+"_slideBottles",500,(float)location.getX(),(float)location.getY(),false,team,0f);
+            ExtensionCommands.playSound(parentExt,room,id,"sfx_gunter_slide_shatter",location);
+            List<Actor> affectedActors = Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),location,2f);
             for(Actor a : affectedActors){
                 if(a.getTeam() != team){
                     handleSpellVamp(getSpellDamage(spellData));

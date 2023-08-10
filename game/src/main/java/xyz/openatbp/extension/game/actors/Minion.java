@@ -91,10 +91,7 @@ public class Minion extends Actor{
         boolean returnVal = super.setTempStat(stat,delta);
         if(stat.equalsIgnoreCase("speed")){
             if(movementLine != null){
-                movementLine.setLine(this.location, movementLine.getP2());
-                this.timeTraveled = 0f;
-                ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,movementLine.getP2(),(float)this.getPlayerStat("speed"),true);
-
+                this.move(movementLine.getP2());
             }
         }
         return returnVal;
@@ -227,17 +224,14 @@ public class Minion extends Actor{
     }
 
     private void moveTowardsTarget(){
-        this.timeTraveled = 0f;
-        this.movementLine = new Line2D.Float(this.location,this.target.getLocation());
-        ExtensionCommands.moveActor(parentExt,room,id, movementLine.getP1(), movementLine.getP2(), (float) this.getPlayerStat("speed"), true);
+        this.move(this.target.getLocation());
     }
 
     @Override
     public void setTarget(Actor a) {
         this.target = a;
-        this.movementLine = new Line2D.Float(this.location,a.getLocation());
+        this.move(a.getLocation());
         this.timeTraveled = 0.1f;
-        ExtensionCommands.moveActor(parentExt,room,id, movementLine.getP1(), movementLine.getP2(), (float) this.getPlayerStat("speed"), true);
         if(this.target.getActorType() == ActorType.PLAYER){
             UserActor ua = (UserActor) a;
             ExtensionCommands.setTarget(this.parentExt,ua.getUser(),this.id,ua.getId());
@@ -313,13 +307,10 @@ public class Minion extends Actor{
     private void resetTarget(){
         this.target = null;
         this.pathIndex = this.findPathIndex();
-        this.timeTraveled = 0f;
-        this.movementLine = new Line2D.Double(this.location,this.getPathPoint());
-        ExtensionCommands.moveActor(parentExt,room,id,this.movementLine.getP1(),this.movementLine.getP2(),(float)this.getPlayerStat("speed"),true);
+        this.move(this.getPathPoint());
     }
 
     private void moveAlongPath(){
-        this.timeTraveled = 0.1f;
         if(this.team == 1) this.pathIndex++;
         else this.pathIndex--;
         if(this.pathIndex < 0) this.pathIndex = 0;
@@ -327,8 +318,8 @@ public class Minion extends Actor{
             if(this.lane == 0 && this.pathIndex == blueTopX.length) this.pathIndex--;
             else if(this.lane == 1 && this.pathIndex == blueBotX.length) this.pathIndex--;
         }
-        this.movementLine = new Line2D.Double(this.location,this.getPathPoint());
-        ExtensionCommands.moveActor(parentExt,room,id,this.movementLine.getP1(),this.movementLine.getP2(), (float) this.getPlayerStat("speed"),true);
+        this.move(this.getPathPoint());
+        this.timeTraveled = 0.1f;
     }
 
     private Point2D getRelativePoint(){ //Gets player's current location based on time

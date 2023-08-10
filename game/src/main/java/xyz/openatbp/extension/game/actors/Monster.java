@@ -125,10 +125,7 @@ public class Monster extends Actor {
         boolean returnVal = super.setTempStat(stat,delta);
         if(stat.equalsIgnoreCase("speed")){
             if(movementLine != null){
-                movementLine.setLine(this.location, movementLine.getP2());
-                this.timeTraveled = 0f;
-                ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,movementLine.getP2(),(float)this.getPlayerStat("speed"),true);
-
+                this.move(movementLine.getP2());
             }
         }
         return returnVal;
@@ -295,27 +292,11 @@ public class Monster extends Actor {
     public void moveTowardsActor(Point2D dest){ //Moves towards a specific point. TODO: Have the path stop based on collision radius
         if(!this.canMove()) return;
         if(this.states.get(ActorState.FEARED)) return;
-        Line2D rawMovementLine = new Line2D.Double(this.location,this.target.getLocation());
-       //int dist = (int) Math.floor(rawMovementLine.getP1().distance(rawMovementLine.getP2()) - this.attackRange);
-       // Line2D newPath = Champion.getDistanceLine(rawMovementLine,dist);
         if(this.movementLine == null){
-            this.movementLine = rawMovementLine;
-            this.timeTraveled = 0f;
-            ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,movementLine.getP2(), (float) this.getPlayerStat("speed"), true);
-
+            this.move(this.target.getLocation());
         }
-        if(this.movementLine.getP2().distance(rawMovementLine.getP2()) > 0.1f){
-            this.movementLine = rawMovementLine;
-            this.timeTraveled = 0f;
-            ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,movementLine.getP2(), (float) this.getPlayerStat("speed"), true);
-
+        if(this.movementLine.getP2().distance(this.target.getLocation()) > 0.1f){
+            this.move(this.target.getLocation());
         }
-    }
-
-    public void move(Point2D dest){
-        this.movementLine = new Line2D.Float(this.location,dest);
-        this.timeTraveled = 0f;
-        ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,dest,(float)this.getPlayerStat("speed"), true);
-
     }
 }

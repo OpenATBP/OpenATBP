@@ -101,14 +101,13 @@ public class FlamePrincess extends UserActor {
                         ultUses--;
                         Point2D dashPoint = Champion.getDashPoint(parentExt,this,dest);
                         if(this.location.distance(dashPoint) < 5) dashPoint = Champion.getDashPoint(parentExt,this,Champion.getMaxRangeLine(new Line2D.Float(this.location,dashPoint),5f).getP2());
-                        ExtensionCommands.moveActor(parentExt,room,id,getLocation(),dashPoint,20f,true);
-                        double time = dest.distance(getLocation())/20f;
-                        this.canMove = false;
-                        SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(true),(int)Math.floor(time*1000),TimeUnit.MILLISECONDS);
+                        ExtensionCommands.moveActor(parentExt,room,id,getLocation(),dashPoint, (float) DASH_SPEED,true);
+                        double time = dest.distance(this.location)/DASH_SPEED;
+                        this.stopMoving((int)(time*1000));
                         if(ultUses == 0){
                             SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dashPoint),(int)Math.floor(time*1000),TimeUnit.MILLISECONDS);
                         }
-                        setLocation(dashPoint);
+                        this.setLocation(dashPoint);
                     }
                 }
                 break;
@@ -198,7 +197,6 @@ public class FlamePrincess extends UserActor {
             JsonNode attackData = parentExt.getAttackData(getAvatar(),"spell1");
             handleSpellVamp(getSpellDamage(attackData));
             victim.addToDamageQueue(FlamePrincess.this,getSpellDamage(attackData),attackData);
-            //ExtensionCommands.moveActor(parentExt,player,this.id,this.location,this.location,this.speed,false);
             ExtensionCommands.playSound(parentExt,room,"","sfx_flame_princess_cone_of_flame",victim.getLocation());
             ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_projectile_large_explosion",200,"flame_explosion",false,"",false,false,team);
             ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_cone_of_flames",300,"flame_cone",false,"",true,false,team);

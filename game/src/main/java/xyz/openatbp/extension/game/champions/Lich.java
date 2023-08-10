@@ -255,10 +255,9 @@ public class Lich extends UserActor{
 
                 if(this.location.distance(lichLocation) > 3 && this.lastLichLocation.distance(lichLocation) > 0.01){
                     float deltaDistance = (float) (this.location.distance(lichLocation)-3f);
-                    this.timeTraveled = 0.1f;
-                    this.movementLine = Champion.getDistanceLine(new Line2D.Float(this.location,lichLocation),deltaDistance);
                     this.lastLichLocation = lichLocation;
-                    ExtensionCommands.moveActor(parentExt,room,this.id,this.movementLine.getP1(),this.movementLine.getP2(), (float) this.getSpeed(),true);
+                    this.move(Champion.getDistanceLine(new Line2D.Float(this.location,lichLocation),deltaDistance).getP2());
+                    this.timeTraveled = 0.1f;
                 }else{
                     this.timeTraveled+=0.1f;
                 }
@@ -268,9 +267,8 @@ public class Lich extends UserActor{
                 }else if(!this.withinRange(this.target)){
                     if(this.target.getLocation().distance(this.lastTargetLocation) > 0.01f){
                         this.lastTargetLocation = this.target.getLocation();
-                        this.movementLine = new Line2D.Float(this.location,this.target.getLocation());
+                        this.move(this.target.getLocation());
                         this.timeTraveled = 0.1f;
-                        ExtensionCommands.moveActor(parentExt,room,this.id,this.movementLine.getP1(),this.movementLine.getP2(), (float) this.getSpeed(),true);
                     }
                 }
             }
@@ -300,9 +298,8 @@ public class Lich extends UserActor{
             if(this.target == a) return;
             this.target = a;
             this.lastTargetLocation = a.getLocation();
-            this.movementLine = new Line2D.Float(this.location,a.getLocation());
+            this.move(a.getLocation());
             this.timeTraveled = 0.1f;
-            ExtensionCommands.moveActor(parentExt,room,this.id,this.location,a.getLocation(), (float) this.getSpeed(),true);
         }
 
         public void resetTarget(){

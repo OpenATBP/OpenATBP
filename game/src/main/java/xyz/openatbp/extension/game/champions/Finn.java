@@ -98,15 +98,11 @@ public class Finn extends UserActor {
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinnAbilityHandler(ability,spellData,cooldown,gCooldown,dest),3000,TimeUnit.MILLISECONDS);
                 break;
             case 2:
-                this.stopMoving();
                 this.canCast[1] = false;
-                Point2D dashPoint = Champion.getDashPoint(this.parentExt,this,dest);
-                double time = dashPoint.distance(this.location)/15d;
-                ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, 15f,true);
-                this.canMove = false;
+                Point2D dashPoint = this.dash(dest,false);
+                double time = dashPoint.distance(this.location)/DASH_SPEED;
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_finn_dash_attack",this.location);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinnAbilityHandler(ability,spellData,cooldown,gCooldown,dashPoint,this.location),(int)(time*1000),TimeUnit.MILLISECONDS);
-                this.setLocation(dashPoint);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
                 break;
             case 3:
@@ -199,7 +195,6 @@ public class Finn extends UserActor {
         @Override
         protected void spellW() {
             canCast[1] = true;
-            canMove = true;
             ExtensionCommands.actorAnimate(parentExt,room,id,"run",100,false);
             if(this.originalLocation != null){
                 for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),new Line2D.Float(this.originalLocation,dest),2f)){

@@ -106,13 +106,13 @@ public class Jake extends UserActor {
                         Actor finalClosestTarget = closestTarget;
                         double finalClosestDistance = closestDistance;
                         Runnable delayedDamage = () -> {
-                            double newTime = (finalClosestDistance / 15d)*1000d;
+                            double newTime = (finalClosestDistance / DASH_SPEED)*1000d;
                             Runnable animationDelay = () -> {
                                 ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell1c",250,false);
                             };
                             SmartFoxServer.getInstance().getTaskScheduler().schedule(animationDelay,(int)newTime,TimeUnit.MILLISECONDS);
                             ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell1b",500,false);
-                            ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location, finalClosestTarget.getLocation(), 15f,true);
+                            ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location, finalClosestTarget.getLocation(), (float) DASH_SPEED,true);
                             this.setLocation(finalClosestTarget.getLocation());
                             double percentage = finalClosestDistance/7d;
                             if(percentage < 0.5d) percentage = 0.5d;
@@ -132,7 +132,9 @@ public class Jake extends UserActor {
             case 2:
                 this.canCast[1] = false;
                 this.stopMoving(gCooldown);
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_jake_ball",1000,this.id+"_ball",true,"displayBar",true,false,this.team);
+                String skin = "";
+                if(this.avatar.split("_").length > 2) skin = "_" + this.avatar.split("_")[2];
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_jake"+skin+"_ball",1000,this.id+"_ball",true,"displayBar",true,false,this.team);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"jake_dust_up",500,this.id+"_dust",false,"Bip001 Footsteps",false,false,this.team);
                 for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,3f)){
                     if(this.isNonStructure(a)){
@@ -147,9 +149,9 @@ public class Jake extends UserActor {
                 break;
             case 3:
                 this.canCast[2] = false;
-                String skin = "";
-                if(this.avatar.split("_").length > 2) skin = "_" + this.avatar.split("_")[2];
-                ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,"jake"+skin+"_big");
+                String skin2 = "";
+                if(this.avatar.split("_").length > 2) skin2 = "_" + this.avatar.split("_")[2];
+                ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,"jake"+skin2+"_big");
                 this.cleanseEffects();
                 this.ultActivated = true;
                 ExtensionCommands.createActorFX(parentExt,room,id,"statusEffect_immunity",5000,id+"_ultImmunity",true,"displayBar",false,false,team);

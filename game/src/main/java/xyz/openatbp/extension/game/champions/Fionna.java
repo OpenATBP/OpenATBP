@@ -23,6 +23,8 @@ public class Fionna extends UserActor {
     private long dashTime = -1;
     private SwordType swordType = SwordType.FEARLESS;
     private boolean ultActivated = false;
+    private double previousAttackDamage;
+    private double previousSpellDamage;
 
     public Fionna(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -31,6 +33,8 @@ public class Fionna extends UserActor {
         ExtensionCommands.addStatusIcon(parentExt,player,"fionna_fearless","FEARLESS","icon_fionna_s2b",0f);
         String[] statsToUpdate = {"healthRegen","armor","spellResist","attackSpeed","speed"};
         this.updateStatMenu(statsToUpdate);
+        this.previousAttackDamage = this.getPlayerStat("attackDamage");
+        this.previousSpellDamage = this.getPlayerStat("spellDamage");
     }
 
     @Override
@@ -45,6 +49,14 @@ public class Fionna extends UserActor {
             this.hitWithDash = false;
             ExtensionCommands.actorAbilityResponse(parentExt,player,"q",true,(int)cooldown,0);
         }
+        if(this.getPlayerStat("attackDamage") != this.previousAttackDamage){
+            this.updateStatMenu("attackDamage");
+            this.previousAttackDamage = this.getPlayerStat("attackDamage");
+        }
+        if(this.getPlayerStat("spellDamage") != this.previousSpellDamage){
+            this.updateStatMenu("spellDamage");
+            this.previousSpellDamage = this.getPlayerStat("spellDamage");
+        }
     }
 
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
@@ -56,10 +68,8 @@ public class Fionna extends UserActor {
                 }
                 if(dashesRemaining > 0){
                     this.dashTime = System.currentTimeMillis();
-                    Point2D dashPoint = Champion.getDashPoint(this.parentExt,this,dest);
-                    ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.getLocation(),dashPoint,20f,true);
-                    this.canMove = false;
-                    double time = dest.distance(getLocation())/20f;
+                    Point2D dashPoint = this.dash(dest,false);
+                    double time = dashPoint.distance(this.location)/DASH_SPEED;
                     this.dashesRemaining--;
                     if(this.dashesRemaining == 0){
                         this.dashTime = -1;
@@ -107,17 +117,6 @@ public class Fionna extends UserActor {
                 break;
             case 4:
                 break;
-        }
-    }
-
-    @Override
-    public void attack(Actor a){
-        if(this.attackCooldown == 0){
-            this.handleAttack(a);
-            System.out.println("Fionna attacking with " + this.getPlayerStat("attackDamage") + " damage");
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),250,TimeUnit.MILLISECONDS);
-            Runnable lifeStealHandler = this::handleLifeSteal;
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(lifeStealHandler,250,TimeUnit.MILLISECONDS);
         }
     }
 
@@ -171,9 +170,7 @@ public class Fionna extends UserActor {
         }
         String[] statsToUpdate = {"healthRegen","armor","spellResist","attackSpeed","speed"};
         this.updateStatMenu(statsToUpdate);
-        this.movementLine = new Line2D.Float(this.location,this.movementLine.getP2());
-        this.timeTraveled = 0f;
-        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,this.movementLine.getP2(), (float) this.getPlayerStat("speed"),true);
+        this.move(this.movementLine.getP2());
     }
 
     public boolean ultActivated(){
@@ -188,7 +185,6 @@ public class Fionna extends UserActor {
 
         @Override
         protected void spellQ() {
-            canMove = true;
             int dashInt = dashesRemaining+1;
             float range = 1f;
             String explosionFx = "fionna_dash_explode_small";

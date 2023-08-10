@@ -107,6 +107,12 @@ public abstract class Actor {
         return this.tempStats.get(stat);
     }
 
+    public void move(Point2D destination){
+        this.movementLine = new Line2D.Float(this.location,destination);
+        this.timeTraveled = 0f;
+        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,destination, (float) this.getPlayerStat("speed"),true);
+    }
+
     public boolean setTempStat(String stat, double delta){
         try{
             if(this.tempStats.containsKey(stat)){

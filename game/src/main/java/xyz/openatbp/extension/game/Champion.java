@@ -355,6 +355,7 @@ public class Champion {
         int damage;
         ATBPExtension parentExt;
         String attack;
+        boolean crit;
 
         public DelayedAttack(ATBPExtension parentExt, Actor attacker, Actor target, int damage, String attack){
             this.attacker = attacker;
