@@ -14,7 +14,7 @@ import java.util.List;
 
 public abstract class Projectile {
 
-    private float timeTraveled = 0;
+    protected float timeTraveled = 0;
     protected Point2D destination;
     protected Point2D location;
     protected Point2D startingLocation;
@@ -75,6 +75,7 @@ public abstract class Projectile {
             return;
         }
         if(this.destination.distance(this.getLocation()) <= 0.01 || System.currentTimeMillis() - this.startTime > this.estimatedDuration){
+            System.out.println("Projectile being destroyed in update!");
             this.destroy();
         }
     }

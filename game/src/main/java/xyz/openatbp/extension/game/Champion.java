@@ -60,6 +60,8 @@ public class Champion {
                 return new Jake(u,parentExt);
             case "rattleballs":
                 return new RattleBalls(u,parentExt);
+            case "neptr":
+                return new Neptr(u,parentExt);
         }
         return new UserActor(u, parentExt);
     }

@@ -46,6 +46,7 @@ public class UserActor extends Actor {
     protected Map<String, ScheduledFuture<?>> iconHandlers = new HashMap<>();
     protected int idleTime = 0;
     protected static final double DASH_SPEED = 20d;
+    private static final boolean MOVEMENT_DEBUG = true;
 
     //TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt){
@@ -67,6 +68,7 @@ public class UserActor extends Actor {
         this.room = u.getLastJoinedRoom();
         this.actorType = ActorType.PLAYER;
         this.backpack = u.getVariable("player").getSFSObjectValue().getUtfString("backpack");
+        if(MOVEMENT_DEBUG) ExtensionCommands.createActor(this.parentExt,this.room,this.id+"_movementDebug","creep1",this.location,0f,2);
     }
 
     public void setAutoAttackEnabled(boolean enabled){
@@ -142,11 +144,6 @@ public class UserActor extends Actor {
     }
     public Point2D getOriginalLocation(){
         return this.movementLine.getP1();
-    }
-
-    @Override
-    public Point2D getLocation(){
-        return this.getRelativePoint(true);
     }
 
     public Point2D getCurrentLocation(){return this.location;}
@@ -416,10 +413,9 @@ public class UserActor extends Actor {
             if(this.currentHealth > 0 && System.currentTimeMillis() > this.timeKilled + (deathTime* 1500L)) this.respawn();
             else return;
         }
-        float x = (float) this.getOriginalLocation().getX();
-        float z = (float) this.getOriginalLocation().getY();
-        Point2D currentPoint = this.getLocation();
-        if(currentPoint.getX() != x && currentPoint.getY() != z){
+        this.location = this.getRelativePoint(false);
+        if(MOVEMENT_DEBUG) ExtensionCommands.moveActor(this.parentExt,this.room,this.id+"_movementDebug",this.location,this.location,5f,false);
+        if(!this.isStopped()){
             this.updateMovementTime();
         }
         if(this.location.distance(this.movementLine.getP2()) <= 0.01f){
@@ -427,7 +423,7 @@ public class UserActor extends Actor {
         }
         boolean insideBrush = false;
         for(Path2D brush : this.parentExt.getBrushPaths()){
-            if(brush.contains(currentPoint)){
+            if(brush.contains(this.location)){
                 insideBrush = true;
                 break;
             }
@@ -451,7 +447,7 @@ public class UserActor extends Actor {
                 this.autoAttack(target);
             }else if(!this.withinRange(target) && this.canMove()){
                 double attackRange = this.getPlayerStat("attackRange");
-                Line2D movementLine = new Line2D.Float(currentPoint,target.getLocation());
+                Line2D movementLine = new Line2D.Float(this.location,target.getLocation());
                 //float targetDistance = (float)(target.getLocation().distance(currentPoint)-attackRange);
                 //Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
                 Line2D finalPath = Champion.getColliderLine(parentExt,room,movementLine);
@@ -824,6 +820,17 @@ public class UserActor extends Actor {
         Line2D maxRangeLine = Champion.getMaxRangeLine(skillShotLine,range);
         double speed = parentExt.getActorStats(id).get("speed").asDouble();
         ExtensionCommands.createProjectile(parentExt,this.room,this,id, maxRangeLine.getP1(), maxRangeLine.getP2(), (float)speed);
+        this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
+    }
+    public void fireProjectile(Projectile projectile, String projectileId, String id, Point2D start, Point2D dest, float range){
+        double x = dest.getX();
+        double z = dest.getY();
+        Point2D endLocation = new Point2D.Double(x,z);
+        Line2D skillShotLine = new Line2D.Float(start,endLocation);
+        Line2D maxRangeLine = Champion.getMaxRangeLine(skillShotLine,range);
+        System.out.println("ProjectileID: " + projectileId);
+        double speed = parentExt.getActorStats(projectileId).get("speed").asDouble();
+        ExtensionCommands.createProjectile(parentExt,this.room,this,id,projectileId, maxRangeLine.getP1(), maxRangeLine.getP2(), (float)speed);
         this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
     }
 

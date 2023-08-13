@@ -162,7 +162,8 @@ public class RoomHandler implements Runnable{
             for(UserActor u : players){ //Tracks player location
                 u.update(mSecondsRan);
             }
-            for(Projectile p : activeProjectiles){ //Handles skill shots
+            List<Projectile> projectileList = new ArrayList<>(this.activeProjectiles);
+            for(Projectile p : projectileList){ //Handles skill shots
                 p.update(this);
             }
             activeProjectiles.removeIf(Projectile::isDestroyed);
