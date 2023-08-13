@@ -65,7 +65,7 @@ public class Monster extends Actor {
     public boolean damaged(Actor a, int damage, JsonNode attackData) { //Runs when taking damage
         try{
             if(this.dead) return true; //Prevents bugs that take place when taking damage (somehow from FP passive) after dying
-            if(this.location.distance(this.startingLocation) > 0.01f && this.state == AggroState.PASSIVE){ //Prevents damage when walking back from being de-aggro
+            if(this.location.distance(this.startingLocation) > 0.01f && this.state == AggroState.PASSIVE && !this.attackRangeOverride){ //Prevents damage when walking back from being de-aggro
                 if(a.getActorType() == ActorType.PLAYER){ //Plays attack-miss sound when trying to damage invulnerable monster
                     UserActor player = (UserActor) a;
                     ExtensionCommands.playSound(parentExt,player.getUser(),player.getId(),"sfx_attack_miss",this.location);
@@ -139,6 +139,12 @@ public class Monster extends Actor {
     @Override
     public void knockback(Point2D source){
         super.knockback(source);
+        this.attackRangeOverride = true;
+    }
+
+    @Override
+    public void pulled(Point2D source){
+        super.pulled(source);
         this.attackRangeOverride = true;
     }
 

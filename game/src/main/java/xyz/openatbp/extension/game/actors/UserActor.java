@@ -241,9 +241,13 @@ public class UserActor extends Actor {
             double damage = this.getPlayerStat("attackDamage");
             if(crit) damage*=2;
             Champion.DelayedAttack delayedAttack = new Champion.DelayedAttack(parentExt,this,a,(int)damage,"basicAttack");
-            String projectileFx = this.parentExt.getActorData(this.getAvatar()).get("scriptData").get("projectileAsset").asText();
-            if(projectileFx != null && projectileFx.length() > 0 && !parentExt.getActorData(this.avatar).get("attackType").asText().equalsIgnoreCase("MELEE")) SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,delayedAttack,projectileFx),500,TimeUnit.MILLISECONDS);
-            else delayedAttack.run();
+            try{
+                String projectileFx = this.parentExt.getActorData(this.getAvatar()).get("scriptData").get("projectileAsset").asText();
+                if(projectileFx != null && projectileFx.length() > 0 && !parentExt.getActorData(this.avatar).get("attackType").asText().equalsIgnoreCase("MELEE")) SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,delayedAttack,projectileFx),500,TimeUnit.MILLISECONDS);
+                else delayedAttack.run();
+            }catch(NullPointerException e){
+                delayedAttack.run();
+            }
         }
     }
 
@@ -254,6 +258,19 @@ public class UserActor extends Actor {
         this.stopMoving((int)(time*1000d));
         ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, (float) DASH_SPEED,true);
         this.setLocation(dashPoint);
+        this.target = null;
+        return dashPoint;
+    }
+
+    public Point2D dash(Point2D dest, boolean noClip, float minRange){
+        Point2D maxDashPoint = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),minRange).getP2();
+        Point2D dashPoint = Champion.getDashPoint(this.parentExt,this,maxDashPoint);
+        if(noClip) dashPoint = Champion.getTeleportPoint(this.parentExt,this.player,this.location,maxDashPoint);
+        double time = dashPoint.distance(this.location)/DASH_SPEED;
+        this.stopMoving((int)(time*1000d));
+        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, (float) DASH_SPEED,true);
+        this.setLocation(dashPoint);
+        this.target = null;
         return dashPoint;
     }
 
