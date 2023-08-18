@@ -46,7 +46,7 @@ public class UserActor extends Actor {
     protected Map<String, ScheduledFuture<?>> iconHandlers = new HashMap<>();
     protected int idleTime = 0;
     protected static final double DASH_SPEED = 20d;
-    private static final boolean MOVEMENT_DEBUG = true;
+    private static final boolean MOVEMENT_DEBUG = false;
 
     //TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt){
@@ -631,6 +631,7 @@ public class UserActor extends Actor {
                 this.level = level;
                 updateData.put("level", (double) this.level);
                 ExtensionCommands.playSound(parentExt,this.player,this.id,"sfx_level_up_beam");
+                ExtensionCommands.createActorFX(parentExt,this.room,this.id,"level_up_beam",1000,this.id+"_levelUpBeam",true,"",true,false,this.team);
                 ChampionData.levelUpCharacter(this.parentExt,this);
 
             }

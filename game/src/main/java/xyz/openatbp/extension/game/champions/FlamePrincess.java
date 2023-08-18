@@ -69,7 +69,7 @@ public class FlamePrincess extends UserActor {
             case 1: //Q
                 Line2D skillShotLine = new Line2D.Float(this.location,dest);
                 Line2D maxRangeLine = Champion.getMaxRangeLine(skillShotLine,8f);
-                ExtensionCommands.playSound(parentExt,room,this.id,"sfx_flame_princess_projectile_throw",this.location);
+                ExtensionCommands.playSound(parentExt,room,this.id,"sfx_flame_princess_cone_of_flame",this.location);
                 this.fireProjectile(new FlameProjectile(this.parentExt,this,maxRangeLine,8f,0.5f,this.id+"projectile_flame_cone"),"projectile_flame_cone",dest,8f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.getUser(),"q",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
@@ -197,7 +197,7 @@ public class FlamePrincess extends UserActor {
             JsonNode attackData = parentExt.getAttackData(getAvatar(),"spell1");
             handleSpellVamp(getSpellDamage(attackData));
             victim.addToDamageQueue(FlamePrincess.this,getSpellDamage(attackData),attackData);
-            ExtensionCommands.playSound(parentExt,room,"","sfx_flame_princess_cone_of_flame",victim.getLocation());
+            ExtensionCommands.playSound(parentExt,room,"","akubat_projectileHit1",victim.getLocation());
             ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_projectile_large_explosion",200,"flame_explosion",false,"",false,false,team);
             ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_cone_of_flames",300,"flame_cone",false,"",true,false,team);
             for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),Champion.extendLine(path,7f),4f)){

@@ -353,7 +353,7 @@ public class Lich extends UserActor{
         protected void hit(Actor victim) {
             JsonNode spellData = parentExt.getAttackData(getAvatar(),"spell2");
             handleSpellVamp(getSpellDamage(spellData));
-            ExtensionCommands.playSound(parentExt,room,this.id,"sfx_lich_charm_shot_hit",this.location);
+            ExtensionCommands.playSound(parentExt,room,"","sfx_lich_charm_shot_hit",victim.getLocation());
             ExtensionCommands.createWorldFX(parentExt,room,this.id,"lich_charm_explosion",id+"_charmExplosion",500,(float)this.location.getX(),(float)this.location.getY(),false,team,0f);
             victim.addToDamageQueue(Lich.this,getSpellDamage(spellData),spellData);
             victim.handleCharm(Lich.this,2000);

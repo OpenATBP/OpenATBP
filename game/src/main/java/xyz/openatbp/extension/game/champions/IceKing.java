@@ -107,7 +107,8 @@ public class IceKing extends UserActor {
         switch (ability){
             case 1:
                 this.canCast[0] = false;
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_ice_king_freeze",this.location);
+                String freezeSfx = (this.avatar.contains("queen")) ? "vo/vo_ice_queen_freeze" : (this.avatar.contains("young")) ? "vo/vo_ice_king_young_freeze" : "vo/vo_ice_king_freeze";
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,freezeSfx,this.location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new IceKingAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 break;
@@ -115,8 +116,9 @@ public class IceKing extends UserActor {
                 this.canCast[1] = false;
                 this.wLocation = dest;
                 this.lastWHit = new HashMap<>();
+                String hailStormSfx = (this.avatar.contains("queen")) ? "vo/vo_ice_queen_hailstorm" : (this.avatar.contains("young")) ? "vo/vo_ice_king_young_hailstorm" : "vo/vo_ice_king_hailstorm";
                 ExtensionCommands.playSound(this.parentExt,this.room,"","sfx_ice_king_hailstorm",dest);
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_ice_king_hailstorm",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,hailStormSfx,this.location);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"ice_king_spell_casting_hand",500,this.id+"_lHand",true,"Bip001 L Hand",true,false,this.team);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"ice_king_spell_casting_hand",500,this.id+"_rHand",true,"Bip001 R Hand",true,false,this.team);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"AoE_iceking_snowballs",this.id+"_snowBalls",3000,(float)dest.getX(),(float)dest.getY(),false,this.team,0f);
@@ -128,8 +130,10 @@ public class IceKing extends UserActor {
                 this.canCast[2] = false;
                 this.ultActive = true;
                 this.ultLocation = this.location;
+                String ultimateSfx = (this.avatar.contains("queen")) ? "vo/vo_ice_queen_ultimate" : (this.avatar.contains("young")) ? "vo/vo_ice_king_young_ultimate" : "vo/vo_ice_king_ultimate";
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_ice_king_ultimate",this.location);
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_ice_king_ultimate",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,ultimateSfx,this.location);
+                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_5.5",this.id+"eRing",6000,(float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"ice_king_whirlwind",6000,this.id+"_whirlWind",true,"",true,false,this.team);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"iceKing_freezeGround",this.id+"_ultFreeze",6000,(float)this.location.getX(),(float)this.location.getY(),false,this.team,0f);
                 ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,this.getSkinAssetBundle().replace("iceking","iceking2"));
