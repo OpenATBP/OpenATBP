@@ -158,8 +158,8 @@ public class Jake extends UserActor {
                 break;
             case 3:
                 this.canCast[2] = false;
-                String bigSfx = (this.avatar.contains("cake")) ? "jake_cake_big" : (this.avatar.contains("guardian")) ? "jake_guardian_big" : (this.avatar.contains("randy")) ? "jake_butternubs_big" : (this.avatar.contains("wizard")) ? "jake_wizard_big" : (this.avatar.contains("zombie")) ? "jake_zombie_big" : "jake_big";
-                ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,bigSfx);
+                String bigFx = (this.avatar.contains("cake")) ? "jake_cake_big" : (this.avatar.contains("guardian")) ? "jake_guardian_big" : (this.avatar.contains("randy")) ? "jake_butternubs_big" : (this.avatar.contains("wizard")) ? "jake_wizard_big" : (this.avatar.contains("zombie")) ? "jake_zombie_big" : "jake_big";
+                ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,bigFx);
                 this.cleanseEffects();
                 this.ultActivated = true;
                 ExtensionCommands.createActorFX(parentExt,room,id,"statusEffect_immunity",5000,id+"_ultImmunity",true,"displayBar",false,false,team);

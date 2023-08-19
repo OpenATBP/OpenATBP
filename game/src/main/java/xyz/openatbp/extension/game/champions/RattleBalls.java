@@ -194,6 +194,7 @@ public class RattleBalls extends UserActor {
         if(this.parryActive){
             this.qUse = 0;
             this.parryActive = false;
+            this.canMove = true;
             JsonNode basicAttackData = this.getParentExt().getAttackData(this.avatar,"basicAttack");
             a.addToDamageQueue(this,this.getPlayerStat("attackDamage")*2,basicAttackData);
             String counterSFx = (this.avatar.contains("spidotron")) ? "sfx_rattleballs_luchador_counter_attack_crit" : "sfx_rattleballs_counter_stance";
@@ -201,7 +202,7 @@ public class RattleBalls extends UserActor {
             ExtensionCommands.playSound(this.parentExt,this.room,this.id,counterSFx,this.location);
             ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_rattle_balls_2",this.location);
             ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"crit",1000,true);
-            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"rattleballs_dash_hit",1000,this.id,true,"",true,false,this.team);
+            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,counterCritFx,1000,this.id,true,"",true,false,this.team);
             ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(12000),0);
             return false;
         }
