@@ -59,8 +59,8 @@ public class RattleBalls extends UserActor {
                     this.parryActive = false;
                     String dashTrailFx = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_dash_trail" : "rattleballs_dash_trail";
                     String dashDustFx = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_dash_dust" : "rattleballs_dash_dust";
-                    String dashSfx = (this.avatar.contains("spidotron")) ? "sfx_rattleballs_luchador_counter_stance" : "sfx_rattleballs_dash";
-                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,dashSfx,this.location);
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_dash",this.location);
+                    if(this.avatar.contains("spidotron")) ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_luchador_counter_stance",this.location);
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_rattle_balls_2",this.location);
                     ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell1c",(int)(time*1000),false);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashTrailFx,1000,this.id+"_q2Trail",true,"Bip001",true,false,this.team);

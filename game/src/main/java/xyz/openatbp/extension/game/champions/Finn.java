@@ -69,16 +69,15 @@ public class Finn extends UserActor {
                         if(this.isNonStructure(a) && this.wallLines[i].ptSegDist(a.getLocation()) <= 0.5f){
                             this.wallsActivated[i] = false;
                             JsonNode spellData = this.parentExt.getAttackData("finn","spell3");
-                            a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
                             a.addState(ActorState.ROOTED,0d,2000,null,false);
+                            a.addToDamageQueue(this,handlePassive(a,getSpellDamage(spellData)),spellData);
                             String direction = "north";
                             if(i == 1) direction = "east";
                             else if(i == 2) direction = "south";
                             else if(i == 3) direction = "west";
                             ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_"+direction+"Wall");
-                            String sfxWallDestroyed = "finn_wall_destroyed";
-                            if(this.avatar.contains("guardian")) sfxWallDestroyed = "sfx_finn_guardian_wall_destroyed";
-                            ExtensionCommands.playSound(parentExt, room, id, sfxWallDestroyed, this.location);
+                            String wallDestroyedSfx = (this.avatar.contains("guardian")) ? "sfx_finn_guardian_wall_destroyed" : "finn_wall_destroyed";
+                            ExtensionCommands.playSound(parentExt, room, id, wallDestroyedSfx, this.location);
                             break;
                         }
                     }
@@ -95,10 +94,10 @@ public class Finn extends UserActor {
                 this.attackCooldown = 0;
                 this.qActive = true;
                 this.updateStatMenu("speed");
-                String skin = "";
-                if(this.avatar.split("_").length > 2) skin = "_" + this.avatar.split("_")[2];
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_finn"+skin+"_shield",this.location);
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"finn"+skin+"_shieldShimmer",3000,this.id+"_shield",true,"Bip001 Pelvis",true,false,this.team);
+                String shieldSfx = (this.avatar.contains("guardian")) ? "sfx_finn_guardian_shield" : "sfx_finn_shield";
+                String shieldFx = (this.avatar.contains("guardian")) ? "finn_guardian_shieldShimmer" : "finn_shieldShimmer";
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,shieldSfx,this.location);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,shieldFx,3000,this.id+"_shield",true,"Bip001 Pelvis",true,false,this.team);
                 this.addEffect("armor",this.getStat("armor")*0.25d,3000,null,false);
                 this.addEffect("attackSpeed",this.getStat("attackSpeed")*-0.20d,3000,null,false);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
@@ -108,8 +107,7 @@ public class Finn extends UserActor {
                 this.canCast[1] = false;
                 Point2D dashPoint = this.dash(dest,false);
                 double time = dashPoint.distance(this.location)/DASH_SPEED;
-                String sfxDash = "sfx_finn_dash_attack";
-                if(this.avatar.contains("guardian")) sfxDash = "sfx_finn_guardian_dash_attack";
+                String sfxDash = (this.avatar.contains("guardian")) ? "sfx_finn_guardian_dash_attack" : "sfx_finn_dash_attack";
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,sfxDash,this.location);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinnAbilityHandler(ability,spellData,cooldown,gCooldown,dashPoint,this.location),(int)(time*1000),TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
@@ -126,15 +124,19 @@ public class Finn extends UserActor {
                     Point2D p4 = new Point2D.Double(this.location.getX()+widthHalf,this.location.getY()-widthHalf); // TOP LEFT
                     float x = (float) this.location.getX();
                     float y = (float) this.location.getY();
-                    String skin2 = "";
-                    if(this.avatar.split("_").length > 2) skin2 = "_" + this.avatar.split("_")[2];
-                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_finn"+skin2+"_walls_drop",this.location);
+                    String wallsDropSfx = (this.avatar.contains("guardian")) ? "sfx_finn_guardian_walls_drop" : "sfx_finn_walls_drop";
+                    String southWallFx = (this.avatar.contains("guardian")) ? "finn_guardian_wall_south" : "finn_wall_south";
+                    String northWallFx = (this.avatar.contains("guardian")) ? "finn_guardian_wall_north" : "finn_wall_north";
+                    String westWallFx = (this.avatar.contains("guardian")) ? "finn_guardian_wall_west" : "finn_wall_west";
+                    String easthWallFx = (this.avatar.contains("guardian")) ? "finn_guardian_wall_east" : "finn_wall_east";
+                    String cornerSwordsFx = (this.avatar.contains("guardian")) ? "finn_guardian_wall_corner_swords" : "finn_wall_corner_swords";
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,wallsDropSfx,this.location);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_square_4.5",5000,this.id+"_eSquare",false,"",false,true,this.team);
-                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn"+skin2+"_wall_south",this.id+"_northWall",5000,x,y,false,this.team,0f);
-                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn"+skin2+"_wall_north",this.id+"_southWall",5000,x,y,false,this.team,0f);
-                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn"+skin2+"_wall_west",this.id+"_eastWall",5000,x,y,false,this.team,0f);
-                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn"+skin2+"_wall_east",this.id+"_westWall",5000,x,y,false,this.team,0f);
-                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn"+skin2+"_wall_corner_swords",this.id+"_p1Sword",5000,x,y,false,this.team,0f);
+                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,southWallFx,this.id+"_northWall",5000,x,y,false,this.team,0f);
+                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,northWallFx,this.id+"_southWall",5000,x,y,false,this.team,0f);
+                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,westWallFx,this.id+"_eastWall",5000,x,y,false,this.team,0f);
+                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,easthWallFx,this.id+"_westWall",5000,x,y,false,this.team,0f);
+                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,cornerSwordsFx,this.id+"_p1Sword",5000,x,y,false,this.team,0f);
                     Line2D northWall = new Line2D.Float(p4,p3);
                     Line2D eastWall = new Line2D.Float(p3,p1);
                     Line2D southWall = new Line2D.Float(p2,p1);
@@ -166,10 +168,10 @@ public class Finn extends UserActor {
                         JsonNode spellData = parentExt.getAttackData("finn","spell1");
                         target.addToDamageQueue(Finn.this,getSpellDamage(spellData),spellData);
                         ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_shield");
-                        String skin3 = "";
-                        if(this.avatar.split("_").length > 2) skin3 = "_" + this.avatar.split("_")[2];
-                        ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_finn"+skin3+"_shield_shatter",this.location);
-                        ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"finn"+skin3+"_shieldShatter",500,this.id+"_qShatter",true,"",true,false,this.team);
+                        String shatterSfx = (this.avatar.contains("guardian")) ? "sfx_finn_guardian_shield_shatter" : "sfx_finn_shield_shatter";
+                        String shatterFx = (this.avatar.contains("guardian")) ? "finn_guardian_shieldShatter" : "finn_shieldShatter";
+                        ExtensionCommands.playSound(this.parentExt,this.room,this.id,shatterSfx,this.location);
+                        ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,shatterFx,500,this.id+"_qShatter",true,"",true,false,this.team);
                         qActive = false;
                     }
                 }

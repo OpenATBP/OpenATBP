@@ -35,6 +35,7 @@ public class PeppermintButler extends UserActor {
     public void attack(Actor a){
         super.attack(a);
         this.stopPassive = true;
+        ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"pepbut_punch_sparks",1000,this.id,true,"",true,false,this.team);
     }
 
     @Override
@@ -135,7 +136,7 @@ public class PeppermintButler extends UserActor {
                     if(this.avatar.contains("zombie")) hissVo = "vo/vo_pepbut_zombie_feral_hiss";
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,hissVo,this.location);
                     ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,"pepbut_feral");
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"pepbut_feral_eyes",7000,this.id+"_ultEyes",true,"cryAnimationExportNode",true,false,this.team);
+                    //ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"pepbut_feral_eyes",7000,this.id+"_ultEyes",true,"cryAnimationExportNode",false,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"marceline_beast_crit_hand",7000,this.id+"ultHandL",true,"Bip001 L Hand",true,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"marceline_beast_crit_hand",7000,this.id+"ultHandR",true,"Bip001 R Hand",true,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"pepbut_feral_explosion",500,this.id+"_ultExplosion",false,"",false,false,this.team);
