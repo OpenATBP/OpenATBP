@@ -48,7 +48,8 @@ public class RattleBalls extends UserActor {
                 if(this.qUse == 0){
                     String dashTrailFx = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_dash_trail" : "rattleballs_dash_trail";
                     String dashDustFx = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_dash_dust" : "rattleballs_dash_dust";
-                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_counter_stance",this.location);
+                    String counterStanceSfx = (this.avatar.contains("spidotron")) ? "sfx_rattleballs_luchador_counter_stance" : "sfx_rattleballs_counter_stance";
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,counterStanceSfx,this.location);
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_dash",this.location);
                     ExtensionCommands.actorAnimate(parentExt,room,id,"spell1a",(int)(time*1000),true);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashTrailFx,1000,this.id+"_q1Trail",true,"Bip001",true,false,this.team);
@@ -60,7 +61,6 @@ public class RattleBalls extends UserActor {
                     String dashTrailFx = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_dash_trail" : "rattleballs_dash_trail";
                     String dashDustFx = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_dash_dust" : "rattleballs_dash_dust";
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_dash",this.location);
-                    if(this.avatar.contains("spidotron")) ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_luchador_counter_stance",this.location);
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_rattle_balls_2",this.location);
                     ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell1c",(int)(time*1000),false);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashTrailFx,1000,this.id+"_q2Trail",true,"Bip001",true,false,this.team);

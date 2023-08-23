@@ -309,6 +309,7 @@ public class UserActor extends Actor {
             this.stopMoving();
             this.setHealth(0, (int) this.maxHealth);
             this.target = null;
+            this.killingSpree = 0;
             ExtensionCommands.knockOutActor(parentExt,room, String.valueOf(player.getId()),a.getId(),this.deathTime);
             if(this.nailDamage > 0) this.nailDamage/=2;
             try{
@@ -388,18 +389,17 @@ public class UserActor extends Actor {
             this.killingSpree+=num;
             this.multiKill++;
             this.lastKilled = System.currentTimeMillis();
-            if(this.multiKill > 1){
                 for(UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
                     if(ua.getTeam() == this.team){
                         boolean ally = !ua.getId().equalsIgnoreCase(this.id);
-                        String sound = ChampionData.getKOSoundEffect(false,ally,this.multiKill,this.killingSpree);
+                        boolean youKilled = ua.getId().equalsIgnoreCase(this.id);
+                        String sound = ChampionData.getKOSoundEffect(false,ally,youKilled,this.multiKill,this.killingSpree);
                         ExtensionCommands.playSound(parentExt,ua.getUser(),"global",sound,new Point2D.Float(0,0));
                     }else{
-                        String sound = ChampionData.getKOSoundEffect(true,false,this.multiKill,this.killingSpree);
+                        String sound = ChampionData.getKOSoundEffect(true,false,false,this.multiKill,this.killingSpree);
                         ExtensionCommands.playSound(parentExt,ua.getUser(),"global",sound,new Point2D.Float(0,0));
                     }
                 }
-            }
         }
         this.stats.put(key,this.stats.get(key)+num);
         ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,key,this.getPlayerStat(key));
