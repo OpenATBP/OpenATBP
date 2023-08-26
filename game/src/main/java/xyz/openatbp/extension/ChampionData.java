@@ -435,14 +435,13 @@ public class ChampionData {
         return (int) Math.round(eloGain);
     }
 
-    private static String getDefeatedSound(boolean enemy, boolean ally, boolean youKilled){
+    private static String getDefeatedSound(boolean enemy, boolean ally){
         if(!enemy && !ally) return "announcer/you_defeated_enemy";
         else if(ally) return "announcer/enemy_defeated";
-        else if(!youKilled) return "announcer/ally_defeated";
-        return "announcer/you_are_defeated";
+        return "";
     }
 
-    public static String getKOSoundEffect(boolean enemy, boolean ally, boolean youKilled, int multiKill, int killingSpree){
+    public static String getKOSoundEffect(boolean enemy, boolean ally, int multiKill, int killingSpree){
         if(multiKill > 1){
             String koSound = "announcer/ko_";
             switch(multiKill){
@@ -470,7 +469,7 @@ public class ChampionData {
             else ko+="ally_is";
             switch(killingSpree) {
                 case 2:
-                    return getDefeatedSound(enemy,ally,youKilled);
+                    return getDefeatedSound(enemy,ally);
                 case 3:
                     koSound += "kill1_" + ko + "_awesome";
                     break;
@@ -495,7 +494,7 @@ public class ChampionData {
             }
             return koSound;
         }else{
-            return getDefeatedSound(enemy,ally,youKilled);
+            return getDefeatedSound(enemy,ally);
         }
     }
 }

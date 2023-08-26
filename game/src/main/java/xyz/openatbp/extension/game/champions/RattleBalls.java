@@ -46,25 +46,22 @@ public class RattleBalls extends UserActor {
                 Point2D dashPoint = this.dash(dest,false,1f);
                 double time = this.location.distance(dashPoint)/DASH_SPEED;
                 if(this.qUse == 0){
-                    String dashTrailFx = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_dash_trail" : "rattleballs_dash_trail";
-                    String dashDustFx = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_dash_dust" : "rattleballs_dash_dust";
-                    String counterStanceSfx = (this.avatar.contains("spidotron")) ? "sfx_rattleballs_luchador_counter_stance" : "sfx_rattleballs_counter_stance";
-                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,counterStanceSfx,this.location);
+                    String counterPrefix = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_" : "rattleballs_";
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+counterPrefix+"counter_stance",this.location);
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_dash",this.location);
                     ExtensionCommands.actorAnimate(parentExt,room,id,"spell1a",(int)(time*1000),true);
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashTrailFx,1000,this.id+"_q1Trail",true,"Bip001",true,false,this.team);
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashDustFx,1000,this.id+"_q1Dust",true,"",true,false,this.team);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,counterPrefix+"dash_trail",1000,this.id+"_q1Trail",true,"Bip001",true,false,this.team);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,counterPrefix+"dash_dust",1000,this.id+"_q1Dust",true,"",true,false,this.team);
                     this.qUse++;
                 }else{
                     this.qUse = 0;
                     this.parryActive = false;
-                    String dashTrailFx = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_dash_trail" : "rattleballs_dash_trail";
-                    String dashDustFx = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_dash_dust" : "rattleballs_dash_dust";
+                    String dashPrefix = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_" : "rattleballs_";
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_dash",this.location);
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_rattle_balls_2",this.location);
                     ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell1c",(int)(time*1000),false);
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashTrailFx,1000,this.id+"_q2Trail",true,"Bip001",true,false,this.team);
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashDustFx,1000,this.id+"_q2Dust",true,"Bip001 Footsteps",true,false,this.team);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashPrefix+"dash_trail",1000,this.id+"_q2Trail",true,"Bip001",true,false,this.team);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashPrefix+"dash_dust",1000,this.id+"_q2Dust",true,"Bip001 Footsteps",true,false,this.team);
                     ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 }
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new RattleAbilityHandler(ability,spellData,cooldown,gCooldown,dashPoint),(int)(time*1000), TimeUnit.MILLISECONDS);
@@ -83,15 +80,13 @@ public class RattleBalls extends UserActor {
                     this.canCast[0] = false;
                     this.canCast[1] = false;
                     this.ultActive = true;
-                    String spinSfx = (this.avatar.contains("spidotron")) ? "sfx_rattleballs_luchador_spin_cycle" : "sfx_rattleballs_spin_cycle";
-                    String sparklesFx = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_sword_sparkles" : "rattleballs_sword_sparkles";
-                    String swordSpinFX = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_sword_spin" : "rattleballs_sword_spin";
-                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,spinSfx,this.location);
+                    String ultPrefix = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_" : "rattleballs_";
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+ultPrefix+"spin_cycle",this.location);
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_rattleballs_eggcelent_1",this.location);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_ring_2",3500,this.id+"_ultRing",true,"Bip001",false,true,this.team);
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,sparklesFx,3500,this.id+"_ultSparkles",true,"Bip001 Prop1",true,false,this.team);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,ultPrefix+"sword_sparkles",3500,this.id+"_ultSparkles",true,"Bip001 Prop1",true,false,this.team);
                     ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell3a",3500,true);
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,swordSpinFX,3500,this.id+"_ultSpin",true,"Bip001",false,false,this.team);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,ultPrefix+"sword_spin",3500,this.id+"_ultSpin",true,"Bip001",false,false,this.team);
                     this.addEffect("speed",this.getStat("speed")*0.14d,3500,null,true);
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new RattleAbilityHandler(ability,spellData,cooldown,gCooldown,dest),3500,TimeUnit.MILLISECONDS);
                 }else{

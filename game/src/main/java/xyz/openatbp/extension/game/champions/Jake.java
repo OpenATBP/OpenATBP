@@ -74,13 +74,12 @@ public class Jake extends UserActor {
                         a.addToDamageQueue(this,(int)damage,spellData);
                     }
                 }
-                String stompSfx = (this.avatar.contains("guardian")) ? "sfx_jake_guardian_grow_stomp" : "sfx_jake_grow_stomp";
-                String stomp1SFx = (this.avatar.contains("guardian")) ? "sfx_jake_guardian_grow_stomp1" : "sfx_jake_grow_stomp1";
-                String stompFx = (this.avatar.contains("cake")) ? "cake_stomp_fx" : (this.avatar.contains("guardian")) ? "jake_guardian_stomp_fx" : "jake_stomp_fx";
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,stompFx,250,this.id+"_stomp",true,"Bip001 Footsteps",false,false,this.team);
+                String stompSfxPrefix = (this.avatar.contains("guardian")) ? "jake_guardian_" : "jake_";
+                String stompFxPrefix = (this.avatar.contains("guardian")) ? "jake_guardian_" : (this.avatar.contains("cake")) ? "cake_" : "jake_";
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,stompFxPrefix+"stomp_fx",250,this.id+"_stomp",true,"Bip001 Footsteps",false,false,this.team);
                 this.stompSoundChange = !this.stompSoundChange;
-                if(this.stompSoundChange) ExtensionCommands.playSound(this.parentExt,this.room,this.id,stomp1SFx,this.location);
-                else ExtensionCommands.playSound(this.parentExt,this.room,this.id,stompSfx,this.location);
+                if(this.stompSoundChange) ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+stompSfxPrefix+"grow_stomp1",this.location);
+                else ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+stompSfxPrefix+"grow_stomp",this.location);
             }
         }
     }
@@ -127,12 +126,11 @@ public class Jake extends UserActor {
                         SmartFoxServer.getInstance().getTaskScheduler().schedule(delayedDamage,(int)time, TimeUnit.MILLISECONDS);
                     }
                 };
-                String stretchSfx = "sfx_jake_stretch";
-                if(avatar.contains("guardian")) stretchSfx = "sfx_jake_guardian_stretch";
-                String stretchVo = (this.avatar.contains("cake")) ? "vo/vo_cake_stretch" : (this.avatar.contains("randy")) ? "vo/vo_jake_butternubs_stretch" : "vo/vo_jake_stretch";
+                String strechFxPrefix = (this.avatar.contains("cake")) ? "cake_" : (this.avatar.contains("randy")) ? "jake_butternubs_" : "jake_";
+                String strechSfxPrefix = (this.avatar.contains("guardian")) ? "jake_guardian_" : "jake_";
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,stretchSfx,this.location);
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,stretchVo,this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+strechSfxPrefix+"stretch",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+strechFxPrefix+"stretch",this.location);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(qDelay,300,TimeUnit.MILLISECONDS);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new JakeAbilityHandler(ability,spellData,cooldown,gCooldown,dest),1300,TimeUnit.MILLISECONDS);
                 break;
@@ -148,11 +146,10 @@ public class Jake extends UserActor {
                         a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
                     }
                 }
-                String ballSfx = "sfx_jake_ball";
-                if(avatar.contains("guardian")) ballSfx = "sfx_jake_guardian_ball";
-                String ballVo = (this.avatar.contains("cake")) ? "vo/vo_cake_ball" : (this.avatar.contains("randy")) ? "vo/vo_jake_butternubs_ball" : "vo/vo_jake_ball";
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,ballSfx,this.location);
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,ballVo,this.location);
+                String ballVoPrefix = (this.avatar.contains("cake")) ? "cake_" : (this.avatar.contains("randy")) ? "jake_butternubs_" : "jake_";
+                String ballSfxPrefix = (this.avatar.contains("guardian")) ? "jake_guardian_" : "jake_";
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+ballSfxPrefix+"ball",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+ballVoPrefix+"ball",this.location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new JakeAbilityHandler(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
                 break;
@@ -166,11 +163,10 @@ public class Jake extends UserActor {
                 this.addState(ActorState.CLEANSED,0d,5000,null,false);
                 this.addState(ActorState.IMMUNITY,0d,5000,null,false);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
-                String growSfx = "sfx_jake_grow";
-                if(avatar.contains("guardian")) growSfx = "sfx_jake_guardian_grow";
-                String growVo = (this.avatar.contains("cake")) ? "vo/vo_cake_grow" : (this.avatar.contains("randy")) ? "vo/vo_jake_butternubs_grow" : "vo/vo_jake_grow";
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,growSfx,this.location);
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,growVo,this.location);
+                String growVoPrefix = (this.avatar.contains("cake")) ? "cake_" : (this.avatar.contains("randy")) ? "jake_butternubs_" : "jake_";
+                String growSfxPrefix = (this.avatar.contains("guardian")) ? "jake_guardian_" : "jake_";
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+growSfxPrefix+"grow",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+growVoPrefix+"grow",this.location);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new JakeAbilityHandler(ability,spellData,cooldown,gCooldown,dest),5000,TimeUnit.MILLISECONDS);
                 break;
         }

@@ -96,13 +96,12 @@ public class Marceline extends UserActor {
                 this.canCast[0] = false;
                 Line2D maxRangeLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),7f);
                 String projectileId = "projectile_marceline_dot";
-                String beastProjectileVo = (this.avatar.contains("marshall")) ? "vo/vo_marshall_lee_projectile_beast" : "vo/vo_marceline_projectile_beast";
-                String humanProjectileVo = (this.avatar.contains("marshall")) ? "vo/vo_marshall_lee_projectile_human" : (this.avatar.contains("young")) ? "vo/vo_marceline_young_projectile_human" : "vo/vo_marceline_projectile_human";
+                String projectileVoPrefix = (this.avatar.contains("marshall")) ? "marshall_lee_" : (this.avatar.contains("young")) ? "marceline_young_" : "marceline_";
                 if(this.getState(ActorState.TRANSFORMED)){
                     projectileId = "projectile_marceline_root";
-                    ExtensionCommands.playSound(parentExt,room,this.id,beastProjectileVo, this.location);
+                    ExtensionCommands.playSound(parentExt,room,this.id,"vo/vo_"+projectileVoPrefix+"projectile_beast", this.location);
                 }else{
-                    ExtensionCommands.playSound(parentExt,room,this.id,humanProjectileVo, this.location);
+                    ExtensionCommands.playSound(parentExt,room,this.id,"vo/vo_"+projectileVoPrefix+"projectile_human", this.location);
                 }
                 ExtensionCommands.playSound(this.parentExt,this.room,"","marceline_throw_projectile",this.location);
                 this.fireProjectile(new MarcelineProjectile(this.parentExt,this,maxRangeLine,8f,0.5f,this.id+projectileId,this.getState(ActorState.TRANSFORMED)),projectileId, dest, 7f);

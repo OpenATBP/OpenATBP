@@ -91,16 +91,16 @@ public class BubbleGum extends UserActor {
         switch(ability){
             case 1: //Q
                 this.stopMoving();
-                String voiceLinePotion = (this.avatar.equals("princessbubblegum_skin_prince")) ? "vo/vo_gumball_potion" : (this.avatar.contains("young")) ? "vo/vo_bubblegum_young_potion" : "vo/vo_bubblegum_potion";
-                ExtensionCommands.playSound(parentExt,room,id,voiceLinePotion,this.location);
+                String potionVo = (this.avatar.equals("princessbubblegum_skin_prince")) ? "vo/vo_gumball_potion" : (this.avatar.contains("young")) ? "vo/vo_bubblegum_young_potion" : "vo/vo_bubblegum_potion";
+                ExtensionCommands.playSound(parentExt,room,id,potionVo,this.location);
                 ExtensionCommands.createWorldFX(parentExt,room,id,"fx_target_ring_2",id+"_potionArea",3000+castDelay,(float)dest.getX(),(float)dest.getY(),true,this.team,0f);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new PBAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"q",this.canUseAbility(1),getReducedCooldown(cooldown),gCooldown);
                 break;
             case 2: //W
                 this.stopMoving();
-                String voiceLineTurret = (this.avatar.equals("princessbubblegum_skin_prince")) ? "vo/vo_gumball_turret" : (this.avatar.contains("young")) ? "vo/vo_bubblegum_young_turret" : "vo/vo_bubblegum_turret";
-                ExtensionCommands.playSound(parentExt,room,id,voiceLineTurret,this.location);
+                String turretVo = (this.avatar.equals("princessbubblegum_skin_prince")) ? "vo/vo_gumball_turret" : (this.avatar.contains("young")) ? "vo/vo_bubblegum_young_turret" : "vo/vo_bubblegum_turret";
+                ExtensionCommands.playSound(parentExt,room,id,turretVo,this.location);
                 this.spawnTurret(dest);
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"w",this.canUseAbility(2),getReducedCooldown(cooldown),gCooldown);
                 break;
@@ -108,8 +108,8 @@ public class BubbleGum extends UserActor {
                 if(!this.bombPlaced){
                     this.canCast[2] = false;
                     this.stopMoving();
-                    String voiceLineBomb = (this.avatar.equals("princessbubblegum_skin_prince")) ? "vo/vo_gumball_bomb_hup" : (this.avatar.contains("young")) ? "vo/vo_bubblegum_young_bomb_hup" : "vo/vo_bubblegum_bomb_hup";
-                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,voiceLineBomb,this.location);
+                    String bombVo = (this.avatar.equals("princessbubblegum_skin_prince")) ? "vo/vo_gumball_bomb_hup" : (this.avatar.contains("young")) ? "vo/vo_bubblegum_young_bomb_hup" : "vo/vo_bubblegum_bomb_hup";
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,bombVo,this.location);
                     ExtensionCommands.createWorldFX(parentExt,room,id,"fx_target_ring_3",id+"_bombArea",4000, (float)dest.getX(), (float)dest.getY(),true,this.team,0f);
                     ExtensionCommands.createWorldFX(parentExt,room,id,"bubblegum_bomb_trap",this.id+"_bomb",4000,(float)dest.getX(),(float)dest.getY(),false,this.team,0f);
                     this.bombLocation = dest;
@@ -134,8 +134,8 @@ public class BubbleGum extends UserActor {
                 if(a.getTeam() != this.team) a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
                 else if(a.getId().equalsIgnoreCase(this.id)){
                     ExtensionCommands.actorAnimate(parentExt,room,this.id,"spell3c",250,false);
-                    String voiceLineUseBomb = (this.avatar.equals("princessbubblegum_skin_prince")) ? "vo/vo_gumball_turret" : (this.avatar.contains("young")) ? "vo/vo_bubblegum_young_bomb_grunt" : "vo/vo_bubblegum_bomb_grunt";
-                    ExtensionCommands.playSound(parentExt,room,this.id,voiceLineUseBomb,this.location);
+                    String useBombVo = (this.avatar.equals("princessbubblegum_skin_prince")) ? "vo/vo_gumball_turret" : (this.avatar.contains("young")) ? "vo/vo_bubblegum_young_bomb_grunt" : "vo/vo_bubblegum_bomb_grunt";
+                    ExtensionCommands.playSound(parentExt,room,this.id,useBombVo,this.location);
                 }
             }
         }

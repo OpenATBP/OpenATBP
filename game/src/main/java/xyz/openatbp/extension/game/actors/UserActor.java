@@ -392,11 +392,10 @@ public class UserActor extends Actor {
                 for(UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
                     if(ua.getTeam() == this.team){
                         boolean ally = !ua.getId().equalsIgnoreCase(this.id);
-                        boolean youKilled = ua.getId().equalsIgnoreCase(this.id);
-                        String sound = ChampionData.getKOSoundEffect(false,ally,youKilled,this.multiKill,this.killingSpree);
+                        String sound = ChampionData.getKOSoundEffect(false,ally,this.multiKill,this.killingSpree);
                         ExtensionCommands.playSound(parentExt,ua.getUser(),"global",sound,new Point2D.Float(0,0));
                     }else{
-                        String sound = ChampionData.getKOSoundEffect(true,false,false,this.multiKill,this.killingSpree);
+                        String sound = ChampionData.getKOSoundEffect(true,false,this.multiKill,this.killingSpree);
                         ExtensionCommands.playSound(parentExt,ua.getUser(),"global",sound,new Point2D.Float(0,0));
                     }
                 }
@@ -631,7 +630,7 @@ public class UserActor extends Actor {
                 this.level = level;
                 updateData.put("level", (double) this.level);
                 ExtensionCommands.playSound(parentExt,this.player,this.id,"sfx_level_up_beam");
-                ExtensionCommands.createActorFX(parentExt,this.room,this.id,"level_up_beam",1000,this.id+"_levelUpBeam",true,"",true,false,this.team);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"level_up_beam",1000,this.id+"_levelUpBeam",true,"",true,false,this.team);
                 ChampionData.levelUpCharacter(this.parentExt,this);
 
             }

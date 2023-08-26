@@ -109,9 +109,8 @@ public class PeppermintButler extends UserActor {
                 Point2D dashLocation = Champion.getTeleportPoint(parentExt,player,this.location,dest);
                 double time = dashLocation.distance(this.location)/DASH_SPEED;
                 int runtime = (int)Math.floor(time*1000);
-                String hohoVo = "vo/vo_pepbut_hoho";
-                if(this.avatar.contains("zombie")) hohoVo = "vo/vo_pepbut_zombie_hoho";
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,hohoVo,this.location);
+                String hohoVoPrefix = (this.avatar.contains("zombie")) ? "pepbut_zombie_" : "pepbut_";
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+hohoVoPrefix+"hoho",this.location);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_2.5",this.id+"_wRing",runtime,(float)dashLocation.getX(),(float)dashLocation.getY(),true,this.team,0f);
                 Runnable animationDelay = () -> {
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_pepbut_dig",this.location);
@@ -132,9 +131,8 @@ public class PeppermintButler extends UserActor {
                     this.setState(ActorState.TRANSFORMED, true);
                     String[] statsToUpdate = {"speed","attackSpeed","attackDamage"};
                     this.updateStatMenu(statsToUpdate);
-                    String hissVo = "vo/vo_pepbut_feral_hiss";
-                    if(this.avatar.contains("zombie")) hissVo = "vo/vo_pepbut_zombie_feral_hiss";
-                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,hissVo,this.location);
+                    String hissVoPrefix = (this.avatar.contains("zombie")) ? "pepbut_zombie_" : "pepbut_";
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+hissVoPrefix+"feral_hiss",this.location);
                     ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,"pepbut_feral");
                     //ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"pepbut_feral_eyes",7000,this.id+"_ultEyes",true,"cryAnimationExportNode",false,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"marceline_beast_crit_hand",7000,this.id+"ultHandL",true,"Bip001 L Hand",true,false,this.team);
@@ -170,10 +168,9 @@ public class PeppermintButler extends UserActor {
         protected void spellW() {
             canCast[1] = true;
             canMove = true;
-            String beholdVo = "vo/vo_pepbut_behold";
-            if(avatar.contains("zombie")) beholdVo = "vo/vo_pepbut_zombie_behold";
+            String beholdVoPrefix = (avatar.contains("zombie")) ? "pepbut_zombie_" : "pepbut_";
             ExtensionCommands.playSound(parentExt,room,id,"sfx_pepbut_dig_emerge",this.dest);
-            ExtensionCommands.playSound(parentExt,room,id,beholdVo,location);
+            ExtensionCommands.playSound(parentExt,room,id,"vo/vo_"+beholdVoPrefix+"behold",location);
             ExtensionCommands.actorAnimate(parentExt,room,id,"spell2c",500,false);
             ExtensionCommands.createWorldFX(parentExt,room,id,"pepbut_dig_explode",id+"_wExplode",500,(float)this.dest.getX(),(float)this.dest.getY(),false,team,0f);
             for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),this.dest,2.5f)){
