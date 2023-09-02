@@ -23,6 +23,7 @@ public class Finn extends UserActor {
     private boolean[] wallsActivated = {false,false,false,false}; //NORTH, EAST, SOUTH, WEST
     private Line2D[] wallLines;
     private boolean ultActivated = false;
+    private long passiveStart = 0;
 
     public Finn(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -31,6 +32,7 @@ public class Finn extends UserActor {
     @Override
     public void attack(Actor a) {
         SmartFoxServer.getInstance().getTaskScheduler().schedule(new PassiveAttack(a,this.handleAttack(a)),250, TimeUnit.MILLISECONDS);
+        passiveStart = System.currentTimeMillis();
     }
 
     @Override
@@ -45,6 +47,7 @@ public class Finn extends UserActor {
         if(a.getActorType() == ActorType.PLAYER){
             this.canCast[1] = true;
             ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,0,0);
+            ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_finn_assist_1",this.location);
         }
     }
 
@@ -54,7 +57,15 @@ public class Finn extends UserActor {
         if(key.equalsIgnoreCase("assists")){
             this.canCast[1] = true;
             ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,0,0);
+            ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_finn_assist_1",this.location);
         }
+    }
+
+    @Override
+    public void die(Actor a){
+        super.die(a);
+        ExtensionCommands.removeFx(parentExt,room,furyTarget.getId()+"_mark"+furyStacks);
+        furyStacks = 0;
     }
 
     @Override
@@ -67,21 +78,28 @@ public class Finn extends UserActor {
                         if(this.isNonStructure(a) && this.wallLines[i].ptSegDist(a.getLocation()) <= 0.5f){
                             this.wallsActivated[i] = false;
                             JsonNode spellData = this.parentExt.getAttackData("finn","spell3");
-                            a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
                             a.addState(ActorState.ROOTED,0d,2000,null,false);
+                            a.addToDamageQueue(this,handlePassive(a,getSpellDamage(spellData)),spellData);
                             String direction = "north";
                             if(i == 1) direction = "east";
                             else if(i == 2) direction = "south";
                             else if(i == 3) direction = "west";
                             ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_"+direction+"Wall");
+                            String wallDestroyedSfx = (this.avatar.contains("guardian")) ? "sfx_finn_guardian_wall_destroyed" : "finn_wall_destroyed";
+                            ExtensionCommands.playSound(parentExt, room, id, wallDestroyedSfx, this.location);
                             break;
                         }
                     }
                 }
             }
         }
+        if(furyStacks > 0){
+            if(System.currentTimeMillis() - passiveStart >= 5000){
+                ExtensionCommands.removeFx(parentExt,room,furyTarget.getId()+"_mark"+furyStacks);
+                furyStacks = 0;
+            }
+        }
     }
-
     @Override
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest) {
         switch (ability){
@@ -90,8 +108,9 @@ public class Finn extends UserActor {
                 this.attackCooldown = 0;
                 this.qActive = true;
                 this.updateStatMenu("speed");
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_finn_shield",this.location);
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"finn_shieldShimmer",3000,this.id+"_shield",true,"Bip001 Pelvis",true,false,this.team);
+                String shieldPrefix = (this.avatar.contains("guardian")) ? "finn_guardian_" : "finn_";
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+shieldPrefix+"shield",this.location);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,shieldPrefix+"shieldShimmer",3000,this.id+"_shield",true,"Bip001 Pelvis",true,false,this.team);
                 this.addEffect("armor",this.getStat("armor")*0.25d,3000,null,false);
                 this.addEffect("attackSpeed",this.getStat("attackSpeed")*-0.20d,3000,null,false);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
@@ -101,7 +120,8 @@ public class Finn extends UserActor {
                 this.canCast[1] = false;
                 Point2D dashPoint = this.dash(dest,false);
                 double time = dashPoint.distance(this.location)/DASH_SPEED;
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_finn_dash_attack",this.location);
+                String sfxDash = (this.avatar.contains("guardian")) ? "sfx_finn_guardian_dash_attack" : "sfx_finn_dash_attack";
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,sfxDash,this.location);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinnAbilityHandler(ability,spellData,cooldown,gCooldown,dashPoint,this.location),(int)(time*1000),TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
                 break;
@@ -117,12 +137,14 @@ public class Finn extends UserActor {
                     Point2D p4 = new Point2D.Double(this.location.getX()+widthHalf,this.location.getY()-widthHalf); // TOP LEFT
                     float x = (float) this.location.getX();
                     float y = (float) this.location.getY();
-                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_finn_walls_drop",this.location);
-                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn_wall_south",this.id+"_northWall",5000,x,y,false,this.team,0f);
-                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn_wall_north",this.id+"_southWall",5000,x,y,false,this.team,0f);
-                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn_wall_west",this.id+"_eastWall",5000,x,y,false,this.team,0f);
-                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn_wall_east",this.id+"_westWall",5000,x,y,false,this.team,0f);
-                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"finn_wall_corner_swords",this.id+"_p1Sword",5000,x,y,false,this.team,0f);
+                    String wallPrefix = (this.avatar.contains("guardian")) ? "finn_guardian_" : "finn_";
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+wallPrefix+"walls_drop",this.location);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_square_4.5",5000,this.id+"_eSquare",false,"",false,true,this.team);
+                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,wallPrefix+"wall_south",this.id+"_northWall",5000,x,y,false,this.team,0f);
+                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,wallPrefix+"wall_north",this.id+"_southWall",5000,x,y,false,this.team,0f);
+                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,wallPrefix+"wall_west",this.id+"_eastWall",5000,x,y,false,this.team,0f);
+                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,wallPrefix+"wall_east",this.id+"_westWall",5000,x,y,false,this.team,0f);
+                    ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,wallPrefix+"wall_corner_swords",this.id+"_p1Sword",5000,x,y,false,this.team,0f);
                     Line2D northWall = new Line2D.Float(p4,p3);
                     Line2D eastWall = new Line2D.Float(p3,p1);
                     Line2D southWall = new Line2D.Float(p2,p1);
@@ -154,18 +176,21 @@ public class Finn extends UserActor {
                         JsonNode spellData = parentExt.getAttackData("finn","spell1");
                         target.addToDamageQueue(Finn.this,getSpellDamage(spellData),spellData);
                         ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_shield");
-                        ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_finn_shield_shatter",this.location);
-                        ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"finn_shieldShatter",500,this.id+"_qShatter",true,"",true,false,this.team);
+                        String shatterPrefix = (this.avatar.contains("guardian")) ? "finn_guardian_" : "finn_";
+                        ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+shatterPrefix+"shield_shatter",this.location);
+                        ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,shatterPrefix+"shieldShatter",500,this.id+"_qShatter",true,"",true,false,this.team);
                         qActive = false;
                     }
                 }
             }else{
-                ExtensionCommands.removeFx(parentExt,room,target.getId()+"_mark"+furyStacks);
+                ExtensionCommands.removeFx(parentExt,room,furyTarget.getId()+"_mark"+furyStacks);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,target.getId(),"fx_mark1",1000*15*60,target.getId()+"_mark1",true,"",true,false,target.getTeam());
                 furyTarget = target;
                 furyStacks = 1;
+
             }
         }else{
-            ExtensionCommands.createActorFX(this.parentExt,this.room,target.getId(),"fx_mark1",1000*15*60,target.getId()+"_mark1",true,"",true,false,this.team);
+            ExtensionCommands.createActorFX(this.parentExt,this.room,target.getId(),"fx_mark1",1000*15*60,target.getId()+"_mark1",true,"",true,false,target.getTeam());
             furyTarget = target;
             furyStacks = 1;
         }
@@ -202,7 +227,6 @@ public class Finn extends UserActor {
                         a.addToDamageQueue(Finn.this,handlePassive(a,getSpellDamage(spellData)),spellData);
                     }
                 }
-                ExtensionCommands.playSound(parentExt,room,id,"sfx_finn_dash_impact",location);
             }
         }
 

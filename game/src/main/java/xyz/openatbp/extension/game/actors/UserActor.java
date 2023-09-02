@@ -309,6 +309,7 @@ public class UserActor extends Actor {
             this.stopMoving();
             this.setHealth(0, (int) this.maxHealth);
             this.target = null;
+            this.killingSpree = 0;
             ExtensionCommands.knockOutActor(parentExt,room, String.valueOf(player.getId()),a.getId(),this.deathTime);
             if(this.nailDamage > 0) this.nailDamage/=2;
             try{
@@ -388,7 +389,6 @@ public class UserActor extends Actor {
             this.killingSpree+=num;
             this.multiKill++;
             this.lastKilled = System.currentTimeMillis();
-            if(this.multiKill > 1){
                 for(UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
                     if(ua.getTeam() == this.team){
                         boolean ally = !ua.getId().equalsIgnoreCase(this.id);
@@ -399,7 +399,6 @@ public class UserActor extends Actor {
                         ExtensionCommands.playSound(parentExt,ua.getUser(),"global",sound,new Point2D.Float(0,0));
                     }
                 }
-            }
         }
         this.stats.put(key,this.stats.get(key)+num);
         ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,key,this.getPlayerStat(key));
@@ -631,6 +630,7 @@ public class UserActor extends Actor {
                 this.level = level;
                 updateData.put("level", (double) this.level);
                 ExtensionCommands.playSound(parentExt,this.player,this.id,"sfx_level_up_beam");
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"level_up_beam",1000,this.id+"_levelUpBeam",true,"",true,false,this.team);
                 ChampionData.levelUpCharacter(this.parentExt,this);
 
             }
