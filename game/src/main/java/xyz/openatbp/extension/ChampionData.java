@@ -435,6 +435,12 @@ public class ChampionData {
         return (int) Math.round(eloGain);
     }
 
+    private static String getDefeatedSound(boolean enemy, boolean ally){
+        if(!enemy && !ally) return "announcer/you_defeated_enemy";
+        else if(ally) return "announcer/enemy_defeated";
+        return "";
+    }
+
     public static String getKOSoundEffect(boolean enemy, boolean ally, int multiKill, int killingSpree){
         if(multiKill > 1){
             String koSound = "announcer/ko_";
@@ -456,39 +462,39 @@ public class ChampionData {
             else if(enemy) koSound+="_enemy";
             return koSound;
         }else if(killingSpree > 1){
-            int spreeToAdd = killingSpree - 1;
-            String koSound = "announcer/kill"+spreeToAdd+"_";
-            if(!enemy && !ally) koSound+="you_";
-            else if(enemy) koSound+="enemy_";
-            else koSound+="ally_";
-            switch(spreeToAdd){
-                case 1:
-                    koSound+="is_awesome";
-                    break;
+            String koSound = "announcer/";
+            String ko = "";
+            if(!enemy && !ally) ko+="you_are";
+            else if(enemy) ko+="enemy_is";
+            else ko+="ally_is";
+            switch(killingSpree) {
                 case 2:
-                    koSound+="is_math";
-                    break;
+                    return getDefeatedSound(enemy,ally);
                 case 3:
-                    koSound+="is_spicy";
+                    koSound += "kill1_" + ko + "_awesome";
                     break;
                 case 4:
-                    koSound+="is_tops";
+                    koSound += "kill2_" + ko + "_math";
                     break;
                 case 5:
-                    koSound+="is_animal";
+                    koSound += "kill3_" + ko + "_spicy";
                     break;
                 case 6:
-                    koSound+="is_god";
+                    koSound += "kill4_" + ko + "_tops";
+                    break;
+                case 7:
+                    koSound += "kill5_" + ko + "_animal";
+                    break;
+                case 8:
+                    koSound += "kill7_" + ko + "_demon";
                     break;
                 default:
-                    koSound+="is_demon";
+                    koSound += "kill6_" + ko + "_god";
                     break;
             }
             return koSound;
         }else{
-            if(!enemy && !ally) return "announcer/you_defeated_enemy";
-            if(enemy) return "announcer/ally_defeated";
-            return "announcer/ally_defeated_enemy";
+            return getDefeatedSound(enemy,ally);
         }
     }
 }

@@ -37,6 +37,19 @@ public class Lemongrab extends UserActor {
             ExtensionCommands.removeStatusIcon(parentExt,player,lastIcon);
             this.lastIcon = iconName;
             ExtensionCommands.addStatusIcon(parentExt,player,iconName,"UNACCEPTABLE!!!!!","icon_lemongrab_p"+this.unacceptableLevels,0f);
+            String voiceLinePassive = "";
+            switch(this.unacceptableLevels){
+                case 1:
+                    voiceLinePassive = "vo/lemongrab_ooo";
+                    break;
+                case 2:
+                    voiceLinePassive = "vo/lemongrab_haha";
+                    break;
+                case 3:
+                    voiceLinePassive = "vo/lemongrab_unacceptable";
+                    break;
+            }
+            ExtensionCommands.playSound(this.parentExt,this.room,this.id,voiceLinePassive,this.location);
             this.lastHit = System.currentTimeMillis();
         }
         return super.damaged(a,damage,attackData);
@@ -69,7 +82,6 @@ public class Lemongrab extends UserActor {
                 this.canCast[0] = false;
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_lemongrab_sound_sword",this.location);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_lemongrab_sound_sword",this.location);
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"lemongrab_sonic_cone",750,this.id+"_sonicCone",true,"Sword",true,false,this.team);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"lemongrab_sonic_sword_effect",750,this.id+"_sonicSword",true,"Sword",true,false,this.team);
                 Line2D ogLine = new Line2D.Float(this.location,dest);
                 List<Actor> affectedActors = Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),Champion.getMaxRangeLine(ogLine,6f),4f);

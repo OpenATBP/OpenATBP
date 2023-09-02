@@ -96,11 +96,12 @@ public class Marceline extends UserActor {
                 this.canCast[0] = false;
                 Line2D maxRangeLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),7f);
                 String projectileId = "projectile_marceline_dot";
+                String projectileVoPrefix = (this.avatar.contains("marshall")) ? "marshall_lee_" : (this.avatar.contains("young")) ? "marceline_young_" : "marceline_";
                 if(this.getState(ActorState.TRANSFORMED)){
                     projectileId = "projectile_marceline_root";
-                    ExtensionCommands.playSound(parentExt,room,this.id,"vo/vo_marceline_projectile_beast", this.location);
+                    ExtensionCommands.playSound(parentExt,room,this.id,"vo/vo_"+projectileVoPrefix+"projectile_beast", this.location);
                 }else{
-                    ExtensionCommands.playSound(parentExt,room,this.id,"vo/vo_marceline_projectile_human", this.location);
+                    ExtensionCommands.playSound(parentExt,room,this.id,"vo/vo_"+projectileVoPrefix+"projectile_human", this.location);
                 }
                 ExtensionCommands.playSound(this.parentExt,this.room,"","marceline_throw_projectile",this.location);
                 this.fireProjectile(new MarcelineProjectile(this.parentExt,this,maxRangeLine,8f,0.5f,this.id+projectileId,this.getState(ActorState.TRANSFORMED)),projectileId, dest, 7f);
@@ -110,13 +111,14 @@ public class Marceline extends UserActor {
             case 2: //W
                 this.canCast[1] = false;
                 wActive = true;
+                String bloodMistVo = (this.avatar.contains("marshall")) ? "vo/vo_marshall_lee_blood_mist" : (this.avatar.contains("young")) ? "vo/vo_marceline_young_blood_mist" : "vo/vo_marceline_blood_mist";
                 if(this.states.get(ActorState.TRANSFORMED)){
                     attackCooldown = 0;
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_marceline_beast_crit_activate",this.location);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"marceline_beast_crit_hand",4500,this.id+"_beastHands",true,"Bip001 R Hand",true,false,this.team);
                     this.addEffect("speed",this.getStat("speed")*0.4d,4500,null,false);
                 }else{
-                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_marceline_blood_mist",this.location);
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,bloodMistVo,this.location);
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_marceline_blood_mist",this.location);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"marceline_vamp_mark",4500,this.id+"_wBats",true,"",true,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"marceline_blood_mist",4500,this.id+"_mist",true,"",true,false,this.team);
@@ -190,7 +192,8 @@ public class Marceline extends UserActor {
             if(getState(ActorState.TRANSFORMED)){
                 ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
                 setState(ActorState.TRANSFORMED, false);
-                ExtensionCommands.playSound(parentExt,room,id,"marceline_morph_to_human",location);
+                String morphHumanVo = (avatar.contains("marshall")) ? "vo/marshall_lee_morph_to_human" : "marceline_morph_to_human";
+                ExtensionCommands.playSound(parentExt,room,id,morphHumanVo,location);
                 if(healthRegenEffectActive){
                     ExtensionCommands.removeFx(parentExt,room,id+"_batRegen");
                     healthRegenEffectActive = false;
@@ -200,7 +203,8 @@ public class Marceline extends UserActor {
                 Marceline.this.addEffect("attackSpeed",500-currentAttackSpeed,3000,null,false);
 
             }else{
-                ExtensionCommands.playSound(parentExt,room,id,"marceline_morph_to_beast",location);
+                String morphBeastVo = (avatar.contains("marshall")) ? "vo/marshall_lee_morph_to_beast" : "marceline_morph_to_beast";
+                ExtensionCommands.playSound(parentExt,room,id,morphBeastVo,location);
                 ExtensionCommands.swapActorAsset(parentExt,room,id,"marceline_bat");
                 passiveHits = 0;
                 ExtensionCommands.createActorFX(parentExt,room,id,"statusEffect_immunity",2000,id+"_ultImmunity",true,"displayBar",false,false,team);

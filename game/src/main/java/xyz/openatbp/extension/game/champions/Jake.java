@@ -35,6 +35,7 @@ public class Jake extends UserActor {
             a.addToDamageQueue(this,getPlayerStat("attackDamage")*0.4d,attackData);
             a.addState(ActorState.SLOWED,0.5d,1500,null,false);
             ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"passive",true,8000,0);
+            ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_jake_passive_1",this.location);
             this.lastPassive = System.currentTimeMillis();
         }
     }
@@ -73,10 +74,12 @@ public class Jake extends UserActor {
                         a.addToDamageQueue(this,(int)damage,spellData);
                     }
                 }
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"jake_stomp_fx",250,this.id+"_stomp",true,"Bip001 Footsteps",false,false,this.team);
+                String stompSfxPrefix = (this.avatar.contains("guardian")) ? "jake_guardian_" : "jake_";
+                String stompFxPrefix = (this.avatar.contains("guardian")) ? "jake_guardian_" : (this.avatar.contains("cake")) ? "cake_" : "jake_";
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,stompFxPrefix+"stomp_fx",250,this.id+"_stomp",true,"Bip001 Footsteps",false,false,this.team);
                 this.stompSoundChange = !this.stompSoundChange;
-                if(this.stompSoundChange) ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_jake_grow_stomp1",this.location);
-                else ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_jake_grow_stomp",this.location);
+                if(this.stompSoundChange) ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+stompSfxPrefix+"grow_stomp1",this.location);
+                else ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+stompSfxPrefix+"grow_stomp",this.location);
             }
         }
     }
@@ -123,18 +126,19 @@ public class Jake extends UserActor {
                         SmartFoxServer.getInstance().getTaskScheduler().schedule(delayedDamage,(int)time, TimeUnit.MILLISECONDS);
                     }
                 };
+                String strechFxPrefix = (this.avatar.contains("cake")) ? "cake_" : (this.avatar.contains("randy")) ? "jake_butternubs_" : "jake_";
+                String strechSfxPrefix = (this.avatar.contains("guardian")) ? "jake_guardian_" : "jake_";
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_jake_stretch",this.location);
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_jake_stretch",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+strechSfxPrefix+"stretch",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+strechFxPrefix+"stretch",this.location);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(qDelay,300,TimeUnit.MILLISECONDS);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new JakeAbilityHandler(ability,spellData,cooldown,gCooldown,dest),1300,TimeUnit.MILLISECONDS);
                 break;
             case 2:
                 this.canCast[1] = false;
                 this.stopMoving(gCooldown);
-                String skin = "";
-                if(this.avatar.split("_").length > 2) skin = "_" + this.avatar.split("_")[2];
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_jake"+skin+"_ball",1000,this.id+"_ball",true,"displayBar",true,false,this.team);
+                String ballFx = (this.avatar.contains("cake")) ? "fx_cake_ball" : (this.avatar.contains("guardian")) ? "fx_jake_guardian_ball" : (this.avatar.contains("randy")) ? "fx_jake_butternubs_ball" : (this.avatar.contains("wizard")) ? "fx_jake_wizard_ball" : "fx_jake_ball";
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,ballFx,1000,this.id+"_ball",true,"displayBar",true,false,this.team);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"jake_dust_up",500,this.id+"_dust",false,"Bip001 Footsteps",false,false,this.team);
                 for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,3f)){
                     if(this.isNonStructure(a)){
@@ -142,24 +146,27 @@ public class Jake extends UserActor {
                         a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
                     }
                 }
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_jake_ball",this.location);
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_jake_ball",this.location);
+                String ballVoPrefix = (this.avatar.contains("cake")) ? "cake_" : (this.avatar.contains("randy")) ? "jake_butternubs_" : "jake_";
+                String ballSfxPrefix = (this.avatar.contains("guardian")) ? "jake_guardian_" : "jake_";
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+ballSfxPrefix+"ball",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+ballVoPrefix+"ball",this.location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new JakeAbilityHandler(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
                 break;
             case 3:
                 this.canCast[2] = false;
-                String skin2 = "";
-                if(this.avatar.split("_").length > 2) skin2 = "_" + this.avatar.split("_")[2];
-                ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,"jake"+skin2+"_big");
+                String bigFx = (this.avatar.contains("cake")) ? "jake_cake_big" : (this.avatar.contains("guardian")) ? "jake_guardian_big" : (this.avatar.contains("randy")) ? "jake_butternubs_big" : (this.avatar.contains("wizard")) ? "jake_wizard_big" : (this.avatar.contains("zombie")) ? "jake_zombie_big" : "jake_big";
+                ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,bigFx);
                 this.cleanseEffects();
                 this.ultActivated = true;
                 ExtensionCommands.createActorFX(parentExt,room,id,"statusEffect_immunity",5000,id+"_ultImmunity",true,"displayBar",false,false,team);
                 this.addState(ActorState.CLEANSED,0d,5000,null,false);
                 this.addState(ActorState.IMMUNITY,0d,5000,null,false);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_jake_grow",this.location);
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_jake_grow",this.location);
+                String growVoPrefix = (this.avatar.contains("cake")) ? "cake_" : (this.avatar.contains("randy")) ? "jake_butternubs_" : "jake_";
+                String growSfxPrefix = (this.avatar.contains("guardian")) ? "jake_guardian_" : "jake_";
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+growSfxPrefix+"grow",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+growVoPrefix+"grow",this.location);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new JakeAbilityHandler(ability,spellData,cooldown,gCooldown,dest),5000,TimeUnit.MILLISECONDS);
                 break;
         }
