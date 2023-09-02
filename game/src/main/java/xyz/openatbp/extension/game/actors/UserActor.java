@@ -46,7 +46,7 @@ public class UserActor extends Actor {
     protected Map<String, ScheduledFuture<?>> iconHandlers = new HashMap<>();
     protected int idleTime = 0;
     protected static final double DASH_SPEED = 20d;
-    private static final boolean MOVEMENT_DEBUG = true;
+    private static final boolean MOVEMENT_DEBUG = false;
 
     //TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt){
@@ -820,17 +820,6 @@ public class UserActor extends Actor {
         Line2D maxRangeLine = Champion.getMaxRangeLine(skillShotLine,range);
         double speed = parentExt.getActorStats(id).get("speed").asDouble();
         ExtensionCommands.createProjectile(parentExt,this.room,this,id, maxRangeLine.getP1(), maxRangeLine.getP2(), (float)speed);
-        this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
-    }
-    public void fireProjectile(Projectile projectile, String projectileId, String id, Point2D start, Point2D dest, float range){
-        double x = dest.getX();
-        double z = dest.getY();
-        Point2D endLocation = new Point2D.Double(x,z);
-        Line2D skillShotLine = new Line2D.Float(start,endLocation);
-        Line2D maxRangeLine = Champion.getMaxRangeLine(skillShotLine,range);
-        System.out.println("ProjectileID: " + projectileId);
-        double speed = parentExt.getActorStats(projectileId).get("speed").asDouble();
-        ExtensionCommands.createProjectile(parentExt,this.room,this,id,projectileId, maxRangeLine.getP1(), maxRangeLine.getP2(), (float)speed);
         this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
     }
 

@@ -5,6 +5,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Champion;
@@ -14,6 +15,8 @@ import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class Neptr extends UserActor {
@@ -28,7 +31,8 @@ public class Neptr extends UserActor {
         super.setState(state, enabled);
         if(state == ActorState.BRUSH && enabled){
             this.passiveStart = System.currentTimeMillis();
-            this.addEffect("speed",this.getStat("speed")*0.35d,3500,"nepter_passive",true);
+            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"neptr_passive",500,this.id+"_passive"+Math.random(),true,"Bip001",true,false,this.team);
+            this.addEffect("speed",this.getStat("speed")*0.35d,3500,null,false);
             this.addEffect("attackSpeed",this.getStat("attackSpeed")*-0.25d,3500,null,false);
             if(this.passiveActive){
                 ExtensionCommands.removeStatusIcon(this.parentExt,this.player,"passive");
@@ -45,6 +49,13 @@ public class Neptr extends UserActor {
             this.passiveActive = false;
             ExtensionCommands.removeStatusIcon(this.parentExt,this.player,"passive");
         }
+    }
+
+    @Override
+    public void fireProjectile(Projectile projectile, String id, Point2D dest, float range) {
+        super.fireProjectile(projectile, id, dest, range);
+        ExtensionCommands.createActorFX(this.parentExt,this.room, this.id+id, "neptr_pie_trail", (int) projectile.getEstimatedDuration()+1000,this.id+id+"_fx",true,"Bip001",true,true,this.team);
+
     }
 
     @Override
@@ -95,36 +106,79 @@ public class Neptr extends UserActor {
 
         private boolean started;
         private double damageReduction = 0d;
+        private Point2D previousOwnerLocation = null;
+        private static final boolean MOVEMENT_DEBUG = true;
+        private long movementCooldown = 0;
+        private boolean intermission = false;
+        private Map<Actor, Long> attackBuffer;
+        private String effectId;
 
         public NeptrProjectile(ATBPExtension parentExt, UserActor owner, Line2D path, float speed, float hitboxRadius, String id, boolean started) {
             super(parentExt, owner, path, speed, hitboxRadius, id);
+            if(MOVEMENT_DEBUG) ExtensionCommands.createActor(this.parentExt,this.owner.getRoom(),this.id+"_movementDebug","creep1",this.location,0f,2);
             this.started = started;
+            this.attackBuffer = new HashMap<>(3);
+            this.effectId = this.id+"_fx";
         }
 
         @Override
         protected void hit(Actor victim) {
-            JsonNode spellData = parentExt.getAttackData(owner.getAvatar(),"spell1");
-            victim.addToDamageQueue(owner,getSpellDamage(spellData)*(1-damageReduction),spellData);
-            damageReduction+=0.15d;
+            if(!this.attackBuffer.containsKey(victim)){
+                JsonNode spellData = parentExt.getAttackData(owner.getAvatar(),"spell1");
+                victim.addToDamageQueue(owner,getSpellDamage(spellData)*(1-damageReduction),spellData);
+                damageReduction+=0.15d;
+                this.attackBuffer.put(victim,System.currentTimeMillis());
+            }else{
+                if(System.currentTimeMillis() - this.attackBuffer.get(victim) >= 500){
+                    JsonNode spellData = parentExt.getAttackData(owner.getAvatar(),"spell1");
+                    victim.addToDamageQueue(owner,getSpellDamage(spellData)*(1-damageReduction),spellData);
+                    damageReduction+=0.15d;
+                    this.attackBuffer.put(victim,System.currentTimeMillis());
+                }
+            }
+        }
+
+        @Override
+        public void update(RoomHandler roomHandler) {
+            super.update(roomHandler);
+            if(this.destroyed) return;
+            if(MOVEMENT_DEBUG){
+                System.out.println("Projectile x: " + this.location.getX() + "," + this.location.getY());
+                ExtensionCommands.moveActor(this.parentExt,this.owner.getRoom(), this.id+"_movementDebug",this.location,this.location,5f,false);
+            }
+            if(!this.started && !this.intermission && this.owner.getLocation().distance(this.previousOwnerLocation) > 0.1f){
+                if(System.currentTimeMillis() - this.movementCooldown >= 250) this.moveTowardsNeptr();
+            }
+        }
+
+        private void moveTowardsNeptr(){
+            System.out.println("Triggered moving!");
+            this.movementCooldown = System.currentTimeMillis();
+            Point2D ownerLocation = this.owner.getLocation();
+            this.startingLocation = this.location;
+            this.destination = ownerLocation;
+            this.path = new Line2D.Float(this.location,ownerLocation);
+            this.startTime = System.currentTimeMillis();
+            this.estimatedDuration = (path.getP1().distance(path.getP2()) / speed)*1000f;
+            this.timeTraveled = 0f;
+            this.previousOwnerLocation = ownerLocation;
+            ExtensionCommands.moveActor(this.parentExt,this.owner.getRoom(), this.id,this.location,this.destination,this.speed,true);
+            ExtensionCommands.removeFx(this.parentExt,this.owner.getRoom(),this.effectId);
+            this.effectId = this.id+"_fx"+Math.random();
+            ExtensionCommands.createActorFX(this.parentExt,this.owner.getRoom(), this.id, "neptr_pie_trail", (int) this.estimatedDuration,this.effectId,true,"Bip001",true,true,owner.getTeam());
         }
 
         @Override
         public void destroy() {
-            if(!started) super.destroy();
-            else{
-                Point2D ownerLocation = this.owner.getLocation();
-                System.out.println("Owner x: " + ownerLocation.getX() + " y: " + ownerLocation.getY());
-                System.out.println("My location x: " + this.location.getX() + " y: " + this.location.getY());
-                this.startingLocation = this.location;
-                this.destination = ownerLocation;
-                this.path = new Line2D.Float(this.location,ownerLocation);
-                this.startTime = System.currentTimeMillis();
-                this.estimatedDuration = (path.getP1().distance(path.getP2()) / speed)*1000f;
-                System.out.println("Moving: " + this.owner.getId()+this.id);
-                ExtensionCommands.moveActor(this.parentExt,this.owner.getRoom(), this.id,this.location,this.destination,this.speed,true);
-                this.started = false;
-                this.timeTraveled = 0f;
+            if(!started){
+                super.destroy();
+                if(MOVEMENT_DEBUG) ExtensionCommands.destroyActor(this.parentExt,this.owner.getRoom(),this.id+"_movementDebug");
+            }
+            else if(!this.intermission){
+                this.intermission = true;
                 this.damageReduction = 0;
+                Runnable intermissionRunnable = () -> {this.moveTowardsNeptr(); this.intermission = false; this.started = false;};
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(intermissionRunnable,1000,TimeUnit.MILLISECONDS);
             }
         }
     }

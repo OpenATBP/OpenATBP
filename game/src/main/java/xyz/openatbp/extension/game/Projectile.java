@@ -107,6 +107,10 @@ public abstract class Projectile {
         return this.destination;
     }
 
+    public double getEstimatedDuration() {
+        return estimatedDuration;
+    }
+
     public void destroy(){
         System.out.println("Projectile: " + id + " is being destroyed! " + this.destroyed);
         if(!destroyed){
