@@ -47,6 +47,8 @@ public class UserActor extends Actor {
     protected int idleTime = 0;
     protected static final double DASH_SPEED = 20d;
     private static final boolean MOVEMENT_DEBUG = false;
+    private static final boolean INVINCIBLE_DEBUG = false;
+    private static final boolean ABILITY_DEBUG = false;
 
     //TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt){
@@ -150,6 +152,7 @@ public class UserActor extends Actor {
 
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         try{
+            if(INVINCIBLE_DEBUG) return false;
             if(this.dead) return true;
             if(a.getActorType() == ActorType.TOWER){
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_turret_shot_hits_you",this.location);
@@ -728,6 +731,7 @@ public class UserActor extends Actor {
     }
 
     protected int getReducedCooldown(double cooldown){
+        if(ABILITY_DEBUG) return 0;
         double cooldownReduction = this.getPlayerStat("coolDownReduction");
         double ratio = 1-(cooldownReduction/100);
         return (int) Math.round(cooldown*ratio);
