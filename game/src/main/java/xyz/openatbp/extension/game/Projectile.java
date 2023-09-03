@@ -93,7 +93,7 @@ public abstract class Projectile {
         return null;
     }
 
-    private List<Actor> getTeammates(RoomHandler roomHandler){
+    protected List<Actor> getTeammates(RoomHandler roomHandler){
         List<Actor> teammates = new ArrayList<>(3);
         for(Actor a : roomHandler.getActors()){
             if((a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE) && a.getTeam() == this.owner.getTeam()) teammates.add(a);
@@ -105,6 +105,10 @@ public abstract class Projectile {
 
     public Point2D getDestination(){
         return this.destination;
+    }
+
+    public double getEstimatedDuration() {
+        return estimatedDuration;
     }
 
     public void destroy(){

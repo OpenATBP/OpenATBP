@@ -105,6 +105,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             // trace("X: " + movementLine.getX2());
             //trace("Y:" + movementLine.getY2());
             //Updates the player's location variable for the server's internal use
+            /*
             ISFSObject userLocation = sender.getVariable("location").getSFSObjectValue();
             userLocation.putFloat("x",destx);
             userLocation.putFloat("z",destz);
@@ -127,6 +128,8 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             data.putFloat("s", params.getFloat("speed"));
             //Send all users the movement data
             GameManager.sendAllUsers(parentExt,data,"cmd_move_actor",sender.getLastJoinedRoom());
+             */
+            user.move(new Point2D.Float(destx,destz));
         }
 
     }
