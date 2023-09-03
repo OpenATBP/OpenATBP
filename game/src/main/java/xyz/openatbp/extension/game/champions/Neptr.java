@@ -157,6 +157,7 @@ public class Neptr extends UserActor {
                 ExtensionCommands.playSound(this.parentExt,this.room,"","sfx_neptr_ultimate",dest);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_neptr_locked_on",this.location);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"neptr_ultimate",this.id+"_ult",500,(float)dest.getX(),(float)dest.getY(),false,this.team,0f);
+                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_3",this.id+"_ultRing",500,(float)dest.getX(),(float)dest.getY(),false,this.team,0f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new NeptrAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 break;
@@ -282,6 +283,7 @@ public class Neptr extends UserActor {
             JsonNode attackData = this.parentExt.getAttackData(Neptr.this.getAvatar(),"spell1");
             double damage = Neptr.this.getSpellDamage(attackData)*(1d-this.damageReduction);
             victim.addToDamageQueue(this.owner,damage,attackData);
+            ExtensionCommands.playSound(this.parentExt,this.owner.getRoom(), victim.getId(), "akubat_projectileHit1", victim.getLocation());
             this.damageReduction+=0.15d;
             if(this.damageReduction > 1d) this.damageReduction = 1d;
         }
