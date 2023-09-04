@@ -49,14 +49,16 @@ public class LSP extends UserActor {
             case 1:
                 this.stopMoving(castDelay);
                 this.canCast[0] = false;
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_lsp_drama_beam",this.location);
+                String dramaVoPrefix = (this.avatar.contains("gummybuns")) ? "lsp_gummybuns_" : (this.avatar.contains("lsprince")) ? "lsprince_" : "lsp_";
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+dramaVoPrefix+"drama_beam",this.location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_rect_7",1100,this.id+"_qRect",false,"",true,true,this.team);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new LSPAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 break;
             case 2:
                 this.canCast[1] = false;
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_lsp_lumps_aoe",this.location);
+                String lumpsVoPrefix = (this.avatar.contains("gummybuns")) ? "lsp_gummybuns_" : (this.avatar.contains("lsprince")) ? "lsprince_" : "lsp_";
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+lumpsVoPrefix+"lumps_aoe",this.location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_ring_3",3500,this.id+"_wRing",true,"",true,true,this.team);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new LSPAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
@@ -64,8 +66,8 @@ public class LSP extends UserActor {
             case 3:
                 this.stopMoving(castDelay);
                 this.canCast[2] = false;
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_lsp_cellphone_throw",this.location);
-                ExtensionCommands.playSound(parentExt,room,"global","sfx_lsp_cellphone_throw",location);
+                String cellphoneVoPrefix = (this.avatar.contains("gummybuns")) ? "lsp_gummybuns_" : (this.avatar.contains("lsprince")) ? "lsprince_" : "lsp_";
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+cellphoneVoPrefix+"cellphone_throw",this.location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new LSPAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 break;
@@ -111,7 +113,9 @@ public class LSP extends UserActor {
             canCast[2] = true;
             Line2D projectileLine = Champion.getMaxRangeLine(new Line2D.Float(location,dest),100f);
             ExtensionCommands.actorAnimate(parentExt,room,id,"spell3b",500,false);
-            fireProjectile(new LSPUltProjectile(parentExt,LSP.this,projectileLine,8f,2f,id+"projectile_lsp_ult"),"projectile_lsp_ult", projectileLine.getP2(), 100f);
+            String ultProjectile = (avatar.contains("prince")) ? "projectile_lsprince_ult" : "projectile_lsp_ult";
+            fireProjectile(new LSPUltProjectile(parentExt,LSP.this,projectileLine,8f,2f,id+"projectile_lsp_ult"),ultProjectile, projectileLine.getP2(), 100f);
+            ExtensionCommands.playSound(parentExt,room,"global","sfx_lsp_cellphone_throw",location);
         }
 
         @Override
