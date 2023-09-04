@@ -47,14 +47,16 @@ public class LSP extends UserActor {
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest) {
         switch(ability){
             case 1:
-                this.stopMoving(2000);
+                this.stopMoving(castDelay);
                 this.canCast[0] = false;
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_lsp_drama_beam",this.location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_rect_7",1100,this.id+"_qRect",false,"",true,true,this.team);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new LSPAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 break;
             case 2:
                 this.canCast[1] = false;
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_lsp_lumps_aoe",this.location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_ring_3",3500,this.id+"_wRing",true,"",true,true,this.team);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new LSPAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
@@ -62,6 +64,8 @@ public class LSP extends UserActor {
             case 3:
                 this.stopMoving(castDelay);
                 this.canCast[2] = false;
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_lsp_cellphone_throw",this.location);
+                ExtensionCommands.playSound(parentExt,room,"global","sfx_lsp_cellphone_throw",location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new LSPAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 break;
@@ -78,6 +82,7 @@ public class LSP extends UserActor {
         protected void spellQ() {
             canCast[0] = true;
             double healthHealed = (double)getMaxHealth() * (0.03d*lumps);
+            ExtensionCommands.playSound(parentExt,room,id,"sfx_lsp_drama_beam",location);
             ExtensionCommands.removeStatusIcon(parentExt,player,"p"+lumps);
             ExtensionCommands.addStatusIcon(parentExt,player,"p0","lsp_spell_4_short_description","icon_lsp_passive",0f);
             lumps = 0;
@@ -96,6 +101,7 @@ public class LSP extends UserActor {
         @Override
         protected void spellW() {
             canCast[1] = true;
+            ExtensionCommands.playSound(parentExt,room,id,"sfx_lsp_lumps_aoe",location);
             ExtensionCommands.createActorFX(parentExt,room,id,"lsp_the_lumps_aoe",3000,id+"_w",true,"",true,false,team);
             wTime = System.currentTimeMillis();
         }
