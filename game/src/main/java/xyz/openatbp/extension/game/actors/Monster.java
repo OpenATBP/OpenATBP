@@ -23,7 +23,7 @@ public class Monster extends Actor {
     private final Point2D startingLocation;
     private final MonsterType type;
     protected boolean dead = false;
-    private static final boolean MOVEMENT_DEBUG = true;
+    private static final boolean MOVEMENT_DEBUG = false;
     private boolean attackRangeOverride = false;
 
     public Monster(ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName){
