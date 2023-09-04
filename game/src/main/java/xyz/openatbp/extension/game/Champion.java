@@ -64,6 +64,8 @@ public class Champion {
                 return new Neptr(u,parentExt);
             case "lsp":
                 return new LSP(u,parentExt);
+            case "billy":
+                return new Billy(u,parentExt);
         }
         return new UserActor(u, parentExt);
     }
