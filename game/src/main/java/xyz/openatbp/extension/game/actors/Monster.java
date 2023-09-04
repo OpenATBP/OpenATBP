@@ -10,7 +10,6 @@ import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 
-import java.awt.*;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.concurrent.TimeUnit;
@@ -24,7 +23,7 @@ public class Monster extends Actor {
     private final Point2D startingLocation;
     private final MonsterType type;
     protected boolean dead = false;
-    private static final boolean MOVEMENT_DEBUG = false;
+    private static final boolean MOVEMENT_DEBUG = true;
     private boolean attackRangeOverride = false;
 
     public Monster(ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName){

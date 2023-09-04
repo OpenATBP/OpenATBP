@@ -380,6 +380,10 @@ public abstract class Actor {
         data.putDouble("damage",damage);
         data.putClass("attackData",attackData);
         this.damageQueue.add(data);
+        if(attacker.getActorType() == ActorType.PLAYER && this.getAttackType(attackData) == AttackType.SPELL){
+            UserActor ua = (UserActor) attacker;
+            ua.handleSpellVamp(damage);
+        }
     }
 
     public void handleDamageQueue(){
@@ -546,8 +550,12 @@ public abstract class Actor {
 
     public void pulled(Point2D source){
         this.stopMoving();
+        float distance = 1f;
+        if(distance > this.location.distance(source)) distance = (float) this.location.distance(source);
+        float distDiff = (float) (distance - this.location.distance(source));
+        System.out.println("Pull distance: " + distance + " vs " + this.location.distance(source));
         Line2D originalLine = new Line2D.Double(this.location,source);
-        Line2D knockBackLine = Champion.getDistanceLine(originalLine,2.5f);
+        Line2D knockBackLine = Champion.getDistanceLine(originalLine,distDiff);
         Line2D finalLine = new Line2D.Double(this.location,Champion.getDashPoint(parentExt,this, knockBackLine.getP2()));
         this.addState(ActorState.AIRBORNE,0d,250,null,false);
         double speed = this.location.distance(finalLine.getP2()) / 0.25f;

@@ -24,6 +24,7 @@ public class Hunson extends UserActor {
     private boolean qActivated = false;
     private int qUses = 0;
     private boolean ultActivated = false;
+    private boolean passiveActivated = false;
     private long ultStart = 0;
 
     public Hunson(User u, ATBPExtension parentExt) {
@@ -48,11 +49,22 @@ public class Hunson extends UserActor {
     }
 
     @Override
+    public boolean canAttack() {
+        if(this.ultActivated) return false;
+        return super.canAttack();
+    }
+
+    @Override
     public void attack(Actor a) {
         super.attack(a);
-        if(this.hasStatusEffect(a) && a.getHealth() - this.getPlayerStat("attackDamage") > -5){
+        if(this.hasStatusEffect(a) && a.getHealth() - this.getPlayerStat("attackDamage") > -5 && !this.passiveActivated){
+            this.passiveActivated = true;
+            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"hunson_hands_passive",5000,this.id+"_passiveR",true,"Bip01 R Hand",true,false,this.team);
+            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"hunson_hands_passive",5000,this.id+"_passiveL",true,"Bip01 L Hand",true,false,this.team);
+            Champion.handleStatusIcon(this.parentExt,this,"icon_hunson_passive","hunson_spell_4_short_description",5000);
             this.addEffect("attackSpeed",this.getStat("attackSpeed")*-0.4d,5000,null,false);
             this.addEffect("speed",0.8d,5000,null,false);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new HunsonAbilityHandler(4,null,0,0,null),5000,TimeUnit.MILLISECONDS);
         }
     }
 
@@ -82,12 +94,14 @@ public class Hunson extends UserActor {
                         ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
                     }
                 }
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_hunson_proj_throw",this.location);
                 Line2D spellLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),8f);
                 this.fireProjectile(new HudsonProjectile(this.parentExt,this,spellLine,8f,0.5f,id+"projectile_hunson_pull"),"projectile_hunson_pull", spellLine.getP2(), 8f);
                 break;
             case 2:
                 this.canCast[1] = false;
-                this.stopMoving();
+                this.stopMoving(castDelay);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_hunson_scream1",this.location);
                 ExtensionCommands.createActorFX(parentExt,room,id,"hunson_fear",1500,id+"_fear",false,"",false,false,team);
                 ExtensionCommands.createActorFX(parentExt,room,id,"fx_target_ring_2.5",1500,id+"_fearRing",false,"",false,true,team);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
@@ -95,7 +109,9 @@ public class Hunson extends UserActor {
                 break;
             case 3:
                 this.canCast[2] = false;
+                this.resetTarget();
                 this.stopMoving(3500+castDelay);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"hunson_power3a",this.location);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_hunson_head1",3500+castDelay,this.id+"_ultHead",true,"headNode",true,false,this.team);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_4",this.id+"_ultRing",3500+castDelay,(float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),3500+castDelay);
@@ -143,7 +159,7 @@ public class Hunson extends UserActor {
 
         @Override
         protected void spellPassive() {
-
+            passiveActivated = false;
         }
     }
 

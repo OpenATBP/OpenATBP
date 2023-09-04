@@ -139,14 +139,14 @@ public class LSP extends UserActor {
             }else{
                 victim.addToDamageQueue(LSP.this,getSpellDamage(spellData)*(1-this.damageReduction),spellData);
                 this.damageReduction+=0.3d;
-                if(this.damageReduction > 1) this.damageReduction = 1d;
+                if(this.damageReduction > 0.9d) this.damageReduction = 0.9d;
             }
         }
 
         @Override
         public Actor checkPlayerCollision(RoomHandler roomHandler){
             for(Actor a : roomHandler.getActors()){
-                if(!this.victims.contains(a) && a.getActorType() == ActorType.PLAYER){ //TODO: Change to not hit teammates
+                if(!this.victims.contains(a) && a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER && !a.getId().equalsIgnoreCase(LSP.this.id)){
                     double collisionRadius = parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
                     if(a.getLocation().distance(location) <= hitbox + collisionRadius){
                         return a;
