@@ -129,7 +129,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             //Send all users the movement data
             GameManager.sendAllUsers(parentExt,data,"cmd_move_actor",sender.getLastJoinedRoom());
              */
-            user.move(new Point2D.Float(destx,destz));
+            user.move(params,new Point2D.Float(destx,destz));
         }
 
     }
