@@ -62,6 +62,8 @@ public class Champion {
                 return new RattleBalls(u,parentExt);
             case "neptr":
                 return new Neptr(u,parentExt);
+            case "lsp":
+                return new LSP(u,parentExt);
         }
         return new UserActor(u, parentExt);
     }

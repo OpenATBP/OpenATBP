@@ -144,11 +144,14 @@ public class UserActor extends Actor {
     public User getUser(){
         return this.player;
     }
-    public Point2D getOriginalLocation(){
-        return this.movementLine.getP1();
-    }
 
-    public Point2D getCurrentLocation(){return this.location;}
+    public void move(ISFSObject params, Point2D destination){
+        Point2D orig = new Point2D.Float(params.getFloat("orig_x"),params.getFloat("orig_z"));
+        this.location = orig;
+        this.movementLine = new Line2D.Float(orig,destination);
+        this.timeTraveled = 0f;
+        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,destination, (float) this.getPlayerStat("speed"),params.getBool("orient"));
+    }
 
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         try{

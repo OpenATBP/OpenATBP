@@ -3,6 +3,7 @@ package xyz.openatbp.extension.game.champions;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
+import com.smartfoxserver.v2.entities.data.ISFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
@@ -50,11 +51,11 @@ public class Neptr extends UserActor {
     }
 
     @Override
-    public void move(Point2D destination) {
+    public void move(ISFSObject params, Point2D destination) {
         System.out.println("Moved!");
         if(this.isStopped()) ExtensionCommands.playSound(this.parentExt,this.player,this.id,"sfx_neptr_move_start",this.location);
         this.soundPlayed = false;
-        super.move(destination);
+        super.move(params,destination);
     }
 
     @Override
