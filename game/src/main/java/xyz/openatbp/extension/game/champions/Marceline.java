@@ -49,7 +49,6 @@ public class Marceline extends UserActor {
                 if(a.getTeam() != this.team && a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE){
                     JsonNode spellData = this.parentExt.getAttackData(this.avatar,"spell2");
                     double damage = getSpellDamage(spellData)/10d;
-                    this.handleSpellVamp(damage);
                     a.addToDamageQueue(this,damage,spellData);
                 }
             }

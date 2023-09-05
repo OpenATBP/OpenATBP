@@ -124,14 +124,12 @@ public class Lich extends UserActor{
                         JsonNode attackData = this.parentExt.getAttackData(getAvatar(),"spell1");
                         if(slimedEnemies.containsKey(a.getId())){
                             if(System.currentTimeMillis() - slimedEnemies.get(a.getId()) >= 1000){
-                                handleSpellVamp(getSpellDamage(attackData));
                                 a.addToDamageQueue(this,getSpellDamage(attackData),attackData);
                                 a.addState(ActorState.SLOWED,0.3d,1500,null,false);
                                 slimedEnemies.put(a.getId(),System.currentTimeMillis());
                                 break;
                             }
                         }else{
-                            handleSpellVamp(getSpellDamage(attackData));
                             a.addToDamageQueue(this,getSpellDamage(attackData),attackData);
                             a.addState(ActorState.SLOWED,0.3d,1500,null,false);
                             slimedEnemies.put(a.getId(),System.currentTimeMillis());
@@ -151,7 +149,6 @@ public class Lich extends UserActor{
                 if(a.getTeam() != this.team && a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER){
                     if(!damageDealt) damageDealt = true;
                     double damage = getSpellDamage(spellData)/10d;
-                    handleSpellVamp(damage);
                     a.addToDamageQueue(this,Math.round(damage),spellData);
                 }
             }
@@ -357,7 +354,6 @@ public class Lich extends UserActor{
         @Override
         protected void hit(Actor victim) {
             JsonNode spellData = parentExt.getAttackData(getAvatar(),"spell2");
-            handleSpellVamp(getSpellDamage(spellData));
             ExtensionCommands.playSound(parentExt,room,"","sfx_lich_charm_shot_hit",victim.getLocation());
             ExtensionCommands.createWorldFX(parentExt,room,this.id,"lich_charm_explosion",id+"_charmExplosion",500,(float)this.location.getX(),(float)this.location.getY(),false,team,0f);
             victim.addToDamageQueue(Lich.this,getSpellDamage(spellData),spellData);

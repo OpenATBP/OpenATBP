@@ -396,7 +396,6 @@ public class Champion {
                     if(!this.target.hasTempStat("spellDamage")) this.target.addEffect("spellDamage",this.target.getPlayerStat("spellDamage")*-0.1,3000,null,false);
                 }
                 if(this.attack.contains("basic")) ua.handleLifeSteal();
-                else if(this.attack.contains("spell")) ua.handleSpellVamp(this.damage);
             }
             /*
             if(this.target.getActorType() == ActorType.PLAYER){

@@ -418,11 +418,11 @@ public class UserActor extends Actor {
             if(this.currentHealth > 0 && System.currentTimeMillis() > this.timeKilled + (deathTime* 1500L)) this.respawn();
             else return;
         }
-        this.location = this.getRelativePoint(false);
-        if(MOVEMENT_DEBUG) ExtensionCommands.moveActor(this.parentExt,this.room,this.id+"_movementDebug",this.location,this.location,5f,false);
         if(!this.isStopped()){
             this.updateMovementTime();
         }
+        this.location = this.getRelativePoint(false);
+        if(MOVEMENT_DEBUG) ExtensionCommands.moveActor(this.parentExt,this.room,this.id+"_movementDebug",this.location,this.location,5f,false);
         if(this.location.distance(this.movementLine.getP2()) <= 0.01f){
             this.idleTime+=100;
         }

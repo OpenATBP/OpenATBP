@@ -42,7 +42,6 @@ public class FlamePrincess extends UserActor {
                     JsonNode attackData = this.parentExt.getAttackData(getAvatar(),"spell3");
                     double damage = (double) this.getSpellDamage(attackData) / 10;
                     if(a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE){
-                        handleSpellVamp(damage);
                         a.addToDamageQueue(this,damage,attackData);
                     }
                 }
@@ -150,7 +149,6 @@ public class FlamePrincess extends UserActor {
                     userActor.addState(ActorState.POLYMORPH,0d,3000,null,false);
                 }
                 double newDamage = getSpellDamage(spellData);
-                handleSpellVamp(newDamage);
                 a.addToDamageQueue(FlamePrincess.this,newDamage,parentExt.getAttackData(getAvatar(),"spell2"));
             }
             canCast[1] = true;
@@ -195,7 +193,6 @@ public class FlamePrincess extends UserActor {
             if(this.hitPlayer) return;
             this.hitPlayer = true;
             JsonNode attackData = parentExt.getAttackData(getAvatar(),"spell1");
-            handleSpellVamp(getSpellDamage(attackData));
             victim.addToDamageQueue(FlamePrincess.this,getSpellDamage(attackData),attackData);
             ExtensionCommands.playSound(parentExt,room,"","akubat_projectileHit1",victim.getLocation());
             ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_projectile_large_explosion",200,"flame_explosion",false,"",false,false,team);
@@ -203,7 +200,6 @@ public class FlamePrincess extends UserActor {
             for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),Champion.extendLine(path,7f),4f)){
                 if(!a.getId().equalsIgnoreCase(victim.getId()) && a.getTeam() != team && a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE){
                     double newDamage = (double)getSpellDamage(attackData)*1.2d;
-                    handleSpellVamp(newDamage);
                     a.addToDamageQueue(FlamePrincess.this,Math.round(newDamage),attackData);
                 }
             }

@@ -35,7 +35,6 @@ public class Gunter extends UserActor{
             for(Actor a : affectedActors){
                 if(a.getTeam() != this.team){
                     double damage = (double)getSpellDamage(spellData)/10;
-                    handleSpellVamp(damage);
                     a.addToDamageQueue(this,Math.round(damage),spellData);
                 }
             }
@@ -86,7 +85,6 @@ public class Gunter extends UserActor{
         for(Actor actor : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),a.getLocation(), 2f)){
             if(actor.getTeam() != this.team && !a.getId().equalsIgnoreCase(actor.getId())){
                 JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(),"spell4");
-                handleSpellVamp(getSpellDamage(spellData));
                 actor.addToDamageQueue(this,getSpellDamage(spellData),spellData);
             }
         }
@@ -141,7 +139,6 @@ public class Gunter extends UserActor{
             List<Actor> affectedActors = Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),location,2f);
             for(Actor a : affectedActors){
                 if(a.getTeam() != team){
-                    handleSpellVamp(getSpellDamage(spellData));
                     a.addToDamageQueue(Gunter.this,getSpellDamage(spellData),spellData);
                 }
             }
@@ -174,7 +171,6 @@ public class Gunter extends UserActor{
         @Override
         protected void hit(Actor victim) {
             JsonNode spellData = parentExt.getAttackData(getAvatar(),"spell2");
-            handleSpellVamp(getSpellDamage(spellData));
             victim.addToDamageQueue(Gunter.this,getSpellDamage(spellData),spellData);
             ExtensionCommands.playSound(parentExt,room,"","sfx_gunter_bottle_shatter",this.location);
             ExtensionCommands.createWorldFX(parentExt,room,this.id,"gunter_bottle_shatter",this.id+"_bottleShatter",500,(float)this.location.getX(),(float)this.location.getY(),false,team,0f);
