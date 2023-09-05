@@ -100,7 +100,9 @@ public class Lich extends UserActor{
     @Override
     public void die(Actor a){
         super.die(a);
-        if(this.skully != null) this.setSkullyTarget(a);
+        //if(this.skully != null) this.setSkullyTarget(a);
+        this.skully.die(this.skully);
+
     }
 
     @Override
@@ -162,6 +164,10 @@ public class Lich extends UserActor{
     private void spawnSkully(){
         this.skully = new Skully();
         this.parentExt.getRoomHandler(this.room.getId()).addCompanion(this.skully);
+        this.lastSkullySpawn = System.currentTimeMillis();
+        ExtensionCommands.addStatusIcon(this.parentExt,this.player,"icon_lich_passive","lich_spell_4_short_description","icon_lich_passive",20000);
+        ExtensionCommands.actorAbilityResponse(parentExt,player,"passive",true,getReducedCooldown(40000),2);
+        ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"lich_skeleton_poof",500,this.id+"_skeleton_poof",false,"",false,false,this.team);
     }
 
     public void setSkullyTarget(Actor a){
@@ -169,10 +175,9 @@ public class Lich extends UserActor{
     }
 
     private void handleSkullyDeath(){
-        ExtensionCommands.actorAbilityResponse(parentExt,player,"passive",true,getReducedCooldown(40000),2);
         this.parentExt.getRoomHandler(this.room.getId()).removeCompanion(this.skully);
         this.skully = null;
-        this.lastSkullySpawn = System.currentTimeMillis();
+        ExtensionCommands.removeStatusIcon(this.parentExt,this.player,"icon_lich_passive");
     }
 
     @Override

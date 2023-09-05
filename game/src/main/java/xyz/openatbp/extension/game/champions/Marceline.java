@@ -133,7 +133,7 @@ public class Marceline extends UserActor {
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"e",true,getReducedCooldown(cooldown),gCooldown);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_marceline_spell_casting",this.location);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"marceline_spell_casting",castDelay,this.id+"_transformCast",true,"",true,false,this.team);
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_ring_3",castDelay,this.id+"_transformRing",false,"",false,true,this.team);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_ring_3",castDelay,this.id+"_transformRing",true,"",false,true,this.team);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new MarcelineAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay, TimeUnit.MILLISECONDS);
                 break;
             case 4: //Passive

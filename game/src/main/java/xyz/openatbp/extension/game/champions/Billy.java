@@ -22,6 +22,9 @@ public class Billy extends UserActor {
     private Point2D ultLocation = null;
     private long ultStartTime = 0;
     private long lastUltTick = 0;
+    private long finalPassiveStart = 0;
+    private long lastSoundPlayed = 0;
+    private long lastPulseEffect = 0;
 
     public Billy(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -30,10 +33,8 @@ public class Billy extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if(this.ultLocation != null && System.currentTimeMillis() - this.ultStartTime < 4500 && System.currentTimeMillis() - this.lastUltTick >= 500){
+        if(this.ultLocation != null && System.currentTimeMillis() - this.ultStartTime < 4500 && System.currentTimeMillis() - this.lastUltTick >= 200){
             this.lastUltTick = System.currentTimeMillis();
-            ExtensionCommands.playSound(this.parentExt,this.room,"","sfx_billy_nothung_pulse",this.ultLocation);
-            ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"billy_nothung_pulse",this.id+"_ultPulse",400,(float)this.ultLocation.getX(),(float)this.ultLocation.getY(),false,this.team,0f);
             List<Actor> impactedActors = Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.ultLocation,2.25f).stream().filter(this::isNonStructure).collect(Collectors.toList());
             JsonNode spellData = this.parentExt.getAttackData(this.avatar,"spell3");
             for(Actor a : impactedActors){
@@ -43,6 +44,17 @@ public class Billy extends UserActor {
             }
         }else if(this.ultLocation != null && System.currentTimeMillis() - this.ultStartTime >= 4500){
             this.ultLocation = null;
+        }
+        if(System.currentTimeMillis() - finalPassiveStart >= 6000){
+            ExtensionCommands.removeStatusIcon(this.parentExt,this.player,"finalpassive");
+        }
+        if(this.ultLocation != null && System.currentTimeMillis() - this.ultStartTime < 4500 && System.currentTimeMillis() - lastSoundPlayed >= 300){
+            ExtensionCommands.playSound(this.parentExt,this.room,"","sfx_billy_nothung_pulse",this.ultLocation);
+            lastSoundPlayed = System.currentTimeMillis();
+        }
+        if(this.ultLocation != null && System.currentTimeMillis() - this.ultStartTime < 4500 && System.currentTimeMillis() - lastPulseEffect >= 50){
+            ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"billy_nothung_pulse",this.id+"_ultPulse",200,(float)this.ultLocation.getX(),(float)this.ultLocation.getY(),false,this.team,0f);
+            lastPulseEffect = System.currentTimeMillis();
         }
     }
 
@@ -91,6 +103,10 @@ public class Billy extends UserActor {
                     this.addEffect("attackSpeed",this.getStat("attackSpeed")*-0.7d,4000,null,false);
                     this.addEffect("speed",0.8d,6000,null,true);
                     this.usePassiveAbility();
+                    ExtensionCommands.addStatusIcon(this.parentExt,this.player,"finalpassive","billy_spell_4_short_description","icon_billy_passive",6000);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"billy_crit_hands",4000,this.id+"_critHandsR",true,"Bip001 R Hand",true,false,this.team);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"billy_crit_hands",4000,this.id+"_critHandsL",true,"Bip001 L Hand",true,false,this.team);
+                    finalPassiveStart = System.currentTimeMillis();
                 }
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new BillyAbilityHandler(ability,spellData,cooldown,gCooldown,finalDashPoint),(int)(time*1000d),TimeUnit.MILLISECONDS);
@@ -98,7 +114,9 @@ public class Billy extends UserActor {
             case 3:
                 this.canCast[2] = false;
                 this.stopMoving(castDelay);
+                Point2D ultLoc = Champion.getMaxRangeLine(new Line2D.Float(location,dest),5.5f).getP2();
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_billy_nothung",this.location);
+                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"lemongrab_ground_aoe_target",this.id+"_billyUltTarget",1750,(float)ultLoc.getX(),(float)ultLoc.getY(),true,this.team,0f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new BillyAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 break;
@@ -139,6 +157,8 @@ public class Billy extends UserActor {
                 ultLocation = ultLoc;
                 ultStartTime = System.currentTimeMillis();
                 lastUltTick = System.currentTimeMillis();
+                lastSoundPlayed = System.currentTimeMillis();
+                lastPulseEffect = System.currentTimeMillis();
                 duration = 4500;
                 usePassiveAbility();
             }
