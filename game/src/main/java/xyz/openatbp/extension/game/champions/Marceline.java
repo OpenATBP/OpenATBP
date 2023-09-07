@@ -20,6 +20,8 @@ public class Marceline extends UserActor {
     private boolean wActive = false;
     private Actor qVictim;
     private long qHit = -1;
+    private long wStartTime = 0;
+    private long regenSound = 0;
     public Marceline(User u, ATBPExtension parentExt) {
         super(u, parentExt);
     }
@@ -61,6 +63,15 @@ public class Marceline extends UserActor {
             this.qVictim.addToDamageQueue(this,damage,spellData);
             this.qHit = System.currentTimeMillis();
         }
+        if(wActive){
+            if(System.currentTimeMillis() - wStartTime >= 4500){
+                wActive = false;
+            }
+        }
+        if(this.getState(ActorState.TRANSFORMED) && this.currentHealth < this.maxHealth && System.currentTimeMillis() - regenSound >= 3000){
+            regenSound = System.currentTimeMillis();
+            ExtensionCommands.playSound(this.parentExt,this.player,this.id,"marceline_regen_loop",this.location);
+        }
     }
 
     @Override
@@ -79,10 +90,6 @@ public class Marceline extends UserActor {
             ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_marceline_crit_fangs",this.location);
             ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"marceline_crit_fangs",1000,this.id+"_passiveHit",true,"Bip001 Head",false,false,this.team);
             lifesteal = 1d;
-        }
-        if(this.states.get(ActorState.TRANSFORMED) && this.wActive){
-            lifesteal = 1d;
-            damage*=2;
         }
         this.changeHealth((int)Math.round(damage*lifesteal));
     }
@@ -110,6 +117,7 @@ public class Marceline extends UserActor {
             case 2: //W
                 this.canCast[1] = false;
                 wActive = true;
+                wStartTime = System.currentTimeMillis();
                 String bloodMistVo = (this.avatar.contains("marshall")) ? "vo/vo_marshall_lee_blood_mist" : (this.avatar.contains("young")) ? "vo/vo_marceline_young_blood_mist" : "vo/vo_marceline_blood_mist";
                 if(this.states.get(ActorState.TRANSFORMED)){
                     attackCooldown = 0;
@@ -152,7 +160,13 @@ public class Marceline extends UserActor {
         @Override
         public void run() {
             double damage = getPlayerStat("attackDamage");
-            if(crit || (wActive && getState(ActorState.TRANSFORMED))) damage*=2;
+            if(!getState((ActorState.TRANSFORMED)) && crit) damage*=2;
+            if(wActive && getState(ActorState.TRANSFORMED)){
+                if(crit) damage*=4;
+                else damage*=2;
+                double lifesteal = 1d;
+                changeHealth((int)Math.round(damage*lifesteal));
+            }
             if(!getState(ActorState.TRANSFORMED) && isNonStructure(this.target)) passiveHits++;
             if(wActive && getState(ActorState.TRANSFORMED)){
                 System.out.println("Marceline hit with the W");
@@ -193,6 +207,7 @@ public class Marceline extends UserActor {
                 setState(ActorState.TRANSFORMED, false);
                 String morphHumanVo = (avatar.contains("marshall")) ? "vo/marshall_lee_morph_to_human" : "marceline_morph_to_human";
                 ExtensionCommands.playSound(parentExt,room,id,morphHumanVo,location);
+                ExtensionCommands.removeFx(parentExt,room,id+"_beastHands");
                 if(healthRegenEffectActive){
                     ExtensionCommands.removeFx(parentExt,room,id+"_batRegen");
                     healthRegenEffectActive = false;
