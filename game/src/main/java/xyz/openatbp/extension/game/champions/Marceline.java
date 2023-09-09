@@ -63,10 +63,8 @@ public class Marceline extends UserActor {
             this.qVictim.addToDamageQueue(this,damage,spellData);
             this.qHit = System.currentTimeMillis();
         }
-        if(wActive){
-            if(System.currentTimeMillis() - wStartTime >= 4500){
-                wActive = false;
-            }
+        if(wActive && System.currentTimeMillis() - wStartTime >= 4500){
+            wActive = false;
         }
         if(this.getState(ActorState.TRANSFORMED) && this.currentHealth < this.maxHealth && System.currentTimeMillis() - regenSound >= 3000){
             regenSound = System.currentTimeMillis();
