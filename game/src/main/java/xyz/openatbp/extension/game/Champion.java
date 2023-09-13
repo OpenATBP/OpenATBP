@@ -68,6 +68,8 @@ public class Champion {
                 return new Billy(u,parentExt);
             case "hunson":
                 return new Hunson(u,parentExt);
+            case "bmo":
+                return  new BMO(u,parentExt);
         }
         return new UserActor(u, parentExt);
     }
