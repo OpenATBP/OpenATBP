@@ -27,6 +27,7 @@ public class RattleBalls extends UserActor {
     private long parryCooldown = 0;
     private boolean ultActive = false;
     private long lastSoundPlayed = 0;
+    private int qTime = 0;
     public RattleBalls(User u, ATBPExtension parentExt) {
         super(u, parentExt);
     }
@@ -34,24 +35,21 @@ public class RattleBalls extends UserActor {
     @Override
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest) {
         System.out.println("Ability used: " + ability);
-        if(!this.passiveActive && System.currentTimeMillis() - this.passiveCooldown >= 5000){
-            this.passiveStart = System.currentTimeMillis();
-            this.passiveActive = true;
-            this.passiveHits = 2;
-            ExtensionCommands.addStatusIcon(this.parentExt,this.player,"passive2","rattleballs_spell_4_short_description","icon_rattleballs_p2",3000);
-        }
         switch(ability){
             case 1:
                 this.canCast[0] = false;
-                Point2D dashPoint = this.dash(dest,false,1f);
-                double time = this.location.distance(dashPoint)/DASH_SPEED;
+                Point2D ogLocation = this.location;
+                Point2D finalDashPoint = this.dash(dest,false);
+                double time = ogLocation.distance(finalDashPoint)/DASH_SPEED;
+                qTime = (int) (time*1000);
+                int qTimeEffects = qTime*5;
                 if(this.qUse == 0){
                     String counterPrefix = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_" : "rattleballs_";
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+counterPrefix+"counter_stance",this.location);
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_dash",this.location);
-                    ExtensionCommands.actorAnimate(parentExt,room,id,"spell1a",(int)(time*1000),true);
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,counterPrefix+"dash_trail",1000,this.id+"_q1Trail",true,"Bip001",true,false,this.team);
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,counterPrefix+"dash_dust",1000,this.id+"_q1Dust",true,"",true,false,this.team);
+                    ExtensionCommands.actorAnimate(parentExt,room,id,"spell1a",qTimeEffects,true);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,counterPrefix+"dash_trail",qTimeEffects,this.id+"_q1Trail",true,"Bip001",true,false,this.team);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,counterPrefix+"dash_dust",qTimeEffects,this.id+"_q1Dust",true,"",true,false,this.team);
                     this.qUse++;
                 }else{
                     this.qUse = 0;
@@ -59,12 +57,12 @@ public class RattleBalls extends UserActor {
                     String dashPrefix = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_" : "rattleballs_";
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_dash",this.location);
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_rattle_balls_2",this.location);
-                    ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell1c",(int)(time*1000),false);
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashPrefix+"dash_trail",1000,this.id+"_q2Trail",true,"Bip001",true,false,this.team);
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashPrefix+"dash_dust",1000,this.id+"_q2Dust",true,"Bip001 Footsteps",true,false,this.team);
+                    ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell1c",qTimeEffects,false);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashPrefix+"dash_trail",qTimeEffects,this.id+"_q2Trail",true,"Bip001",true,false,this.team);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashPrefix+"dash_dust",qTimeEffects,this.id+"_q2Dust",true,"Bip001 Footsteps",true,false,this.team);
                     ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 }
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new RattleAbilityHandler(ability,spellData,cooldown,gCooldown,dashPoint),(int)(time*1000), TimeUnit.MILLISECONDS);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new RattleAbilityHandler(ability,spellData,cooldown,gCooldown,finalDashPoint),qTime,TimeUnit.MILLISECONDS);
                 break;
             case 2:
                 this.canCast[1] = false;
@@ -113,6 +111,15 @@ public class RattleBalls extends UserActor {
         ExtensionCommands.removeStatusIcon(this.parentExt,this.player,"passive"+this.passiveHits);
     }
 
+    private void abilityEnded(){
+        if(!this.passiveActive && System.currentTimeMillis() - this.passiveCooldown >= 5000){
+            this.passiveStart = System.currentTimeMillis();
+            this.passiveActive = true;
+            this.passiveHits = 2;
+            ExtensionCommands.addStatusIcon(this.parentExt,this.player,"passive2","rattleballs_spell_4_short_description","icon_rattleballs_p2",3000);
+        }
+    }
+
     @Override
     public boolean canAttack() {
         if(this.ultActive) return false;
@@ -128,6 +135,7 @@ public class RattleBalls extends UserActor {
         }
         if(this.parryActive && System.currentTimeMillis() - this.parryCooldown >= 1500){
             this.canCast[0] = false;
+            this.abilityEnded();
             String spinSfx = (this.avatar.contains("spidotron")) ? "sfx_rattleballs_luchador_counter_attack" : "sfx_rattleballs_spin";
             String swordSpinFX = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_sword_spin" : "rattleballs_sword_spin";
             ExtensionCommands.playSound(this.parentExt,this.room,this.id,spinSfx,this.location);
@@ -190,6 +198,7 @@ public class RattleBalls extends UserActor {
             this.qUse = 0;
             this.parryActive = false;
             this.canMove = true;
+            this.handleLifeSteal();
             JsonNode basicAttackData = this.getParentExt().getAttackData(this.avatar,"basicAttack");
             a.addToDamageQueue(this,this.getPlayerStat("attackDamage")*2,basicAttackData);
             String counterSFx = (this.avatar.contains("spidotron")) ? "sfx_rattleballs_luchador_counter_attack_crit" : "sfx_rattleballs_counter_stance";
@@ -232,18 +241,18 @@ public class RattleBalls extends UserActor {
         protected void spellQ() {
             canCast[0] = true;
             if(qUse == 1){
-                parryActive = true;
-                parryCooldown = System.currentTimeMillis();
                 Runnable flipDelay = () -> {
-                    if(parryActive){
-                        stopMoving(1200);
-                        ExtensionCommands.playSound(parentExt,room,id,"sfx_rattleballs_counter_stance",location);
-                        ExtensionCommands.actorAnimate(parentExt,room,id,"spell1b",1500,true);
-                        ExtensionCommands.createActorFX(parentExt,room,id,"rattleballs_counter_stance",1500,id+"_stance",true,"Bip001",true,false,team);
-                    }
+                    parryActive = true;
+                    parryCooldown = System.currentTimeMillis();
+                    stopMoving(1500);
+                    ExtensionCommands.playSound(parentExt,room,id,"sfx_rattleballs_counter_stance",location);
+                    ExtensionCommands.actorAnimate(parentExt,room,id,"spell1b",1500,true);
+                    ExtensionCommands.createActorFX(parentExt,room,id,"rattleballs_counter_stance",1500,id+"_stance",true,"Bip001",true,false,team);
+
                 };
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(flipDelay,400,TimeUnit.MILLISECONDS);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(flipDelay,qTime,TimeUnit.MILLISECONDS);
             }else{
+                abilityEnded();
                 boolean sound = false;
                 for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),new Line2D.Float(location,dest),2d)){
                     if(!sound){
@@ -263,6 +272,7 @@ public class RattleBalls extends UserActor {
             canCast[1] = true;
             String pullFx = (avatar.contains("spidotron")) ? "rattleballs_luchador_pull" : "rattleballs_pull";
             ExtensionCommands.createActorFX(parentExt,room,id,pullFx,500,id+"_pull",true,"Bip001",true,false,team);
+            abilityEnded();
             for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),location,5f)){
                 if(isNonStructure(a)){
                     a.pulled(location);
@@ -281,6 +291,7 @@ public class RattleBalls extends UserActor {
                 canCast[2] = true;
             }
             ultActive = false;
+            abilityEnded();
         }
 
         @Override

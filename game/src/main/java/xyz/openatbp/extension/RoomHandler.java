@@ -859,16 +859,54 @@ public class RoomHandler implements Runnable{
                     break;
                 }
             }
+            int purpleTeamSize = 0;
+            int blueTeamSize = 0;
+            for(UserActor p : players){
+                if(p.getTeam() == 0){
+                    purpleTeamSize++;
+                }else if(p.getTeam() == 1){
+                    blueTeamSize++;
+                }
+            }
+            int teamSizeDiff = blueTeamSize - purpleTeamSize;
             int oppositeTeam = 0;
             if(team == 0) oppositeTeam = 1;
             if(teamMembersLeft == 0) this.gameOver(oppositeTeam);
             else{
                 for(UserActor p : this.players){
-                    if(p.getTeam() == team){
-                        p.handleDCBuff(true);
-                    }else p.handleDCBuff(false);
+                    if(purpleTeamSize == 3 && blueTeamSize == 2){
+                        if(p.getTeam() == team){
+                            p.handleDCBuff(teamSizeDiff,false);
+                        }
+                    }else if(purpleTeamSize == 3 && blueTeamSize == 1){
+                        if(p.getTeam() == team){
+                            p.handleDCBuff(teamSizeDiff,false);
+                        }
+                    }else if(purpleTeamSize == 2 && blueTeamSize == 1){
+                        if(p.getTeam() != team){
+                            p.handleDCBuff(teamSizeDiff,true);
+                        } else if (p.getTeam() == 1) {
+                            p.handleDCBuff(teamSizeDiff,false);
+                        }
+                    }else if(purpleTeamSize == 2 && blueTeamSize == 3){
+                        if(p.getTeam() == team){
+                            p.handleDCBuff(teamSizeDiff,false);
+                        }
+                    }else if(purpleTeamSize == 1 && blueTeamSize == 3){
+                        if(p.getTeam() == team){
+                            p.handleDCBuff(teamSizeDiff,false);
+                        }
+                    }else if(purpleTeamSize == 1 && blueTeamSize == 2){
+                        if(p.getTeam() != team){
+                            p.handleDCBuff(teamSizeDiff,true);
+                        } else if (p.getTeam() == 0) {
+                            p.handleDCBuff(teamSizeDiff,false);
+                        }
+                    }else if(purpleTeamSize == blueTeamSize){
+                            p.handleDCBuff(teamSizeDiff,false);
+                        }
+                    }
                 }
-            }
         }catch(Exception e){
             e.printStackTrace();
         }

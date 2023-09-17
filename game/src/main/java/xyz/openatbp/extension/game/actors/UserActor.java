@@ -841,30 +841,37 @@ public class UserActor extends Actor {
         this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
     }
 
-    public void handleDCBuff(boolean affected){
-        if(affected) this.dcBuff++;
-        else if(this.dcBuff != 0){
-            if(this.dcBuff == 1){
-                String[] stats = {"armor","spellResist","speed"};
-                ExtensionCommands.removeStatusIcon(parentExt,player,"DC Buff #1");
-                ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,this.getPlayerStats(stats));
-            }
-            else if(this.dcBuff == 2){
-                String[] stats = {"attackDamage","spellDamage"};
-                ExtensionCommands.removeStatusIcon(parentExt,player,"DC Buff #2");
-                ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,this.getPlayerStats(stats));
-            }
-            this.dcBuff--;
+    public void handleDCBuff(int teamSizeDiff, boolean removeSecondBuff){
+        String[] stats = {"armor","spellResist","speed"};
+        String[] stats2 = {"attackDamage","spellDamage"};
+        if(removeSecondBuff){
+            this.dcBuff = 1;
+            ExtensionCommands.updateActorData(parentExt,room,id,getPlayerStats(stats2));
+            ExtensionCommands.removeStatusIcon(parentExt,player,"DC Buff #2");
+            ExtensionCommands.removeFx(parentExt,room,id+"_dcbuff2");
             return;
         }
-        if(this.dcBuff == 1){
-            String[] stats = {"armor","spellResist","speed"};
-            ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,this.getPlayerStats(stats));
-            ExtensionCommands.addStatusIcon(parentExt,player,"DC Buff #1","Some coward left the battle! Here's something to help even the playing field!", "icon_parity",0);
-        }else if (this.dcBuff == 2){
-            String[] stats = {"attackDamage","spellDamage"};
-            ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,this.getPlayerStats(stats));
-            ExtensionCommands.addStatusIcon(parentExt,player,"DC Buff #2","You're the last one left, finish the mission", "icon_parity2",0);
+        switch (teamSizeDiff){
+            case 0:
+                this.dcBuff = 0;
+                ExtensionCommands.updateActorData(parentExt,room,id,getPlayerStats(stats));
+                ExtensionCommands.removeStatusIcon(parentExt,player,"DC Buff #1");
+                ExtensionCommands.removeFx(parentExt,room,id+"_dcbuff1");
+                break;
+            case 1:
+            case -1:
+                this.dcBuff = 1;
+                ExtensionCommands.updateActorData(parentExt,room,id,getPlayerStats(stats));
+                ExtensionCommands.addStatusIcon(parentExt,player,"DC Buff #1","Some coward left the battle! Here's something to help even the playing field!", "icon_parity",0);
+                ExtensionCommands.createActorFX(parentExt,room,id,"disconnect_buff_duo",1000*15*60,id+"_dcbuff1",true,"",false,false,team);
+                break;
+            case 2:
+            case -2:
+                this.dcBuff = 2;
+                ExtensionCommands.updateActorData(parentExt,room,id,getPlayerStats(stats2));
+                ExtensionCommands.addStatusIcon(parentExt,player,"DC Buff #2","You're the last one left, finish the mission", "icon_parity2",0);
+                ExtensionCommands.createActorFX(parentExt,room,id,"disconnect_buff_solo",1000*15*60,id+"_dcbuff2",true,"",false,false,team);
+                break;
         }
     }
 
