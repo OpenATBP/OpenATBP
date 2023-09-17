@@ -830,6 +830,17 @@ public class UserActor extends Actor {
         this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
     }
 
+    public void fireProjectile(Projectile projectile, String id, String projectileId, Point2D dest, float range){
+        double x = dest.getX();
+        double z = dest.getY();
+        Point2D endLocation = new Point2D.Double(x,z);
+        Line2D skillShotLine = new Line2D.Float(this.location,endLocation);
+        Line2D maxRangeLine = Champion.getMaxRangeLine(skillShotLine,range);
+        double speed = parentExt.getActorStats(projectileId).get("speed").asDouble();
+        ExtensionCommands.createProjectile(parentExt,room,this,id,projectileId, maxRangeLine.getP1(), maxRangeLine.getP2(), (float)speed);
+        this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
+    }
+
     public void handleDCBuff(int teamSizeDiff, boolean removeSecondBuff){
         String[] stats = {"armor","spellResist","speed"};
         String[] stats2 = {"attackDamage","spellDamage"};

@@ -68,6 +68,8 @@ public class Champion {
                 return new Billy(u,parentExt);
             case "hunson":
                 return new Hunson(u,parentExt);
+            case "magicman":
+                return new MagicMan(u,parentExt);
             case "bmo":
                 return  new BMO(u,parentExt);
         }
@@ -107,6 +109,24 @@ public class Champion {
             }
         }
         return dest;
+    }
+
+    public static Point2D getRelativePoint(Line2D movementLine, double speed, double timeTraveled){ //Gets player's current location based on time
+        double currentTime = timeTraveled;
+        Point2D rPoint = new Point2D.Float();
+        float x2 = (float) movementLine.getX2();
+        float y2 = (float) movementLine.getY2();
+        float x1 = (float) movementLine.getX1();
+        float y1 = (float) movementLine.getY1();
+        double dist = movementLine.getP1().distance(movementLine.getP2());
+        if(dist == 0) return movementLine.getP1();
+        double time = dist/speed;
+        if(currentTime>time) currentTime=time;
+        double currentDist = speed*currentTime;
+        float x = (float)(x1+(currentDist/dist)*(x2-x1));
+        float y = (float)(y1+(currentDist/dist)*(y2-y1));
+        rPoint.setLocation(x,y);
+        return rPoint;
     }
 
     private static Point2D collidePlayer(Line2D movementLine, Path2D collider){
