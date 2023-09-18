@@ -114,7 +114,7 @@ public class LSP extends UserActor {
             Line2D projectileLine = Champion.getMaxRangeLine(new Line2D.Float(location,dest),100f);
             ExtensionCommands.actorAnimate(parentExt,room,id,"spell3b",500,false);
             String ultProjectile = (avatar.contains("prince")) ? "projectile_lsprince_ult" : "projectile_lsp_ult";
-            fireProjectile(new LSPUltProjectile(parentExt,LSP.this,projectileLine,8f,2f,id+"projectile_lsp_ult"),ultProjectile, projectileLine.getP2(), 100f);
+            fireProjectile(new LSPUltProjectile(parentExt,LSP.this,projectileLine,8f,2f,id+ultProjectile),ultProjectile, projectileLine.getP2(), 100f);
             ExtensionCommands.playSound(parentExt,room,"global","sfx_lsp_cellphone_throw",location);
         }
 
@@ -128,6 +128,7 @@ public class LSP extends UserActor {
 
         private List<Actor> victims;
         private double damageReduction = 0d;
+        private double healReduction = 0d;
 
         public LSPUltProjectile(ATBPExtension parentExt, UserActor owner, Line2D path, float speed, float hitboxRadius, String id) {
             super(parentExt, owner, path, speed, hitboxRadius, id);
@@ -139,7 +140,9 @@ public class LSP extends UserActor {
             this.victims.add(victim);
             JsonNode spellData = this.parentExt.getAttackData(LSP.this.avatar,"spell3");
             if(victim.getTeam() == LSP.this.team){
-                victim.changeHealth(getSpellDamage(spellData));
+                victim.changeHealth((int) (getSpellDamage(spellData)*(1-this.healReduction)));
+                this.healReduction+=0.3d;
+                if(this.healReduction > 0.9d) this.healReduction = 0.9d;
             }else{
                 victim.addToDamageQueue(LSP.this,getSpellDamage(spellData)*(1-this.damageReduction),spellData);
                 this.damageReduction+=0.3d;

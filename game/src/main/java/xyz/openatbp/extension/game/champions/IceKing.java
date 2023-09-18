@@ -173,7 +173,6 @@ public class IceKing extends UserActor {
             Line2D fireLine = new Line2D.Float(location,dest);
             Line2D newLine = Champion.getMaxRangeLine(fireLine,7.5f);
             fireProjectile(new IceKingProjectile(parentExt,IceKing.this,newLine,9f,0.5f,id+"projectile_iceking_deepfreeze"),"projectile_iceking_deepfreeze", newLine.getP2(), 7.5f);
-
         }
 
         @Override

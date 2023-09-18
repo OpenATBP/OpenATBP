@@ -60,7 +60,6 @@ public class Billy extends UserActor {
 
     private void usePassiveAbility(){
         this.passiveUses = 0;
-        //ExtensionCommands.removeStatusIcon(this.parentExt,this.player,"p3");
         ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_passive");
     }
 

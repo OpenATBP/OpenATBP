@@ -21,6 +21,7 @@ public class BMO extends UserActor {
     private boolean wActive = false;
     private long wStartTime = 0;
     private long lastWSound = 0;
+    private boolean ultSlowActive = false;
 
     public BMO(User u, ATBPExtension parentExt){
         super(u, parentExt);
@@ -28,7 +29,8 @@ public class BMO extends UserActor {
 
     @Override
     public void attack(Actor a){
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new BMOPassive(a, this.handleAttack(a)), "bmo_projectile"), 500, TimeUnit.MILLISECONDS);
+        String projectileFx = (this.avatar.contains("noir")) ? "bmo_projectile_noire" : "bmo_projectile";
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a, new BMOPassive(a, this.handleAttack(a)), projectileFx), 500, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -39,6 +41,7 @@ public class BMO extends UserActor {
                 if(a.getTeam() != this.team && isNonStructure(a)){
                     JsonNode spellData = parentExt.getAttackData("bmo", "spell2");
                     a.addToDamageQueue(this, (double)getSpellDamage(spellData)/10d,spellData);
+                    if(passiveStacks == 3) a.addState(ActorState.SLOWED,0.5d,2500,null,false);
                 }
             }
             if(System.currentTimeMillis() - lastWSound >= 500){
@@ -53,7 +56,8 @@ public class BMO extends UserActor {
         switch(ability){
             case 1:
                 this.canCast[0] = false;
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"bmo_camera",500,this.id+"_camera",true,"",true,false,this.team);
+                String cameraFx = (this.avatar.contains("noir")) ? "bmo_camera_noire" : "bmo_camera";
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,cameraFx,500,this.id+"_camera",true,"",true,false,this.team);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_bmo_camera",this.location);
                 Line2D spellLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest), 6f);
                 for(Actor a : Champion.getActorsAlongLine(this.parentExt.getRoomHandler(this.room.getId()),spellLine,4f)){
@@ -78,8 +82,10 @@ public class BMO extends UserActor {
                     this.wActive = true;
                     wStartTime = System.currentTimeMillis();
                     Runnable secondUseDelay = () -> this.canCast[1] = true;
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_bmo_remote",3000,this.id+"_bmo_remote",true,"",false,false,this.team);
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"bmo_pixels_aoe",3000,this.id+"_pixels_aoe",true,"",true,false,this.team);
+                    String pixelsAoeFx = (this.avatar.contains("noir")) ? "bmo_pixels_aoe_noire" : "bmo_pixels_aoe";
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_bmo_pixels_start",this.location);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_bmo_remote",3000,this.id+"_bmo_remote",true,"",true,false,this.team);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,pixelsAoeFx,3000,this.id+"_pixels_aoe",true,"",true,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_ring_4",3000,this.id+"_target_ring_4.5",true,"",true,true,this.team);
                     ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell2",3000,true);
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(secondUseDelay,500,TimeUnit.MILLISECONDS);
@@ -95,20 +101,21 @@ public class BMO extends UserActor {
             case 3:
                 this.stopMoving(castDelay);
                 this.canCast[2] = false;
-                if(passiveStacks == 3) usePassiveStacks();
+                if(passiveStacks == 3){
+                    ultSlowActive = true;
+                    passiveStacks = 0;
+                }
                 else addPasiveStacks();
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_bmo_ultimate",this.location);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_bmo_ultimate",this.location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new BMOAbilityHandler(ability,spellData,cooldown,gCooldown,dest), castDelay,TimeUnit.MILLISECONDS);
                 break;
-
-
         }
     }
 
     private void addPasiveStacks(){
-        if(passiveStacks < 4){
+        if(passiveStacks < 3){
             if(passiveStacks != 0) ExtensionCommands.removeStatusIcon(this.parentExt,this.player,"bmoPassive"+passiveStacks);
             this.passiveStacks++;
             ExtensionCommands.addStatusIcon(this.parentExt,this.player,"bmoPassive"+passiveStacks,"bmo_spell_4_short_description","icon_bmo_p"+passiveStacks,0);
@@ -116,7 +123,8 @@ public class BMO extends UserActor {
         if(passiveStacks == 3){
             ExtensionCommands.playSound(this.parentExt,this.player,this.id,"vo/vo_bmo_passive_on",this.location);
             ExtensionCommands.playSound(this.parentExt,this.player,this.id,"sfx_bmo_passive",this.location);
-            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"bmo_passive",1000*60*15,this.id+"_bmo_p_fx",true,"",false,false,this.team);
+            String passiveFx = (this.avatar.contains("noir")) ? "bmo_passive_noire" : "bmo_passive";
+            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,passiveFx,1000*60*15,this.id+"_bmo_p_fx",true,"",false,false,this.team);
         }
     }
 
@@ -135,17 +143,17 @@ public class BMO extends UserActor {
                 double damageMultiplier = 1 + (wDuration / 10000d);
                 a.addToDamageQueue(this,(this.getSpellDamage(spellData))*damageMultiplier,spellData);
                 a.addState(ActorState.STUNNED,0d,1000,null,false);
-                if(passiveStacks == 3) a.addState(ActorState.SLOWED,0.5d,2500,null,false);
             }
         }
         if(passiveStacks == 3) usePassiveStacks();
         else addPasiveStacks();
+        String aoeExplodeFX = (this.avatar.contains("noir")) ? "bmo_pixels_aoe_explode_noire" : "bmo_pixels_aoe_explode";
         ExtensionCommands.removeFx(this.parentExt,this.player,this.id+"_pixels_aoe");
         ExtensionCommands.removeFx(this.parentExt,this.player,this.id+"_bmo_remote");
         ExtensionCommands.removeFx(this.parentExt,this.player,this.id+"_target_ring_4.5");
         ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_bmo_yay",this.location);
         ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_bmo_pixels_explode",this.location);
-        ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"bmo_pixels_aoe_explode",750,this.id+"_pixels_aoe_explode",true,"",false,false,this.team);
+        ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,aoeExplodeFX,750,this.id+"_pixels_aoe_explode",true,"",false,false,this.team);
         ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
         ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"idle",100,false);
     }
@@ -206,7 +214,7 @@ public class BMO extends UserActor {
             JsonNode spellData = this.parentExt.getAttackData(BMO.this.avatar, "spell3");
             victim.addToDamageQueue(BMO.this, getSpellDamage(spellData)*(1-damageReduction),spellData);
             ExtensionCommands.playSound(parentExt,room,"","akubat_projectileHit1",victim.getLocation());
-            if(passiveStacks == 3) victim.addState(ActorState.SLOWED,0.5d,2500,null,false);
+            if(ultSlowActive) victim.addState(ActorState.SLOWED,0.5d,2500,null,false);
             this.damageReduction+=0.3d;
             if(this.damageReduction > 0.9d) this.damageReduction = 0.9d;
         }
@@ -214,7 +222,7 @@ public class BMO extends UserActor {
         @Override
         public Actor checkPlayerCollision(RoomHandler roomHandler){
             for(Actor a : roomHandler.getActors()){
-                if(!this.victims.contains(a) && a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER && !a.getId().equalsIgnoreCase(BMO.this.id)){
+                if(!this.victims.contains(a) && a.getTeam() != BMO.this.getTeam() && a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER && !a.getId().equalsIgnoreCase(BMO.this.id)){
                     double collisionRadius = parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
                     if(a.getLocation().distance(location) <= hitbox + collisionRadius){
                         return a;
@@ -224,6 +232,13 @@ public class BMO extends UserActor {
             return null;
         }
 
+        public void destroy(){
+            super.destroy();
+            if(ultSlowActive){
+                ExtensionCommands.removeStatusIcon(BMO.this.parentExt,BMO.this.player,"bmoPassive3");
+                ultSlowActive = false;
+            }
+        }
     }
 
     private class BMOPassive implements Runnable{
