@@ -72,6 +72,8 @@ public class Champion {
                 return new MagicMan(u,parentExt);
             case "bmo":
                 return  new BMO(u,parentExt);
+            case "cinnamonbun":
+                return new CinnamonBun(u,parentExt);
         }
         return new UserActor(u, parentExt);
     }
