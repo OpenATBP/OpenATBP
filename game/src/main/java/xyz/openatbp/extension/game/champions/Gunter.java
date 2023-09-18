@@ -54,7 +54,7 @@ public class Gunter extends UserActor{
                 ExtensionCommands.createActorFX(parentExt,room,this.id,"gunter_slide_snow",qTime,this.id+"_gunterTrail",true,"Bip01",true,false,team);
                 ExtensionCommands.actorAnimate(parentExt,room,id,"spell1b",qTime,false);
                 Runnable castReset = () -> {canCast[0] = true;};
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new GunterAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),qTime,TimeUnit.MILLISECONDS);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new GunterAbilityRunnable(ability,spellData,cooldown,gCooldown,finalDastPoint),qTime,TimeUnit.MILLISECONDS);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(castReset,250,TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,player,"q",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
                 break;

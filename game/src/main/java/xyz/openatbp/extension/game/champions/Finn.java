@@ -5,6 +5,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
@@ -80,6 +81,7 @@ public class Finn extends UserActor {
                             JsonNode spellData = this.parentExt.getAttackData("finn","spell3");
                             a.addState(ActorState.ROOTED,0d,2000,null,false);
                             a.addToDamageQueue(this,handlePassive(a,getSpellDamage(spellData)),spellData);
+                            passiveStart = System.currentTimeMillis();
                             String direction = "north";
                             if(i == 1) direction = "east";
                             else if(i == 2) direction = "south";
@@ -118,11 +120,22 @@ public class Finn extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
-                Point2D dashPoint = this.dash(dest,false);
-                double time = dashPoint.distance(this.location)/DASH_SPEED;
+                Point2D ogLocation = this.location;
+                Point2D finalDashPoint = this.dash(dest,false);
+                double time = ogLocation.distance(finalDashPoint)/DASH_SPEED;
+                int wTime = (int) (time*1000);
                 String sfxDash = (this.avatar.contains("guardian")) ? "sfx_finn_guardian_dash_attack" : "sfx_finn_dash_attack";
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,sfxDash,this.location);
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinnAbilityHandler(ability,spellData,cooldown,gCooldown,dashPoint,this.location),(int)(time*1000),TimeUnit.MILLISECONDS);
+                Line2D wLine = new Line2D.Double(ogLocation,finalDashPoint);
+                for(Actor a : Champion.getActorsAlongLine(this.parentExt.getRoomHandler(this.room.getId()),wLine,2f)){
+                    if(a.getTeam() != this.team && a.getActorType() != ActorType.BASE){
+                        a.addToDamageQueue(this,handlePassive(a,getSpellDamage(spellData)),spellData);
+                        passiveStart = System.currentTimeMillis();
+                    }
+                }
+                Runnable changeAnimation = () -> ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"run",100,false);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(changeAnimation,wTime,TimeUnit.MILLISECONDS);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinnAbilityHandler(ability,spellData,cooldown,gCooldown,finalDashPoint),wTime,TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
                 break;
             case 3:
@@ -220,14 +233,6 @@ public class Finn extends UserActor {
         @Override
         protected void spellW() {
             canCast[1] = true;
-            ExtensionCommands.actorAnimate(parentExt,room,id,"run",100,false);
-            if(this.originalLocation != null){
-                for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),new Line2D.Float(this.originalLocation,dest),2f)){
-                    if(a.getTeam() != team){
-                        a.addToDamageQueue(Finn.this,handlePassive(a,getSpellDamage(spellData)),spellData);
-                    }
-                }
-            }
         }
 
         @Override
