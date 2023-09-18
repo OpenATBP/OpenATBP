@@ -45,14 +45,16 @@ public class Gunter extends UserActor{
         super.useAbility(ability,spellData,cooldown,gCooldown,castDelay,dest);
         switch(ability){
             case 1:
-                Point2D dashLocation = this.dash(dest, true);
-                double time = dashLocation.distance(this.location)/DASH_SPEED;
-                int runtime = (int)Math.floor(time*1000);
+                Point2D ogLocation = this.location;
+                Point2D finalDastPoint = this.dash(dest,true);
+                double time = ogLocation.distance(finalDastPoint)/DASH_SPEED;
+                int qTime = (int) (time*1000);
                 ExtensionCommands.playSound(parentExt,this.room,this.id,"sfx_gunter_slide",this.location);
-                ExtensionCommands.createActorFX(parentExt,room,this.id,"gunter_slide_trail",runtime,this.id+"_gunterTrail",true,"Bip01",true,false,team);
-                ExtensionCommands.createActorFX(parentExt,room,this.id,"gunter_slide_snow",runtime,this.id+"_gunterTrail",true,"Bip01",true,false,team);
+                ExtensionCommands.createActorFX(parentExt,room,this.id,"gunter_slide_trail",qTime,this.id+"_gunterTrail",true,"Bip01",true,false,team);
+                ExtensionCommands.createActorFX(parentExt,room,this.id,"gunter_slide_snow",qTime,this.id+"_gunterTrail",true,"Bip01",true,false,team);
+                ExtensionCommands.actorAnimate(parentExt,room,id,"spell1b",qTime,false);
                 Runnable castReset = () -> {canCast[0] = true;};
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new GunterAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),runtime,TimeUnit.MILLISECONDS);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new GunterAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),qTime,TimeUnit.MILLISECONDS);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(castReset,250,TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,player,"q",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
                 break;
@@ -136,6 +138,7 @@ public class Gunter extends UserActor{
         protected void spellQ() {
             ExtensionCommands.createWorldFX(parentExt,room,id+"_slide","gunter_belly_slide_bottles",id+"_slideBottles",500,(float)location.getX(),(float)location.getY(),false,team,0f);
             ExtensionCommands.playSound(parentExt,room,id,"sfx_gunter_slide_shatter",location);
+            ExtensionCommands.actorAnimate(parentExt,room,id,"spell1c",500,false);
             List<Actor> affectedActors = Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),location,2f);
             for(Actor a : affectedActors){
                 if(a.getTeam() != team){
