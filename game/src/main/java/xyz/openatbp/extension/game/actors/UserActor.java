@@ -265,6 +265,16 @@ public class UserActor extends Actor {
         return dashPoint;
     }
 
+    public Point2D fpDash(Point2D dest){
+        Point2D dashPoint = Champion.getDashPoint(this.parentExt,this,dest);
+        double time = dashPoint.distance(this.location)/16d;
+        this.stopMoving((int)(time*1000d));
+        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, (float) 16d,true);
+        this.setLocation(dashPoint);
+        this.target = null;
+        return dashPoint;
+    }
+
     public Point2D dash(Point2D dest, boolean noClip, float minRange){
         Point2D maxDashPoint = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),minRange).getP2();
         Point2D dashPoint = Champion.getDashPoint(this.parentExt,this,maxDashPoint);
