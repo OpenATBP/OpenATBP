@@ -7,6 +7,7 @@ import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
+import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -54,12 +55,18 @@ public class RattleBalls extends UserActor {
                 }else{
                     this.qUse = 0;
                     this.parryActive = false;
+                    Line2D wDashLine = new Line2D.Double(ogLocation,finalDashPoint);
                     String dashPrefix = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_" : "rattleballs_";
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_dash",this.location);
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_rattle_balls_2",this.location);
                     ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell1c",qTimeEffects,false);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashPrefix+"dash_trail",qTimeEffects,this.id+"_q2Trail",true,"Bip001",true,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashPrefix+"dash_dust",qTimeEffects,this.id+"_q2Dust",true,"Bip001 Footsteps",true,false,this.team);
+                    for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(this.room.getId()),wDashLine,2f)){
+                        if(a.getTeam() != this.team && a.getActorType() != ActorType.BASE){
+                            a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
+                        }
+                    }
                     ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 }
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new RattleAbilityHandler(ability,spellData,cooldown,gCooldown,finalDashPoint),qTime,TimeUnit.MILLISECONDS);
@@ -253,17 +260,6 @@ public class RattleBalls extends UserActor {
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(flipDelay,qTime,TimeUnit.MILLISECONDS);
             }else{
                 abilityEnded();
-                boolean sound = false;
-                for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),new Line2D.Float(location,dest),2d)){
-                    if(!sound){
-                        ExtensionCommands.playSound(parentExt,room,id,"sfx_rattleballs_dash_hit",location);
-                        sound = true;
-                    }
-                    if(isNonStructure(a)){
-                        ExtensionCommands.createActorFX(parentExt,room,a.getId(),"rattleballs_dash_hit",500,a.getId()+"_rattleHit",true,"Bip001",true,false,a.getTeam());
-                        a.addToDamageQueue(RattleBalls.this,getSpellDamage(spellData),spellData);
-                    }
-                }
             }
         }
 
