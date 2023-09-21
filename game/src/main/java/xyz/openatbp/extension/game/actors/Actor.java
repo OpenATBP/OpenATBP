@@ -60,6 +60,10 @@ public abstract class Actor {
 
     public String getId(){return this.id;}
     public int getTeam(){return this.team;}
+    public int getOppositeTeam(){
+        if(this.getTeam() == 1) return 0;
+        else return 1;
+    }
 
     public void setLocation(Point2D location){
         this.location = location;
@@ -292,6 +296,8 @@ public abstract class Actor {
                     break;
                 case POLYMORPH:
                     ExtensionCommands.swapActorAsset(parentExt,this.room, this.id,"flambit");
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"flambit_aoe",3000,this.id+"_flambit_aoe",true,"",true,false,this.team);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_ring_2",3000,this.id+"_flambit_ring_"+Math.random(),true,"",true,true,getOppositeTeam());
                     data.putUtfString("stat","speed");
                     double speedChange = this.getStat("speed")*-0.3;
                     this.setTempStat("speed",speedChange);
