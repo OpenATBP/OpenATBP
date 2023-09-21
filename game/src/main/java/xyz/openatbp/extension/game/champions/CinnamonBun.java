@@ -11,6 +11,7 @@ import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
+import java.awt.*;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.concurrent.TimeUnit;
@@ -124,8 +125,8 @@ public class CinnamonBun extends UserActor {
                 this.canCast[1] = false;
                 this.canMove = false;
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_cb_power2",this.location);
+                //ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_rect_7",5000,this.id+"w",false,"",true,true,this.team);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"cb_frosting_slide",5000,this.id+"_slide",false,"",true,false,this.team);
-                //ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_rect_7",5000,this.id+"_wRect",false,"",true,true,this.team);
                 this.changeHealth((int) ((double)(this.getMaxHealth())*0.05d));
                 Point2D firstLocation = new Point2D.Double(this.location.getX(),this.location.getY());
                 Point2D dashPoint = dest;
@@ -135,6 +136,7 @@ public class CinnamonBun extends UserActor {
                 int msRan = (int)(dashTime*1000d);
                 this.wLine = new Line2D.Double(firstLocation,dashEndPoint);
                 Runnable dashEnd = () -> this.canMove = true;
+                ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell2b",msRan,false);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(dashEnd,msRan,TimeUnit.MILLISECONDS);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new CinnamonAbilityHandler(ability,spellData,cooldown,gCooldown,dashEndPoint),5000,TimeUnit.MILLISECONDS);
