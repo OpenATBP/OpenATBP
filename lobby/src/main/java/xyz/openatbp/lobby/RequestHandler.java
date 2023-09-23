@@ -11,10 +11,9 @@ public class RequestHandler {
 
     }
 
-    public static JsonNode handleHandshake(JsonNode obj){ //Gives success to client
+    public static JsonNode handleHandshake(boolean successful){ //Gives success to client
         ObjectNode objectNode = objectMapper.createObjectNode();
-
-        objectNode.put("result",true);
+        objectNode.put("result",successful);
         return objectNode;
     }
 

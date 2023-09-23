@@ -2,6 +2,7 @@ const fs = require('fs');
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
+const { request } = require('undici');
 
 const database = require('./db-operations.js');
 const getRequest = require('./get-requests.js');
@@ -125,6 +126,50 @@ mongoClient.connect(err => {
     getRequest.handleBrowserLogin(req.params.username,playerCollection).then((data) => {
       res.send(JSON.stringify(data));
     }).catch(console.error);
+  });
+
+  app.get('/auth', async(req,res) => {
+    console.log(req.query.code);
+    var code = req.query.code;
+    if(code != undefined){
+      const token = await request('https://discord.com/api/oauth2/token',{
+        method: 'POST',
+        body: new URLSearchParams({
+          client_id: config.discord.client_id,
+          client_secret: config.discord.client_secret,
+          code,
+          grant_type: 'authorization_code',
+          redirect_uri: `${config.httpserver.url}:${config.httpserver.port}/auth/`,
+          scope: 'identify',
+        }).toString(),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+      const oauthData = await token.body.json();
+      console.log(oauthData);
+      if(oauthData != undefined){
+        const userResult = await request('https://discord.com/api/users/@me',{
+          headers: {
+            authorization: `${oauthData.token_type} ${oauthData.access_token}`
+          }
+        });
+        var userInfo = await userResult.body.json();
+        if(userInfo != undefined){
+          database.findDiscordId(userInfo.id,playerCollection).then((data) => {
+            res.cookie('TEGid',data.TEGid);
+            res.cookie('authid',data.authid);
+            res.cookie('dname',data.dname);
+            res.cookie('authpass',data.authpass);
+            res.cookie('logged',true);
+            res.redirect(config.discord.redirect_url);
+          }).catch((err)=>{
+            console.log(err);
+            res.redirect(config.discord.redirect_url);
+          });
+        }
+      }
+    }
   });
 
   app.post('/service/authenticate/login', (req,res) => {

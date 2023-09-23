@@ -40,17 +40,19 @@ class ClientWorker implements Runnable {
                     System.out.println("Received " + request.getType());
                     System.out.println("Payload " + request.getPayload().toPrettyString());
                     if(request.getType().equalsIgnoreCase("handshake")){ //Sends when client loads up the game
-                        request.send(clientOut,"handshake",RequestHandler.handleHandshake(request.getPayload()));
+                        request.send(clientOut,"handshake",RequestHandler.handleHandshake(true));
                     }else if(request.getType().equalsIgnoreCase("login")){ // Sends when client logs in
                         if(this.findPlayer(socket.getRemoteSocketAddress().toString()) == null){
                             int guestNum = this.getGuestNum();
                             if(request.getPayload().get("name").asText().contains("Guest")){
-                                players.add(new Player(socket,guestNum)); //Adds logged player in to server's player list
-                                System.out.println("Guest joined! " + guestNum);
+                                //players.add(new Player(socket,guestNum)); //Adds logged player in to server's player list
+                                //System.out.println("Guest joined! " + guestNum);
+                                request.send(clientOut,"handshake",RequestHandler.handleHandshake(false));
                             }else{
                                 players.add(new Player(socket,request.getPayload())); //Adds logged player in to server's player list
+                                request.send(clientOut,"login", RequestHandler.handleLogin(request.getPayload(),guestNum));
                             }
-                            request.send(clientOut,"login", RequestHandler.handleLogin(request.getPayload(),guestNum));
+
                         }
                     }else if(request.getType().equalsIgnoreCase("auto_join")){ //Sends when client presses on quick match
                         JsonNode payload = request.getPayload();
