@@ -139,7 +139,7 @@ mongoClient.connect(err => {
           client_secret: config.discord.client_secret,
           code,
           grant_type: 'authorization_code',
-          redirect_uri: `${config.httpserver.url}:${config.httpserver.port}/auth/`,
+          redirect_uri: `${config.httpserver.url}/auth/`,
           scope: 'identify',
         }).toString(),
         headers: {
