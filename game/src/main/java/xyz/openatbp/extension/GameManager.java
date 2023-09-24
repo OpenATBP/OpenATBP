@@ -151,10 +151,10 @@ public class GameManager {
             u.setVariable(userStat);
             ExtensionCommands.updateActorData(parentExt,room,updateData);
         }
-        Point2D guardianLoc = new Point2D.Float(MapData.L2_GUARDIAN1_X*-1,MapData.L2_GUARDIAN1_Z);
-        Point2D guardianLoc2 = new Point2D.Float(MapData.L2_GUARDIAN1_X,MapData.L2_GUARDIAN1_Z);
-        ExtensionCommands.moveActor(parentExt,room,"gumball0",guardianLoc,new Point2D.Float((float) (guardianLoc.getX()+0.01f), (float) guardianLoc.getY()),0.01f,true);
-        ExtensionCommands.moveActor(parentExt,room,"gumball1",guardianLoc2,new Point2D.Float((float) (guardianLoc2.getX()-0.01f), (float) guardianLoc2.getY()),0.01f,true);
+        Point2D guardianLoc = MapData.getGuardianLocationData(0,room.getGroupId());
+        Point2D guardianLoc2 = MapData.getGuardianLocationData(1,room.getGroupId());
+        ExtensionCommands.moveActor(parentExt,room,"gumball0",guardianLoc,new Point2D.Float((float) (guardianLoc.getX()+1f), (float) guardianLoc.getY()),0.01f,true);
+        ExtensionCommands.moveActor(parentExt,room,"gumball1",guardianLoc2,new Point2D.Float((float) (guardianLoc2.getX()-1f), (float) guardianLoc2.getY()),0.01f,true);
         try{ //Sets all the room variables once the game is about to begin
             setRoomVariables(room);
         }catch(SFSVariableException e){

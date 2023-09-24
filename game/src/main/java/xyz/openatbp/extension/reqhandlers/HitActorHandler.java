@@ -42,7 +42,7 @@ public class HitActorHandler extends BaseClientRequestHandler {
                 actor.resetIdleTime();
                 actor.setTarget(target);
                 if(actor.withinRange(target) && actor.canAttack()){
-                    actor.stopMoving(250);
+                    actor.stopMoving();
                     actor.attack(target);
                 }else if(!actor.withinRange(target)){ //Move actor
                     int attackRange = parentExt.getActorStats(actor.getAvatar()).get("attackRange").asInt();

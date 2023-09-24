@@ -61,7 +61,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
             CreateRoomSettings settings = new CreateRoomSettings();
             settings.setName(name);
             settings.setGame(true);
-            if(params.getUtfString("room_id").contains("pra")){
+            if(params.getUtfString("room_id").contains("pra") || params.getUtfString("room_id").contains("tutorial")){
                 settings.setMaxUsers(1);
                 settings.setGroupId("Practice");
             }else if(params.getUtfString("room_id").contains("3p")){

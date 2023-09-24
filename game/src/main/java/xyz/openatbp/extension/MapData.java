@@ -265,4 +265,18 @@ public class MapData {
         return guardian;
     }
 
+    public static Point2D getGuardianLocationData(int team, String room){
+        float x = 0;
+        float z = 0;
+        if(room.equalsIgnoreCase("practice")){
+            x = L1_GUARDIAN_X;
+            z = L1_GUARDIAN_Z;
+        }else{
+            x = L2_GUARDIAN1_X;
+            z = L2_GUARDIAN1_Z;
+        }
+        if(team == 0) x*=-1;
+        return new Point2D.Float(x,z);
+    }
+
 }
