@@ -8,8 +8,6 @@ import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
-import xyz.openatbp.extension.game.actors.Base;
-import xyz.openatbp.extension.game.actors.Tower;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
@@ -27,7 +25,9 @@ public class FlamePrincess extends UserActor {
     private boolean ultStarted = false;
     private int ultUses = 3;
     private int dashTime = 0;
-    boolean wUsed = false;
+    private boolean wUsed = false;
+    boolean polymorphActive = false;
+    long lastPolymorphTime = 0;
 
     public FlamePrincess(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -45,6 +45,22 @@ public class FlamePrincess extends UserActor {
                     double damage = (double) this.getSpellDamage(attackData) / 10;
                     if(a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE){
                         a.addToDamageQueue(this,damage,attackData);
+                    }
+                }
+            }
+        }
+        if(System.currentTimeMillis() - lastPolymorphTime <= 3000){
+            for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
+                this.polymorphActive = a.getState(ActorState.POLYMORPH);
+                if(polymorphActive){
+                    List<Actor> playersInRadius = Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()), a.getLocation(), 2f);
+                    playersInRadius.remove(a);
+
+                    for(Actor affectedActor : playersInRadius){
+                        if(!affectedActor.getId().equalsIgnoreCase(this.id) && affectedActor.getTeam() != this.team){
+                            JsonNode spellData = this.parentExt.getAttackData("flame","spell2");
+                            affectedActor.addToDamageQueue(this,getSpellDamage(spellData)/10d,spellData);
+                        }
                     }
                 }
             }
@@ -152,6 +168,7 @@ public class FlamePrincess extends UserActor {
                 if(a.getActorType() == ActorType.PLAYER){
                     UserActor userActor = (UserActor) a;
                     userActor.addState(ActorState.POLYMORPH,0d,3000,null,false);
+                    lastPolymorphTime = System.currentTimeMillis();
                 }
                 double newDamage = getSpellDamage(spellData);
                 a.addToDamageQueue(FlamePrincess.this,newDamage,parentExt.getAttackData(getAvatar(),"spell2"));
