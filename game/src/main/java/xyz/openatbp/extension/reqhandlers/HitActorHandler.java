@@ -42,22 +42,16 @@ public class HitActorHandler extends BaseClientRequestHandler {
                 actor.resetIdleTime();
                 actor.setTarget(target);
                 if(actor.withinRange(target) && actor.canAttack()){
-
-                    ExtensionCommands.moveActor(parentExt,sender.getLastJoinedRoom(),actor.getId(),location,location,(float) actor.getSpeed(),false);
-                    actor.setLocation(location);
-                    actor.setCanMove(false);
-                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(actor),250,TimeUnit.MILLISECONDS);
+                    actor.stopMoving(250);
                     actor.attack(target);
                 }else if(!actor.withinRange(target)){ //Move actor
                     int attackRange = parentExt.getActorStats(actor.getAvatar()).get("attackRange").asInt();
                     Line2D movementLine = new Line2D.Float(location,target.getLocation());
                     float targetDistance = (float)target.getLocation().distance(location)-attackRange;
                     Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
-                    actor.setPath(newPath);
-                    ExtensionCommands.moveActor(parentExt,sender.getLastJoinedRoom(), actor.getId(),location, newPath.getP2(), (float) actor.getSpeed(),true);
+                    actor.move(newPath.getP2());
                 }else if(actor.withinRange(target)){
-                    ExtensionCommands.moveActor(parentExt,sender.getLastJoinedRoom(),actor.getId(),location,location, (float) actor.getSpeed(),false);
-                    actor.setLocation(location);
+                    actor.stopMoving();
                 }
             }else{
                 trace("No target found!");
