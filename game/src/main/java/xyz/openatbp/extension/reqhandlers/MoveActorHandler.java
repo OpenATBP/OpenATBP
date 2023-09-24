@@ -57,93 +57,12 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                 //ExtensionCommands.createWorldFX(parentExt,user.getRoom(),"nothing","gnome_a","testPoint"+Math.random(),10000,(float)intersectionPoint.getX(),(float)intersectionPoint.getY(),false,0,0f);
                 destx = (float)intersectionPoint.getX();
                 destz = (float)intersectionPoint.getY();
-                /*
-                if(insideCollider(finalPoint,mapPaths) && !insideCollider(movementLine.getP2(), mapPaths)){
-                    System.out.println("Test case 1");
-                    destx = (float)movementLine.getX2();
-                    destz = (float)movementLine.getY2();
-                }
-
-                 */
-            }else{
-                System.out.println("Does not intersect!");
             }
-            /*Point2D testPoint = new Point2D.Float(destx,destz);
-            if(insideCollider(movementLine.getP1(), mapPaths)){
-                System.out.println("Test case 2");
-                Point2D newPoint = this.getOutsidePoint(new Line2D.Float(movementLine.getP1(),testPoint),mapPaths);
-                destx = (float) newPoint.getX();
-                destz = (float) newPoint.getY();
-            }
-
-             */
             Point2D dest = new Point2D.Float(destx,destz);
-            if(movementLine.getP1().distance(dest) >= 0.1f)user.move(params,dest);
+            if(movementLine.getP1().distance(dest) >= 0.1f) user.move(params,dest);
             else user.stopMoving();
         }else System.out.println("Can't move!");
 
-    }
-
-    private Point2D[] findAllPoints(Line2D line){ //Finds all points within a line
-        int arrayLength = (int)(line.getP1().distance(line.getP2()))*30; //Longer movement have more precision when checking collisions
-        if(arrayLength < 8) arrayLength = 8;
-        Point2D[] points = new Point2D[arrayLength];
-        float slope = (float)((line.getP2().getY() - line.getP1().getY())/(line.getP2().getX()-line.getP1().getX()));
-        float intercept = (float)(line.getP2().getY()-(slope*line.getP2().getX()));
-        float distance = (float)(line.getX2()-line.getX1());
-        int pValue = 0;
-        for(int i = 0; i < points.length; i++){ //Finds the points on the line based on distance
-            float x = (float)line.getP1().getX()+((distance/points.length)*i);
-            float y = slope*x + intercept;
-            Point2D point = new Point2D.Float(x,y);
-            points[pValue] = point;
-            pValue++;
-        }
-        return points;
-    }
-
-    private Point2D getIntersectionPoint(Line2D line, Line2D line2){ //Finds the intersection of two lines
-        float slope1 = (float)((line.getP2().getY() - line.getP1().getY())/(line.getP2().getX()-line.getP1().getX()));
-        float slope2 = (float)((line2.getP2().getY() - line2.getP1().getY())/(line2.getP2().getX()-line2.getP1().getX()));
-        float intercept1 = (float)(line.getP2().getY()-(slope1*line.getP2().getX()));
-        float intercept2 = (float)(line2.getP2().getY()-(slope2*line2.getP2().getX()));
-        float x = (intercept2-intercept1)/(slope1-slope2);
-        float y = slope1 * ((intercept2-intercept1)/(slope1-slope2)) + intercept1;
-        return new Point2D.Float(x,y);
-    }
-
-    //Returns a point where the player is no longer colliding with an object so that they can move freely and don't clip inside an object
-    @Deprecated
-    private Point2D collidePlayer(Line2D movementLine, Path2D collider){
-        if(collider.contains(movementLine.getP1())) return movementLine.getP1();
-        Point2D[] points = findAllPoints(movementLine);
-        Point2D p = movementLine.getP1();
-        for(int i = points.length-2; i>0; i--){ //Searchs all points in the movement line to see how close it can move without crashing into the collider
-            Point2D p2 = new Point2D.Double(points[i].getX(),points[i].getY());
-            Line2D line = new Line2D.Double(movementLine.getP1(),p2);
-            if(collider.intersects(line.getBounds())){
-                p = p2;
-                break;
-            }
-        }
-        return p;
-    }
-
-    private boolean insideCollider(Point2D point, List<Path2D> colliders){
-        for(Path2D collider : colliders){
-            if(collider.contains(point)) return true;
-        }
-        return false;
-    }
-
-    private Point2D getOutsidePoint(Line2D line, ArrayList<Path2D> colliders){
-        Point2D[] allPoints = findAllPoints(new Line2D.Float(line.getP2(),line.getP1()));
-        for(Path2D collider: colliders){
-            for(int i = allPoints.length-1; i >= 0; i--){
-                if(!collider.contains(allPoints[i])) return allPoints[i];
-            }
-        }
-        return line.getP2();
     }
 
 }

@@ -8,6 +8,7 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
@@ -176,7 +177,7 @@ public abstract class Actor {
                     ActorState state = (ActorState) data.getClass("state");
                     if(state == ActorState.CHARMED && this.target != null){
                         if(this.location.distance(this.movementLine.getP2()) < 0.01d){
-                            this.movementLine = Champion.getColliderLine(this.parentExt,this.room,new Line2D.Float(this.location, this.target.getLocation()));
+                            this.movementLine = MovementManager.getColliderLine(this.parentExt,this.room,new Line2D.Float(this.location, this.target.getLocation()));
                             this.timeTraveled = 0f;
                             ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,this.movementLine.getP2(), (float) this.getPlayerStat("speed"),true);
                         }
@@ -333,7 +334,7 @@ public abstract class Actor {
             this.setState(ActorState.CHARMED,true);
             this.setTarget(charmer);
             this.movementLine = new Line2D.Float(this.location,charmer.getLocation());
-            this.movementLine = Champion.getColliderLine(this.parentExt,this.room,this.movementLine);
+            this.movementLine = MovementManager.getColliderLine(this.parentExt,this.room,this.movementLine);
             this.timeTraveled = 0f;
             this.addState(ActorState.CHARMED,0d,duration,null,false);
             if(this.canMove) ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,this.movementLine.getP2(), (float) this.getSpeed(),true);
@@ -344,7 +345,7 @@ public abstract class Actor {
         if(!this.states.get(ActorState.FEARED)){
             this.setState(ActorState.FEARED,true);
             Line2D oppositeLine = Champion.getMaxRangeLine(new Line2D.Float(feared.getLocation(),this.location),10f);
-            oppositeLine = Champion.getColliderLine(this.parentExt,this.room,oppositeLine);
+            oppositeLine = MovementManager.getColliderLine(this.parentExt,this.room,oppositeLine);
             this.movementLine = new Line2D.Float(this.location,oppositeLine.getP2());
             this.timeTraveled = 0f;
             this.addState(ActorState.FEARED,0d,duration,null,false);
@@ -547,7 +548,7 @@ public abstract class Actor {
         this.stopMoving();
         Line2D originalLine = new Line2D.Double(source,this.location);
         Line2D knockBackLine = Champion.extendLine(originalLine,6f);
-        Line2D finalLine = new Line2D.Double(this.location,Champion.getDashPoint(parentExt,this, knockBackLine.getP2()));
+        Line2D finalLine = new Line2D.Double(this.location,MovementManager.getDashPoint(this,knockBackLine));
         this.addState(ActorState.AIRBORNE,0d,250,null,false);
         double speed = this.location.distance(finalLine.getP2()) / 0.25f;
         ExtensionCommands.knockBackActor(this.parentExt,this.room,this.id,this.location, finalLine.getP2(), (float)speed, false);
@@ -562,7 +563,7 @@ public abstract class Actor {
         System.out.println("Pull distance: " + distance + " vs " + this.location.distance(source));
         Line2D originalLine = new Line2D.Double(this.location,source);
         Line2D knockBackLine = Champion.getDistanceLine(originalLine,distDiff);
-        Line2D finalLine = new Line2D.Double(this.location,Champion.getDashPoint(parentExt,this, knockBackLine.getP2()));
+        Line2D finalLine = new Line2D.Double(this.location,MovementManager.getDashPoint(this,knockBackLine));
         this.addState(ActorState.AIRBORNE,0d,250,null,false);
         double speed = this.location.distance(finalLine.getP2()) / 0.25f;
         ExtensionCommands.knockBackActor(this.parentExt,this.room,this.id,this.location, finalLine.getP2(), (float)speed, false);

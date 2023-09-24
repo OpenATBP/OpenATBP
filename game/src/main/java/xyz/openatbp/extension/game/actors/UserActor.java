@@ -92,8 +92,13 @@ public class UserActor extends Actor {
         double currentDist = speed*currentTime;
         float x = (float)(x1+(currentDist/dist)*(x2-x1));
         float y = (float)(y1+(currentDist/dist)*(y2-y1));
+        if(x >= 52) x = 52;
+        else if(x <= -52) x = -52;
+        if(y >= 30) y = 30;
+        else if(y <= -30) y = -30;
         rPoint.setLocation(x,y);
         this.location = rPoint;
+        if(x >= 52 || x <= -52 || y >= 30 || y <= -30) this.stopMoving();
         return rPoint;
     }
 
@@ -114,7 +119,7 @@ public class UserActor extends Actor {
     @Override
     public boolean setTempStat(String stat, double delta){
         boolean returnVal = super.setTempStat(stat,delta);
-        if(stat.contains("speed")){
+        if(stat.contains("speed") && this.canMove){
             this.move(movementLine.getP2());
         }else if(stat.contains("healthRegen")){
             if(this.hasTempStat("healthRegen") && this.getTempStat("healthRegen") <= 0) this.tempStats.remove("healthRegen");
@@ -144,7 +149,6 @@ public class UserActor extends Actor {
 
     public void move(ISFSObject params, Point2D destination){
         Point2D orig = new Point2D.Float(params.getFloat("orig_x"),params.getFloat("orig_z"));
-        System.out.println("px: " + orig.getX() + " pz: " + orig.getY() + " | dx: " +destination.getX() + " dz: " + destination.getY());
         this.location = orig;
         this.movementLine = new Line2D.Float(orig,destination);
         this.timeTraveled = 0f;
@@ -254,6 +258,7 @@ public class UserActor extends Actor {
 
     public Point2D dash(Point2D dest, boolean noClip){
         Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
+        if(dashPoint == null) dashPoint = this.location;
         System.out.println("Dash: " + dashPoint);
         if(MOVEMENT_DEBUG) ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"gnome_a",this.id+"_test"+Math.random(),5000,(float)dashPoint.getX(),(float)dashPoint.getY(),false,0,0f);
         //if(noClip) dashPoint = Champion.getTeleportPoint(this.parentExt,this.player,this.location,dest);
@@ -267,22 +272,10 @@ public class UserActor extends Actor {
     }
 
     public Point2D fpDash(Point2D dest){
-        Point2D dashPoint = Champion.getDashPoint(this.parentExt,this,dest);
+        Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
         double time = dashPoint.distance(this.location)/16d;
         this.stopMoving((int)(time*1000d));
         ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, (float) 16d,true);
-        this.setLocation(dashPoint);
-        this.target = null;
-        return dashPoint;
-    }
-
-    public Point2D dash(Point2D dest, boolean noClip, float minRange){
-        Point2D maxDashPoint = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),minRange).getP2();
-        Point2D dashPoint = Champion.getDashPoint(this.parentExt,this,maxDashPoint);
-        if(noClip) dashPoint = Champion.getTeleportPoint(this.parentExt,this.player,this.location,maxDashPoint);
-        double time = dashPoint.distance(this.location)/DASH_SPEED;
-        this.stopMoving((int)(time*1000d));
-        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, (float) DASH_SPEED,true);
         this.setLocation(dashPoint);
         this.target = null;
         return dashPoint;
@@ -466,7 +459,7 @@ public class UserActor extends Actor {
                 Line2D movementLine = new Line2D.Float(this.location,target.getLocation());
                 //float targetDistance = (float)(target.getLocation().distance(currentPoint)-attackRange);
                 //Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
-                Line2D finalPath = Champion.getColliderLine(parentExt,room,movementLine);
+                Line2D finalPath = MovementManager.getColliderLine(parentExt,room,movementLine);
                 if(finalPath.getP2().distance(this.movementLine.getP2()) > 0.1f){
                     this.move(finalPath.getP2());
                 }

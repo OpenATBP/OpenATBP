@@ -7,6 +7,7 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -56,7 +57,7 @@ public class MagicMan extends UserActor {
         if(this.getState(ActorState.INVISIBLE) && wLocation != null){
             this.wMoveTime+=0.1d;
         }else if(!this.getState(ActorState.INVISIBLE) && wLocation != null){
-            Point2D explosionPoint = Champion.getRelativePoint(new Line2D.Float(this.wLocation,this.wDest),this.wSpeed,this.wMoveTime);
+            Point2D explosionPoint = MovementManager.getRelativePoint(new Line2D.Float(this.wLocation,this.wDest),this.wSpeed,this.wMoveTime);
             ExtensionCommands.moveActor(this.parentExt,this.room,this.id+"_decoy",explosionPoint,explosionPoint,5f,false);
             ExtensionCommands.destroyActor(this.parentExt,this.room,this.id+"_decoy");
             ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"magicman_eat_it",this.id+"_eatIt",1000,(float)explosionPoint.getX(),(float) explosionPoint.getY(), false,this.team,0f);

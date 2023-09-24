@@ -6,6 +6,7 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -74,7 +75,7 @@ public class Lich extends UserActor{
                 }
                 else{
                     if(this.ultTeleportsRemaining > 0){
-                        Point2D testLocation = Champion.getTeleportPoint(parentExt,player,this.location,ultLocation);
+                        Point2D testLocation = MovementManager.getDashPoint(this,new Line2D.Float(this.location,ultLocation));
                         ExtensionCommands.snapActor(parentExt,room,this.id,testLocation,testLocation,false);
                         this.setLocation(testLocation);
                         if(this.skully != null){

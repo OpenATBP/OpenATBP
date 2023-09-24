@@ -83,55 +83,6 @@ public class Champion {
         return actorDef.get("MonoBehaviours").get("ActorData").get("spell"+spell);
     }
 
-    public static Point2D getDashPoint(ATBPExtension parentExt, Actor actor, Point2D dest){
-        String room = actor.getRoom().getGroupId();
-        Line2D movementLine = new Line2D.Float(actor.getLocation(),dest);
-        ArrayList<Vector<Float>>[] colliders = parentExt.getColliders(room); //Gets all collision object vertices
-        ArrayList<Path2D> mapPaths = parentExt.getMapPaths(room); //Gets all created paths for the collision objects
-        for(int i = 0; i < mapPaths.size(); i++){
-            if(mapPaths.get(i).contains(movementLine.getP2())){
-                ArrayList<Vector<Float>> collider = colliders[i];
-                for(int g = 0; g < collider.size(); g++){ //Check all vertices in the collider
-
-                    Vector<Float> v = collider.get(g);
-                    Vector<Float> v2;
-                    if(g+1 == collider.size()){ //If it's the final vertex, loop to the beginning
-                        v2 = collider.get(0);
-                    }else{
-                        v2 = collider.get(g+1);
-                    }
-
-
-                    Line2D colliderLine = new Line2D.Float(v.get(0),v.get(1),v2.get(0),v2.get(1)); //Draws a line segment for the sides of the collider
-                    if(movementLine.intersectsLine(colliderLine)){ //If the player movement intersects a side
-                        Point2D intersectPoint = getIntersectionPoint(movementLine,colliderLine);
-                        Line2D newMovementLine = new Line2D.Float(movementLine.getP1(),intersectPoint);
-                        return collidePlayer(newMovementLine, intersectPoint);
-                    }
-                }
-            }
-        }
-        return dest;
-    }
-
-    public static Point2D getRelativePoint(Line2D movementLine, double speed, double timeTraveled){ //Gets player's current location based on time
-        double currentTime = timeTraveled;
-        Point2D rPoint = new Point2D.Float();
-        float x2 = (float) movementLine.getX2();
-        float y2 = (float) movementLine.getY2();
-        float x1 = (float) movementLine.getX1();
-        float y1 = (float) movementLine.getY1();
-        double dist = movementLine.getP1().distance(movementLine.getP2());
-        if(dist == 0) return movementLine.getP1();
-        double time = dist/speed;
-        if(currentTime>time) currentTime=time;
-        double currentDist = speed*currentTime;
-        float x = (float)(x1+(currentDist/dist)*(x2-x1));
-        float y = (float)(y1+(currentDist/dist)*(y2-y1));
-        rPoint.setLocation(x,y);
-        return rPoint;
-    }
-
     public static Point2D collidePlayer(Line2D movementLine, Point2D intersectionPoint){
         Point2D[] points = findAllPoints(movementLine);
         Point2D p = movementLine.getP2();
@@ -144,6 +95,7 @@ public class Champion {
         return p;
     }
 
+    @Deprecated
     public static Point2D getIntersectionPoint(Line2D line, Line2D line2){ //Finds the intersection of two lines
         float slope1 = (float)((line.getP2().getY() - line.getP1().getY())/(line.getP2().getX()-line.getP1().getX()));
         float slope2 = (float)((line2.getP2().getY() - line2.getP1().getY())/(line2.getP2().getX()-line2.getP1().getX()));
@@ -326,52 +278,7 @@ public class Champion {
         return states;
     }
 
-    public static Line2D getColliderLine(ATBPExtension parentExt, Room room, Line2D movementLine){
-        boolean intersects = false;
-        int mapPathIndex = -1;
-        float closestDistance = 100000;
-        ArrayList<Vector<Float>>[] colliders = parentExt.getColliders(room.getGroupId()); //Gets all collision object vertices
-        ArrayList<Path2D> mapPaths = parentExt.getMapPaths(room.getGroupId()); //Gets all created paths for the collision objects
-        Point2D intersectionPoint = new Point2D.Float(-1,-1);
-        for(int i = 0; i < mapPaths.size(); i++){ //Search through all colliders
-            if(mapPaths.get(i).intersects(movementLine.getBounds())){ //If the player's movement intersects a collider
-                ArrayList<Vector<Float>> collider = colliders[i];
-                for(int g = 0; g < collider.size(); g++){ //Check all vertices in the collider
 
-                    Vector<Float> v = collider.get(g);
-                    Vector<Float> v2;
-                    if(g+1 == collider.size()){ //If it's the final vertex, loop to the beginning
-                        v2 = collider.get(0);
-                    }else{
-                        v2 = collider.get(g+1);
-                    }
-
-
-                    Line2D colliderLine = new Line2D.Float(v.get(0),v.get(1),v2.get(0),v2.get(1)); //Draws a line segment for the sides of the collider
-                    if(movementLine.intersectsLine(colliderLine)){ //If the player movement intersects a side
-                        intersects = true;
-                        Point2D intPoint = getIntersectionPoint(movementLine,colliderLine);
-                        float dist = (float)movementLine.getP1().distance(intPoint);
-                        if(dist<closestDistance){ //If the player intersects two objects, this chooses the closest one.
-                            mapPathIndex = i;
-                            closestDistance = dist;
-                            intersectionPoint = intPoint;
-                        }
-
-                    }
-                }
-            }
-        }
-        float destx = (float)movementLine.getX2();
-        float destz = (float)movementLine.getY2();
-        if(intersects){ //If the player hits an object, find where they should end up
-            Point2D finalPoint = collidePlayer(new Line2D.Double(movementLine.getX1(),movementLine.getY1(),intersectionPoint.getX(),intersectionPoint.getY()),intersectionPoint);
-            destx = (float)finalPoint.getX();
-            destz = (float)finalPoint.getY();
-        }
-        Point2D finalPoint = new Point2D.Float(destx,destz);
-        return new Line2D.Float(movementLine.getP1(),finalPoint);
-    }
 
     public static void handleStatusIcon(ATBPExtension parentExt, UserActor player, String icon, String iconDesc, float duration){
         String iconName = icon+player.getId()+Math.random();

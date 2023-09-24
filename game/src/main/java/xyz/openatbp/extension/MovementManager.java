@@ -1,13 +1,10 @@
 package xyz.openatbp.extension;
 
 import com.smartfoxserver.v2.entities.Room;
-import org.w3c.dom.css.Rect;
-import xyz.openatbp.extension.game.Champion;
-import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.game.actors.Actor;
 
 import java.awt.geom.*;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 import java.util.stream.Collectors;
@@ -58,32 +55,38 @@ public class MovementManager {
         return colliderLines;
     }
 
-    public static Point2D getDashPoint(UserActor player, Line2D movementLine){
+    public static Point2D getDashPoint(Actor player, Line2D movementLine){
+        if(Math.abs(movementLine.getP2().getX()) >= 51 || Math.abs(movementLine.getY2()) >= 31) return movementLine.getP1();
         List<Vector<Float>> collider = getCollidingVectors(movementLine, player.getParentExt(), player.getRoom());
         if(collider != null){
             List<Line2D> vectorLines = getColliderVectorLines(collider);
             Line2D closestLine = findClosestLine(new Line2D.Float(movementLine.getP2(), movementLine.getP1()), vectorLines);
             if(closestLine == null) return movementLine.getP2();
-            if(collider.size() < 25 && !playerIntersectsWithCollider(movementLine.getP2(), collider)) return movementLine.getP2();
-            for(Point2D point : findAllPoints(closestLine)) {
-                ExtensionCommands.createWorldFX(player.getParentExt(), player.getUser(),"t","gnome_b","gnome"+Math.random(),4000,(float)point.getX(),(float)point.getY(),false,0,0f);
+            if(collider.size() < 25 && !playerIntersectsWithCollider(movementLine.getP2(), collider)){
+                return movementLine.getP2();
             }
             Line2D checkLine = extendLine(movementLine,10f);
             Point2D intPoint = getIntersectionPoint(checkLine,closestLine);
             if(intPoint != null){
                 System.out.println("Collider size: " + collider.size());
-                if(collider.size() >= 25) return getPathIntersectionPoint(movementLine,collider);
+                if(collider.size() > 25){
+                    Point2D wallPoint = getPathIntersectionPoint(movementLine,collider);
+                    if(wallPoint != null) return wallPoint;
+                    else return movementLine.getP2();
+                }
                 Point2D[] movementPoints = findAllPoints(checkLine);
                 Point2D[] colliderPoints = findAllPoints(closestLine);
+                if(colliderPoints.length > 600){
+                    System.out.println(colliderPoints.length + " size <-");
+                    return movementLine.getP1();
+                }
                 for(int i = 0; i < movementPoints.length; i++){
-                    ExtensionCommands.createWorldFX(player.getParentExt(), player.getUser(),"t","gnome_c","gnome2"+Math.random(),4000,(float)movementPoints[i].getX(),(float)movementPoints[i].getY(),false,0,0f);
-
+                   // ExtensionCommands.createWorldFX(player.getParentExt(), player.getUser(),"t","gnome_c","gnome2"+Math.random(),4000,(float)movementPoints[i].getX(),(float)movementPoints[i].getY(),false,0,0f);
                     for(Point2D p : colliderPoints){
                         Point2D currentPoint = movementPoints[i];
-                        if(currentPoint.distance(p) <= 0.5d){
+                        if(currentPoint.distance(p) <= 0.6d){
                             if(i == 0) return currentPoint;
                             else if(!playerIntersectsWithCollider(movementPoints[i-1],collider)) return movementPoints[i-1];
-                            else System.out.println("Ahh! " + i);
                         }
                     }
                 }
@@ -92,6 +95,28 @@ public class MovementManager {
 
         }
         return movementLine.getP2();
+    }
+
+    public static Point2D getRelativePoint(Line2D movementLine, double speed, double timeTraveled){ //Gets player's current location based on time
+        double currentTime = timeTraveled;
+        Point2D rPoint = new Point2D.Float();
+        float x2 = (float) movementLine.getX2();
+        float y2 = (float) movementLine.getY2();
+        float x1 = (float) movementLine.getX1();
+        float y1 = (float) movementLine.getY1();
+        double dist = movementLine.getP1().distance(movementLine.getP2());
+        if(dist == 0) return movementLine.getP1();
+        double time = dist/speed;
+        if(currentTime>time) currentTime=time;
+        double currentDist = speed*currentTime;
+        float x = (float)(x1+(currentDist/dist)*(x2-x1));
+        float y = (float)(y1+(currentDist/dist)*(y2-y1));
+        rPoint.setLocation(x,y);
+        return rPoint;
+    }
+
+    public static Line2D getColliderLine(ATBPExtension parentExt, Room room, Line2D movementLine){
+        return new Line2D.Float(movementLine.getP1(),getPathIntersectionPoint(movementLine,getCollidingVectors(movementLine,parentExt,room)));
     }
 
     public static Point2D getIntersectionPoint(Line2D line, Line2D line2){ //Finds the intersection of two lines
@@ -103,47 +128,6 @@ public class MovementManager {
         float y = slope1 * ((intercept2-intercept1)/(slope1-slope2)) + intercept1;
         if(Float.isNaN(x) || Float.isNaN(y)) return line.getP1();
         return new Point2D.Float(x,y);
-    }
-
-    public static Point2D findClosestNonCollidingPoint(Line2D movementLine, Line2D colliderLine){
-        Point2D[] allMovementPoints = findAllPoints(movementLine);
-        Point2D[] allPoints = findAllPoints(colliderLine);
-        for(int i = 0; i < allMovementPoints.length; i++){
-            for(Point2D p : allPoints){
-                if(p.distance(allMovementPoints[i]) <= 0.6f){
-                    if(i != 0 && p.distance(allMovementPoints[i-1]) >= 0.6f){
-                        System.out.println("Distance: " + p.distance(allMovementPoints[i-1]));
-                        return allMovementPoints[i-1];
-                    }
-                    else{
-                        System.out.println("Inside collider!");
-                        //return movementLine.getP1();
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    public static Point2D findClosestNonCollidingPoint(Line2D movementLine, Line2D colliderLine, List<Vector<Float>> collider){
-        Point2D[] allMovementPoints = findAllPoints(movementLine);
-        Point2D[] allPoints = findAllPoints(colliderLine);
-        for(int i = 0; i < allMovementPoints.length; i++){
-            for(Point2D p : allPoints){
-                if(!playerIntersectsWithCollider(p,collider)){
-                    if(i != 0 && !playerIntersectsWithCollider(allMovementPoints[i-1],collider)){
-                        System.out.println("Distance: " + p.distance(allMovementPoints[i-1]));
-                        return allMovementPoints[i-1];
-                    }
-                    else{
-                        System.out.println("Distance: " + p.distance(allMovementPoints[i]));
-                        System.out.println("Inside collider!");
-                        //return movementLine.getP1();
-                    }
-                }
-            }
-        }
-        return null;
     }
 
     public static Line2D extendLine(Line2D projectileLine, float distance){
