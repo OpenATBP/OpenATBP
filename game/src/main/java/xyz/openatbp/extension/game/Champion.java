@@ -104,8 +104,9 @@ public class Champion {
 
                     Line2D colliderLine = new Line2D.Float(v.get(0),v.get(1),v2.get(0),v2.get(1)); //Draws a line segment for the sides of the collider
                     if(movementLine.intersectsLine(colliderLine)){ //If the player movement intersects a side
-                        Line2D newMovementLine = new Line2D.Float(movementLine.getP1(),getIntersectionPoint(movementLine,colliderLine));
-                        return collidePlayer(newMovementLine, mapPaths.get(i));
+                        Point2D intersectPoint = getIntersectionPoint(movementLine,colliderLine);
+                        Line2D newMovementLine = new Line2D.Float(movementLine.getP1(),intersectPoint);
+                        return collidePlayer(newMovementLine, intersectPoint);
                     }
                 }
             }
@@ -131,17 +132,14 @@ public class Champion {
         return rPoint;
     }
 
-    private static Point2D collidePlayer(Line2D movementLine, Path2D collider){
-        if(collider.contains(movementLine.getP1())) return movementLine.getP1();
+    public static Point2D collidePlayer(Line2D movementLine, Point2D intersectionPoint){
         Point2D[] points = findAllPoints(movementLine);
-        Point2D p = movementLine.getP1();
-        for(int i = points.length-2; i>0; i--){ //Searchs all points in the movement line to see how close it can move without crashing into the collider
+        Point2D p = movementLine.getP2();
+        for(int i = points.length-1; i>0; i--){ //Searchs all points in the movement line to see how close it can move without crashing into the collider
             Point2D p2 = new Point2D.Double(points[i].getX(),points[i].getY());
+            Rectangle2D boundingBox = new Rectangle2D.Double(points[i].getX()+0.5f,points[i].getY()-0.5f,0.5f,0.5f);
             Line2D line = new Line2D.Double(movementLine.getP1(),p2);
-            if(collider.intersects(line.getBounds())){
-                p = p2;
-                break;
-            }
+            if(p2.distance(intersectionPoint) <= 0.5f) return p2;
         }
         return p;
     }
@@ -157,7 +155,7 @@ public class Champion {
         return new Point2D.Float(x,y);
     }
 
-    private static Point2D[] findAllPoints(Line2D line){ //Finds all points within a line
+    public static Point2D[] findAllPoints(Line2D line){ //Finds all points within a line
         int arrayLength = (int)(line.getP1().distance(line.getP2()))*30; //Longer movement have more precision when checking collisions
         if(arrayLength < 8) arrayLength = 8;
         Point2D[] points = new Point2D[arrayLength];
@@ -367,7 +365,7 @@ public class Champion {
         float destx = (float)movementLine.getX2();
         float destz = (float)movementLine.getY2();
         if(intersects){ //If the player hits an object, find where they should end up
-            Point2D finalPoint = collidePlayer(new Line2D.Double(movementLine.getX1(),movementLine.getY1(),intersectionPoint.getX(),intersectionPoint.getY()),mapPaths.get(mapPathIndex));
+            Point2D finalPoint = collidePlayer(new Line2D.Double(movementLine.getX1(),movementLine.getY1(),intersectionPoint.getX(),intersectionPoint.getY()),intersectionPoint);
             destx = (float)finalPoint.getX();
             destz = (float)finalPoint.getY();
         }

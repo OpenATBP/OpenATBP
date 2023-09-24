@@ -1,13 +1,9 @@
 package xyz.openatbp.extension;
-
-import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 
 import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
 import java.util.HashMap;
-import java.util.Vector;
 
 //PURPLE NEGATIVE X, BLUE POSITIVE X
 

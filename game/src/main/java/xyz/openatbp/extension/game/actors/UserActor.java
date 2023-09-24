@@ -6,10 +6,7 @@ import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ChampionData;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.MapData;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
@@ -48,7 +45,7 @@ public class UserActor extends Actor {
     protected static final double DASH_SPEED = 20d;
     private static final boolean MOVEMENT_DEBUG = false;
     private static final boolean INVINCIBLE_DEBUG = false;
-    private static final boolean ABILITY_DEBUG = false;
+    private static final boolean ABILITY_DEBUG = true;
 
     //TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt){
@@ -147,6 +144,7 @@ public class UserActor extends Actor {
 
     public void move(ISFSObject params, Point2D destination){
         Point2D orig = new Point2D.Float(params.getFloat("orig_x"),params.getFloat("orig_z"));
+        System.out.println("px: " + orig.getX() + " pz: " + orig.getY() + " | dx: " +destination.getX() + " dz: " + destination.getY());
         this.location = orig;
         this.movementLine = new Line2D.Float(orig,destination);
         this.timeTraveled = 0f;
@@ -255,9 +253,12 @@ public class UserActor extends Actor {
     }
 
     public Point2D dash(Point2D dest, boolean noClip){
-        Point2D dashPoint = Champion.getDashPoint(this.parentExt,this,dest);
-        if(noClip) dashPoint = Champion.getTeleportPoint(this.parentExt,this.player,this.location,dest);
+        Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
+        System.out.println("Dash: " + dashPoint);
+        if(MOVEMENT_DEBUG) ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"gnome_a",this.id+"_test"+Math.random(),5000,(float)dashPoint.getX(),(float)dashPoint.getY(),false,0,0f);
+        //if(noClip) dashPoint = Champion.getTeleportPoint(this.parentExt,this.player,this.location,dest);
         double time = dashPoint.distance(this.location)/DASH_SPEED;
+        System.out.println("Time stopped: " + time);
         this.stopMoving((int)(time*1000d));
         ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, (float) DASH_SPEED,true);
         this.setLocation(dashPoint);
@@ -610,7 +611,7 @@ public class UserActor extends Actor {
         this.canMove = false;
         if(delay > 0){
             SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(true),delay,TimeUnit.MILLISECONDS);
-        }
+        }else this.canMove = true;
     }
 
     public void respawn(){
