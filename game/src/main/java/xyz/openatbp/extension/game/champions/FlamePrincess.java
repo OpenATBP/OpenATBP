@@ -53,11 +53,11 @@ public class FlamePrincess extends UserActor {
             for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
                 this.polymorphActive = a.getState(ActorState.POLYMORPH);
                 if(polymorphActive){
-                    List<Actor> playersInRadius = Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()), a.getLocation(), 2f);
-                    playersInRadius.remove(a);
+                    List<Actor> actorsInRadius = Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()), a.getLocation(), 2f);
+                    actorsInRadius.remove(a);
 
-                    for(Actor affectedActor : playersInRadius){
-                        if(!affectedActor.getId().equalsIgnoreCase(this.id) && affectedActor.getTeam() != this.team){
+                    for(Actor affectedActor : actorsInRadius){
+                        if(!affectedActor.getId().equalsIgnoreCase(this.id) && affectedActor.getTeam() != this.team && isNonStructure(affectedActor)){
                             JsonNode spellData = this.parentExt.getAttackData("flame","spell2");
                             affectedActor.addToDamageQueue(this,getSpellDamage(spellData)/10d,spellData);
                         }
@@ -133,6 +133,16 @@ public class FlamePrincess extends UserActor {
             case 4: //Passive
                 break;
         }
+    }
+
+    private Point2D fpDash(Point2D dest){
+        Point2D dashPoint = Champion.getDashPoint(this.parentExt,this,dest);
+        double time = dashPoint.distance(this.location)/16d;
+        this.stopMoving((int)(time*1000d));
+        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, (float) 16d,true);
+        this.setLocation(dashPoint);
+        this.target = null;
+        return dashPoint;
     }
 
     @Override
