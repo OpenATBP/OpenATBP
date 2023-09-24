@@ -83,18 +83,6 @@ public class Champion {
         return actorDef.get("MonoBehaviours").get("ActorData").get("spell"+spell);
     }
 
-    public static Point2D collidePlayer(Line2D movementLine, Point2D intersectionPoint){
-        Point2D[] points = findAllPoints(movementLine);
-        Point2D p = movementLine.getP2();
-        for(int i = points.length-1; i>0; i--){ //Searchs all points in the movement line to see how close it can move without crashing into the collider
-            Point2D p2 = new Point2D.Double(points[i].getX(),points[i].getY());
-            Rectangle2D boundingBox = new Rectangle2D.Double(points[i].getX()+0.5f,points[i].getY()-0.5f,0.5f,0.5f);
-            Line2D line = new Line2D.Double(movementLine.getP1(),p2);
-            if(p2.distance(intersectionPoint) <= 0.5f) return p2;
-        }
-        return p;
-    }
-
     @Deprecated
     public static Point2D getIntersectionPoint(Line2D line, Line2D line2){ //Finds the intersection of two lines
         float slope1 = (float)((line.getP2().getY() - line.getP1().getY())/(line.getP2().getX()-line.getP1().getX()));
@@ -107,6 +95,7 @@ public class Champion {
         return new Point2D.Float(x,y);
     }
 
+    @Deprecated
     public static Point2D[] findAllPoints(Line2D line){ //Finds all points within a line
         int arrayLength = (int)(line.getP1().distance(line.getP2()))*30; //Longer movement have more precision when checking collisions
         if(arrayLength < 8) arrayLength = 8;
@@ -144,34 +133,6 @@ public class Champion {
                 Point2D location = a.getLocation();
                 if(circle.contains(location)) affectedActors.add(a);
             }
-        }
-        return affectedActors;
-    }
-
-    public static UserActor getUserInLine(RoomHandler room, List<UserActor> exemptedUsers, Line2D line){
-        UserActor hitActor = null;
-        double closestDistance = 100;
-        for(UserActor u : room.getPlayers()){
-            if(!exemptedUsers.contains(u)){
-                if(line.intersectsLine(u.getMovementLine())){
-                    if(u.getLocation().distance(line.getP1()) < closestDistance){
-                        closestDistance = u.getLocation().distance(line.getP1());
-                        hitActor = u;
-                    }
-                }
-            }
-        }
-        if(hitActor != null){
-            Point2D intersectionPoint = getIntersectionPoint(line,hitActor.getMovementLine());
-        }
-        return hitActor;
-    }
-
-    public static List<Actor> getUsersInBox(RoomHandler room, Point2D start, double width, double height){
-        Rectangle2D box = new Rectangle2D.Double(start.getX()+(width/2),start.getY(),width,height);
-        List<Actor> affectedActors = new ArrayList<>();
-        for(Actor a : room.getActors()){
-            if(box.contains(a.getLocation())) affectedActors.add(a);
         }
         return affectedActors;
     }
@@ -232,42 +193,6 @@ public class Champion {
         float y = slope*x + intercept;
         Point2D newPoint = new Point2D.Float(x,y);
         return new Line2D.Float(movementLine.getP1(),newPoint);
-    }
-
-    public static Point2D getTeleportPoint(ATBPExtension parentExt, User user, Point2D location, Point2D dest){
-        ArrayList<Path2D> colliderPaths = parentExt.getMapPaths("main");
-        for(int i = 0; i < colliderPaths.size(); i++){
-            if(colliderPaths.get(i).contains(dest)){
-                Path2D path = colliderPaths.get(i);
-                Rectangle2D bounds = path.getBounds2D();
-                Point2D topRight = new Point2D.Double(bounds.getMaxX(),bounds.getMaxY());
-                Point2D topLeft = new Point2D.Double(bounds.getMinX(),bounds.getMaxY());
-                Point2D bottomLeft = new Point2D.Double(bounds.getMinX(),bounds.getMinY());
-                Point2D bottomRight = new Point2D.Double(bounds.getMaxX(),bounds.getMinY());
-
-                double closestDistance = 1000d;
-                Point2D closestPoint = new Point2D.Double(location.getX(),location.getY());
-
-                for(double g = bottomLeft.getY(); g < topLeft.getY(); g+=(topLeft.getY()/10)){
-                    Point2D testPoint = new Point2D.Double(topLeft.getX(),g);
-                    if(testPoint.distance(dest) < closestDistance){
-                        closestDistance = testPoint.distance(dest);
-                        closestPoint = testPoint;
-                    }
-                }
-
-                for(double g = bottomRight.getY(); g < topRight.getY(); g+=(topRight.getY()/10)){
-                    Point2D testPoint = new Point2D.Double(topRight.getX(),g);
-                    if(testPoint.distance(dest) < closestDistance){
-                        closestDistance = testPoint.distance(dest);
-                        closestPoint = testPoint;
-                    }
-                }
-
-                return closestPoint;
-            }
-        }
-        return dest;
     }
 
     public static HashMap<ActorState, Boolean> getBlankStates(){

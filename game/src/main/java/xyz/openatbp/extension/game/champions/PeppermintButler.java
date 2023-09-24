@@ -5,12 +5,14 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.concurrent.TimeUnit;
 
@@ -106,12 +108,12 @@ public class PeppermintButler extends UserActor {
                 canCast[1] = false;
                 this.stopMoving();
                 this.setCanMove(false);
-                Point2D dashLocation = Champion.getTeleportPoint(parentExt,player,this.location,dest);
+                Point2D dashLocation = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
                 double time = dashLocation.distance(this.location)/DASH_SPEED;
                 int runtime = (int)Math.floor(time*1000);
                 String hohoVoPrefix = (this.avatar.contains("zombie")) ? "pepbut_zombie_" : "pepbut_";
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+hohoVoPrefix+"hoho",this.location);
-                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_2.5",this.id+"_wRing",runtime,(float)dashLocation.getX(),(float)dashLocation.getY(),true,this.team,0f);
+                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_2.5",this.id+"_wRing",runtime+500,(float)dashLocation.getX(),(float)dashLocation.getY(),true,this.team,0f);
                 Runnable animationDelay = () -> {
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_pepbut_dig",this.location);
                     ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell2b",runtime,true);

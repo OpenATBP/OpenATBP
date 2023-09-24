@@ -116,8 +116,8 @@ public class MagicMan extends UserActor {
                 }
                 this.canCast[1] = false;
                 if(this.wLocation == null){
-                    Point2D dashPoint = Champion.getTeleportPoint(parentExt,this.player,this.location,dest);
-                    if(this.location.distance(dashPoint) < 5) dashPoint = Champion.getTeleportPoint(parentExt,this.player,this.location,Champion.getMaxRangeLine(new Line2D.Float(this.location,dashPoint),5f).getP2());
+                    Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
+                    if(this.location.distance(dashPoint) < 5) dashPoint = MovementManager.getDashPoint(this,Champion.getMaxRangeLine(new Line2D.Float(this.location,dashPoint),5f));
                     this.addState(ActorState.INVISIBLE,0d,3000,null,false);
                     this.wLocation = new Point2D.Double(this.location.getX(),this.location.getY());
                     Point2D endLocation = Champion.getDistanceLine(this.movementLine,100f).getP2();
