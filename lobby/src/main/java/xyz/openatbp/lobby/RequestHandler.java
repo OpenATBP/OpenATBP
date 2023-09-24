@@ -26,7 +26,7 @@ public class RequestHandler {
             objectNode.put("player",(float)obj.get("auth_id").asDouble());
         }
         objectNode.put("teg_id",obj.get("teg_id").asText());
-        objectNode.put("name", obj.get("name").asText());
+        objectNode.put("name", obj.get("name").asText().replace("%20"," "));
         return objectNode;
     }
 
