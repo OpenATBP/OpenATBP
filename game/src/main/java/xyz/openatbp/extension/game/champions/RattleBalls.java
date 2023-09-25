@@ -206,6 +206,7 @@ public class RattleBalls extends UserActor {
             this.parryActive = false;
             this.canMove = true;
             this.handleLifeSteal();
+            this.abilityEnded();
             JsonNode basicAttackData = this.getParentExt().getAttackData(this.avatar,"basicAttack");
             a.addToDamageQueue(this,this.getPlayerStat("attackDamage")*2,basicAttackData);
             String counterSFx = (this.avatar.contains("spidotron")) ? "sfx_rattleballs_luchador_counter_attack_crit" : "sfx_rattleballs_counter_stance";
@@ -246,9 +247,9 @@ public class RattleBalls extends UserActor {
 
         @Override
         protected void spellQ() {
-            canCast[0] = true;
             if(qUse == 1){
                 Runnable flipDelay = () -> {
+                    canCast[0] = true;
                     parryActive = true;
                     parryCooldown = System.currentTimeMillis();
                     stopMoving(1500);
@@ -260,6 +261,7 @@ public class RattleBalls extends UserActor {
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(flipDelay,qTime,TimeUnit.MILLISECONDS);
             }else{
                 abilityEnded();
+                canCast[0] = true;
             }
         }
 

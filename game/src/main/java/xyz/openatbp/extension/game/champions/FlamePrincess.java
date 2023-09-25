@@ -117,7 +117,6 @@ public class FlamePrincess extends UserActor {
                 }else{
                     if(ultUses>0){
                         //TODO: Fix so FP can dash and still get health packs
-                        System.out.println(ultUses);
                         Point2D ogLocation = this.location;
                         Point2D dashLocation = this.fpDash(dest);
                         double time = ogLocation.distance(dashLocation)/DASH_SPEED;
