@@ -114,13 +114,19 @@ public class ExtensionCommands {
     public static void moveActor(ATBPExtension parentExt, Room room, String id, Point2D p, Point2D d, float speed, boolean orient){
         //System.out.println(id + " moving!");
         //if(id.contains("neptr")) System.out.println(id + ": (" + p.getX() + "," + p.getY() +") to (" + d.getX() + "," + d.getY() + ") at " + speed);
+        float px = (float) p.getX();
+        float pz = (float) p.getY();
+        float dx = (float) d.getX();
+        float dz = (float) d.getY();
+        if(Float.isNaN(dx)) dx = px;
+        if(Float.isNaN(dz)) dz = pz;
         for(User u : room.getUserList()){
             ISFSObject data = new SFSObject();
             data.putUtfString("i",id);
             data.putFloat("px",(float)p.getX());
             data.putFloat("pz",(float)p.getY());
-            data.putFloat("dx",(float) d.getX() + 0.1f);
-            data.putFloat("dz",(float) d.getY() + 0.1f);
+            data.putFloat("dx",dx + 0.1f);
+            data.putFloat("dz",dz + 0.1f);
             data.putFloat("s",speed);
             data.putBool("o",orient);
             parentExt.send("cmd_move_actor",data,u);

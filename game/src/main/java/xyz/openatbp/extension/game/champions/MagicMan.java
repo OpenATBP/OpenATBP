@@ -118,21 +118,24 @@ public class MagicMan extends UserActor {
                 if(this.wLocation == null){
                     Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
                     if(this.location.distance(dashPoint) < 5) dashPoint = MovementManager.getDashPoint(this,Champion.getMaxRangeLine(new Line2D.Float(this.location,dashPoint),5f));
+                    if(Double.isNaN(dashPoint.getY())) dashPoint = this.location;
                     this.addState(ActorState.INVISIBLE,0d,3000,null,false);
                     this.wLocation = new Point2D.Double(this.location.getX(),this.location.getY());
                     Point2D endLocation = Champion.getDistanceLine(this.movementLine,100f).getP2();
                     if(this.location.distance(endLocation) <= 1d) endLocation = this.location;
                     this.wDest = endLocation;
                     this.wSpeed = this.getPlayerStat("speed");
-                    ExtensionCommands.createActor(this.parentExt,this.room,this.id+"_decoy",this.avatar+"_decoy",this.location,0f,this.team);
-                    ExtensionCommands.moveActor(this.parentExt,this.room,this.id+"_decoy",this.location,endLocation, (float) this.getPlayerStat("speed"),true);
                     ISFSObject data = new SFSObject();
                     data.putInt("currentHealth", (int) this.currentHealth);
                     data.putInt("maxHealth",(int) this.maxHealth);
                     data.putDouble("pHealth",this.getPHealth());
                     ExtensionCommands.updateActorData(this.parentExt,this.room,this.id+"_decoy",data);
                     ExtensionCommands.snapActor(this.parentExt,this.room,this.id,this.location,dashPoint,true);
+                    Point2D ogLocation = new Point2D.Double(this.location.getX(),this.location.getY());
+                    System.out.println("DashX: " + dashPoint.getX() + " DashY: " + dashPoint.getY());
                     this.setLocation(dashPoint);
+                    ExtensionCommands.createActor(this.parentExt,this.room,this.id+"_decoy",this.avatar+"_decoy",ogLocation,0f,this.team);
+                    ExtensionCommands.moveActor(this.parentExt,this.room,this.id+"_decoy",ogLocation,endLocation, (float) this.getPlayerStat("speed"),true);
                     ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,gCooldown,gCooldown);
                 }else{
                     this.setState(ActorState.INVISIBLE, false);
