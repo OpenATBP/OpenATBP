@@ -1,6 +1,5 @@
 package xyz.openatbp.extension;
 
-import com.dongbat.walkable.PathHelper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -13,12 +12,10 @@ import static com.mongodb.client.model.Filters.eq;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.entities.Room;
-import com.smartfoxserver.v2.entities.User;
-import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.extensions.SFSExtension;
 import org.bson.Document;
 import xyz.openatbp.extension.evthandlers.*;
-import xyz.openatbp.extension.game.actors.Actor;
+import xyz.openatbp.extension.game.Obstacle;
 import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.reqhandlers.*;
 
@@ -35,6 +32,7 @@ public class ATBPExtension extends SFSExtension {
     HashMap<String, JsonNode> itemDefinitions = new HashMap<>();
     ArrayList<Vector<Float>>[] mapColliders; //Contains all vertices for the practice map
     ArrayList<Vector<Float>>[] mainMapColliders; //Contains all vertices for the main map
+    List<Obstacle> mainMapObstacles;
 
     ArrayList<Vector<Float>>[] brushColliders;
     ArrayList<Path2D> mapPaths; //Contains all line paths of the colliders for the practice map
@@ -48,9 +46,6 @@ public class ATBPExtension extends SFSExtension {
     MongoClient mongoClient;
     MongoDatabase database;
     MongoCollection<Document> playerDatabase;
-
-    PathHelper l1_mapHelper;
-    PathHelper l2_mapHelper;
     public void init() {
         this.addEventHandler(SFSEventType.USER_JOIN_ROOM, JoinRoomEventHandler.class);
         this.addEventHandler(SFSEventType.USER_JOIN_ZONE, JoinZoneEventHandler.class);
@@ -172,6 +167,7 @@ public class ATBPExtension extends SFSExtension {
         colliders = (ArrayNode) node.get("SceneColliders").get("collider");
         mainMapColliders = new ArrayList[colliders.size()];
         mainMapPaths = new ArrayList<>(colliders.size());
+        mainMapObstacles = new ArrayList<>(colliders.size());
         for(int i = 0; i < colliders.size(); i++){
             Path2D path = new Path2D.Float();
             ArrayNode vertices = (ArrayNode) colliders.get(i).get("vertex");
@@ -190,7 +186,12 @@ public class ATBPExtension extends SFSExtension {
             path.closePath();
             mainMapPaths.add(path);
             mainMapColliders[i] = vecs;
+            mainMapObstacles.add(new Obstacle(path,vecs));
         }
+    }
+
+    public List<Obstacle> getMainMapObstacles(){
+        return this.mainMapObstacles;
     }
 
     public ArrayList<Vector<Float>>[] getColliders(String map){

@@ -6,6 +6,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.Obstacle;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
@@ -46,11 +47,22 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             ArrayList<Vector<Float>>[] colliders = ((ATBPExtension) getParentExtension()).getColliders(room); //Gets all collision object vertices
             ArrayList<Path2D> mapPaths = ((ATBPExtension) getParentExtension()).getMapPaths(room); //Gets all created paths for the collision objects
             Point2D intersectionPoint = null;
-            for(int i = 0; i < mapPaths.size(); i++){ //Search through all colliders
-                if(mapPaths.get(i).intersects(movementLine.getBounds())){ //If the player's movement intersects a collider
-                    intersectionPoint = MovementManager.getPathIntersectionPoint(movementLine,colliders[i]);
+            for(Obstacle o : parentExt.getMainMapObstacles()){
+                if(o.intersects(movementLine)){
+                    intersectionPoint = o.intersectPoint(movementLine);
+                    break;
                 }
             }
+            /*
+            for(int i = 0; i < mapPaths.size(); i++){ //Search through all colliders
+                Point2D playerLoc = MovementManager.getPathIntersectionPoint(movementLine,colliders[i]);
+                if(playerLoc != null){
+                    intersectionPoint = playerLoc;
+                    break;
+                }
+            }
+
+             */
             float destx = (float)movementLine.getX2();
             float destz = (float)movementLine.getY2();
             if(intersectionPoint != null){ //If the player hits an object, find where they should end up

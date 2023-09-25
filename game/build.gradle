@@ -66,15 +66,12 @@ jar {
 
 repositories {
     mavenCentral()
-    jcenter()
-    maven { url "https://jitpack.io"}
 }
 
 dependencies {
     implementation files('lib/sfs2x-core.jar', 'lib/sfs2x.jar')
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-xml', version: '2.9.0'
     implementation 'org.mongodb:mongodb-driver-sync:4.10.0'
-    compile 'com.github.implicit-invocation:jwalkable:master-SNAPSHOT'
 }
 
 assemble.dependsOn copySFS2XLibs
