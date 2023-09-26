@@ -149,7 +149,7 @@ public class Lich extends UserActor{
             for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(this.room.getId()),ultLocation,3f)){
                 if(a.getTeam() != this.team && a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER){
                     if(!damageDealt) damageDealt = true;
-                    double damage = getSpellDamage(spellData)/10d;
+                    double damage = getSpellDamage(spellData)/2d;
                     a.addToDamageQueue(this,Math.round(damage),spellData);
                 }
             }

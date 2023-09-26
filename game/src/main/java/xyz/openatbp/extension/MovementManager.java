@@ -1,6 +1,7 @@
 package xyz.openatbp.extension;
 
 import com.smartfoxserver.v2.entities.Room;
+import xyz.openatbp.extension.game.Obstacle;
 import xyz.openatbp.extension.game.actors.Actor;
 
 import java.awt.geom.*;
@@ -149,6 +150,13 @@ public class MovementManager {
         return closestLine;
     }
 
+    public static boolean insideAnyObstacle(ATBPExtension parentExt, Point2D point){
+        for(Obstacle o : parentExt.getMainMapObstacles()){
+            if(o.contains(point)) return true;
+        }
+        return false;
+    }
+
     public static Point2D getPathIntersectionPoint(Line2D movementLine, List<Vector<Float>> collider){
         Point2D[] allPoints = findAllPoints(movementLine);
         List<Line2D> colliderLines = getColliderVectorLines(collider).stream().filter(l -> l.intersectsLine(movementLine)).collect(Collectors.toList());
@@ -168,6 +176,15 @@ public class MovementManager {
             }
         }else{
             System.out.println("Null!");
+        }
+        return null;
+    }
+
+    public static Point2D getPathIntersectionPoint(ATBPExtension parentExt, Line2D movementLine){
+        for(Obstacle o : parentExt.getMainMapObstacles()){
+            if(o.intersects(movementLine)){
+                return o.intersectPoint(movementLine);
+            }
         }
         return null;
     }

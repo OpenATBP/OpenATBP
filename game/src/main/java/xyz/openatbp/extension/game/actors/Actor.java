@@ -41,6 +41,8 @@ public abstract class Actor {
     protected Map<String, ISFSObject> activeBuffs = new HashMap<>();
     protected List<ISFSObject> damageQueue = new ArrayList<>();
     protected Actor target;
+    protected List<Point2D> path;
+    protected int pathIndex = 1;
 
 
     public double getPHealth(){
@@ -116,6 +118,29 @@ public abstract class Actor {
         this.movementLine = new Line2D.Float(this.location,destination);
         this.timeTraveled = 0f;
         ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,destination, (float) this.getPlayerStat("speed"),true);
+    }
+
+    public void moveWithCollision(Point2D dest){
+        Line2D testLine = new Line2D.Float(this.location,dest);
+        Point2D newPoint = MovementManager.getPathIntersectionPoint(this.parentExt,testLine);
+        if(newPoint != null){
+            this.move(newPoint);
+        }else this.move(dest);
+    }
+
+    public void setPath(List<Point2D> path){
+
+        Line2D pathLine = new Line2D.Float(this.location,path.get(1));
+        Point2D dest = MovementManager.getPathIntersectionPoint(parentExt,pathLine);
+        if(dest == null) dest = path.get(1);
+        this.path = path;
+        this.pathIndex = 1;
+        this.move(dest);
+    }
+
+    public void clearPath(){
+        this.path = null;
+        this.pathIndex = 1;
     }
 
     public boolean setTempStat(String stat, double delta){

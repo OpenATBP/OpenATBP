@@ -426,6 +426,15 @@ public class UserActor extends Actor {
             this.updateMovementTime();
         }
         this.location = this.getRelativePoint(false);
+        if(this.path != null && this.location.distance(this.movementLine.getP2()) <= 0.9d){
+            if(this.pathIndex+1 != this.path.size()){
+                this.pathIndex++;
+                if(MovementManager.insideAnyObstacle(this.parentExt,this.path.get(this.pathIndex))) this.moveWithCollision(this.path.get(this.pathIndex));
+                else this.move(this.path.get(this.pathIndex));
+            }else{
+                this.path = null;
+            }
+        }
         if(MOVEMENT_DEBUG) ExtensionCommands.moveActor(this.parentExt,this.room,this.id+"_movementDebug",this.location,this.location,5f,false);
         if(this.location.distance(this.movementLine.getP2()) <= 0.01f){
             this.idleTime+=100;

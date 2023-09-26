@@ -1,5 +1,6 @@
 package xyz.openatbp.extension;
 
+import com.dongbat.walkable.PathHelper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -9,10 +10,13 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.in;
+
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.extensions.SFSExtension;
+import hxDaedalus.ai.PathFinder;
 import org.bson.Document;
 import xyz.openatbp.extension.evthandlers.*;
 import xyz.openatbp.extension.game.Obstacle;
@@ -46,6 +50,8 @@ public class ATBPExtension extends SFSExtension {
     MongoClient mongoClient;
     MongoDatabase database;
     MongoCollection<Document> playerDatabase;
+
+    PathHelper mainMapPathFinder;
     public void init() {
         this.addEventHandler(SFSEventType.USER_JOIN_ROOM, JoinRoomEventHandler.class);
         this.addEventHandler(SFSEventType.USER_JOIN_ZONE, JoinZoneEventHandler.class);
@@ -71,7 +77,6 @@ public class ATBPExtension extends SFSExtension {
         this.addRequestHandler("req_auto_target", AutoTargetHandler.class);
         this.addRequestHandler("req_admin_command", Stub.class);
         this.addRequestHandler("req_spam", Stub.class);
-
         Properties props = getConfigProperties();
         if (!props.containsKey("mongoURI"))
             throw new RuntimeException("Mongo URI not set. Please create config.properties in the extension folder and define it.");
@@ -168,6 +173,7 @@ public class ATBPExtension extends SFSExtension {
         mainMapColliders = new ArrayList[colliders.size()];
         mainMapPaths = new ArrayList<>(colliders.size());
         mainMapObstacles = new ArrayList<>(colliders.size());
+        mainMapPathFinder = new PathHelper(100f,100f);
         for(int i = 0; i < colliders.size(); i++){
             Path2D path = new Path2D.Float();
             ArrayNode vertices = (ArrayNode) colliders.get(i).get("vertex");
@@ -187,7 +193,19 @@ public class ATBPExtension extends SFSExtension {
             mainMapPaths.add(path);
             mainMapColliders[i] = vecs;
             mainMapObstacles.add(new Obstacle(path,vecs));
+            float[] verts = new float[vecs.size()*2];
+            int index = 0;
+            for(Vector<Float> v : vecs){
+                verts[index] = v.get(0)+50;
+                verts[index+1] = v.get(1)+30;
+                index+=2;
+            }
+            mainMapPathFinder.addPolyline(verts);
         }
+    }
+
+    public PathHelper getMainMapPathFinder(){
+        return this.mainMapPathFinder;
     }
 
     public List<Obstacle> getMainMapObstacles(){
