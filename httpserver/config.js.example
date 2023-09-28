@@ -1,12 +1,19 @@
 var config = {};
 config.httpserver = {};
 config.sockpol = {};
+config.discord = {};
 
 config.httpserver.port = 8000;
 config.httpserver.mongouri = "mongodb://admin:password@127.0.0.1:27017";
+config.httpserver.url = 'http://127.0.0.1';
 
 config.sockpol.enable = true;
 config.sockpol.port = 843;
 config.sockpol.file = "static/crossdomain.xml";
+
+config.discord.client_id = 'client_id';
+config.discord.client_secret = 'client_secret';
+config.discord.oauth_url = 'https://discord.com/api/oauth2/authorize?client_id=';
+config.discord.redirect_url = 'http://127.0.0.1';
 
 module.exports = config;
