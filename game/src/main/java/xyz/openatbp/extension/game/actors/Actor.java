@@ -582,13 +582,9 @@ public abstract class Actor {
 
     public void pulled(Point2D source){
         this.stopMoving();
-        float distance = 1f;
-        if(distance > this.location.distance(source)) distance = (float) this.location.distance(source);
-        float distDiff = (float) (distance - this.location.distance(source));
-        System.out.println("Pull distance: " + distance + " vs " + this.location.distance(source));
-        Line2D originalLine = new Line2D.Double(this.location,source);
-        Line2D knockBackLine = Champion.getDistanceLine(originalLine,distDiff);
-        Line2D finalLine = new Line2D.Double(this.location,MovementManager.getDashPoint(this,knockBackLine));
+        Line2D pullLine = new Line2D.Float(this.location,source);
+        Line2D newLine = new Line2D.Double(this.location,MovementManager.findPullPoint(pullLine,1.2f));
+        Line2D finalLine = new Line2D.Double(this.location,MovementManager.getDashPoint(this,newLine));
         this.addState(ActorState.AIRBORNE,0d,250,null,false);
         double speed = this.location.distance(finalLine.getP2()) / 0.25f;
         ExtensionCommands.knockBackActor(this.parentExt,this.room,this.id,this.location, finalLine.getP2(), (float)speed, false);

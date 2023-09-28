@@ -1,6 +1,7 @@
 package xyz.openatbp.extension;
 
 import com.smartfoxserver.v2.entities.Room;
+import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.Obstacle;
 import xyz.openatbp.extension.game.actors.Actor;
 
@@ -42,6 +43,7 @@ public class MovementManager {
 
     public static List<Line2D> getColliderVectorLines(List<Vector<Float>> collider){
         List<Line2D> colliderLines = new ArrayList<>();
+        if(collider == null) return colliderLines;
         for(int g = 0; g < collider.size(); g++){ //Check all vertices in the collider
             Vector<Float> v = collider.get(g);
             Vector<Float> v2;
@@ -116,8 +118,33 @@ public class MovementManager {
         return rPoint;
     }
 
+    public static Point2D lerp(Line2D movementLine, double dist){
+        float slope = (float)((movementLine.getP2().getY() - movementLine.getP1().getY())/(movementLine.getP2().getX()-movementLine.getP1().getX()));
+        float intercept = (float)(movementLine.getP2().getY()-(slope*movementLine.getP2().getX()));
+        float deltaX = (float) (movementLine.getX2()-movementLine.getX1());
+        float distance = (float)(movementLine.getP1().distance(movementLine.getP2())*dist);
+        float x = -1;
+        if(distance > 0){
+            x = (float)movementLine.getP1().getX()+(distance);
+            if (deltaX < 0) x = (float)movementLine.getX1()-distance;
+        }else if(distance < 0){
+            x = (float)movementLine.getX2()+distance;
+            if(deltaX < 0) x = (float)movementLine.getX2()-distance;
+        }
+        float y = slope*x + intercept;
+        return new Point2D.Float(x,y);
+    }
+
+    public static Point2D findPullPoint(Line2D movementLine, float dist){
+        float distance = (float)(movementLine.getP1().distance(movementLine.getP2()));
+        if(dist >= distance) return movementLine.getP2();
+        else return Champion.getDistanceLine(movementLine,dist).getP2();
+    }
+
     public static Line2D getColliderLine(ATBPExtension parentExt, Room room, Line2D movementLine){
-        return new Line2D.Float(movementLine.getP1(),getPathIntersectionPoint(movementLine,getCollidingVectors(movementLine,parentExt,room)));
+        Point2D dest = getPathIntersectionPoint(movementLine,getCollidingVectors(movementLine,parentExt,room));
+        if(dest != null) return new Line2D.Float(movementLine.getP1(),dest);
+        else return movementLine;
     }
 
     public static Point2D getIntersectionPoint(Line2D line, Line2D line2){ //Finds the intersection of two lines
@@ -174,8 +201,6 @@ public class MovementManager {
                     }
                 }
             }
-        }else{
-            System.out.println("Null!");
         }
         return null;
     }
