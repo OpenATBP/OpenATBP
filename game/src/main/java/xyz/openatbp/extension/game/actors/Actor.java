@@ -580,6 +580,18 @@ public abstract class Actor {
         this.setLocation(finalLine.getP2());
     }
 
+    public void handlePathing(){
+        if(this.path != null && this.location.distance(this.movementLine.getP2()) <= 0.9d){
+            if(this.pathIndex+1 != this.path.size()){
+                this.pathIndex++;
+                if(MovementManager.insideAnyObstacle(this.parentExt,this.path.get(this.pathIndex))) this.moveWithCollision(this.path.get(this.pathIndex));
+                else this.move(this.path.get(this.pathIndex));
+            }else{
+                this.path = null;
+            }
+        }
+    }
+
     public void pulled(Point2D source){
         this.stopMoving();
         Line2D pullLine = new Line2D.Float(this.location,source);

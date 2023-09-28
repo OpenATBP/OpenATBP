@@ -1,10 +1,12 @@
 package xyz.openatbp.extension.game.actors;
 
+import com.dongbat.walkable.FloatArray;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
@@ -12,6 +14,7 @@ import xyz.openatbp.extension.game.Champion;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class Monster extends Actor {
@@ -83,7 +86,7 @@ public class Monster extends Actor {
                 state = AggroState.ATTACKED;
                 target = a;
                 this.timeTraveled = 0f;
-                this.moveTowardsActor(this.target.getLocation());
+                this.moveTowardsActor();
                 if(target.getActorType() == ActorType.PLAYER) ExtensionCommands.setTarget(parentExt,((UserActor)target).getUser(),this.id, target.getId());
                 if(this.type == MonsterType.SMALL){ //Gets all mini monsters like gnomes and owls to all target player when one is hit
                     for(Monster m : parentExt.getRoomHandler(this.room.getId()).getCampMonsters(this.id)){
@@ -173,10 +176,10 @@ public class Monster extends Actor {
     @Override
     public void setTarget(Actor a) {
         if(this.state == AggroState.PASSIVE) this.setAggroState(AggroState.ATTACKED,a);
-        this.target = (UserActor) a;
+        this.target = a;
         this.movementLine = new Line2D.Float(this.location,a.getLocation());
         this.timeTraveled = 0f;
-        this.moveTowardsActor(a.getLocation());
+        this.moveTowardsActor();
     }
 
     @Override
@@ -225,29 +228,20 @@ public class Monster extends Actor {
                 this.level = averagePLevel;
                 Champion.updateServerHealth(this.parentExt,this);
             }
-        }
-        if(this.states.get(ActorState.FEARED) || this.states.get(ActorState.CHARMED)){
-            if(this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01d) this.timeTraveled+=0.1f;
-            else System.out.println("Failed! Distance is " + this.movementLine.getP1().distance(this.movementLine.getP2()));
-        }
-        if(this.target != null && this.target.getHealth() <= 0) this.setAggroState(AggroState.PASSIVE,null);
-        if(this.movementLine != null) this.location = this.getRelativePoint(); //Sets location variable to its actual location using *math*
+        }if(this.movementLine != null) this.location = this.getRelativePoint(); //Sets location variable to its actual location using *math*
         else this.movementLine = new Line2D.Float(this.location,this.location);
+        if(this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01d) this.timeTraveled+=0.1f;
+        this.handlePathing();
+        if(this.target != null && this.target.getHealth() <= 0) this.setAggroState(AggroState.PASSIVE,null);
         if(MOVEMENT_DEBUG && this.type == MonsterType.BIG) ExtensionCommands.moveActor(parentExt,room,this.id+"_test",this.location,this.location,5f,false);
         if(this.state == AggroState.PASSIVE){
             if(this.currentHealth < this.maxHealth){
                 this.changeHealth(25);
             }
-            if(this.location.distance(this.startingLocation) >= 0.01){ //Still walking from being de-agro'd
-                timeTraveled+=0.1f;
-            }else{ //Standing still at camp
-                timeTraveled = 0f;
-                this.movementLine = null;
-            }
         }else{ //Monster is pissed!!
             if((this.location.distance(this.startingLocation) >= 10 && !this.attackRangeOverride) || this.target.getHealth() <= 0){
                 this.state = AggroState.PASSIVE; //Far from camp, heading back
-                this.move(this.startingLocation);
+                this.moveWithCollision(this.startingLocation);
                 this.target = null;
             }
             else if(this.target != null){ //Chasing player
@@ -255,8 +249,7 @@ public class Monster extends Actor {
                 if(this.withinRange(this.target) && this.canAttack()){
                     this.attack(this.target);
                 }else if(!this.withinRange(this.target) && this.canMove()){
-                    this.timeTraveled+=0.1f;
-                    this.moveTowardsActor(this.target.getLocation());
+                    this.moveTowardsActor();
                 }else if(this.withinRange(this.target) && !this.states.get(ActorState.FEARED) && !this.states.get(ActorState.CHARMED)){
                     if(this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f) this.stopMoving();
                 }
@@ -274,9 +267,7 @@ public class Monster extends Actor {
         if(this.movementLine == null) return this.location;
         if(this.timeTraveled == 0 && this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f) this.timeTraveled+=0.1f; //Prevents any stagnation in movement
         Point2D rPoint = new Point2D.Float();
-        Point2D destination;
-        if(this.state == AggroState.PASSIVE || this.target == null) destination = startingLocation;
-        else destination = movementLine.getP2();
+        Point2D destination = movementLine.getP2();
         float x2 = (float) destination.getX();
         float y2 = (float) destination.getY();
         float x1 = (float) movementLine.getX1();
@@ -294,14 +285,35 @@ public class Monster extends Actor {
         else return movementLine.getP1();
     }
 
-    public void moveTowardsActor(Point2D dest){ //Moves towards a specific point. TODO: Have the path stop based on collision radius
+    public void moveTowardsActor(){ //Moves towards a specific point. TODO: Have the path stop based on collision radius
         if(!this.canMove()) return;
         if(this.states.get(ActorState.FEARED)) return;
         if(this.movementLine == null){
-            this.move(this.target.getLocation());
+            this.moveWithCollision(this.target.getLocation());
         }
-        if(this.movementLine.getP2().distance(this.target.getLocation()) > 0.1f){
-            this.move(this.target.getLocation());
+        if(this.path == null){
+            if(this.movementLine.getP2().distance(this.target.getLocation()) > 0.1f){
+                this.moveWithCollision(this.target.getLocation());
+            }
+        }else{
+            if(this.path.size() - this.pathIndex < 3 && this.path.get(this.path.size()-1).distance(this.target.getLocation()) > 0.1f){
+                this.moveWithCollision(this.target.getLocation());
+            }
         }
+    }
+
+    @Override
+    public void moveWithCollision(Point2D dest){
+        List<Point2D> path = MovementManager.getPath(this.parentExt,this.location,dest);
+        if(path.size() > 2){
+            this.setPath(path);
+        }else{
+            Line2D testLine = new Line2D.Float(this.location,dest);
+            Point2D newPoint = MovementManager.getPathIntersectionPoint(this.parentExt,testLine);
+            if(newPoint != null){
+                this.move(newPoint);
+            }else this.move(dest);
+        }
+
     }
 }
