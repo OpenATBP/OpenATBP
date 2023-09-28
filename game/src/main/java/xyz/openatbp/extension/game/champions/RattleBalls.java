@@ -63,7 +63,7 @@ public class RattleBalls extends UserActor {
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashPrefix+"dash_trail",qTimeEffects,this.id+"_q2Trail",true,"Bip001",true,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashPrefix+"dash_dust",qTimeEffects,this.id+"_q2Dust",true,"Bip001 Footsteps",true,false,this.team);
                     for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(this.room.getId()),wDashLine,2f)){
-                        if(a.getTeam() != this.team && a.getActorType() != ActorType.BASE){
+                        if(a.getTeam() != this.team && isNonStructure(a)){
                             a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
                         }
                     }
