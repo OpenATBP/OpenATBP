@@ -45,7 +45,7 @@ public class UserActor extends Actor {
     protected static final double DASH_SPEED = 20d;
     private static final boolean MOVEMENT_DEBUG = false;
     private static final boolean INVINCIBLE_DEBUG = false;
-    private static final boolean ABILITY_DEBUG = true;
+    private static final boolean ABILITY_DEBUG = false;
 
     //TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt){
