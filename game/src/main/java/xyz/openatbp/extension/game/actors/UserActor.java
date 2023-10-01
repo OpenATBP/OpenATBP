@@ -45,7 +45,7 @@ public class UserActor extends Actor {
     protected static final double DASH_SPEED = 20d;
     private static final boolean MOVEMENT_DEBUG = false;
     private static final boolean INVINCIBLE_DEBUG = false;
-    private static final boolean ABILITY_DEBUG = false;
+    private static final boolean ABILITY_DEBUG = true;
 
     //TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt){
@@ -271,16 +271,6 @@ public class UserActor extends Actor {
         return dashPoint;
     }
 
-    public Point2D fpDash(Point2D dest){
-        Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
-        double time = dashPoint.distance(this.location)/16d;
-        this.stopMoving((int)(time*1000d));
-        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, (float) 16d,true);
-        this.setLocation(dashPoint);
-        this.target = null;
-        return dashPoint;
-    }
-
     protected boolean handleAttack(Actor a){ //To be used if you're not using the standard DelayedAttack Runnable
         if(this.attackCooldown == 0){
             double critChance = this.getPlayerStat("criticalChance")/100d;
@@ -495,20 +485,6 @@ public class UserActor extends Actor {
             }
             int newDeath = 10+((msRan/1000)/60);
             if(newDeath != this.deathTime) this.deathTime = newDeath;
-            if(this.isState(ActorState.POLYMORPH)){
-                for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(this.room.getId()),this.location,2)){
-                    if(a.getTeam() != this.team){
-                        UserActor enemyFP = this.parentExt.getRoomHandler(this.room.getId()).getEnemyCharacter("flame",this.team);
-                        JsonNode attackData = this.parentExt.getAttackData("flame","spell2");
-                        int damage = (int) (50 + (enemyFP.getPlayerStat("spellDamage"))*0.3);
-                        if(a.getActorType() != ActorType.PLAYER && a.getActorType() != ActorType.TOWER) a.addToDamageQueue(enemyFP,damage,attackData);
-                        else if(a.getActorType() == ActorType.PLAYER){
-                            UserActor ua = (UserActor) a;
-                            ua.addToDamageQueue(enemyFP,damage,attackData);
-                        }
-                    }
-                }
-            }
             List<Actor> actorsToRemove = new ArrayList<Actor>(this.aggressors.keySet().size());
             for(Actor a : this.aggressors.keySet()){
                 ISFSObject damageData = this.aggressors.get(a);

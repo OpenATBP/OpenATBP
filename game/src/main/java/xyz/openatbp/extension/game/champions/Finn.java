@@ -263,7 +263,7 @@ public class Finn extends UserActor {
         public void run() {
             double damage = getPlayerStat("attackDamage");
             if(this.crit) damage*=2;
-            damage = handlePassive(target,damage);
+            if(target.getActorType() != ActorType.TOWER && target.getActorType() != ActorType.BASE) damage = handlePassive(target,damage);
             new Champion.DelayedAttack(parentExt,Finn.this,target,(int)damage,"basicAttack").run();
         }
     }

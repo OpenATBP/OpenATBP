@@ -9,9 +9,11 @@ import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
+import java.awt.*;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -24,6 +26,8 @@ public class IceKing extends UserActor {
     private Point2D wLocation = null;
     private boolean ultActive = false;
     private Point2D ultLocation = null;
+    private boolean assetSwapped = false;
+    private boolean hasDefaultAsset = true;
 
     public IceKing(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -82,6 +86,19 @@ public class IceKing extends UserActor {
                     }
                 }
             }
+            List<Actor> affectedActors = Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),ultLocation,5.5f);
+            if(affectedActors.contains(this)){
+                if(!this.assetSwapped){
+                    ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,"iceking2");
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"ice_king_whirlwind",2500,this.id+"_whirlWind"+Math.random(),true,"",true,false,this.team);
+                    this.assetSwapped = true;
+                    this.hasDefaultAsset = false;
+                }
+            }else if(!hasDefaultAsset){
+                ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,getSkinAssetBundle());
+                this.hasDefaultAsset = true;
+                this.assetSwapped = false;
+            }
         }
     }
 
@@ -134,9 +151,8 @@ public class IceKing extends UserActor {
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_ice_king_ultimate",this.location);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,ultimateSfx,this.location);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_5.5",this.id+"eRing",6000,(float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"ice_king_whirlwind",6000,this.id+"_whirlWind",true,"",true,false,this.team);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"ice_king_whirlwind",2500,this.id+"_whirlWind"+Math.random(),true,"",true,false,this.team);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"iceKing_freezeGround",this.id+"_ultFreeze",6000,(float)this.location.getX(),(float)this.location.getY(),false,this.team,0f);
-                ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,this.getSkinAssetBundle().replace("iceking","iceking2"));
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new IceKingAbilityHandler(ability,spellData,cooldown,gCooldown,dest),6000,TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
                 break;
@@ -187,6 +203,8 @@ public class IceKing extends UserActor {
             canCast[2] = true;
             if(ultActive){
                 ultActive = false;
+                assetSwapped = false;
+                hasDefaultAsset = true;
                 ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
             }
             ultLocation = null;

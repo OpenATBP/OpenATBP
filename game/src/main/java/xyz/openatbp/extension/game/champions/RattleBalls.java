@@ -63,7 +63,7 @@ public class RattleBalls extends UserActor {
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashPrefix+"dash_trail",qTimeEffects,this.id+"_q2Trail",true,"Bip001",true,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashPrefix+"dash_dust",qTimeEffects,this.id+"_q2Dust",true,"Bip001 Footsteps",true,false,this.team);
                     for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(this.room.getId()),wDashLine,2f)){
-                        if(a.getTeam() != this.team && a.getActorType() != ActorType.BASE){
+                        if(a.getTeam() != this.team && isNonStructure(a)){
                             a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
                         }
                     }
@@ -206,6 +206,7 @@ public class RattleBalls extends UserActor {
             this.parryActive = false;
             this.canMove = true;
             this.handleLifeSteal();
+            this.abilityEnded();
             JsonNode basicAttackData = this.getParentExt().getAttackData(this.avatar,"basicAttack");
             a.addToDamageQueue(this,this.getPlayerStat("attackDamage")*2,basicAttackData);
             String counterSFx = (this.avatar.contains("spidotron")) ? "sfx_rattleballs_luchador_counter_attack_crit" : "sfx_rattleballs_counter_stance";
@@ -246,9 +247,9 @@ public class RattleBalls extends UserActor {
 
         @Override
         protected void spellQ() {
-            canCast[0] = true;
             if(qUse == 1){
                 Runnable flipDelay = () -> {
+                    canCast[0] = true;
                     parryActive = true;
                     parryCooldown = System.currentTimeMillis();
                     stopMoving(1500);
@@ -260,6 +261,7 @@ public class RattleBalls extends UserActor {
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(flipDelay,qTime,TimeUnit.MILLISECONDS);
             }else{
                 abilityEnded();
+                canCast[0] = true;
             }
         }
 

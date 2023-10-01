@@ -5,11 +5,10 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
-import xyz.openatbp.extension.game.actors.Base;
-import xyz.openatbp.extension.game.actors.Tower;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
@@ -27,7 +26,9 @@ public class FlamePrincess extends UserActor {
     private boolean ultStarted = false;
     private int ultUses = 3;
     private int dashTime = 0;
-    boolean wUsed = false;
+    private boolean wUsed = false;
+    boolean polymorphActive = false;
+    long lastPolymorphTime = 0;
 
     public FlamePrincess(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -45,6 +46,22 @@ public class FlamePrincess extends UserActor {
                     double damage = (double) this.getSpellDamage(attackData) / 10;
                     if(a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE){
                         a.addToDamageQueue(this,damage,attackData);
+                    }
+                }
+            }
+        }
+        if(System.currentTimeMillis() - lastPolymorphTime <= 3000){
+            for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
+                this.polymorphActive = a.getState(ActorState.POLYMORPH);
+                if(polymorphActive){
+                    List<Actor> actorsInRadius = Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()), a.getLocation(), 2f);
+                    actorsInRadius.remove(a);
+
+                    for(Actor affectedActor : actorsInRadius){
+                        if(!affectedActor.getId().equalsIgnoreCase(this.id) && affectedActor.getTeam() != this.team && isNonStructure(affectedActor)){
+                            JsonNode spellData = this.parentExt.getAttackData("flame","spell2");
+                            affectedActor.addToDamageQueue(this,getSpellDamage(spellData)/10d,spellData);
+                        }
                     }
                 }
             }
@@ -101,7 +118,6 @@ public class FlamePrincess extends UserActor {
                 }else{
                     if(ultUses>0){
                         //TODO: Fix so FP can dash and still get health packs
-                        System.out.println(ultUses);
                         Point2D ogLocation = this.location;
                         Point2D dashLocation = this.fpDash(dest);
                         double time = ogLocation.distance(dashLocation)/DASH_SPEED;
@@ -117,6 +133,19 @@ public class FlamePrincess extends UserActor {
             case 4: //Passive
                 break;
         }
+    }
+
+    private Point2D fpDash(Point2D dest){
+        Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
+        if(dashPoint == null) dashPoint = this.location;
+        System.out.println("Dash: " + dashPoint);
+        double time = dashPoint.distance(this.location)/15d;
+        System.out.println("Time stopped: " + time);
+        this.stopMoving((int)(time*1000d));
+        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, 15f,true);
+        this.setLocation(dashPoint);
+        this.target = null;
+        return dashPoint;
     }
 
     @Override
@@ -152,6 +181,7 @@ public class FlamePrincess extends UserActor {
                 if(a.getActorType() == ActorType.PLAYER){
                     UserActor userActor = (UserActor) a;
                     userActor.addState(ActorState.POLYMORPH,0d,3000,null,false);
+                    lastPolymorphTime = System.currentTimeMillis();
                 }
                 double newDamage = getSpellDamage(spellData);
                 a.addToDamageQueue(FlamePrincess.this,newDamage,parentExt.getAttackData(getAvatar(),"spell2"));

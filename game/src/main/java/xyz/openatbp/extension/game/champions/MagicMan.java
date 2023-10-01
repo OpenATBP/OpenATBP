@@ -62,11 +62,7 @@ public class MagicMan extends UserActor {
             ExtensionCommands.destroyActor(this.parentExt,this.room,this.id+"_decoy");
             ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"magicman_eat_it",this.id+"_eatIt",1000,(float)explosionPoint.getX(),(float) explosionPoint.getY(), false,this.team,0f);
             ExtensionCommands.playSound(this.parentExt,this.room,"","sfx_magicman_decoy",explosionPoint);
-            if(Math.random() > 0.5){
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_magicman_decoy",this.location);
-            }else{
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_magicman_decoy2",this.location);
-            }
+            ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_magicman_decoy2",this.location);
             JsonNode spellData = this.parentExt.getAttackData(this.avatar,"spell2");
             for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),explosionPoint,2.5f)){
                 if(this.isNonStructure(a)){
@@ -147,8 +143,8 @@ public class MagicMan extends UserActor {
                 this.canCast[2] = false;
                 this.canMove = false;
                 Point2D firstLocation = new Point2D.Double(this.location.getX(),this.location.getY());
-                Point2D dashPoint = this.dash(dest,true);
-                double dashTime = dashPoint.distance(firstLocation)/DASH_SPEED;
+                Point2D dashPoint = this.mmDash(dest);
+                double dashTime = dashPoint.distance(firstLocation)/15f;
                 int timeMs = (int)(dashTime*1000d);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_magicman_explode_roll",this.location);
                 ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell3",timeMs,true);
@@ -156,6 +152,19 @@ public class MagicMan extends UserActor {
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new MagicManAbilityHandler(ability,spellData,cooldown,gCooldown,dashPoint),timeMs,TimeUnit.MILLISECONDS);
                 break;
         }
+    }
+
+    private Point2D mmDash(Point2D dest){
+        Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
+        if(dashPoint == null) dashPoint = this.location;
+        System.out.println("Dash: " + dashPoint);
+        double time = dashPoint.distance(this.location)/15d;
+        System.out.println("Time stopped: " + time);
+        this.stopMoving((int)(time*1000d));
+        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, 15f,true);
+        this.setLocation(dashPoint);
+        this.target = null;
+        return dashPoint;
     }
 
     private class MagicManAbilityHandler extends AbilityRunnable {
@@ -168,6 +177,7 @@ public class MagicMan extends UserActor {
         protected void spellQ() {
             canCast[0] = true;
             qHit = false;
+            attackCooldown = 0;
         }
 
         @Override
@@ -186,7 +196,7 @@ public class MagicMan extends UserActor {
             double damageModifier = getPlayerStat("spellDamage")*0.001d;
             for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),dest,4f)){
                 if(isNonStructure(a)){
-                    double damage = (double)(a.getMaxHealth()) * (0.35d+damageModifier);
+                    double damage = (double)(a.getHealth()) * (0.35d+damageModifier);
                     a.addToDamageQueue(MagicMan.this,damage,spellData);
                     a.addEffect("armor",a.getStat("armor")*-0.3d,3000,null,false);
                     a.addState(ActorState.SLOWED,0.3d,3000,null,false);
@@ -209,6 +219,7 @@ public class MagicMan extends UserActor {
         @Override
         protected void hit(Actor victim) {
             victim.addState(ActorState.SILENCED,0d,1000,null,false);
+            ExtensionCommands.createWorldFX(this.parentExt,this.owner.getRoom(), this.id,"magicman_snake_explosion",this.id+"_explosion",500,(float)this.location.getX(),(float)this.location.getY(),false,owner.getTeam(),0f);
             if(!qHit){
                 JsonNode spellData = parentExt.getAttackData(MagicMan.this.avatar,"spell1");
                 victim.addToDamageQueue(MagicMan.this,getSpellDamage(spellData),spellData);
@@ -220,7 +231,6 @@ public class MagicMan extends UserActor {
         @Override
         public void destroy() {
             super.destroy();
-            ExtensionCommands.createWorldFX(this.parentExt,this.owner.getRoom(), this.id,"magicman_snake_explosion",this.id+"_explosion",500,(float)this.location.getX(),(float)this.location.getY(),false,owner.getTeam(),0f);
         }
     }
 
