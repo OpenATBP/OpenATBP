@@ -5,6 +5,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Champion;
@@ -79,7 +80,7 @@ public class Billy extends UserActor {
                 this.canCast[0] = false;
                 this.stopMoving();
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_billy_knock_back",this.location);
-                Line2D spellLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),4.25f);
+                Line2D spellLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),2.8f);
                 for(Actor a : Champion.getActorsAlongLine(this.parentExt.getRoomHandler(this.room.getId()),spellLine,2d)){
                     if(this.isNonStructure(a)){
                         a.knockback(this.location);
@@ -95,9 +96,11 @@ public class Billy extends UserActor {
                 this.canCast[1] = false;
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_billy_jump",this.location);
                 Point2D ogLocation = this.location;
-                Point2D finalDashPoint = this.dash(dest,true);
-                double time = ogLocation.distance(finalDashPoint)/DASH_SPEED;
+                Point2D finalDashPoint = this.billyDash(dest);
+                double time = ogLocation.distance(finalDashPoint)/14d;
+                int wTime = (int) (time*1000);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"billy_dash_trail",(int)(time*1000),this.id+"_dash",true,"Bip001",true,false,this.team);
+                ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell2",wTime,false);
                 if(this.passiveUses == 3){
                     this.addEffect("attackSpeed",this.getStat("attackSpeed")*-0.7d,4000,null,false);
                     this.addEffect("speed",0.8d,6000,null,true);
@@ -120,6 +123,19 @@ public class Billy extends UserActor {
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new BillyAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 break;
         }
+    }
+
+    private Point2D billyDash(Point2D dest){
+        Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
+        if(dashPoint == null) dashPoint = this.location;
+        System.out.println("Dash: " + dashPoint);
+        double time = dashPoint.distance(this.location)/14d;
+        System.out.println("Time stopped: " + time);
+        this.stopMoving((int)(time*1000d));
+        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, 14f,true);
+        this.setLocation(dashPoint);
+        this.target = null;
+        return dashPoint;
     }
 
     private class BillyAbilityHandler extends AbilityRunnable {
