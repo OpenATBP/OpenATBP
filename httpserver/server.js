@@ -72,7 +72,10 @@ mongoClient.connect(err => {
   app.use(bodyParser.json());
 
   app.get('/', (req, res) => {
-    res.render('index');
+    res.render('index', {
+      client_id: config.discord.client_id,
+      redirect: config.discord.redirect_url
+    });
   });
 
   app.get('/service/presence/present', (req, res) => {
