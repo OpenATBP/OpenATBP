@@ -14,6 +14,6 @@ config.sockpol.file = "static/crossdomain.xml";
 config.discord.client_id = 'client_id';
 config.discord.client_secret = 'client_secret';
 config.discord.oauth_url = 'https://discord.com/api/oauth2/authorize?client_id=';
-config.discord.redirect_url = 'http://127.0.0.1';
+config.discord.redirect_url = 'http://127.0.0.1:8000/auth';
 
 module.exports = config;
