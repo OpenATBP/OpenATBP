@@ -5,10 +5,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.game.AbilityRunnable;
-import xyz.openatbp.extension.game.ActorType;
-import xyz.openatbp.extension.game.Champion;
-import xyz.openatbp.extension.game.Projectile;
+import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
@@ -106,7 +103,7 @@ public class Gunter extends UserActor{
 
     @Override
     public boolean canMove(){
-        if(this.ultActivated) return false;
+        if(this.ultActivated || this.getState(ActorState.STUNNED) || this.getState(ActorState.ROOTED) || this.getState(ActorState.FEARED) || this.getState(ActorState.CHARMED) || this.getState(ActorState.AIRBORNE)) return false;
         else return super.canMove;
     }
 

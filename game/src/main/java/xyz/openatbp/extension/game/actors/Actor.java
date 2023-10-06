@@ -331,6 +331,7 @@ public abstract class Actor {
                     this.setState(ActorState.SLOWED, true);
                     break;
                 case ROOTED:
+                case STUNNED:
                     this.stopMoving();
                     break;
             }

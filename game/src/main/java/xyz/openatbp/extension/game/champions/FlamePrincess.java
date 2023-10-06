@@ -27,8 +27,8 @@ public class FlamePrincess extends UserActor {
     private int ultUses = 3;
     private int dashTime = 0;
     private boolean wUsed = false;
-    boolean polymorphActive = false;
-    long lastPolymorphTime = 0;
+    private boolean polymorphActive = false;
+    private long lastPolymorphTime = 0;
 
     public FlamePrincess(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -73,6 +73,11 @@ public class FlamePrincess extends UserActor {
         super.die(a);
         if(this.ultStarted && !this.ultFinished){
             this.ultFinished = true;
+        }
+        if(passiveEnabled){
+            passiveEnabled = false;
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_flame_passive");
+            ExtensionCommands.actorAbilityResponse(parentExt,player,"passive",true,10000,0);
         }
     }
 
@@ -155,7 +160,7 @@ public class FlamePrincess extends UserActor {
 
     @Override
     public boolean canMove(){
-        if(this.wUsed) return false;
+        if(this.wUsed || this.getState(ActorState.STUNNED) || this.getState(ActorState.ROOTED) || this.getState(ActorState.FEARED) || this.getState(ActorState.CHARMED) || this.getState(ActorState.AIRBORNE)) return false;
         else return super.canMove;
     }
 

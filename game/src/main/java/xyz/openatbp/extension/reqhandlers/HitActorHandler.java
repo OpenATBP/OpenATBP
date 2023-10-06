@@ -44,7 +44,7 @@ public class HitActorHandler extends BaseClientRequestHandler {
                 if(actor.withinRange(target) && actor.canAttack()){
                     actor.stopMoving();
                     actor.attack(target);
-                }else if(!actor.withinRange(target)){ //Move actor
+                }else if(!actor.withinRange(target) && (!actor.getState(ActorState.STUNNED) && !actor.getState(ActorState.ROOTED) && !actor.getState(ActorState.FEARED) && !actor.getState(ActorState.CHARMED)) && !actor.getState(ActorState.AIRBORNE)){ //Move actor
                     int attackRange = parentExt.getActorStats(actor.getAvatar()).get("attackRange").asInt();
                     Line2D movementLine = new Line2D.Float(location,target.getLocation());
                     float targetDistance = (float)target.getLocation().distance(location)-attackRange;

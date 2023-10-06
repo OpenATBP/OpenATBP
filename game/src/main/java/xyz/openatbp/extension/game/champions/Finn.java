@@ -100,6 +100,10 @@ public class Finn extends UserActor {
                 ExtensionCommands.removeFx(parentExt,room,furyTarget.getId()+"_mark"+furyStacks);
                 furyStacks = 0;
             }
+            if(furyTarget.getHealth() <= 0){
+                ExtensionCommands.removeFx(parentExt,room,furyTarget.getId()+"_mark"+furyStacks);
+                furyStacks = 0;
+            }
         }
     }
     @Override

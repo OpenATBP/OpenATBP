@@ -26,6 +26,7 @@ public class Billy extends UserActor {
     private long finalPassiveStart = 0;
     private long lastSoundPlayed = 0;
     private long lastPulseEffect = 0;
+    private Point2D ultLoc = null;
 
     public Billy(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -116,7 +117,7 @@ public class Billy extends UserActor {
             case 3:
                 this.canCast[2] = false;
                 this.stopMoving(castDelay);
-                Point2D ultLoc = Champion.getMaxRangeLine(new Line2D.Float(location,dest),5.5f).getP2();
+                this.ultLoc = Champion.getMaxRangeLine(new Line2D.Float(location,dest),5.5f).getP2();
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_billy_nothung",this.location);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"lemongrab_ground_aoe_target",this.id+"_billyUltTarget",1750,(float)ultLoc.getX(),(float)ultLoc.getY(),true,this.team,0f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
@@ -165,7 +166,6 @@ public class Billy extends UserActor {
         @Override
         protected void spellE() {
             canCast[2] = true;
-            Point2D ultLoc = Champion.getMaxRangeLine(new Line2D.Float(location,dest),5.5f).getP2();
             ExtensionCommands.playSound(parentExt,room,"","sfx_billy_nothung_skyfall",ultLoc);
             int duration = 1000;
             if(passiveUses == 3){

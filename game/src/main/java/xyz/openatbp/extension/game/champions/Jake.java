@@ -208,7 +208,7 @@ public class Jake extends UserActor {
     }
 
     public boolean canMove(){
-        if(dashActive) return false;
+        if(dashActive || this.getState(ActorState.STUNNED) || this.getState(ActorState.ROOTED) || this.getState(ActorState.FEARED) || this.getState(ActorState.CHARMED) || this.getState(ActorState.AIRBORNE)) return false;
         return super.canMove;
     }
 
