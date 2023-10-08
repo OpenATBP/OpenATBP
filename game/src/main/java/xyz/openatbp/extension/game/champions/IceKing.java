@@ -28,6 +28,7 @@ public class IceKing extends UserActor {
     private Point2D ultLocation = null;
     private boolean assetSwapped = false;
     private boolean hasDefaultAsset = true;
+    private long lastWhirlwindTime = 0;
 
     public IceKing(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -86,13 +87,15 @@ public class IceKing extends UserActor {
                     }
                 }
             }
+            String flyFx = this.avatar.contains("queen") ? "iceking2_icequeen2" : this.avatar.contains("young") ? "iceking2_young2" : "iceking2";
             List<Actor> affectedActors = Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),ultLocation,5.5f);
             if(affectedActors.contains(this)){
                 if(!this.assetSwapped){
-                    ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,"iceking2");
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"ice_king_whirlwind",2500,this.id+"_whirlWind"+Math.random(),true,"",true,false,this.team);
+                    ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,flyFx);
+                    if(System.currentTimeMillis() - lastWhirlwindTime > 2500) ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"ice_king_whirlwind",2500,this.id+"_whirlWind"+Math.random(),true,"",true,false,this.team);
                     this.assetSwapped = true;
                     this.hasDefaultAsset = false;
+                    this.lastWhirlwindTime = System.currentTimeMillis();
                 }
             }else if(!hasDefaultAsset){
                 ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,getSkinAssetBundle());

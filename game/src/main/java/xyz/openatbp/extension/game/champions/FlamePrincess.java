@@ -73,6 +73,11 @@ public class FlamePrincess extends UserActor {
         super.die(a);
         if(this.ultStarted && !this.ultFinished){
             this.ultFinished = true;
+            setState(ActorState.TRANSFORMED, false);
+            ExtensionCommands.removeFx(parentExt,room,"flame_e");
+            ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
+            ExtensionCommands.actorAbilityResponse(parentExt,player,"e",canUseAbility(2), getReducedCooldown(60000), 0);
+            ExtensionCommands.scaleActor(parentExt,room,id,0.6667f);
         }
         if(passiveEnabled){
             passiveEnabled = false;
@@ -160,8 +165,8 @@ public class FlamePrincess extends UserActor {
 
     @Override
     public boolean canMove(){
-        if(this.wUsed || this.getState(ActorState.STUNNED) || this.getState(ActorState.ROOTED) || this.getState(ActorState.FEARED) || this.getState(ActorState.CHARMED) || this.getState(ActorState.AIRBORNE)) return false;
-        else return super.canMove;
+        if(this.wUsed) return false;
+        else return super.canMove();
     }
 
     private class FlameAbilityRunnable extends AbilityRunnable {
@@ -189,7 +194,7 @@ public class FlamePrincess extends UserActor {
                     lastPolymorphTime = System.currentTimeMillis();
                 }
                 double newDamage = getSpellDamage(spellData);
-                a.addToDamageQueue(FlamePrincess.this,newDamage,parentExt.getAttackData(getAvatar(),"spell2"));
+                if(isNonStructure(a)) a.addToDamageQueue(FlamePrincess.this,newDamage,parentExt.getAttackData(getAvatar(),"spell2"));
             }
             canCast[1] = true;
         }
@@ -238,7 +243,7 @@ public class FlamePrincess extends UserActor {
             ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_projectile_large_explosion",200,"flame_explosion",false,"",false,false,team);
             ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_cone_of_flames",300,"flame_cone",false,"",true,false,team);
             for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),Champion.extendLine(path,0.75f),0.75f)){
-                if(!a.getId().equalsIgnoreCase(victim.getId()) && a.getTeam() != team && a.getActorType() != ActorType.BASE){
+                if(!a.getId().equalsIgnoreCase(victim.getId()) && a.getTeam() != team){
                     double newDamage = (double)getSpellDamage(attackData)*1.2d;
                     a.addToDamageQueue(FlamePrincess.this,Math.round(newDamage),attackData);
                 }

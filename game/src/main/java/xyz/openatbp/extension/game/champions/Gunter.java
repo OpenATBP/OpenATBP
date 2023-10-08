@@ -80,7 +80,7 @@ public class Gunter extends UserActor{
 
     public void shatter(Actor a){
         ExtensionCommands.playSound(parentExt,room,"","sfx_gunter_slide_shatter",a.getLocation());
-        ExtensionCommands.createWorldFX(parentExt,room,id,"gunter_belly_slide_bottles",a.getId()+"_shattered",500,(float)a.getLocation().getX(),(float)a.getLocation().getY(),false,team,0f);
+        ExtensionCommands.createWorldFX(parentExt,room,id,"gunter_belly_slide_bottles",a.getId()+"_shattered",1000,(float)a.getLocation().getX(),(float)a.getLocation().getY(),false,team,0f);
         for(Actor actor : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),a.getLocation(), 2f)){
             if(actor.getTeam() != this.team && !a.getId().equalsIgnoreCase(actor.getId())){
                 JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(),"spell4");
@@ -103,8 +103,8 @@ public class Gunter extends UserActor{
 
     @Override
     public boolean canMove(){
-        if(this.ultActivated || this.getState(ActorState.STUNNED) || this.getState(ActorState.ROOTED) || this.getState(ActorState.FEARED) || this.getState(ActorState.CHARMED) || this.getState(ActorState.AIRBORNE)) return false;
-        else return super.canMove;
+        if(this.ultActivated) return false;
+        else return super.canMove();
     }
 
     @Override
@@ -133,12 +133,12 @@ public class Gunter extends UserActor{
 
         @Override
         protected void spellQ() {
-            ExtensionCommands.createWorldFX(parentExt,room,id+"_slide","gunter_belly_slide_bottles",id+"_slideBottles",500,(float)location.getX(),(float)location.getY(),false,team,0f);
+            ExtensionCommands.createActorFX(parentExt,room,id,"gunter_belly_slide_bottles",1000,id+"_slide_bottles",false,"",false,false,team);
             ExtensionCommands.playSound(parentExt,room,id,"sfx_gunter_slide_shatter",location);
             ExtensionCommands.actorAnimate(parentExt,room,id,"spell1c",500,false);
             List<Actor> affectedActors = Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),location,2f);
             for(Actor a : affectedActors){
-                if(a.getTeam() != team){
+                if(a.getTeam() != team && isNonStructure(a)){
                     a.addToDamageQueue(Gunter.this,getSpellDamage(spellData),spellData);
                 }
             }

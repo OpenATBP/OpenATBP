@@ -61,10 +61,12 @@ public class BMO extends UserActor {
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_bmo_camera",this.location);
                 Line2D spellLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest), 6f);
                 for(Actor a : Champion.getActorsAlongLine(this.parentExt.getRoomHandler(this.room.getId()),spellLine,4f)){
-                    if(a.getTeam() != this.team && a.getActorType() != ActorType.BASE){
+                    if(a.getTeam() != this.team){
+                        if(isNonStructure(a)){
+                            a.addState(ActorState.BLINDED,0.5d,2500,null,false);
+                            if(passiveStacks == 3) a.addState(ActorState.SLOWED,0d,2500,null,false);
+                        }
                         a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
-                        a.addState(ActorState.BLINDED,0.5d,2500,null,false);
-                        if(passiveStacks == 3) a.addState(ActorState.SLOWED,0d,2500,null,false);
                     }
                 }
                 if(passiveStacks == 3) usePassiveStacks();
@@ -132,6 +134,11 @@ public class BMO extends UserActor {
         ExtensionCommands.removeStatusIcon(this.parentExt,this.player,"bmoPassive"+passiveStacks);
         ExtensionCommands.removeFx(this.parentExt,this.player,this.id+"_bmo_p_fx");
         this.passiveStacks = 0;
+    }
+
+    public boolean canAttack(){
+        if(wActive) return false;
+        return super.canAttack();
     }
 
     private void wEnd(int cooldown, int gCooldown){

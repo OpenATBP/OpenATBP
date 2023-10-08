@@ -7,6 +7,7 @@ import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
+import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -39,9 +40,9 @@ public class CinnamonBun extends UserActor {
             double percentage = 0.2d + ((double)(this.level) * 0.01d);
             int duration = 2000 + (this.level*100);
             for(Actor a : Champion.getActorsAlongLine(this.parentExt.getRoomHandler(this.room.getId()),this.wLine,1.5d)){
-                if(this.isNonStructure(a)){
+                if(a.getTeam() != this.team){
                     a.addToDamageQueue(this,getSpellDamage(spellData)/10d,spellData);
-                    a.addState(ActorState.SLOWED,percentage,duration,null,false);
+                    if(isNonStructure(a)) a.addState(ActorState.SLOWED,percentage,duration,null,false);
                 }
             }
         }
@@ -113,7 +114,7 @@ public class CinnamonBun extends UserActor {
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"cb_lance_jab_v2",500,this.id+"_jab",true,"",true,false,this.team);
                 this.changeHealth((int) ((double)(this.getMaxHealth())*0.05d));
                 for(Actor a : Champion.getActorsAlongLine(this.parentExt.getRoomHandler(this.room.getId()), new Line2D.Float(this.location,dest),2f)){
-                    if(this.isNonStructure(a)){
+                    if(a.getTeam() != this.team){
                         a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
                     }
                 }
@@ -202,14 +203,14 @@ public class CinnamonBun extends UserActor {
                     this.ultPoint = null;
                     this.ultPoint2 = null;
                     this.ultStart = 0;
-                    ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
                 }
-                if(this.ultUses < 2){
+                if(this.ultUses < 3){
                     this.ultUses++;
-                    ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,gCooldown,gCooldown);
                 }
                 else this.ultUses = 0;
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new CinnamonAbilityHandler(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
+                int eUseDelay = ultUses < 2 ? 0 : gCooldown;
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new CinnamonAbilityHandler(ability,spellData,cooldown,gCooldown,dest), eUseDelay,TimeUnit.MILLISECONDS);
+                if(this.ultUses == 3) ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
                 break;
         }
     }

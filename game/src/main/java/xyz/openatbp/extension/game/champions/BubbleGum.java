@@ -74,7 +74,7 @@ public class BubbleGum extends UserActor {
                         JsonNode spellData = this.parentExt.getAttackData("princessbubblegum","spell1");
                         double damage = this.getSpellDamage(spellData)/10f;
                         a.addToDamageQueue(this,damage,spellData);
-                        a.addState(ActorState.SLOWED,0.3d,2000,null,false);
+                        if(isNonStructure(a)) a.addState(ActorState.SLOWED,0.3d,2000,null,false);
                     }else if(a.getId().equalsIgnoreCase(this.id)){
                         this.addEffect("speed",this.getStat("speed")*0.4d,2000,null,false);
                     }
@@ -120,7 +120,7 @@ public class BubbleGum extends UserActor {
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(bombDelay, 750, TimeUnit.MILLISECONDS);
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new PBAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),4000,TimeUnit.MILLISECONDS);
                 }else{
-                    this.useBomb(cooldown,gCooldown);
+                    this.useBomb(getReducedCooldown(cooldown),gCooldown);
                 }
                 break;
         }
@@ -133,16 +133,18 @@ public class BubbleGum extends UserActor {
                 JsonNode spellData = parentExt.getAttackData("peebles","spell3");
                 if(a.getTeam() != this.team) a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
                 else if(a.getId().equalsIgnoreCase(this.id)){
-                    ExtensionCommands.actorAnimate(parentExt,room,this.id,"spell3c",250,false);
-                    String useBombVo = (this.avatar.equals("princessbubblegum_skin_prince")) ? "vo/vo_gumball_turret" : (this.avatar.contains("young")) ? "vo/vo_bubblegum_young_bomb_grunt" : "vo/vo_bubblegum_bomb_grunt";
-                    ExtensionCommands.playSound(parentExt,room,this.id,useBombVo,this.location);
+                    ExtensionCommands.actorAnimate(parentExt,room,this.id,"spell3b",325,false);
+                    Runnable animationDelay = () -> ExtensionCommands.actorAnimate(parentExt,room,id,"spell3c",350,false);
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(animationDelay,325,TimeUnit.MILLISECONDS);
                 }
             }
         }
+        String useBombVo = (this.avatar.equals("princessbubblegum_skin_prince")) ? "vo/vo_gumball_turret" : (this.avatar.contains("young")) ? "vo/vo_bubblegum_young_bomb_grunt" : "vo/vo_bubblegum_bomb_grunt";
+        ExtensionCommands.playSound(parentExt,room,this.id,useBombVo,this.location);
         ExtensionCommands.removeFx(parentExt,room,id+"_bomb");
         ExtensionCommands.removeFx(parentExt,room,id+"_bombArea");
         ExtensionCommands.playSound(parentExt,room,"","sfx_bubblegum_bomb",bombLocation);
-        ExtensionCommands.createWorldFX(parentExt,room,id,"bubblegum_bomb_explosion",id+"_bombExplosion",500,(float)bombLocation.getX(),(float)bombLocation.getY(),false,team,0f);
+        ExtensionCommands.createWorldFX(parentExt,room,id,"bubblegum_bomb_explosion",id+"_bombExplosion",1500,(float)bombLocation.getX(),(float)bombLocation.getY(),false,team,0f);
         ExtensionCommands.actorAbilityResponse(parentExt,player,"e",true,cooldown,gCooldown);
         this.bombPlaced = false;
         this.bombLocation = null;
@@ -201,7 +203,7 @@ public class BubbleGum extends UserActor {
         @Override
         protected void spellE() {
             if(bombPlaced){
-                useBomb(cooldown,gCooldown);
+                useBomb(getReducedCooldown(cooldown),gCooldown);
             }
         }
 

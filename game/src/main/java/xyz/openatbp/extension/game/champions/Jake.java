@@ -30,19 +30,21 @@ public class Jake extends UserActor {
     @Override
     public void attack(Actor a) {
         super.attack(a);
-        if(!lastPassiveTime.isEmpty()){
-            if(lastPassiveTime.containsKey(target.getId())){
-                if(System.currentTimeMillis() - lastPassiveTime.get(target.getId()) >= 8000){
-                    System.out.println("8 sec");
+        if(isNonStructure(target)){
+            if(!lastPassiveTime.isEmpty()){
+                if(lastPassiveTime.containsKey(target.getId())){
+                    if(System.currentTimeMillis() - lastPassiveTime.get(target.getId()) >= 8000){
+                        System.out.println("8 sec");
+                        doPassive();
+                    }
+                }else{
+                    System.out.println("new target "+target.getId());
                     doPassive();
                 }
             }else{
-                System.out.println("new target "+target.getId());
+                System.out.println("first target "+target.getId());
                 doPassive();
             }
-        }else{
-            System.out.println("first target "+target.getId());
-            doPassive();
         }
     }
 
@@ -208,7 +210,7 @@ public class Jake extends UserActor {
     }
 
     public boolean canMove(){
-        if(dashActive || this.getState(ActorState.STUNNED) || this.getState(ActorState.ROOTED) || this.getState(ActorState.FEARED) || this.getState(ActorState.CHARMED) || this.getState(ActorState.AIRBORNE)) return false;
+        if(dashActive) return false;
         return super.canMove;
     }
 
