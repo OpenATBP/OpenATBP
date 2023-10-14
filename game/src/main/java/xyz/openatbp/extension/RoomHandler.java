@@ -235,8 +235,8 @@ public class RoomHandler implements Runnable{
                             ExtensionCommands.removeFx(parentExt,room,s+"_fx");
                             ExtensionCommands.createActorFX(parentExt,room,String.valueOf(u.getId()),"picked_up_health_cyclops",2000,s+"_fx2",true,"",false,false,team);
                             ExtensionCommands.playSound(parentExt,u.getRoom(),"","sfx_health_picked_up",healthLoc);
-                            if(!u.hasTempStat("healthRegen")) u.changeHealth(100);
-                            u.addEffect("healthRegen",20d,5000,"fx_health_regen",false);
+                            if(!u.hasTempStat("healthRegen")) u.changeHealth(90);
+                            u.addEffect("healthRegen",20d,15000,"fx_health_regen",false);
                             //Champion.giveBuff(parentExt,u.getUser(), Buff.HEALTH_PACK);
                             spawns.putInt(s,0);
                             break;

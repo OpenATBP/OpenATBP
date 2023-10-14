@@ -33,7 +33,7 @@ public class BubbleGum extends UserActor {
     private int turretNum = 0;
     private boolean bombPlaced;
     private Point2D bombLocation;
-    private final static boolean DEBUG = true;
+    private final static boolean DEBUG = false;
 
 
     public BubbleGum(User u, ATBPExtension parentExt) {
@@ -77,6 +77,7 @@ public class BubbleGum extends UserActor {
                         if(isNonStructure(a)) a.addState(ActorState.SLOWED,0.3d,2000,null,false);
                     }else if(a.getId().equalsIgnoreCase(this.id)){
                         this.addEffect("speed",this.getStat("speed")*0.4d,2000,null,false);
+                        ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_speed",2000,this.id+"_pbQSpeed",true,"Bip01 Footsteps",true,false,this.team);
                     }
                 }
             }
