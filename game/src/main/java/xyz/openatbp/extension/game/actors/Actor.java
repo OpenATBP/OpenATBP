@@ -331,6 +331,7 @@ public abstract class Actor {
                     this.setState(ActorState.SLOWED, true);
                     break;
                 case ROOTED:
+                case STUNNED:
                     this.stopMoving();
                     break;
             }
@@ -572,7 +573,7 @@ public abstract class Actor {
     public void knockback(Point2D source){
         this.stopMoving();
         Line2D originalLine = new Line2D.Double(source,this.location);
-        Line2D knockBackLine = Champion.extendLine(originalLine,6f);
+        Line2D knockBackLine = Champion.extendLine(originalLine,5f);
         Line2D finalLine = new Line2D.Double(this.location,MovementManager.getDashPoint(this,knockBackLine));
         this.addState(ActorState.AIRBORNE,0d,250,null,false);
         double speed = this.location.distance(finalLine.getP2()) / 0.25f;

@@ -100,6 +100,10 @@ public class Finn extends UserActor {
                 ExtensionCommands.removeFx(parentExt,room,furyTarget.getId()+"_mark"+furyStacks);
                 furyStacks = 0;
             }
+            if(furyTarget.getHealth() <= 0){
+                ExtensionCommands.removeFx(parentExt,room,furyTarget.getId()+"_mark"+furyStacks);
+                furyStacks = 0;
+            }
         }
     }
     @Override
@@ -128,9 +132,12 @@ public class Finn extends UserActor {
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,sfxDash,this.location);
                 Line2D wLine = new Line2D.Double(ogLocation,finalDashPoint);
                 for(Actor a : Champion.getActorsAlongLine(this.parentExt.getRoomHandler(this.room.getId()),wLine,2f)){
-                    if(a.getTeam() != this.team && a.getActorType() != ActorType.BASE){
-                        a.addToDamageQueue(this,handlePassive(a,getSpellDamage(spellData)),spellData);
-                        passiveStart = System.currentTimeMillis();
+                    if(a.getTeam() != this.team){
+                        if(!isNonStructure(a)) a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
+                        else {
+                            a.addToDamageQueue(this,handlePassive(a,getSpellDamage(spellData)),spellData);
+                            passiveStart = System.currentTimeMillis();
+                        }
                     }
                 }
                 Runnable changeAnimation = () -> ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"run",100,false);

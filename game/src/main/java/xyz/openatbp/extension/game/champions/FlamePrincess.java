@@ -27,8 +27,8 @@ public class FlamePrincess extends UserActor {
     private int ultUses = 3;
     private int dashTime = 0;
     private boolean wUsed = false;
-    boolean polymorphActive = false;
-    long lastPolymorphTime = 0;
+    private boolean polymorphActive = false;
+    private long lastPolymorphTime = 0;
 
     public FlamePrincess(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -73,6 +73,16 @@ public class FlamePrincess extends UserActor {
         super.die(a);
         if(this.ultStarted && !this.ultFinished){
             this.ultFinished = true;
+            setState(ActorState.TRANSFORMED, false);
+            ExtensionCommands.removeFx(parentExt,room,"flame_e");
+            ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
+            ExtensionCommands.actorAbilityResponse(parentExt,player,"e",canUseAbility(2), getReducedCooldown(60000), 0);
+            ExtensionCommands.scaleActor(parentExt,room,id,0.6667f);
+        }
+        if(passiveEnabled){
+            passiveEnabled = false;
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_flame_passive");
+            ExtensionCommands.actorAbilityResponse(parentExt,player,"passive",true,10000,0);
         }
     }
 
@@ -156,7 +166,7 @@ public class FlamePrincess extends UserActor {
     @Override
     public boolean canMove(){
         if(this.wUsed) return false;
-        else return super.canMove;
+        else return super.canMove();
     }
 
     private class FlameAbilityRunnable extends AbilityRunnable {
@@ -184,7 +194,7 @@ public class FlamePrincess extends UserActor {
                     lastPolymorphTime = System.currentTimeMillis();
                 }
                 double newDamage = getSpellDamage(spellData);
-                a.addToDamageQueue(FlamePrincess.this,newDamage,parentExt.getAttackData(getAvatar(),"spell2"));
+                if(isNonStructure(a)) a.addToDamageQueue(FlamePrincess.this,newDamage,parentExt.getAttackData(getAvatar(),"spell2"));
             }
             canCast[1] = true;
         }
@@ -233,7 +243,7 @@ public class FlamePrincess extends UserActor {
             ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_projectile_large_explosion",200,"flame_explosion",false,"",false,false,team);
             ExtensionCommands.createActorFX(parentExt,room,this.id,"flame_princess_cone_of_flames",300,"flame_cone",false,"",true,false,team);
             for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),Champion.extendLine(path,0.75f),0.75f)){
-                if(!a.getId().equalsIgnoreCase(victim.getId()) && a.getTeam() != team && a.getActorType() != ActorType.BASE){
+                if(!a.getId().equalsIgnoreCase(victim.getId()) && a.getTeam() != team){
                     double newDamage = (double)getSpellDamage(attackData)*1.2d;
                     a.addToDamageQueue(FlamePrincess.this,Math.round(newDamage),attackData);
                 }

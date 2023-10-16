@@ -199,7 +199,12 @@ public class UserActor extends Actor {
             this.handleDamageTakenStat(type,newDamage);
             ExtensionCommands.damageActor(parentExt,this.room,this.id,newDamage);
             this.processHitData(a,attackData,newDamage);
-            if(this.hasTempStat("healthRegen")) this.tempStats.remove("healthRegen");
+            if(this.hasTempStat("healthRegen")){
+                this.tempStats.remove("healthRegen");
+                this.updateStatMenu("healthRegen");
+                ExtensionCommands.removeFx(this.parentExt,this.room,this.id + "_" + "fx_health_regen");
+            }
+
             this.changeHealth(newDamage*-1);
             if(this.currentHealth > 0) return false;
             else{
@@ -500,6 +505,13 @@ public class UserActor extends Actor {
                         if(this.multiKill > largestMulti) this.setGameStat("largestMulti",this.multiKill);
                     }else this.setGameStat("largestMulti",this.multiKill);
                     this.multiKill = 0;
+                }
+            }
+            if(this.hasTempStat("healthRegen")){
+                if(this.currentHealth == this.maxHealth){
+                    this.tempStats.remove("healthRegen");
+                    this.updateStatMenu("healthRegen");
+                    ExtensionCommands.removeFx(this.parentExt,this.room,this.id + "_" + "fx_health_regen");
                 }
             }
         }

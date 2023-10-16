@@ -18,6 +18,7 @@ public class Tower extends Actor {
     private final int[] BLUE_TOWER_NUM = {5,4,3};
     private long lastHit;
     private boolean destroyed = false;
+    private long lastMissSoundTime = 0;
 
     public Tower(ATBPExtension parentExt, Room room, String id, int team, Point2D location){
         this.currentHealth = 800;
@@ -49,7 +50,12 @@ public class Tower extends Actor {
         if(this.target == null){
             if(a.getActorType() == ActorType.PLAYER){
                 UserActor ua = (UserActor) a;
-                ExtensionCommands.playSound(this.parentExt,ua.getUser(),ua.getId(),"sfx_attack_miss");
+                if(System.currentTimeMillis() - this.lastMissSoundTime >= 1500){
+                    this.lastMissSoundTime = System.currentTimeMillis();
+                    ExtensionCommands.playSound(this.parentExt,ua.getUser(),ua.getId(),"sfx_attack_miss");
+                }
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"tower_no_damage_taken",500,this.id+"_noDamage",true,"",true,false,this.team);
+
             }
             return false;
         }

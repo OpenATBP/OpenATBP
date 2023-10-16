@@ -55,6 +55,12 @@ public class Hunson extends UserActor {
     }
 
     @Override
+    public boolean canMove(){
+        if(this.ultActivated) return false;
+        return super.canMove();
+    }
+
+    @Override
     public void attack(Actor a) {
         super.attack(a);
         if(this.hasStatusEffect(a) && a.getHealth() - this.getPlayerStat("attackDamage") > -5 && !this.passiveActivated){

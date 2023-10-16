@@ -6,8 +6,6 @@ import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
-import xyz.openatbp.extension.game.ActorState;
-import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -27,7 +25,7 @@ public class RattleBalls extends UserActor {
     private boolean parryActive = false;
     private long parryCooldown = 0;
     private boolean ultActive = false;
-    private long lastSoundPlayed = 0;
+    private long lastSoundTime = 0;
     private int qTime = 0;
     public RattleBalls(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -150,17 +148,13 @@ public class RattleBalls extends UserActor {
             ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell3a",250,true);
             ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,swordSpinFX,250,this.id+"_parrySpin",true,"Bip001 Footsteps",false,false,this.team);
             ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"rattleballs_counter_trail",250,this.id+"_trail",true,"Bip001 Prop1",true,false,this.team);
-            Runnable castDelay = () -> {this.canCast[0] = true;};
+            Runnable castDelay = () -> this.canCast[0] = true;
             SmartFoxServer.getInstance().getTaskScheduler().schedule(castDelay,500,TimeUnit.MILLISECONDS);
             this.parryActive = false;
             this.qUse = 0;
             ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(12000),0);
             List<Actor> affectedActors = Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,2f);
             affectedActors = affectedActors.stream().filter(this::isNonStructure).collect(Collectors.toList());
-            if(affectedActors.size() > 0){
-                //TODO: Make this more optimized
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"rattleballs_sword_sparkles",100,this.id+"_spark"+Math.random(),true,"Bip001",true,false,this.team);
-            }
             for(Actor a : affectedActors){
                 if(this.isNonStructure(a)){
                     JsonNode spellData = this.parentExt.getAttackData(this.avatar,"spell1");
@@ -170,8 +164,8 @@ public class RattleBalls extends UserActor {
         }
         if(this.ultActive){
             int soundCooldown = 450;
-            if(System.currentTimeMillis() - lastSoundPlayed >= soundCooldown && !this.dead){
-                lastSoundPlayed = System.currentTimeMillis();
+            if(System.currentTimeMillis() - lastSoundTime >= soundCooldown && !this.dead){
+                lastSoundTime = System.currentTimeMillis();
                 ExtensionCommands.playSound(this.parentExt, this.room, this.id, "sfx_rattleballs_counter_stance", this.location);
             }
         if(this.ultActive && this.dead){
