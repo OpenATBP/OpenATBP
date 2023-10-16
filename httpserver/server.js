@@ -160,7 +160,6 @@ mongoClient.connect(err => {
         var userInfo = await userResult.body.json();
         if(userInfo != undefined){
           database.findDiscordId(userInfo.id,playerCollection).then((data) => {
-            console.log(data);
             res.cookie('TEGid',data.TEGid);
             res.cookie('authid',data.authid);
             res.cookie('dname',data.dname);
@@ -168,7 +167,7 @@ mongoClient.connect(err => {
             res.cookie('logged',true);
             res.redirect(config.httpserver.url);
           }).catch((err)=>{
-            console.log("Err: " + err);
+            console.log(err);
             res.redirect(config.httpserver.url);
           });
         }
