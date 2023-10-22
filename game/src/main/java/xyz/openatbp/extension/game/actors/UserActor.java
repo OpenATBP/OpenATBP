@@ -596,6 +596,13 @@ public class UserActor extends Actor {
         }else this.canMove = true;
     }
 
+    public float getRotation(Point2D dest){ //have no idea how this works but it works
+        double dx = dest.getX() - this.location.getX();
+        double dy = dest.getY() - this.location.getY();
+        double angleRad = Math.atan2(dy,dx);
+        return (float) Math.toDegrees(angleRad)*-1+90f;
+    }
+
     public void respawn(){
         this.canMove = true;
         this.setHealth((int) this.maxHealth, (int) this.maxHealth);

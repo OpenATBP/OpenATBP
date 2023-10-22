@@ -92,7 +92,7 @@ public class Neptr extends UserActor {
                             }
                         }
                     };
-                    SmartFoxServer.getInstance().getTaskScheduler().schedule(mineExplosion,500,TimeUnit.MILLISECONDS);
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(mineExplosion,1000,TimeUnit.MILLISECONDS);
                     break;
                 }
             }
@@ -157,8 +157,9 @@ public class Neptr extends UserActor {
                 this.canCast[2] = false;
                 ExtensionCommands.playSound(this.parentExt,this.room,"","sfx_neptr_ultimate",dest);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_neptr_locked_on",this.location);
-                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"neptr_ultimate",this.id+"_ult",500,(float)dest.getX(),(float)dest.getY(),false,this.team,0f);
-                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_3",this.id+"_ultRing",500,(float)dest.getX(),(float)dest.getY(),false,this.team,0f);
+                float rotation = getRotation(dest);
+                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"neptr_ultimate",this.id+"_ult",2000,(float)dest.getX(),(float)dest.getY(),false,this.team,rotation);
+                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_3",this.id+"_ultRing",500,(float)dest.getX(),(float)dest.getY(),true,this.team,0f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new NeptrAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 break;
@@ -190,7 +191,7 @@ public class Neptr extends UserActor {
                 if(isNonStructure(a)){
                     a.knockback(Neptr.this.location);
                     a.addState(ActorState.SILENCED,0d,1000,null,false);
-                    ExtensionCommands.createActorFX(parentExt,room,a.getId(),"neptr_dot_poison",3000,a.getId()+"_neptrPoison",true,"Bip001",true,false,team);
+                    ExtensionCommands.createActorFX(parentExt,room,a.getId(),"neptr_dot_poison",3000,a.getId()+"_neptrPoison",true,"Bip001",false,false,team);
                     ultImpactedActors.add(a);
                 }
             }
