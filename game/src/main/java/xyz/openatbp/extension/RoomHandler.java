@@ -1,5 +1,6 @@
 package xyz.openatbp.extension;
 
+import com.dongbat.walkable.PathHelper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.MongoCollection;
@@ -25,7 +26,7 @@ import java.util.*;
 public class RoomHandler implements Runnable{
     private ATBPExtension parentExt;
     private Room room;
-    private ArrayList<Minion> minions;
+    private ArrayList<NewMinion> minions;
     private ArrayList<Tower> towers;
     private ArrayList<UserActor> players;
     private List<Projectile> activeProjectiles;
@@ -42,6 +43,7 @@ public class RoomHandler implements Runnable{
     private HashMap<String, Long> destroyedIds = new HashMap<>();
     private List<String> createdActorIds = new ArrayList<>();
     private static final boolean MONSTER_DEBUG = true;
+    private PathHelper minionPathHelper;
     public RoomHandler(ATBPExtension parentExt, Room room){
         this.parentExt = parentExt;
         this.room = room;
@@ -139,7 +141,7 @@ public class RoomHandler implements Runnable{
                 if(minionWave != this.currentMinionWave){
                     int minionNum = secondsRan % 10;
                     if(minionNum == 5) this.currentMinionWave = minionWave;
-                    if(minionNum <= 4){
+                    if(minionNum <= 4){ //TODO: Set to test!
                         this.addMinion(1,minionNum,minionWave,0);
                         this.addMinion(0,minionNum,minionWave,0);
                         this.addMinion(1,minionNum,minionWave,1);
@@ -168,7 +170,9 @@ public class RoomHandler implements Runnable{
             }
             activeProjectiles.removeIf(Projectile::isDestroyed);
             handleHealth();
-            for(Minion m : minions){ //Handles minion behavior
+            //minionPathHelper.obstacles.clear();
+            for(NewMinion m : minions){ //Handles minion behavior
+                //minionPathHelper.addRect((float)m.getLocation().getX()+49.75f,(float)m.getLocation().getY()+30.25f,0.5f,0.5f);
                 m.update(mSecondsRan);
             }
             minions.removeIf(m -> (m.getHealth()<=0));
@@ -201,8 +205,8 @@ public class RoomHandler implements Runnable{
         return null;
     }
 
-    public Minion findMinion(String id){
-        for(Minion m : minions){
+    public NewMinion findMinion(String id){
+        for(NewMinion m : minions){
             if(m.getId().equalsIgnoreCase(id)) return m;
         }
         return null;
@@ -213,7 +217,7 @@ public class RoomHandler implements Runnable{
     }
 
     public void addMinion(int team, int minionNum, int wave, int lane){
-        Minion m = new Minion(parentExt,room, team, minionNum, wave,lane);
+        NewMinion m = new NewMinion(parentExt,room, team, minionNum, wave,lane);
         minions.add(m);
     }
 
@@ -544,8 +548,8 @@ public class RoomHandler implements Runnable{
         this.activeProjectiles.add(p);
     }
 
-    public Minion getMinion(String id){
-        for(Minion m : minions){
+    public NewMinion getMinion(String id){
+        for(NewMinion m : minions){
             if(m.getId().equalsIgnoreCase(id)) return m;
         }
         return  null;
@@ -566,8 +570,8 @@ public class RoomHandler implements Runnable{
     }
 
     private boolean hasSuperMinion(int lane, int team){
-        for(Minion m : minions){
-            if(m.getTeam() == team && m.getLane() == lane && m.getType() == Minion.MinionType.SUPER && m.getHealth() > 0) return true;
+        for(NewMinion m : minions){
+            if(m.getTeam() == team && m.getLane() == lane && m.getType() == NewMinion.MinionType.SUPER && m.getHealth() > 0) return true;
         }
         return false;
     }
@@ -591,8 +595,17 @@ public class RoomHandler implements Runnable{
         return null;
     }
 
-    public List<Minion> getMinions(){
+    public List<NewMinion> getMinions(){
         return this.minions;
+    }
+
+    public List<NewMinion> getMinions(int team, int lane){
+        List<NewMinion> teamMinions = new ArrayList<>();
+        List<NewMinion> allMinions = new ArrayList<>(this.minions);
+        for(NewMinion m : allMinions){
+            if(m.getTeam() == team && m.getLane() == lane) teamMinions.add(m);
+        }
+        return teamMinions;
     }
 
     public List<Monster> getCampMonsters(){
@@ -941,5 +954,9 @@ public class RoomHandler implements Runnable{
 
     public boolean hasActorId(String id){
         return this.createdActorIds.contains(id);
+    }
+
+    public PathHelper getMinionPathHelper(){
+        return this.minionPathHelper;
     }
 }

@@ -555,6 +555,7 @@ public class UserActor extends Actor {
 
     public void resetTarget(){
         this.target = null;
+        ExtensionCommands.setTarget(this.parentExt,this.player,this.id,"");
     }
 
     public void setState(ActorState[] states, boolean stateBool){
@@ -566,6 +567,7 @@ public class UserActor extends Actor {
 
     public void setTarget(Actor a){
         this.target = a;
+        ExtensionCommands.setTarget(this.parentExt,this.player,this.id,a.getId());
         if(this.states.get(ActorState.CHARMED)){
             this.setPath(getRelativePoint(false),a.getLocation());
             if(this.canMove) this.move(this.movementLine.getP2());

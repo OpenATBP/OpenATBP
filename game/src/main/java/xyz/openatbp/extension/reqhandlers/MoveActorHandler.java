@@ -1,6 +1,7 @@
 package xyz.openatbp.extension.reqhandlers;
 
 import com.dongbat.walkable.FloatArray;
+import com.dongbat.walkable.PathfinderException;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
@@ -45,8 +46,39 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             float dx = params.getFloat("dest_x");
             float dz = params.getFloat("dest_z");
             FloatArray path = new FloatArray();
-            parentExt.getMainMapPathFinder().findPath(px+50,pz+30,dx+50,dz+30,0.6f,path);
-            if(path.size <= 2){
+            try{
+                parentExt.getMainMapPathFinder().findPath(px+50,pz+30,dx+50,dz+30,0.6f,path);
+                if(path.size <= 2 || MovementManager.insideAnyObstacle(parentExt,new Point2D.Float(dx,dz))){
+                    Line2D movementLine = new Line2D.Float(px,pz,dx,dz); //Creates the path of the player
+                    //ExtensionCommands.createWorldFX(parentExt, user.getRoom(), "test","gnome_c","testBox"+Math.random(),5000,(float)playerBoundingBox.getCenterX(),(float)playerBoundingBox.getCenterY(),false,0,0f);
+                    Point2D intersectionPoint = MovementManager.getPathIntersectionPoint(parentExt,movementLine);
+
+                    float destx = (float)movementLine.getX2();
+                    float destz = (float)movementLine.getY2();
+                    if(intersectionPoint != null){ //If the player hits an object, find where they should end up
+                        //ExtensionCommands.createWorldFX(parentExt,user.getRoom(),"nothing","gnome_a","testPoint"+Math.random(),10000,(float)intersectionPoint.getX(),(float)intersectionPoint.getY(),false,0,0f);
+                        destx = (float)intersectionPoint.getX();
+                        destz = (float)intersectionPoint.getY();
+                    }
+                    Point2D dest = new Point2D.Float(destx,destz);
+                    if(movementLine.getP1().distance(dest) >= 0.1f) user.move(params,dest);
+                    else user.stopMoving();
+                }else{
+                    List<Point2D> p = new ArrayList<>();
+                    float fx = 0;
+                    float fy = 0;
+                    for(int i = 0; i < path.size; i++){
+                        if(i%2 == 0) fx = path.get(i)-50;
+                        else fy = path.get(i)-30;
+                        if(fx != 0 && fy != 0){
+                            p.add(new Point2D.Float(fx,fy));
+                            fx = 0;
+                            fy = 0;
+                        }
+                    }
+                    user.setPath(p);
+                }
+            }catch(PathfinderException pe){
                 Line2D movementLine = new Line2D.Float(px,pz,dx,dz); //Creates the path of the player
                 //ExtensionCommands.createWorldFX(parentExt, user.getRoom(), "test","gnome_c","testBox"+Math.random(),5000,(float)playerBoundingBox.getCenterX(),(float)playerBoundingBox.getCenterY(),false,0,0f);
                 Point2D intersectionPoint = MovementManager.getPathIntersectionPoint(parentExt,movementLine);
@@ -61,20 +93,6 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                 Point2D dest = new Point2D.Float(destx,destz);
                 if(movementLine.getP1().distance(dest) >= 0.1f) user.move(params,dest);
                 else user.stopMoving();
-            }else{
-                List<Point2D> p = new ArrayList<>();
-                float fx = 0;
-                float fy = 0;
-                for(int i = 0; i < path.size; i++){
-                    if(i%2 == 0) fx = path.get(i)-50;
-                    else fy = path.get(i)-30;
-                    if(fx != 0 && fy != 0){
-                        p.add(new Point2D.Float(fx,fy));
-                        fx = 0;
-                        fy = 0;
-                    }
-                }
-                user.setPath(p);
             }
         }else System.out.println("Can't move!");
 

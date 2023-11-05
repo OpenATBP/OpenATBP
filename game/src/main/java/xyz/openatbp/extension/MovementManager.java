@@ -7,9 +7,7 @@ import xyz.openatbp.extension.game.Obstacle;
 import xyz.openatbp.extension.game.actors.Actor;
 
 import java.awt.geom.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MovementManager {
@@ -17,6 +15,15 @@ public class MovementManager {
     public static boolean playerIntersectsWithCollider(Point2D player, Path2D collider){
         Rectangle2D playerBoundingBox = new Rectangle2D.Double(player.getX(),player.getY(),0.5d,0.5d);
         return collider.intersects(playerBoundingBox);
+    }
+
+    public static Point2D getStoppingPoint(Point2D location, Point2D destination, double stoppingDistance){
+        Line2D movementLine = new Line2D.Double(location,destination);
+        Point2D[] allPoints = findAllPoints(movementLine);
+        for(Point2D p : allPoints){
+            if(p.distance(destination) <= stoppingDistance) return p;
+        }
+        return null;
     }
 
     public static boolean playerIntersectsWithCollider(Point2D player, List<Vector<Float>> collider){
@@ -249,6 +256,91 @@ public class MovementManager {
             pValue++;
         }
         return points;
+    }
+
+    public static List<Point2D> findPath(Point2D start, Point2D goal, Set<Point2D> obstacles) {
+        PriorityQueue<Node> openSet = new PriorityQueue<>();
+        Map<Point2D, Point2D> cameFrom = new HashMap<>();
+        Map<Point2D, Double> gScore = new HashMap<>();
+        gScore.put(start, 0.0);
+        openSet.add(new Node(start, heuristic(start, goal)));
+
+        while (!openSet.isEmpty()) {
+            Node current = openSet.poll();
+
+            if (current.point.equals(goal)) {
+                return reconstructPath(cameFrom, current.point);
+            }
+
+            for (Point2D neighbor : getNeighbors(current.point, obstacles)) {
+                double tentativeGScore = gScore.get(current.point) + current.point.distance(neighbor);
+                if (tentativeGScore < gScore.getOrDefault(neighbor, Double.POSITIVE_INFINITY)) {
+                    cameFrom.put(neighbor, current.point);
+                    gScore.put(neighbor, tentativeGScore);
+                    double fScore = tentativeGScore + heuristic(neighbor, goal);
+                    openSet.add(new Node(neighbor, fScore));
+                }
+            }
+        }
+
+        return Collections.emptyList(); // No path found
+    }
+
+    private static List<Point2D> reconstructPath(Map<Point2D, Point2D> cameFrom, Point2D current) {
+        List<Point2D> path = new ArrayList<>();
+        path.add(current);
+        while (cameFrom.containsKey(current)) {
+            current = cameFrom.get(current);
+            path.add(0, current);
+        }
+        return path;
+    }
+
+    private static double heuristic(Point2D a, Point2D b) {
+        return a.distance(b);
+    }
+
+    private static Set<Point2D> getNeighbors(Point2D point, Set<Point2D> obstacles) {
+        Set<Point2D> neighbors = new HashSet<>();
+        for (double dx = -0.5; dx <= 0.5; dx += 0.5) {
+            for (double dy = -0.5; dy <= 0.5; dy += 0.5) {
+                double newX = point.getX() + dx;
+                double newY = point.getY() + dy;
+                Point2D neighbor = new Point2D.Double(newX, newY);
+
+                if (isValidPoint(neighbor, obstacles) && !isCollidingWithObstacle(neighbor, obstacles)) {
+                    neighbors.add(neighbor);
+                }
+            }
+        }
+        return neighbors;
+    }
+
+    private static boolean isValidPoint(Point2D point, Set<Point2D> obstacles) {
+        // Add any additional checks for validity here
+        return !obstacles.contains(point);
+    }
+
+    private static boolean isCollidingWithObstacle(Point2D point, Set<Point2D> obstacles) {
+        for(Point2D p : obstacles){
+            if(point.distance(p) <= 0.5) return true;
+        }
+        return false;
+    }
+
+    private static class Node implements Comparable<Node> {
+        Point2D point;
+        double fScore;
+
+        Node(Point2D point, double fScore) {
+            this.point = point;
+            this.fScore = fScore;
+        }
+
+        @Override
+        public int compareTo(Node other) {
+            return Double.compare(this.fScore, other.fScore);
+        }
     }
 
 }

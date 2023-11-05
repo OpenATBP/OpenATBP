@@ -5,10 +5,10 @@ import com.dongbat.walkable.PathHelper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
-import com.smartfoxserver.v2.entities.User;
-import hxDaedalus.ai.PathFinder;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
@@ -18,22 +18,27 @@ import java.awt.geom.Point2D;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-public class Minion extends Actor{
+public class NewMinion extends Actor{
+
     private final double[] blueBotX = {36.90,26.00,21.69,16.70,3.44,-9.56,-21.20,-28.02,-33.11,-36.85}; //Path points from blue base to purple base
     private final double[] blueBotY = {2.31,8.64,12.24,17.25,17.81,18.76,14.78,7.19,5.46,2.33};
     private final double[] blueTopX = {36.68, 30.10, 21.46, 18.20, -5.26, -12.05, -24.69, -28.99, -35.67};
     private final double[] blueTopY = {-2.56, -7.81, -12.09, -16.31, -17.11, -17.96, -13.19, -7.50, -2.70};
+
     public enum MinionType{RANGED, MELEE, SUPER} //Type of minion
+    public enum State{IDLE, MOVING, TARGETING, ATTACKING}
     private MinionType type;
-    private boolean dead = false;
-    private Map<UserActor, Integer> aggressors;
+
     private int lane;
     private int mainPathIndex = 0;
+    private Map<UserActor, Integer> aggressors;
     private final boolean MOVEMENT_DEBUG = false;
+    private State state;
+    private boolean dead;
     private int xpWorth = 5;
-
-    public Minion(ATBPExtension parentExt, Room room, int team, int minionNum, int wave, int lane){
+    public NewMinion(ATBPExtension parentExt, Room room, int team, int minionNum, int wave, int lane) {
         this.avatar = "creep"+team;
+        this.state = State.IDLE;
         String typeString = "super";
         if(minionNum <= 2){
             typeString = "melee"+minionNum;
@@ -88,33 +93,12 @@ public class Minion extends Actor{
     }
 
     @Override
-    public boolean setTempStat(String stat, double delta) {
-        boolean returnVal = super.setTempStat(stat,delta);
-        if(stat.equalsIgnoreCase("speed")){
-            if(movementLine != null){
-                this.move(movementLine.getP2());
-            }
-        }
-        return returnVal;
-    }
-
-    @Override
     public void attack(Actor a) {
         this.canMove = false;
         this.attackCooldown = this.getPlayerStat("attackSpeed");
         ExtensionCommands.attackActor(this.parentExt,this.room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),false,true);
-        if(this.type == MinionType.RANGED) SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedRangedAttack(this,a),500,TimeUnit.MILLISECONDS);
+        if(this.type == MinionType.RANGED) SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedRangedAttack(this,a),500, TimeUnit.MILLISECONDS);
         else SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),500, TimeUnit.MILLISECONDS);
-    }
-
-    @Override
-    public void rangedAttack(Actor a){
-        String fxId = "minion_projectile_";
-        if(this.team == 0) fxId+="purple";
-        else fxId+="blue";
-        double time = a.getLocation().distance(this.location) / 20d;
-        ExtensionCommands.createProjectileFX(this.parentExt,this.room,fxId,this.id,a.getId(),"emitNode","", (float) time);
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),(int)(time*1000),TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -172,10 +156,6 @@ public class Minion extends Actor{
         this.handleDamageQueue();
         this.handleActiveEffects();
         if(this.dead) return;
-        this.location = this.getRelativePoint();
-        this.handlePathing();
-        if(MOVEMENT_DEBUG) ExtensionCommands.moveActor(parentExt,room,id+"_test",this.location,this.location,5f,false);
-        if(this.attackCooldown > 0) this.attackCooldown-=100;
 
         if(msRan % 1000 == 0){
             /*
@@ -190,79 +170,135 @@ public class Minion extends Actor{
             if(xpWorth != xp) xpWorth = xp;
         }
 
-        if(this.target == null){
-            Actor potentialTarget = this.searchForTarget();
-            if(potentialTarget != null){
-                this.setTarget(potentialTarget);
-            }else{
-                if(this.hasArrived()){
-                    this.moveAlongPath();
-                }else{
-                    this.timeTraveled+=0.1f;
+        if(!this.isStopped()) this.timeTraveled+=0.1f;
+        this.location = MovementManager.getRelativePoint(this.movementLine,this.getSpeed(),this.timeTraveled);
+        this.handlePathing();
+        NewMinion conflictingMinion = this.isInsideMinion();
+        if(conflictingMinion != null && this.state != State.ATTACKING && this.target != null){
+            Line2D line = new Line2D.Float(conflictingMinion.getLocation(),this.location);
+            Line2D extendedLine = MovementManager.extendLine(line,10f);
+            Point2D snapLocation = extendedLine.getP2();
+            Point2D finalLocation = MovementManager.getStoppingPoint(snapLocation,this.target.getLocation(),0.5f);
+            this.move(finalLocation);
+            //if(this.target != null) this.moveTowardsTarget();
+        }
+        if(this.attackCooldown > 0) this.reduceAttackCooldown();
+        if(MOVEMENT_DEBUG) ExtensionCommands.moveActor(parentExt,room,id+"_test",this.location,this.location,5f,false);
+        switch(this.state){
+            case IDLE:
+                Console.logWarning(this.id + " is idle!");
+                this.mainPathIndex = this.findPathIndex();
+                this.move(this.getPathPoint());
+                this.state = State.MOVING;
+                break;
+            case MOVING:
+                if(this.location.distance(this.movementLine.getP2()) <= 0.1d) this.moveAlongPath();
+                Actor potentialTarget = this.searchForTarget();
+                if(potentialTarget != null){
+                    this.state = State.TARGETING;
+                    this.setTarget(potentialTarget);
                 }
-            }
-        }else{
-            if(this.withinAggroRange(this.target.getLocation()) && this.target.getHealth() > 0){
-                if(this.withinRange(this.target)){
-                    if(!this.isStopped()) this.stopMoving();
-                    if(this.canAttack()) this.attack(this.target);
-                }else{
-                    if(this.target.getActorType() == ActorType.PLAYER){
-                        Actor newTarget = this.searchForTarget();
-                        if(newTarget != null && newTarget.getActorType() != ActorType.PLAYER){
-                            this.setTarget(newTarget);
-                            return;
-                        }else if(newTarget == null){
-                            this.resetTarget();
-                        }
+                break;
+            case TARGETING:
+                if(this.target == null){
+                    this.state = State.IDLE;
+                    return;
+                }
+                if(this.withinAggroRange(this.target.getLocation())){
+                    if(this.withinRange(this.target) && conflictingMinion == null){
+                        this.stopMoving();
+                        this.state = State.ATTACKING;
                     }
-                    //if(this.isStopped() || this.hasArrived()) this.moveTowardsTarget();
-                    this.timeTraveled+=0.1f;
+                }else{
+                    this.resetTarget();
                 }
-            }else{
-                this.resetTarget();
-            }
-        }
-    }
-
-    private void moveTowardsTarget(){
-        Line2D movementLine = new Line2D.Float(this.location,this.target.getLocation());
-        FloatArray path = new FloatArray();
-        PathHelper pathFinder = new PathHelper(100f,100f);
-        for(NewMinion m : this.parentExt.getRoomHandler(this.room.getId()).getMinions(this.team,this.lane)){
-            if(!this.id.equalsIgnoreCase(m.getId())){
-                pathFinder.addRect((float)m.getLocation().getX()+49.75f,(float)m.getLocation().getY()+30.25f,0.5f,0.5f);
-            }
-        }
-        pathFinder.findPath((float)movementLine.getX1()+50,(float)movementLine.getY1()+30,(float)movementLine.getX2()+50,(float)movementLine.getY2()+30,0.45f,path);
-        System.out.println("Path size: " + path.size);
-        if(path.size > 2){
-            System.out.println("Path finding Minion!");
-            List<Point2D> p = new ArrayList<>();
-            float fx = 0;
-            float fy = 0;
-            for(int i = 0; i < path.size; i++){
-                if(i%2 == 0) fx = path.get(i)-50;
-                else fy = path.get(i)-30;
-                if(fx != 0 && fy != 0){
-                    p.add(new Point2D.Float(fx,fy));
-                    fx = 0;
-                    fy = 0;
+                break;
+            case ATTACKING:
+                if(this.target == null){
+                    this.state = State.IDLE;
+                    return;
                 }
-            }
-            this.setPath(p);
-        }else this.move(this.target.getLocation());
+                if(this.withinRange(this.target) && this.canAttack()){
+                    this.attack(this.target);
+                }else if(!this.withinRange(this.target) || this.target.getHealth() <= 0){
+                    Actor target = this.searchForTarget();
+                    if(target != null){
+                        this.state = State.TARGETING;
+                        this.setTarget(target);
+                    }else{
+                       this.resetTarget();
+                    }
+                }
+                break;
+        }
     }
 
     @Override
     public void setTarget(Actor a) {
         this.target = a;
         this.moveTowardsTarget();
-       // this.timeTraveled = 0.1f;
-        if(this.target.getActorType() == ActorType.PLAYER){
-            UserActor ua = (UserActor) a;
-            ExtensionCommands.setTarget(this.parentExt,ua.getUser(),this.id,ua.getId());
+    }
+
+    @Override
+    public void rangedAttack(Actor a){
+        String fxId = "minion_projectile_";
+        if(this.team == 0) fxId+="purple";
+        else fxId+="blue";
+        double time = a.getLocation().distance(this.location) / 20d;
+        ExtensionCommands.createProjectileFX(this.parentExt,this.room,fxId,this.id,a.getId(),"emitNode","", (float) time);
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),(int)(time*1000),TimeUnit.MILLISECONDS);
+    }
+
+    public void resetTarget(){
+        this.state = State.IDLE;
+        this.target = null;
+        //TODO: Add line movement
+    }
+
+    public int getLane(){
+        return this.lane;
+    }
+
+    public MinionType getType(){
+        return this.type;
+    }
+
+    private Point2D getPathPoint(){
+        double x;
+        double y;
+        if(this.lane == 0){
+            x = blueTopX[this.mainPathIndex];
+            y = blueTopY[this.mainPathIndex];
+        }else{
+            x = blueBotX[this.mainPathIndex];
+            y = blueBotY[this.mainPathIndex];
         }
+        return new Point2D.Double(x,y);
+    }
+
+    private Point2D getPathPoint(int mainPathIndex){
+        double x;
+        double y;
+        if(this.lane == 0){
+            x = blueTopX[mainPathIndex];
+            y = blueTopY[mainPathIndex];
+        }else{
+            x = blueBotX[mainPathIndex];
+            y = blueBotY[mainPathIndex];
+        }
+        return new Point2D.Double(x,y);
+    }
+
+    private void moveAlongPath(){
+        if(this.team == 1) this.mainPathIndex++;
+        else this.mainPathIndex--;
+        if(this.mainPathIndex < 0) this.mainPathIndex = 0;
+        else{
+            if(this.lane == 0 && this.mainPathIndex == blueTopX.length) this.mainPathIndex--;
+            else if(this.lane == 1 && this.mainPathIndex == blueBotX.length) this.mainPathIndex--;
+        }
+        this.move(this.getPathPoint());
+        this.timeTraveled = 0.1f;
     }
 
     @Override
@@ -270,43 +306,24 @@ public class Minion extends Actor{
         return this.avatar.replace("0","");
     }
 
-    private boolean hasArrived(){
-        return this.movementLine == null || this.location.distance(this.movementLine.getP2()) <= 0.01f;
+    @Override
+    protected HashMap<String, Double> initializeStats(){
+        HashMap<String, Double> stats = new HashMap<>();
+        JsonNode actorStats = this.parentExt.getActorStats(this.avatar.replace("0",""));
+        for (Iterator<String> it = actorStats.fieldNames(); it.hasNext(); ) {
+            String k = it.next();
+            stats.put(k,actorStats.get(k).asDouble());
+        }
+        return stats;
     }
 
-    private Actor searchForTarget(){
-        Actor closestActor = null;
-        Actor closestNonUser = null;
-        double distance = 1000f;
-        double distanceNonUser = 1000f;
-        for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
-            if(a.getTeam() != this.team && a.getActorType() != ActorType.MONSTER && this.withinAggroRange(a.getLocation()) && this.facingEntity(a.getLocation())){
-                if(a.getActorType() == ActorType.PLAYER){
-                    UserActor ua = (UserActor) a;
-                    if(ua.getState(ActorState.REVEALED) && !ua.getState(ActorState.BRUSH)){
-                        if(ua.getLocation().distance(this.location) < distance){
-                            distance = ua.getLocation().distance(this.location);
-                            closestActor = ua;
-                        }
-                    }
-                }else{
-                    if(a.getLocation().distance(this.location) < distanceNonUser){
-                        if(a.getActorType() != ActorType.BASE){
-                            closestNonUser = a;
-                            distanceNonUser = a.getLocation().distance(this.location);
-                        }else{
-                            Base b = (Base) a;
-                            if(b.isUnlocked()){
-                                closestNonUser = a;
-                                distanceNonUser = a.getLocation().distance(this.location);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        if(closestNonUser != null) return closestNonUser;
-        else return closestActor;
+    @Override
+    public String getPortrait(){
+        return this.getAvatar();
+    }
+
+    private boolean withinAggroRange(Point2D p){
+        return p.distance(this.location) <= 5;
     }
 
     private boolean facingEntity(Point2D p){ // Returns true if the point is in the same direction as the minion is heading
@@ -327,47 +344,63 @@ public class Minion extends Actor{
         else return deltaX < 0 && p.getX() < line.getX1();
     }
 
-    private boolean withinAggroRange(Point2D p){
-        return p.distance(this.location) <= 5;
-    }
-
-    private void resetTarget(){
-        this.target = null;
-        this.mainPathIndex = this.findPathIndex();
-        this.move(this.getPathPoint());
-    }
-
-    private void moveAlongPath(){
-        if(this.team == 1) this.mainPathIndex++;
-        else this.mainPathIndex--;
-        if(this.mainPathIndex < 0) this.mainPathIndex = 0;
-        else{
-            if(this.lane == 0 && this.mainPathIndex == blueTopX.length) this.mainPathIndex--;
-            else if(this.lane == 1 && this.mainPathIndex == blueBotX.length) this.mainPathIndex--;
+    @Override
+    public boolean setTempStat(String stat, double delta) {
+        boolean returnVal = super.setTempStat(stat,delta);
+        if(stat.equalsIgnoreCase("speed")){
+            if(movementLine != null){
+                this.move(movementLine.getP2());
+            }
         }
-        this.move(this.getPathPoint());
-        this.timeTraveled = 0.1f;
+        return returnVal;
     }
 
-    private Point2D getRelativePoint(){ //Gets player's current location based on time
-        Point2D rPoint = new Point2D.Float();
-        if(this.movementLine == null) return this.location;
-        float x2 = (float) this.movementLine.getX2();
-        float y2 = (float) this.movementLine.getY2();
-        float x1 = (float) movementLine.getX1();
-        float y1 = (float) movementLine.getY1();
-        double dist = movementLine.getP1().distance(movementLine.getP2());
-        double time = dist/(float)this.getPlayerStat("speed");
-        double currentTime = this.timeTraveled;
-        if(currentTime>time) currentTime=time;
-        double currentDist = (float)this.getPlayerStat("speed")*currentTime;
-        float x = (float)(x1+(currentDist/dist)*(x2-x1));
-        float y = (float)(y1+(currentDist/dist)*(y2-y1));
-        rPoint.setLocation(x,y);
-        if(dist != 0) return rPoint;
-        else return location;
+    private Actor searchForTarget(){
+        Actor closestActor = null;
+        Actor closestNonUser = null;
+        double distance = 1000f;
+        double distanceNonUser = 1000f;
+        for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
+            if(a.getTeam() != this.team && a.getActorType() != ActorType.MONSTER && this.withinAggroRange(a.getLocation())){
+                if(a.getActorType() == ActorType.PLAYER && this.facingEntity(a.getLocation())){
+                    UserActor ua = (UserActor) a;
+                    if(ua.getState(ActorState.REVEALED) && !ua.getState(ActorState.BRUSH)){
+                        if(ua.getLocation().distance(this.location) < distance){
+                            distance = ua.getLocation().distance(this.location);
+                            closestActor = ua;
+                        }
+                    }
+                }else{
+                    //Console.debugLog(this.id +": Targeting " + a.getId() + " at dist " + a.getLocation().distance(this.location));
+                    if(a.getLocation().distance(this.location) < distanceNonUser){
+                        if(a.getActorType() != ActorType.BASE){
+                            closestNonUser = a;
+                            distanceNonUser = a.getLocation().distance(this.location);
+                        }else{
+                            Base b = (Base) a;
+                            if(b.isUnlocked()){
+                                closestNonUser = a;
+                                distanceNonUser = a.getLocation().distance(this.location);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if(closestNonUser != null) return closestNonUser;
+        else return closestActor;
     }
 
+    private void moveTowardsTarget(){
+        this.move(this.target.getLocation());
+    }
+
+    private NewMinion isInsideMinion(){
+        for(NewMinion m : this.parentExt.getRoomHandler(this.room.getId()).getMinions(this.team,this.lane)){
+            if(!m.getId().equalsIgnoreCase(this.id) && m.getLocation().distance(this.location) <= 0.45d) return m;
+        }
+        return null;
+    }
     private int findPathIndex(){ //Finds the nearest point along the defined path for the minion to travel to
         double[] pathX;
         double[] pathY;
@@ -410,53 +443,4 @@ public class Minion extends Actor{
         return index;
     }
 
-    private Point2D getPathPoint(){
-        double x;
-        double y;
-        if(this.lane == 0){
-            x = blueTopX[this.mainPathIndex];
-            y = blueTopY[this.mainPathIndex];
-        }else{
-            x = blueBotX[this.mainPathIndex];
-            y = blueBotY[this.mainPathIndex];
-        }
-        return new Point2D.Double(x,y);
-    }
-
-    private Point2D getPathPoint(int mainPathIndex){
-        double x;
-        double y;
-        if(this.lane == 0){
-            x = blueTopX[mainPathIndex];
-            y = blueTopY[mainPathIndex];
-        }else{
-            x = blueBotX[mainPathIndex];
-            y = blueBotY[mainPathIndex];
-        }
-        return new Point2D.Double(x,y);
-    }
-
-    public int getLane(){
-        return this.lane;
-    }
-
-    public MinionType getType(){
-        return this.type;
-    }
-
-    @Override
-    protected HashMap<String, Double> initializeStats(){
-        HashMap<String, Double> stats = new HashMap<>();
-        JsonNode actorStats = this.parentExt.getActorStats(this.avatar.replace("0",""));
-        for (Iterator<String> it = actorStats.fieldNames(); it.hasNext(); ) {
-            String k = it.next();
-            stats.put(k,actorStats.get(k).asDouble());
-        }
-        return stats;
-    }
-
-    @Override
-    public String getPortrait(){
-        return this.getAvatar();
-    }
 }
