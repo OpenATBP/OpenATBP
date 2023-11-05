@@ -7,6 +7,7 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.game.ActorState;
@@ -129,6 +130,10 @@ public abstract class Actor {
     }
 
     public void setPath(List<Point2D> path){
+        if(path.size() == 0){
+            Console.logWarning(this.id + " was given a 0 length path");
+            return;
+        }
         Line2D pathLine = new Line2D.Float(this.location,path.get(1));
         Point2D dest = MovementManager.getPathIntersectionPoint(parentExt,pathLine);
         if(dest == null) dest = path.get(1);

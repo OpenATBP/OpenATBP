@@ -455,9 +455,15 @@ public class UserActor extends Actor {
                 Line2D movementLine = new Line2D.Float(this.location,target.getLocation());
                 //float targetDistance = (float)(target.getLocation().distance(currentPoint)-attackRange);
                 //Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
-                Line2D finalPath = MovementManager.getColliderLine(parentExt,room,movementLine);
-                if(finalPath.getP2().distance(this.movementLine.getP2()) > 0.1f){
-                    this.move(finalPath.getP2());
+                if(this.path != null){
+                    if(this.path.get(this.path.size()-1).distance(this.target.getLocation()) > 0.1f){
+                        this.setPath(MovementManager.getPath(this.parentExt,this.location,this.target.getLocation()));
+                    }
+                }else{
+                    Line2D finalPath = MovementManager.getColliderLine(parentExt,room,movementLine);
+                    if(finalPath.getP2().distance(this.movementLine.getP2()) > 0.1f){
+                        this.move(finalPath.getP2());
+                    }
                 }
             }
         }else{
