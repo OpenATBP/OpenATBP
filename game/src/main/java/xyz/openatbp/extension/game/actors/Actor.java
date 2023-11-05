@@ -125,7 +125,7 @@ public abstract class Actor {
 
     public void moveWithCollision(Point2D dest){
         Line2D testLine = new Line2D.Float(this.location,dest);
-        Point2D newPoint = MovementManager.getPathIntersectionPoint(this.parentExt,testLine);
+        Point2D newPoint = MovementManager.getPathIntersectionPoint(this.parentExt,this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),testLine);
         if(newPoint != null){
             this.move(newPoint);
         }else this.move(dest);
@@ -137,7 +137,7 @@ public abstract class Actor {
             return;
         }
         Line2D pathLine = new Line2D.Float(this.location,path.get(1));
-        Point2D dest = MovementManager.getPathIntersectionPoint(parentExt,pathLine);
+        Point2D dest = MovementManager.getPathIntersectionPoint(parentExt,this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),pathLine);
         if(dest == null) dest = path.get(1);
         this.path = path;
         this.pathIndex = 1;

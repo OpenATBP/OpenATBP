@@ -67,7 +67,11 @@ public class MovementManager {
     }
 
     public static Point2D getDashPoint(Actor player, Line2D movementLine){
-        if(Math.abs(movementLine.getP2().getX()) >= 51 || Math.abs(movementLine.getY2()) >= 31) return movementLine.getP1();
+        if(!player.getParentExt().getRoomHandler(player.getRoom().getId()).isPracticeMap()){
+            if(Math.abs(movementLine.getP2().getX()) >= 51 || Math.abs(movementLine.getY2()) >= 31) return movementLine.getP1();
+        }else{
+            if(Math.abs(movementLine.getP2().getX()) >= 61 || Math.abs(movementLine.getY2()) >= 31) return movementLine.getP1();
+        }
         List<Vector<Float>> collider = getCollidingVectors(movementLine, player.getParentExt(), player.getRoom());
         if(collider != null){
             List<Line2D> vectorLines = getColliderVectorLines(collider);
@@ -185,8 +189,11 @@ public class MovementManager {
         return closestLine;
     }
 
-    public static boolean insideAnyObstacle(ATBPExtension parentExt, Point2D point){
-        for(Obstacle o : parentExt.getMainMapObstacles()){
+    public static boolean insideAnyObstacle(ATBPExtension parentExt,boolean practice, Point2D point){
+        List<Obstacle> obstacles;
+        if(practice) obstacles = parentExt.getPracticeMapObstacles();
+        else obstacles = parentExt.getMainMapObstacles();
+        for(Obstacle o : obstacles){
             if(o.contains(point)) return true;
         }
         return false;
@@ -213,8 +220,11 @@ public class MovementManager {
         return null;
     }
 
-    public static Point2D getPathIntersectionPoint(ATBPExtension parentExt, Line2D movementLine){
-        for(Obstacle o : parentExt.getMainMapObstacles()){
+    public static Point2D getPathIntersectionPoint(ATBPExtension parentExt,boolean practice, Line2D movementLine){
+        List<Obstacle> obstacles;
+        if(practice) obstacles = parentExt.getPracticeMapObstacles();
+        else obstacles = parentExt.getMainMapObstacles();
+        for(Obstacle o : obstacles){
             if(o.intersects(movementLine)){
                 return o.intersectPoint(movementLine);
             }
@@ -222,9 +232,10 @@ public class MovementManager {
         return null;
     }
 
-    public static List<Point2D> getPath(ATBPExtension parentExt, Point2D location, Point2D dest){
+    public static List<Point2D> getPath(ATBPExtension parentExt, boolean practice, Point2D location, Point2D dest){
         FloatArray path = new FloatArray();
-        parentExt.getMainMapPathFinder().findPath((float)location.getX()+50,(float)location.getY()+30,(float)dest.getX()+50,(float)dest.getY()+30,0.6f,path);
+        if(!practice) parentExt.getMainMapPathFinder().findPath((float)location.getX()+50,(float)location.getY()+30,(float)dest.getX()+50,(float)dest.getY()+30,0.6f,path);
+        else parentExt.getPracticeMapPathFinder().findPath((float)location.getX()+50,(float)location.getY()+30,(float)dest.getX()+50,(float)dest.getY()+30,0.6f,path);
         List<Point2D> pathList = new ArrayList<>();
         float px = 0;
         float py = 0;

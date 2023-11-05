@@ -26,6 +26,7 @@ import xyz.openatbp.extension.reqhandlers.*;
 import java.awt.geom.*;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -37,12 +38,15 @@ public class ATBPExtension extends SFSExtension {
     ArrayList<Vector<Float>>[] mapColliders; //Contains all vertices for the practice map
     ArrayList<Vector<Float>>[] mainMapColliders; //Contains all vertices for the main map
     List<Obstacle> mainMapObstacles;
+    List<Obstacle> practiceMapObstacles;
 
     ArrayList<Vector<Float>>[] brushColliders;
+    ArrayList<Vector<Float>>[] practiceBrushColliders;
     ArrayList<Path2D> mapPaths; //Contains all line paths of the colliders for the practice map
     ArrayList<Path2D> mainMapPaths; //Contains all line paths of the colliders for the main map
 
     ArrayList<Path2D> brushPaths;
+    ArrayList<Path2D> practiceBrushPaths;
     HashMap<String, List<String>> tips = new HashMap<>();
 
     HashMap<Integer, RoomHandler> roomHandlers = new HashMap<>();
@@ -52,6 +56,7 @@ public class ATBPExtension extends SFSExtension {
     MongoCollection<Document> playerDatabase;
 
     PathHelper mainMapPathFinder;
+    PathHelper practiceMapPathFinder;
     public void init() {
         this.addEventHandler(SFSEventType.USER_JOIN_ROOM, JoinRoomEventHandler.class);
         this.addEventHandler(SFSEventType.USER_JOIN_ZONE, JoinZoneEventHandler.class);
@@ -148,6 +153,8 @@ public class ATBPExtension extends SFSExtension {
         ArrayNode colliders = (ArrayNode) node.get("SceneColliders").get("collider");
         mapColliders = new ArrayList[colliders.size()];
         mapPaths = new ArrayList<>(colliders.size());
+        practiceMapObstacles = new ArrayList<>(colliders.size());
+        practiceMapPathFinder = new PathHelper(100f,100f);
         for(int i = 0; i < colliders.size(); i++){ //Reads all colliders and makes a list of their vertices
             Path2D path = new Path2D.Float();
             ArrayNode vertices = (ArrayNode) colliders.get(i).get("vertex");
@@ -166,7 +173,17 @@ public class ATBPExtension extends SFSExtension {
             path.closePath();
             mapPaths.add(path);
             mapColliders[i] = vecs;
+            practiceMapObstacles.add(new Obstacle(path,vecs));
+            float[] verts = new float[vecs.size()*2];
+            int index = 0;
+            for(Vector<Float> v : vecs){
+                verts[index] = v.get(0)+50;
+                verts[index+1] = v.get(1)+30;
+                index+=2;
+            }
+            practiceMapPathFinder.addPolyline(verts);
         }
+
         //Process main map. This can probably be optimized.
         node = mapper.readTree(mainMap);
         colliders = (ArrayNode) node.get("SceneColliders").get("collider");
@@ -211,6 +228,12 @@ public class ATBPExtension extends SFSExtension {
     public List<Obstacle> getMainMapObstacles(){
         return this.mainMapObstacles;
     }
+
+    public PathHelper getPracticeMapPathFinder(){
+        return this.practiceMapPathFinder;
+    }
+
+    public List<Obstacle> getPracticeMapObstacles(){return this.practiceMapObstacles;}
 
     public ArrayList<Vector<Float>>[] getColliders(String map){
         if(map.equalsIgnoreCase("practice")) return mapColliders;
@@ -324,10 +347,36 @@ public class ATBPExtension extends SFSExtension {
             brushPaths.add(path);
             brushColliders[i] = vecs;
         }
+
+        File practiceMap = new File(getCurrentFolder()+"/data/colliders/practiceBrush.json");
+        JsonNode node2 = mapper.readTree(practiceMap);
+        ArrayNode colliders2 = (ArrayNode) node2.get("BrushAreas").get("brush");
+        practiceBrushColliders = new ArrayList[colliders2.size()];
+        practiceBrushPaths = new ArrayList<>(colliders2.size());
+        for(int i = 0; i < colliders2.size(); i++){ //Reads all colliders and makes a list of their vertices
+            Path2D path = new Path2D.Float();
+            ArrayNode vertices = (ArrayNode) colliders2.get(i).get("vertex");
+            ArrayList<Vector<Float>> vecs = new ArrayList<>(vertices.size());
+            for(int g = 0; g < vertices.size(); g++){
+                if(g == 0){
+                    path.moveTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
+                }else{ //Draws lines from each vertex to make a shape
+                    path.lineTo(vertices.get(g).get("x").asDouble(),vertices.get(g).get("z").asDouble());
+                }
+                Vector<Float> vertex = new Vector<>(2);
+                vertex.add(0, (float) vertices.get(g).get("x").asDouble());
+                vertex.add(1, (float) vertices.get(g).get("z").asDouble());
+                vecs.add(vertex);
+            }
+            path.closePath();
+            practiceBrushPaths.add(path);
+            practiceBrushColliders[i] = vecs;
+        }
     }
 
-    public ArrayList<Path2D> getBrushPaths(){
-        return this.brushPaths;
+    public ArrayList<Path2D> getBrushPaths(boolean practice){
+        if(!practice) return this.brushPaths;
+        else return this.practiceBrushPaths;
     }
 
     public Path2D getBrush(int num){

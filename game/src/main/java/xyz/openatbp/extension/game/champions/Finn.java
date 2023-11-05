@@ -65,7 +65,7 @@ public class Finn extends UserActor {
     @Override
     public void die(Actor a){
         super.die(a);
-        ExtensionCommands.removeFx(parentExt,room,furyTarget.getId()+"_mark"+furyStacks);
+        if(this.furyTarget != null) ExtensionCommands.removeFx(parentExt,room,furyTarget.getId()+"_mark"+furyStacks);
         furyStacks = 0;
     }
 

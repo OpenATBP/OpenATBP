@@ -2,6 +2,7 @@ package xyz.openatbp.extension.reqhandlers;
 
 import com.dongbat.walkable.FloatArray;
 import com.dongbat.walkable.PathfinderException;
+import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
@@ -37,7 +38,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             user.resetTarget();
             user.resetIdleTime();
             user.clearPath();
-            String room = sender.getLastJoinedRoom().getGroupId();
+            Room room = sender.getLastJoinedRoom();
             long timeSinceBasicAttack = sender.getVariable("stats").getSFSObjectValue().getLong("timeSinceBasicAttack");
             if ((System.currentTimeMillis() - timeSinceBasicAttack) < 500) return; //hard coded, this seems to be when the projectile should leaving during the animation
 
@@ -45,13 +46,16 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             float pz = params.getFloat("orig_z");
             float dx = params.getFloat("dest_x");
             float dz = params.getFloat("dest_z");
+            Console.debugLog("dx: " + dx + " dz: " + dz);
             FloatArray path = new FloatArray();
             try{
-                parentExt.getMainMapPathFinder().findPath(px+50,pz+30,dx+50,dz+30,0.6f,path);
-                if(path.size <= 2 || MovementManager.insideAnyObstacle(parentExt,new Point2D.Float(dx,dz))){
+                Console.debugLog("Is practice: " + parentExt.getRoomHandler(room.getId()).isPracticeMap());
+                if(!parentExt.getRoomHandler(room.getId()).isPracticeMap()) parentExt.getMainMapPathFinder().findPath(px+50,pz+30,dx+50,dz+30,0.6f,path);
+                else parentExt.getPracticeMapPathFinder().findPath(px+50,pz+30,dx+50,dz+30,0.6f,path);
+                if(path.size <= 2 || MovementManager.insideAnyObstacle(parentExt,parentExt.getRoomHandler(room.getId()).isPracticeMap(),new Point2D.Float(dx,dz))){
                     Line2D movementLine = new Line2D.Float(px,pz,dx,dz); //Creates the path of the player
                     //ExtensionCommands.createWorldFX(parentExt, user.getRoom(), "test","gnome_c","testBox"+Math.random(),5000,(float)playerBoundingBox.getCenterX(),(float)playerBoundingBox.getCenterY(),false,0,0f);
-                    Point2D intersectionPoint = MovementManager.getPathIntersectionPoint(parentExt,movementLine);
+                    Point2D intersectionPoint = MovementManager.getPathIntersectionPoint(parentExt,parentExt.getRoomHandler(room.getId()).isPracticeMap(),movementLine);
 
                     float destx = (float)movementLine.getX2();
                     float destz = (float)movementLine.getY2();
@@ -81,7 +85,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             }catch(PathfinderException pe){
                 Line2D movementLine = new Line2D.Float(px,pz,dx,dz); //Creates the path of the player
                 //ExtensionCommands.createWorldFX(parentExt, user.getRoom(), "test","gnome_c","testBox"+Math.random(),5000,(float)playerBoundingBox.getCenterX(),(float)playerBoundingBox.getCenterY(),false,0,0f);
-                Point2D intersectionPoint = MovementManager.getPathIntersectionPoint(parentExt,movementLine);
+                Point2D intersectionPoint = MovementManager.getPathIntersectionPoint(parentExt,parentExt.getRoomHandler(room.getId()).isPracticeMap(),movementLine);
 
                 float destx = (float)movementLine.getX2();
                 float destz = (float)movementLine.getY2();

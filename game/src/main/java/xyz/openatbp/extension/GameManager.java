@@ -309,19 +309,4 @@ public class GameManager {
         return node;
     }
 
-    public static List<Monster> initializeCamps(ATBPExtension parentExt, Room room){
-        List<Monster> monsters = new ArrayList<>(8);
-        monsters.add(new Monster(parentExt,room,MapData.GRASS,"grassbear"));
-        monsters.add(new Monster(parentExt,room,MapData.HUGWOLF,"hugwolf"));
-        char[] chars = {'a','b','c'};
-        for(int i = 0; i < MapData.OWLS.length; i++){
-            String monsterName = "ironowl_"+chars[i];
-            monsters.add(new Monster(parentExt,room,MapData.OWLS[i],monsterName));
-        }
-        for(int i = 0; i < MapData.GNOMES.length; i++){
-            String monsterName = "gnome_"+chars[i];
-            monsters.add(new Monster(parentExt,room,MapData.GNOMES[i],monsterName));
-        }
-        return monsters;
-    }
 }

@@ -43,7 +43,7 @@ public class RoomHandler implements Runnable{
     private HashMap<String, Long> destroyedIds = new HashMap<>();
     private List<String> createdActorIds = new ArrayList<>();
     private static final boolean MONSTER_DEBUG = true;
-    private PathHelper minionPathHelper;
+    private boolean practiceMap;
     public RoomHandler(ATBPExtension parentExt, Room room){
         this.parentExt = parentExt;
         this.room = room;
@@ -51,6 +51,7 @@ public class RoomHandler implements Runnable{
         this.towers = new ArrayList<>();
         this.players = new ArrayList<>();
         this.campMonsters = new ArrayList<>();
+        this.practiceMap = room.getGroupId().equalsIgnoreCase("practice");
         HashMap<String, Point2D> towers0 = MapData.getTowerData(room.getGroupId(),0);
         HashMap<String, Point2D> towers1 = MapData.getTowerData(room.getGroupId(),1);
         for(String key : towers0.keySet()){
@@ -149,15 +150,19 @@ public class RoomHandler implements Runnable{
                     if(minionNum <= 4){ //TODO: Set to test!
                         this.addMinion(1,minionNum,minionWave,0);
                         this.addMinion(0,minionNum,minionWave,0);
-                        this.addMinion(1,minionNum,minionWave,1);
-                        this.addMinion(0,minionNum,minionWave,1);
+                        if(!this.practiceMap){
+                            this.addMinion(1,minionNum,minionWave,1);
+                            this.addMinion(0,minionNum,minionWave,1);
+                        }
                     }else if(minionNum == 5){
                         for(int i = 0; i < 2; i++){ //i = lane
+                            if(this.practiceMap && i == 1) break;
                             for(int g = 0; g < 2; g++){
                                 if(!this.hasSuperMinion(i,g) && this.canSpawnSupers(g)) this.addMinion(g, minionNum,minionWave,i);
                             }
                         }
                     }
+
                 }
 
             }catch(Exception e){
@@ -260,6 +265,7 @@ public class RoomHandler implements Runnable{
         Point2D healthLocation = getHealthLocation(health);
         double hx = healthLocation.getX();
         double hy = healthLocation.getY();
+        if(hx == 0) return false;
         double px = pLoc.getX();
         double pz = pLoc.getY();
         double dist = Math.sqrt(Math.pow(px-hx,2) + Math.pow(pz-hy,2));
@@ -270,25 +276,38 @@ public class RoomHandler implements Runnable{
         float x = MapData.L2_BOT_BLUE_HEALTH[0];
         float z = MapData.L2_BOT_BLUE_HEALTH[1];
         // num = 1
-        switch(num){
-            case 0:
-                z*=-1;
-                break;
-            case 2:
-                x = MapData.L2_LEFT_HEALTH[0];
-                z = MapData.L2_LEFT_HEALTH[1];
-                break;
-            case 3:
-                x*=-1;
-                z*=-1;
-                break;
-            case 4:
-                x*=-1;
-                break;
-            case 5:
-                x = MapData.L2_LEFT_HEALTH[0]*-1;
-                z = MapData.L2_LEFT_HEALTH[1];
-                break;
+        if(!this.practiceMap){
+            switch(num){
+                case 0:
+                    z*=-1;
+                    break;
+                case 2:
+                    x = MapData.L2_LEFT_HEALTH[0];
+                    z = MapData.L2_LEFT_HEALTH[1];
+                    break;
+                case 3:
+                    x*=-1;
+                    z*=-1;
+                    break;
+                case 4:
+                    x*=-1;
+                    break;
+                case 5:
+                    x = MapData.L2_LEFT_HEALTH[0]*-1;
+                    z = MapData.L2_LEFT_HEALTH[1];
+                    break;
+            }
+        }else{
+            if(num == 0){
+                x = MapData.L1_BLUE_HEALTH_X;
+                z = MapData.L1_BLUE_HEALTH_Z;
+            }else if(num == 1){
+                x = MapData.L1_BLUE_HEALTH_X*-1;
+                z = MapData.L1_BLUE_HEALTH_Z*-1;
+            }else{
+                x = 0;
+                z = 0;
+            }
         }
         return new Point2D.Float(x,z);
     }
@@ -312,48 +331,63 @@ public class RoomHandler implements Runnable{
     }
 
     private void spawnMonster(String monster){
-        String map = room.getGroupId();
             float x = 0;
             float z = 0;
             String actor = monster;
             if(monster.equalsIgnoreCase("gnomes") || monster.equalsIgnoreCase("ironowls")){
-                char[] abc = {'a','b','c'};
-                for(int i = 0; i < 3; i++){ //Gnomes and owls have three different mobs so need to be spawned in triplets
-                    if(monster.equalsIgnoreCase("gnomes")){
-                        actor="gnome_"+abc[i];
-                        x = (float)MapData.GNOMES[i].getX();
-                        z = (float)MapData.GNOMES[i].getY();
-                        campMonsters.add(new Monster(parentExt,room,MapData.GNOMES[i],actor));
-                    }else{
-                        actor="ironowl_"+abc[i];
-                        x = (float)MapData.OWLS[i].getX();
-                        z = (float)MapData.OWLS[i].getY();
-                        campMonsters.add(new Monster(parentExt,room,MapData.OWLS[i],actor));
+                if(!this.practiceMap){
+                    char[] abc = {'a','b','c'};
+                    for(int i = 0; i < 3; i++){ //Gnomes and owls have three different mobs so need to be spawned in triplets
+                        if(monster.equalsIgnoreCase("gnomes")){
+                            actor="gnome_"+abc[i];
+                            x = (float)MapData.GNOMES[i].getX();
+                            z = (float)MapData.GNOMES[i].getY();
+                            campMonsters.add(new Monster(parentExt,room,MapData.GNOMES[i],actor));
+                        }else{
+                            actor="ironowl_"+abc[i];
+                            x = (float)MapData.OWLS[i].getX();
+                            z = (float)MapData.OWLS[i].getY();
+                            campMonsters.add(new Monster(parentExt,room,MapData.OWLS[i],actor));
+                        }
+                        Point2D spawnLoc = new Point2D.Float(x,z);
+                        ExtensionCommands.createActor(this.parentExt,this.room,actor,actor,spawnLoc,0f,2);
+                        ExtensionCommands.moveActor(this.parentExt,this.room,actor,spawnLoc,spawnLoc,5f,false);
                     }
-                    Point2D spawnLoc = new Point2D.Float(x,z);
-                    ExtensionCommands.createActor(this.parentExt,this.room,actor,actor,spawnLoc,0f,2);
-                    ExtensionCommands.moveActor(this.parentExt,this.room,actor,spawnLoc,spawnLoc,5f,false);
                 }
             }else if(monster.length()>3){
                 switch(monster){
                     case "hugwolf":
-                        x = MapData.HUGWOLF[0];
-                        z = MapData.HUGWOLF[1];
-                        campMonsters.add(new Monster(parentExt,room,MapData.HUGWOLF,actor));
-                        break;
+                        if(!this.practiceMap){
+                            x = MapData.HUGWOLF[0];
+                            z = MapData.HUGWOLF[1];
+                            campMonsters.add(new Monster(parentExt,room,MapData.HUGWOLF,actor));
+                            break;
+                        }
                     case "grassbear":
-                        x = MapData.GRASS[0];
-                        z = MapData.GRASS[1];
-                        campMonsters.add(new Monster(parentExt,room,MapData.GRASS,actor));
-                        break;
+                        if(!this.practiceMap){
+                            x = MapData.GRASS[0];
+                            z = MapData.GRASS[1];
+                            campMonsters.add(new Monster(parentExt,room,MapData.GRASS,actor));
+                            break;
+                        }
                     case "keeoth":
-                        x = MapData.L2_KEEOTH[0];
-                        z = MapData.L2_KEEOTH[1];
+                        if(!this.practiceMap){
+                            x = MapData.L2_KEEOTH[0];
+                            z = MapData.L2_KEEOTH[1];
+                        }else{
+                            x = MapData.L1_KEEOTH_X;
+                            z = MapData.L1_KEEOTH_Z;
+                        }
                         campMonsters.add(new Keeoth(parentExt,room,MapData.L2_KEEOTH,actor));
                         break;
                     case "ooze":
-                        x = MapData.L2_OOZE[0];
-                        z = MapData.L2_OOZE[1];
+                        if(!this.practiceMap){
+                            x = MapData.L2_OOZE[0];
+                            z = MapData.L2_OOZE[1];
+                        }else{
+                            x = MapData.L1_OOZE_X;
+                            z = MapData.L1_OOZE_Z;
+                        }
                         actor = "goomonster";
                         campMonsters.add(new GooMonster(parentExt,room,MapData.L2_OOZE,actor));
                         break;
@@ -367,7 +401,7 @@ public class RoomHandler implements Runnable{
         int healthNum = getHealthNum(id);
         Point2D healthLocation = getHealthLocation(healthNum);
         int effectTime = (15*60-secondsRan)*1000;
-        ExtensionCommands.createWorldFX(parentExt,this.room, "","pickup_health_cyclops",id+"_fx",effectTime,(float)healthLocation.getX(),(float)healthLocation.getY(),false,2,0f);
+        if(healthLocation.getX() != 0) ExtensionCommands.createWorldFX(parentExt,this.room, "","pickup_health_cyclops",id+"_fx",effectTime,(float)healthLocation.getX(),(float)healthLocation.getY(),false,2,0f);
         room.getVariable("spawns").getSFSObjectValue().putInt(id,91);
     }
 
@@ -449,12 +483,20 @@ public class RoomHandler implements Runnable{
     private boolean insideAltar(Point2D pLoc, int altar){
         double altar2_x = 0;
         double altar2_y = 0;
-        if(altar == 0){
-            altar2_x = MapData.L2_TOP_ALTAR[0];
-            altar2_y = MapData.L2_TOP_ALTAR[1];
-        }else if(altar == 2){
-            altar2_x = MapData.L2_BOT_ALTAR[0];
-            altar2_y = MapData.L2_BOT_ALTAR[1];
+        if(!this.practiceMap){
+            if(altar == 0){
+                altar2_x = MapData.L2_TOP_ALTAR[0];
+                altar2_y = MapData.L2_TOP_ALTAR[1];
+            }else if(altar == 2){
+                altar2_x = MapData.L2_BOT_ALTAR[0];
+                altar2_y = MapData.L2_BOT_ALTAR[1];
+            }
+        }else{
+            if(altar == 2){
+                altar2_y = MapData.L1_DALTAR_Z;
+            }else if(altar == 1){
+                altar2_y = MapData.L1_AALTAR_Z;
+            }else return false;
         }
         double px = pLoc.getX();
         double pz = pLoc.getY();
@@ -465,12 +507,20 @@ public class RoomHandler implements Runnable{
     private Point2D getAltarLocation(int altar){
         double altar_x = 0d;
         double altar_y = 0d;
-        if(altar == 0){
-            altar_x = MapData.L2_TOP_ALTAR[0];
-            altar_y = MapData.L2_TOP_ALTAR[1];
-        }else if(altar == 2){
-            altar_x = MapData.L2_BOT_ALTAR[0];
-            altar_y = MapData.L2_BOT_ALTAR[1];
+        if(!this.practiceMap){
+            if(altar == 0){
+                altar_x = MapData.L2_TOP_ALTAR[0];
+                altar_y = MapData.L2_TOP_ALTAR[1];
+            }else if(altar == 2){
+                altar_x = MapData.L2_BOT_ALTAR[0];
+                altar_y = MapData.L2_BOT_ALTAR[1];
+            }
+        }else{
+            if(altar == 0){
+                altar_y = MapData.L1_DALTAR_Z;
+            }else if(altar == 1){
+                altar_y = MapData.L1_AALTAR_Z;
+            }
         }
         return new Point2D.Double(altar_x,altar_y);
     }
@@ -718,6 +768,7 @@ public class RoomHandler implements Runnable{
 
     public void handleFountain(){
         Point2D blueCenter = new Point2D.Float(-50.16f,0f);
+        if(this.practiceMap) blueCenter = new Point2D.Float(MapData.L1_GUARDIAN_X*-1,MapData.L1_GUARDIAN_Z);
         List<Actor> blueTeam = Champion.getEnemyActorsInRadius(this,1,blueCenter,4f);
         for(Actor a : blueTeam){
             if(a.getActorType() == ActorType.PLAYER){
@@ -730,6 +781,7 @@ public class RoomHandler implements Runnable{
             }
         }
         Point2D purpleCenter = new Point2D.Float(50.16f, 0f);
+        if(this.practiceMap) purpleCenter = new Point2D.Float(MapData.L1_GUARDIAN_X,MapData.L1_GUARDIAN_Z);
         List<Actor> purpleTeam = Champion.getEnemyActorsInRadius(this,0,purpleCenter,4f);
         for(Actor a : purpleTeam){ //I can optimize but that's future me's problem
             if(a.getActorType() == ActorType.PLAYER){
@@ -961,7 +1013,7 @@ public class RoomHandler implements Runnable{
         return this.createdActorIds.contains(id);
     }
 
-    public PathHelper getMinionPathHelper(){
-        return this.minionPathHelper;
+    public boolean isPracticeMap(){
+        return this.practiceMap;
     }
 }

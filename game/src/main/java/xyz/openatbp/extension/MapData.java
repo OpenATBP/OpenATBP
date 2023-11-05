@@ -127,6 +127,7 @@ public class MapData {
             float towerDifference = 0;
             String towerID = "tower"+tower;
             if(room.equalsIgnoreCase("practice")){
+                if(tower == 3) break;
                 towerDifference = L1_TOWER1_X-L1_TOWER2_X;
                 x = (L1_TOWER1_X-(towerDifference*(tower-1)));
                 z = L1_TOWER_Z;
@@ -163,10 +164,12 @@ public class MapData {
         float z = (float) 0.0;
         String actorID = "altar_"+type;
         if(room.equalsIgnoreCase("practice")){
-            if(type == 1){
+            if(type == 2){
                 z = L1_DALTAR_Z;
+                actorID = "altar_1";
             }else{
                 z = L1_AALTAR_Z;
+                actorID = "altar_2";
             }
         }else{
             if(type == 0){

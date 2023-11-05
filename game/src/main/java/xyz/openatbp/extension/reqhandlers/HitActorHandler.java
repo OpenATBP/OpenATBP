@@ -50,7 +50,7 @@ public class HitActorHandler extends BaseClientRequestHandler {
                     Line2D movementLine = new Line2D.Float(location,target.getLocation());
                     float targetDistance = (float)target.getLocation().distance(location)-attackRange;
                     Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
-                    actor.setPath(MovementManager.getPath(parentExt,location,target.getLocation()));
+                    actor.setPath(MovementManager.getPath(parentExt,parentExt.getRoomHandler(actor.getRoom().getId()).isPracticeMap(),location,target.getLocation()));
                 }else if(actor.withinRange(target)){
                     actor.stopMoving();
                 }

@@ -44,7 +44,7 @@ public class UserActor extends Actor {
     protected int idleTime = 0;
     protected static final double DASH_SPEED = 20d;
     private static final boolean MOVEMENT_DEBUG = false;
-    private static final boolean INVINCIBLE_DEBUG = false;
+    private static final boolean INVINCIBLE_DEBUG = true;
     private static final boolean ABILITY_DEBUG = false;
 
     //TODO: Add all stats into UserActor object instead of User Variables
@@ -93,13 +93,24 @@ public class UserActor extends Actor {
         double currentDist = speed*currentTime;
         float x = (float)(x1+(currentDist/dist)*(x2-x1));
         float y = (float)(y1+(currentDist/dist)*(y2-y1));
-        if(x >= 52) x = 52;
-        else if(x <= -52) x = -52;
+        if(!this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap()){
+            if(x >= 52) x = 52;
+            else if(x <= -52) x = -52;
+        }else{
+            if(x >= 62) x = 62;
+            else if(x <= -62) x = -62;
+        }
+
         if(y >= 30) y = 30;
         else if(y <= -30) y = -30;
         rPoint.setLocation(x,y);
         this.location = rPoint;
-        if(x >= 52 || x <= -52 || y >= 30 || y <= -30) this.stopMoving();
+        if(!this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap()){
+            if(x >= 52 || x <= -52 || y >= 30 || y <= -30) this.stopMoving();
+        }else{
+            if(x >= 62 || x <= -62 || y >= 30 || y <= -30) this.stopMoving();
+        }
+
         return rPoint;
     }
 
@@ -444,7 +455,7 @@ public class UserActor extends Actor {
             this.idleTime+=100;
         }
         boolean insideBrush = false;
-        for(Path2D brush : this.parentExt.getBrushPaths()){
+        for(Path2D brush : this.parentExt.getBrushPaths(this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap())){
             if(brush.contains(this.location)){
                 insideBrush = true;
                 break;
@@ -474,7 +485,7 @@ public class UserActor extends Actor {
                 //Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
                 if(this.path != null){
                     if(this.path.get(this.path.size()-1).distance(this.target.getLocation()) > 0.1f){
-                        this.setPath(MovementManager.getPath(this.parentExt,this.location,this.target.getLocation()));
+                        this.setPath(MovementManager.getPath(this.parentExt,this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),this.location,this.target.getLocation()));
                     }
                 }else{
                     Line2D finalPath = MovementManager.getColliderLine(parentExt,room,movementLine);

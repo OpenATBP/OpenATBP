@@ -23,6 +23,9 @@ public class Minion extends Actor{
     private final double[] blueTopX = {36.68, 30.10, 21.46, 18.20, -5.26, -12.05, -24.69, -28.99, -35.67};
     private final double[] blueTopY = {-2.56, -7.81, -12.09, -16.31, -17.11, -17.96, -13.19, -7.50, -2.70};
 
+    private final double[] practiceX = {38.00, 33.93, 30, 20.68, 12.76, 7.38, -4.87, -15.79, -24.00, -33.49, -38.77};
+    private final double[] practiceY = {0.76, 0.53, -1.5, -1.46, -1.43,0.1, 0.1, -0.95, -0.79, -0.67, 0.06};
+
     public enum MinionType{RANGED, MELEE, SUPER} //Type of minion
     public enum State{IDLE, MOVING, TARGETING, ATTACKING}
     private MinionType type;
@@ -36,6 +39,9 @@ public class Minion extends Actor{
     public Minion(ATBPExtension parentExt, Room room, int team, int minionNum, int wave, int lane) {
         this.avatar = "creep"+team;
         this.state = State.IDLE;
+        this.room = room;
+        this.team = team;
+        this.parentExt = parentExt;
         String typeString = "super";
         if(minionNum <= 2){
             typeString = "melee"+minionNum;
@@ -65,16 +71,25 @@ public class Minion extends Actor{
                 y = (float) blueTopY[blueTopY.length-1];
             }
         }
+        if(this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap()){
+            if(team == 1){
+                x = (float) practiceX[0];
+                y = (float) practiceY[0];
+            }else{
+                x = (float) practiceX[practiceX.length-1];
+                y = (float) practiceY[practiceY.length-1];
+            }
+        }
         this.location = new Point2D.Float(x,y);
         this.id = team+"creep_"+lane+typeString+wave;
-        this.room = room;
-        this.team = team;
-        this.parentExt = parentExt;
         this.lane = lane;
         this.actorType = ActorType.MINION;
         if(team == 0){
             if(lane == 0) mainPathIndex = blueTopX.length-1;
             else mainPathIndex = blueBotX.length-1;
+        }
+        if(this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap()){
+            if(team == 0) mainPathIndex = practiceX.length-1;
         }
         this.movementLine = new Line2D.Float(this.location,this.location);
         aggressors = new HashMap<>(3);
@@ -267,26 +282,38 @@ public class Minion extends Actor{
     private Point2D getPathPoint(){
         double x;
         double y;
-        if(this.lane == 0){
-            x = blueTopX[this.mainPathIndex];
-            y = blueTopY[this.mainPathIndex];
+        if(!this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap()){
+            if(this.lane == 0){
+                x = blueTopX[this.mainPathIndex];
+                y = blueTopY[this.mainPathIndex];
+            }else{
+                x = blueBotX[this.mainPathIndex];
+                y = blueBotY[this.mainPathIndex];
+            }
         }else{
-            x = blueBotX[this.mainPathIndex];
-            y = blueBotY[this.mainPathIndex];
+            x = practiceX[this.mainPathIndex];
+            y = practiceY[this.mainPathIndex];
         }
+
         return new Point2D.Double(x,y);
     }
 
     private Point2D getPathPoint(int mainPathIndex){
         double x;
         double y;
-        if(this.lane == 0){
-            x = blueTopX[mainPathIndex];
-            y = blueTopY[mainPathIndex];
+        if(!this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap()){
+            if(this.lane == 0){
+                x = blueTopX[mainPathIndex];
+                y = blueTopY[mainPathIndex];
+            }else{
+                x = blueBotX[mainPathIndex];
+                y = blueBotY[mainPathIndex];
+            }
         }else{
-            x = blueBotX[mainPathIndex];
-            y = blueBotY[mainPathIndex];
+            x = practiceX[mainPathIndex];
+            y = practiceY[mainPathIndex];
         }
+
         return new Point2D.Double(x,y);
     }
 
@@ -295,8 +322,12 @@ public class Minion extends Actor{
         else this.mainPathIndex--;
         if(this.mainPathIndex < 0) this.mainPathIndex = 0;
         else{
-            if(this.lane == 0 && this.mainPathIndex == blueTopX.length) this.mainPathIndex--;
-            else if(this.lane == 1 && this.mainPathIndex == blueBotX.length) this.mainPathIndex--;
+            if(!this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap()){
+                if(this.lane == 0 && this.mainPathIndex == blueTopX.length) this.mainPathIndex--;
+                else if(this.lane == 1 && this.mainPathIndex == blueBotX.length) this.mainPathIndex--;
+            }else{
+                if(this.mainPathIndex == practiceX.length) this.mainPathIndex--;
+            }
         }
         this.move(this.getPathPoint());
         this.timeTraveled = 0.1f;
@@ -412,6 +443,10 @@ public class Minion extends Actor{
             pathX = blueTopX;
             pathY = blueTopY;
         }
+        if(this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap()){
+            pathX = practiceX;
+            pathY = practiceY;
+        }
         double shortestDistance = 100;
         int index = -1;
         Line2D testLine;
@@ -420,7 +455,7 @@ public class Minion extends Actor{
             if(lane == 0) p2 = blueTopX.length-1;
             if(team == 0){
                 p2 = 0;
-            }
+            }else if(this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap()) p2 = practiceX.length-1;
             testLine = new Line2D.Float(this.location,this.getPathPoint(p2));
         }else testLine = new Line2D.Float(this.location,this.movementLine.getP2());
         for(int i = 0; i < pathX.length; i++){

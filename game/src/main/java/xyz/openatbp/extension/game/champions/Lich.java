@@ -101,9 +101,8 @@ public class Lich extends UserActor{
     @Override
     public void die(Actor a){
         super.die(a);
-        //if(this.skully != null) this.setSkullyTarget(a);
-        this.skully.die(this.skully);
-
+        if(this.skully != null) this.setSkullyTarget(a);
+        //this.skully.die(this.skully);
     }
 
     @Override
@@ -260,7 +259,7 @@ public class Lich extends UserActor{
                     if(!this.isStopped()) this.stopMoving();
                     if(this.canAttack()) this.attack(this.target);
                 }else{
-                    if(this.movementLine.getP2().distance(this.target.getLocation()) > 0.1d) this.setPath(MovementManager.getPath(this.parentExt,this.location,this.target.getLocation()));
+                    if(this.movementLine.getP2().distance(this.target.getLocation()) > 0.1d) this.setPath(MovementManager.getPath(this.parentExt,this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),this.location,this.target.getLocation()));
                 }
             }
         }

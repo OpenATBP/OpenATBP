@@ -309,12 +309,12 @@ public class Monster extends Actor {
 
     @Override
     public void moveWithCollision(Point2D dest){
-        List<Point2D> path = MovementManager.getPath(this.parentExt,this.location,dest);
+        List<Point2D> path = MovementManager.getPath(this.parentExt,this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),this.location,dest);
         if(path.size() > 2){
             this.setPath(path);
         }else{
             Line2D testLine = new Line2D.Float(this.location,dest);
-            Point2D newPoint = MovementManager.getPathIntersectionPoint(this.parentExt,testLine);
+            Point2D newPoint = MovementManager.getPathIntersectionPoint(this.parentExt,this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),testLine);
             if(newPoint != null){
                 this.move(newPoint);
             }else this.move(dest);
