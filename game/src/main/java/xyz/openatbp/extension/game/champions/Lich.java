@@ -195,9 +195,6 @@ public class Lich extends UserActor{
 
     private class Skully extends Actor {
 
-        private Line2D movementLine;
-        private float timeTraveled = 0f;
-        private Actor target;
         private Point2D lastLichLocation;
         private Point2D lastTargetLocation;
         private long timeOfBirth;
@@ -211,7 +208,7 @@ public class Lich extends UserActor{
             this.avatar = "skully";
             this.id = "skully_"+Lich.this.id;
             this.team = Lich.this.team;
-            movementLine = new Line2D.Float(this.location,this.location);
+            this.movementLine = new Line2D.Float(this.location,this.location);
             this.lastLichLocation = Lich.this.getRelativePoint(false);
             this.timeOfBirth = System.currentTimeMillis();
             this.actorType = ActorType.COMPANION;
@@ -251,50 +248,21 @@ public class Lich extends UserActor{
                 this.die(this);
             }
             this.handleDamageQueue();
-            this.location = this.getRelativePoint();
-            if(this.attackCooldown > 0) this.reduceAttackCooldown();
+            if(this.attackCooldown > 0) this.attackCooldown-=100;
+            if(!this.isStopped()) this.timeTraveled+=0.1f;
+            this.location = MovementManager.getRelativePoint(this.movementLine,this.getPlayerStat("speed"),this.timeTraveled);
+            this.handlePathing();
             if(this.target == null){
-                Point2D lichLocation = Lich.this.getRelativePoint(false);
-
-                if(this.location.distance(lichLocation) > 3 && this.lastLichLocation.distance(lichLocation) > 0.01){
-                    float deltaDistance = (float) (this.location.distance(lichLocation)-3f);
-                    this.lastLichLocation = lichLocation;
-                    this.move(Champion.getDistanceLine(new Line2D.Float(this.location,lichLocation),deltaDistance).getP2());
-                    this.timeTraveled = 0.1f;
-                }else{
-                    this.timeTraveled+=0.1f;
-                }
+                if(this.movementLine.getP2().distance(Lich.this.location) > 0.1d && this.location.distance(Lich.this.location) > 2.5f) this.move(Lich.this.location);
+                if(!this.isStopped() && this.location.distance(Lich.this.location) <= 2f) this.stopMoving();
             }else{
-                if(this.withinRange(this.target) && this.attackCooldown <= 0){
-                    this.attack(this.target);
-                }else if(!this.withinRange(this.target)){
-                    if(this.target.getLocation().distance(this.lastTargetLocation) > 0.01f){
-                        this.lastTargetLocation = this.target.getLocation();
-                        this.move(this.target.getLocation());
-                        this.timeTraveled = 0.1f;
-                    }
+                if(this.withinRange(this.target)){
+                    if(!this.isStopped()) this.stopMoving();
+                    if(this.canAttack()) this.attack(this.target);
+                }else{
+                    if(this.movementLine.getP2().distance(this.target.getLocation()) > 0.1d) this.setPath(MovementManager.getPath(this.parentExt,this.location,this.target.getLocation()));
                 }
             }
-        }
-
-        public Point2D getRelativePoint(){ //Gets player's current location based on time
-            Point2D rPoint = new Point2D.Float();
-            if(movementLine == null) return this.location;
-            float x2 = (float) movementLine.getX2();
-            float y2 = (float) movementLine.getY2();
-            float x1 = (float) movementLine.getX1();
-            float y1 = (float) movementLine.getY1();
-            Line2D movementLine = new Line2D.Double(x1,y1,x2,y2);
-            double dist = movementLine.getP1().distance(movementLine.getP2());
-            double time = dist/1.75f;
-            double currentTime = this.timeTraveled;
-            if(currentTime>time) currentTime=time;
-            double currentDist = 1.75f*currentTime;
-            float x = (float)(x1+(currentDist/dist)*(x2-x1));
-            float y = (float)(y1+(currentDist/dist)*(y2-y1));
-            rPoint.setLocation(x,y);
-            if(dist != 0) return rPoint;
-            else return this.location;
         }
 
         public void setTarget(Actor a){

@@ -117,6 +117,7 @@ public abstract class Actor {
     }
 
     public void move(Point2D destination){
+        if(!this.canMove()) return;
         this.movementLine = new Line2D.Float(this.location,destination);
         this.timeTraveled = 0f;
         ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,destination, (float) this.getPlayerStat("speed"),true);
