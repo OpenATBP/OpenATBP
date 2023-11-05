@@ -92,6 +92,11 @@ public class RoomHandler implements Runnable{
                     this.printActors();
                 }
                 secondsRan++;
+                if(secondsRan % 5 == 0){
+                    for(UserActor player : this.players){
+                        player.addXP(2);
+                    }
+                }
                 if(secondsRan == (60*7) + 30){
                     ExtensionCommands.playSound(parentExt,room,"global","announcer/time_half",new Point2D.Float(0f,0f));
                 }else if(secondsRan == (60*13)){

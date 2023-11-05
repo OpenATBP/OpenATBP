@@ -44,6 +44,7 @@ public class Monster extends Actor {
         this.currentHealth = this.maxHealth;
         this.actorType = ActorType.MONSTER;
         this.displayName = parentExt.getDisplayName(monsterName);
+        this.xpWorth = this.parentExt.getActorXP(this.id);
         if(MOVEMENT_DEBUG) ExtensionCommands.createActor(parentExt,room,id+"_test","creep",this.location,0f,2);
     }
 
@@ -61,6 +62,7 @@ public class Monster extends Actor {
         this.maxHealth = this.stats.get("health");
         this.currentHealth = this.maxHealth;
         this.actorType = ActorType.MONSTER;
+        this.xpWorth = this.parentExt.getActorXP(this.id);
         this.displayName = parentExt.getDisplayName(monsterName);
     }
     @Override
@@ -203,7 +205,7 @@ public class Monster extends Actor {
                     ua.addGameStat("jungleMobs",1);
                     if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(2);
                     roomHandler.addScore(ua,a.getTeam(),scoreValue);
-                    roomHandler.handleXPShare(ua,this.parentExt.getActorXP(this.id));
+                    //roomHandler.handleXPShare(ua,this.parentExt.getActorXP(this.id));
                     ExtensionCommands.knockOutActor(parentExt,this.room,this.id,ua.getId(),45);
                     ExtensionCommands.playSound(this.parentExt,ua.getUser(),ua.getId(),"sfx_gems_get",this.location);
                 }
@@ -237,6 +239,9 @@ public class Monster extends Actor {
         if(this.state == AggroState.PASSIVE){
             if(this.currentHealth < this.maxHealth){
                 this.changeHealth(25);
+            }
+            if(this.isStopped() && this.location.distance(this.startingLocation) > 0.1d){
+                this.move(this.startingLocation);
             }
         }else{ //Monster is pissed!!
             if((this.location.distance(this.startingLocation) >= 10 && !this.attackRangeOverride) || this.target.getHealth() <= 0){

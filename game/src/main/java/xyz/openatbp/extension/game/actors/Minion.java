@@ -33,7 +33,6 @@ public class Minion extends Actor{
     private final boolean MOVEMENT_DEBUG = false;
     private State state;
     private boolean dead;
-    private int xpWorth = 5;
     public Minion(ATBPExtension parentExt, Room room, int team, int minionNum, int wave, int lane) {
         this.avatar = "creep"+team;
         this.state = State.IDLE;
@@ -83,6 +82,7 @@ public class Minion extends Actor{
         ExtensionCommands.createActor(parentExt,room,this.id,this.getAvatar(),this.location,0f,this.team);
         if(MOVEMENT_DEBUG) ExtensionCommands.createActor(parentExt,room,this.id+"_test","gnome_a",this.location,0f,this.team);
         this.attackCooldown = this.getPlayerStat("attackSpeed");
+        this.xpWorth = 5;
     }
 
     @Override
@@ -123,7 +123,7 @@ public class Minion extends Actor{
             ExtensionCommands.knockOutActor(parentExt,this.room,this.id,a.getId(),30);
         }
         ExtensionCommands.destroyActor(parentExt,this.room,this.id);
-        this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,aggressors.keySet(), this.xpWorth);
+        //this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,aggressors.keySet(), this.xpWorth);
     }
 
     @Override
@@ -234,6 +234,10 @@ public class Minion extends Actor{
     @Override
     public void setTarget(Actor a) {
         this.target = a;
+        if(a.getActorType() == ActorType.PLAYER){
+            UserActor ua = (UserActor) a;
+            ExtensionCommands.setTarget(parentExt,ua.getUser(),this.id,ua.getId());
+        }
         this.moveTowardsTarget();
     }
 
@@ -250,7 +254,6 @@ public class Minion extends Actor{
     public void resetTarget(){
         this.state = State.IDLE;
         this.target = null;
-        //TODO: Add line movement
     }
 
     public int getLane(){

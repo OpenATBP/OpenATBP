@@ -16,7 +16,7 @@ import java.util.Map;
 
 public class ChampionData {
 
-    private static final int[] XP_LEVELS = {100,200,300,400,500,600,700,800,900,1000};
+    private static final int[] XP_LEVELS = {100,210,330,460,600,670,850,1040,1240,1450};
 
     public static int getXPLevel(int xp){
         for(int i = 0; i < XP_LEVELS.length; i++){

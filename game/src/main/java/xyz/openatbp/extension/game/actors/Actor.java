@@ -44,6 +44,7 @@ public abstract class Actor {
     protected Actor target;
     protected List<Point2D> path;
     protected int pathIndex = 1;
+    protected int xpWorth;
 
 
     public double getPHealth(){
@@ -145,6 +146,10 @@ public abstract class Actor {
     public void clearPath(){
         this.path = null;
         this.pathIndex = 1;
+    }
+
+    public int getXPWorth(){
+        return this.xpWorth;
     }
 
     public boolean setTempStat(String stat, double delta){
@@ -434,6 +439,7 @@ public abstract class Actor {
             double damage = data.getDouble("damage");
             JsonNode attackData = (JsonNode) data.getClass("attackData");
             if(this.damaged(damager,(int)damage,attackData)){
+                Console.debugLog(damager.getId() + " killed " + this.id);
                 damager.handleKill(this,attackData);
                 this.die(damager);
                 return;

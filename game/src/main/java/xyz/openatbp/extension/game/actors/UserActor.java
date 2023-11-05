@@ -67,6 +67,7 @@ public class UserActor extends Actor {
         this.room = u.getLastJoinedRoom();
         this.actorType = ActorType.PLAYER;
         this.backpack = u.getVariable("player").getSFSObjectValue().getUtfString("backpack");
+        this.xpWorth = 25;
         if(MOVEMENT_DEBUG) ExtensionCommands.createActor(this.parentExt,this.room,this.id+"_movementDebug","creep1",this.location,0f,2);
     }
 
@@ -315,7 +316,23 @@ public class UserActor extends Actor {
             this.setHealth(0, (int) this.maxHealth);
             this.target = null;
             this.killingSpree = 0;
-            ExtensionCommands.knockOutActor(parentExt,room, String.valueOf(player.getId()),a.getId(),this.deathTime);
+            Actor realKiller = a;
+            if(a.getActorType() != ActorType.PLAYER){
+                long lastAttacked = -1;
+                UserActor lastAttacker = null;
+                for(int i = 0; i < aggressors.size(); i++){
+                    Actor attacker = (Actor) aggressors.keySet().toArray()[i];
+                    if(attacker.getActorType() == ActorType.PLAYER){
+                        long attacked = aggressors.get(attacker).getLong("lastAttacked");
+                        if(lastAttacked == -1 || lastAttacked > attacked){
+                            lastAttacked = attacked;
+                            lastAttacker = (UserActor) attacker;
+                        }
+                    }
+                }
+                if(lastAttacker != null) realKiller = lastAttacker;
+            }
+            ExtensionCommands.knockOutActor(parentExt,room, String.valueOf(player.getId()), realKiller.getId(), this.deathTime);
             if(this.nailDamage > 0) this.nailDamage/=2;
             try{
                 ExtensionCommands.handleDeathRecap(parentExt,player,this.id,a.getId(), (HashMap<Actor, ISFSObject>) this.aggressors);
@@ -324,8 +341,8 @@ public class UserActor extends Actor {
                     if(this.killingSpree > this.getGameStat("spree")) this.endGameStats.put("spree", (double) this.killingSpree);
                     this.killingSpree = 0;
                 }
-                if(a.getActorType() == ActorType.PLAYER){
-                    UserActor ua = (UserActor) a;
+                if(realKiller.getActorType() == ActorType.PLAYER){
+                    UserActor ua = (UserActor) realKiller;
                     ua.increaseStat("kills",1);
                     if(ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0) ua.addNailStacks(5);
                     this.parentExt.getRoomHandler(this.room.getId()).addScore(ua,ua.getTeam(),25);
@@ -339,14 +356,14 @@ public class UserActor extends Actor {
                 }
                 Set<UserActor> assistIds = new HashSet<>(2);
                 for(Actor actor : this.aggressors.keySet()){
-                    if(actor.getActorType() == ActorType.PLAYER && !actor.getId().equalsIgnoreCase(a.getId())){
+                    if(actor.getActorType() == ActorType.PLAYER && !actor.getId().equalsIgnoreCase(realKiller.getId())){
                         UserActor ua = (UserActor) actor;
                         ua.increaseStat("assists",1);
                         assistIds.add(ua);
                     }
                 }
                 //Set<String> buffKeys = this.activeBuffs.keySet();
-                this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,assistIds,50); //TODO: Not sure if this is the correct xp value
+                this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(realKiller,assistIds,50); //TODO: Not sure if this is the correct xp value
             }catch(Exception e){
                 e.printStackTrace();
             }
@@ -629,7 +646,8 @@ public class UserActor extends Actor {
                 double multiplier = 1+((5*this.getStat("sp_category5"))/100);
                 xp*=multiplier;
             }
-            this.xp+=xp; //TODO: Backpack modifiers
+            this.xp+=xp;
+            Console.debugLog(this.id + " xp is " + this.xp);
             HashMap<String, Double> updateData = new HashMap<>(3);
             updateData.put("xp", (double) this.xp);
             int level = ChampionData.getXPLevel(this.xp);
@@ -776,7 +794,13 @@ public class UserActor extends Actor {
 
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
-
+        this.addXP(a.getXPWorth());
+        for(Actor actor : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,10f)){
+            if(actor.getActorType() == ActorType.PLAYER && !actor.getId().equalsIgnoreCase(this.id) && actor.getTeam() == this.team){
+                UserActor ua = (UserActor) actor;
+                ua.addXP(a.getXPWorth()/2);
+            }
+        }
     }
 
     public boolean getState(ActorState state){
