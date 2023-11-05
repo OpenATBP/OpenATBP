@@ -131,9 +131,13 @@ mongoClient.connect(err => {
     }).catch(console.error);
   });
 
-  app.get('/auth', async(req,res) => {
-    console.log(req.query.code);
-    var code = req.query.code;
+  app.get('/backup/url/:code', (req,res) => {
+    res.send(`Open this in Pale Moon or Waterfox Classic ${config.httpserver.url}/backup/${req.params.code}`);
+  });
+
+  app.get('/backup/:code', async(req,res) => {
+    var code = req.params.code;
+    console.log("Code " + code);
     if(code != undefined){
       const token = await request('https://discord.com/api/oauth2/token',{
         method: 'POST',
@@ -166,6 +170,53 @@ mongoClient.connect(err => {
             res.cookie('authpass',data.authpass);
             res.cookie('logged',true);
             res.redirect(config.httpserver.url);
+          }).catch((err)=>{
+            console.log(err);
+            res.redirect(config.httpserver.url);
+          });
+        }
+      }
+    }
+  });
+
+  app.get('/auth', async(req,res) => {
+    if(config.discord.backup){
+      res.redirect(`${config.httpserver.url}/backup/url/${req.query.code}`);
+      return;
+    }
+    var code = req.query.code;
+    if(code != undefined){
+      const token = await request('https://discord.com/api/oauth2/token',{
+        method: 'POST',
+        body: new URLSearchParams({
+          client_id: config.discord.client_id,
+          client_secret: config.discord.client_secret,
+          code,
+          grant_type: 'authorization_code',
+          redirect_uri: `${config.httpserver.url}/auth/`,
+          scope: 'identify',
+        }).toString(),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+      const oauthData = await token.body.json();
+      console.log(oauthData);
+      if(oauthData != undefined){
+        const userResult = await request('https://discord.com/api/users/@me',{
+          headers: {
+            authorization: `${oauthData.token_type} ${oauthData.access_token}`
+          }
+        });
+        var userInfo = await userResult.body.json();
+        if(userInfo != undefined){
+          database.findDiscordId(userInfo.id,playerCollection).then((data) => {
+            res.cookie('TEGid',data.TEGid);
+            res.cookie('authid',data.authid);
+            res.cookie('dname',data.dname);
+            res.cookie('authpass',data.authpass);
+            res.cookie('logged',true);
+            //res.redirect(config.httpserver.url);
           }).catch((err)=>{
             console.log(err);
             res.redirect(config.httpserver.url);
