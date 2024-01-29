@@ -344,6 +344,7 @@ public class UserActor extends Actor {
                 if(lastAttacker != null) realKiller = lastAttacker;
             }
             ExtensionCommands.knockOutActor(parentExt,room, String.valueOf(player.getId()), realKiller.getId(), this.deathTime);
+            if(this.hasTempStat("criticalChance")) ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_"+"jungle_buff_keeoth");
             if(this.nailDamage > 0) this.nailDamage/=2;
             try{
                 ExtensionCommands.handleDeathRecap(parentExt,player,this.id,a.getId(), (HashMap<Actor, ISFSObject>) this.aggressors);
@@ -371,6 +372,12 @@ public class UserActor extends Actor {
                         UserActor ua = (UserActor) actor;
                         ua.increaseStat("assists",1);
                         assistIds.add(ua);
+                    }
+                }
+                if(a.getActorType() == ActorType.PLAYER){
+                    UserActor ua = (UserActor) a;
+                    if(ua.killingSpree < 3 && ua.multiKill < 2){
+                        ExtensionCommands.playSound(this.parentExt,this.player,this.getId(),"announcer/you_are_defeated",new Point2D.Float(0,0));
                     }
                 }
                 //Set<String> buffKeys = this.activeBuffs.keySet();
@@ -630,6 +637,13 @@ public class UserActor extends Actor {
         if(delay > 0){
             SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(true),delay,TimeUnit.MILLISECONDS);
         }else this.canMove = true;
+    }
+
+    public float getRotation(Point2D dest){ //have no idea how this works but it works
+        double dx = dest.getX() - this.location.getX();
+        double dy = dest.getY() - this.location.getY();
+        double angleRad = Math.atan2(dy,dx);
+        return (float) Math.toDegrees(angleRad)*-1+90f;
     }
 
     public void respawn(){
