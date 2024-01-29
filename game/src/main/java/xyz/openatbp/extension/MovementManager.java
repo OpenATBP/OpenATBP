@@ -7,9 +7,7 @@ import xyz.openatbp.extension.game.Obstacle;
 import xyz.openatbp.extension.game.actors.Actor;
 
 import java.awt.geom.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MovementManager {
@@ -17,6 +15,15 @@ public class MovementManager {
     public static boolean playerIntersectsWithCollider(Point2D player, Path2D collider){
         Rectangle2D playerBoundingBox = new Rectangle2D.Double(player.getX(),player.getY(),0.5d,0.5d);
         return collider.intersects(playerBoundingBox);
+    }
+
+    public static Point2D getStoppingPoint(Point2D location, Point2D destination, double stoppingDistance){
+        Line2D movementLine = new Line2D.Double(location,destination);
+        Point2D[] allPoints = findAllPoints(movementLine);
+        for(Point2D p : allPoints){
+            if(p.distance(destination) <= stoppingDistance) return p;
+        }
+        return null;
     }
 
     public static boolean playerIntersectsWithCollider(Point2D player, List<Vector<Float>> collider){

@@ -1,5 +1,6 @@
 package xyz.openatbp.extension;
 
+import com.dongbat.walkable.PathHelper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.MongoCollection;
@@ -42,6 +43,7 @@ public class RoomHandler implements Runnable{
     private HashMap<String, Long> destroyedIds = new HashMap<>();
     private List<String> createdActorIds = new ArrayList<>();
     private static final boolean MONSTER_DEBUG = true;
+    private PathHelper minionPathHelper;
     public RoomHandler(ATBPExtension parentExt, Room room){
         this.parentExt = parentExt;
         this.room = room;
@@ -139,7 +141,7 @@ public class RoomHandler implements Runnable{
                 if(minionWave != this.currentMinionWave){
                     int minionNum = secondsRan % 10;
                     if(minionNum == 5) this.currentMinionWave = minionWave;
-                    if(minionNum <= 4){
+                    if(minionNum <= 4){ //TODO: Set to test!
                         this.addMinion(1,minionNum,minionWave,0);
                         this.addMinion(0,minionNum,minionWave,0);
                         this.addMinion(1,minionNum,minionWave,1);
@@ -168,7 +170,9 @@ public class RoomHandler implements Runnable{
             }
             activeProjectiles.removeIf(Projectile::isDestroyed);
             handleHealth();
+            //minionPathHelper.obstacles.clear();
             for(Minion m : minions){ //Handles minion behavior
+                //minionPathHelper.addRect((float)m.getLocation().getX()+49.75f,(float)m.getLocation().getY()+30.25f,0.5f,0.5f);
                 m.update(mSecondsRan);
             }
             minions.removeIf(m -> (m.getHealth()<=0));
@@ -595,6 +599,15 @@ public class RoomHandler implements Runnable{
         return this.minions;
     }
 
+    public List<Minion> getMinions(int team, int lane){
+        List<Minion> teamMinions = new ArrayList<>();
+        List<Minion> allMinions = new ArrayList<>(this.minions);
+        for(Minion m : allMinions){
+            if(m.getTeam() == team && m.getLane() == lane) teamMinions.add(m);
+        }
+        return teamMinions;
+    }
+
     public List<Monster> getCampMonsters(){
         return this.campMonsters;
     }
@@ -941,5 +954,9 @@ public class RoomHandler implements Runnable{
 
     public boolean hasActorId(String id){
         return this.createdActorIds.contains(id);
+    }
+
+    public PathHelper getMinionPathHelper(){
+        return this.minionPathHelper;
     }
 }

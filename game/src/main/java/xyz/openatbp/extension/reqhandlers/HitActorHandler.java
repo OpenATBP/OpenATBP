@@ -7,6 +7,7 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
@@ -49,7 +50,7 @@ public class HitActorHandler extends BaseClientRequestHandler {
                     Line2D movementLine = new Line2D.Float(location,target.getLocation());
                     float targetDistance = (float)target.getLocation().distance(location)-attackRange;
                     Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
-                    actor.move(newPath.getP2());
+                    actor.setPath(MovementManager.getPath(parentExt,location,target.getLocation()));
                 }else if(actor.withinRange(target)){
                     actor.stopMoving();
                 }

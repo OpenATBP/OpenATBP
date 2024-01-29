@@ -7,6 +7,7 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.game.ActorState;
@@ -129,7 +130,10 @@ public abstract class Actor {
     }
 
     public void setPath(List<Point2D> path){
-
+        if(path.size() == 0){
+            Console.logWarning(this.id + " was given a 0 length path");
+            return;
+        }
         Line2D pathLine = new Line2D.Float(this.location,path.get(1));
         Point2D dest = MovementManager.getPathIntersectionPoint(parentExt,pathLine);
         if(dest == null) dest = path.get(1);
@@ -522,6 +526,13 @@ public abstract class Actor {
         return stats;
     }
 
+    public void snap(Point2D newLocation){
+        ExtensionCommands.snapActor(this.parentExt,this.room,this.id,this.location,newLocation,true);
+        this.location = newLocation;
+        this.timeTraveled = 0f;
+        this.movementLine = new Line2D.Float(this.location,this.movementLine.getP2());
+    }
+
     protected AttackType getAttackType(JsonNode attackData){
         if(attackData.has("spellType")) return AttackType.SPELL;
         String type = attackData.get("attackType").asText();
@@ -585,8 +596,7 @@ public abstract class Actor {
         if(this.path != null && this.location.distance(this.movementLine.getP2()) <= 0.9d){
             if(this.pathIndex+1 != this.path.size()){
                 this.pathIndex++;
-                if(MovementManager.insideAnyObstacle(this.parentExt,this.path.get(this.pathIndex))) this.moveWithCollision(this.path.get(this.pathIndex));
-                else this.move(this.path.get(this.pathIndex));
+                this.moveWithCollision(this.path.get(this.pathIndex));
             }else{
                 this.path = null;
             }

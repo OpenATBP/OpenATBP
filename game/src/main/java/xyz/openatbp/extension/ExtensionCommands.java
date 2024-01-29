@@ -112,7 +112,7 @@ public class ExtensionCommands {
      * @param orient - Should the actor face in the direction of their path?
      */
     public static void moveActor(ATBPExtension parentExt, Room room, String id, Point2D p, Point2D d, float speed, boolean orient){
-        //System.out.println(id + " moving!");
+        //Console.debugLog(id + " is moving!");
         //if(id.contains("neptr")) System.out.println(id + ": (" + p.getX() + "," + p.getY() +") to (" + d.getX() + "," + d.getY() + ") at " + speed);
         float px = (float) p.getX();
         float pz = (float) p.getY();
