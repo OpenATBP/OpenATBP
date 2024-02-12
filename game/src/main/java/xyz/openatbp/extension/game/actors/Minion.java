@@ -393,7 +393,7 @@ public class Minion extends Actor{
         double distance = 1000f;
         double distanceNonUser = 1000f;
         for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
-            if(a.getTeam() != this.team && a.getActorType() != ActorType.MONSTER && this.withinAggroRange(a.getLocation())){
+            if(a.getTeam() != this.team && a.getActorType() != ActorType.MONSTER && !a.getAvatar().equalsIgnoreCase("neptr_mine") && this.withinAggroRange(a.getLocation())){
                 if(a.getActorType() == ActorType.PLAYER && this.facingEntity(a.getLocation())){
                     UserActor ua = (UserActor) a;
                     if(ua.getState(ActorState.REVEALED) && !ua.getState(ActorState.BRUSH)){
