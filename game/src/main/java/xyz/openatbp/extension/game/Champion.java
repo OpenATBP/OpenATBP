@@ -1,6 +1,7 @@
 package xyz.openatbp.extension.game;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
@@ -241,6 +242,16 @@ public class Champion {
             ExtensionCommands.createActorFX(this.parentExt,this.attacker.getRoom(), this.target.getId(),"_playerGotHitSparks",500,this.target.getId()+"_hit"+Math.random(),true,"",true,false, target.getTeam());
             JsonNode attackData;
             if(this.attacker.getActorType() == ActorType.MINION) attackData = this.parentExt.getAttackData(this.attacker.getAvatar().replace("0",""),this.attack);
+            if(this.attack.equalsIgnoreCase("turretAttack")){
+                attackData = this.parentExt.getAttackData("princessbubblegum","spell2");
+                ((ObjectNode) attackData).remove("spellType");
+                ((ObjectNode) attackData).put("attackType","physical");
+            }
+            if(this.attack.equalsIgnoreCase("skullyAttack")){
+                attackData = this.parentExt.getAttackData("lich","spell4");
+                ((ObjectNode) attackData).remove("spellType");
+                ((ObjectNode) attackData).put("attackType","physical");
+            }
             else attackData = this.parentExt.getAttackData(this.attacker.getAvatar(),this.attack);
             if(this.attacker.getActorType() == ActorType.PLAYER){
                 UserActor ua = (UserActor) this.attacker;

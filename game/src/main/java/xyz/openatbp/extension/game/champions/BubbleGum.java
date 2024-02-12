@@ -1,6 +1,8 @@
 package xyz.openatbp.extension.game.champions;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
@@ -34,7 +36,6 @@ public class BubbleGum extends UserActor {
     private boolean bombPlaced;
     private Point2D bombLocation;
     private final static boolean DEBUG = false;
-
 
     public BubbleGum(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -291,7 +292,8 @@ public class BubbleGum extends UserActor {
             ExtensionCommands.createProjectileFX(parentExt,room,"bubblegum_turret_projectile",this.id,a.getId(),"Bip01","targetNode",time);
             Actor attacker = this;
             if(a.getActorType() == ActorType.PLAYER) attacker = BubbleGum.this;
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,attacker,a,10+(int)this.getPlayerStat("attackDamage"),"spell2"),(int)time*1000,TimeUnit.MILLISECONDS);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,attacker,a,10+(int)this.getPlayerStat("attackDamage"),"turretAttack"),(int)time*1000,TimeUnit.MILLISECONDS);
+            BubbleGum.this.handleLifeSteal();
             this.attackCooldown = this.getPlayerStat("attackSpeed");
         }
 

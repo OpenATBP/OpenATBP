@@ -33,6 +33,8 @@ public class Lich extends UserActor{
     public Lich(User u, ATBPExtension parentExt){
         super(u,parentExt);
         lastSkullySpawn = 0;
+        setStat("attackDamage",1000);
+        setStat("speed",20);
     }
 
     @Override
@@ -308,7 +310,8 @@ public class Lich extends UserActor{
                 if(this.target.getActorType() == ActorType.PLAYER){
                     attacker = Lich.this;
                 }
-                new Champion.DelayedAttack(parentExt,attacker,target,(int)damage,"spell4").run();
+                new Champion.DelayedAttack(parentExt,attacker,target,(int)damage,"skullyAttack").run();
+                if(isNonStructure(target)) Lich.this.handleLifeSteal();
             }
         }
     }
