@@ -174,7 +174,7 @@ public class Gunter extends UserActor{
             JsonNode spellData = parentExt.getAttackData(getAvatar(),"spell2");
             victim.addToDamageQueue(Gunter.this,getSpellDamage(spellData),spellData);
             ExtensionCommands.playSound(parentExt,room,"","sfx_gunter_bottle_shatter",this.location);
-            ExtensionCommands.createWorldFX(parentExt,room,this.id,"gunter_bottle_shatter",this.id+"_bottleShatter",500,(float)this.location.getX(),(float)this.location.getY(),false,team,0f);
+            ExtensionCommands.createWorldFX(parentExt,room,this.id,"gunter_bottle_shatter",this.id+"_bottleShatter",1000,(float)this.location.getX(),(float)this.location.getY(),false,team,0f);
             destroy();
         }
     }

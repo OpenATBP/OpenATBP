@@ -290,9 +290,7 @@ public class BubbleGum extends UserActor {
             float time = (float) (a.getLocation().distance(this.location) / 10f);
             ExtensionCommands.playSound(parentExt,room,this.id,"sfx_bubblegum_turret_shoot",this.location);
             ExtensionCommands.createProjectileFX(parentExt,room,"bubblegum_turret_projectile",this.id,a.getId(),"Bip01","targetNode",time);
-            Actor attacker = this;
-            if(a.getActorType() == ActorType.PLAYER) attacker = BubbleGum.this;
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,attacker,a,10+(int)this.getPlayerStat("attackDamage"),"turretAttack"),(int)time*1000,TimeUnit.MILLISECONDS);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,BubbleGum.this,a,10+(int)this.getPlayerStat("attackDamage"),"turretAttack"),(int)time*1000,TimeUnit.MILLISECONDS);
             BubbleGum.this.handleLifeSteal();
             this.attackCooldown = this.getPlayerStat("attackSpeed");
         }

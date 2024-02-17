@@ -118,13 +118,36 @@ public class Billy extends UserActor {
             case 3:
                 this.canCast[2] = false;
                 this.stopMoving(castDelay);
-                this.ultLoc = Champion.getMaxRangeLine(new Line2D.Float(location,dest),5.5f).getP2();
+                this.ultLoc = getUltLoc(dest);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_billy_nothung",this.location);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"lemongrab_ground_aoe_target",this.id+"_billyUltTarget",1750,(float)ultLoc.getX(),(float)ultLoc.getY(),true,this.team,0f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new BillyAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 break;
         }
+    }
+
+    private Point2D getUltLoc(float directionX, float directionZ){
+        double extendedX = this.location.getX() + 5.5 * directionX;
+        double extendedY = this.location.getY() + 5.5 * directionZ;
+        return new Point2D.Double(extendedX,extendedY);
+    }
+
+    private Point2D getUltLoc(Point2D dest){
+        double dx = dest.getX() - this.location.getX();
+        double dy = dest.getY() - this.location.getY();
+
+        double length = Math.sqrt(dx * dx + dy * dy);
+        double unitX = dx / length;
+        double unitY = dy / length;
+
+        float abilityRange = 5.5F;
+
+        double extendedX = this.location.getX() + abilityRange * unitX;
+        double extendedY = this.location.getY() + abilityRange * unitY;
+
+
+        return new Point2D.Double(extendedX,extendedY);
     }
 
     private Point2D billyDash(Point2D dest){

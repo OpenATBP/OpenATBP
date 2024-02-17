@@ -33,8 +33,6 @@ public class Lich extends UserActor{
     public Lich(User u, ATBPExtension parentExt){
         super(u,parentExt);
         lastSkullySpawn = 0;
-        setStat("attackDamage",1000);
-        setStat("speed",20);
     }
 
     @Override
@@ -181,6 +179,7 @@ public class Lich extends UserActor{
 
     @Override
     public void handleKill(Actor a, JsonNode attackData){
+        super.handleKill(a,attackData);
         if(this.skully != null) this.skully.resetTarget();
         if(attackData.has("spellType") && (attackData.get("spellType").asText().equalsIgnoreCase("spell1") || attackData.get("spellType").asText().equalsIgnoreCase("passive"))) this.increaseStat("spellDamage",1);
     }

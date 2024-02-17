@@ -7,6 +7,7 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.GameManager;
 import xyz.openatbp.extension.game.actors.UserActor;
 
@@ -29,6 +30,9 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
             float y = 0f;
             float z = params.getFloat("z");
 
+            float fx = params.getFloat("fx");
+            float fz = params.getFloat("fz");
+            //Console.debugLog(params.getDump());
             ISFSObject specialAttackData = new SFSObject();
             List<Float> location = new ArrayList<>(Arrays.asList(x, y, z));
             specialAttackData.putUtfString("id", userId);

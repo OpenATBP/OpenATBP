@@ -128,7 +128,7 @@ public class RattleBalls extends UserActor {
 
     @Override
     public boolean canAttack() {
-        if(this.ultActive) return false;
+        if(this.ultActive || this.parryActive) return false;
         return super.canAttack();
     }
 

@@ -67,6 +67,20 @@ public class Finn extends UserActor {
         super.die(a);
         if(this.furyTarget != null) ExtensionCommands.removeFx(parentExt,room,furyTarget.getId()+"_mark"+furyStacks);
         furyStacks = 0;
+        if(qActive){
+            for(Actor actor : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,2f)){
+                if(isNonStructure(actor)){
+                    JsonNode spellData = parentExt.getAttackData("finn","spell1");
+                    actor.addToDamageQueue(Finn.this,getSpellDamage(spellData),spellData);
+                }
+            }
+            qActive = false;
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_shield");
+            String shatterPrefix = (this.avatar.contains("guardian")) ? "finn_guardian_" : "finn_";
+            ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+shatterPrefix+"shield_shatter",this.location);
+            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,shatterPrefix+"shieldShatter",500,this.id+"_qShatter",true,"",true,false,this.team);
+
+        }
     }
 
     @Override
@@ -193,13 +207,18 @@ public class Finn extends UserActor {
                     ExtensionCommands.removeFx(parentExt,room,target.getId()+"_mark3");
                     ExtensionCommands.createActorFX(parentExt,room,target.getId(),"fx_mark4",500,target.getId()+"_mark4",true,"",true,false,target.getTeam());
                     if(qActive){
-                        JsonNode spellData = parentExt.getAttackData("finn","spell1");
-                        target.addToDamageQueue(Finn.this,getSpellDamage(spellData),spellData);
+                        for(Actor actor : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,2f)){
+                            if(isNonStructure(actor)){
+                                JsonNode spellData = parentExt.getAttackData("finn","spell1");
+                                actor.addToDamageQueue(Finn.this,getSpellDamage(spellData),spellData);
+                            }
+                        }
+                        qActive = false;
                         ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_shield");
                         String shatterPrefix = (this.avatar.contains("guardian")) ? "finn_guardian_" : "finn_";
                         ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+shatterPrefix+"shield_shatter",this.location);
                         ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,shatterPrefix+"shieldShatter",500,this.id+"_qShatter",true,"",true,false,this.team);
-                        qActive = false;
+
                     }
                 }
             }else{
