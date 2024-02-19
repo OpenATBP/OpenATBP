@@ -14,6 +14,7 @@ import xyz.openatbp.extension.game.actors.UserActor;
 import javax.print.attribute.standard.MediaSize;
 import java.awt.geom.Point2D;
 import java.lang.management.OperatingSystemMXBean;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -675,5 +676,4 @@ public class ExtensionCommands {
         data.putBool("o",orient);
         parentExt.send("cmd_knockback_actor",data,room.getUserList());
     }
-
 }

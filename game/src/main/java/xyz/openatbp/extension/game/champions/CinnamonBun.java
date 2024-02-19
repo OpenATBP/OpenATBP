@@ -149,8 +149,8 @@ public class CinnamonBun extends UserActor {
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_rect_7",5000,this.id+"w",false,"",true,true,this.team);
                 //ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_rect_7",this.id+"w",5000,startLocation.getX(),startLocation.getY(),false,this.team,rotation);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"cb_frosting_slide",this.id+"_slide",5000,desiredX,desiredY,false,this.team,rotation);
-                Point2D dashEndPoint = this.dash(this.endLocation,false);
-                double dashTime = startLocation.distance(dashEndPoint)/DASH_SPEED;
+                Point2D dashEndPoint = this.dash(this.endLocation,false, 15d);
+                double dashTime = startLocation.distance(dashEndPoint)/15d;
                 int msRan = (int)(dashTime*1000d);
                 Runnable dashEnd = () -> this.canMove = true;
                 ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell2b",msRan,false);

@@ -100,14 +100,14 @@ public class Hunson extends UserActor {
                         ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
                     }
                 }
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_hunson_proj_throw",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_hunson_scream2",this.location);
                 Line2D spellLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),8f);
                 this.fireProjectile(new HudsonProjectile(this.parentExt,this,spellLine,8f,0.5f,id+"projectile_hunson_pull"),"projectile_hunson_pull", spellLine.getP2(), 8f);
                 break;
             case 2:
                 this.canCast[1] = false;
                 this.stopMoving(castDelay);
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_hunson_scream1",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"hunson_power2a",this.location);
                 ExtensionCommands.createActorFX(parentExt,room,id,"hunson_fear",1500,id+"_fear",false,"",false,false,team);
                 ExtensionCommands.createActorFX(parentExt,room,id,"fx_target_ring_2.5",1500,id+"_fearRing",false,"",false,true,team);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
@@ -117,7 +117,11 @@ public class Hunson extends UserActor {
                 this.canCast[2] = false;
                 this.resetTarget();
                 this.stopMoving(3500+castDelay);
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"hunson_power3a",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_hunson_scream1",this.location);
+                Runnable soundDelay = () -> {
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"hunson_power3a",this.location);
+                };
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(soundDelay,625,TimeUnit.MILLISECONDS);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_hunson_head1",3500+castDelay,this.id+"_ultHead",true,"headNode",true,false,this.team);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_4",this.id+"_ultRing",3500+castDelay,(float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),3500+castDelay);
@@ -190,6 +194,7 @@ public class Hunson extends UserActor {
             victim.pulled(Hunson.this.location);
             victim.addToDamageQueue(Hunson.this,damage,spellData);
             victim.addState(ActorState.SLOWED,0.1d,2000,null,false);
+            ExtensionCommands.playSound(parentExt,room,"","akubat_projectileHit1",victim.getLocation());
             this.destroy();
         }
 

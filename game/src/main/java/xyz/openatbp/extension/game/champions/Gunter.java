@@ -43,7 +43,7 @@ public class Gunter extends UserActor{
         switch(ability){
             case 1:
                 Point2D ogLocation = this.location;
-                Point2D finalDastPoint = this.dash(dest,true);
+                Point2D finalDastPoint = this.dash(dest,true,DASH_SPEED);
                 double time = ogLocation.distance(finalDastPoint)/DASH_SPEED;
                 int qTime = (int) (time*1000);
                 ExtensionCommands.playSound(parentExt,this.room,this.id,"sfx_gunter_slide",this.location);

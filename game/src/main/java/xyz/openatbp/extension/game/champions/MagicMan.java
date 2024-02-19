@@ -143,7 +143,7 @@ public class MagicMan extends UserActor {
                 this.canCast[2] = false;
                 this.canMove = false;
                 Point2D firstLocation = new Point2D.Double(this.location.getX(),this.location.getY());
-                Point2D dashPoint = this.mmDash(dest);
+                Point2D dashPoint = this.dash(dest,true,15d);
                 double dashTime = dashPoint.distance(firstLocation)/15f;
                 int timeMs = (int)(dashTime*1000d);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_magicman_explode_roll",this.location);
@@ -152,19 +152,6 @@ public class MagicMan extends UserActor {
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new MagicManAbilityHandler(ability,spellData,cooldown,gCooldown,dashPoint),timeMs,TimeUnit.MILLISECONDS);
                 break;
         }
-    }
-
-    private Point2D mmDash(Point2D dest){
-        Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
-        if(dashPoint == null) dashPoint = this.location;
-        System.out.println("Dash: " + dashPoint);
-        double time = dashPoint.distance(this.location)/15d;
-        System.out.println("Time stopped: " + time);
-        this.stopMoving((int)(time*1000d));
-        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, 15f,true);
-        this.setLocation(dashPoint);
-        this.target = null;
-        return dashPoint;
     }
 
     private class MagicManAbilityHandler extends AbilityRunnable {

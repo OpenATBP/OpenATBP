@@ -5,6 +5,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
@@ -30,7 +31,7 @@ public class Tower extends Actor {
         this.parentExt = parentExt;
         this.lastHit = 0;
         this.actorType = ActorType.TOWER;
-        this.attackCooldown = 500;
+        this.attackCooldown = 2000;
         this.avatar = "tower1";
         if(team == 1) this.avatar = "tower2";
         this.displayName = parentExt.getDisplayName(this.avatar);
@@ -70,20 +71,21 @@ public class Tower extends Actor {
 
     @Override
     public void attack(Actor a) {
-        this.attackCooldown = this.getPlayerStat("attackSpeed");
         String projectileName = "tower_projectile_blue";
         String effectName = "tower_shoot_blue";
         if(this.team == 0){
             projectileName = "tower_projectile_purple";
             effectName = "tower_shoot_purple";
         }
-        float time = (float) (a.getLocation().distance(this.location) / 10f);
-        ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_turret_shoots_at_you",this.location);
-        ExtensionCommands.createProjectileFX(this.parentExt,this.room,projectileName,this.id,a.getId(),"emitNode","Bip01",time);
-        ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,effectName,600,this.id+"_attackFx",false,"emitNode",false,false,this.team);
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),(int)(time*1000), TimeUnit.MILLISECONDS);
+        if(attackCooldown == 0){
+            this.attackCooldown = this.getPlayerStat("attackSpeed");
+            float time = (float) (a.getLocation().distance(this.location) / 6f);
+            ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_turret_shoots_at_you",this.location);
+            ExtensionCommands.createProjectileFX(this.parentExt,this.room,projectileName,this.id,a.getId(),"emitNode","Bip01",time);
+            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,effectName,600,this.id+"_attackFx",false,"emitNode",false,false,this.team);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),(int)(time*1000), TimeUnit.MILLISECONDS);
+        }
     }
-
     @Override
     public void die(Actor a) {
         System.out.println(this.id + " has died! " + this.destroyed);
@@ -137,8 +139,6 @@ public class Tower extends Actor {
                 if(this.destroyed) return;
                 List<Actor> nearbyActors = Champion.getEnemyActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.team,this.location, (float) this.getPlayerStat("attackRange"));
                 if(this.target == null){
-                    if(this.attackCooldown > this.getPlayerStat("attackSpeed")) this.reduceAttackCooldown();
-                    else this.attackCooldown = 500d;
                     boolean hasMinion = false;
                     double distance = 1000;
                     Actor potentialTarget = null;

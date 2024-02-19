@@ -132,16 +132,13 @@ public class Neptr extends UserActor {
             this.mines.get(0).die(this);
             this.mines.remove(0);
             m = new Mine(dest, this.mineNum);
-            System.out.println("first if");
         } else if(this.mines != null){
             m = new Mine(dest, this.mineNum);
-            System.out.println("else if");
         }
         if(this.mines != null){
             this.mineNum++;
             this.mines.add(m);
             this.parentExt.getRoomHandler(this.room.getId()).addCompanion(m);
-            System.out.println("last if");
         }
     }
 
@@ -335,6 +332,8 @@ public class Neptr extends UserActor {
             if(a.getActorType() == ActorType.TOWER){
                 this.die(this);
                 Neptr.this.handleMineDeath(this);
+                ExtensionCommands.playSound(this.parentExt,room,"","sfx_neptr_mine_activate",this.location);
+                ExtensionCommands.createWorldFX(parentExt, room, this.id, "neptr_mine_explode", this.id + "_explosion", 1000, (float) this.location.getX(), (float) this.location.getY(), false, this.team, 0f);
             }
             return false;
         }
@@ -346,7 +345,6 @@ public class Neptr extends UserActor {
             if(System.currentTimeMillis() - this.timeOfBirth >= 30000){
                 this.die(this);
                 Neptr.this.handleMineDeath(this);
-                System.out.println("30sec elapsed");
             }
             List<Actor> actors = Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,2f);
             for(Actor a : actors){
@@ -369,7 +367,7 @@ public class Neptr extends UserActor {
                         target.addState(ActorState.SLOWED, 0.4d, 3000, null, false);
 
                     };
-                    SmartFoxServer.getInstance().getTaskScheduler().schedule(mineExplosion,1000,TimeUnit.MILLISECONDS);
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(mineExplosion,1200,TimeUnit.MILLISECONDS);
                 }
             }
             Runnable explosionFX = () -> {
@@ -380,7 +378,9 @@ public class Neptr extends UserActor {
                 ExtensionCommands.destroyActor(parentExt,room,this.id);
                 this.parentExt.getRoomHandler(this.room.getId()).removeCompanion(this);
             };
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(explosionFX,1000,TimeUnit.MILLISECONDS);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(explosionFX,1200,TimeUnit.MILLISECONDS);
+            Runnable activate = () -> ExtensionCommands.playSound(this.parentExt,room,this.id,"sfx_neptr_mine_activate",this.location);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(activate,500,TimeUnit.MILLISECONDS);
         }
         @Override
         public void setTarget(Actor a) {

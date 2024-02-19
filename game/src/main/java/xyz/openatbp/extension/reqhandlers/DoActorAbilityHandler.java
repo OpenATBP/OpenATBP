@@ -29,9 +29,6 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
             float x = params.getFloat("x");
             float y = 0f;
             float z = params.getFloat("z");
-
-            float fx = params.getFloat("fx");
-            float fz = params.getFloat("fz");
             //Console.debugLog(params.getDump());
             ISFSObject specialAttackData = new SFSObject();
             List<Float> location = new ArrayList<>(Arrays.asList(x, y, z));

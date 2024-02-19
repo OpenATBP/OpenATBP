@@ -139,7 +139,7 @@ public class Finn extends UserActor {
             case 2:
                 this.canCast[1] = false;
                 Point2D ogLocation = this.location;
-                Point2D finalDashPoint = this.dash(dest,false);
+                Point2D finalDashPoint = this.dash(dest,false,DASH_SPEED);
                 double time = ogLocation.distance(finalDashPoint)/DASH_SPEED;
                 int wTime = (int) (time*1000);
                 String sfxDash = (this.avatar.contains("guardian")) ? "sfx_finn_guardian_dash_attack" : "sfx_finn_dash_attack";

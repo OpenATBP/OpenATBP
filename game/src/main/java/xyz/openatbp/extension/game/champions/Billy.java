@@ -3,7 +3,9 @@ package xyz.openatbp.extension.game.champions;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
+import com.smartfoxserver.v2.entities.data.ISFSObject;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.game.AbilityRunnable;
@@ -17,6 +19,8 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class Billy extends UserActor {
@@ -98,7 +102,7 @@ public class Billy extends UserActor {
                 this.canCast[1] = false;
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_billy_jump",this.location);
                 Point2D ogLocation = this.location;
-                Point2D finalDashPoint = this.billyDash(dest);
+                Point2D finalDashPoint = this.dash(dest,true,14d);
                 double time = ogLocation.distance(finalDashPoint)/14d;
                 int wTime = (int) (time*1000);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"billy_dash_trail",(int)(time*1000),this.id+"_dash",true,"Bip001",true,false,this.team);
@@ -148,19 +152,6 @@ public class Billy extends UserActor {
 
 
         return new Point2D.Double(extendedX,extendedY);
-    }
-
-    private Point2D billyDash(Point2D dest){
-        Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
-        if(dashPoint == null) dashPoint = this.location;
-        System.out.println("Dash: " + dashPoint);
-        double time = dashPoint.distance(this.location)/14d;
-        System.out.println("Time stopped: " + time);
-        this.stopMoving((int)(time*1000d));
-        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, 14f,true);
-        this.setLocation(dashPoint);
-        this.target = null;
-        return dashPoint;
     }
 
     private class BillyAbilityHandler extends AbilityRunnable {

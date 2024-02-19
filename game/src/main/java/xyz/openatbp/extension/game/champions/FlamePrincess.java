@@ -129,7 +129,7 @@ public class FlamePrincess extends UserActor {
                     if(ultUses>0){
                         //TODO: Fix so FP can dash and still get health packs
                         Point2D ogLocation = this.location;
-                        Point2D dashLocation = this.fpDash(dest);
+                        Point2D dashLocation = this.dash(dest,false,15d);
                         double time = ogLocation.distance(dashLocation)/DASH_SPEED;
                         this.dashTime = (int) (time*1000);
                         ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"run",this.dashTime,false);
@@ -143,19 +143,6 @@ public class FlamePrincess extends UserActor {
             case 4: //Passive
                 break;
         }
-    }
-
-    private Point2D fpDash(Point2D dest){
-        Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
-        if(dashPoint == null) dashPoint = this.location;
-        System.out.println("Dash: " + dashPoint);
-        double time = dashPoint.distance(this.location)/15d;
-        System.out.println("Time stopped: " + time);
-        this.stopMoving((int)(time*1000d));
-        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, 15f,true);
-        this.setLocation(dashPoint);
-        this.target = null;
-        return dashPoint;
     }
 
     @Override

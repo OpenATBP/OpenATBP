@@ -39,7 +39,7 @@ public class RattleBalls extends UserActor {
             case 1:
                 this.canCast[0] = false;
                 Point2D ogLocation = this.location;
-                Point2D finalDashPoint = this.dash(dest,false);
+                Point2D finalDashPoint = this.dash(dest,false,DASH_SPEED);
                 double time = ogLocation.distance(finalDashPoint)/DASH_SPEED;
                 qTime = (int) (time*1000);
                 int qTimeEffects = qTime*5;

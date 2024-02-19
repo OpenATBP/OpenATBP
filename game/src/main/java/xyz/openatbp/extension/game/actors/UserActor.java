@@ -273,16 +273,16 @@ public class UserActor extends Actor {
         }
     }
 
-    public Point2D dash(Point2D dest, boolean noClip){
+    public Point2D dash(Point2D dest, boolean noClip, double dashSpeed){
         Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
         if(dashPoint == null) dashPoint = this.location;
         System.out.println("Dash: " + dashPoint);
         if(MOVEMENT_DEBUG) ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"gnome_a",this.id+"_test"+Math.random(),5000,(float)dashPoint.getX(),(float)dashPoint.getY(),false,0,0f);
         //if(noClip) dashPoint = Champion.getTeleportPoint(this.parentExt,this.player,this.location,dest);
-        double time = dashPoint.distance(this.location)/DASH_SPEED;
+        double time = dashPoint.distance(this.location)/dashSpeed;
         System.out.println("Time stopped: " + time);
         this.stopMoving((int)(time*1000d));
-        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, (float) DASH_SPEED,true);
+        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, (float) dashSpeed,true);
         this.setLocation(dashPoint);
         this.target = null;
         return dashPoint;
