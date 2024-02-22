@@ -19,6 +19,8 @@ import java.util.concurrent.TimeUnit;
 public class LSP extends UserActor {
     private int lumps = 0;
     private long wTime = 0;
+    private boolean isCastingult = false;
+    private boolean interruptE = false;
 
     public LSP(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -35,6 +37,9 @@ public class LSP extends UserActor {
                     a.addToDamageQueue(this,(double)getSpellDamage(spellData)/10d,spellData);
                 }
             }
+        }
+        if(this.isCastingult && this.hasInterrupingCC()){
+            this.interruptE = true;
         }
     }
 
@@ -66,6 +71,7 @@ public class LSP extends UserActor {
             case 3:
                 this.stopMoving(castDelay);
                 this.canCast[2] = false;
+                this.isCastingult = true;
                 String cellphoneVoPrefix = (this.avatar.contains("gummybuns")) ? "lsp_gummybuns_" : (this.avatar.contains("lsprince")) ? "lsprince_" : "lsp_";
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+cellphoneVoPrefix+"cellphone_throw",this.location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
@@ -111,11 +117,19 @@ public class LSP extends UserActor {
         @Override
         protected void spellE() {
             canCast[2] = true;
-            Line2D projectileLine = Champion.getMaxRangeLine(new Line2D.Float(location,dest),100f);
-            ExtensionCommands.actorAnimate(parentExt,room,id,"spell3b",500,false);
-            String ultProjectile = (avatar.contains("prince")) ? "projectile_lsprince_ult" : "projectile_lsp_ult";
-            fireProjectile(new LSPUltProjectile(parentExt,LSP.this,projectileLine,8f,2f,id+ultProjectile),ultProjectile, projectileLine.getP2(), 100f);
-            ExtensionCommands.playSound(parentExt,room,"global","sfx_lsp_cellphone_throw",location);
+            isCastingult = false;
+            if(!interruptE){
+                Line2D projectileLine = Champion.getMaxRangeLine(new Line2D.Float(location,dest),100f);
+                ExtensionCommands.actorAnimate(parentExt,room,id,"spell3b",500,false);
+                String ultProjectile = (avatar.contains("prince")) ? "projectile_lsprince_ult" : "projectile_lsp_ult";
+                fireProjectile(new LSPUltProjectile(parentExt,LSP.this,projectileLine,8f,2f,id+ultProjectile),ultProjectile, projectileLine.getP2(), 100f);
+                ExtensionCommands.playSound(parentExt,room,"global","sfx_lsp_cellphone_throw",location);
+            } else {
+                ExtensionCommands.playSound(parentExt,room,id,"sfx_skill_interrupted",location);
+                ExtensionCommands.actorAnimate(parentExt,room,id,"run",500,false);
+                ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
+            }
+            interruptE = false;
         }
 
         @Override

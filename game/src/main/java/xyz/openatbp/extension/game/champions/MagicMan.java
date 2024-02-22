@@ -25,6 +25,8 @@ public class MagicMan extends UserActor {
     private Point2D wDest = null;
     private double wMoveTime = 0d;
     private double wSpeed = 0d;
+    private boolean ultStarted;
+    private boolean interruptE = false;
 
     public MagicMan(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -75,6 +77,9 @@ public class MagicMan extends UserActor {
             this.wSpeed = 0d;
             this.setState(ActorState.REVEALED, true);
             ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(25000),250);
+        }
+        if(this.ultStarted && this.hasUltInterruptingCC()){
+            this.interruptE = true;
         }
     }
 
@@ -142,6 +147,7 @@ public class MagicMan extends UserActor {
             case 3:
                 this.canCast[2] = false;
                 this.canMove = false;
+                this.ultStarted = true;
                 Point2D firstLocation = new Point2D.Double(this.location.getX(),this.location.getY());
                 Point2D dashPoint = this.dash(dest,true,15d);
                 double dashTime = dashPoint.distance(firstLocation)/15f;
@@ -152,6 +158,14 @@ public class MagicMan extends UserActor {
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new MagicManAbilityHandler(ability,spellData,cooldown,gCooldown,dashPoint),timeMs,TimeUnit.MILLISECONDS);
                 break;
         }
+    }
+
+    private boolean hasUltInterruptingCC(){
+        ActorState[] states = {ActorState.CHARMED, ActorState.FEARED};
+        for(ActorState state : states){
+            if(this.getState(state)) return true;
+        }
+        return false;
     }
 
     private class MagicManAbilityHandler extends AbilityRunnable {
@@ -176,19 +190,25 @@ public class MagicMan extends UserActor {
         protected void spellE() {
             canCast[2] = true;
             canMove = true;
-            ExtensionCommands.actorAnimate(parentExt,room,id,"spell3b",500,false);
-            ExtensionCommands.playSound(parentExt,room,id,"sfx_magicman_explode",location);
-            ExtensionCommands.playSound(parentExt,room,id,"vo/vo_magicman_explosion",location);
-            ExtensionCommands.createWorldFX(parentExt,room,id,"magicman_explosion",id+"_ultExplosion",1000,(float)dest.getX(),(float)dest.getY(),false,team,0f);
-            double damageModifier = getPlayerStat("spellDamage")*0.001d;
-            for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),dest,4f)){
-                if(isNonStructure(a)){
-                    double damage = (double)(a.getHealth()) * (0.35d+damageModifier);
-                    a.addToDamageQueue(MagicMan.this,damage,spellData);
-                    a.addEffect("armor",a.getStat("armor")*-0.3d,3000,null,false);
-                    a.addState(ActorState.SLOWED,0.3d,3000,null,false);
+            ultStarted = false;
+            if(!interruptE){
+                ExtensionCommands.actorAnimate(parentExt,room,id,"spell3b",500,false);
+                ExtensionCommands.playSound(parentExt,room,id,"sfx_magicman_explode",location);
+                ExtensionCommands.playSound(parentExt,room,id,"vo/vo_magicman_explosion",location);
+                ExtensionCommands.createWorldFX(parentExt,room,id,"magicman_explosion",id+"_ultExplosion",1000,(float)location.getX(),(float)location.getY(),false,team,0f);
+                double damageModifier = getPlayerStat("spellDamage")*0.001d;
+                for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),location,4f)){
+                    if(isNonStructure(a)){
+                        double damage = (double)(a.getHealth()) * (0.35d+damageModifier);
+                        a.addToDamageQueue(MagicMan.this,damage,spellData);
+                        a.addEffect("armor",a.getStat("armor")*-0.3d,3000,null,false);
+                        a.addState(ActorState.SLOWED,0.3d,3000,null,false);
+                    }
                 }
+            } else {
+                ExtensionCommands.playSound(parentExt,room,id,"sfx_skill_interrupted",location);
             }
+            interruptE = false;
         }
 
         @Override

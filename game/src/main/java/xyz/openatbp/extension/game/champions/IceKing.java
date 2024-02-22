@@ -79,7 +79,7 @@ public class IceKing extends UserActor {
             for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.ultLocation,5.5f)){
                 if(a.getTeam() != this.team || a.getId().equalsIgnoreCase(this.id)){
                     if(a.getId().equalsIgnoreCase(this.id)){
-                        if(!this.getState(ActorState.POLYMORPH)) this.addEffect("speed",this.getStat("speed"),500,null,false);
+                        this.addEffect("speed",this.getStat("speed"),500,null,false);
                     }else{
                         JsonNode spellData = this.parentExt.getAttackData("iceking","spell3");
                         a.addToDamageQueue(this,getSpellDamage(spellData)/10d,spellData);

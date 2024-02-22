@@ -136,6 +136,7 @@ public class Hunson extends UserActor {
 
     private void interruptE(){
         this.canMove = true;
+        ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_skill_interrupted",this.location);
         ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_ultHead");
         ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_ultRing");
         ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_ultSuck");

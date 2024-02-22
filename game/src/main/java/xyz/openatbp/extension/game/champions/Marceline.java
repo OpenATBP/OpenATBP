@@ -244,6 +244,14 @@ public class Marceline extends UserActor {
             } else {
                 canMove = true;
                 ExtensionCommands.playSound(parentExt,room,id,"sfx_skill_interrupted",location);
+                if(getState(ActorState.TRANSFORMED)){
+                    if(!getState(ActorState.POLYMORPH)) ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
+                    setState(ActorState.TRANSFORMED, false);
+                    ExtensionCommands.removeFx(parentExt,room,id+"_batRegen");
+                } else if(!getState(ActorState.TRANSFORMED)){
+                    if(!getState(ActorState.POLYMORPH)) ExtensionCommands.swapActorAsset(parentExt,room,id,"marceline_bat");
+                    setState(ActorState.TRANSFORMED, true);
+                }
             }
         }
 
