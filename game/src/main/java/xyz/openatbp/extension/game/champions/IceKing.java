@@ -9,7 +9,6 @@ import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
-import java.awt.*;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.HashMap;
@@ -80,7 +79,7 @@ public class IceKing extends UserActor {
             for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.ultLocation,5.5f)){
                 if(a.getTeam() != this.team || a.getId().equalsIgnoreCase(this.id)){
                     if(a.getId().equalsIgnoreCase(this.id)){
-                        this.addEffect("speed",this.getStat("speed"),500,null,false);
+                        if(!this.getState(ActorState.POLYMORPH)) this.addEffect("speed",this.getStat("speed"),500,null,false);
                     }else{
                         JsonNode spellData = this.parentExt.getAttackData("iceking","spell3");
                         a.addToDamageQueue(this,getSpellDamage(spellData)/10d,spellData);
@@ -96,11 +95,13 @@ public class IceKing extends UserActor {
                     this.assetSwapped = true;
                     this.hasDefaultAsset = false;
                     this.lastWhirlwindTime = System.currentTimeMillis();
+                    this.setState(ActorState.TRANSFORMED,true);
                 }
             }else if(!hasDefaultAsset){
                 ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,getSkinAssetBundle());
                 this.hasDefaultAsset = true;
                 this.assetSwapped = false;
+                this.setState(ActorState.TRANSFORMED,false);
             }
         }
     }
@@ -209,6 +210,7 @@ public class IceKing extends UserActor {
                 assetSwapped = false;
                 hasDefaultAsset = true;
                 ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
+                setState(ActorState.TRANSFORMED,false);
             }
             ultLocation = null;
         }

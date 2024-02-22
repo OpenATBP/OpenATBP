@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
@@ -22,6 +23,7 @@ public class Marceline extends UserActor {
     private long qHit = -1;
     private long wStartTime = 0;
     private long regenSound = 0;
+    private boolean canTransform = true;
     public Marceline(User u, ATBPExtension parentExt) {
         super(u, parentExt);
     }
@@ -70,6 +72,7 @@ public class Marceline extends UserActor {
             regenSound = System.currentTimeMillis();
             ExtensionCommands.playSound(this.parentExt,this.player,this.id,"marceline_regen_loop",this.location);
         }
+        this.canTransform = !this.hasInterrupingCC();
     }
 
     @Override
@@ -200,42 +203,47 @@ public class Marceline extends UserActor {
         protected void spellE() {
             canCast[2] = true;
             wActive = false;
-            if(getState(ActorState.TRANSFORMED)){
-                ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
-                setState(ActorState.TRANSFORMED, false);
-                String morphHumanVo = (avatar.contains("marshall")) ? "vo/marshall_lee_morph_to_human" : "marceline_morph_to_human";
-                ExtensionCommands.playSound(parentExt,room,id,morphHumanVo,location);
-                ExtensionCommands.removeFx(parentExt,room,id+"_beastHands");
-                if(healthRegenEffectActive){
-                    ExtensionCommands.removeFx(parentExt,room,id+"_batRegen");
-                    healthRegenEffectActive = false;
-                }
-                double currentAttackSpeed = getPlayerStat("attackSpeed");
-                attackCooldown = 0d;
-                Marceline.this.addEffect("attackSpeed",500-currentAttackSpeed,3000,null,false);
+            if(canTransform){
+                if(getState(ActorState.TRANSFORMED)){
+                    ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
+                    setState(ActorState.TRANSFORMED, false);
+                    String morphHumanVo = (avatar.contains("marshall")) ? "vo/marshall_lee_morph_to_human" : "marceline_morph_to_human";
+                    ExtensionCommands.playSound(parentExt,room,id,morphHumanVo,location);
+                    ExtensionCommands.removeFx(parentExt,room,id+"_beastHands");
+                    if(healthRegenEffectActive){
+                        ExtensionCommands.removeFx(parentExt,room,id+"_batRegen");
+                        healthRegenEffectActive = false;
+                    }
+                    double currentAttackSpeed = getPlayerStat("attackSpeed");
+                    attackCooldown = 0d;
+                    Marceline.this.addEffect("attackSpeed",500-currentAttackSpeed,3000,null,false);
 
-            }else{
-                String morphBeastVo = (avatar.contains("marshall")) ? "vo/marshall_lee_morph_to_beast" : "marceline_morph_to_beast";
-                ExtensionCommands.playSound(parentExt,room,id,morphBeastVo,location);
-                ExtensionCommands.swapActorAsset(parentExt,room,id,"marceline_bat");
-                passiveHits = 0;
-                ExtensionCommands.createActorFX(parentExt,room,id,"statusEffect_immunity",2000,id+"_ultImmunity",true,"displayBar",false,false,team);
-                Marceline.this.addState(ActorState.IMMUNITY,0d,2000,null,false);
-                setState(ActorState.CLEANSED, true);
-                Marceline.this.cleanseEffects();
-                setState(ActorState.TRANSFORMED, true);
-            }
-            updateStatMenu("healthRegen");
-            for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),dest,3)){
-                if(a.getTeam() != team && a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE){
-                    double damage = getSpellDamage(spellData);
-                    a.addToDamageQueue(Marceline.this,damage,spellData);
-                    if(!getState(ActorState.TRANSFORMED)){
-                        a.handleCharm(Marceline.this,2000);
-                    }else{
-                        a.handleFear(Marceline.this,2000);
+                }else{
+                    String morphBeastVo = (avatar.contains("marshall")) ? "vo/marshall_lee_morph_to_beast" : "marceline_morph_to_beast";
+                    ExtensionCommands.playSound(parentExt,room,id,morphBeastVo,location);
+                    ExtensionCommands.swapActorAsset(parentExt,room,id,"marceline_bat");
+                    passiveHits = 0;
+                    ExtensionCommands.createActorFX(parentExt,room,id,"statusEffect_immunity",2000,id+"_ultImmunity",true,"displayBar",false,false,team);
+                    Marceline.this.addState(ActorState.IMMUNITY,0d,2000,null,false);
+                    setState(ActorState.CLEANSED, true);
+                    Marceline.this.cleanseEffects();
+                    setState(ActorState.TRANSFORMED, true);
+                }
+                updateStatMenu("healthRegen");
+                for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),dest,3)){
+                    if(a.getTeam() != team && a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE){
+                        double damage = getSpellDamage(spellData);
+                        a.addToDamageQueue(Marceline.this,damage,spellData);
+                        if(!getState(ActorState.TRANSFORMED)){
+                            a.handleCharm(Marceline.this,2000);
+                        }else{
+                            a.handleFear(Marceline.this,2000);
+                        }
                     }
                 }
+            } else {
+                canMove = true;
+                ExtensionCommands.playSound(parentExt,room,id,"sfx_skill_interrupted",location);
             }
         }
 

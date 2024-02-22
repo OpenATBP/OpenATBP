@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.game.AbilityRunnable;
@@ -20,6 +21,9 @@ public class PeppermintButler extends UserActor {
     private int timeStopped = 0;
     private boolean qActive = false;
     private boolean stopPassive = false;
+    private boolean ultActive = false;
+    private boolean ultFxRemoved = false;
+    private boolean removeFx = false;
     public PeppermintButler(User u, ATBPExtension parentExt) {
         super(u, parentExt);
     }
@@ -78,7 +82,6 @@ public class PeppermintButler extends UserActor {
                 ExtensionCommands.createActorFX(parentExt,room,id,"statusEffect_immunity",2000,id+"_Immunity",true,"displayBar",false,false,team);
             }
         }
-
         if(this.qActive){
             for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,3f)){
                 if(this.isNonStructure(a)){
@@ -88,6 +91,22 @@ public class PeppermintButler extends UserActor {
                     a.addState(ActorState.BLINDED,0d,500,null,true);
                 }
             }
+        }
+        if(this.ultActive && this.getState(ActorState.POLYMORPH ) && !this.ultFxRemoved){
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"ultHandL");
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"ultHandR");
+            this.ultFxRemoved = true;
+        }
+        if(ultActive && this.ultFxRemoved && !this.getState(ActorState.POLYMORPH)){
+            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"marceline_beast_crit_hand",7000,this.id+"ultHandL",true,"Bip001 L Hand",true,false,this.team);
+            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"marceline_beast_crit_hand",7000,this.id+"ultHandR",true,"Bip001 R Hand",true,false,this.team);
+            this.ultFxRemoved = false;
+            this.removeFx = true;
+        }
+        if(!this.ultActive && this.removeFx){
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"ultHandL");
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"ultHandR");
+            this.removeFx = false;
         }
     }
 
@@ -127,6 +146,8 @@ public class PeppermintButler extends UserActor {
                 break;
             case 3:
                 canCast[2] = false;
+                this.ultActive = true;
+                this.ultFxRemoved = false;
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_pepbut_feral",this.location);
                 Runnable delay = () -> {
                     this.attackCooldown = 0;
@@ -186,6 +207,7 @@ public class PeppermintButler extends UserActor {
         @Override
         protected void spellE() {
             canCast[2] = true;
+            ultActive = false;
             setState(ActorState.TRANSFORMED, false);
             String[] statsToUpdate = {"speed","attackSpeed","attackDamage"};
             updateStatMenu(statsToUpdate);

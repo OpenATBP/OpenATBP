@@ -45,6 +45,7 @@ public abstract class Actor {
     protected List<Point2D> path;
     protected int pathIndex = 1;
     protected int xpWorth;
+    protected String bundle;
 
 
     public double getPHealth(){
@@ -193,7 +194,28 @@ public abstract class Actor {
                         }
                         if(state == ActorState.POLYMORPH){
                             UserActor ua = (UserActor) this;
-                            ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,ua.getSkinAssetBundle());
+                            this.bundle = ua.getSkinAssetBundle();
+                            boolean scale = false;
+                            if(ua.getState(ActorState.TRANSFORMED)){
+                                switch (ua.getAvatar()){
+                                    case "flame":
+                                        this.bundle = "flame_ult";
+                                        scale = true;
+                                        break;
+                                    case "iceking":
+                                        this.bundle = this.avatar.contains("queen") ? "iceking2_icequeen2" : this.avatar.contains("young") ? "iceking2_young2" : "iceking2";
+                                        break;
+                                    case "marceline":
+                                        this.bundle = "marceline_bat";
+                                        break;
+                                    case "peppermintbutler":
+                                        this.bundle = "pepbut_feral";
+                                }
+                            }
+                            ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,this.bundle);
+                            if(scale){
+                                ExtensionCommands.scaleActor(this.parentExt,this.room,this.id,1f);
+                            }
                             if(!this.activeBuffs.containsKey(ActorState.SLOWED.toString())) this.setState(ActorState.SLOWED, false);
                         }
                     }else{ //Resets stat back to normal by removing what it was modified by

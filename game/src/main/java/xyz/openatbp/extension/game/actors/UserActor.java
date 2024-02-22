@@ -589,6 +589,15 @@ public class UserActor extends Actor {
             }
         }
     }
+
+    public boolean hasInterrupingCC(){
+        ActorState[] states = {ActorState.CHARMED, ActorState.FEARED, ActorState.POLYMORPH, ActorState.STUNNED, ActorState.AIRBORNE, ActorState.SILENCED};
+        for(ActorState state : states){
+            if(this.getState(state)) return true;
+        }
+        return false;
+    }
+
     public void setCanMove(boolean canMove){
         this.canMove = canMove;
         if(this.canMove && this.states.get(ActorState.CHARMED)) this.move(this.movementLine.getP2());

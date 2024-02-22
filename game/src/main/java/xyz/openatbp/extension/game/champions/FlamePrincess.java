@@ -3,10 +3,7 @@ package xyz.openatbp.extension.game.champions;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.MovementManager;
-import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -74,7 +71,7 @@ public class FlamePrincess extends UserActor {
         if(this.ultStarted && !this.ultFinished){
             this.ultFinished = true;
             setState(ActorState.TRANSFORMED, false);
-            ExtensionCommands.removeFx(parentExt,room,"flame_e");
+            ExtensionCommands.removeFx(parentExt,room,this.id+"flameE");
             ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
             ExtensionCommands.actorAbilityResponse(parentExt,player,"e",canUseAbility(2), getReducedCooldown(60000), 0);
             ExtensionCommands.scaleActor(parentExt,room,id,0.6667f);
@@ -122,7 +119,7 @@ public class FlamePrincess extends UserActor {
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_flame_princess_flame_form",this.getLocation());
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_flame_princess_flame_form",this.getLocation());
                     ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,"flame_ult");
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"flame_princess_ultimate_aoe",5000,"flame_e",true,"",true,false,this.team);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"flame_princess_ultimate_aoe",5000,this.id+"flameE",true,"",true,false,this.team);
                     ExtensionCommands.scaleActor(this.parentExt,this.room,this.id,1.5f);
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),duration, TimeUnit.MILLISECONDS);
                 }else{
@@ -190,7 +187,7 @@ public class FlamePrincess extends UserActor {
         protected void spellE() {
             if(!ultFinished && ultStarted){
                 setState(ActorState.TRANSFORMED, false);
-                ExtensionCommands.removeFx(parentExt,room,"flame_e");
+                ExtensionCommands.removeFx(parentExt,room,id+"flameE");
                 ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"e",canUseAbility(2), getReducedCooldown(cooldown), gCooldown);
                 ExtensionCommands.scaleActor(parentExt,room,id,0.6667f);

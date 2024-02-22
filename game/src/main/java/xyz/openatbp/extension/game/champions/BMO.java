@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
@@ -48,6 +49,10 @@ public class BMO extends UserActor {
                 lastWSound = System.currentTimeMillis();
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_bmo_pixels_shoot1",this.location);
             }
+        }
+        if(wActive && this.hasInterrupingCC()){
+            interrputW();
+            this.wActive = false;
         }
     }
 
@@ -134,6 +139,18 @@ public class BMO extends UserActor {
         ExtensionCommands.removeStatusIcon(this.parentExt,this.player,"bmoPassive"+passiveStacks);
         ExtensionCommands.removeFx(this.parentExt,this.player,this.id+"_bmo_p_fx");
         this.passiveStacks = 0;
+    }
+
+    private void interrputW(){
+        if(passiveStacks < 3) addPasiveStacks();
+        canMove = true;
+        this.canCast[0] = true;
+        this.canCast[2] = true;
+        ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_skill_interrupted",this.location);
+        ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_bmo_remote");
+        ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_pixels_aoe");
+        ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_target_ring_4.5");
+        ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"run",500,false);
     }
 
     public boolean canAttack(){

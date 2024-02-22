@@ -45,6 +45,10 @@ public class Hunson extends UserActor {
                 this.ultActivated = false;
                 ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"idle",500,false);
             }
+            if(this.ultActivated && this.hasInterrupingCC()){
+                this.interruptE();
+                this.ultActivated = false;
+            }
         }
     }
 
@@ -128,6 +132,14 @@ public class Hunson extends UserActor {
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new HunsonAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 break;
         }
+    }
+
+    private void interruptE(){
+        this.canMove = true;
+        ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_ultHead");
+        ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_ultRing");
+        ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_ultSuck");
+        ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"run",500,false);
     }
 
     private class HunsonAbilityHandler extends AbilityRunnable {

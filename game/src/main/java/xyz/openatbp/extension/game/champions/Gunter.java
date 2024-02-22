@@ -36,6 +36,11 @@ public class Gunter extends UserActor{
                 }
             }
         }
+        if(ultActivated && this.hasInterrupingCC()){
+            this.interruptE();
+            this.ultPoint = null;
+            this.ultActivated = false;
+        }
     }
     @Override
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
@@ -61,7 +66,6 @@ public class Gunter extends UserActor{
                 this.fireProjectile(new BottleProjectile(this.parentExt,this,maxRangeLine,11f,0.5f,this.id+"projectile_gunter_bottle"),"projectile_gunter_bottle",dest,8f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,player,"w",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new GunterAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
-
                 break;
             case 3: //TODO: Last left off - actually make this do damage
                 this.ultPoint = dest;
@@ -87,6 +91,13 @@ public class Gunter extends UserActor{
                 actor.addToDamageQueue(this,getSpellDamage(spellData),spellData);
             }
         }
+    }
+
+    private void interruptE(){
+        ExtensionCommands.removeFx(parentExt,this.room,this.id+"_gunterPower");
+        ExtensionCommands.removeFx(parentExt,this.room,this.id+"gunterUlt");
+        ExtensionCommands.actorAnimate(parentExt,this.room,this.id,"run",500,false);
+        ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_skill_interrupted",this.location);
     }
 
     @Override
