@@ -6,9 +6,7 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.Console;
-import xyz.openatbp.extension.GameManager;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Point2D;
@@ -44,7 +42,7 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
             int castDelay = spellData.get("castDelay").asInt();
             player.useAbility(spellNum,spellData,cooldown,gCooldown,castDelay,newLocation);
         }
-
+        if(player.hasDashInterrupingCC()) ExtensionCommands.playSound(parentExt,sender.getLastJoinedRoom(),String.valueOf(sender.getId()),"not_allowed_error",player.getLocation());
     }
 
     private JsonNode getSpellData(String avatar, int spell){

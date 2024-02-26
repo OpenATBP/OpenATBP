@@ -147,7 +147,7 @@ public class CinnamonBun extends UserActor {
                 float desiredX = (float) (startLocation.getX() + 1.5f * normalizedX);
                 float desiredY = (float) (startLocation.getY() + 1.5f * normalizedY);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_rect_7",5000,this.id+"w",false,"",true,true,this.team);
-                //ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_rect_7",this.id+"w",5000,startLocation.getX(),startLocation.getY(),false,this.team,rotation);
+                //ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_rect_7",this.id+"w",5000,(float)startLocation.getX(),(float)startLocation.getY(),false,this.team,rotation);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"cb_frosting_slide",this.id+"_slide",5000,desiredX,desiredY,false,this.team,rotation);
                 Point2D dashEndPoint = this.dash(this.endLocation,false, 15d);
                 double dashTime = startLocation.distance(dashEndPoint)/15d;

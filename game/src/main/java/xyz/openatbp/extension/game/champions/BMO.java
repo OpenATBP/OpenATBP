@@ -191,7 +191,6 @@ public class BMO extends UserActor {
         @Override
         protected void spellQ(){
             canCast[0] = true;
-
         }
 
         @Override
