@@ -24,6 +24,8 @@ public class Marceline extends UserActor {
     private long wStartTime = 0;
     private long regenSound = 0;
     private boolean canTransform = true;
+    private boolean humanWActive = false;
+    private boolean eUsed = false;
     public Marceline(User u, ATBPExtension parentExt) {
         super(u, parentExt);
     }
@@ -48,7 +50,7 @@ public class Marceline extends UserActor {
             this.healthRegenEffectActive = false;
         }
 
-        if(this.wActive && !this.getState(ActorState.TRANSFORMED)){
+        if(this.humanWActive){
             for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,2f)){
                 if(a.getTeam() != this.team && a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE){
                     JsonNode spellData = this.parentExt.getAttackData(this.avatar,"spell2");
@@ -72,7 +74,7 @@ public class Marceline extends UserActor {
             regenSound = System.currentTimeMillis();
             ExtensionCommands.playSound(this.parentExt,this.player,this.id,"marceline_regen_loop",this.location);
         }
-        this.canTransform = !this.hasInterrupingCC();
+        if(this.eUsed) this.canTransform = !this.hasInterrupingCC();
     }
 
     @Override
@@ -93,6 +95,12 @@ public class Marceline extends UserActor {
             lifesteal = 1d;
         }
         this.changeHealth((int)Math.round(damage*lifesteal));
+    }
+
+    @Override
+    public void die(Actor a) {
+        super.die(a);
+        this.humanWActive = false;
     }
 
     @Override
@@ -126,6 +134,7 @@ public class Marceline extends UserActor {
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"marceline_beast_crit_hand",4500,this.id+"_beastHands",true,"Bip001 R Hand",true,false,this.team);
                     this.addEffect("speed",this.getStat("speed")*0.4d,4500,null,false);
                 }else{
+                    this.humanWActive = true;
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,bloodMistVo,this.location);
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_marceline_blood_mist",this.location);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"marceline_vamp_mark",4500,this.id+"_wBats",true,"",true,false,this.team);
@@ -133,10 +142,11 @@ public class Marceline extends UserActor {
                     this.addEffect("speed",this.getStat("speed")*0.3d,4500,null,false);
                 }
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new MarcelineAbilityHandler(ability,spellData,cooldown,gCooldown,dest),getReducedCooldown(cooldown),TimeUnit.MILLISECONDS);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new MarcelineAbilityHandler(ability,spellData,cooldown,gCooldown,dest),4500,TimeUnit.MILLISECONDS);
                 break;
             case 3: //E
                 this.canCast[2] = false;
+                this.eUsed = true;
                 this.stopMoving(castDelay);
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"e",true,getReducedCooldown(cooldown),gCooldown);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_marceline_spell_casting",this.location);
@@ -197,6 +207,7 @@ public class Marceline extends UserActor {
         protected void spellW() {
             canCast[1] = true;
             wActive = false;
+            humanWActive = false;
         }
 
         @Override
@@ -253,6 +264,7 @@ public class Marceline extends UserActor {
                     setState(ActorState.TRANSFORMED, true);
                 }
             }
+            eUsed = false;
         }
 
         @Override

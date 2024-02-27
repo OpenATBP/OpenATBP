@@ -277,6 +277,7 @@ public class BubbleGum extends UserActor {
             ExtensionCommands.createActor(parentExt,room,this.id,this.avatar,this.location,0f,this.team);
             ExtensionCommands.playSound(parentExt,room,this.id,"sfx_bubblegum_turret_spawn",this.location);
             ExtensionCommands.createWorldFX(parentExt,room,this.id,"fx_target_ring_3",this.id+"_ring", 60000, (float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
+            this.addState(ActorState.IMMUNITY,0d,1000*60*15,"tower_"+this.id+"_immunity",false);
         }
 
         @Override

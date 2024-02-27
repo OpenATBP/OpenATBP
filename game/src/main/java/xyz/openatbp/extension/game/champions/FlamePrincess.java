@@ -87,7 +87,7 @@ public class FlamePrincess extends UserActor {
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
         super.useAbility(ability,spellData,cooldown,gCooldown,castDelay,dest);
         if(ultUses == 3 && !passiveEnabled && System.currentTimeMillis()-lastPassiveUsage >= 10000){
-            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"flame_princess_passive_flames",1000*60,this.id+"_flame_passive",true,"",false,false,this.team);
+            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"flame_princess_passive_flames",1000*60*15,this.id+"_flame_passive",true,"",false,false,this.team);
             ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_flame_princess_passive_ignite",this.location);
             passiveEnabled = true;
         }
@@ -124,6 +124,7 @@ public class FlamePrincess extends UserActor {
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),duration, TimeUnit.MILLISECONDS);
                 }else{
                     if(ultUses>0){
+                        this.canCast[2] = false;
                         //TODO: Fix so FP can dash and still get health packs
                         Point2D ogLocation = this.location;
                         Point2D dashLocation = this.dash(dest,false,15d);
@@ -131,6 +132,8 @@ public class FlamePrincess extends UserActor {
                         this.dashTime = (int) (time*1000);
                         ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"run",this.dashTime,false);
                         ultUses--;
+                        Runnable ultUseDelay = () -> this.canCast[2] = true;
+                        SmartFoxServer.getInstance().getTaskScheduler().schedule(ultUseDelay, dashTime, TimeUnit.MILLISECONDS);
                     }
                     if(ultUses == 0){
                         SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),this.dashTime+100, TimeUnit.MILLISECONDS);
