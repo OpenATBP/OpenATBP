@@ -90,8 +90,9 @@ public class BMO extends UserActor {
                     wStartTime = System.currentTimeMillis();
                     Runnable secondUseDelay = () -> this.canCast[1] = true;
                     String pixelsAoeFx = (this.avatar.contains("noir")) ? "bmo_pixels_aoe_noire" : "bmo_pixels_aoe";
+                    String remoteSpinFx = (this.avatar.contains("noir")) ? "bmo_remote_spin_noire" : "bmo_remote_spin";
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_bmo_pixels_start",this.location);
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_bmo_remote",3000,this.id+"_bmo_remote",true,"",true,false,this.team);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,remoteSpinFx,3000,this.id+"_bmo_remote",true,"fxNode",true,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,pixelsAoeFx,3000,this.id+"_pixels_aoe",true,"",true,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_ring_4",3000,this.id+"_target_ring_4.5",true,"",true,true,this.team);
                     ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell2",3000,true);

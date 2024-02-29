@@ -676,4 +676,10 @@ public class ExtensionCommands {
         data.putBool("o",orient);
         parentExt.send("cmd_knockback_actor",data,room.getUserList());
     }
+
+    public static void audioSting(ATBPExtension parentExt, Room room, String name){
+        ISFSObject data = new SFSObject();
+        data.putUtfString("name", name);
+        parentExt.send("cmd_audio_sting",data,room.getUserList());
+    }
 }

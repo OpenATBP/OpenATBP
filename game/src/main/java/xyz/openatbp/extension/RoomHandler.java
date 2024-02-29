@@ -7,6 +7,7 @@ import static com.mongodb.client.model.Filters.eq;
 
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
+import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -21,6 +22,7 @@ import xyz.openatbp.extension.game.champions.Keeoth;
 
 import java.awt.geom.Point2D;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class RoomHandler implements Runnable{
     private ATBPExtension parentExt;
@@ -47,6 +49,9 @@ public class RoomHandler implements Runnable{
     private boolean fastPurpleCapture = false;
     private int blueCounter = 0;
     private int purpleCounter = 0;
+    private boolean playMainMusic = false;
+    private boolean playTowerMusic = false;
+    private ArrayList<Tower> destroyedTowers = new ArrayList<>();
 
     public RoomHandler(ATBPExtension parentExt, Room room){
         this.parentExt = parentExt;
@@ -101,6 +106,14 @@ public class RoomHandler implements Runnable{
                     for(UserActor player : this.players){
                         player.addXP(2);
                     }
+                }
+                if(mSecondsRan == 1000 || this.playMainMusic && secondsRan < (60*13) && !this.gameOver){
+                    playMainMusic(parentExt,room);
+                    this.playMainMusic = false;
+                }
+                if(playTowerMusic){
+                    playTowerMusic();
+                    this.playTowerMusic = false;
                 }
                 if(secondsRan == (60*7) + 30){
                     ExtensionCommands.playSound(parentExt,room,"global","announcer/time_half",new Point2D.Float(0f,0f));
@@ -197,6 +210,11 @@ public class RoomHandler implements Runnable{
             for(Tower t : towers){
                 t.update(mSecondsRan);
                 if(t.getHealth() <= 0 && (t.getTowerNum() == 0 || t.getTowerNum() == 3)) bases[t.getTeam()].unlock();
+
+                if(t.getHealth() <= 0 && !destroyedTowers.contains(t) && mSecondsRan < 1000*60*13){
+                    destroyedTowers.add(t);
+                    this.playTowerMusic = true;
+                }
             }
             for(GumballGuardian g : this.guardians){
                 g.update(mSecondsRan);
@@ -210,6 +228,55 @@ public class RoomHandler implements Runnable{
             e.printStackTrace();
         }
 
+    }
+
+    public void playMainMusic(ATBPExtension parentExt, Room room){
+        String[] mainMusicStings = {"music_main1", "music_main2", "music_main3"};
+        Random random = new Random();
+        int index = random.nextInt(3);
+        String musicName = mainMusicStings[index];
+        int duration = 0;
+        switch (musicName){
+            case "music_main1":
+                duration = 1000*130;
+                break;
+            case "music_main2":
+                duration = 1000*178;
+                break;
+            case "music_main3":
+                duration = 1000*140;
+                break;
+        }
+        ExtensionCommands.playSound(parentExt,room,"music","music/"+musicName,new Point2D.Float(0,0));
+        Runnable musicEnd = () -> this.playMainMusic = true;
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(musicEnd, duration, TimeUnit.MILLISECONDS);
+    }
+
+    public void playTowerMusic(){
+        this.playMainMusic = false;
+        String[] towerDownStings = {"sting_towerdown1", "sting_towerdown2", "sting_towerdown3", "sting_towerdown4", "sting_towerdown5"};
+        Random random = new Random();
+        int index = random.nextInt(5);
+        String stingName = towerDownStings[index];
+        int duration = 0;
+        switch (stingName){
+            case "sting_towerdown1":
+                duration = 13500;
+                break;
+            case "sting_towerdown2":
+            case "sting_towerdown3":
+                duration = 7000;
+                break;
+            case "sting_towerdown4":
+                duration = 13000;
+                break;
+            case "sting_towerdown5":
+                duration = 7500;
+
+        }
+        ExtensionCommands.playSound(parentExt,room,"music","music/"+stingName,new Point2D.Float(0,0));
+        Runnable stingEnd = () -> this.playMainMusic = true;
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(stingEnd,duration,TimeUnit.MILLISECONDS);
     }
 
     public Tower findTower(String id){

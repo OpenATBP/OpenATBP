@@ -117,7 +117,6 @@ public class Tower extends Actor {
                     }else{
                         ExtensionCommands.playSound(parentExt,ua.getUser(),"global","announcer/you_destroyed_tower");
                     }
-                    ExtensionCommands.playSound(parentExt,ua.getUser(),"music","music/music_towerdown");
                 }
             }else{
                 for(UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
