@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
@@ -21,6 +22,7 @@ public class LSP extends UserActor {
     private long wTime = 0;
     private boolean isCastingult = false;
     private boolean interruptE = false;
+    private boolean wActive = false;
 
     public LSP(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -30,7 +32,15 @@ public class LSP extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if(System.currentTimeMillis() - this.wTime < 3000){
+        if(this.wActive && this.currentHealth <= 0){
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_wRing");
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_w");
+            this.wActive = false;
+        }
+        if(this.wActive && System.currentTimeMillis() - this.wTime >= 3500){
+            this.wActive = false;
+        }
+        if(this.wActive){
             JsonNode spellData = this.parentExt.getAttackData(this.avatar,"spell2");
             for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,3f)){
                 if(this.isNonStructure(a)){
@@ -62,6 +72,9 @@ public class LSP extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
+                this.wActive = true;
+                this.wTime = System.currentTimeMillis();
+                Console.debugLog(castDelay);
                 String lumpsVoPrefix = (this.avatar.contains("gummybuns")) ? "lsp_gummybuns_" : (this.avatar.contains("lsprince")) ? "lsprince_" : "lsp_";
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+lumpsVoPrefix+"lumps_aoe",this.location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
@@ -111,7 +124,6 @@ public class LSP extends UserActor {
             canCast[1] = true;
             ExtensionCommands.playSound(parentExt,room,id,"sfx_lsp_lumps_aoe",location);
             ExtensionCommands.createActorFX(parentExt,room,id,"lsp_the_lumps_aoe",3000,id+"_w",true,"",true,false,team);
-            wTime = System.currentTimeMillis();
         }
 
         @Override

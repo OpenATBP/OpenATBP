@@ -83,7 +83,13 @@ public class PeppermintButler extends UserActor {
                 this.updateStatMenu("healthRegen");
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_pepbut_invis_reveal",this.location);
                 ExtensionCommands.createActorFX(parentExt,room,id,"statusEffect_immunity",2000,id+"_Immunity",true,"displayBar",false,false,team);
+                this.addState(ActorState.IMMUNITY,0d,2000,this.id+"_pep_immune",false);
             }
+        }
+        if(this.qActive && this.currentHealth <= 0){
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_qRing");
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_aoe");
+            this.qActive = false;
         }
         if(this.qActive){
             for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,3f)){

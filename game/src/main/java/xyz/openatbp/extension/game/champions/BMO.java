@@ -37,6 +37,20 @@ public class BMO extends UserActor {
     @Override
     public void update(int msRan){
         super.update(msRan);
+        if(wActive && this.currentHealth <= 0){
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_bmo_remote");
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_pixels_aoe");
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_target_ring_4.5");
+            if(passiveStacks < 3) addPasiveStacks();
+            JsonNode spellData = parentExt.getAttackData(this.avatar,"spell2");
+            int cooldown = spellData.get("spellCoolDown").asInt();
+            int gCooldown = spellData.get("spellGlobalCoolDown").asInt();
+            ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
+            this.canCast[0] = true;
+            this.canCast[2] = true;
+            this.wActive = false;
+        }
+
         if(wActive){
             for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(this.room.getId()),this.location,4f)){
                 if(a.getTeam() != this.team && isNonStructure(a)){

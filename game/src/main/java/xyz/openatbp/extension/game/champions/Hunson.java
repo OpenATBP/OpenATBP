@@ -49,6 +49,12 @@ public class Hunson extends UserActor {
                 this.interruptE();
                 this.ultActivated = false;
             }
+            if(this.currentHealth <= 0){
+                ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_ultHead");
+                ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_ultRing");
+                ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_ultSuck");
+                this.ultActivated = false;
+            }
         }
     }
 
