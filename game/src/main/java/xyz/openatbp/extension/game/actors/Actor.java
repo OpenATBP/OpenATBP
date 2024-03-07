@@ -354,6 +354,7 @@ public abstract class Actor {
                     break;
                 case POLYMORPH:
                     ExtensionCommands.swapActorAsset(parentExt,this.room, this.id,"flambit");
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_polymorph",1000,this.id+"_statusEffect_polymorph",true,"",true,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"flambit_aoe",3000,this.id+"_flambit_aoe",true,"",true,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_ring_2",3000,this.id+"_flambit_ring_"+Math.random(),true,"",true,true,getOppositeTeam());
                     data.putUtfString("stat","speed");
@@ -364,7 +365,7 @@ public abstract class Actor {
                     break;
                 case ROOTED:
                 case STUNNED:
-                    this.stopMoving();
+                    if(!this.getState(ActorState.AIRBORNE)) this.stopMoving();
                     break;
             }
             this.setState(state,true);
@@ -616,7 +617,7 @@ public abstract class Actor {
         Line2D knockBackLine = Champion.extendLine(originalLine,5f);
         Line2D finalLine = new Line2D.Double(this.location,MovementManager.getDashPoint(this,knockBackLine));
         this.addState(ActorState.AIRBORNE,0d,250,null,false);
-        double speed = this.location.distance(finalLine.getP2()) / 0.25f;
+        double speed = this.location.distance(finalLine.getP2()) / 0.275f;
         ExtensionCommands.knockBackActor(this.parentExt,this.room,this.id,this.location, finalLine.getP2(), (float)speed, false);
         this.setLocation(finalLine.getP2());
     }

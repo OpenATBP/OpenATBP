@@ -99,7 +99,7 @@ public class Jake extends UserActor {
                 }
                 String stompSfxPrefix = (this.avatar.contains("guardian")) ? "jake_guardian_" : "jake_";
                 String stompFxPrefix = (this.avatar.contains("guardian")) ? "jake_guardian_" : (this.avatar.contains("cake")) ? "cake_" : "jake_";
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,stompFxPrefix+"stomp_fx",250,this.id+"_stomp",true,"Bip001 Footsteps",false,false,this.team);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,stompFxPrefix+"stomp_fx",325,this.id+"_stomp",true,"",false,false,this.team);
                 this.stompSoundChange = !this.stompSoundChange;
                 if(this.stompSoundChange) ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+stompSfxPrefix+"grow_stomp1",this.location);
                 else ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+stompSfxPrefix+"grow_stomp",this.location);

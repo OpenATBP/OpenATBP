@@ -20,6 +20,8 @@ public class Tower extends Actor {
     private long lastHit;
     private boolean destroyed = false;
     private long lastMissSoundTime = 0;
+    private long lastSpellDeniedTime = 0;
+    private List<Actor> nearbyActors;
 
     public Tower(ATBPExtension parentExt, Room room, String id, int team, Point2D location){
         this.currentHealth = 800;
@@ -48,12 +50,15 @@ public class Tower extends Actor {
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         if(this.destroyed) return true;
-        if(this.target == null){
+        if(this.target == null && nearbyActors.isEmpty()){
             if(a.getActorType() == ActorType.PLAYER){
                 UserActor ua = (UserActor) a;
-                if(System.currentTimeMillis() - this.lastMissSoundTime >= 1500){
+                if(System.currentTimeMillis() - this.lastMissSoundTime >= 1500 && getAttackType(attackData) == AttackType.PHYSICAL){
                     this.lastMissSoundTime = System.currentTimeMillis();
                     ExtensionCommands.playSound(this.parentExt,ua.getUser(),ua.getId(),"sfx_attack_miss");
+                } else if (System.currentTimeMillis() - this.lastSpellDeniedTime >= 1500) {
+                    this.lastSpellDeniedTime = System.currentTimeMillis();
+                    ExtensionCommands.playSound(this.parentExt,ua.getUser(),ua.getId(),"sfx_tower_no_damage_taken");
                 }
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"tower_no_damage_taken",500,this.id+"_noDamage",true,"",true,false,this.team);
 
@@ -136,7 +141,7 @@ public class Tower extends Actor {
             if(!this.destroyed){
                 this.handleDamageQueue();
                 if(this.destroyed) return;
-                List<Actor> nearbyActors = Champion.getEnemyActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.team,this.location, (float) this.getPlayerStat("attackRange"));
+                nearbyActors = Champion.getEnemyActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.team,this.location, (float) this.getPlayerStat("attackRange"));
                 if(this.target == null){
                     boolean hasMinion = false;
                     double distance = 1000;

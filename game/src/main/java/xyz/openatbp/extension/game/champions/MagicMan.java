@@ -6,6 +6,7 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.game.*;
@@ -52,8 +53,8 @@ public class MagicMan extends UserActor {
     public void update(int msRan) {
         super.update(msRan);
         if(System.currentTimeMillis() - passiveIconStarted >= 3000 && passiveActivated){
-            ExtensionCommands.removeStatusIcon(this.parentExt,this.player,"passive");
             this.passiveActivated = false;
+            ExtensionCommands.removeStatusIcon(this.parentExt,this.player,"passive");
         }
 
         if(this.getState(ActorState.INVISIBLE) && wLocation != null){
@@ -257,13 +258,11 @@ public class MagicMan extends UserActor {
             if(crit) damage*=2;
             new Champion.DelayedAttack(parentExt,MagicMan.this,target,(int)damage,"basicAttack").run();
             if(this.target.getActorType() == ActorType.PLAYER){
-                addEffect("speed",getStat("speed")*0.2d,3000,null,false);
+                addEffect("speed",getStat("speed")*2d,3000,null,false);
+                if(!passiveActivated) ExtensionCommands.addStatusIcon(parentExt,player,"passive","magicman_spell_4_short_description","icon_magicman_passive",0f);
                 passiveActivated = true;
-                if(System.currentTimeMillis() - passiveIconStarted < 3000){
-                    ExtensionCommands.removeStatusIcon(parentExt,player,"passive");
-                    passiveIconStarted = System.currentTimeMillis();
-                }
-                ExtensionCommands.addStatusIcon(parentExt,player,"passive","magicman_spell_4_short_description","icon_magicman_passive",3000);
+                passiveIconStarted = System.currentTimeMillis();
+
             }
         }
     }

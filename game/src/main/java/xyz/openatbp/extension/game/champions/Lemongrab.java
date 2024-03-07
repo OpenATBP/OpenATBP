@@ -185,7 +185,7 @@ public class Lemongrab extends UserActor {
                     if(a.getActorType() == ActorType.PLAYER){
                         a.addState(ActorState.STUNNED,0d,(int)duration,null,false);
                     }
-                    if(a.getActorType() == ActorType.PLAYER) ExtensionCommands.createActorFX(parentExt,room,a.getId(),"lemongrab_lemon_jail",(int)duration,a.getId()+"_jailed",true,"",true,false,team);
+                    if(a.getActorType() == ActorType.PLAYER && !a.getState(ActorState.IMMUNITY)) ExtensionCommands.createActorFX(parentExt,room,a.getId(),"lemongrab_lemon_jail",(int)duration,a.getId()+"_jailed",true,"",true,false,team);
 
                 }
             }
