@@ -590,6 +590,10 @@ public class UserActor extends Actor {
         }
     }
 
+    public boolean canDash(){
+        return !this.getState(ActorState.ROOTED);
+    }
+
     public boolean hasInterrupingCC(){
         ActorState[] states = {ActorState.CHARMED, ActorState.FEARED, ActorState.POLYMORPH, ActorState.STUNNED, ActorState.AIRBORNE, ActorState.SILENCED};
         for(ActorState state : states){
@@ -642,6 +646,26 @@ public class UserActor extends Actor {
             if(this.states.get(s)) return false;
         }
         return this.canCast[ability-1];
+    }
+
+    public boolean isDash(String avatar, int ability){ //all chars except fp
+        switch (avatar){
+            case "billy":
+            case "cinnamon_bun":
+            case "pepbut":
+            case "finn":
+                if(ability == 2) return true;
+                break;
+            case "fionna":
+            case "gunter":
+            case "rattleballs":
+                if(ability == 1) return true;
+                break;
+            case "magicman":
+                if(ability == 3) return true;
+                break;
+        }
+        return false;
     }
 
     public Line2D getMovementLine(){

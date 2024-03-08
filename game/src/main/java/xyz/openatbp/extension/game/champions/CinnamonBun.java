@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
@@ -223,10 +224,12 @@ public class CinnamonBun extends UserActor {
                 if(this.ultUses < 3){
                     this.ultUses++;
                 }
-                else this.ultUses = 0;
                 int eUseDelay = ultUses < 2 ? 0 : gCooldown;
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new CinnamonAbilityHandler(ability,spellData,cooldown,gCooldown,dest), eUseDelay,TimeUnit.MILLISECONDS);
-                if(this.ultUses == 3) ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
+                if(this.ultUses == 3){
+                    ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
+                    this.ultUses = 0;
+                }
                 break;
         }
     }

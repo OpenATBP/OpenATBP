@@ -123,7 +123,7 @@ public class FlamePrincess extends UserActor {
                     ExtensionCommands.scaleActor(this.parentExt,this.room,this.id,1.5f);
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),duration, TimeUnit.MILLISECONDS);
                 }else{
-                    if(ultUses>0){
+                    if(ultUses>0 && canDash()){
                         this.canCast[2] = false;
                         //TODO: Fix so FP can dash and still get health packs
                         Point2D ogLocation = this.location;
@@ -134,6 +134,8 @@ public class FlamePrincess extends UserActor {
                         ultUses--;
                         Runnable ultUseDelay = () -> this.canCast[2] = true;
                         SmartFoxServer.getInstance().getTaskScheduler().schedule(ultUseDelay, dashTime, TimeUnit.MILLISECONDS);
+                    } else {
+                        ExtensionCommands.playSound(this.parentExt,this.player,this.id,"not_allowed_error");
                     }
                     if(ultUses == 0){
                         SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),this.dashTime+100, TimeUnit.MILLISECONDS);
