@@ -13,7 +13,8 @@ import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.MapData;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GotoRoomHandler extends BaseClientRequestHandler {
 

@@ -1,6 +1,5 @@
 package xyz.openatbp.extension.game.actors;
 
-import com.dongbat.walkable.FloatArray;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;

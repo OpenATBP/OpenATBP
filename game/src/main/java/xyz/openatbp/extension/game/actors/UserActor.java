@@ -12,7 +12,7 @@ import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.champions.Fionna;
-import xyz.openatbp.extension.reqhandlers.HitActorHandler;
+
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;

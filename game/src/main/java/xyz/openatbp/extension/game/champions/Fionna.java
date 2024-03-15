@@ -12,7 +12,6 @@ import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
-import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.concurrent.TimeUnit;
 

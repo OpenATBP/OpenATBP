@@ -1,9 +1,7 @@
 package xyz.openatbp.extension.game.actors;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
-import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
@@ -17,7 +15,6 @@ import xyz.openatbp.extension.game.Champion;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public abstract class Actor {
     public enum AttackType{ PHYSICAL, SPELL}

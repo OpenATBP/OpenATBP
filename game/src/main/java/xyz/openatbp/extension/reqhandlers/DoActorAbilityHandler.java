@@ -6,7 +6,9 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
-import xyz.openatbp.extension.*;
+import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.GameManager;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Point2D;

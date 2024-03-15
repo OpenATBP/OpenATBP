@@ -6,8 +6,13 @@ import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.Obstacle;
 import xyz.openatbp.extension.game.actors.Actor;
 
-import java.awt.geom.*;
-import java.util.*;
+import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
 import java.util.stream.Collectors;
 
 public class MovementManager {
