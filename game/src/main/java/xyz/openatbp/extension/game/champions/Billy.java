@@ -5,10 +5,8 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
-import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -98,7 +96,7 @@ public class Billy extends UserActor {
                 this.canCast[1] = false;
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_billy_jump",this.location);
                 Point2D ogLocation = this.location;
-                Point2D finalDashPoint = this.billyDash(dest);
+                Point2D finalDashPoint = this.dash(dest,true,14d);
                 double time = ogLocation.distance(finalDashPoint)/14d;
                 int wTime = (int) (time*1000);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"billy_dash_trail",(int)(time*1000),this.id+"_dash",true,"Bip001",true,false,this.team);
@@ -118,7 +116,7 @@ public class Billy extends UserActor {
             case 3:
                 this.canCast[2] = false;
                 this.stopMoving(castDelay);
-                this.ultLoc = Champion.getMaxRangeLine(new Line2D.Float(location,dest),5.5f).getP2();
+                this.ultLoc = getUltLoc(dest);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_billy_nothung",this.location);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"lemongrab_ground_aoe_target",this.id+"_billyUltTarget",1750,(float)ultLoc.getX(),(float)ultLoc.getY(),true,this.team,0f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
@@ -127,17 +125,27 @@ public class Billy extends UserActor {
         }
     }
 
-    private Point2D billyDash(Point2D dest){
-        Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
-        if(dashPoint == null) dashPoint = this.location;
-        System.out.println("Dash: " + dashPoint);
-        double time = dashPoint.distance(this.location)/14d;
-        System.out.println("Time stopped: " + time);
-        this.stopMoving((int)(time*1000d));
-        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, 14f,true);
-        this.setLocation(dashPoint);
-        this.target = null;
-        return dashPoint;
+    private Point2D getUltLoc(float directionX, float directionZ){
+        double extendedX = this.location.getX() + 5.5 * directionX;
+        double extendedY = this.location.getY() + 5.5 * directionZ;
+        return new Point2D.Double(extendedX,extendedY);
+    }
+
+    private Point2D getUltLoc(Point2D dest){
+        double dx = dest.getX() - this.location.getX();
+        double dy = dest.getY() - this.location.getY();
+
+        double length = Math.sqrt(dx * dx + dy * dy);
+        double unitX = dx / length;
+        double unitY = dy / length;
+
+        float abilityRange = 5.5F;
+
+        double extendedX = this.location.getX() + abilityRange * unitX;
+        double extendedY = this.location.getY() + abilityRange * unitY;
+
+
+        return new Point2D.Double(extendedX,extendedY);
     }
 
     private class BillyAbilityHandler extends AbilityRunnable {

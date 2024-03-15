@@ -23,6 +23,7 @@ public class Lemongrab extends UserActor {
     private int unacceptableLevels = 0;
     private long lastHit = -1;
     private String lastIcon = "lemon0";
+    private boolean isCastingUlt = false;
 
     public Lemongrab(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -74,6 +75,11 @@ public class Lemongrab extends UserActor {
         this.unacceptableLevels = 0;
         super.die(a);
     }
+
+    public boolean canMove(){
+        if(this.isCastingUlt) return false;
+        return super.canMove();
+    }
     @Override
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
         super.useAbility(ability,spellData,cooldown,gCooldown,castDelay,dest);
@@ -98,19 +104,20 @@ public class Lemongrab extends UserActor {
                 this.canCast[1] = false;
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"lemongrab_ground_aoe_target",this.id+"wTarget",castDelay,(float)dest.getX(),(float)dest.getY(),true,this.team,0f);
+                ExtensionCommands.playSound(parentExt,room,"","sfx_lemongrab_my_juice",dest);
                 Runnable delayedJuice = () -> {
                     ExtensionCommands.createWorldFX(parentExt,room,id,"lemongrab_ground_juice_aoe",id+"_wJuice",2000,(float)dest.getX(),(float)dest.getY(),false,team,0f);
-                    ExtensionCommands.playSound(parentExt,room,"","sfx_lemongrab_my_juice",dest);
                 };
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(delayedJuice,350,TimeUnit.MILLISECONDS);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(delayedJuice,500,TimeUnit.MILLISECONDS);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_lemongrab_my_juice",this.location);
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new LemonAbilityHandler(ability,spellData,cooldown,gCooldown,dest),850,TimeUnit.MILLISECONDS);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new LemonAbilityHandler(ability,spellData,cooldown,gCooldown,dest),1000,TimeUnit.MILLISECONDS);
                 break;
             case 3:
                 this.canCast[2] = false;
+                this.isCastingUlt = true;
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_2.5",this.id+"_jailRing",castDelay,(float)dest.getX(),(float)dest.getY(),true,this.team,0f);
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new LemonAbilityHandler(ability,spellData,cooldown,gCooldown,dest),1500,TimeUnit.MILLISECONDS);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new LemonAbilityHandler(ability,spellData,cooldown,gCooldown,dest),1000,TimeUnit.MILLISECONDS);
                 String voiceLine = "lemongrab_dungeon_3hours";
                 switch(this.unacceptableLevels){
                     case 1:
@@ -166,7 +173,8 @@ public class Lemongrab extends UserActor {
         @Override
         protected void spellE() {
             canCast[2] = true;
-            ExtensionCommands.createWorldFX(parentExt,room,id,"lemongrab_dungeon_hit",id+"_jailHit",500,(float)dest.getX(),(float)dest.getY(),false,team,0f);
+            isCastingUlt = false;
+            ExtensionCommands.createWorldFX(parentExt,room,id,"lemongrab_dungeon_hit",id+"_jailHit",1000,(float)dest.getX(),(float)dest.getY(),false,team,0f);
             double damage = getSpellDamage(spellData);
             double duration = 2000d;
             damage*= (1d+(0.1d*unacceptableLevels));
@@ -177,7 +185,8 @@ public class Lemongrab extends UserActor {
                     if(a.getActorType() == ActorType.PLAYER){
                         a.addState(ActorState.STUNNED,0d,(int)duration,null,false);
                     }
-                    ExtensionCommands.createActorFX(parentExt,room,a.getId(),"lemongrab_lemon_jail",(int)duration,a.getId()+"_jailed",true,"",true,false,team);
+                    if(a.getActorType() == ActorType.PLAYER && !a.getState(ActorState.IMMUNITY)) ExtensionCommands.createActorFX(parentExt,room,a.getId(),"lemongrab_lemon_jail",(int)duration,a.getId()+"_jailed",true,"",true,false,team);
+
                 }
             }
             unacceptableLevels = 0;

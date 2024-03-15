@@ -5,11 +5,13 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.game.*;
+import xyz.openatbp.extension.game.AbilityRunnable;
+import xyz.openatbp.extension.game.ActorState;
+import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
-import java.awt.*;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.HashMap;
@@ -96,11 +98,13 @@ public class IceKing extends UserActor {
                     this.assetSwapped = true;
                     this.hasDefaultAsset = false;
                     this.lastWhirlwindTime = System.currentTimeMillis();
+                    this.setState(ActorState.TRANSFORMED,true);
                 }
             }else if(!hasDefaultAsset){
                 ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,getSkinAssetBundle());
                 this.hasDefaultAsset = true;
                 this.assetSwapped = false;
+                this.setState(ActorState.TRANSFORMED,false);
             }
         }
     }
@@ -209,6 +213,7 @@ public class IceKing extends UserActor {
                 assetSwapped = false;
                 hasDefaultAsset = true;
                 ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
+                setState(ActorState.TRANSFORMED,false);
             }
             ultLocation = null;
         }

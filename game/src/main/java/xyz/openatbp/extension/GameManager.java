@@ -12,14 +12,12 @@ import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
 import com.smartfoxserver.v2.entities.variables.SFSUserVariable;
 import com.smartfoxserver.v2.entities.variables.UserVariable;
 import com.smartfoxserver.v2.exceptions.SFSVariableException;
-import xyz.openatbp.extension.game.actors.Monster;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 public class GameManager {
 
@@ -165,8 +163,8 @@ public class GameManager {
             ISFSObject data = new SFSObject();
             parentExt.send("cmd_match_starting", data, u); //Starts the game for everyone
         }
-        ExtensionCommands.playSound(parentExt,room,"music","music/music_main2",new Point2D.Float(0,0));
         ExtensionCommands.playSound(parentExt,room,"global","announcer/welcome",new Point2D.Float(0,0));
+        ExtensionCommands.playSound(parentExt,room,"music","",new Point2D.Float(0,0)); //turn off char select music
     }
 
     private static void setRoomVariables(Room room) throws SFSVariableException {

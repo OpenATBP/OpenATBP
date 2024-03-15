@@ -1,9 +1,7 @@
 package xyz.openatbp.extension.game.actors;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
-import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
@@ -17,7 +15,6 @@ import xyz.openatbp.extension.game.Champion;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public abstract class Actor {
     public enum AttackType{ PHYSICAL, SPELL}
@@ -45,6 +42,7 @@ public abstract class Actor {
     protected List<Point2D> path;
     protected int pathIndex = 1;
     protected int xpWorth;
+    protected String bundle;
 
 
     public double getPHealth(){
@@ -193,7 +191,28 @@ public abstract class Actor {
                         }
                         if(state == ActorState.POLYMORPH){
                             UserActor ua = (UserActor) this;
-                            ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,ua.getSkinAssetBundle());
+                            this.bundle = ua.getSkinAssetBundle();
+                            boolean scale = false;
+                            if(ua.getState(ActorState.TRANSFORMED)){
+                                switch (ua.getAvatar()){
+                                    case "flame":
+                                        this.bundle = "flame_ult";
+                                        scale = true;
+                                        break;
+                                    case "iceking":
+                                        this.bundle = this.avatar.contains("queen") ? "iceking2_icequeen2" : this.avatar.contains("young") ? "iceking2_young2" : "iceking2";
+                                        break;
+                                    case "marceline":
+                                        this.bundle = "marceline_bat";
+                                        break;
+                                    case "peppermintbutler":
+                                        this.bundle = "pepbut_feral";
+                                }
+                            }
+                            ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,this.bundle);
+                            if(scale){
+                                ExtensionCommands.scaleActor(this.parentExt,this.room,this.id,1f);
+                            }
                             if(!this.activeBuffs.containsKey(ActorState.SLOWED.toString())) this.setState(ActorState.SLOWED, false);
                         }
                     }else{ //Resets stat back to normal by removing what it was modified by
@@ -332,6 +351,7 @@ public abstract class Actor {
                     break;
                 case POLYMORPH:
                     ExtensionCommands.swapActorAsset(parentExt,this.room, this.id,"flambit");
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_polymorph",1000,this.id+"_statusEffect_polymorph",true,"",true,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"flambit_aoe",3000,this.id+"_flambit_aoe",true,"",true,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_ring_2",3000,this.id+"_flambit_ring_"+Math.random(),true,"",true,true,getOppositeTeam());
                     data.putUtfString("stat","speed");
@@ -342,7 +362,7 @@ public abstract class Actor {
                     break;
                 case ROOTED:
                 case STUNNED:
-                    this.stopMoving();
+                    if(!this.getState(ActorState.AIRBORNE)) this.stopMoving();
                     break;
             }
             this.setState(state,true);
@@ -594,7 +614,7 @@ public abstract class Actor {
         Line2D knockBackLine = Champion.extendLine(originalLine,5f);
         Line2D finalLine = new Line2D.Double(this.location,MovementManager.getDashPoint(this,knockBackLine));
         this.addState(ActorState.AIRBORNE,0d,250,null,false);
-        double speed = this.location.distance(finalLine.getP2()) / 0.25f;
+        double speed = this.location.distance(finalLine.getP2()) / 0.275f;
         ExtensionCommands.knockBackActor(this.parentExt,this.room,this.id,this.location, finalLine.getP2(), (float)speed, false);
         this.setLocation(finalLine.getP2());
     }

@@ -1,27 +1,29 @@
 package xyz.openatbp.extension;
 
-import com.dongbat.walkable.PathHelper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.MongoCollection;
-import static com.mongodb.client.model.Filters.eq;
-
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
+import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import xyz.openatbp.extension.game.*;
+import xyz.openatbp.extension.game.ActorType;
+import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.actors.*;
-import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.game.champions.GooMonster;
 import xyz.openatbp.extension.game.champions.Keeoth;
 
 import java.awt.geom.Point2D;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+
+import static com.mongodb.client.model.Filters.eq;
 
 public class RoomHandler implements Runnable{
     private ATBPExtension parentExt;
@@ -44,6 +46,16 @@ public class RoomHandler implements Runnable{
     private List<String> createdActorIds = new ArrayList<>();
     private static final boolean MONSTER_DEBUG = true;
     private boolean practiceMap;
+    private boolean fastBlueCapture = false;
+    private boolean fastPurpleCapture = false;
+    private int blueCounter = 0;
+    private int purpleCounter = 0;
+    private boolean playMainMusic = false;
+    private boolean playTowerMusic = false;
+    private ArrayList<Tower> destroyedTowers = new ArrayList<>();
+    private long lastPointLeadTime = 0;
+    private boolean playLeadSound = true;
+
     public RoomHandler(ATBPExtension parentExt, Room room){
         this.parentExt = parentExt;
         this.room = room;
@@ -97,6 +109,14 @@ public class RoomHandler implements Runnable{
                     for(UserActor player : this.players){
                         player.addXP(2);
                     }
+                }
+                if(mSecondsRan == 1000 || this.playMainMusic && secondsRan < (60*13) && !this.gameOver){
+                    playMainMusic(parentExt,room);
+                    this.playMainMusic = false;
+                }
+                if(playTowerMusic){
+                    playTowerMusic();
+                    this.playTowerMusic = false;
                 }
                 if(secondsRan == (60*7) + 30){
                     ExtensionCommands.playSound(parentExt,room,"global","announcer/time_half",new Point2D.Float(0f,0f));
@@ -193,6 +213,11 @@ public class RoomHandler implements Runnable{
             for(Tower t : towers){
                 t.update(mSecondsRan);
                 if(t.getHealth() <= 0 && (t.getTowerNum() == 0 || t.getTowerNum() == 3)) bases[t.getTeam()].unlock();
+
+                if(t.getHealth() <= 0 && !destroyedTowers.contains(t) && mSecondsRan < 1000*60*13){
+                    destroyedTowers.add(t);
+                    this.playTowerMusic = true;
+                }
             }
             for(GumballGuardian g : this.guardians){
                 g.update(mSecondsRan);
@@ -206,6 +231,55 @@ public class RoomHandler implements Runnable{
             e.printStackTrace();
         }
 
+    }
+
+    public void playMainMusic(ATBPExtension parentExt, Room room){
+        String[] mainMusicStings = {"music_main1", "music_main2", "music_main3"};
+        Random random = new Random();
+        int index = random.nextInt(3);
+        String musicName = mainMusicStings[index];
+        int duration = 0;
+        switch (musicName){
+            case "music_main1":
+                duration = 1000*130;
+                break;
+            case "music_main2":
+                duration = 1000*178;
+                break;
+            case "music_main3":
+                duration = 1000*140;
+                break;
+        }
+        ExtensionCommands.playSound(parentExt,room,"music","music/"+musicName,new Point2D.Float(0,0));
+        Runnable musicEnd = () -> this.playMainMusic = true;
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(musicEnd, duration, TimeUnit.MILLISECONDS);
+    }
+
+    public void playTowerMusic(){
+        this.playMainMusic = false;
+        String[] towerDownStings = {"sting_towerdown1", "sting_towerdown2", "sting_towerdown3", "sting_towerdown4", "sting_towerdown5"};
+        Random random = new Random();
+        int index = random.nextInt(5);
+        String stingName = towerDownStings[index];
+        int duration = 0;
+        switch (stingName){
+            case "sting_towerdown1":
+                duration = 13500;
+                break;
+            case "sting_towerdown2":
+            case "sting_towerdown3":
+                duration = 7000;
+                break;
+            case "sting_towerdown4":
+                duration = 13000;
+                break;
+            case "sting_towerdown5":
+                duration = 7500;
+
+        }
+        ExtensionCommands.playSound(parentExt,room,"music","music/"+stingName,new Point2D.Float(0,0));
+        Runnable stingEnd = () -> this.playMainMusic = true;
+        SmartFoxServer.getInstance().getTaskScheduler().schedule(stingEnd,duration,TimeUnit.MILLISECONDS);
     }
 
     public Tower findTower(String id){
@@ -407,75 +481,132 @@ public class RoomHandler implements Runnable{
 
     private void handleAltars(){
         int[] altarChange = {0,0,0};
-        boolean[] playerInside = {false,false,false};
+        boolean[] hasPlayerInside = {false,false,false};
+        ArrayList<UserActor> purplePlayersInside = new ArrayList<>(3);
+        ArrayList<UserActor> bluePlayersInside = new ArrayList<>(3);
+        int playerDifference;
         for(UserActor u : players){
 
             int team = u.getTeam();
             Point2D currentPoint = u.getLocation();
             for(int i = 0; i < 3; i++){ // 0 is top, 1 is mid, 2 is bot
                 if(u.getHealth() > 0 && insideAltar(currentPoint,i)){
-                    playerInside[i] = true;
-                    if(team == 1) altarChange[i]--;
-                    else altarChange[i]++;
+                    hasPlayerInside[i] = true;
+                    if(team == 1){
+                        bluePlayersInside.add(u);
+                        altarChange[i]--;
+
+                    } else {
+                        purplePlayersInside.add(u);
+                        altarChange[i]++;
+                    }
+                    if(bluePlayersInside.size() > purplePlayersInside.size()){ //check if fast capture for blue team should be enabled
+                        playerDifference = (bluePlayersInside.size() - purplePlayersInside.size());
+                        if(playerDifference > 1 && Math.abs(altarStatus[i]) < 5){
+                            fastBlueCapture = true;
+                        }
+                    }
+                    if(purplePlayersInside.size() > bluePlayersInside.size()){ //check if fast capture for purple team should be enabled
+                        playerDifference = (purplePlayersInside.size() - bluePlayersInside.size());
+                        if(playerDifference > 1 && Math.abs(altarStatus[i]) < 5){
+                            fastPurpleCapture = true;
+                        }
+                    }
+                    if(altarStatus[i] == 0){
+                        ExtensionCommands.playSound(parentExt,room,"","sfx_altar_1",getAltarLocation(i));
+                    }
                 }
             }
         }
         for(int i = 0; i < 3; i++){
-            if(altarChange[i] > 0) altarChange[i] = 1;
-            else if(altarChange[i] < 0) altarChange[i] = -1;
-            else if(altarChange[i] == 0 && !playerInside[i]){
-                if(altarStatus[i]>0) altarChange[i]=-1;
-                else if(altarStatus[i]<0) altarChange[i]=1;
-            }
-            int altarStat = Math.abs(altarStatus[i]);
-            if(altarStat <= 4) altarStatus[i]+=altarChange[i];
-            if(altarStat > 0 && altarStat < 5){
-                String sound = "sfx_altar_"+altarStat;
-                ExtensionCommands.playSound(parentExt,room,"",sound,getAltarLocation(i));
-            }
-            int team = 2;
-            if(altarStatus[i]>0) team = 0;
-            else team = 1;
-            String altarId = "altar_"+i;
-            if(Math.abs(altarStatus[i]) >= 5 && altarStatus[i] != 10){
-                ExtensionCommands.createActorFX(this.parentExt,this.room,altarId,"fx_altar_5",500,"fx_altar_"+5+i,false,"Bip01",false,true,team);
-                ExtensionCommands.playSound(parentExt,room,"","sfx_altar_locked",getAltarLocation(i));
-                altarStatus[i]=10; //Locks altar
-                if(i == 1) addScore(null,team,15);
-                else addScore(null,team,10);
-                cooldowns.put(altarId+"__"+"altar",180);
-                ExtensionCommands.createActorFX(this.parentExt,this.room,altarId,"fx_altar_lock",1000*60*3,"fx_altar_lock"+i,false,"Bip01",false,true,team);
-                int altarNum;
-                if(i == 0) altarNum = 1;
-                else if(i == 1) altarNum = 0;
-                else altarNum = i;
-                ExtensionCommands.updateAltar(this.parentExt,this.room,altarNum,team,true);
-                for(UserActor u : this.players){
-                    if(u.getTeam() == team){
-                        try{
-                            if(i == 1){
-                                u.addEffect("attackDamage",u.getStat("attackDamage")*0.25d,1000*60,"altar_buff_offense",false);
-                                u.addEffect("spellDamage",u.getStat("spellDamage")*0.25d,1000*60,null,false);
-                                Champion.handleStatusIcon(parentExt,u,"icon_altar_attack","altar2_description",1000*60);
-                            }else{
-                                double addArmor = u.getStat("armor")*0.5d;
-                                double addMR = u.getStat("spellResist")*0.5d;
-                                if(addArmor == 0) addArmor = 5d;
-                                if(addMR == 0) addMR = 5d;
-                                u.addEffect("armor",addArmor,1000*60,"altar_buff_defense",true);
-                                u.addEffect("spellResist",addMR,1000*60,null,true);
-                                Champion.handleStatusIcon(parentExt,u,"icon_altar_armor","altar1_description",1000*60);
-                            }
-                            //cooldowns.put(u.getId()+"__buff__"+buffName,60);
-                            ExtensionCommands.knockOutActor(parentExt,u.getUser(),altarId,u.getId(),180);
-                        }catch(Exception e){
-                            e.printStackTrace();
-                        }
+            if(fastBlueCapture && Math.abs(altarStatus[i]) < 5 && altarChange[i] < 0) blueCounter++;
+            else if(fastPurpleCapture && Math.abs(altarStatus[i]) < 5 && altarChange[i] > 0) purpleCounter++;
+            if(blueCounter == 0 && purpleCounter == 0 || blueCounter == 2 || purpleCounter == 2){
+                if(purpleCounter == 2){
+                    fastPurpleCapture = false;
+                    altarChange[i] = 6 - Math.abs(altarStatus[i]);
+                }
+                else if(blueCounter == 2){
+                    fastBlueCapture = false;
+                    altarChange[i] = (6 - Math.abs(altarStatus[i])) * -1;
+                }
+                else if(altarChange[i] > 0) altarChange[i] = 1;
+                else if(altarChange[i] < 0) altarChange[i] = -1;
+                else if(altarChange[i] == 0 && !hasPlayerInside[i]){
+                    if(altarStatus[i]>0){
+                        altarChange[i]=-1;
+                        purpleCounter = 0;
+                    }
+                    else if(altarStatus[i]<0){
+                        altarChange[i]=1;
+                        blueCounter = 0;
                     }
                 }
-            }else if(Math.abs(altarStatus[i])<=4 && altarStatus[i]!=0){
-                int stage = Math.abs(altarStatus[i]);
-                ExtensionCommands.createActorFX(this.parentExt,this.room,altarId,"fx_altar_"+stage,1000,"fx_altar_"+stage+i,false,"Bip01",false,true,team);
+                int altarStat = Math.abs(altarStatus[i]);
+                if(altarStat <= 5) altarStatus[i]+=altarChange[i];
+                if(altarStat > 0 && altarStat < 6){
+                    String sound = "sfx_altar_"+altarStat;
+                    ExtensionCommands.playSound(parentExt,room,"",sound,getAltarLocation(i));
+                }
+                int team = 2;
+                if(altarStatus[i]>0) team = 0;
+                else team = 1;
+                String altarId = "altar_"+i;
+                if(Math.abs(altarStatus[i]) >= 6 && altarStatus[i] != 10){
+                    if(blueCounter == 2 || purpleCounter == 2){
+                        ExtensionCommands.createActorFX(this.parentExt,this.room,altarId,"fx_altar_5",500,"fx_altar_"+5+i,false,"Bip01",false,true,team);
+                        if(blueCounter == 2) blueCounter = 0;
+                        if(purpleCounter == 2) purpleCounter = 0;
+                        int finalI = i;
+                        int finalTeam = team;
+                        Runnable fastAltarLock = () -> captureAltar(finalI,finalTeam,altarId);
+                        SmartFoxServer.getInstance().getTaskScheduler().schedule(fastAltarLock,500,TimeUnit.MILLISECONDS);
+                        Console.debugLog("fast");
+                    } else {
+                        captureAltar(i,team,altarId);
+                        Console.debugLog("slow capture");
+                    }
+                }else if(Math.abs(altarStatus[i])<=5 && altarStatus[i]!=0){
+                    int stage = Math.abs(altarStatus[i]);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,altarId,"fx_altar_"+stage,1000,"fx_altar_"+stage+i,false,"Bip01",false,true,team);
+                }
+            }
+        }
+    }
+
+    private void captureAltar(int i, int team, String altarId){
+        ExtensionCommands.playSound(parentExt,room,"","sfx_altar_locked",getAltarLocation(i));
+        altarStatus[i]=10; //Locks altar
+        if(i == 1) addScore(null,team,15);
+        else addScore(null,team,10);
+        cooldowns.put(altarId+"__"+"altar",180);
+        ExtensionCommands.createActorFX(this.parentExt,this.room,altarId,"fx_altar_lock",1000*60*3,"fx_altar_lock"+i,false,"Bip01",false,true,team);
+        int altarNum;
+        if(i == 0) altarNum = 1;
+        else if(i == 1) altarNum = 0;
+        else altarNum = i;
+        ExtensionCommands.updateAltar(this.parentExt,this.room,altarNum,team,true);
+        for(UserActor u : this.players){
+            if(u.getTeam() == team){
+                try{
+                    if(i == 1){
+                        u.addEffect("attackDamage",u.getStat("attackDamage")*0.25d,1000*60,"altar_buff_offense",false);
+                        u.addEffect("spellDamage",u.getStat("spellDamage")*0.25d,1000*60,null,false);
+                        Champion.handleStatusIcon(parentExt,u,"icon_altar_attack","altar2_description",1000*60);
+                    }else{
+                        double addArmor = u.getStat("armor")*0.5d;
+                        double addMR = u.getStat("spellResist")*0.5d;
+                        if(addArmor == 0) addArmor = 5d;
+                        if(addMR == 0) addMR = 5d;
+                        u.addEffect("armor",addArmor,1000*60,"altar_buff_defense",true);
+                        u.addEffect("spellResist",addMR,1000*60,null,true);
+                        Champion.handleStatusIcon(parentExt,u,"icon_altar_armor","altar1_description",1000*60);
+                    }
+                    //cooldowns.put(u.getId()+"__buff__"+buffName,60);
+                    ExtensionCommands.knockOutActor(parentExt,u.getUser(),altarId,u.getId(),180);
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -535,16 +666,21 @@ public class RoomHandler implements Runnable{
         scoreObject.putInt("blue",newBlueScore);
         scoreObject.putInt("purple",newPurpleScore);
         ExtensionCommands.updateScores(this.parentExt,this.room,newPurpleScore,newBlueScore);
-        if(newBlueScore > newPurpleScore && blueScore <= purpleScore){
-            for(UserActor player : this.players){
-                if(player.getTeam() == 1) ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/gained_point_lead",new Point2D.Float(0f,0f));
-                else ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/lost_point_lead",new Point2D.Float(0f,0f));
+        playLeadSound = System.currentTimeMillis() - lastPointLeadTime >= 10000;
+        Console.debugLog(playLeadSound);
+        if(playLeadSound){
+            if(newBlueScore > newPurpleScore && blueScore <= purpleScore){
+                for(UserActor player : this.players){
+                    if(player.getTeam() == 1) ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/gained_point_lead",new Point2D.Float(0f,0f));
+                    else ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/lost_point_lead",new Point2D.Float(0f,0f));
+                }
+            }else if(newPurpleScore > newBlueScore && blueScore >= purpleScore){
+                for(UserActor player : this.players){
+                    if(player.getTeam() == 0) ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/gained_point_lead",new Point2D.Float(0f,0f));
+                    else ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/lost_point_lead",new Point2D.Float(0f,0f));
+                }
             }
-        }else if(newPurpleScore > newBlueScore && blueScore >= purpleScore){
-            for(UserActor player : this.players){
-                if(player.getTeam() == 0) ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/gained_point_lead",new Point2D.Float(0f,0f));
-                else ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/lost_point_lead",new Point2D.Float(0f,0f));
-            }
+            lastPointLeadTime = System.currentTimeMillis();
         }
         if(earner != null){
             earner.addGameStat("score",points);

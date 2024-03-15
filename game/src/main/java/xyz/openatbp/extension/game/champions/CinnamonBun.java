@@ -7,12 +7,10 @@ import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
-import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
-import java.awt.*;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +25,7 @@ public class CinnamonBun extends UserActor {
     private long lastUltEffect = 0;
     private boolean canApplyUltEffects = false;
     private boolean ultEffectsApplied = false;
+    private Point2D endLocation = null;
 
     public CinnamonBun(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -126,16 +125,30 @@ public class CinnamonBun extends UserActor {
                 this.canCast[1] = false;
                 this.canMove = false;
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_cb_power2",this.location);
-                //ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_rect_7",5000,this.id+"w",false,"",true,true,this.team);
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"cb_frosting_slide",5000,this.id+"_slide",false,"",true,false,this.team);
                 this.changeHealth((int) ((double)(this.getMaxHealth())*0.05d));
-                Point2D firstLocation = new Point2D.Double(this.location.getX(),this.location.getY());
-                Point2D dashPoint = dest;
-                if(this.location.distance(dashPoint) < 6.5f) dashPoint = Champion.getMaxRangeLine(new Line2D.Float(this.location,dashPoint),6.5f).getP2();
-                Point2D dashEndPoint = this.dash(dashPoint,false);
-                double dashTime = firstLocation.distance(dashEndPoint)/DASH_SPEED;
+                Point2D startLocation = this.location;
+                this.endLocation = dest;
+                float distance = (float) this.location.distance(dest);
+                Line2D dashLine = new Line2D.Double(startLocation,endLocation);
+                if(distance < 6.5f){
+                    float remainingDistance = (float) (6.5 - distance);
+                    Line2D newLine = Champion.extendLine(dashLine,remainingDistance);
+                    this.endLocation = newLine.getP2();
+                }
+                this.wLine = new Line2D.Double(startLocation,endLocation);
+                float rotation = getRotation(dest);
+                Point2D directionVector = new Point2D.Double(endLocation.getX() - startLocation.getX(), endLocation.getY() - startLocation.getY());
+                double length = Math.sqrt(directionVector.getX() * directionVector.getX() + directionVector.getY() * directionVector.getY());
+                double normalizedX = directionVector.getX() / length;
+                double normalizedY = directionVector.getY() / length;
+                float desiredX = (float) (startLocation.getX() + 1.5f * normalizedX);
+                float desiredY = (float) (startLocation.getY() + 1.5f * normalizedY);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_rect_7",5000,this.id+"w",false,"",true,true,this.team);
+                //ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_rect_7",this.id+"w",5000,(float)startLocation.getX(),(float)startLocation.getY(),false,this.team,rotation);
+                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"cb_frosting_slide",this.id+"_slide",5000,desiredX,desiredY,false,this.team,rotation);
+                Point2D dashEndPoint = this.dash(this.endLocation,false, 15d);
+                double dashTime = startLocation.distance(dashEndPoint)/15d;
                 int msRan = (int)(dashTime*1000d);
-                this.wLine = new Line2D.Double(firstLocation,dashEndPoint);
                 Runnable dashEnd = () -> this.canMove = true;
                 ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell2b",msRan,false);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
@@ -207,10 +220,12 @@ public class CinnamonBun extends UserActor {
                 if(this.ultUses < 3){
                     this.ultUses++;
                 }
-                else this.ultUses = 0;
                 int eUseDelay = ultUses < 2 ? 0 : gCooldown;
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new CinnamonAbilityHandler(ability,spellData,cooldown,gCooldown,dest), eUseDelay,TimeUnit.MILLISECONDS);
-                if(this.ultUses == 3) ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
+                if(this.ultUses == 3){
+                    ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
+                    this.ultUses = 0;
+                }
                 break;
         }
     }

@@ -12,7 +12,6 @@ import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
-import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.concurrent.TimeUnit;
 
@@ -68,7 +67,7 @@ public class Fionna extends UserActor {
                 }
                 if(dashesRemaining > 0){
                     this.dashTime = System.currentTimeMillis();
-                    Point2D dashPoint = this.dash(dest,false);
+                    Point2D dashPoint = this.dash(dest,false,DASH_SPEED);
                     double time = dashPoint.distance(this.location)/DASH_SPEED;
                     this.dashesRemaining--;
                     if(this.dashesRemaining == 0){

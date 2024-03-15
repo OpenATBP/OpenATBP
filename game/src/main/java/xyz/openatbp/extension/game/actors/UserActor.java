@@ -12,7 +12,7 @@ import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.champions.Fionna;
-import xyz.openatbp.extension.reqhandlers.HitActorHandler;
+
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
@@ -44,7 +44,7 @@ public class UserActor extends Actor {
     protected int idleTime = 0;
     protected static final double DASH_SPEED = 20d;
     private static final boolean MOVEMENT_DEBUG = false;
-    private static final boolean INVINCIBLE_DEBUG = true;
+    private static final boolean INVINCIBLE_DEBUG = false;
     private static final boolean ABILITY_DEBUG = false;
 
     //TODO: Add all stats into UserActor object instead of User Variables
@@ -273,16 +273,16 @@ public class UserActor extends Actor {
         }
     }
 
-    public Point2D dash(Point2D dest, boolean noClip){
+    public Point2D dash(Point2D dest, boolean noClip, double dashSpeed){
         Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
         if(dashPoint == null) dashPoint = this.location;
         System.out.println("Dash: " + dashPoint);
         if(MOVEMENT_DEBUG) ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"gnome_a",this.id+"_test"+Math.random(),5000,(float)dashPoint.getX(),(float)dashPoint.getY(),false,0,0f);
         //if(noClip) dashPoint = Champion.getTeleportPoint(this.parentExt,this.player,this.location,dest);
-        double time = dashPoint.distance(this.location)/DASH_SPEED;
+        double time = dashPoint.distance(this.location)/dashSpeed;
         System.out.println("Time stopped: " + time);
         this.stopMoving((int)(time*1000d));
-        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, (float) DASH_SPEED,true);
+        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, (float) dashSpeed,true);
         this.setLocation(dashPoint);
         this.target = null;
         return dashPoint;
@@ -344,6 +344,7 @@ public class UserActor extends Actor {
                 if(lastAttacker != null) realKiller = lastAttacker;
             }
             ExtensionCommands.knockOutActor(parentExt,room, String.valueOf(player.getId()), realKiller.getId(), this.deathTime);
+            if(this.hasTempStat("criticalChance")) ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_"+"jungle_buff_keeoth");
             if(this.nailDamage > 0) this.nailDamage/=2;
             try{
                 ExtensionCommands.handleDeathRecap(parentExt,player,this.id,a.getId(), (HashMap<Actor, ISFSObject>) this.aggressors);
@@ -371,6 +372,12 @@ public class UserActor extends Actor {
                         UserActor ua = (UserActor) actor;
                         ua.increaseStat("assists",1);
                         assistIds.add(ua);
+                    }
+                }
+                if(a.getActorType() == ActorType.PLAYER){
+                    UserActor ua = (UserActor) a;
+                    if(ua.killingSpree < 3 && ua.multiKill < 2){
+                        ExtensionCommands.playSound(this.parentExt,this.player,this.getId(),"announcer/you_are_defeated",new Point2D.Float(0,0));
                     }
                 }
                 //Set<String> buffKeys = this.activeBuffs.keySet();
@@ -582,6 +589,27 @@ public class UserActor extends Actor {
             }
         }
     }
+
+    public boolean canDash(){
+        return !this.getState(ActorState.ROOTED);
+    }
+
+    public boolean hasInterrupingCC(){
+        ActorState[] states = {ActorState.CHARMED, ActorState.FEARED, ActorState.POLYMORPH, ActorState.STUNNED, ActorState.AIRBORNE, ActorState.SILENCED};
+        for(ActorState state : states){
+            if(this.getState(state)) return true;
+        }
+        return false;
+    }
+
+    public boolean hasDashInterrupingCC(){
+        ActorState[] states = {ActorState.CHARMED, ActorState.FEARED, ActorState.POLYMORPH, ActorState.STUNNED, ActorState.SILENCED};
+        for(ActorState state : states){
+            if(this.getState(state)) return true;
+        }
+        return false;
+    }
+
     public void setCanMove(boolean canMove){
         this.canMove = canMove;
         if(this.canMove && this.states.get(ActorState.CHARMED)) this.move(this.movementLine.getP2());
@@ -620,6 +648,26 @@ public class UserActor extends Actor {
         return this.canCast[ability-1];
     }
 
+    public boolean isDash(String avatar, int ability){ //all chars except fp
+        switch (avatar){
+            case "billy":
+            case "cinnamon_bun":
+            case "pepbut":
+            case "finn":
+                if(ability == 2) return true;
+                break;
+            case "fionna":
+            case "gunter":
+            case "rattleballs":
+                if(ability == 1) return true;
+                break;
+            case "magicman":
+                if(ability == 3) return true;
+                break;
+        }
+        return false;
+    }
+
     public Line2D getMovementLine(){
         return this.movementLine;
     }
@@ -630,6 +678,13 @@ public class UserActor extends Actor {
         if(delay > 0){
             SmartFoxServer.getInstance().getTaskScheduler().schedule(new MovementStopper(true),delay,TimeUnit.MILLISECONDS);
         }else this.canMove = true;
+    }
+
+    public float getRotation(Point2D dest){ //have no idea how this works but it works
+        double dx = dest.getX() - this.location.getX();
+        double dy = dest.getY() - this.location.getY();
+        double angleRad = Math.atan2(dy,dx);
+        return (float) Math.toDegrees(angleRad)*-1+90f;
     }
 
     public void respawn(){

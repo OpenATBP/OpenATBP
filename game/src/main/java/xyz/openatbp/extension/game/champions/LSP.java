@@ -4,9 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
-import xyz.openatbp.extension.game.*;
+import xyz.openatbp.extension.game.AbilityRunnable;
+import xyz.openatbp.extension.game.ActorType;
+import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
@@ -19,6 +23,9 @@ import java.util.concurrent.TimeUnit;
 public class LSP extends UserActor {
     private int lumps = 0;
     private long wTime = 0;
+    private boolean isCastingult = false;
+    private boolean interruptE = false;
+    private boolean wActive = false;
 
     public LSP(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -28,13 +35,24 @@ public class LSP extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if(System.currentTimeMillis() - this.wTime < 3000){
+        if(this.wActive && this.currentHealth <= 0){
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_wRing");
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_w");
+            this.wActive = false;
+        }
+        if(this.wActive && System.currentTimeMillis() - this.wTime >= 3500){
+            this.wActive = false;
+        }
+        if(this.wActive){
             JsonNode spellData = this.parentExt.getAttackData(this.avatar,"spell2");
             for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,3f)){
                 if(this.isNonStructure(a)){
                     a.addToDamageQueue(this,(double)getSpellDamage(spellData)/10d,spellData);
                 }
             }
+        }
+        if(this.isCastingult && this.hasInterrupingCC()){
+            this.interruptE = true;
         }
     }
 
@@ -57,6 +75,9 @@ public class LSP extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
+                this.wActive = true;
+                this.wTime = System.currentTimeMillis();
+                Console.debugLog(castDelay);
                 String lumpsVoPrefix = (this.avatar.contains("gummybuns")) ? "lsp_gummybuns_" : (this.avatar.contains("lsprince")) ? "lsprince_" : "lsp_";
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+lumpsVoPrefix+"lumps_aoe",this.location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
@@ -66,6 +87,7 @@ public class LSP extends UserActor {
             case 3:
                 this.stopMoving(castDelay);
                 this.canCast[2] = false;
+                this.isCastingult = true;
                 String cellphoneVoPrefix = (this.avatar.contains("gummybuns")) ? "lsp_gummybuns_" : (this.avatar.contains("lsprince")) ? "lsprince_" : "lsp_";
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+cellphoneVoPrefix+"cellphone_throw",this.location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
@@ -105,17 +127,24 @@ public class LSP extends UserActor {
             canCast[1] = true;
             ExtensionCommands.playSound(parentExt,room,id,"sfx_lsp_lumps_aoe",location);
             ExtensionCommands.createActorFX(parentExt,room,id,"lsp_the_lumps_aoe",3000,id+"_w",true,"",true,false,team);
-            wTime = System.currentTimeMillis();
         }
 
         @Override
         protected void spellE() {
             canCast[2] = true;
-            Line2D projectileLine = Champion.getMaxRangeLine(new Line2D.Float(location,dest),100f);
-            ExtensionCommands.actorAnimate(parentExt,room,id,"spell3b",500,false);
-            String ultProjectile = (avatar.contains("prince")) ? "projectile_lsprince_ult" : "projectile_lsp_ult";
-            fireProjectile(new LSPUltProjectile(parentExt,LSP.this,projectileLine,8f,2f,id+ultProjectile),ultProjectile, projectileLine.getP2(), 100f);
-            ExtensionCommands.playSound(parentExt,room,"global","sfx_lsp_cellphone_throw",location);
+            isCastingult = false;
+            if(!interruptE){
+                Line2D projectileLine = Champion.getMaxRangeLine(new Line2D.Float(location,dest),100f);
+                ExtensionCommands.actorAnimate(parentExt,room,id,"spell3b",500,false);
+                String ultProjectile = (avatar.contains("prince")) ? "projectile_lsprince_ult" : "projectile_lsp_ult";
+                fireProjectile(new LSPUltProjectile(parentExt,LSP.this,projectileLine,8f,2f,id+ultProjectile),ultProjectile, projectileLine.getP2(), 100f);
+                ExtensionCommands.playSound(parentExt,room,"global","sfx_lsp_cellphone_throw",location);
+            } else {
+                ExtensionCommands.playSound(parentExt,room,id,"sfx_skill_interrupted",location);
+                ExtensionCommands.actorAnimate(parentExt,room,id,"run",500,false);
+                ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
+            }
+            interruptE = false;
         }
 
         @Override

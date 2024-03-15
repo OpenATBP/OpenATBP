@@ -15,7 +15,6 @@ import xyz.openatbp.extension.game.actors.Monster;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Point2D;
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 public class Keeoth extends Monster {
@@ -44,12 +43,13 @@ public class Keeoth extends Monster {
                     u.addEffect("criticalChance",35d,60000,null,false);
                     double healthChange = (double)u.getHealth() * 0.3d;
                     u.changeHealth((int)healthChange);
-                    ExtensionCommands.playSound(parentExt,u.getUser(),"global","announcer/you_keeoth");
                     Champion.handleStatusIcon(this.parentExt,u,"icon_buff_keeoth","keeoth_buff_desc",60000f);
-                }else{
-                    ExtensionCommands.playSound(parentExt,u.getUser(),"global","announcer/enemy_keeoth");
                 }
             }
+        }
+        for(UserActor u : parentExt.getRoomHandler(this.room.getId()).getPlayers()){
+            if(u.getTeam() == a.getTeam()) ExtensionCommands.playSound(parentExt,u.getUser(),"global","announcer/you_keeoth");
+            else ExtensionCommands.playSound(parentExt,u.getUser(),"global","announcer/enemy_keeoth");
         }
         super.die(a);
     }

@@ -13,7 +13,9 @@ import xyz.openatbp.extension.game.Champion;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class Minion extends Actor{
@@ -393,7 +395,7 @@ public class Minion extends Actor{
         double distance = 1000f;
         double distanceNonUser = 1000f;
         for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
-            if(a.getTeam() != this.team && a.getActorType() != ActorType.MONSTER && this.withinAggroRange(a.getLocation())){
+            if(a.getTeam() != this.team && a.getActorType() != ActorType.MONSTER && !a.getAvatar().equalsIgnoreCase("neptr_mine") && this.withinAggroRange(a.getLocation())){
                 if(a.getActorType() == ActorType.PLAYER && this.facingEntity(a.getLocation())){
                     UserActor ua = (UserActor) a;
                     if(ua.getState(ActorState.REVEALED) && !ua.getState(ActorState.BRUSH)){

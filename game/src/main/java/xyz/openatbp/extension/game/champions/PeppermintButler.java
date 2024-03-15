@@ -5,21 +5,25 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
-import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class PeppermintButler extends UserActor {
     private int timeStopped = 0;
     private boolean qActive = false;
     private boolean stopPassive = false;
+    private boolean ultActive = false;
+    private boolean ultFxRemoved = false;
+    private boolean removeFx = false;
+    boolean wActive = false;
+    boolean interruptW = false;
     public PeppermintButler(User u, ATBPExtension parentExt) {
         super(u, parentExt);
     }
@@ -76,9 +80,14 @@ public class PeppermintButler extends UserActor {
                 this.updateStatMenu("healthRegen");
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_pepbut_invis_reveal",this.location);
                 ExtensionCommands.createActorFX(parentExt,room,id,"statusEffect_immunity",2000,id+"_Immunity",true,"displayBar",false,false,team);
+                this.addState(ActorState.IMMUNITY,0d,2000,this.id+"_pep_immune",false);
             }
         }
-
+        if(this.qActive && this.currentHealth <= 0){
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_qRing");
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_aoe");
+            this.qActive = false;
+        }
         if(this.qActive){
             for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,3f)){
                 if(this.isNonStructure(a)){
@@ -88,6 +97,25 @@ public class PeppermintButler extends UserActor {
                     a.addState(ActorState.BLINDED,0d,500,null,true);
                 }
             }
+        }
+        if(this.ultActive && this.getState(ActorState.POLYMORPH ) && !this.ultFxRemoved){
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"ultHandL");
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"ultHandR");
+            this.ultFxRemoved = true;
+        }
+        if(ultActive && this.ultFxRemoved && !this.getState(ActorState.POLYMORPH)){
+            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"marceline_beast_crit_hand",7000,this.id+"ultHandL",true,"Bip001 L Hand",true,false,this.team);
+            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"marceline_beast_crit_hand",7000,this.id+"ultHandR",true,"Bip001 R Hand",true,false,this.team);
+            this.ultFxRemoved = false;
+            this.removeFx = true;
+        }
+        if(!this.ultActive && this.removeFx){
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"ultHandL");
+            ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"ultHandR");
+            this.removeFx = false;
+        }
+        if(this.wActive && this.hasDashInterrupingCC()){
+            this.interruptW = true;
         }
     }
 
@@ -108,25 +136,28 @@ public class PeppermintButler extends UserActor {
                 canCast[1] = false;
                 this.stopMoving();
                 this.setCanMove(false);
-                Point2D dashLocation = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
-                double time = dashLocation.distance(this.location)/DASH_SPEED;
-                int runtime = (int)Math.floor(time*1000);
+                this.wActive = true;
+                double time = dest.distance(this.location)/15d;
+                AtomicInteger runtime = new AtomicInteger((int) (time * 1000));
                 String hohoVoPrefix = (this.avatar.contains("zombie")) ? "pepbut_zombie_" : "pepbut_";
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+hohoVoPrefix+"hoho",this.location);
-                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_2.5",this.id+"_wRing",runtime+500,(float)dashLocation.getX(),(float)dashLocation.getY(),true,this.team,0f);
+                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_2.5",this.id+"_wRing", runtime.get() +500,(float)dest.getX(),(float)dest.getY(),true,this.team,0f);
                 Runnable animationDelay = () -> {
-                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_pepbut_dig",this.location);
-                    ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell2b",runtime,true);
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"pepbut_dig_rocks",runtime,this.id+"_digRocks",true,"",true,false,this.team);
-                    ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashLocation, (float) DASH_SPEED,true);
-                    this.setLocation(dashLocation);
-                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new PeppermintAbilityHandler(ability,spellData,cooldown,gCooldown,dashLocation),runtime,TimeUnit.MILLISECONDS);
+                    if(!hasDashInterrupingCC()){
+                        ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_pepbut_dig",this.location);
+                        ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell2b", runtime.get(),true);
+                        ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"pepbut_dig_rocks", runtime.get(),this.id+"_digRocks",true,"",true,false,this.team);
+                        this.dash(dest,true,15d);
+                    } else runtime.set(0);
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new PeppermintAbilityHandler(ability,spellData,cooldown,gCooldown,dest), runtime.get(),TimeUnit.MILLISECONDS);
                 };
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(animationDelay,500,TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
                 break;
             case 3:
                 canCast[2] = false;
+                this.ultActive = true;
+                this.ultFxRemoved = false;
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_pepbut_feral",this.location);
                 Runnable delay = () -> {
                     this.attackCooldown = 0;
@@ -169,23 +200,30 @@ public class PeppermintButler extends UserActor {
         @Override
         protected void spellW() {
             canCast[1] = true;
+            wActive = false;
             canMove = true;
-            String beholdVoPrefix = (avatar.contains("zombie")) ? "pepbut_zombie_" : "pepbut_";
-            ExtensionCommands.playSound(parentExt,room,id,"sfx_pepbut_dig_emerge",this.dest);
-            ExtensionCommands.playSound(parentExt,room,id,"vo/vo_"+beholdVoPrefix+"behold",location);
-            ExtensionCommands.actorAnimate(parentExt,room,id,"spell2c",500,false);
-            ExtensionCommands.createWorldFX(parentExt,room,id,"pepbut_dig_explode",id+"_wExplode",500,(float)this.dest.getX(),(float)this.dest.getY(),false,team,0f);
-            for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),this.dest,2.5f)){
-                if(isNonStructure(a)){
-                    a.addToDamageQueue(PeppermintButler.this,getSpellDamage(spellData),spellData);
-                    a.addState(ActorState.STUNNED,0d,1500,null,false);
+            if(!interruptW){
+                String beholdVoPrefix = (avatar.contains("zombie")) ? "pepbut_zombie_" : "pepbut_";
+                ExtensionCommands.playSound(parentExt,room,id,"sfx_pepbut_dig_emerge",this.dest);
+                ExtensionCommands.playSound(parentExt,room,id,"vo/vo_"+beholdVoPrefix+"behold",location);
+                ExtensionCommands.actorAnimate(parentExt,room,id,"spell2c",500,false);
+                ExtensionCommands.createWorldFX(parentExt,room,id,"pepbut_dig_explode",id+"_wExplode",500,(float)location.getX(),(float)location.getY(),false,team,0f);
+                for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),location,2.5f)){
+                    if(isNonStructure(a)){
+                        a.addToDamageQueue(PeppermintButler.this,getSpellDamage(spellData),spellData);
+                        a.addState(ActorState.STUNNED,0d,1500,null,false);
+                    }
                 }
+            } else {
+                ExtensionCommands.playSound(parentExt,room,id,"sfx_skill_interrupted",location);
             }
+            interruptW = false;
         }
 
         @Override
         protected void spellE() {
             canCast[2] = true;
+            ultActive = false;
             setState(ActorState.TRANSFORMED, false);
             String[] statsToUpdate = {"speed","attackSpeed","attackDamage"};
             updateStatMenu(statsToUpdate);

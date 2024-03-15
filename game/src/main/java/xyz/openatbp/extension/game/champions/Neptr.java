@@ -13,22 +13,24 @@ import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class Neptr extends UserActor {
     private boolean passiveActive = false;
     private long passiveStart = 0;
-    private Map<String, Point2D> mineLocations;
     private int mineNum = 0;
+    private List<Mine> mines;
     private List<Actor> ultImpactedActors;
     private long ultDamageStartTime = 0;
     private boolean soundPlayed = false;
     private long lastMoveSoundPlayed = 0;
     public Neptr(User u, ATBPExtension parentExt) {
         super(u, parentExt);
-        this.mineLocations = new HashMap<>(3);
+        this.mines = new ArrayList<>(3);
         this.ultImpactedActors = new ArrayList<>();
     }
 
@@ -72,32 +74,6 @@ public class Neptr extends UserActor {
             ExtensionCommands.playSound(this.parentExt,this.player,this.id,"sfx_neptr_move",this.location);
             this.lastMoveSoundPlayed = System.currentTimeMillis();
         }
-        Set<String> keys = new HashSet<>(this.mineLocations.keySet());
-        for(String k : keys){
-            Point2D mine = this.mineLocations.get(k);
-            for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),mine,2f)){
-                if(this.isNonStructure(a)){
-                    this.mineLocations.remove(k);
-                    ExtensionCommands.playSound(this.parentExt,this.room,"","sfx_neptr_mine_activate",mine);
-                    Runnable mineExplosion = () -> {
-                        ExtensionCommands.playSound(this.parentExt,this.room,"","sfx_neptr_mine_explode",mine);
-                        ExtensionCommands.removeFx(this.parentExt,this.room,k);
-                        ExtensionCommands.removeFx(this.parentExt,this.room,k+"_ring");
-                        ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"neptr_mine_explode",k+"_explosion",500,(float)mine.getX(),(float)mine.getY(),false,this.team,0f);
-                        for(Actor actor : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),mine,2f)){
-                            if(this.isNonStructure(actor)){
-                                JsonNode spellData = this.parentExt.getAttackData(this.avatar,"spell2");
-                                actor.addToDamageQueue(this,this.getSpellDamage(spellData),spellData);
-                                actor.addState(ActorState.SLOWED,0.4d,3000,null,false);
-                            }
-                        }
-                    };
-                    SmartFoxServer.getInstance().getTaskScheduler().schedule(mineExplosion,500,TimeUnit.MILLISECONDS);
-                    break;
-                }
-            }
-        }
-
         List<Actor> impactedActors = new ArrayList<>(this.ultImpactedActors);
         if(impactedActors.size() > 1 && System.currentTimeMillis() - this.ultDamageStartTime < 3000){
             JsonNode attackData = this.parentExt.getAttackData(this.avatar,"spell3");
@@ -105,6 +81,12 @@ public class Neptr extends UserActor {
                 a.addToDamageQueue(this,this.getSpellDamage(attackData)/10d,attackData);
             }
         }
+
+        ArrayList<Mine> mines = new ArrayList<>(this.mines); //To remove concurrent exceptions
+        for(Mine m : mines){
+            m.update(msRan);
+        }
+
     }
 
     @Override
@@ -129,27 +111,7 @@ public class Neptr extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
-                if(this.mineLocations.size() == 3){
-                    Set<String> keys = this.mineLocations.keySet();
-                    int lowestNum = 10000;
-                    for(String k : keys){
-                        String numString = k.split("_")[1].replace("mine","");
-                        System.out.println("String: " + numString);
-                        int num = Integer.parseInt(numString);
-                        if(num < lowestNum) lowestNum = num;
-                    }
-                    String id = this.id+"_mine"+lowestNum;
-                    ExtensionCommands.removeFx(this.parentExt,this.room,id);
-                    ExtensionCommands.removeFx(this.parentExt,this.room,id+"_ring");
-                    this.mineLocations.remove(id);
-                }
-                String mineId = this.id+"_mine"+this.mineNum;
-                this.mineNum++;
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_neptr_mine",this.location);
-                ExtensionCommands.playSound(this.parentExt,this.player,this.id,"sfx_neptr_mine_spawn",dest);
-                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"neptr_pie_mine",mineId,1000*60*15,(float)dest.getX(),(float)dest.getY(),false,this.team,0f);
-                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_2",mineId+"_ring",1000*60*15,(float)dest.getX(),(float)dest.getY(),true,this.team,0f);
-                this.mineLocations.put(mineId,dest);
+                this.spawnMine(dest);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new NeptrAbilityHandler(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
                 break;
@@ -157,12 +119,43 @@ public class Neptr extends UserActor {
                 this.canCast[2] = false;
                 ExtensionCommands.playSound(this.parentExt,this.room,"","sfx_neptr_ultimate",dest);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_neptr_locked_on",this.location);
-                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"neptr_ultimate",this.id+"_ult",500,(float)dest.getX(),(float)dest.getY(),false,this.team,0f);
-                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_3",this.id+"_ultRing",500,(float)dest.getX(),(float)dest.getY(),false,this.team,0f);
+                float rotation = getRotation(dest);
+                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"neptr_ultimate",this.id+"_ult",2000,(float)dest.getX(),(float)dest.getY(),false,this.team,rotation);
+                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_3",this.id+"_ultRing",500,(float)dest.getX(),(float)dest.getY(),true,this.team,0f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new NeptrAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 break;
         }
+    }
+
+    private void spawnMine(Point2D dest){
+        Mine m = null;
+
+        if(this.mines != null && this.mines.size() == 3){
+            this.mines.get(0).die(this);
+            this.mines.remove(0);
+            m = new Mine(dest, this.mineNum);
+        } else if(this.mines != null){
+            m = new Mine(dest, this.mineNum);
+        }
+        if(this.mines != null){
+            this.mineNum++;
+            this.mines.add(m);
+            this.parentExt.getRoomHandler(this.room.getId()).addCompanion(m);
+        }
+    }
+
+    @Override
+    public void die(Actor a) {
+        super.die(a);
+        for(Mine m : mines){
+            m.die(a);
+        }
+        this.mines = new ArrayList<>();
+    }
+
+    public void handleMineDeath(Mine m){
+        this.mines.remove(m);
     }
 
     private class NeptrAbilityHandler extends AbilityRunnable{
@@ -190,7 +183,7 @@ public class Neptr extends UserActor {
                 if(isNonStructure(a)){
                     a.knockback(Neptr.this.location);
                     a.addState(ActorState.SILENCED,0d,1000,null,false);
-                    ExtensionCommands.createActorFX(parentExt,room,a.getId(),"neptr_dot_poison",3000,a.getId()+"_neptrPoison",true,"Bip001",true,false,team);
+                    ExtensionCommands.createActorFX(parentExt,room,a.getId(),"neptr_dot_poison",3000,a.getId()+"_neptrPoison",true,"Bip001",false,false,team);
                     ultImpactedActors.add(a);
                 }
             }
@@ -287,6 +280,114 @@ public class Neptr extends UserActor {
             ExtensionCommands.playSound(this.parentExt,this.owner.getRoom(), victim.getId(), "akubat_projectileHit1", victim.getLocation());
             this.damageReduction+=0.15d;
             if(this.damageReduction > 1d) this.damageReduction = 1d;
+        }
+    }
+
+    private class Mine extends Actor {
+        private boolean dead = false;
+        private String iconName;
+        private long timeOfBirth;
+        private boolean mineActivated = false;
+        Mine(Point2D location, int mineNum){
+            this.room = Neptr.this.room;
+            this.parentExt = Neptr.this.parentExt;
+            this.currentHealth = 999;
+            this.maxHealth = 999;
+            this.location = location;
+            this.avatar = "neptr_mine";
+            this.id = "mine" + mineNum + "_" + Neptr.this.id;
+            this.team = Neptr.this.team;
+            this.timeOfBirth = System.currentTimeMillis();
+            this.actorType = ActorType.COMPANION;
+            this.stats = this.initializeStats();
+            this.iconName = "Mine #" + mineNum;
+            ExtensionCommands.addStatusIcon(parentExt,player,iconName,"Mine placed!","icon_neptr_s2",30000f);
+            ExtensionCommands.createActor(parentExt,room,this.id,this.avatar,this.location,0f,this.team);
+            ExtensionCommands.playSound(parentExt,this.room,this.id,"vo/vo_neptr_mine",this.location);
+            ExtensionCommands.playSound(parentExt,room,this.id,"sfx_neptr_mine_spawn",this.location);
+            ExtensionCommands.createWorldFX(parentExt,room,this.id,"fx_target_ring_2",this.id+"_mine",30000,(float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
+        }
+
+        @Override
+        public void handleKill(Actor a, JsonNode attackData) {
+
+        }
+
+        @Override
+        public void attack(Actor a) {
+
+        }
+
+        @Override
+        public void die(Actor a) {
+            this.dead = true;
+            this.currentHealth = 0;
+            if(!mineActivated){
+                ExtensionCommands.removeFx(parentExt,room,this.id+"_mine");
+                ExtensionCommands.removeStatusIcon(parentExt,player,this.iconName);
+                ExtensionCommands.destroyActor(parentExt,room,this.id);
+                this.parentExt.getRoomHandler(this.room.getId()).removeCompanion(this);
+            }
+        }
+
+        @Override
+        public boolean damaged(Actor a, int damage, JsonNode attackData) {
+            if(a.getActorType() == ActorType.TOWER){
+                this.die(this);
+                Neptr.this.handleMineDeath(this);
+                ExtensionCommands.playSound(this.parentExt,room,"","sfx_neptr_mine_activate",this.location);
+                ExtensionCommands.createWorldFX(parentExt, room, this.id, "neptr_mine_explode", this.id + "_explosion", 1000, (float) this.location.getX(), (float) this.location.getY(), false, this.team, 0f);
+            }
+            return false;
+        }
+
+        @Override
+        public void update(int msRan) {
+            this.handleDamageQueue();
+            if(this.dead) return;
+            if(System.currentTimeMillis() - this.timeOfBirth >= 30000){
+                this.die(this);
+                Neptr.this.handleMineDeath(this);
+            }
+            List<Actor> actors = Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,2f);
+            for(Actor a : actors){
+                if(isNonStructure(a) && !this.mineActivated){
+                    this.mineActivated = true;
+                    explodeMine();
+                    this.die(this);
+                    Neptr.this.handleMineDeath(this);
+                }
+            }
+        }
+
+        private void explodeMine(){
+            List<Actor> targets = Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,2f);
+            for(Actor target : targets){
+                if(isNonStructure(target)){
+                    Runnable mineExplosion = () -> {
+                        JsonNode spellData = this.parentExt.getAttackData(Neptr.this.avatar, "spell2");
+                        target.addToDamageQueue(Neptr.this, getSpellDamage(spellData), spellData);
+                        target.addState(ActorState.SLOWED, 0.4d, 3000, null, false);
+
+                    };
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(mineExplosion,1200,TimeUnit.MILLISECONDS);
+                }
+            }
+            Runnable explosionFX = () -> {
+                ExtensionCommands.createWorldFX(parentExt, room, this.id, "neptr_mine_explode", this.id + "_explosion", 1000, (float) this.location.getX(), (float) this.location.getY(), false, this.team, 0f);
+                ExtensionCommands.playSound(parentExt, room, "", "sfx_neptr_mine_explode", this.location);
+                ExtensionCommands.removeFx(parentExt,room,this.id+"_mine");
+                ExtensionCommands.removeStatusIcon(parentExt,player,this.iconName);
+                ExtensionCommands.destroyActor(parentExt,room,this.id);
+                this.parentExt.getRoomHandler(this.room.getId()).removeCompanion(this);
+            };
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(explosionFX,1200,TimeUnit.MILLISECONDS);
+            Runnable activate = () -> ExtensionCommands.playSound(this.parentExt,room,this.id,"sfx_neptr_mine_activate",this.location);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(activate,500,TimeUnit.MILLISECONDS);
+        }
+        @Override
+        public void setTarget(Actor a) {
+
         }
     }
 }

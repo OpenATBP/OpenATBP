@@ -1,6 +1,7 @@
 package xyz.openatbp.extension.game.champions;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
@@ -38,7 +39,7 @@ public class RattleBalls extends UserActor {
             case 1:
                 this.canCast[0] = false;
                 Point2D ogLocation = this.location;
-                Point2D finalDashPoint = this.dash(dest,false);
+                Point2D finalDashPoint = this.dash(dest,false,DASH_SPEED);
                 double time = ogLocation.distance(finalDashPoint)/DASH_SPEED;
                 qTime = (int) (time*1000);
                 int qTimeEffects = qTime*5;
@@ -127,7 +128,7 @@ public class RattleBalls extends UserActor {
 
     @Override
     public boolean canAttack() {
-        if(this.ultActive) return false;
+        if(this.ultActive || this.parryActive) return false;
         return super.canAttack();
     }
 
@@ -201,8 +202,8 @@ public class RattleBalls extends UserActor {
             this.canMove = true;
             this.handleLifeSteal();
             this.abilityEnded();
-            JsonNode basicAttackData = this.getParentExt().getAttackData(this.avatar,"basicAttack");
-            a.addToDamageQueue(this,this.getPlayerStat("attackDamage")*2,basicAttackData);
+            JsonNode counterAttackData = counterAttackData();
+            a.addToDamageQueue(this,this.getPlayerStat("attackDamage")*2,counterAttackData);
             String counterSFx = (this.avatar.contains("spidotron")) ? "sfx_rattleballs_luchador_counter_attack_crit" : "sfx_rattleballs_counter_stance";
             String counterCritFx = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_dash_hit" : "rattleballs_dash_hit";
             ExtensionCommands.playSound(this.parentExt,this.room,this.id,counterSFx,this.location);
@@ -213,6 +214,13 @@ public class RattleBalls extends UserActor {
             return false;
         }
         return super.damaged(a, damage, attackData);
+    }
+
+    private JsonNode counterAttackData(){
+        JsonNode attackData = this.parentExt.getAttackData(this.avatar,"spell1");
+        ((ObjectNode) attackData).remove("spellType");
+        ((ObjectNode) attackData).put("attackType","physical");
+        return attackData;
     }
 
     @Override

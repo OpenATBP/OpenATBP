@@ -3,7 +3,6 @@ package xyz.openatbp.extension.game.champions;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
-import com.smartfoxserver.v2.entities.data.ISFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MovementManager;
@@ -179,6 +178,7 @@ public class Lich extends UserActor{
 
     @Override
     public void handleKill(Actor a, JsonNode attackData){
+        super.handleKill(a,attackData);
         if(this.skully != null) this.skully.resetTarget();
         if(attackData.has("spellType") && (attackData.get("spellType").asText().equalsIgnoreCase("spell1") || attackData.get("spellType").asText().equalsIgnoreCase("passive"))) this.increaseStat("spellDamage",1);
     }
@@ -308,7 +308,8 @@ public class Lich extends UserActor{
                 if(this.target.getActorType() == ActorType.PLAYER){
                     attacker = Lich.this;
                 }
-                new Champion.DelayedAttack(parentExt,attacker,target,(int)damage,"spell4").run();
+                new Champion.DelayedAttack(parentExt,attacker,target,(int)damage,"skullyAttack").run();
+                if(isNonStructure(target)) Lich.this.handleLifeSteal();
             }
         }
     }

@@ -5,7 +5,6 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
@@ -74,7 +73,7 @@ public class FlamePrincess extends UserActor {
         if(this.ultStarted && !this.ultFinished){
             this.ultFinished = true;
             setState(ActorState.TRANSFORMED, false);
-            ExtensionCommands.removeFx(parentExt,room,"flame_e");
+            ExtensionCommands.removeFx(parentExt,room,this.id+"flameE");
             ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
             ExtensionCommands.actorAbilityResponse(parentExt,player,"e",canUseAbility(2), getReducedCooldown(60000), 0);
             ExtensionCommands.scaleActor(parentExt,room,id,0.6667f);
@@ -90,7 +89,7 @@ public class FlamePrincess extends UserActor {
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
         super.useAbility(ability,spellData,cooldown,gCooldown,castDelay,dest);
         if(ultUses == 3 && !passiveEnabled && System.currentTimeMillis()-lastPassiveUsage >= 10000){
-            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"flame_princess_passive_flames",1000*60,this.id+"_flame_passive",true,"",false,false,this.team);
+            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"flame_princess_passive_flames",1000*60*15,this.id+"_flame_passive",true,"",false,false,this.team);
             ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_flame_princess_passive_ignite",this.location);
             passiveEnabled = true;
         }
@@ -122,18 +121,23 @@ public class FlamePrincess extends UserActor {
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_flame_princess_flame_form",this.getLocation());
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_flame_princess_flame_form",this.getLocation());
                     ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,"flame_ult");
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"flame_princess_ultimate_aoe",5000,"flame_e",true,"",true,false,this.team);
+                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"flame_princess_ultimate_aoe",5000,this.id+"flameE",true,"",true,false,this.team);
                     ExtensionCommands.scaleActor(this.parentExt,this.room,this.id,1.5f);
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),duration, TimeUnit.MILLISECONDS);
                 }else{
-                    if(ultUses>0){
+                    if(ultUses>0 && canDash()){
+                        this.canCast[2] = false;
                         //TODO: Fix so FP can dash and still get health packs
                         Point2D ogLocation = this.location;
-                        Point2D dashLocation = this.fpDash(dest);
+                        Point2D dashLocation = this.dash(dest,false,15d);
                         double time = ogLocation.distance(dashLocation)/DASH_SPEED;
                         this.dashTime = (int) (time*1000);
                         ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"run",this.dashTime,false);
                         ultUses--;
+                        Runnable ultUseDelay = () -> this.canCast[2] = true;
+                        SmartFoxServer.getInstance().getTaskScheduler().schedule(ultUseDelay, dashTime, TimeUnit.MILLISECONDS);
+                    } else {
+                        ExtensionCommands.playSound(this.parentExt,this.player,this.id,"not_allowed_error");
                     }
                     if(ultUses == 0){
                         SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),this.dashTime+100, TimeUnit.MILLISECONDS);
@@ -143,19 +147,6 @@ public class FlamePrincess extends UserActor {
             case 4: //Passive
                 break;
         }
-    }
-
-    private Point2D fpDash(Point2D dest){
-        Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
-        if(dashPoint == null) dashPoint = this.location;
-        System.out.println("Dash: " + dashPoint);
-        double time = dashPoint.distance(this.location)/15d;
-        System.out.println("Time stopped: " + time);
-        this.stopMoving((int)(time*1000d));
-        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, 15f,true);
-        this.setLocation(dashPoint);
-        this.target = null;
-        return dashPoint;
     }
 
     @Override
@@ -203,7 +194,7 @@ public class FlamePrincess extends UserActor {
         protected void spellE() {
             if(!ultFinished && ultStarted){
                 setState(ActorState.TRANSFORMED, false);
-                ExtensionCommands.removeFx(parentExt,room,"flame_e");
+                ExtensionCommands.removeFx(parentExt,room,id+"flameE");
                 ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"e",canUseAbility(2), getReducedCooldown(cooldown), gCooldown);
                 ExtensionCommands.scaleActor(parentExt,room,id,0.6667f);

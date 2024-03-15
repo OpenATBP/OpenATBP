@@ -9,27 +9,25 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import static com.mongodb.client.model.Filters.eq;
-import static com.mongodb.client.model.Filters.in;
-
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.extensions.SFSExtension;
-import hxDaedalus.ai.PathFinder;
 import org.bson.Document;
 import xyz.openatbp.extension.evthandlers.*;
 import xyz.openatbp.extension.game.Obstacle;
 import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.reqhandlers.*;
 
-import java.awt.geom.*;
+import java.awt.geom.Path2D;
+import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+import static com.mongodb.client.model.Filters.eq;
 
 public class ATBPExtension extends SFSExtension {
     HashMap<String, JsonNode> actorDefinitions = new HashMap<>(); //Contains all xml definitions for the characters

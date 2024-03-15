@@ -8,8 +8,6 @@ import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.GameManager;
 
-import java.util.ArrayList;
-
 public class ClientReadyHandler extends BaseClientRequestHandler {
     @Override
     public void handleClientRequest(User sender, ISFSObject params) { //Sent when client has loaded all assets

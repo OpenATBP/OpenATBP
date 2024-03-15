@@ -5,7 +5,9 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.game.*;
+import xyz.openatbp.extension.game.AbilityRunnable;
+import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
@@ -36,6 +38,11 @@ public class Gunter extends UserActor{
                 }
             }
         }
+        if(ultActivated && this.hasInterrupingCC()){
+            this.interruptE();
+            this.ultPoint = null;
+            this.ultActivated = false;
+        }
     }
     @Override
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
@@ -43,7 +50,7 @@ public class Gunter extends UserActor{
         switch(ability){
             case 1:
                 Point2D ogLocation = this.location;
-                Point2D finalDastPoint = this.dash(dest,true);
+                Point2D finalDastPoint = this.dash(dest,true,DASH_SPEED);
                 double time = ogLocation.distance(finalDastPoint)/DASH_SPEED;
                 int qTime = (int) (time*1000);
                 ExtensionCommands.playSound(parentExt,this.room,this.id,"sfx_gunter_slide",this.location);
@@ -61,7 +68,6 @@ public class Gunter extends UserActor{
                 this.fireProjectile(new BottleProjectile(this.parentExt,this,maxRangeLine,11f,0.5f,this.id+"projectile_gunter_bottle"),"projectile_gunter_bottle",dest,8f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,player,"w",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new GunterAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
-
                 break;
             case 3: //TODO: Last left off - actually make this do damage
                 this.ultPoint = dest;
@@ -87,6 +93,13 @@ public class Gunter extends UserActor{
                 actor.addToDamageQueue(this,getSpellDamage(spellData),spellData);
             }
         }
+    }
+
+    private void interruptE(){
+        ExtensionCommands.removeFx(parentExt,this.room,this.id+"_gunterPower");
+        ExtensionCommands.removeFx(parentExt,this.room,this.id+"gunterUlt");
+        ExtensionCommands.actorAnimate(parentExt,this.room,this.id,"run",500,false);
+        ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_skill_interrupted",this.location);
     }
 
     @Override
@@ -174,7 +187,7 @@ public class Gunter extends UserActor{
             JsonNode spellData = parentExt.getAttackData(getAvatar(),"spell2");
             victim.addToDamageQueue(Gunter.this,getSpellDamage(spellData),spellData);
             ExtensionCommands.playSound(parentExt,room,"","sfx_gunter_bottle_shatter",this.location);
-            ExtensionCommands.createWorldFX(parentExt,room,this.id,"gunter_bottle_shatter",this.id+"_bottleShatter",500,(float)this.location.getX(),(float)this.location.getY(),false,team,0f);
+            ExtensionCommands.createWorldFX(parentExt,room,this.id,"gunter_bottle_shatter",this.id+"_bottleShatter",1000,(float)this.location.getX(),(float)this.location.getY(),false,team,0f);
             destroy();
         }
     }

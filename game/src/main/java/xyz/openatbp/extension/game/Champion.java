@@ -1,8 +1,8 @@
 package xyz.openatbp.extension.game;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.smartfoxserver.v2.SmartFoxServer;
-import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
@@ -10,16 +10,15 @@ import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.actors.Actor;
-import xyz.openatbp.extension.game.actors.Tower;
-import xyz.openatbp.extension.game.champions.*;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.game.champions.*;
 
-import java.awt.*;
-import java.awt.geom.*;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Line2D;
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 
 public class Champion {
@@ -241,7 +240,22 @@ public class Champion {
             ExtensionCommands.createActorFX(this.parentExt,this.attacker.getRoom(), this.target.getId(),"_playerGotHitSparks",500,this.target.getId()+"_hit"+Math.random(),true,"",true,false, target.getTeam());
             JsonNode attackData;
             if(this.attacker.getActorType() == ActorType.MINION) attackData = this.parentExt.getAttackData(this.attacker.getAvatar().replace("0",""),this.attack);
-            else attackData = this.parentExt.getAttackData(this.attacker.getAvatar(),this.attack);
+            else {
+                switch (this.attack){ //these attacks need to be physical so that Rattle can actually counter-attack them
+                    case "turretAttack":
+                        attackData = this.parentExt.getAttackData("princessbubblegum","spell2");
+                        ((ObjectNode) attackData).remove("spellType");
+                        ((ObjectNode) attackData).put("attackType","physical");
+                        break;
+                    case "skullyAttack":
+                        attackData = this.parentExt.getAttackData("lich","spell4");
+                        ((ObjectNode) attackData).remove("spellType");
+                        ((ObjectNode) attackData).put("attackType","physical");
+                        break;
+                    default:
+                        attackData = this.parentExt.getAttackData(this.attacker.getAvatar(),this.attack);
+                }
+            }
             if(this.attacker.getActorType() == ActorType.PLAYER){
                 UserActor ua = (UserActor) this.attacker;
                 if(ua.hasBackpackItem("junk_1_numb_chucks") && ua.getStat("sp_category1") > 0){

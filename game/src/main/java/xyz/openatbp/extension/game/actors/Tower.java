@@ -19,6 +19,8 @@ public class Tower extends Actor {
     private long lastHit;
     private boolean destroyed = false;
     private long lastMissSoundTime = 0;
+    private long lastSpellDeniedTime = 0;
+    private List<Actor> nearbyActors;
 
     public Tower(ATBPExtension parentExt, Room room, String id, int team, Point2D location){
         this.currentHealth = 800;
@@ -30,7 +32,7 @@ public class Tower extends Actor {
         this.parentExt = parentExt;
         this.lastHit = 0;
         this.actorType = ActorType.TOWER;
-        this.attackCooldown = 500;
+        this.attackCooldown = 2000;
         this.avatar = "tower1";
         if(team == 1) this.avatar = "tower2";
         this.displayName = parentExt.getDisplayName(this.avatar);
@@ -47,12 +49,15 @@ public class Tower extends Actor {
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         if(this.destroyed) return true;
-        if(this.target == null){
+        if(this.target == null && nearbyActors.isEmpty()){
             if(a.getActorType() == ActorType.PLAYER){
                 UserActor ua = (UserActor) a;
-                if(System.currentTimeMillis() - this.lastMissSoundTime >= 1500){
+                if(System.currentTimeMillis() - this.lastMissSoundTime >= 1500 && getAttackType(attackData) == AttackType.PHYSICAL){
                     this.lastMissSoundTime = System.currentTimeMillis();
                     ExtensionCommands.playSound(this.parentExt,ua.getUser(),ua.getId(),"sfx_attack_miss");
+                } else if (System.currentTimeMillis() - this.lastSpellDeniedTime >= 1500) {
+                    this.lastSpellDeniedTime = System.currentTimeMillis();
+                    ExtensionCommands.playSound(this.parentExt,ua.getUser(),ua.getId(),"sfx_tower_no_damage_taken");
                 }
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"tower_no_damage_taken",500,this.id+"_noDamage",true,"",true,false,this.team);
 
@@ -70,20 +75,21 @@ public class Tower extends Actor {
 
     @Override
     public void attack(Actor a) {
-        this.attackCooldown = this.getPlayerStat("attackSpeed");
         String projectileName = "tower_projectile_blue";
         String effectName = "tower_shoot_blue";
         if(this.team == 0){
             projectileName = "tower_projectile_purple";
             effectName = "tower_shoot_purple";
         }
-        float time = (float) (a.getLocation().distance(this.location) / 10f);
-        ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_turret_shoots_at_you",this.location);
-        ExtensionCommands.createProjectileFX(this.parentExt,this.room,projectileName,this.id,a.getId(),"emitNode","Bip01",time);
-        ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,effectName,600,this.id+"_attackFx",false,"emitNode",false,false,this.team);
-        SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),(int)(time*1000), TimeUnit.MILLISECONDS);
+        if(attackCooldown == 0){
+            this.attackCooldown = this.getPlayerStat("attackSpeed");
+            float time = (float) (a.getLocation().distance(this.location) / 6f);
+            ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_turret_shoots_at_you",this.location);
+            ExtensionCommands.createProjectileFX(this.parentExt,this.room,projectileName,this.id,a.getId(),"emitNode","Bip01",time);
+            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,effectName,600,this.id+"_attackFx",false,"emitNode",false,false,this.team);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(this.parentExt,this,a,(int)this.getPlayerStat("attackDamage"),"basicAttack"),(int)(time*1000), TimeUnit.MILLISECONDS);
+        }
     }
-
     @Override
     public void die(Actor a) {
         System.out.println(this.id + " has died! " + this.destroyed);
@@ -115,7 +121,6 @@ public class Tower extends Actor {
                     }else{
                         ExtensionCommands.playSound(parentExt,ua.getUser(),"global","announcer/you_destroyed_tower");
                     }
-                    ExtensionCommands.playSound(parentExt,ua.getUser(),"music","music/music_towerdown");
                 }
             }else{
                 for(UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
@@ -135,10 +140,8 @@ public class Tower extends Actor {
             if(!this.destroyed){
                 this.handleDamageQueue();
                 if(this.destroyed) return;
-                List<Actor> nearbyActors = Champion.getEnemyActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.team,this.location, (float) this.getPlayerStat("attackRange"));
+                nearbyActors = Champion.getEnemyActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.team,this.location, (float) this.getPlayerStat("attackRange"));
                 if(this.target == null){
-                    if(this.attackCooldown > this.getPlayerStat("attackSpeed")) this.reduceAttackCooldown();
-                    else this.attackCooldown = 500d;
                     boolean hasMinion = false;
                     double distance = 1000;
                     Actor potentialTarget = null;

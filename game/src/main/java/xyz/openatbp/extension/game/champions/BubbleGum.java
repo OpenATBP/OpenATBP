@@ -12,11 +12,9 @@ import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
-import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -34,7 +32,6 @@ public class BubbleGum extends UserActor {
     private boolean bombPlaced;
     private Point2D bombLocation;
     private final static boolean DEBUG = false;
-
 
     public BubbleGum(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -276,6 +273,7 @@ public class BubbleGum extends UserActor {
             ExtensionCommands.createActor(parentExt,room,this.id,this.avatar,this.location,0f,this.team);
             ExtensionCommands.playSound(parentExt,room,this.id,"sfx_bubblegum_turret_spawn",this.location);
             ExtensionCommands.createWorldFX(parentExt,room,this.id,"fx_target_ring_3",this.id+"_ring", 60000, (float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
+            this.addState(ActorState.IMMUNITY,0d,1000*60*15,"tower_"+this.id+"_immunity",false);
         }
 
         @Override
@@ -289,9 +287,8 @@ public class BubbleGum extends UserActor {
             float time = (float) (a.getLocation().distance(this.location) / 10f);
             ExtensionCommands.playSound(parentExt,room,this.id,"sfx_bubblegum_turret_shoot",this.location);
             ExtensionCommands.createProjectileFX(parentExt,room,"bubblegum_turret_projectile",this.id,a.getId(),"Bip01","targetNode",time);
-            Actor attacker = this;
-            if(a.getActorType() == ActorType.PLAYER) attacker = BubbleGum.this;
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,attacker,a,10+(int)this.getPlayerStat("attackDamage"),"spell2"),(int)time*1000,TimeUnit.MILLISECONDS);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,BubbleGum.this,a,10+(int)this.getPlayerStat("attackDamage"),"turretAttack"),(int)time*1000,TimeUnit.MILLISECONDS);
+            BubbleGum.this.handleLifeSteal();
             this.attackCooldown = this.getPlayerStat("attackSpeed");
         }
 
