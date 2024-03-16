@@ -68,7 +68,7 @@ function handleRequest (jsonString, socket) {
         if(type.includes('p')) queueSize = Number(type.replace("p",""));
         if(queueSize == 3) queueSize = 2; //DEBUG
         for(var q of queues){
-          if(q.type == type && q.players.length < q.max){
+          if(q.type == type && q.players.length < q.max && !q.inGame){
             // Join Queue
             q.players.push(socket.player);
             socket.player.queueNum = q.queueNum;
@@ -186,36 +186,43 @@ function handleRequest (jsonString, socket) {
         break;
 
       case 'set_avatar':
+        var shouldSend = true;
         for(var q of queues){
           if(q.queueNum == socket.player.queueNum){
             if(socket.player.team == 0){
               for(var pUser of q.purple){
                 if(pUser.name == socket.player.name){
+                  if(pUser.is_ready) shouldSend = false;
                   pUser.avatar = jsonObject['payload'].name;
                   break;
                 }
               }
-              sendAll(users.filter(user => user.player.team == 0 && user.player.queueNum == q.queueNum), {
-                'cmd': 'team_update',
-                'payload': {
-                  'players': q.purple,
-                  'team': `PURPLE${q.queueNum}`
-                }
-              });
+              if(shouldSend){
+                sendAll(users.filter(user => user.player.team == 0 && user.player.queueNum == q.queueNum), {
+                    'cmd': 'team_update',
+                    'payload': {
+                    'players': q.purple,
+                    'team': `PURPLE${q.queueNum}`
+                    }
+                });
+              }
             }else{
               for(var pUser of q.blue){
                 if(pUser.name == socket.player.name){
+                  if(pUser.is_ready) shouldSend = false;
                   pUser.avatar = jsonObject['payload'].name;
                   break;
                 }
               }
-              sendAll(users.filter(user => user.player.team == 1 && user.player.queueNum == q.queueNum), {
-                'cmd': 'team_update',
-                'payload': {
-                  'players': q.blue,
-                  'team': `BLUE${q.queueNum}`
-                }
-              });
+              if(shouldSend){
+                sendAll(users.filter(user => user.player.team == 1 && user.player.queueNum == q.queueNum), {
+                    'cmd': 'team_update',
+                    'payload': {
+                    'players': q.blue,
+                    'team': `BLUE${q.queueNum}`
+                    }
+                });
+              }
             }
             break;
           }
