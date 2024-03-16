@@ -20,7 +20,7 @@ dl.on('end', () => {
   }
 });
 
-dl.on('error', (err) => console.error("Asset download failed - check Internet connection.", err));
+dl.on('error', (err) => {console.error("Asset download failed - check Internet connection.", err)});
 dl.on('start', () => {console.log("Downloading game assets... this may take a while.")});
 
 if(!fs.existsSync("static/CNChampions.unity3d") || !fs.existsSync("static/assets")) {
