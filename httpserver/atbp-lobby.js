@@ -73,10 +73,12 @@ function handleRequest (jsonString, socket) {
             q.players.push(socket.player);
             socket.player.queueNum = q.queueNum;
             if(q.players.length < q.max){
+            var size = q.players.length;
+            if(size>4) size = 4;
               res = {
                 'cmd': 'queue_update',
                 'payload': {
-                  'size': q.players.length
+                  'size': size
                 }
               };
               sendAll(users.filter(user => (q.players.includes(user.player))), res);
@@ -164,10 +166,12 @@ function handleRequest (jsonString, socket) {
               q.players = [];
               socket.player.inGame = false;
             }else{
+              var size = q.players.length;
+              if(size > 4) size = 4;
               res = {
                 'cmd': 'queue_update',
                 'payload': {
-                  size: q.players.length
+                  size: size
                 }
               };
             }
@@ -369,10 +373,12 @@ module.exports = class ATBPLobbyServer {
                       }
                     };
                   }else{
+                    var size = q.players.length;
+                    if(size > 4) size = 4;
                     res = {
                       'cmd': 'queue_update',
                       'payload': {
-                        'size': q.players.length
+                        'size': size
                       }
                     };
                   }
