@@ -96,7 +96,7 @@ public class ATBPExtension extends SFSExtension {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        trace("ATBP Extension loaded");
+        trace("ATBP Extension loadeded");
     }
 
     @Override
