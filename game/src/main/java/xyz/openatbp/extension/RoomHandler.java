@@ -29,12 +29,13 @@ public class RoomHandler implements Runnable{
     private ATBPExtension parentExt;
     private Room room;
     private ArrayList<Minion> minions;
-    private ArrayList<Tower> towers;
     private ArrayList<UserActor> players;
     private List<Projectile> activeProjectiles;
     private List<Monster> campMonsters;
     private List<Actor> companions;
     private Base[] bases = new Base[2];
+    private ArrayList<BaseTower> baseTowers;
+    private ArrayList<Tower> towers;
     private int mSecondsRan = 0;
     private int secondsRan = 0;
     private int[] altarStatus = {0,0,0};
@@ -52,20 +53,30 @@ public class RoomHandler implements Runnable{
     private int purpleCounter = 0;
     private boolean playMainMusic = false;
     private boolean playTowerMusic = false;
-    private ArrayList<Tower> destroyedTowers = new ArrayList<>();
     private long lastPointLeadTime = 0;
-    private boolean playLeadSound = true;
 
     public RoomHandler(ATBPExtension parentExt, Room room){
         this.parentExt = parentExt;
         this.room = room;
         this.minions = new ArrayList<>();
         this.towers = new ArrayList<>();
+        this.baseTowers = new ArrayList<>();
         this.players = new ArrayList<>();
         this.campMonsters = new ArrayList<>();
         this.practiceMap = room.getGroupId().equalsIgnoreCase("practice");
-        HashMap<String, Point2D> towers0 = MapData.getTowerData(room.getGroupId(),0);
-        HashMap<String, Point2D> towers1 = MapData.getTowerData(room.getGroupId(),1);
+        HashMap<String, Point2D> towers0;
+        HashMap<String, Point2D> towers1;
+        if(!this.practiceMap){
+            towers0 = MapData.getMainMapTowerData(0);
+            towers1 = MapData.getMainMapTowerData(1);
+            baseTowers.add(new BaseTower(parentExt,room,"purple_tower3",0));
+            baseTowers.add(new BaseTower(parentExt,room,"blue_tower3",1));
+        } else {
+            towers0 = MapData.getPTowerActorData(0);
+            towers1 = MapData.getPTowerActorData(1);
+            baseTowers.add(new BaseTower(parentExt,room,"purple_tower0",0));
+            baseTowers.add(new BaseTower(parentExt,room,"blue_tower3",1));
+        }
         for(String key : towers0.keySet()){
             towers.add(new Tower(parentExt,room,key,0,towers0.get(key)));
         }
@@ -212,18 +223,27 @@ public class RoomHandler implements Runnable{
             campMonsters.removeIf(m -> (m.getHealth()<=0));
             for(Tower t : towers){
                 t.update(mSecondsRan);
-                if(t.getHealth() <= 0 && (t.getTowerNum() == 0 || t.getTowerNum() == 3)) bases[t.getTeam()].unlock();
-
-                if(t.getHealth() <= 0 && !destroyedTowers.contains(t) && mSecondsRan < 1000*60*13){
-                    destroyedTowers.add(t);
-                    this.playTowerMusic = true;
+                if(t.getHealth() <= 0){
+                    if(mSecondsRan < 1000*60*13) this.playTowerMusic = true;
+                    baseTowers.get(t.getTeam()).unlockBaseTower();
+                    if(this.practiceMap) {
+                        if(t.getTowerNum() == 0 || t.getTowerNum() == 3) bases[t.getTeam()].unlock();
+                    }
                 }
             }
+
+            for(BaseTower b : baseTowers){
+                b.update(mSecondsRan);
+                if(b.getHealth() <= 0) {
+                    if(mSecondsRan < 1000 * 60 * 13) this.playTowerMusic = true;
+                    bases[b.getTeam()].unlock();
+                }
+            }
+            towers.removeIf(t -> (t.getHealth()<=0));
+            baseTowers.removeIf(b -> (b.getHealth()<=0));
             for(GumballGuardian g : this.guardians){
                 g.update(mSecondsRan);
             }
-            towers.removeIf(t -> (t.getHealth()<=0));
-
             bases[0].update(mSecondsRan);
             bases[1].update(mSecondsRan);
             if(this.room.getUserList().size() == 0) parentExt.stopScript(this.room.getId());
@@ -560,11 +580,9 @@ public class RoomHandler implements Runnable{
                         int finalI = i;
                         int finalTeam = team;
                         Runnable fastAltarLock = () -> captureAltar(finalI,finalTeam,altarId);
-                        SmartFoxServer.getInstance().getTaskScheduler().schedule(fastAltarLock,500,TimeUnit.MILLISECONDS);
-                        Console.debugLog("fast");
+                        SmartFoxServer.getInstance().getTaskScheduler().schedule(fastAltarLock,400,TimeUnit.MILLISECONDS);
                     } else {
                         captureAltar(i,team,altarId);
-                        Console.debugLog("slow capture");
                     }
                 }else if(Math.abs(altarStatus[i])<=5 && altarStatus[i]!=0){
                     int stage = Math.abs(altarStatus[i]);
@@ -666,21 +684,31 @@ public class RoomHandler implements Runnable{
         scoreObject.putInt("blue",newBlueScore);
         scoreObject.putInt("purple",newPurpleScore);
         ExtensionCommands.updateScores(this.parentExt,this.room,newPurpleScore,newBlueScore);
-        playLeadSound = System.currentTimeMillis() - lastPointLeadTime >= 10000;
-        Console.debugLog(playLeadSound);
-        if(playLeadSound){
-            if(newBlueScore > newPurpleScore && blueScore <= purpleScore){
-                for(UserActor player : this.players){
-                    if(player.getTeam() == 1) ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/gained_point_lead",new Point2D.Float(0f,0f));
-                    else ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/lost_point_lead",new Point2D.Float(0f,0f));
-                }
-            }else if(newPurpleScore > newBlueScore && blueScore >= purpleScore){
-                for(UserActor player : this.players){
-                    if(player.getTeam() == 0) ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/gained_point_lead",new Point2D.Float(0f,0f));
-                    else ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/lost_point_lead",new Point2D.Float(0f,0f));
-                }
+        if(newBlueScore > newPurpleScore && blueScore <= purpleScore){
+            for(UserActor player : this.players){
+                Runnable playLeadSound = () -> {
+                    if(player.getTeam() == 1){
+                        ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/gained_point_lead",new Point2D.Float(0f,0f));
+                    } else {
+                        ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/lost_point_lead",new Point2D.Float(0f,0f));
+                    }
+                    lastPointLeadTime = System.currentTimeMillis();
+                };
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(playLeadSound,getLeadRemainingTime(),TimeUnit.MILLISECONDS);
             }
-            lastPointLeadTime = System.currentTimeMillis();
+        }else if(newPurpleScore > newBlueScore && blueScore >= purpleScore){
+            for(UserActor player : this.players){
+                Runnable playLeadSound2 = () -> {
+                    if(player.getTeam() == 0){
+                        ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/gained_point_lead",new Point2D.Float(0f,0f));
+                    }
+                    else {
+                        ExtensionCommands.playSound(parentExt,player.getUser(),"global","announcer/lost_point_lead",new Point2D.Float(0f,0f));
+                    }
+                    lastPointLeadTime = System.currentTimeMillis();
+                };
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(playLeadSound2,getLeadRemainingTime(),TimeUnit.MILLISECONDS);
+            }
         }
         if(earner != null){
             earner.addGameStat("score",points);
@@ -722,6 +750,14 @@ public class RoomHandler implements Runnable{
                 cooldowns.put(key,time);
             }
         }
+    }
+
+    private int getLeadRemainingTime() {
+        int elapsedTime = (int) (System.currentTimeMillis() - lastPointLeadTime);
+        if (elapsedTime < 5000) {
+            return 5000 - elapsedTime;
+        }
+        return 0;
     }
 
     public ArrayList<UserActor> getPlayers(){
@@ -770,6 +806,7 @@ public class RoomHandler implements Runnable{
     public List<Actor> getActors(){
         List<Actor> actors = new ArrayList<>();
         actors.addAll(towers);
+        actors.addAll(baseTowers);
         actors.addAll(minions);
         Collections.addAll(actors, bases);
         actors.addAll(players);
@@ -931,9 +968,41 @@ public class RoomHandler implements Runnable{
         }
     }
 
-    public UserActor getEnemyCharacter(String avatar, int team){
+    public UserActor getEnemyPB(int team){
+        String[] avatars = {"princessbubblegum", "princessbubblegum_skin_hoth", "princessbubblegum_skin_prince", "princessbubblegum_skin_warrior", "princessbubblegum_skin_young"};
         for(UserActor ua : this.players){
-            if(ua.getTeam() != team && ua.getAvatar().equalsIgnoreCase(avatar)) return ua;
+            if(ua.getTeam() != team){
+                String playerAvatar = ua.getAvatar();
+                for(String avatar : avatars){
+                    if(playerAvatar.equals(avatar)) return ua;
+                }
+            }
+        }
+        return null;
+    }
+
+    public UserActor getEnemyLich(int team){
+        String[] avatars = {"lich", "lich_skin_skeleton"};
+        for(UserActor ua : this.players){
+            if(ua.getTeam() != team){
+                String playerAvatar = ua.getAvatar();
+                for(String avatar : avatars){
+                    if(playerAvatar.equals(avatar)) return ua;
+                }
+            }
+        }
+        return null;
+    }
+
+    public UserActor getEnemyNEPTR(int team){
+        String[] avatars = {"neptr", "neptr_skin_racing"};
+        for(UserActor ua : this.players){
+            if(ua.getTeam() != team){
+                String playerAvatar = ua.getAvatar();
+                for(String avatar : avatars){
+                    if(playerAvatar.equals(avatar)) return ua;
+                }
+            }
         }
         return null;
     }

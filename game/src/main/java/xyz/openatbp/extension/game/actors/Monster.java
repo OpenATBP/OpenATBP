@@ -197,8 +197,9 @@ public class Monster extends Actor {
                 if(a.getActorType() == ActorType.COMPANION){
                     int team = 0;
                     if(a.getTeam() == 0) team = 1;
-                    if(a.getId().contains("skully")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyCharacter("lich",team);
-                    else if(a.getId().contains("turret")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyCharacter("princessbubblegum",team);
+                    if(a.getId().contains("skully")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyLich(team);
+                    else if(a.getId().contains("turret")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyPB(team);
+                    else if(a.getId().contains("mine")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyNEPTR(team);
                 }else ua = (UserActor) a;
                 if(ua != null){
                     ua.addGameStat("jungleMobs",1);
@@ -221,6 +222,11 @@ public class Monster extends Actor {
         this.handleDamageQueue();
         this.handleActiveEffects();
         if(this.dead) return;
+        if(this.target != null && this.target.getState(ActorState.INVISIBLE)){
+            this.state = AggroState.PASSIVE; //
+            this.moveWithCollision(this.startingLocation);
+            this.target = null;
+        }
         if(msRan % 1000*60 == 0){ //Every second it checks average player level and scales accordingly
             int averagePLevel = parentExt.getRoomHandler(this.room.getId()).getAveragePlayerLevel();
             if(averagePLevel != level){
