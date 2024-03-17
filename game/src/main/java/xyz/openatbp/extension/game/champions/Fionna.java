@@ -11,6 +11,7 @@ import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
+
 import java.awt.geom.Point2D;
 import java.util.concurrent.TimeUnit;
 
@@ -66,20 +67,18 @@ public class Fionna extends UserActor {
                 }
                 if(dashesRemaining > 0){
                     this.dashTime = System.currentTimeMillis();
-                    Point2D origLocation = this.location;
-                    Point2D dashPoint = this.dash(dest,false,15d);
-                    double time = origLocation.distance(dashPoint)/15d;
-                    int qTime = (int)(time*1000);
+                    Point2D dashPoint = this.dash(dest,false,DASH_SPEED);
+                    double time = dashPoint.distance(this.location)/DASH_SPEED;
                     this.dashesRemaining--;
                     if(this.dashesRemaining == 0){
                         this.dashTime = -1;
                         this.canCast[0] = false;
-                        double newCooldown = getReducedCooldown(cooldown);
+                        double newCooldown = 0d+cooldown;
                         if(!this.hitWithDash) newCooldown*=0.7d;
                         ExtensionCommands.actorAbilityResponse(parentExt,player,"q",true,(int)newCooldown,gCooldown);
-                        ExtensionCommands.actorAnimate(parentExt,room,id,"spell1c",qTime,false);
+                        ExtensionCommands.actorAnimate(parentExt,room,id,"spell1c",(int)(time*1000),false);
                     }else if(this.dashesRemaining == 1){
-                        ExtensionCommands.actorAnimate(parentExt,room,id,"spell1b",qTime,false);
+                        ExtensionCommands.actorAnimate(parentExt,room,id,"spell1b",(int)(time*1000),false);
                     }
                     if(this.dashesRemaining != 0){
                         ExtensionCommands.playSound(parentExt,room,this.id,"sfx_fionna_dash_small",this.location);
@@ -89,18 +88,18 @@ public class Fionna extends UserActor {
                     }
                     if(this.dashesRemaining != 2) ExtensionCommands.removeStatusIcon(parentExt,player,this.id+"_dash"+(this.dashesRemaining+1));
                     ExtensionCommands.playSound(parentExt,room,this.id,"sfx_fionna_dash_wind",this.location);
-                    ExtensionCommands.createActorFX(parentExt,room,this.id,"fionna_trail",qTime,this.id+"_dashTrail"+dashesRemaining,true,"",true,false,this.team);
+                    ExtensionCommands.createActorFX(parentExt,room,this.id,"fionna_trail",(int)(time*1000),this.id+"_dashTrail"+dashesRemaining,true,"",true,false,this.team);
                     int gruntNum = 3-this.dashesRemaining;
                     ExtensionCommands.playSound(parentExt,room,this.id,"fionna_grunt"+gruntNum,this.location);
 
-                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new FionnaAbilityRunnable(ability,spellData,cooldown,gCooldown,dashPoint),qTime, TimeUnit.MILLISECONDS);
+                    SmartFoxServer.getInstance().getTaskScheduler().schedule(new FionnaAbilityRunnable(ability,spellData,cooldown,gCooldown,dashPoint),(int)(time*1000), TimeUnit.MILLISECONDS);
                 }
                 break;
             case 2:
                 if(this.swordType == SwordType.FEARLESS) this.swordType = SwordType.FIERCE;
                 else this.swordType = SwordType.FEARLESS;
                 this.handleSwordAnimation();
-                ExtensionCommands.actorAbilityResponse(parentExt,player,"w",true,getReducedCooldown(cooldown),gCooldown);
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"w",true,cooldown,gCooldown);
                 this.canCast[1] = false;
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new FionnaAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),250,TimeUnit.MILLISECONDS);
                 break;
@@ -193,7 +192,7 @@ public class Fionna extends UserActor {
                 explosionFx = "fionna_dash_explode";
                 canCast[0] = true;
             }
-            ExtensionCommands.createWorldFX(parentExt,room,id,explosionFx,id+"_explosion"+dashInt,1500,(float)dest.getX(),(float)dest.getY(),false,team,0f);
+            ExtensionCommands.createWorldFX(parentExt,room,id,explosionFx,id+"_explosion"+dashInt,500,(float)dest.getX(),(float)dest.getY(),false,team,0f);
             for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),dest,range)){
                 if(a.getTeam() != team && a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER){
                     if(!hitWithDash) hitWithDash = true;

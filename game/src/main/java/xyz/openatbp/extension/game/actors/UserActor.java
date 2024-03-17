@@ -12,6 +12,7 @@ import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.champions.Fionna;
+
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
@@ -41,7 +42,6 @@ public class UserActor extends Actor {
     protected boolean[] canCast = {true,true,true};
     protected Map<String, ScheduledFuture<?>> iconHandlers = new HashMap<>();
     protected int idleTime = 0;
-    protected boolean changeTowerAggro = false;
     protected static final double DASH_SPEED = 20d;
     private static final boolean MOVEMENT_DEBUG = false;
     private static final boolean INVINCIBLE_DEBUG = false;
@@ -171,14 +171,10 @@ public class UserActor extends Actor {
         try{
             if(INVINCIBLE_DEBUG) return false;
             if(this.dead) return true;
-            if(a.getActorType() == ActorType.PLAYER) checkTowerAggro((UserActor) a);
-            if(a.getActorType() == ActorType.COMPANION){
-                checkTowerAggroCompanion(a);
-            }
             if(a.getActorType() == ActorType.TOWER){
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_turret_shot_hits_you",this.location);
             }
-            AttackType type = this.getAttackType(attackData);
+            Actor.AttackType type = this.getAttackType(attackData);
             if(this.states.get(ActorState.BRUSH)){
                 Runnable runnable = () -> UserActor.this.setState(ActorState.REVEALED,false);
                 this.setState(ActorState.REVEALED,true);
@@ -275,74 +271,6 @@ public class UserActor extends Actor {
                 delayedAttack.run();
             }
         }
-    }
-
-    public void checkTowerAggro(UserActor ua){
-        if(isInTowerRadius(ua,false)) ua.changeTowerAggro = true;
-    }
-
-    public void checkTowerAggroCompanion(Actor a){
-        if(isInTowerRadius(a,false)) a.towerAggroCompanion = true;
-    }
-
-    public boolean isInTowerRadius(Actor a, boolean ownTower){
-        HashMap<String, Point2D> towers;
-        List<Point2D> towerLocations = new ArrayList<>();
-        HashMap<String, Point2D> baseTowers = new HashMap<>();
-        String roomGroup = room.getGroupId();
-        if(room.getGroupId().equalsIgnoreCase("practice")){
-            if(ownTower){
-                if(a.getTeam() == 1){
-                    towers = MapData.getPTowerActorData(1);
-                    baseTowers = MapData.getBaseTowerData(1,roomGroup);
-                }
-                else{
-                    towers = MapData.getPTowerActorData(0);
-                    baseTowers = MapData.getBaseTowerData(0,roomGroup);
-                }
-            } else {
-                if(a.getTeam() == 1){
-                    towers = MapData.getPTowerActorData(0);
-                    baseTowers = MapData.getBaseTowerData(0,roomGroup);
-                }
-                else{
-                    towers = MapData.getPTowerActorData(1);
-                    baseTowers = MapData.getBaseTowerData(1,roomGroup);
-                }
-            }
-        } else {
-            if(ownTower){
-                if(a.getTeam() == 1){
-                    towers = MapData.getMainMapTowerData(1);
-                    baseTowers = MapData.getBaseTowerData(1,roomGroup);
-                }
-                else{
-                    towers = MapData.getMainMapTowerData(0);
-                    baseTowers = MapData.getBaseTowerData(0,roomGroup);
-                }
-            } else {
-                if(a.getTeam() == 1){
-                    towers = MapData.getMainMapTowerData(0);
-                    baseTowers = MapData.getBaseTowerData(0,roomGroup);
-                }
-                else{
-                    towers = MapData.getMainMapTowerData(1);
-                    baseTowers = MapData.getBaseTowerData(1,roomGroup);
-                }
-            }
-        }
-        for(String key : baseTowers.keySet()){
-            towerLocations.add(baseTowers.get(key));
-        }
-        for(String key : towers.keySet()){
-            towerLocations.add(towers.get(key));
-        }
-        for(Point2D location : towerLocations){
-            if(Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),location,6f).contains(a)){
-                return true;
-            }
-        }
-        return false;
     }
 
     public Point2D dash(Point2D dest, boolean noClip, double dashSpeed){
@@ -554,7 +482,6 @@ public class UserActor extends Actor {
             }
         }
         if(this.attackCooldown > 0) this.reduceAttackCooldown();
-        if(this.target != null && invisOrInBrush(target)) this.target = null;
         if(this.target != null && this.target.getHealth() > 0){
             if(this.withinRange(target) && this.canAttack()){
                 this.autoAttack(target);
@@ -629,19 +556,10 @@ public class UserActor extends Actor {
                 }
             }
         }
-        if(this.changeTowerAggro && !isInTowerRadius(this,false)) this.changeTowerAggro = false;
     }
 
     public void resetIdleTime(){
         this.idleTime = 0;
-    }
-
-    public boolean invisOrInBrush(Actor a){
-        ActorState[] states = {ActorState.INVISIBLE, ActorState.BRUSH};
-        for(ActorState state : states){
-            if(a.getState(state)) return true;
-        }
-        return false;
     }
 
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
@@ -733,37 +651,17 @@ public class UserActor extends Actor {
     public boolean isDash(String avatar, int ability){ //all chars except fp
         switch (avatar){
             case "billy":
-            case "billy_skin_young":
-            case "cinnamonbun":
-            case "cinnamonbun_skin_guy":
-            case "peppermintbutler":
-            case "peppermintbutler_skin_crowley":
-            case "peppermintbutler_skin_detective":
-            case "peppermintbutler_skin_sweater":
-            case "peppermintbutler_skin_zombie":
+            case "cinnamon_bun":
+            case "pepbut":
             case "finn":
-            case "finn_skin_davey":
-            case "finn_skin_guardian":
-            case "finn_skin_hotbod":
-            case "finn_skin_lute":
-            case "finn_skin_pj":
-            case "finn_skin_wizard":
                 if(ability == 2) return true;
                 break;
             case "fionna":
-            case "fionna_skin_ballgown":
-            case "fionna_skin_pj":
             case "gunter":
-            case "gunter_skin_evil":
-            case "gunter_skin_guntelina":
-            case "gunter_skin_jewel_thief":
             case "rattleballs":
-            case "rattleballs_skin_cloaked":
-            case "rattleballs_skin_spidotron":
                 if(ability == 1) return true;
                 break;
             case "magicman":
-            case "magicman_skin_mystery":
                 if(ability == 3) return true;
                 break;
         }
@@ -845,8 +743,6 @@ public class UserActor extends Actor {
     }
 
     private void processHitData(Actor a, JsonNode attackData, int damage){
-        if(a.getId().contains("turret")) a = this.parentExt.getRoomHandler(this.room.getId()).getEnemyPB(this.team);
-        if(a.getId().contains("skully")) a = this.parentExt.getRoomHandler(this.room.getId()).getEnemyLich(this.team);
         String precursor = "attack";
         if(attackData.has("spellName")) precursor = "spell";
         if(this.aggressors.containsKey(a)){
@@ -944,7 +840,6 @@ public class UserActor extends Actor {
     public void addNailStacks(int damage){
         this.nailDamage+=damage;
         if(this.nailDamage>25*level) this.nailDamage = 25*level;
-        this.updateStatMenu("attackDamage");
     }
     @Override
     public double getPlayerStat(String stat){
@@ -1013,42 +908,6 @@ public class UserActor extends Actor {
             e.printStackTrace();
             return attackData.get("damage").asInt();
         }
-    }
-
-    public void fireProjectile(Projectile projectile, String id, Point2D location, Point2D dest, float abilityRange){
-        double x = location.getX();
-        double y = location.getY();
-        double dx = dest.getX() - location.getX();
-        double dy = dest.getY() - location.getY();
-        double length = Math.sqrt(dx * dx + dy * dy);
-        double unitX = dx/length;
-        double unitY = dy/length;
-        double extendedX = x + abilityRange * unitX;
-        double extendedY = y + abilityRange * unitY;
-        Point2D lineEndPoint = new Point2D.Double(extendedX,extendedY);
-        //double distance = location.distance(lineEndPoint);
-        //Console.debugLog(distance);
-        double speed = parentExt.getActorStats(id).get("speed").asDouble();
-        ExtensionCommands.createProjectile(parentExt,this.room,this,id, location, lineEndPoint, (float)speed);
-        this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
-    }
-
-    public void fireMMProjectile(Projectile projectile, String id, String projectileId, Point2D location, Point2D dest, float abilityRange){
-        double x = location.getX();
-        double y = location.getY();
-        double dx = dest.getX() - location.getX();
-        double dy = dest.getY() - location.getY();
-        double length = Math.sqrt(dx * dx + dy * dy);
-        double unitX = dx/length;
-        double unitY = dy/length;
-        double extendedX = x + abilityRange * unitX;
-        double extendedY = y + abilityRange * unitY;
-        Point2D lineEndPoint = new Point2D.Double(extendedX,extendedY);
-        //double distance = location.distance(lineEndPoint);
-        //Console.debugLog(distance);
-        double speed = parentExt.getActorStats(projectileId).get("speed").asDouble();
-        ExtensionCommands.createProjectile(parentExt,this.room,this,id,projectileId,location,lineEndPoint,(float)speed);
-        this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
     }
 
     public void fireProjectile(Projectile projectile, String id, Point2D dest, float range){

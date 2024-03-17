@@ -7,15 +7,10 @@ import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
-import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.ActorState;
-import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.game.actors.Actor;
 
-import javax.print.attribute.standard.MediaSize;
 import java.awt.geom.Point2D;
-import java.lang.management.OperatingSystemMXBean;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 public class ExtensionCommands {

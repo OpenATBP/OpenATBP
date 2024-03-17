@@ -15,7 +15,9 @@ import com.smartfoxserver.v2.exceptions.SFSVariableException;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Point2D;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 public class GameManager {
 

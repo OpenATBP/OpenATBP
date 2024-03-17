@@ -15,7 +15,6 @@ import xyz.openatbp.extension.game.actors.Monster;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Point2D;
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 public class Keeoth extends Monster {
