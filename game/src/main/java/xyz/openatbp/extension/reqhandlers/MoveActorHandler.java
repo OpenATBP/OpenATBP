@@ -40,7 +40,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             float pz = params.getFloat("orig_z");
             float dx = params.getFloat("dest_x");
             float dz = params.getFloat("dest_z");
-            Console.debugLog("dx: " + dx + " dz: " + dz);
+            //Console.debugLog("dx: " + dx + " dz: " + dz);
             FloatArray path = new FloatArray();
             try{
                 Console.debugLog("Is practice: " + parentExt.getRoomHandler(room.getId()).isPracticeMap());
