@@ -22,8 +22,8 @@ public class PeppermintButler extends UserActor {
     private boolean ultActive = false;
     private boolean ultFxRemoved = false;
     private boolean removeFx = false;
-    boolean wActive = false;
-    boolean interruptW = false;
+    private boolean wActive = false;
+    private boolean interruptW = false;
     public PeppermintButler(User u, ATBPExtension parentExt) {
         super(u, parentExt);
     }
@@ -73,14 +73,14 @@ public class PeppermintButler extends UserActor {
             this.timeStopped = 0;
             if(this.stopPassive) this.stopPassive = false;
             if(this.getState(ActorState.STEALTH)){
-                ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"run",1,false);
+                ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"idle",1,false);
                 this.setState(ActorState.STEALTH, false);
                 this.setState(ActorState.INVISIBLE, false);
                 if(!this.getState(ActorState.BRUSH)) this.setState(ActorState.REVEALED, true);
                 this.updateStatMenu("healthRegen");
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_pepbut_invis_reveal",this.location);
                 ExtensionCommands.createActorFX(parentExt,room,id,"statusEffect_immunity",2000,id+"_Immunity",true,"displayBar",false,false,team);
-                this.addState(ActorState.IMMUNITY,0d,2000,this.id+"_pep_immune",false);
+                this.addState(ActorState.IMMUNITY,0d,2000,null,false);
             }
         }
         if(this.qActive && this.currentHealth <= 0){

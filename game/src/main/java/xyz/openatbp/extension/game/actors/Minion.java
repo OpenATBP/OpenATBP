@@ -399,7 +399,7 @@ public class Minion extends Actor{
         return returnVal;
     }
 
-    public boolean isRightState(Actor a){
+    public boolean isInvisOrInBrush(Actor a){
         ActorState[] states = {ActorState.INVISIBLE, ActorState.BRUSH};
         for(ActorState state : states){
             if(a.getState(state)) return false;
@@ -413,7 +413,7 @@ public class Minion extends Actor{
         double distance = 1000f;
         double distanceNonUser = 1000f;
         for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
-            if(a.getTeam() != this.team && isNotAMonster(a) && !a.getAvatar().equalsIgnoreCase("neptr_mine") && isRightState(a) && this.withinAggroRange(a.getLocation())){
+            if(a.getTeam() != this.team && isNotAMonster(a) && !a.getAvatar().equalsIgnoreCase("neptr_mine") && isInvisOrInBrush(a) && this.withinAggroRange(a.getLocation())){
                 if(a.getActorType() == ActorType.PLAYER && this.facingEntity(a.getLocation())){
                     UserActor ua = (UserActor) a;
                     if(ua.getState(ActorState.REVEALED) && !ua.getState(ActorState.BRUSH)){

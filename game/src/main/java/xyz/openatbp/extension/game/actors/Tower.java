@@ -186,8 +186,8 @@ public class Tower extends Actor {
                     }
                 }else{
                     if(this.target.getHealth() <= 0){
-                        if(isFocusingCompanion) isFocusingCompanion = false;
-                        if(isFocusingPlayer) isFocusingPlayer = false;
+                        if(this.target.getActorType() == ActorType.COMPANION && isFocusingCompanion) isFocusingCompanion = false;
+                        if(this.target.getActorType() == ActorType.PLAYER && isFocusingPlayer) isFocusingPlayer = false;
                         this.resetTarget(this.target);
                         return;
                     }
@@ -214,7 +214,6 @@ public class Tower extends Actor {
                             }
                         }
                     }
-
                     if(this.attackCooldown > 0) this.reduceAttackCooldown();
                     if(nearbyActors.isEmpty()){
                         if(this.target.getActorType() == ActorType.PLAYER){
@@ -269,6 +268,8 @@ public class Tower extends Actor {
 
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
+        if(this.target.getActorType() == ActorType.COMPANION && isFocusingCompanion) isFocusingCompanion = false;
+        if(this.target.getActorType() == ActorType.PLAYER && isFocusingPlayer) isFocusingPlayer = false;
         this.resetTarget(a);
     }
 

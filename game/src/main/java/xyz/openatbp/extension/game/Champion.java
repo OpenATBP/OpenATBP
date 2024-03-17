@@ -194,6 +194,20 @@ public class Champion {
         return new Line2D.Float(movementLine.getP1(),newPoint);
     }
 
+    public static Line2D getAbilityLine(Point2D location, Point2D dest, float abilityRange){
+        double x = location.getX();
+        double y = location.getY();
+        double dx = dest.getX() - location.getX();
+        double dy = dest.getY() - location.getY();
+        double length = Math.sqrt(dx * dx + dy * dy);
+        double unitX = dx/length;
+        double unitY = dy/length;
+        double extendedX = x + abilityRange * unitX;
+        double extendedY = y + abilityRange * unitY;
+        Point2D lineEndPoint = new Point2D.Double(extendedX,extendedY);
+        return new Line2D.Double(location,lineEndPoint);
+    }
+
     public static HashMap<ActorState, Boolean> getBlankStates(){
         HashMap<ActorState, Boolean> states = new HashMap<>(ActorState.values().length);
         for(ActorState s : ActorState.values()){
