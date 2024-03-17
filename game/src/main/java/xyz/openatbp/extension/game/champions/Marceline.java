@@ -108,7 +108,7 @@ public class Marceline extends UserActor {
             case 1: //Q
                 this.stopMoving(castDelay);
                 this.canCast[0] = false;
-                Line2D abilityLine = Champion.getAbilityLine(this.location,dest,7f);
+                Line2D maxRangeLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),7f);
                 String projectileId = "projectile_marceline_dot";
                 String projectileVoPrefix = (this.avatar.contains("marshall")) ? "marshall_lee_" : (this.avatar.contains("young")) ? "marceline_young_" : "marceline_";
                 if(this.getState(ActorState.TRANSFORMED)){
@@ -118,7 +118,7 @@ public class Marceline extends UserActor {
                     ExtensionCommands.playSound(parentExt,room,this.id,"vo/vo_"+projectileVoPrefix+"projectile_human", this.location);
                 }
                 ExtensionCommands.playSound(this.parentExt,this.room,"","marceline_throw_projectile",this.location);
-                this.fireProjectile(new MarcelineProjectile(this.parentExt,this,abilityLine,8f,0.5f,this.id+projectileId,this.getState(ActorState.TRANSFORMED)),projectileId,this.location,dest,7f);
+                this.fireProjectile(new MarcelineProjectile(this.parentExt,this,maxRangeLine,8f,0.5f,this.id+projectileId,this.getState(ActorState.TRANSFORMED)),projectileId, dest, 7f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new MarcelineAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 break;

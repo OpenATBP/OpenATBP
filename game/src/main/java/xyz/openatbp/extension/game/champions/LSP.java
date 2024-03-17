@@ -77,6 +77,7 @@ public class LSP extends UserActor {
                 this.canCast[1] = false;
                 this.wActive = true;
                 this.wTime = System.currentTimeMillis();
+                Console.debugLog(castDelay);
                 String lumpsVoPrefix = (this.avatar.contains("gummybuns")) ? "lsp_gummybuns_" : (this.avatar.contains("lsprince")) ? "lsprince_" : "lsp_";
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+lumpsVoPrefix+"lumps_aoe",this.location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
@@ -111,8 +112,8 @@ public class LSP extends UserActor {
             lumps = 0;
             changeHealth((int)healthHealed);
             ExtensionCommands.createActorFX(parentExt,room,id,"lsp_drama_beam",1100,id+"q",false,"",true,false,team);
-            Line2D abilityLine = Champion.getAbilityLine(location,dest,7f);
-            for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),abilityLine,1.5d)){
+            Line2D maxLine = Champion.getMaxRangeLine(new Line2D.Float(LSP.this.location,dest),7f);
+            for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),maxLine,1.5d)){
                 if(isNonStructure(a)){
                     a.handleFear(LSP.this,3000);
                     a.addToDamageQueue(LSP.this,getSpellDamage(spellData),spellData);
@@ -133,10 +134,10 @@ public class LSP extends UserActor {
             canCast[2] = true;
             isCastingult = false;
             if(!interruptE){
-                Line2D projectileLine = Champion.getAbilityLine(location,dest,100f);
+                Line2D projectileLine = Champion.getMaxRangeLine(new Line2D.Float(location,dest),100f);
                 ExtensionCommands.actorAnimate(parentExt,room,id,"spell3b",500,false);
                 String ultProjectile = (avatar.contains("prince")) ? "projectile_lsprince_ult" : "projectile_lsp_ult";
-                fireProjectile(new LSPUltProjectile(parentExt,LSP.this,projectileLine,8f,2f,id+ultProjectile),ultProjectile,location,dest,100f);
+                fireProjectile(new LSPUltProjectile(parentExt,LSP.this,projectileLine,8f,2f,id+ultProjectile),ultProjectile, projectileLine.getP2(), 100f);
                 ExtensionCommands.playSound(parentExt,room,"global","sfx_lsp_cellphone_throw",location);
             } else {
                 ExtensionCommands.playSound(parentExt,room,id,"sfx_skill_interrupted",location);
