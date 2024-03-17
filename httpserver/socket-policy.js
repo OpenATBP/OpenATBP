@@ -21,6 +21,10 @@ module.exports = class SocketPolicyServer {
       socket.on('error', (error) => {
         console.error('Socket error:', error);
       });
+
+      socket.on('timeout', () => {
+        socket.end();
+      });
     });
 
     this.server.listen(this.port, () => {
