@@ -7,6 +7,8 @@ const { request } = require('undici');
 const database = require('./db-operations.js');
 const getRequest = require('./get-requests.js');
 const postRequest = require('./post-requests.js');
+
+const ATBPLobbyServer = require('./atbp-lobby.js');
 const SocketPolicyServer = require('./socket-policy.js');
 
 const displayNames = require('./data/names.json');
@@ -15,14 +17,14 @@ const shopData = require('./data/shop.json');
 let config;
 try {
   config = require('./config.js');
-} catch(e) {
-  if (e instanceof Error && e.code === "MODULE_NOT_FOUND") {
+} catch(err) {
+  if (err instanceof Error && err.code === "MODULE_NOT_FOUND") {
     console.error("FATAL: Could not find config.js. If this is your first time running the server,");
     console.error("copy config.js.example to config.js. You can then edit it to add your MongoDB URI");
     console.error("as well as customize other options. Once finished, restart the server.");
   }
   else
-    throw e;
+    throw err;
   process.exit(1);
 }
 
@@ -32,17 +34,14 @@ const mongoClient = new MongoClient(config.httpserver.mongouri, { useNewUrlParse
 var onlinePlayers = [];
 
 var onlineChecker = setInterval(() => {
-  console.log("Checking online users!");
   for(var p of onlinePlayers){
     if(Date.now()-p.lastChecked > 10000){
       console.log(p.username + " offline!");
       onlinePlayers = onlinePlayers.filter((i) => {
         return i.username != p.username;
       });
-    //  console.log(onlinePlayers);
     }else{
       console.log(p.username + " online!");
-      //console.log(onlinePlayers);
     }
   }
 }, 11000);
@@ -233,7 +232,6 @@ mongoClient.connect(err => {
   });
 
   app.post('/service/presence/present', (req,res) => {
-    console.log(req.body);
     var test = 0;
     var options = JSON.parse(req.body.options);
     for(var p of onlinePlayers){
@@ -294,7 +292,13 @@ mongoClient.connect(err => {
   });
 
   app.listen(config.httpserver.port, () => {
-    console.info(`App running on port ${config.httpserver.port}!`);
+    console.info(`Express server running on port ${config.httpserver.port}!`);
+    if (config.lobbyserver.enable) {
+      const lobbyServer = new ATBPLobbyServer(config.lobbyserver.port);
+      lobbyServer.start(() => {
+        console.info(`Lobby server running on port ${config.lobbyserver.port}!`);
+      });
+    }
     if (config.sockpol.enable) {
       const policyContent = fs.readFileSync(config.sockpol.file, 'utf8');
       const sockpol = new SocketPolicyServer(config.sockpol.port, policyContent);
