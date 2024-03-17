@@ -111,8 +111,8 @@ public class Hunson extends UserActor {
                     }
                 }
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_hunson_scream2",this.location);
-                Line2D spellLine = Champion.getAbilityLine(this.location,dest,8f);
-                this.fireProjectile(new HudsonProjectile(this.parentExt,this,spellLine,8f,0.5f,id+"projectile_hunson_pull"),"projectile_hunson_pull",this.location,dest,8f);
+                Line2D spellLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),8f);
+                this.fireProjectile(new HudsonProjectile(this.parentExt,this,spellLine,8f,0.5f,id+"projectile_hunson_pull"),"projectile_hunson_pull", spellLine.getP2(), 8f);
                 break;
             case 2:
                 this.canCast[1] = false;
