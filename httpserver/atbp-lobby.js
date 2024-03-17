@@ -28,6 +28,37 @@ function sendAll (sockets, response){
   }
 }
 
+function safeSendAll(sockets,command,response){
+  return new Promise(function(resolve, reject) {
+    if(sockets.length == 0) resolve(true);
+    else {
+      sendCommand(sockets[0],command,response).then(() => {
+        sockets.shift();
+        resolve(safeSendAll(sockets,command,response));
+      }).catch(console.error);
+    }
+  });
+}
+
+function sendCommand (socket, command, response){
+    console.log(`Sending ${command} to ${socket.player.name}`);
+    return new Promise(function(resolve, reject) {
+      if(command == undefined && response == undefined) reject();
+      var package = {
+        'cmd': command,
+        'payload': response
+      };
+      package = JSON.stringify(package);
+      let lengthBytes = Buffer.alloc(2);
+      lengthBytes.writeInt16BE(Buffer.byteLength(package, 'utf8'));
+      socket.write(lengthBytes);
+      socket.write(package, () => {
+        console.log("Finished sending package to ", socket.player.name);
+        resolve();
+      });
+    });
+}
+
 // TODO: move out to separate file
 function handleRequest (jsonString, socket) {
   let jsonObject = tryParseJSONObject(jsonString);
@@ -74,7 +105,7 @@ function handleRequest (jsonString, socket) {
             socket.player.queueNum = q.queueNum;
             if(q.players.length < q.max){
             var size = q.players.length;
-            if(size>4) size = 4;
+            if(size>3) size = 3;
               res = {
                 'cmd': 'queue_update',
                 'payload': {
@@ -83,6 +114,61 @@ function handleRequest (jsonString, socket) {
               };
               sendAll(users.filter(user => (q.players.includes(user.player))), res);
             }else{
+              safeSendAll(users.filter(user => q.players.includes(user.player)),'team_full',{'full':true}).then(()=> {
+                  var purpleTeam = [];
+                  var blueTeam = [];
+
+                  for(var i = 0; i < q.players.length; i++){
+                    var playerObj = {
+                      'name': q.players[i].name,
+                      'player': q.players[i].player,
+                      'teg_id': `${q.players[i].teg_id}`,
+                      'avatar': 'unassigned',
+                      'is_ready': false
+                    };
+                    console.log(playerObj);
+                    if(i % 2 == 0){
+                      purpleTeam.push(playerObj);
+                      q.players[i].team = 0;
+                    }else{
+                      blueTeam.push(playerObj);
+                      q.players[i].team = 1;
+                    }
+                  }
+                  q.purple = purpleTeam;
+                  q.blue = blueTeam;
+
+                  safeSendAll(users.filter(user => q.players.includes(user.player) && user.player.team == 0), 'game_ready',{
+                    'countdown': 60,
+                    'ip': config.lobbyserver.gameIp,
+                    'port': config.lobbyserver.gamePort,
+                    'policy_port': config.sockpol.port,
+                    'room_id': `GAME${q.queueNum}_${q.type}`,
+                    'password': '',
+                    'team': 'PURPLE'
+                  }).then(() => {
+                    safeSendAll(users.filter(user => user.player.team == 0 && user.player.queueNum == q.queueNum),'team_update', {
+                      'players': purpleTeam,
+                      'team': `PURPLE`
+                    });
+                  }).catch(console.error);
+
+                  safeSendAll(users.filter(user => q.players.includes(user.player) && user.player.team == 1), 'game_ready',{
+                    'countdown': 60,
+                    'ip': config.lobbyserver.gameIp,
+                    'port': config.lobbyserver.gamePort,
+                    'policy_port': config.sockpol.port,
+                    'room_id': `GAME${q.queueNum}_${q.type}`,
+                    'password': '',
+                    'team': 'BLUE'
+                  }).then(() => {
+                    safeSendAll(users.filter(user => user.player.team == 1 && user.player.queueNum == q.queueNum),'team_update', {
+                      'players': blueTeam,
+                      'team': `BLUE`
+                    });
+                  }).catch(console.error);
+              }).catch(console.error);
+              /*
               res = {
                 'cmd': 'match_found',
                 'payload': {
@@ -93,44 +179,8 @@ function handleRequest (jsonString, socket) {
                 p.inGame = true;
               }
               sendAll(users.filter(user => (q.players.includes(user.player))), res);
+              */
 
-              var purpleTeam = [];
-              var blueTeam = [];
-
-              for(var i = 0; i < q.players.length; i++){
-                var playerObj = {
-                  'name': q.players[i].name,
-                  'player': q.players[i].player,
-                  'teg_id': `${q.players[i].teg_id}`,
-                  'avatar': 'unassigned',
-                  'is_ready': false
-                };
-                console.log(playerObj);
-                if(i % 2 == 0){
-                  purpleTeam.push(playerObj);
-                  q.players[i].team = 0;
-                }else{
-                  blueTeam.push(playerObj);
-                  q.players[i].team = 1;
-                }
-              }
-              q.purple = purpleTeam;
-              q.blue = blueTeam;
-
-              sendAll(users.filter(user => user.player.team == 0 && user.player.queueNum == q.queueNum), {
-                'cmd': 'team_update',
-                'payload': {
-                  'players': purpleTeam,
-                  'team': `PURPLE${q.queueNum}`
-                }
-              });
-              sendAll(users.filter(user => user.player.team == 1 && user.player.queueNum == q.queueNum), {
-                'cmd': 'team_update',
-                'payload': {
-                  'players': blueTeam,
-                  'team': `BLUE${q.queueNum}`
-                }
-              });
             }
             break;
           }else tries++;
@@ -167,7 +217,7 @@ function handleRequest (jsonString, socket) {
               socket.player.inGame = false;
             }else{
               var size = q.players.length;
-              if(size > 4) size = 4;
+              if(size > 3) size = 3;
               res = {
                 'cmd': 'queue_update',
                 'payload': {
@@ -190,9 +240,9 @@ function handleRequest (jsonString, socket) {
         break;
 
       case 'set_avatar':
-        var shouldSend = true;
         for(var q of queues){
           if(q.queueNum == socket.player.queueNum){
+            if(q.ready == q.max) break;
             if(socket.player.team == 0){
               for(var pUser of q.purple){
                 if(pUser.name == socket.player.name){
@@ -201,15 +251,13 @@ function handleRequest (jsonString, socket) {
                   break;
                 }
               }
-              if(shouldSend){
                 sendAll(users.filter(user => user.player.team == 0 && user.player.queueNum == q.queueNum), {
                     'cmd': 'team_update',
                     'payload': {
                     'players': q.purple,
-                    'team': `PURPLE${q.queueNum}`
+                    'team': `PURPLE`
                     }
                 });
-              }
             }else{
               for(var pUser of q.blue){
                 if(pUser.name == socket.player.name){
@@ -218,15 +266,13 @@ function handleRequest (jsonString, socket) {
                   break;
                 }
               }
-              if(shouldSend){
-                sendAll(users.filter(user => user.player.team == 1 && user.player.queueNum == q.queueNum), {
-                    'cmd': 'team_update',
-                    'payload': {
-                    'players': q.blue,
-                    'team': `BLUE${q.queueNum}`
-                    }
-                });
-              }
+              sendAll(users.filter(user => user.player.team == 1 && user.player.queueNum == q.queueNum), {
+                  'cmd': 'team_update',
+                  'payload': {
+                  'players': q.blue,
+                  'team': `BLUE`
+                  }
+              });
             }
             break;
           }
@@ -236,63 +282,41 @@ function handleRequest (jsonString, socket) {
       case 'set_ready':
       for(var q of queues){
         if(q.queueNum == socket.player.queueNum){
-          if(socket.player.team == 0){
+            var blueTrigger = false;
+            var purpleTrigger = false;
             for(var pUser of q.purple){
               if(pUser.name == socket.player.name){
                 pUser.is_ready = true;
+                purpleTrigger = true;
                 q.ready++;
                 break;
               }
             }
-            sendAll(users.filter(user => user.player.team == 0 && user.player.queueNum == q.queueNum), {
-              'cmd': 'team_update',
-              'payload': {
-                'players': q.purple,
-                'team': `PURPLE${q.queueNum}`
-              }
-            });
-          }else{
             for(var pUser of q.blue){
               if(pUser.name == socket.player.name){
                 pUser.is_ready = true;
+                blueTrigger = true;
                 q.ready++;
                 break;
               }
             }
-            sendAll(users.filter(user => user.player.team == 1 && user.player.queueNum == q.queueNum), {
-              'cmd': 'team_update',
-              'payload': {
-                'players': q.blue,
-                'team': `BLUE${q.queueNum}`
-              }
-            });
-          }
-          if(q.ready == q.max){
-            sendAll(users.filter(user => user.player.queueNum == q.queueNum && user.player.team == 0), {
-              'cmd': 'game_ready',
-              'payload': {
-                'countdown': 5,
-                'ip': config.lobbyserver.gameIp,
-                'port': config.lobbyserver.gamePort,
-                'policy_port': config.sockpol.port,
-                'room_id': `GAME${q.queueNum}_${q.type}`,
-                'password': '',
-                'team': 'PURPLE'
-              }
-            });
-            sendAll(users.filter(user => user.player.queueNum == q.queueNum && user.player.team == 1), {
-              'cmd': 'game_ready',
-              'payload': {
-                'countdown': 5,
-                'ip': config.lobbyserver.gameIp,
-                'port': config.lobbyserver.gamePort,
-                'policy_port': config.sockpol.port,
-                'room_id': `GAME${q.queueNum}_${q.type}`,
-                'password': '',
-                'team': 'BLUE'
-              }
-            });
-          }
+            if(purpleTrigger){
+              sendAll(users.filter(user => user.player.team == 0 && user.player.queueNum == q.queueNum), {
+                'cmd': 'team_update',
+                'payload': {
+                  'players': q.purple,
+                  'team': `PURPLE`
+                }
+              });
+            }else if(blueTrigger){
+              sendAll(users.filter(user => user.player.team == 1 && user.player.queueNum == q.queueNum), {
+                'cmd': 'team_update',
+                'payload': {
+                  'players': q.blue,
+                  'team': `BLUE`
+                }
+              });
+            }
           break;
         }
       }
@@ -329,14 +353,14 @@ module.exports = class ATBPLobbyServer {
     this.server = net.createServer((socket) => {
       socket.setEncoding('utf8');
 
-      socket.on('readable', () => {
+      socket.on('readable', () => { //TODO: Add error handlers
         let jsonLength = socket.read(2);
         if (jsonLength == null || 0) {
           socket.destroy();
         } else {
           let packet = socket.read(jsonLength);
           let response = handleRequest(packet, socket);
-          if (response != "null") {
+          if (response != "null" && response != undefined) {
             // Get length of JSON object in bytes
             let lengthBytes = Buffer.alloc(2);
             lengthBytes.writeInt16BE(Buffer.byteLength(response, 'utf8'));
@@ -374,7 +398,7 @@ module.exports = class ATBPLobbyServer {
                     };
                   }else{
                     var size = q.players.length;
-                    if(size > 4) size = 4;
+                    if(size > 3) size = 3;
                     res = {
                       'cmd': 'queue_update',
                       'payload': {
