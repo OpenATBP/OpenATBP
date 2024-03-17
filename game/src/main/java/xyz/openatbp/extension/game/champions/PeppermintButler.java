@@ -4,16 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
-
-import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,8 +21,8 @@ public class PeppermintButler extends UserActor {
     private boolean ultActive = false;
     private boolean ultFxRemoved = false;
     private boolean removeFx = false;
-    boolean wActive = false;
-    boolean interruptW = false;
+    private boolean wActive = false;
+    private boolean interruptW = false;
     public PeppermintButler(User u, ATBPExtension parentExt) {
         super(u, parentExt);
     }
@@ -76,14 +72,14 @@ public class PeppermintButler extends UserActor {
             this.timeStopped = 0;
             if(this.stopPassive) this.stopPassive = false;
             if(this.getState(ActorState.STEALTH)){
-                ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"run",1,false);
+                ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"idle",1,false);
                 this.setState(ActorState.STEALTH, false);
                 this.setState(ActorState.INVISIBLE, false);
                 if(!this.getState(ActorState.BRUSH)) this.setState(ActorState.REVEALED, true);
                 this.updateStatMenu("healthRegen");
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_pepbut_invis_reveal",this.location);
                 ExtensionCommands.createActorFX(parentExt,room,id,"statusEffect_immunity",2000,id+"_Immunity",true,"displayBar",false,false,team);
-                this.addState(ActorState.IMMUNITY,0d,2000,this.id+"_pep_immune",false);
+                this.addState(ActorState.IMMUNITY,0d,2000,null,false);
             }
         }
         if(this.qActive && this.currentHealth <= 0){

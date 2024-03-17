@@ -3,7 +3,6 @@ package xyz.openatbp.extension.game;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.smartfoxserver.v2.SmartFoxServer;
-import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
@@ -11,7 +10,6 @@ import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.actors.Actor;
-import xyz.openatbp.extension.game.actors.Tower;
 import xyz.openatbp.extension.game.champions.*;
 import xyz.openatbp.extension.game.actors.UserActor;
 
@@ -159,6 +157,21 @@ public class Champion {
         if(Double.isNaN(deltaX)) return false;
         return (deltaX > 0 && pointDelta > 0) || (deltaX < 0 && pointDelta < 0);
     }
+
+    public static Line2D getAbilityLine(Point2D location, Point2D dest, float abilityRange){
+        double x = location.getX();
+        double y = location.getY();
+        double dx = dest.getX() - location.getX();
+        double dy = dest.getY() - location.getY();
+        double length = Math.sqrt(dx * dx + dy * dy);
+        double unitX = dx/length;
+        double unitY = dy/length;
+        double extendedX = x + abilityRange * unitX;
+        double extendedY = y + abilityRange * unitY;
+        Point2D lineEndPoint = new Point2D.Double(extendedX,extendedY);
+        return new Line2D.Double(location,lineEndPoint);
+    }
+
     public static Line2D getMaxRangeLine(Line2D projectileLine, float spellRange){
         float remainingRange = (float) (spellRange-projectileLine.getP1().distance(projectileLine.getP2()));
         if(projectileLine.getP1().distance(projectileLine.getP2()) >= spellRange-0.01) return projectileLine;

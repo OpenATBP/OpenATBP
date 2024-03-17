@@ -102,6 +102,7 @@ public class BMO extends UserActor {
                     this.canCast[2] = false;
                     this.wActive = true;
                     wStartTime = System.currentTimeMillis();
+                    ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,500,0);
                     Runnable secondUseDelay = () -> this.canCast[1] = true;
                     String pixelsAoeFx = (this.avatar.contains("noir")) ? "bmo_pixels_aoe_noire" : "bmo_pixels_aoe";
                     String remoteSpinFx = (this.avatar.contains("noir")) ? "bmo_remote_spin_noire" : "bmo_remote_spin";
@@ -225,10 +226,9 @@ public class BMO extends UserActor {
         @Override
         protected void spellE(){
             canCast[2] = true;
-            Line2D fireLine = new Line2D.Float(location,dest);
-            Line2D newLine = Champion.getMaxRangeLine(fireLine,16f);
+            Line2D abilityLine = Champion.getAbilityLine(location,dest,16f);
             String ultProjectile = (avatar.contains("noir")) ? "projectile_bmo_bee_noire" : "projectile_bmo_bee";
-            fireProjectile(new BMOUltProjectile(parentExt,BMO.this,newLine,5f,1.5f,id+ultProjectile),ultProjectile,newLine.getP2(),16f);
+            fireProjectile(new BMOUltProjectile(parentExt,BMO.this,abilityLine,5f,1.5f,id+ultProjectile),ultProjectile,location,dest,16f);
         }
 
         @Override

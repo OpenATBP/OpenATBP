@@ -124,8 +124,9 @@ public class Minion extends Actor{
         if(a.getActorType() == ActorType.PLAYER || a.getActorType() == ActorType.COMPANION){
             UserActor ua = null;
             if(a.getActorType() == ActorType.COMPANION){
-                if(a.getId().contains("skully")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyCharacter("lich",this.team);
-                else if(a.getId().contains("turret")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyCharacter("princessbubblegum",this.team);
+                if(a.getId().contains("skully")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyLich(this.team);
+                else if(a.getId().contains("turret")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyPB(this.team);
+                else if(a.getId().contains("mine")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyNEPTR(this.team);
             }else ua = (UserActor) a;
             if(ua != null ){
                 ua.addGameStat("minions",1);
@@ -164,11 +165,20 @@ public class Minion extends Actor{
         }
     }
 
+    public boolean isInvisible(Actor a){
+        ActorState[] states = {ActorState.INVISIBLE, ActorState.BRUSH};
+        for(ActorState state : states){
+            if(a.getState(state)) return true;
+        }
+        return false;
+    }
+
     @Override
     public void update(int msRan) {
         this.handleDamageQueue();
         this.handleActiveEffects();
         if(this.dead) return;
+        if(this.target != null && isInvisible(target)) this.target = null;
 
         if(msRan % 1000 == 0){
             /*
@@ -387,13 +397,21 @@ public class Minion extends Actor{
         return returnVal;
     }
 
+    public boolean isRightState(Actor a){
+        ActorState[] states = {ActorState.INVISIBLE, ActorState.BRUSH};
+        for(ActorState state : states){
+            if(a.getState(state)) return false;
+        }
+        return true;
+    }
+
     private Actor searchForTarget(){
         Actor closestActor = null;
         Actor closestNonUser = null;
         double distance = 1000f;
         double distanceNonUser = 1000f;
         for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
-            if(a.getTeam() != this.team && a.getActorType() != ActorType.MONSTER && !a.getAvatar().equalsIgnoreCase("neptr_mine") && this.withinAggroRange(a.getLocation())){
+            if(a.getTeam() != this.team && isNotAMonster(a) && !a.getAvatar().equalsIgnoreCase("neptr_mine") && isRightState(a) && this.withinAggroRange(a.getLocation())){
                 if(a.getActorType() == ActorType.PLAYER && this.facingEntity(a.getLocation())){
                     UserActor ua = (UserActor) a;
                     if(ua.getState(ActorState.REVEALED) && !ua.getState(ActorState.BRUSH)){

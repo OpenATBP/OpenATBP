@@ -190,9 +190,8 @@ public class IceKing extends UserActor {
         @Override
         protected void spellQ() {
             canCast[0] = true;
-            Line2D fireLine = new Line2D.Float(location,dest);
-            Line2D newLine = Champion.getMaxRangeLine(fireLine,7.5f);
-            fireProjectile(new IceKingProjectile(parentExt,IceKing.this,newLine,9f,0.5f,id+"projectile_iceking_deepfreeze"),"projectile_iceking_deepfreeze", newLine.getP2(), 7.5f);
+            Line2D abilityLine = Champion.getAbilityLine(location,dest,7.5f);
+            fireProjectile(new IceKingProjectile(parentExt,IceKing.this,abilityLine,9f,0.5f,id+"projectile_iceking_deepfreeze"),"projectile_iceking_deepfreeze",location,dest,7.5f);
         }
 
         @Override

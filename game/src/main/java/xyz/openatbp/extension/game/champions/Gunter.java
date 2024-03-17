@@ -61,9 +61,9 @@ public class Gunter extends UserActor{
                 ExtensionCommands.actorAbilityResponse(this.parentExt,player,"q",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
                 break;
             case 2:
-                Line2D maxRangeLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),7f);
+                Line2D abilityLine = Champion.getAbilityLine(this.location,dest,7f);
                 ExtensionCommands.playSound(this.parentExt,this.room,"","sfx_gunter_wing_it",this.location);
-                this.fireProjectile(new BottleProjectile(this.parentExt,this,maxRangeLine,11f,0.5f,this.id+"projectile_gunter_bottle"),"projectile_gunter_bottle",dest,8f);
+                this.fireProjectile(new BottleProjectile(this.parentExt,this,abilityLine,11f,0.5f,this.id+"projectile_gunter_bottle"),"projectile_gunter_bottle",this.location,dest,8f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,player,"w",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new GunterAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
                 break;

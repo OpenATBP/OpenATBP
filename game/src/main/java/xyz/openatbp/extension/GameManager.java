@@ -12,10 +12,7 @@ import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
 import com.smartfoxserver.v2.entities.variables.SFSUserVariable;
 import com.smartfoxserver.v2.entities.variables.UserVariable;
 import com.smartfoxserver.v2.exceptions.SFSVariableException;
-import xyz.openatbp.extension.game.Champion;
-import xyz.openatbp.extension.game.actors.Monster;
 import xyz.openatbp.extension.game.actors.UserActor;
-import xyz.openatbp.extension.game.champions.BMO;
 
 import java.awt.geom.Point2D;
 import java.util.*;
@@ -206,15 +203,20 @@ public class GameManager {
 
     private static void spawnTowers(Room room, ATBPExtension parentExt){
         String roomStr = room.getGroupId();
-
-        ExtensionCommands.createActor(parentExt,room,MapData.getTowerActorData(0,1,roomStr));
-        ExtensionCommands.createActor(parentExt,room,MapData.getTowerActorData(0,2,roomStr));
-        ExtensionCommands.createActor(parentExt,room,MapData.getTowerActorData(1,1,roomStr));
-        ExtensionCommands.createActor(parentExt,room,MapData.getTowerActorData(1,2,roomStr));
-
         if(!roomStr.equalsIgnoreCase("practice")){
-            ExtensionCommands.createActor(parentExt,room,MapData.getTowerActorData(0,3,roomStr));
-            ExtensionCommands.createActor(parentExt,room,MapData.getTowerActorData(1,3,roomStr));
+            ExtensionCommands.createActor(parentExt,room,MapData.getTowerActorData(0,1,roomStr));
+            ExtensionCommands.createActor(parentExt,room,MapData.getTowerActorData(0,2,roomStr));
+            ExtensionCommands.createActor(parentExt,room,MapData.getTowerActorData(1,1,roomStr));
+            ExtensionCommands.createActor(parentExt,room,MapData.getTowerActorData(1,2,roomStr));
+
+            ExtensionCommands.createActor(parentExt,room,MapData.getBaseTowerActorData(0, roomStr));
+            ExtensionCommands.createActor(parentExt,room,MapData.getBaseTowerActorData(1, roomStr));
+        } else {
+            ExtensionCommands.createActor(parentExt,room,MapData.getTowerActorData(0,1,roomStr));
+            ExtensionCommands.createActor(parentExt,room,MapData.getTowerActorData(1,4,roomStr));
+
+            ExtensionCommands.createActor(parentExt,room,MapData.getBaseTowerActorData(0,roomStr));
+            ExtensionCommands.createActor(parentExt,room,MapData.getBaseTowerActorData(1,roomStr));
         }
     }
 

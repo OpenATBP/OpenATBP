@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
@@ -192,8 +191,9 @@ public class Jake extends UserActor {
                 this.canCast[1] = false;
                 this.stopMoving(gCooldown);
                 String ballFx = (this.avatar.contains("cake")) ? "fx_cake_ball" : (this.avatar.contains("guardian")) ? "fx_jake_guardian_ball" : (this.avatar.contains("randy")) ? "fx_jake_butternubs_ball" : (this.avatar.contains("wizard")) ? "fx_jake_wizard_ball" : "fx_jake_ball";
+                String dustFx = (this.avatar.contains("cake")) ? "cake_dust_up" : (this.avatar.contains("guardian")) ? "jake_guardian_dust_up" : "jake_dust_up";
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,ballFx,1000,this.id+"_ball",true,"displayBar",true,false,this.team);
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"jake_dust_up",500,this.id+"_dust",false,"Bip001 Footsteps",false,false,this.team);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dustFx,1000,this.id+"_dust",false,"Bip001 Footsteps",false,false,this.team);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_ring_3",850,this.id+"_jake_ring_3",true,"",true,true,this.team);
                 for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,3f)){
                     if(this.isNonStructure(a)){
@@ -265,6 +265,7 @@ public class Jake extends UserActor {
             canCast[2] = true;
             ultActivated = false;
             ExtensionCommands.swapActorAsset(parentExt,room,id,getSkinAssetBundle());
+            ExtensionCommands.removeFx(parentExt,room,id+"_stomp");
         }
 
         @Override

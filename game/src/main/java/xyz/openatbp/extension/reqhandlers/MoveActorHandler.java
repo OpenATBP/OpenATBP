@@ -5,20 +5,14 @@ import com.dongbat.walkable.PathfinderException;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
-import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.*;
-import xyz.openatbp.extension.game.Champion;
-import xyz.openatbp.extension.game.Obstacle;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
-import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 
 public class MoveActorHandler extends BaseClientRequestHandler {
     @Override
@@ -46,7 +40,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             float pz = params.getFloat("orig_z");
             float dx = params.getFloat("dest_x");
             float dz = params.getFloat("dest_z");
-            Console.debugLog("dx: " + dx + " dz: " + dz);
+            //Console.debugLog("dx: " + dx + " dz: " + dz);
             FloatArray path = new FloatArray();
             try{
                 Console.debugLog("Is practice: " + parentExt.getRoomHandler(room.getId()).isPracticeMap());

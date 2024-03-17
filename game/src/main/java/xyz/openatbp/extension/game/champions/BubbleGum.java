@@ -1,8 +1,6 @@
 package xyz.openatbp.extension.game.champions;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
@@ -249,8 +247,6 @@ public class BubbleGum extends UserActor {
         }
     }
 
-
-
     private class Turret extends Actor {
         private long timeOfBirth;
         private Actor target;
@@ -277,7 +273,7 @@ public class BubbleGum extends UserActor {
             ExtensionCommands.createActor(parentExt,room,this.id,this.avatar,this.location,0f,this.team);
             ExtensionCommands.playSound(parentExt,room,this.id,"sfx_bubblegum_turret_spawn",this.location);
             ExtensionCommands.createWorldFX(parentExt,room,this.id,"fx_target_ring_3",this.id+"_ring", 60000, (float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
-            this.addState(ActorState.IMMUNITY,0d,1000*60*15,"tower_"+this.id+"_immunity",false);
+            this.addState(ActorState.IMMUNITY,0d,1000*60*15,null,false);
         }
 
         @Override
@@ -291,7 +287,7 @@ public class BubbleGum extends UserActor {
             float time = (float) (a.getLocation().distance(this.location) / 10f);
             ExtensionCommands.playSound(parentExt,room,this.id,"sfx_bubblegum_turret_shoot",this.location);
             ExtensionCommands.createProjectileFX(parentExt,room,"bubblegum_turret_projectile",this.id,a.getId(),"Bip01","targetNode",time);
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,BubbleGum.this,a,10+(int)this.getPlayerStat("attackDamage"),"turretAttack"),(int)time*1000,TimeUnit.MILLISECONDS);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,this,a,10+(int)this.getPlayerStat("attackDamage"),"turretAttack"),(int)time*1000,TimeUnit.MILLISECONDS);
             BubbleGum.this.handleLifeSteal();
             this.attackCooldown = this.getPlayerStat("attackSpeed");
         }

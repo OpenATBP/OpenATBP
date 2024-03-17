@@ -1,9 +1,7 @@
 package xyz.openatbp.extension.game.actors;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
-import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
@@ -17,7 +15,6 @@ import xyz.openatbp.extension.game.Champion;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public abstract class Actor {
     public enum AttackType{ PHYSICAL, SPELL}
@@ -46,7 +43,7 @@ public abstract class Actor {
     protected int pathIndex = 1;
     protected int xpWorth;
     protected String bundle;
-
+    protected boolean towerAggroCompanion = false;
 
     public double getPHealth(){
         return currentHealth/maxHealth;
@@ -122,6 +119,10 @@ public abstract class Actor {
         this.movementLine = new Line2D.Float(this.location,destination);
         this.timeTraveled = 0f;
         ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,destination, (float) this.getPlayerStat("speed"),true);
+    }
+
+    public boolean isNotAMonster(Actor a){
+        return a.getActorType() != ActorType.MONSTER;
     }
 
     public void moveWithCollision(Point2D dest){
@@ -463,6 +464,12 @@ public abstract class Actor {
             double damage = data.getDouble("damage");
             JsonNode attackData = (JsonNode) data.getClass("attackData");
             if(this.damaged(damager,(int)damage,attackData)){
+                if(damager.getId().contains("turret")){
+                    damager = this.parentExt.getRoomHandler(this.room.getId()).getEnemyPB(this.team);
+                }
+                else if(damager.getId().contains("skully")){
+                    damager = this.parentExt.getRoomHandler(this.room.getId()).getEnemyLich(this.team);
+                }
                 Console.debugLog(damager.getId() + " killed " + this.id);
                 damager.handleKill(this,attackData);
                 this.die(damager);

@@ -94,10 +94,9 @@ public class FlamePrincess extends UserActor {
         switch(ability){
             case 1: //Q
                 this.canCast[0] = false;
-                Line2D skillShotLine = new Line2D.Float(this.location,dest);
-                Line2D maxRangeLine = Champion.getMaxRangeLine(skillShotLine,8f);
+                Line2D abilityLine = Champion.getAbilityLine(location,dest,8f);
                 ExtensionCommands.playSound(parentExt,room,this.id,"sfx_flame_princess_cone_of_flame",this.location);
-                this.fireProjectile(new FlameProjectile(this.parentExt,this,maxRangeLine,8f,0.5f,this.id+"projectile_flame_cone"),"projectile_flame_cone",dest,8f);
+                fireProjectile(new FlameProjectile(this.parentExt,this,abilityLine,8f,0.5f,this.id+"projectile_flame_cone"),"projectile_flame_cone",location,dest,8f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
                 break;
@@ -110,7 +109,7 @@ public class FlamePrincess extends UserActor {
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(fxDelay,500,TimeUnit.MILLISECONDS);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new FlameAbilityRunnable(ability,spellData,cooldown,gCooldown,dest), castDelay, TimeUnit.MILLISECONDS);
                 break;
-            case 3: //E TODO: FP does not return to form when skin is used also she needs to be scaled up
+            case 3: //E
                 if(!ultStarted && ultUses == 3){
                     int duration = Champion.getSpellData(parentExt,getAvatar(),ability).get("spellDuration").asInt();
                     ultStarted = true;

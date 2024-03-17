@@ -10,7 +10,6 @@ import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
-
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.*;
@@ -25,6 +24,7 @@ public class Neptr extends UserActor {
     private long ultDamageStartTime = 0;
     private boolean soundPlayed = false;
     private long lastMoveSoundPlayed = 0;
+    private Point2D ultLocation;
     public Neptr(User u, ATBPExtension parentExt) {
         super(u, parentExt);
         this.mines = new ArrayList<>(3);
@@ -72,7 +72,7 @@ public class Neptr extends UserActor {
             this.lastMoveSoundPlayed = System.currentTimeMillis();
         }
         List<Actor> impactedActors = new ArrayList<>(this.ultImpactedActors);
-        if(impactedActors.size() > 1 && System.currentTimeMillis() - this.ultDamageStartTime < 3000){
+        if(!impactedActors.isEmpty() && System.currentTimeMillis() - this.ultDamageStartTime < 3000){
             JsonNode attackData = this.parentExt.getAttackData(this.avatar,"spell3");
             for(Actor a : impactedActors){
                 a.addToDamageQueue(this,this.getSpellDamage(attackData)/10d,attackData);
@@ -87,8 +87,8 @@ public class Neptr extends UserActor {
     }
 
     @Override
-    public void fireProjectile(Projectile projectile, String id, Point2D dest, float range) {
-        super.fireProjectile(projectile, id, dest, range);
+    public void fireProjectile(Projectile projectile, String id, Point2D location, Point2D dest, float abilityRange) {
+        super.fireProjectile(projectile, id, location, dest, abilityRange);
         ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_neptr_boommeringue",this.location);
         ExtensionCommands.createActorFX(this.parentExt,this.room, this.id+id, "neptr_pie_trail", (int) projectile.getEstimatedDuration()+1000,this.id+id+"_fx",true,"Bip001",true,true,this.team);
 
@@ -101,8 +101,8 @@ public class Neptr extends UserActor {
             case 1:
                 this.canCast[0] = false;
                 //ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_neptr_boommeringue",this.location);
-                Line2D maxRangeLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),8f);
-                this.fireProjectile(new NeptrProjectile(this.parentExt,this,maxRangeLine,8f,0.5f,this.id+"projectile_neptr_boom_meringue"),"projectile_neptr_boom_meringue",maxRangeLine.getP2(),8f);
+                Line2D abilityLine = Champion.getAbilityLine(this.location,dest,8f);
+                this.fireProjectile(new NeptrProjectile(this.parentExt,this,abilityLine,8f,0.5f,this.id+"projectile_neptr_boom_meringue"),"projectile_neptr_boom_meringue",this.location, dest,8f);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new NeptrAbilityHandler(ability,spellData,cooldown,gCooldown,dest),gCooldown, TimeUnit.MILLISECONDS);
                 break;
@@ -114,6 +114,7 @@ public class Neptr extends UserActor {
                 break;
             case 3:
                 this.canCast[2] = false;
+                this.ultLocation = dest;
                 ExtensionCommands.playSound(this.parentExt,this.room,"","sfx_neptr_ultimate",dest);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_neptr_locked_on",this.location);
                 float rotation = getRotation(dest);
@@ -176,7 +177,7 @@ public class Neptr extends UserActor {
             canCast[2] = true;
             ultDamageStartTime = System.currentTimeMillis();
             ultImpactedActors = new ArrayList<>();
-            for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),dest,3f)){
+            for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),ultLocation,3f)){
                 if(isNonStructure(a)){
                     a.knockback(Neptr.this.location);
                     a.addState(ActorState.SILENCED,0d,1000,null,false);
@@ -300,7 +301,7 @@ public class Neptr extends UserActor {
             this.iconName = "Mine #" + mineNum;
             ExtensionCommands.addStatusIcon(parentExt,player,iconName,"Mine placed!","icon_neptr_s2",30000f);
             ExtensionCommands.createActor(parentExt,room,this.id,this.avatar,this.location,0f,this.team);
-            ExtensionCommands.playSound(parentExt,this.room,this.id,"vo/vo_neptr_mine",this.location);
+            ExtensionCommands.playSound(parentExt,this.room,Neptr.this.id,"vo/vo_neptr_mine",Neptr.this.location);
             ExtensionCommands.playSound(parentExt,room,this.id,"sfx_neptr_mine_spawn",this.location);
             ExtensionCommands.createWorldFX(parentExt,room,this.id,"fx_target_ring_2",this.id+"_mine",30000,(float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
         }
