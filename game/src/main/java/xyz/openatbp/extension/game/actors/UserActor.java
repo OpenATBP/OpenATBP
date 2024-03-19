@@ -731,42 +731,30 @@ public class UserActor extends Actor {
         return this.canCast[ability-1];
     }
 
+    public String getDefaultCharacterName(String avatar){
+        String[] avatarComponents = avatar.split("_");
+        if(avatarComponents.length > 1){
+            return avatarComponents[0];
+        } else {
+            return avatar;
+        }
+    }
+
     public boolean isDash(String avatar, int ability) { //all chars except fp
-        switch (avatar) {
+        String defaultAvatar = getDefaultCharacterName(avatar);
+        switch (defaultAvatar) {
             case "billy":
-            case "cinnamon_bun":
-            case "pepbut":
-            case "billy_skin_young":
             case "cinnamonbun":
-            case "cinnamonbun_skin_guy":
             case "peppermintbutler":
-            case "peppermintbutler_skin_crowley":
-            case "peppermintbutler_skin_detective":
-            case "peppermintbutler_skin_sweater":
-            case "peppermintbutler_skin_zombie":
             case "finn":
-            case "finn_skin_davey":
-            case "finn_skin_guardian":
-            case "finn_skin_hotbod":
-            case "finn_skin_lute":
-            case "finn_skin_pj":
-            case "finn_skin_wizard":
                 if (ability == 2) return true;
                 break;
             case "fionna":
-            case "fionna_skin_ballgown":
-            case "fionna_skin_pj":
             case "gunter":
-            case "gunter_skin_evil":
-            case "gunter_skin_guntelina":
-            case "gunter_skin_jewel_thief":
             case "rattleballs":
-            case "rattleballs_skin_cloaked":
-            case "rattleballs_skin_spidotron":
                 if (ability == 1) return true;
                 break;
             case "magicman":
-            case "magicman_skin_mystery":
                 if (ability == 3) return true;
                 break;
         }
@@ -848,8 +836,8 @@ public class UserActor extends Actor {
     }
 
     private void processHitData(Actor a, JsonNode attackData, int damage){
-        if(a.getId().contains("turret")) a = this.parentExt.getRoomHandler(this.room.getId()).getEnemyPB(this.team);
-        if(a.getId().contains("skully")) a = this.parentExt.getRoomHandler(this.room.getId()).getEnemyLich(this.team);
+        if(a.getId().contains("turret")) a = this.parentExt.getRoomHandler(this.room.getId()).getEnemyChampion(this.team, "princessbubblegum");
+        if(a.getId().contains("skully")) a = this.parentExt.getRoomHandler(this.room.getId()).getEnemyChampion(this.team, "lich");
         String precursor = "attack";
         if(attackData.has("spellName")) precursor = "spell";
         if(this.aggressors.containsKey(a)){
@@ -1029,8 +1017,6 @@ public class UserActor extends Actor {
         double extendedX = x + abilityRange * unitX;
         double extendedY = y + abilityRange * unitY;
         Point2D lineEndPoint = new Point2D.Double(extendedX,extendedY);
-        //double distance = location.distance(lineEndPoint);
-        //Console.debugLog(distance);
         double speed = parentExt.getActorStats(id).get("speed").asDouble();
         ExtensionCommands.createProjectile(parentExt,this.room,this,id, location, lineEndPoint, (float)speed);
         this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
@@ -1047,8 +1033,6 @@ public class UserActor extends Actor {
         double extendedX = x + abilityRange * unitX;
         double extendedY = y + abilityRange * unitY;
         Point2D lineEndPoint = new Point2D.Double(extendedX,extendedY);
-        //double distance = location.distance(lineEndPoint);
-        //Console.debugLog(distance);
         double speed = parentExt.getActorStats(projectileId).get("speed").asDouble();
         ExtensionCommands.createProjectile(parentExt,this.room,this,id,projectileId,location,lineEndPoint,(float)speed);
         this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);

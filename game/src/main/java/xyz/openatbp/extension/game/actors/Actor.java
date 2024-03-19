@@ -465,10 +465,10 @@ public abstract class Actor {
             JsonNode attackData = (JsonNode) data.getClass("attackData");
             if(this.damaged(damager,(int)damage,attackData)){
                 if(damager.getId().contains("turret")){
-                    damager = this.parentExt.getRoomHandler(this.room.getId()).getEnemyPB(this.team);
+                    damager = this.parentExt.getRoomHandler(this.room.getId()).getEnemyChampion(team, "princessbubblegum");
                 }
                 else if(damager.getId().contains("skully")){
-                    damager = this.parentExt.getRoomHandler(this.room.getId()).getEnemyLich(this.team);
+                    damager = this.parentExt.getRoomHandler(this.room.getId()).getEnemyChampion(team, "lich");
                 }
                 Console.debugLog(damager.getId() + " killed " + this.id);
                 damager.handleKill(this,attackData);

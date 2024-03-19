@@ -968,40 +968,11 @@ public class RoomHandler implements Runnable{
         }
     }
 
-    public UserActor getEnemyPB(int team){
-        String[] avatars = {"princessbubblegum", "princessbubblegum_skin_hoth", "princessbubblegum_skin_prince", "princessbubblegum_skin_warrior", "princessbubblegum_skin_young"};
+    public UserActor getEnemyChampion(int team, String championName){
         for(UserActor ua : this.players){
             if(ua.getTeam() != team){
                 String playerAvatar = ua.getAvatar();
-                for(String avatar : avatars){
-                    if(playerAvatar.equals(avatar)) return ua;
-                }
-            }
-        }
-        return null;
-    }
-
-    public UserActor getEnemyLich(int team){
-        String[] avatars = {"lich", "lich_skin_skeleton"};
-        for(UserActor ua : this.players){
-            if(ua.getTeam() != team){
-                String playerAvatar = ua.getAvatar();
-                for(String avatar : avatars){
-                    if(playerAvatar.equals(avatar)) return ua;
-                }
-            }
-        }
-        return null;
-    }
-
-    public UserActor getEnemyNEPTR(int team){
-        String[] avatars = {"neptr", "neptr_skin_racing"};
-        for(UserActor ua : this.players){
-            if(ua.getTeam() != team){
-                String playerAvatar = ua.getAvatar();
-                for(String avatar : avatars){
-                    if(playerAvatar.equals(avatar)) return ua;
-                }
+                if(ua.getDefaultCharacterName(playerAvatar).equalsIgnoreCase(championName)) return ua;
             }
         }
         return null;

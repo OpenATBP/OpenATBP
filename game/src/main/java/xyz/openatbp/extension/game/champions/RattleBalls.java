@@ -38,6 +38,8 @@ public class RattleBalls extends UserActor {
         switch(ability){
             case 1:
                 this.canCast[0] = false;
+                this.canCast[1] = false;
+                this.canCast[2] = false;
                 Point2D ogLocation = this.location;
                 Point2D finalDashPoint = this.dash(dest,false,DASH_SPEED);
                 double time = ogLocation.distance(finalDashPoint)/DASH_SPEED;
@@ -263,7 +265,9 @@ public class RattleBalls extends UserActor {
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(flipDelay,qTime,TimeUnit.MILLISECONDS);
             }else{
                 abilityEnded();
-                canCast[0] = true;
+                canCast[0] = false;
+                canCast[1] = false;
+                canCast[2] = false;
             }
         }
 

@@ -142,12 +142,11 @@ public class Lich extends UserActor{
         if(this.ultStarted && System.currentTimeMillis() - this.ultTime >= 500){
             this.ultTime = System.currentTimeMillis();
             boolean damageDealt = false;
-            JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(),"spell3");
             for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(this.room.getId()),ultLocation,3f)){
                 if(a.getTeam() != this.team && a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER){
                     if(!damageDealt) damageDealt = true;
-                    double damage = getSpellDamage(spellData)/2d;
-                    a.addToDamageQueue(this,Math.round(damage),spellData);
+                    JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(),"spell3");
+                    a.addToDamageQueue(this,(double)getSpellDamage(spellData)/2,spellData);
                 }
             }
             if(damageDealt){
@@ -234,6 +233,7 @@ public class Lich extends UserActor{
 
         @Override
         public void die(Actor a) {
+            this.stopMoving();
             System.out.println(this.id + " has died! ");
             ExtensionCommands.knockOutActor(parentExt,room,this.id,a.getId(),40000);
             Lich.this.handleSkullyDeath();

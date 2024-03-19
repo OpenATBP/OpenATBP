@@ -109,16 +109,19 @@ public class LSP extends UserActor {
             ExtensionCommands.removeStatusIcon(parentExt,player,"p"+lumps);
             ExtensionCommands.addStatusIcon(parentExt,player,"p0","lsp_spell_4_short_description","icon_lsp_passive",0f);
             lumps = 0;
-            changeHealth((int)healthHealed);
             ExtensionCommands.createActorFX(parentExt,room,id,"lsp_drama_beam",1100,id+"q",false,"",true,false,team);
             Line2D abilityLine = Champion.getAbilityLine(location,dest,7f);
+            List<Actor> affectedActors = new ArrayList<>();
             for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),abilityLine,1.5d)){
                 if(isNonStructure(a)){
                     a.handleFear(LSP.this,3000);
                     a.addToDamageQueue(LSP.this,getSpellDamage(spellData),spellData);
+                    affectedActors.add(a);
                 }
             }
-
+            if(!affectedActors.isEmpty()){
+                changeHealth((int)healthHealed);
+            }
         }
 
         @Override

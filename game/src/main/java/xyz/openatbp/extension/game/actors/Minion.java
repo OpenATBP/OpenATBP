@@ -126,9 +126,9 @@ public class Minion extends Actor{
         if(a.getActorType() == ActorType.PLAYER || a.getActorType() == ActorType.COMPANION){
             UserActor ua = null;
             if(a.getActorType() == ActorType.COMPANION){
-                if(a.getId().contains("skully")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyLich(this.team);
-                else if(a.getId().contains("turret")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyPB(this.team);
-                else if(a.getId().contains("mine")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyNEPTR(this.team);
+                if(a.getId().contains("skully")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyChampion(this.team, "lich");
+                else if(a.getId().contains("turret")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyChampion(this.team, "princessbubblegum");
+                else if(a.getId().contains("mine")) ua = this.parentExt.getRoomHandler(this.room.getId()).getEnemyChampion(this.team, "neptr");
             }else ua = (UserActor) a;
             if(ua != null ){
                 ua.addGameStat("minions",1);
