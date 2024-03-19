@@ -81,11 +81,16 @@ public class ATBPExtension extends SFSExtension {
         this.addRequestHandler("req_admin_command", Stub.class);
         this.addRequestHandler("req_spam", Stub.class);
         Properties props = getConfigProperties();
-        if (!props.containsKey("mongoURI"))
+        String databaseURI = null;
+        if (props.containsKey("mongoURI"))
+            databaseURI = props.getProperty("mongoURI")
+        else if (System.getenv().containsKey("API_DATABASE_URL"))
+            databaseURI = System.getenv().get("API_DATABASE_URL")
+        if (databaseURI == null)
             throw new RuntimeException("Mongo URI not set. Please create config.properties in the extension folder and define it.");
 
         try {
-            mongoClient = MongoClients.create(props.getProperty("mongoURI"));
+            mongoClient = MongoClients.create(databaseURI);
             database = mongoClient.getDatabase("openatbp");
             playerDatabase = database.getCollection("players");
             loadDefinitions();

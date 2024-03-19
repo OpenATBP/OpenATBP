@@ -1,0 +1,7 @@
+*
+!build.docker.gradle
+!settings.docker.gradle
+!makefile
+!deploy
+!lib
+!src
