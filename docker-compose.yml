@@ -1,0 +1,196 @@
+name: openatbp
+
+networks:
+  external:
+    driver: host
+  internal:
+    driver: bridge
+
+services:
+  openatbp-api:
+    container_name: openatbp-api
+    image: openatbp-api:0.0.1
+    build:
+      context: api
+      dockerfile: Dockerfile
+      args: &env
+        ENV: ${ENV-development}
+        LOG_LEVEL: ${LOG_LEVEL-debug}
+        DOWNLOAD_ASSETS_URL: ${DOWNLOAD_ASSETS_URL-https://archive.org/download/atbp-20150519/atbp-20150519-full.zip}
+        DOWNLOAD_DEFINITIONS_URL: ${DOWNLOAD_DEFINITIONS_URL-https://archive.org/download/atbp-20150519/atbp-20150519-definitions.zip}
+        API_URL: ${API_URL-http://127.0.0.1}
+        API_PORT: ${API_PORT-8080}
+        API_DATABASE_TYPE: ${API_DATABASE_TYPE-mongodb}
+        API_DATABASE_URL: ${API_DATABASE_URL-mongodb://mongodb:27017}
+        API_DATABASE_SSL: ${API_DATABASE_SSL-false}
+        API_AUTH_TYPE: ${API_AUTH_TYPE-open}
+        API_AUTH_CLIENT_ID: ${API_AUTH_CLIENT_ID-}
+        API_AUTH_CLIENT_SECRET: ${API_AUTH_CLIENT_SECRET-}
+        API_AUTH_OAUTH_URL: ${API_AUTH_OAUTH_URL-https://discord.com/api/oauth2/authorize?client_id=&redirect_uri=}
+        API_AUTH_REDIRECT_URL: ${API_AUTH_REDIRECT_URL-http://127.0.0.1:8080/auth}
+        ASSETS_URL: ${ASSETS_URL-http://127.0.0.1}
+        ASSETS_PORT: ${ASSETS_PORT-8081}
+        ASSETS_STATIC_DIRECTORY: ${ASSETS_STATIC_DIRECTORY-./static}
+        ASSETS_STATIC_ROUTE: ${ASSETS_STATIC_ROUTE-/static}
+        ASSETS_CONFIG_DOCUMENT_ROUTE: ${ASSETS_CONFIG_DOCUMENT_ROUTE-/config.xml}
+        ASSETS_CONFIG_DOCUMENT_INDENT: ${ASSETS_CONFIG_DOCUMENT_INDENT-true}
+        ASSETS_CONFIG_DOCUMENT_SELFCLOSING: ${ASSETS_CONFIG_DOCUMENT_SELFCLOSING-false}
+        ASSETS_CONFIG_STREAMED_ASSET_URL: ${ASSETS_CONFIG_STREAMED_ASSET_URL-http://127.0.0.1:8081}
+        ASSETS_CONFIG_ZONE: ${ASSETS_CONFIG_ZONE-Champions}
+        ASSETS_CONFIG_DEBUG: ${ASSETS_CONFIG_DEBUG-True}
+        ASSETS_CONFIG_DEBUG_CONSOLE: ${ASSETS_CONFIG_DEBUG_CONSOLE-True}
+        ASSETS_CONFIG_LOBBY_IP: ${ASSETS_CONFIG_LOBBY_IP-127.0.0.1}
+        ASSETS_CONFIG_LOBBY_PORT: ${ASSETS_CONFIG_LOBBY_PORT-6778}
+        ASSETS_CONFIG_LOBBY_POLICY_PORT: ${ASSETS_CONFIG_LOBBY_POLICY_PORT-843}
+        ASSETS_CONFIG_LANGUAGE: ${ASSETS_CONFIG_LANGUAGE-English}
+        ASSETS_CONFIG_FACADE_URL: ${ASSETS_CONFIG_FACADE_URL-http://127.0.0.1:8080}
+        ASSETS_CONFIG_SHOW_PROMO: ${ASSETS_CONFIG_SHOW_PROMO-False}
+        ASSETS_CONFIG_PRESENCE_URL: ${ASSETS_CONFIG_PRESENCE_URL-http://www.cartoonnetwork.com/presence/}
+        ASSETS_CONFIG_PRESENCE_UPDATE_DELAY: ${ASSETS_CONFIG_PRESENCE_UPDATE_DELAY-10000}
+        ASSETS_CONFIG_DIRECT_PRESENCE: ${ASSETS_CONFIG_DIRECT_PRESENCE-False}
+        ASSETS_CONFIG_DEV_LOGIN: ${ASSETS_CONFIG_DEV_LOGIN-False}
+        ASSETS_CONFIG_DEV_MAPS: ${ASSETS_CONFIG_DEV_MAPS-True}
+        ASSETS_CONFIG_GUEST_MODE_ONLY: ${ASSETS_CONFIG_GUEST_MODE_ONLY-False}
+        ASSETS_CONFIG_ASPEN_ENABLED: ${ASSETS_CONFIG_ASPEN_ENABLED-False}
+        ASSETS_CONFIG_PING_LIMIT: ${ASSETS_CONFIG_PING_LIMIT-2000}
+        GAME_URL: ${GAME_URL-127.0.0.1}
+        GAME_PORT: ${GAME_PORT-9933}
+        LOBBY_URL: ${LOBBY_URL-127.0.0.1}
+        LOBBY_PORT: ${LOBBY_PORT-6778}
+        SOCKPOL_URL: ${SOCKPOL_URL-127.0.0.1}
+        SOCKPOL_PORT: ${SOCKPOL_PORT-843}
+        SOCKPOL_TIMEOUT_SECONDS: ${SOCKPOL_TIMEOUT_SECONDS-60}
+        SOCKPOL_REQUEST: ${SOCKPOL_REQUEST-<policy-file-request/>}
+        SOCKPOL_POLICIES: ${SOCKPOL_POLICIES-master-only}
+        SOCKPOL_DOMAIN: ${SOCKPOL_DOMAIN-*}
+        SOCKPOL_HEADERS: ${SOCKPOL_HEADERS-*}
+        SOCKPOL_INDENT: ${SOCKPOL_INDENT-true}
+        SOCKPOL_SELFCLOSING: ${SOCKPOL_SELFCLOSING-true}
+    ports:
+      - ${API_PORT-8080}:${API_PORT-8080}
+    restart: on-failure:2
+    environment: *env
+    # env_file: .env
+    # healthcheck:
+    #   test: wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+    #   interval: 10s
+    #   timeout: 10s
+    #   retries: 2
+    #   start_period: 30s
+    #   start_interval: 5s
+    # deploy:
+    #   replicas: 1
+    depends_on:
+      - mongodb
+    networks:
+      - internal
+
+  openatbp-assets:
+    container_name: openatbp-assets
+    image: openatbp-assets:0.0.1
+    build:
+      context: assets
+      dockerfile: Dockerfile
+      args: *env
+    ports:
+      - ${ASSETS_PORT-8081}:${ASSETS_PORT-8081}
+    restart: on-failure:2
+    environment: *env
+    networks:
+      - internal
+
+  openatbp-game:
+    container_name: openatbp-game
+    image: openatbp-game:0.0.1
+    build:
+      context: game
+      dockerfile: Dockerfile
+      args: *env
+    ports:
+      - ${GAME_PORT-9933}:${GAME_PORT-9933}
+    restart: on-failure:2
+    environment: *env
+    networks:
+      - internal
+
+  openatbp-lobby:
+    container_name: openatbp-lobby
+    image: openatbp-lobby:0.0.1
+    build:
+      context: lobby
+      dockerfile: Dockerfile
+      args: *env
+    ports:
+      - ${LOBBY_PORT-6778}:${LOBBY_PORT-6778}
+    restart: on-failure:2
+    environment: *env
+    networks:
+      - internal
+
+  openatbp-sockpol:
+    container_name: openatbp-sockpol
+    image: openatbp-sockpol:0.0.1
+    build:
+      context: sockpol
+      dockerfile: Dockerfile
+      args: *env
+    ports:
+      - ${SOCKPOL_PORT-843}:${SOCKPOL_PORT-843}
+    restart: on-failure:2
+    environment: *env
+    networks:
+      - internal
+
+  openatbp-proxy:
+    container_name: openatbp-proxy
+    image: openatbp-proxy:0.0.1
+    build:
+      context: proxy
+      dockerfile: Dockerfile
+      args: *env
+    ports:
+      - ${API_PORT-8080}:${API_PORT-8080}
+      - ${ASSETS_PORT-8081}:${ASSETS_PORT-8081}
+      - ${GAME_PORT-9933}:${GAME_PORT-9933}
+      - ${LOBBY_PORT-6778}:${LOBBY_PORT-6778}
+      - ${SOCKPOL_PORT-843}:${SOCKPOL_PORT-843}
+    restart: on-failure:2
+    environment: *env
+    networks:
+      - internal
+      - external
+
+  mongodb:
+    container_name: mongodb
+    image: mongo:7.0.7
+    ports:
+      - 27017:27017
+    restart: on-failure:2
+    volumes:
+      - db:/data/db
+    # healthcheck:
+    #   test: ['CMD', 'mongod', '--version']
+    #   interval: 10s
+    #   timeout: 10s
+    #   retries: 2
+    networks:
+      - internal
+
+  mongodb-express:
+    container_name: mongodb-express
+    image: mongo-express:1.0.2-20-alpine3.19
+    ports:
+      - 8082:8081
+    environment:
+      - ME_CONFIG_BASICAUTH_USERNAME: ''
+      - ME_CONFIG_BASICAUTH_PASSWORD: ''
+      - ME_CONFIG_MONGODB_ENABLE_ADMIN: 'true'
+      - ME_CONFIG_MONGODB_PORT: '27017'
+      - ME_CONFIG_MONGODB_SERVER: mongodb
+      - ME_CONFIG_SITE_SSL_ENABLED: 'false'
+    restart: on-failure:2
+    depends_on:
+      - mongodb
+    networks:
+      - internal
+      - external
