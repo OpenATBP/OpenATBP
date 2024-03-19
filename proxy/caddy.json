@@ -1,0 +1,144 @@
+{
+  "apps": {
+    "http": {
+      "servers": {
+        "srv0": {
+          "listen": [
+            ":8080"
+          ],
+          "routes": [
+            {
+              "match": [
+                {
+                  "host": [
+                    "localhost"
+                  ]
+                }
+              ],
+              "handle": [
+                {
+                  "handler": "subroute",
+                  "routes": [
+                    {
+                      "handle": [
+                        {
+                          "handler": "headers",
+                          "response": {
+                            "set": {
+                              "Content-Type": [
+                                "application/xml"
+                              ]
+                            }
+                          }
+                        }
+                      ],
+                      "match": [
+                        {
+                          "path": [
+                            "*.xml"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "handle": [
+                        {
+                          "encodings": {
+                            "gzip": {},
+                            "zstd": {}
+                          },
+                          "handler": "encode",
+                          "prefer": [
+                            "zstd",
+                            "gzip"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "handle": [
+                        {
+                          "body": "\u003cConfig\u003e\n  \u003cTest\u003e123\u003c/Test\u003e\n\u003c/Config\u003e",
+                          "close": true,
+                          "handler": "static_response",
+                          "status_code": 200
+                        }
+                      ],
+                      "match": [
+                        {
+                          "path": [
+                            "/config.xml"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "handle": [
+                        {
+                          "handler": "file_server",
+                          "hide": [
+                            "./Caddyfile"
+                          ],
+                          "root": "/srv"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "terminal": true
+            }
+          ],
+          "errors": {
+            "routes": [
+              {
+                "match": [
+                  {
+                    "host": [
+                      "localhost"
+                    ]
+                  }
+                ],
+                "handle": [
+                  {
+                    "handler": "subroute",
+                    "routes": [
+                      {
+                        "handle": [
+                          {
+                            "handler": "subroute",
+                            "routes": [
+                              {
+                                "handle": [
+                                  {
+                                    "handler": "static_response",
+                                    "status_code": 404
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ],
+                        "match": [
+                          {
+                            "expression": "{http.error.status_code} in [404, 410]"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "terminal": true
+              }
+            ]
+          },
+          "logs": {
+            "logger_names": {
+              "localhost": ""
+            }
+          }
+        }
+      }
+    }
+  }
+}
