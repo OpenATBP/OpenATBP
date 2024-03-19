@@ -1,0 +1,6 @@
+*
+!package.json
+!babel.config.js
+!tsconfig.json
+!makefile
+!src
