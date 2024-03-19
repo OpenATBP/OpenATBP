@@ -3,14 +3,20 @@ package xyz.openatbp.extension.game.actors;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
-import xyz.openatbp.extension.*;
+import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.MovementManager;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 public class Monster extends Actor {
