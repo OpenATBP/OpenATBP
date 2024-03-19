@@ -1,0 +1,90 @@
+// https://www.typescriptlang.org/docs/handbook/compiler-options.html
+{
+  "compilerOptions": {
+    // Base directory to resolve non-relative module names.
+    "baseUrl": "./",
+    // List of path mapping entries for module names to locations relative to the baseUrl.
+    "paths": {
+      "*": [
+        "typings/*"
+      ]
+    },
+    // Target latest version of ECMAScript.
+    "target": "esnext",
+    // Specify module code generation.
+    "module": "esnext",
+    // Search under node_modules for non-relative imports.
+    "moduleResolution": "node",
+    // Specify a set of bundled library declaration files that describe the target runtime environment.
+    "lib": [
+      "ESNext",
+    ],
+    // Allow JavaScript files to be compiled.
+    "allowJs": false,
+    // Report errors in .js files.
+    "checkJs": false,
+    // Enable all strict type checking options.
+    // --noImplicitAny, --noImplicitThis, --alwaysStrict, --strictBindCallApply, --strictNullChecks, --strictFunctionTypes, --strictPropertyInitialization
+    "strict": true,
+    // Transpile each file as a separate module.
+    // "isolatedModules": true,
+    // Import non-ES modules as default imports.
+    "esModuleInterop": true,
+    // Skip type checking of all declaration files (*.d.ts).
+    "skipLibCheck": false,
+    // Include modules imported with .json extension.
+    "resolveJsonModule": true,
+    // Do not emit outputs.
+    // "noEmit": true,
+    // Do not emit outputs if any errors were reported.
+    "noEmitOnError": true,
+    // Only emit .d.ts declaration files.
+    "emitDeclarationOnly": true,
+    // Ensure TypeScript can determine where to find the outputs of the referenced project to compile project.
+    "composite": false,
+    // Generates corresponding .d.ts file.
+    "declaration": true,
+    // Print names of generated files part of the compilation.
+    "listEmittedFiles": true,
+    // Print names of files part of the compilation.
+    "listFiles": false,
+    // Output directory for generated declaration files.
+    "declarationDir": "docs/types",
+    // Redirect output structure to the directory.
+    "outDir": "dist",
+    // Generates a sourcemap for each corresponding ‘.d.ts’ file.
+    "declarationMap": true,
+    // Show diagnostic information.
+    "diagnostics": true,
+    // Emit a single file with source maps instead of having a separate file.
+    "inlineSourceMap": false,
+    // Remove all comments except copy-right header comments.
+    "removeComments": true,
+    // Generates corresponding .map file.
+    "sourceMap": false,
+    // Report module resolution log messages.
+    "traceResolution": false,
+    // Do not truncate error messages.
+    "noErrorTruncation": true,
+    // Stylize errors and messages using color and context.
+    "pretty": true,
+    // Pick up dead code paths
+    "allowUnreachableCode": false,
+    // Enable error reporting for codepaths that do not explicitly return in a function.
+    "noImplicitReturns": true,
+    // accessing index must always check for undefined
+    "noUncheckedIndexedAccess": true,
+    // Report errors on unused local variables.
+    "noUnusedLocals": true,
+    // Report errors on unused parameters in functions
+    "noUnusedParameters": true,
+  },
+  "include": [
+    "src/**/*",
+    ".eslintrc.js",
+    "babel.config.js", "src/common/config.ts", "src/common/log.ts",
+  ],
+  "exclude": [
+    "node_modules/**/*",
+  ]
+}

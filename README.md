@@ -1,4 +1,5 @@
 # OpenATBP
+
 [![Releases Badge](https://img.shields.io/github/v/release/OpenATBP/OpenATBP?include_prereleases)](https://github.com/OpenATBP/OpenATBP/releases)
 [![Trello Badge](https://img.shields.io/badge/trello-progress_tracking-0052CC?logo=trello)](https://trello.com/b/DcrsFKB1/openatbp)
 [![Discord Badge](https://img.shields.io/discord/929861280456671324?color=687DC5&logo=discord)](https://discord.gg/AwmCCuAdT4)
@@ -9,51 +10,39 @@ An open-source lobby, service, and game server for Adventure Time Battle Party.
 ![Screenshot](docs/screenshot2.png)
 
 ## Status
+
 Currently, a handful of characters have their full kits functional, and games can be played from start to finish. Collision, pathfinding, and a few other systems still need work. For the most up-to-date progress, check the [Trello board](https://trello.com/b/DcrsFKB1/openatbp). Contributions are always welcome!
+If you have any questions or would like to join our community, feel free to reach out to us on [our Discord](https://discord.gg/AwmCCuAdT4).
 
-## Server Architecture
-Originally, Battle Party required several server-side components in order to to function:
-* Web server to serve static content/streaming assets
-* Web server that provides service/API endpoints (internal name "Facade")
-* Socket policy server to satisfy the Unity Web Player [security sandbox](https://docs.unity3d.com/351/Documentation/Manual/SecuritySandbox.html)
-* Lobby server for players to form parties and search for matches (internal name "DungeonServer")
-* SmartFoxServer2X with custom extension acting as the actual game server
+## Architecture
 
-To simplify development and deployment, the first three components have been combined into one piece of software, which is available under the `httpserver` directory.
+OpenATBP requires several server-side components in order to to function:
+* `assets`: web server to serve static content/streaming assets
+* `api`: web server that provides service/API endpoints (internal name "Facade")
+* `sockpol`: socket policy server to satisfy the Unity Web Player [security sandbox](https://docs.unity3d.com/351/Documentation/Manual/SecuritySandbox.html)
+* `lobby`: lobby server for players to form parties and search for matches (internal name "DungeonServer")
+* `game`: SmartFoxServer2X with custom extension acting as the actual game server
 
-~~More in-depth explanations of each component, how the client interacts with them, and how request/response packets are structured can be found in the `docs/` folder.~~
-This is unfortunately not available yet, but work is slowly being done. For the time being, feel free to reference the `dev-general` channel in [the Discord](https://discord.gg/AwmCCuAdT4), as well as decompiled client code generated via ILSpy/dnSpy.
+See [Architecture](docs/architecture.md) for more detailed information.
 
 ## Development
 
-### Prerequisites 
+Each server component requires different dependencies installed.
+
+See [Development](docs/development.md) for more detailed information.
+
+## Deployment
+
+The simplest way to run this project is using Docker. Simply run `make run` in a terminal.
+
 *Ensure these are all installed before proceeding!*
-* Git
-* Java Development Kit 11
-* SFS2X Community Edition
-* NodeJS and NPM
-* MongoDB Server 
+* Make ([Windows](https://gnuwin32.sourceforge.net/packages/make.htm) or [Linux](https://www.digitalocean.com/community/tutorials/how-to-use-makefiles-to-automate-repetitive-tasks-on-an-ubuntu-vps#installing-make))
+* Docker ([Windows](https://docs.docker.com/desktop/install/windows-install/) or [Linux](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04#step-1-installing-docker))
 
-### Setting up
-1. Clone the repository: `git clone https://github.com/OpenATBP/OpenATBP.git`
-2. Open a new terminal inside of the `httpserver` directory
-3. In this new terminal window, run the following command to install dependencies and download required asset files - this may take a while! `npm install`
-4. Copy the example config in the httpserver directory: `cp config.js.example config.js` - once copied, edit it to include the connection string URI for your MongoDB server
-5. Run httpserver using the following command: `npm run start` - if done correctly you should see `App running on port 8000!`
-6. Start SmartFoxServer2X once so it can generate the correct files and folders, then close it
-7. Open another terminal, this time in the root of the repository
-8. Run the following command to compile and run the lobby: `.\gradlew ATBPLobby:run` - if successful you should see `DungeonServer running on port 6778`
-9. Run the following commands to copy necessary files, then compile the game extension: `.\gradlew ATBPExtension:copySFS2XLibs`, `.\gradlew ATBPExtension:jar`
-10. Provided there weren't any errors, deploy the SmartFox extension: `.\gradlew ATBPExtension:deploy` - this will also copy the data, definition and zone file(s) if needed
-11. Copy the example config in the SFS2X extension directory (SFS2X/extensions/Champions, should be right next to the jar file): `cp config.properties.example config.properties` - once copied, edit it to include the same URI string you did in step 4.
-12. Start SmartFoxServer2X, you should see a log line indicating the extension is working: `ATBP Extension loaded`
-13. Finally, connect to http://127.0.0.1:8000 with an NPAPI-compatible browser such as Pale Moon to test the game!
-
-Note that you can also run any Gradle task (`gradlew` commands) graphically through an IDE such as IntelliJ IDEA or Eclipse. 
-
-These instructions are subject to change, if you run into any problems or have questions feel free to open an issue here on Github or reach out to us on [our Discord](https://discord.gg/AwmCCuAdT4).
+See [Deployment](docs/deployment.md) for more detailed information.
 
 ## License
-MIT unless specified otherwise
+
+MIT unless specified otherwise. See [LICENSE](LICENSE.md).
 
 ![SFS2X Logo](docs/sfs2xlogo.png)

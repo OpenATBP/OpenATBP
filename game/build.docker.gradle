@@ -1,0 +1,28 @@
+apply plugin: 'java'
+group 'xyz.openatbp'
+version '0.1.0-SNAPSHOT'
+
+tasks.withType(JavaCompile) {
+    options.release = 11
+}
+
+jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    archiveFileName = "ATBPExtension.jar"
+    manifest {
+        attributes('Main-Class': 'xyz.openatbp.extension.ATBPExtension')
+    }
+    from {
+        configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation files('lib/sfs2x-core.jar', 'lib/sfs2x.jar')
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-xml', version: '2.9.0'
+    implementation files('lib/jwalkable-master-8ffaaf3558-1.jar')
+}
