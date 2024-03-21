@@ -48,6 +48,7 @@ function sendCommand (socket, command, response){
         'cmd': command,
         'payload': response
       };
+      console.log("Sent ", package);
       package = JSON.stringify(package);
       let lengthBytes = Buffer.alloc(2);
       lengthBytes.writeInt16BE(Buffer.byteLength(package, 'utf8'));
@@ -57,6 +58,13 @@ function sendCommand (socket, command, response){
         resolve();
       });
     });
+}
+
+function displayQueues(){
+  for(var q of queues){
+    console.log(`QUEUE ${q.queueNum}: ${q.players.length} players, Type ${q.type}, Stage ${q.stage}`);
+  }
+  if(queues.length == 0) console.log("NO QUEUES");
 }
 
 // TODO: move out to separate file
@@ -96,10 +104,10 @@ function handleRequest (jsonString, socket) {
         var type = act[act.length-1];
         var res = {};
         var queueSize = 1;
-        if(type.includes('p')) queueSize = Number(type.replace("p",""));
+        if(type.includes('p') && type != 'practice') queueSize = Number(type.replace("p",""));
         if(queueSize == 3) queueSize = 2; //DEBUG
         for(var q of queues){
-          if(q.type == type && q.players.length < q.max && !q.inGame){
+          if(q.type == type && q.players.length < q.max && q.stage == 0){
             // Join Queue
             q.players.push(socket.player);
             socket.player.queueNum = q.queueNum;
@@ -137,6 +145,11 @@ function handleRequest (jsonString, socket) {
                   }
                   q.purple = purpleTeam;
                   q.blue = blueTeam;
+                  q.stage = 1;
+
+                  for(var p of q.players){
+                    p.inGame = true;
+                  }
 
                   safeSendAll(users.filter(user => q.players.includes(user.player) && user.player.team == 0), 'game_ready',{
                     'countdown': 60,
@@ -168,42 +181,68 @@ function handleRequest (jsonString, socket) {
                     });
                   }).catch(console.error);
               }).catch(console.error);
-              /*
-              res = {
-                'cmd': 'match_found',
-                'payload': {
-                  'countdown': 60
-                }
-              };
-              for(var p of q.players){
-                p.inGame = true;
-              }
-              sendAll(users.filter(user => (q.players.includes(user.player))), res);
-              */
-
             }
             break;
           }else tries++;
         }
         if(tries == queues.length){
-          queues.push({
-            'type': type,
-            'players': [socket.player],
-            'queueNum': queueNum,
-            'blue': [],
-            'purple': [],
-            'ready': 0,
-            'max': queueSize
-          });
+          console.log("New queue! ", queueSize);
+          if(queueSize == 1){
+            var playerObj = {
+              'name': socket.player.name,
+              'player': socket.player.player,
+              'teg_id': `${socket.player.teg_id}`,
+              'avatar': 'unassigned',
+              'is_ready': false
+            };
+            socket.player.team = 0;
+            socket.player.inGame = true;
+            queues.push({
+              'type': type,
+              'players': [socket.player],
+              'queueNum': queueNum,
+              'blue': [],
+              'purple': [playerObj],
+              'ready': 0,
+              'max': queueSize,
+              'stage': 1
+            });
+            sendCommand(socket,'game_ready',{
+              'countdown': 60,
+              'ip': config.lobbyserver.gameIp,
+              'port': config.lobbyserver.gamePort,
+              'policy_port': config.sockpol.port,
+              'room_id': `${socket.player.name}_${type}`,
+              'password': '',
+              'team': 'PURPLE'
+            }).then(() => {
+              sendCommand(socket,'team_update', {
+                'players': [playerObj],
+                'team': `PURPLE`
+              });
+            }).catch(console.error);
+          }else{
+            response = {
+              'cmd': 'queue_update',
+              'payload': {
+                'size': 1
+              }
+            };
+            queues.push({
+              'type': type,
+              'players': [socket.player],
+              'queueNum': queueNum,
+              'blue': [],
+              'purple': [],
+              'ready': 0,
+              'max': queueSize,
+              'stage': 0
+            });
+          }
           socket.player.queueNum = queueNum;
           queueNum++;
-          response = {
-            'cmd': 'queue_update',
-            'payload': {
-              'size': 1
-            }
-          };
         }
+        displayQueues();
       break;
 
       case 'leave_team':
@@ -212,7 +251,7 @@ function handleRequest (jsonString, socket) {
             q.players = q.players.filter(p => p != socket.player);
             var res = {};
             if(q.players.length == 0) break;
-            if(socket.player.inGame){ //Probably will never be called, but it's already here
+            if(q.stage == 1){ //Probably will never be called, but it's already here
               q.players = [];
               socket.player.inGame = false;
             }else{
@@ -237,6 +276,7 @@ function handleRequest (jsonString, socket) {
             'size': 0
           }
         };
+        displayQueues();
         break;
 
       case 'set_avatar':
@@ -317,9 +357,22 @@ function handleRequest (jsonString, socket) {
                 }
               });
             }
+            if(q.ready == q.max) q.stage = 2;
           break;
         }
       }
+        break;
+      case 'chat_message':
+        for(var q of queues){
+          var player = q.players.find(p => p.teg_id == jsonObject['payload'].teg_id);
+          if(player != undefined) {
+            for(var p of q.players){
+              var sock = users.find(u => u.player == p);
+              if(sock != undefined) sendCommand(sock,'chat_message',{'name':player.name,'teg_id':player.teg_id,'message_id':Number(jsonObject['payload'].message_id)}).catch(console.error);
+              else console.log("No socket found!");
+            }
+          }
+        }
         break;
   };
 
@@ -377,26 +430,25 @@ module.exports = class ATBPLobbyServer {
       });
 
       socket.on('close', (err) => {
-        //todo?
         console.log(err);
         for(var user of users){
           if (user._readableState.ended){
             console.log(user.player.name + " logged out");
             for(var q of queues){
-              if(user.player.queueNum == -1 && !user.player.inGame) break;
+              if(user.player.queueNum == -1) break;
               else if (q.queueNum == user.player.queueNum){
                 q.players = q.players.filter(p => p != user.player);
                 if(q.players.length == 0) console.log("Removed queue!");
                 else{
                   var res = {};
-                  if(q.players.length == 1){
+                  if(q.stage == 1){
                     res = {
                       'cmd': 'team_disband',
                       'payload': {
                         'reason': 'error_lobby_playerLeftMatch'
                       }
                     };
-                  }else{
+                  }else if(q.stage == 0){
                     var size = q.players.length;
                     if(size > 3) size = 3;
                     res = {
@@ -405,8 +457,9 @@ module.exports = class ATBPLobbyServer {
                         'size': size
                       }
                     };
-                  }
+                  }else console.log("Q stage: ", q.stage);
                   sendAll(users.filter(user => q.players.includes(user.player)),res);
+                  if(res.cmd == 'team_disband') q.players = [];
                 }
               }
             }
@@ -414,6 +467,7 @@ module.exports = class ATBPLobbyServer {
           }
         }
         users = users.filter(user => !user._readableState.ended);
+        displayQueues();
       });
     });
 
