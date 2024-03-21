@@ -138,6 +138,7 @@ function handleRequest (jsonString, socket) {
                   }
                   q.purple = purpleTeam;
                   q.blue = blueTeam;
+                  q.inGame = true;
 
                   for(var p of q.players){
                     p.inGame = true;
@@ -173,26 +174,13 @@ function handleRequest (jsonString, socket) {
                     });
                   }).catch(console.error);
               }).catch(console.error);
-              /*
-              res = {
-                'cmd': 'match_found',
-                'payload': {
-                  'countdown': 60
-                }
-              };
-              for(var p of q.players){
-                p.inGame = true;
-              }
-              sendAll(users.filter(user => (q.players.includes(user.player))), res);
-              */
-
             }
             break;
           }else tries++;
         }
         if(tries == queues.length){
           console.log("New queue! ", queueSize);
-          if(queueSize == 1){ //TODO: Currently does not work in champ select because of lack of queue object
+          if(queueSize == 1){
             var playerObj = {
               'name': socket.player.name,
               'player': socket.player.player,
@@ -209,7 +197,8 @@ function handleRequest (jsonString, socket) {
               'blue': [],
               'purple': [playerObj],
               'ready': 0,
-              'max': queueSize
+              'max': queueSize,
+              'inGame': true
             });
             sendCommand(socket,'game_ready',{
               'countdown': 60,
@@ -239,7 +228,8 @@ function handleRequest (jsonString, socket) {
               'blue': [],
               'purple': [],
               'ready': 0,
-              'max': queueSize
+              'max': queueSize,
+              'inGame': false
             });
           }
           socket.player.queueNum = queueNum;
