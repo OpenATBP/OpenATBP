@@ -60,6 +60,18 @@ function sendCommand (socket, command, response){
     });
 }
 
+function joinQueue(socket, jsonObject){
+
+}
+
+function leaveQueue(socket){
+
+}
+
+function createQueue(socket, jsonObject){
+
+}
+
 function displayQueues(){
   for(var q of queues){
     console.log(`QUEUE ${q.queueNum}: ${q.players.length} players, Type ${q.type}, Stage ${q.stage}`);
@@ -246,8 +258,10 @@ function handleRequest (jsonString, socket) {
       break;
 
       case 'leave_team':
+        var firstMember = false;
         for(var q of queues){
           if(q.players.includes(socket.player)){
+            if(q.players[0] == socket.player) firstMember = true;
             q.players = q.players.filter(p => p != socket.player);
             var res = {};
             if(q.players.length == 0) break;
@@ -257,12 +271,41 @@ function handleRequest (jsonString, socket) {
             }else{
               var size = q.players.length;
               if(size > 3) size = 3;
-              res = {
-                'cmd': 'queue_update',
-                'payload': {
-                  size: size
+              if(q.max == 0){
+                if(firstMember){
+                  res = {
+                    'cmd': 'team_disband',
+                    'payload': {
+                      'reason': 'error_lobby_teamLeader'
+                    }
+                  };
+                }else{
+                  var newTeam = [];
+                  for(var p of q.players){
+                    newTeam.push({
+                      'name': p.name,
+                      'player': p.player,
+                      'teg_id': p.teg_id
+                    });
+                  }
+                  res = {
+                    'cmd': 'team_update',
+                    'payload': {
+                      'players': newTeam,
+                      'team': ''
+                    }
+                  };
+                  var userOne = users.find(user => user.player == q.players[0]);
+                  if(userOne != undefined) sendCommand(userOne, 'invite_declined', {'player':socket.player.teg_id});
                 }
-              };
+              }else{
+                res = {
+                  'cmd': 'queue_update',
+                  'payload': {
+                    size: size
+                  }
+                };
+              }
             }
             sendAll(users.filter(user => q.players.includes(user.player)),res);
             break;
@@ -294,8 +337,8 @@ function handleRequest (jsonString, socket) {
                 sendAll(users.filter(user => user.player.team == 0 && user.player.queueNum == q.queueNum), {
                     'cmd': 'team_update',
                     'payload': {
-                    'players': q.purple,
-                    'team': `PURPLE`
+                      'players': q.purple,
+                      'team': `PURPLE`
                     }
                 });
             }else{
@@ -374,6 +417,79 @@ function handleRequest (jsonString, socket) {
           }
         }
         break;
+
+        case 'create_team':
+          var playerObj = {
+            'name': socket.player.name,
+            'teg_id': socket.player.teg_id,
+            'player': socket.player.player
+          };
+          response = {
+            'cmd': 'team_update',
+            'payload': {
+              'players': [playerObj],
+              'team': ''
+            }
+          };
+          socket.player.queueNum = queueNum;
+          queues.push({
+            'type': jsonObject['payload'].act,
+            'players': [socket.player],
+            'queueNum': queueNum,
+            'blue': [],
+            'purple': [],
+            'ready': 0,
+            'max': 0,
+            'stage': 0
+          });
+          queueNum++;
+          break;
+
+        case 'send_invite':
+          var invitedPlayer = users.find(user => user.player.teg_id == jsonObject['payload'].player);
+          if(invitedPlayer != undefined){
+            var q = queues.find(qu => qu.players.includes(socket.player));
+            sendCommand(invitedPlayer, 'receive_invite', {'name': socket.player.name, 'player': socket.player.player, 'act': q.type, 'vs': true, 'team': socket.player.teg_id}).catch(console.error);
+          }
+          break;
+
+        case 'join_team':
+          var teamLeader = users.find(user => user.player.teg_id == jsonObject['payload'].name);
+          if(teamLeader != undefined){
+            var team = queues.find(q => q.players.includes(teamLeader.player));
+            if(team != undefined && team.players.length < 3){
+              socket.player.queueNum = team.queueNum;
+              team.players.push(socket.player);
+              var teamObjs = [];
+              for(var p of team.players){
+                teamObjs.push({
+                  'name': p.name,
+                  'teg_id': p.teg_id,
+                  'player': p.player
+                });
+              }
+              response = {
+                'cmd': 'invite_verified',
+                'payload': {
+                  'result': 'success'
+                }
+              };
+              safeSendAll(users.filter(u => team.players.includes(u.player)),'team_update',{'players': teamObjs, 'team': ''}).catch(console.error);
+            }else console.log("Could not join queue");
+          }else console.log("Could not find player");
+
+          break;
+
+        case 'decline_invite':
+          var partyLeader = jsonObject['payload'].party_leader;
+          if(partyLeader != undefined){
+            var teamLeader = users.find(user => Math.abs(jsonObject['payload'].party_leader - user.player.player) <= 500);
+          }else console.log(jsonObject['payload']);
+          if(teamLeader != undefined) sendCommand(teamLeader, 'invite_declined', {'player':socket.player.teg_id});
+          else {
+            console.log("No leader found!");
+          }
+          break;
   };
 
   if (response){
@@ -434,9 +550,11 @@ module.exports = class ATBPLobbyServer {
         for(var user of users){
           if (user._readableState.ended){
             console.log(user.player.name + " logged out");
+            var firstMember = false;
             for(var q of queues){
               if(user.player.queueNum == -1) break;
               else if (q.queueNum == user.player.queueNum){
+                if(q.players[0] == user.player) firstMember = true;
                 q.players = q.players.filter(p => p != user.player);
                 if(q.players.length == 0) console.log("Removed queue!");
                 else{
@@ -451,12 +569,41 @@ module.exports = class ATBPLobbyServer {
                   }else if(q.stage == 0){
                     var size = q.players.length;
                     if(size > 3) size = 3;
-                    res = {
-                      'cmd': 'queue_update',
-                      'payload': {
-                        'size': size
+                    if(q.max == 0){
+                      if(q.players[0] == user.player){
+                        res = {
+                          'cmd': 'team_disband',
+                          'payload': {
+                            'reason': 'error_lobby_teamLeader'
+                          }
+                        };
+                      }else{
+                        var newTeam = [];
+                        for(var p of q.players){
+                          newTeam.push({
+                            'name': p.name,
+                            'player': p.player,
+                            'teg_id': p.teg_id
+                          });
+                        }
+                        res = {
+                          'cmd': 'team_update',
+                          'payload': {
+                            'players': newTeam,
+                            'team': ''
+                          }
+                        };
+                        var userOne = users.find(us => us.player == q.players[0]);
+                        if(userOne != undefined) sendCommand(userOne, 'invite_declined', {'player':user.player.teg_id});
                       }
-                    };
+                    }else{
+                      res = {
+                        'cmd': 'queue_update',
+                        'payload': {
+                          'size': size
+                        }
+                      };
+                    }
                   }else console.log("Q stage: ", q.stage);
                   sendAll(users.filter(user => q.players.includes(user.player)),res);
                   if(res.cmd == 'team_disband') q.players = [];
