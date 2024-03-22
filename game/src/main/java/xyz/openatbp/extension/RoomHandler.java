@@ -45,7 +45,7 @@ public class RoomHandler implements Runnable{
     private boolean gameOver = false;
     private HashMap<String, Long> destroyedIds = new HashMap<>();
     private List<String> createdActorIds = new ArrayList<>();
-    private static final boolean MONSTER_DEBUG = true;
+    private static final boolean MONSTER_DEBUG = false;
     private boolean practiceMap;
     private boolean fastBlueCapture = false;
     private boolean fastPurpleCapture = false;
@@ -153,7 +153,7 @@ public class RoomHandler implements Runnable{
                     if(s.length()>3){
                         int spawnRate = 45; //Mob spawn rate
                         if(s.equalsIgnoreCase("keeoth")) spawnRate = 120;
-                        else if(s.equalsIgnoreCase("ooze")) spawnRate = 90;
+                        else if(s.equalsIgnoreCase("goomonster")) spawnRate = 90;
                         if(MONSTER_DEBUG) spawnRate = 10;
                         if(spawns.getInt(s) == spawnRate){ //Mob timers will be set to 0 when killed or health when taken
                             spawnMonster(s);
@@ -474,16 +474,16 @@ public class RoomHandler implements Runnable{
                         }
                         campMonsters.add(new Keeoth(parentExt,room,MapData.L2_KEEOTH,actor));
                         break;
-                    case "ooze":
+                    case "goomonster":
                         if(!this.practiceMap){
-                            x = MapData.L2_OOZE[0];
-                            z = MapData.L2_OOZE[1];
+                            x = MapData.L2_GOOMONSTER[0];
+                            z = MapData.L2_GOOMONSTER[1];
                         }else{
-                            x = MapData.L1_OOZE_X;
-                            z = MapData.L1_OOZE_Z;
+                            x = MapData.L1_GOOMONSTER_X;
+                            z = MapData.L1_GOOMONSTER_Z;
                         }
                         actor = "goomonster";
-                        campMonsters.add(new GooMonster(parentExt,room,MapData.L2_OOZE,actor));
+                        campMonsters.add(new GooMonster(parentExt,room,MapData.L2_GOOMONSTER,actor));
                         break;
                 }
                 Point2D spawnLoc = new Point2D.Float(x,z);
@@ -861,7 +861,7 @@ public class RoomHandler implements Runnable{
                     room.getVariable("spawns").getSFSObjectValue().putInt(s,0);
                     return;
                 }
-                else if(s.contains("ooze")){
+                else if(s.contains("goomonster")){
                     room.getVariable("spawns").getSFSObjectValue().putInt(s,0);
                     return;
                 }

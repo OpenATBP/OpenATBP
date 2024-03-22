@@ -22,7 +22,7 @@ import java.util.List;
 public class GameManager {
 
     //bh1 = Blue Health 1 ph1 = Purple Health 1. Numbers refer to top,bottom,and outside respectively.
-    public static final String[] SPAWNS = {"bh1","bh2","bh3","ph1","ph2","ph3","keeoth","ooze","hugwolf","gnomes","ironowls","grassbear"};
+    public static final String[] SPAWNS = {"bh1","bh2","bh3","ph1","ph2","ph3","keeoth","goomonster","hugwolf","gnomes","ironowls","grassbear"};
     private static ObjectMapper objectMapper = new ObjectMapper();
 
     public static void addPlayer(Room room, ATBPExtension parentExt){ //Sends player info to client

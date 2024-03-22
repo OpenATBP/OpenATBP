@@ -17,12 +17,12 @@ public class MapData {
     public static final float L1_GUARDIAN_Z = (float) -0.5;
     public static final float L1_KEEOTH_X = (float) -21.3;
     public static final float L1_KEEOTH_Z = (float) 11.6;
-    public static final float L1_OOZE_X = (float) 22.6;
-    public static final float L1_OOZE_Z = (float) -10.7;
+    public static final float L1_GOOMONSTER_X = (float) 22.6;
+    public static final float L1_GOOMONSTER_Z = (float) -10.7;
     public static final float L2_GUARDIAN1_X = (float) 52.00;
     public static final float L2_GUARDIAN1_Z = (float) 0;
     public static final float[] L2_TOP_ALTAR = {(float) -13.38, (float) -26.08};
-    public static final float[] L2_OOZE = {(float) 0.54, (float) -27.42};
+    public static final float[] L2_GOOMONSTER = {(float) 0.54, (float) -27.42};
     public static final float[] L2_LEFT_HEALTH = {(float) 14.10, (float) 0.0};
     public static final float[] L2_BOT_BLUE_HEALTH = {(float) 27.68, (float) 3.03};
     public static final float[] L2_BOT_ALTAR = {(float) 14.47, (float) 27.08};

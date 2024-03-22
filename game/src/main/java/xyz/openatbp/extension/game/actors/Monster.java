@@ -72,6 +72,7 @@ public class Monster extends Actor {
     public boolean damaged(Actor a, int damage, JsonNode attackData) { //Runs when taking damage
         try{
             if(this.dead) return true; //Prevents bugs that take place when taking damage (somehow from FP passive) after dying
+            if(Champion.getUserActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,10f).isEmpty()) return false;
             if(a.getActorType() == ActorType.PLAYER){
                 UserActor ua = (UserActor) a;
                 if(ua.hasBackpackItem("junk_1_demon_blood_sword") && ua.getStat("sp_category1") > 0) damage*=1.3;
@@ -80,12 +81,12 @@ public class Monster extends Actor {
             int newDamage = this.getMitigatedDamage(damage,attackType,a);
             if(a.getActorType() == ActorType.PLAYER) this.addDamageGameStat((UserActor) a,newDamage,attackType);
             boolean returnVal = super.damaged(a,newDamage,attackData);
-            if(!this.headingBack){ //If being attacked while minding own business, it will target player
+            if(!this.headingBack && Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,10f).contains(a)){ //If being attacked while minding own business, it will target player
                 state = AggroState.ATTACKED;
                 target = findClosestAttacker();
                 this.timeTraveled = 0f;
                 this.moveTowardsActor();
-                if(target.getActorType() == ActorType.PLAYER) ExtensionCommands.setTarget(parentExt,((UserActor)target).getUser(),this.id, target.getId());
+                if(target != null && target.getActorType() == ActorType.PLAYER) ExtensionCommands.setTarget(parentExt,((UserActor)target).getUser(),this.id, target.getId());
                 if(this.type == MonsterType.SMALL){ //Gets all mini monsters like gnomes and owls to all target player when one is hit
                     for(Monster m : parentExt.getRoomHandler(this.room.getId()).getCampMonsters(this.id)){
                         m.setAggroState(AggroState.ATTACKED,a);
@@ -99,7 +100,7 @@ public class Monster extends Actor {
         }
 
     }
-
+    
     public Actor findClosestAttacker(){
         List<Actor> actorsInCamp = Champion.getActorsInRadius(parentExt.getRoomHandler(this.room.getId()),startingLocation,10f);
         HashMap<Actor, Double> actorLocations = new HashMap<>();
@@ -272,7 +273,7 @@ public class Monster extends Actor {
                 this.move(this.startingLocation);
             }
         }else{ //Monster is pissed!!
-            if((this.location.distance(this.startingLocation) >= 10 && !this.attackRangeOverride) || this.target.getHealth() <= 0){
+            if((this.location.distance(this.startingLocation) >= 10 && !this.attackRangeOverride) || this.target != null && this.target.getHealth() <= 0){
                 this.state = AggroState.PASSIVE; //Far from camp, heading back
                 this.moveWithCollision(this.startingLocation);
                 this.target = null;
@@ -326,11 +327,11 @@ public class Monster extends Actor {
             this.moveWithCollision(this.target.getLocation());
         }
         if(this.path == null){
-            if(this.movementLine.getP2().distance(this.target.getLocation()) > 0.1f){
+            if(this.target != null && this.movementLine.getP2().distance(this.target.getLocation()) > 0.1f){
                 this.moveWithCollision(this.target.getLocation());
             }
         }else{
-            if(this.path.size() - this.pathIndex < 3 && this.path.get(this.path.size()-1).distance(this.target.getLocation()) > 0.1f){
+            if(this.target != null && this.path.size() - this.pathIndex < 3 && this.path.get(this.path.size()-1).distance(this.target.getLocation()) > 0.1f){
                 this.moveWithCollision(this.target.getLocation());
             }
         }

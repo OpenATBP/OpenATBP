@@ -113,6 +113,16 @@ public class Champion {
         return points;
     }
 
+    public static List<UserActor> getUserActorsInRadius(RoomHandler room, Point2D center, float radius){
+        List<UserActor> players = room.getPlayers();
+        List<UserActor> playersInRadius = new ArrayList<>();
+        for(UserActor ua : players){
+            Point2D location = ua.getLocation();
+            if(location.distance(center) <= radius) playersInRadius.add(ua);
+        }
+        return playersInRadius;
+    }
+
     public static List<Actor> getActorsInRadius(RoomHandler room, Point2D center, float radius){
         List<Actor> actors = room.getActors();
         List<Actor> affectedActors = new ArrayList<>(actors.size());
