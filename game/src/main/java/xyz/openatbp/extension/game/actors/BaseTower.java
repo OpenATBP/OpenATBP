@@ -6,6 +6,8 @@ import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.MapData;
+import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 
@@ -14,9 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class Tower extends Actor {
-    private final int[] PURPLE_TOWER_NUM = {2,1};
-    private final int[] BLUE_TOWER_NUM = {5,4};
+public class BaseTower extends Actor {
     private long lastHit;
     private boolean destroyed = false;
     private long lastMissSoundTime = 0;
@@ -24,34 +24,38 @@ public class Tower extends Actor {
     private List<Actor> nearbyActors;
     private boolean isFocusingPlayer = false;
     private boolean isFocusingCompanion = false;
+    private boolean isUnlocked = false;
     private int numberOfAttacks = 0;
 
-    public Tower(ATBPExtension parentExt, Room room, String id, int team, Point2D location) {
+    public BaseTower(ATBPExtension parentExt, Room room, String id, int team){
         this.currentHealth = 800;
         this.maxHealth = 800;
-        this.location = location;
-        this.id = id;
+        if(room.getGroupId().equalsIgnoreCase("practice")){
+            if(team == 0) this.location = new Point2D.Float(MapData.L1_PURPLE_TOWER_0[0], MapData.L1_PURPLE_TOWER_0[1]);
+            else this.location = new Point2D.Float(MapData.L1_BLUE_TOWER_3[0], MapData.L1_BLUE_TOWER_3[1]);
+        } else {
+            if(team == 0) this.location = new Point2D.Float(MapData.L2_PURPLE_BASE_TOWER[0], MapData.L2_PURPLE_BASE_TOWER[1]);
+            else this.location = new Point2D.Float(MapData.L2_BLUE_BASE_TOWER[0], MapData.L2_BLUE_BASE_TOWER[1]);
+        }
         this.room = room;
+        this.id = id;
         this.team = team;
         this.parentExt = parentExt;
         this.lastHit = 0;
         this.actorType = ActorType.TOWER;
         this.attackCooldown = 1000;
         this.avatar = "tower1";
-        if (team == 1) this.avatar = "tower2";
+        if(team == 1) this.avatar = "tower2";
         this.displayName = parentExt.getDisplayName(this.avatar);
         this.stats = this.initializeStats();
-        ExtensionCommands.createWorldFX(parentExt, room, this.id, "fx_target_ring_6", this.id + "_ring", 15 * 60 * 1000, (float) this.location.getX(), (float) this.location.getY(), true, this.team, 0f);
-    }
-
-    public Tower(ATBPExtension parentExt, Room room, int team){
-        this.parentExt = parentExt;
-        this.room = room;
-        this.team = team;
+        ExtensionCommands.createWorldFX(parentExt,room,this.id,"fx_target_ring_6",this.id+"_ring",15*60*1000,(float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
+        ExtensionCommands.updateActorState(parentExt,room,id,ActorState.INVINCIBLE,true);
+        ExtensionCommands.updateActorState(parentExt,room,this.id, ActorState.IMMUNITY,true);
     }
 
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
+        if(!this.isUnlocked) return false;
         if(this.destroyed) return true;
         if(this.target == null && nearbyActors.isEmpty()){
             if(a.getActorType() == ActorType.PLAYER){
@@ -115,21 +119,11 @@ public class Tower extends Actor {
                 if(this.target != null && this.target.getActorType() == ActorType.PLAYER) ExtensionCommands.removeFx(parentExt,u,this.id+"_aggro");
                 this.parentExt.getRoomHandler(this.room.getId()).addScore(null,a.getTeam(),50);
             }
-            if(this.getTowerNum() == 0 || this.getTowerNum() == 3){
-                for(UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
-                    if(ua.getTeam() == this.team){
-                        ExtensionCommands.playSound(parentExt,ua.getUser(),"global","announcer/base_tower_down");
-                    }else{
-                        ExtensionCommands.playSound(parentExt,ua.getUser(),"global","announcer/you_destroyed_tower");
-                    }
-                }
-            }else{
-                for(UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
-                    if(ua.getTeam() == this.team){
-                        ExtensionCommands.playSound(parentExt,ua.getUser(),"global","announcer/your_tower_down");
-                    }else{
-                        ExtensionCommands.playSound(parentExt,ua.getUser(),"global","announcer/you_destroyed_tower");
-                    }
+            for(UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
+                if(ua.getTeam() == this.team){
+                    ExtensionCommands.playSound(parentExt,ua.getUser(),"global","announcer/base_tower_down");
+                }else{
+                    ExtensionCommands.playSound(parentExt,ua.getUser(),"global","announcer/you_destroyed_tower");
                 }
             }
         }
@@ -186,8 +180,8 @@ public class Tower extends Actor {
                     }
                 }else{
                     if(this.target.getHealth() <= 0){
-                        if(this.target.getActorType() == ActorType.COMPANION && isFocusingCompanion) isFocusingCompanion = false;
-                        if(this.target.getActorType() == ActorType.PLAYER && isFocusingPlayer) isFocusingPlayer = false;
+                        if(isFocusingCompanion) isFocusingCompanion = false;
+                        if(isFocusingPlayer) isFocusingPlayer = false;
                         this.resetTarget(this.target);
                         return;
                     }
@@ -214,6 +208,7 @@ public class Tower extends Actor {
                             }
                         }
                     }
+
                     if(this.attackCooldown > 0) this.reduceAttackCooldown();
                     if(nearbyActors.isEmpty()){
                         if(this.target.getActorType() == ActorType.PLAYER){
@@ -268,48 +263,12 @@ public class Tower extends Actor {
 
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
-        if(this.target.getActorType() == ActorType.COMPANION && isFocusingCompanion) isFocusingCompanion = false;
-        if(this.target.getActorType() == ActorType.PLAYER && isFocusingPlayer) isFocusingPlayer = false;
         this.resetTarget(a);
     }
 
     public int getTowerNum(){ //Gets tower number for the client to process correctly
-        /*
-        Main map
-        0 - Purple Base Tower
-        1 - Purple Bot Tower
-        2 - Purple Top Tower
-        3 - Blue Base Tower
-        4 - Blue Bot Tower
-        5 - Blue Top Tower
-
-        Practice map
-        0 - Purple Base Tower
-        1 - Purple First Tower
-        3 - Blue Base Tower
-        4 - Blue First Tower
-         */
-        if(!this.id.contains("gumball")){
-            String[] towerIdComponents = this.id.split("_");
-            if(!room.getGroupId().equalsIgnoreCase("practice")){
-                if(towerIdComponents[1].contains("blue")){
-                    return BLUE_TOWER_NUM[(Integer.parseInt(towerIdComponents[1].replace("tower", "")))-1];
-                } else {
-                    return PURPLE_TOWER_NUM[(Integer.parseInt(towerIdComponents[1].replace("tower", "")))-1];
-                }
-            } else {
-                return Integer.parseInt(towerIdComponents[1].replace("tower", ""));
-            }
-        }
-        /*String[] towerIdComponents = this.id.split("_");
-        if(!room.getGroupId().equalsIgnoreCase("practice")){
-            if(towerIdComponents[0].equalsIgnoreCase("blue")){
-                return BLUE_TOWER_NUM[Integer.parseInt(towerIdComponents[1].replace("tower",""))-1];
-            }else{
-                return PURPLE_TOWER_NUM[Integer.parseInt(towerIdComponents[1].replace("tower",""))-1];
-            }
-        }*/
-        return 0;
+        if(this.team == 0) return 0;
+        else return 3;
     }
 
     public void triggerNotification(){ //Resets the hit timer so players aren't spammed by the tower being attacked
@@ -335,4 +294,13 @@ public class Tower extends Actor {
         ExtensionCommands.playSound(this.parentExt,user.getUser(),user.getId(),"sfx_turret_has_you_targeted",this.location);
     }
 
+    public void unlockBaseTower(){
+        this.isUnlocked = true;
+        ExtensionCommands.updateActorState(parentExt,room,id,ActorState.INVINCIBLE,false);
+        ExtensionCommands.updateActorState(parentExt,room,this.id, ActorState.IMMUNITY,false);
+    }
+
+    public boolean isUnlocked(){
+        return this.isUnlocked;
+    }
 }

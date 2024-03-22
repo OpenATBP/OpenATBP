@@ -93,14 +93,14 @@ public class BubbleGum extends UserActor {
                 ExtensionCommands.playSound(parentExt,room,id,potionVo,this.location);
                 ExtensionCommands.createWorldFX(parentExt,room,id,"fx_target_ring_2",id+"_potionArea",3000+castDelay,(float)dest.getX(),(float)dest.getY(),true,this.team,0f);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new PBAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
-                ExtensionCommands.actorAbilityResponse(parentExt,player,"q",this.canUseAbility(1),getReducedCooldown(cooldown),gCooldown);
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 break;
             case 2: //W
                 this.stopMoving();
                 String turretVo = (this.avatar.equals("princessbubblegum_skin_prince")) ? "vo/vo_gumball_turret" : (this.avatar.contains("young")) ? "vo/vo_bubblegum_young_turret" : "vo/vo_bubblegum_turret";
                 ExtensionCommands.playSound(parentExt,room,id,turretVo,this.location);
                 this.spawnTurret(dest);
-                ExtensionCommands.actorAbilityResponse(parentExt,player,"w",this.canUseAbility(2),getReducedCooldown(cooldown),gCooldown);
+                ExtensionCommands.actorAbilityResponse(parentExt,player,"w",true,getReducedCooldown(cooldown),gCooldown);
                 break;
             case 3: //E
                 if(!this.bombPlaced){
@@ -245,8 +245,6 @@ public class BubbleGum extends UserActor {
         }
     }
 
-
-
     private class Turret extends Actor {
         private long timeOfBirth;
         private Actor target;
@@ -273,7 +271,7 @@ public class BubbleGum extends UserActor {
             ExtensionCommands.createActor(parentExt,room,this.id,this.avatar,this.location,0f,this.team);
             ExtensionCommands.playSound(parentExt,room,this.id,"sfx_bubblegum_turret_spawn",this.location);
             ExtensionCommands.createWorldFX(parentExt,room,this.id,"fx_target_ring_3",this.id+"_ring", 60000, (float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
-            this.addState(ActorState.IMMUNITY,0d,1000*60*15,"tower_"+this.id+"_immunity",false);
+            this.addState(ActorState.IMMUNITY,0d,1000*60*15,null,false);
         }
 
         @Override
@@ -287,7 +285,7 @@ public class BubbleGum extends UserActor {
             float time = (float) (a.getLocation().distance(this.location) / 10f);
             ExtensionCommands.playSound(parentExt,room,this.id,"sfx_bubblegum_turret_shoot",this.location);
             ExtensionCommands.createProjectileFX(parentExt,room,"bubblegum_turret_projectile",this.id,a.getId(),"Bip01","targetNode",time);
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,BubbleGum.this,a,10+(int)this.getPlayerStat("attackDamage"),"turretAttack"),(int)time*1000,TimeUnit.MILLISECONDS);
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(new Champion.DelayedAttack(parentExt,this,a,10+(int)this.getPlayerStat("attackDamage"),"turretAttack"),(int)time*1000,TimeUnit.MILLISECONDS);
             BubbleGum.this.handleLifeSteal();
             this.attackCooldown = this.getPlayerStat("attackSpeed");
         }
