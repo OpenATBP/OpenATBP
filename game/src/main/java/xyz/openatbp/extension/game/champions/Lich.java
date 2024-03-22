@@ -57,9 +57,8 @@ public class Lich extends UserActor{
                 this.stopMoving();
                 ExtensionCommands.playSound(parentExt,room,this.id,"sfx_lich_charm_shot",this.location);
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_lich_charm_shot",this.location);
-                Line2D fireLine = new Line2D.Float(this.getRelativePoint(false),dest);
-                Line2D newLine = Champion.getMaxRangeLine(fireLine,8f);
-                this.fireProjectile(new LichCharm(parentExt,this,newLine,9f,0.5f,this.id+"projectile_lich_charm"),"projectile_lich_charm",dest,8f);
+                Line2D abilityLine = Champion.getAbilityLine(this.location,dest,8f);
+                this.fireProjectile(new LichCharm(parentExt,this,abilityLine,9f,0.5f,this.id+"projectile_lich_charm"),"projectile_lich_charm",this.location,dest,8f);
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"w",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new LichAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
 
@@ -143,12 +142,11 @@ public class Lich extends UserActor{
         if(this.ultStarted && System.currentTimeMillis() - this.ultTime >= 500){
             this.ultTime = System.currentTimeMillis();
             boolean damageDealt = false;
-            JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(),"spell3");
             for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(this.room.getId()),ultLocation,3f)){
                 if(a.getTeam() != this.team && a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER){
                     if(!damageDealt) damageDealt = true;
-                    double damage = getSpellDamage(spellData)/2d;
-                    a.addToDamageQueue(this,Math.round(damage),spellData);
+                    JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(),"spell3");
+                    a.addToDamageQueue(this,(double)getSpellDamage(spellData)/2,spellData);
                 }
             }
             if(damageDealt){
@@ -235,6 +233,7 @@ public class Lich extends UserActor{
 
         @Override
         public void die(Actor a) {
+            this.stopMoving();
             System.out.println(this.id + " has died! ");
             ExtensionCommands.knockOutActor(parentExt,room,this.id,a.getId(),40000);
             Lich.this.handleSkullyDeath();
@@ -304,10 +303,6 @@ public class Lich extends UserActor{
                 Lich.this.setSkullyTarget(this.target);
             }else if(attacker.getClass() == Skully.class){
                 double damage = 25d + (Lich.this.getPlayerStat("attackDamage")*0.8);
-                Actor attacker = this.attacker;
-                if(this.target.getActorType() == ActorType.PLAYER){
-                    attacker = Lich.this;
-                }
                 new Champion.DelayedAttack(parentExt,attacker,target,(int)damage,"skullyAttack").run();
                 if(isNonStructure(target)) Lich.this.handleLifeSteal();
             }

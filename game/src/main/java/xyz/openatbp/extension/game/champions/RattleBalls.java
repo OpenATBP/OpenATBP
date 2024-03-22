@@ -38,6 +38,8 @@ public class RattleBalls extends UserActor {
         switch(ability){
             case 1:
                 this.canCast[0] = false;
+                this.canCast[1] = false;
+                this.canCast[2] = false;
                 Point2D ogLocation = this.location;
                 Point2D finalDashPoint = this.dash(dest,false,DASH_SPEED);
                 double time = ogLocation.distance(finalDashPoint)/DASH_SPEED;
@@ -66,7 +68,7 @@ public class RattleBalls extends UserActor {
                             a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
                         }
                     }
-                    ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
+                    ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),qTime+250);
                 }
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new RattleAbilityHandler(ability,spellData,cooldown,gCooldown,finalDashPoint),qTime,TimeUnit.MILLISECONDS);
                 break;
@@ -140,7 +142,11 @@ public class RattleBalls extends UserActor {
             this.endPassive();
         }
         if(this.parryActive && System.currentTimeMillis() - this.parryCooldown >= 1500){
-            this.canCast[0] = false;
+            this.canCast[0] = true;
+            this.canCast[1] = true;
+            this.canCast[2] = true;
+            this.parryActive = false;
+            this.qUse = 0;
             this.abilityEnded();
             String spinSfx = (this.avatar.contains("spidotron")) ? "sfx_rattleballs_luchador_counter_attack" : "sfx_rattleballs_spin";
             String swordSpinFX = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_sword_spin" : "rattleballs_sword_spin";
@@ -149,11 +155,7 @@ public class RattleBalls extends UserActor {
             ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell3a",250,true);
             ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,swordSpinFX,250,this.id+"_parrySpin",true,"Bip001 Footsteps",false,false,this.team);
             ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"rattleballs_counter_trail",250,this.id+"_trail",true,"Bip001 Prop1",true,false,this.team);
-            Runnable castDelay = () -> this.canCast[0] = true;
-            SmartFoxServer.getInstance().getTaskScheduler().schedule(castDelay,500,TimeUnit.MILLISECONDS);
-            this.parryActive = false;
-            this.qUse = 0;
-            ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(12000),0);
+            ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(12000),250);
             List<Actor> affectedActors = Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,2f);
             affectedActors = affectedActors.stream().filter(this::isNonStructure).collect(Collectors.toList());
             for(Actor a : affectedActors){
@@ -200,6 +202,8 @@ public class RattleBalls extends UserActor {
             this.qUse = 0;
             this.parryActive = false;
             this.canMove = true;
+            this.canCast[1] = true;
+            this.canCast[2] = true;
             this.handleLifeSteal();
             this.abilityEnded();
             JsonNode counterAttackData = counterAttackData();
@@ -264,6 +268,8 @@ public class RattleBalls extends UserActor {
             }else{
                 abilityEnded();
                 canCast[0] = true;
+                canCast[1] = true;
+                canCast[2] = true;
             }
         }
 

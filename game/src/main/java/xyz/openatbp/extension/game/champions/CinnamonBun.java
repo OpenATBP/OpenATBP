@@ -72,9 +72,9 @@ public class CinnamonBun extends UserActor {
             float radius = 2f;
             if(this.ultUses > 1 && this.ultPoint2 == null){
                 radius = 4f;
-                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"cb_ring_explode_big",this.id+"_bigExplosion",500,(float)this.ultPoint.getX(),(float)this.ultPoint.getY(),false,this.team,0f);
+                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"cb_ring_explode_big",this.id+"_bigExplosion",2000,(float)this.ultPoint.getX(),(float)this.ultPoint.getY(),false,this.team,0f);
             }else{
-                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"cb_ring_sm_explode",this.id+"_smallExplosion",500,(float)this.ultPoint.getX(),(float)this.ultPoint.getY(),false,this.team,0f);
+                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"cb_ring_sm_explode",this.id+"_smallExplosion",2000,(float)this.ultPoint.getX(),(float)this.ultPoint.getY(),false,this.team,0f);
             }
             JsonNode spellData = this.parentExt.getAttackData(this.avatar,"spell3");
             for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.ultPoint,radius)){
@@ -88,7 +88,7 @@ public class CinnamonBun extends UserActor {
                         a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
                     }
                 }
-                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"cb_ring_sm_explode",this.id+"_smallExplosion2",500,(float)this.ultPoint2.getX(),(float)this.ultPoint2.getY(),false,this.team,0f);
+                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"cb_ring_sm_explode",this.id+"_smallExplosion2",2000,(float)this.ultPoint2.getX(),(float)this.ultPoint2.getY(),false,this.team,0f);
             }
             this.ultPoint = null;
             this.ultPoint2 = null;
@@ -126,34 +126,21 @@ public class CinnamonBun extends UserActor {
                 this.canMove = false;
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_cb_power2",this.location);
                 this.changeHealth((int) ((double)(this.getMaxHealth())*0.05d));
-                Point2D startLocation = this.location;
-                this.endLocation = dest;
-                float distance = (float) this.location.distance(dest);
-                Line2D dashLine = new Line2D.Double(startLocation,endLocation);
-                if(distance < 6.5f){
-                    float remainingDistance = (float) (6.5 - distance);
-                    Line2D newLine = Champion.extendLine(dashLine,remainingDistance);
-                    this.endLocation = newLine.getP2();
-                }
-                this.wLine = new Line2D.Double(startLocation,endLocation);
+                Point2D origLocation = this.location;
+                this.wLine = Champion.getAbilityLine(origLocation,dest,6.5f);
+                double slideX = Champion.getAbilityLine(origLocation,dest,1.5f).getP2().getX();
+                double slideY = Champion.getAbilityLine(origLocation,dest,1.5f).getP2().getY();
                 float rotation = getRotation(dest);
-                Point2D directionVector = new Point2D.Double(endLocation.getX() - startLocation.getX(), endLocation.getY() - startLocation.getY());
-                double length = Math.sqrt(directionVector.getX() * directionVector.getX() + directionVector.getY() * directionVector.getY());
-                double normalizedX = directionVector.getX() / length;
-                double normalizedY = directionVector.getY() / length;
-                float desiredX = (float) (startLocation.getX() + 1.5f * normalizedX);
-                float desiredY = (float) (startLocation.getY() + 1.5f * normalizedY);
+                Point2D finalDashPoint = this.dash(wLine.getP2(),true,15d);
+                double time = origLocation.distance(finalDashPoint)/15d;
+                int wTime = (int) (time*1000);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_rect_7",5000,this.id+"w",false,"",true,true,this.team);
-                //ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_rect_7",this.id+"w",5000,(float)startLocation.getX(),(float)startLocation.getY(),false,this.team,rotation);
-                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"cb_frosting_slide",this.id+"_slide",5000,desiredX,desiredY,false,this.team,rotation);
-                Point2D dashEndPoint = this.dash(this.endLocation,false, 15d);
-                double dashTime = startLocation.distance(dashEndPoint)/15d;
-                int msRan = (int)(dashTime*1000d);
+                ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"cb_frosting_slide",this.id+"_slide",5000,(float)slideX,(float)slideY,false,this.team,rotation);
                 Runnable dashEnd = () -> this.canMove = true;
-                ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell2b",msRan,false);
+                ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell2b",wTime,false);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(dashEnd,msRan,TimeUnit.MILLISECONDS);
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new CinnamonAbilityHandler(ability,spellData,cooldown,gCooldown,dashEndPoint),5000,TimeUnit.MILLISECONDS);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(dashEnd,wTime,TimeUnit.MILLISECONDS);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new CinnamonAbilityHandler(ability,spellData,cooldown,gCooldown,finalDashPoint),5000,TimeUnit.MILLISECONDS);
                 break;
             case 3:
                 System.out.println("Ult uses: " + this.ultUses);
@@ -190,11 +177,11 @@ public class CinnamonBun extends UserActor {
                         radius = 4f;
                         ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_ultBig");
                         ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_bigUltRing");
-                        ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"cb_ring_explode_big",this.id+"_bigExplosion",500,(float)this.ultPoint.getX(),(float)this.ultPoint.getY(),false,this.team,0f);
+                        ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"cb_ring_explode_big",this.id+"_bigExplosion",2000,(float)this.ultPoint.getX(),(float)this.ultPoint.getY(),false,this.team,0f);
                     }else{
                         ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_ultSmall");
                         ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_smUltRing");
-                        ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"cb_ring_sm_explode",this.id+"_smallExplosion",500,(float)this.ultPoint.getX(),(float)this.ultPoint.getY(),false,this.team,0f);
+                        ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"cb_ring_sm_explode",this.id+"_smallExplosion",2000,(float)this.ultPoint.getX(),(float)this.ultPoint.getY(),false,this.team,0f);
 
                     }
                     for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.ultPoint,radius)){
@@ -204,7 +191,7 @@ public class CinnamonBun extends UserActor {
                     }
                     if(this.ultPoint2 != null){
                         System.out.println("Here!");
-                        ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"cb_ring_sm_explode",this.id+"_smallExplosion2",500,(float)this.ultPoint2.getX(),(float)this.ultPoint2.getY(),false,this.team,0f);
+                        ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"cb_ring_sm_explode",this.id+"_smallExplosion2",2000,(float)this.ultPoint2.getX(),(float)this.ultPoint2.getY(),false,this.team,0f);
                         ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_ultSmall2");
                         ExtensionCommands.removeFx(this.parentExt,this.room,this.id+"_smUltRing2");
                         for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.ultPoint2,radius)){

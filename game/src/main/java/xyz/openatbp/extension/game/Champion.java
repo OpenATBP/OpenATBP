@@ -113,6 +113,16 @@ public class Champion {
         return points;
     }
 
+    public static List<UserActor> getUserActorsInRadius(RoomHandler room, Point2D center, float radius){
+        List<UserActor> players = room.getPlayers();
+        List<UserActor> playersInRadius = new ArrayList<>();
+        for(UserActor ua : players){
+            Point2D location = ua.getLocation();
+            if(location.distance(center) <= radius) playersInRadius.add(ua);
+        }
+        return playersInRadius;
+    }
+
     public static List<Actor> getActorsInRadius(RoomHandler room, Point2D center, float radius){
         List<Actor> actors = room.getActors();
         List<Actor> affectedActors = new ArrayList<>(actors.size());
@@ -192,6 +202,20 @@ public class Champion {
         float y = slope*x + intercept;
         Point2D newPoint = new Point2D.Float(x,y);
         return new Line2D.Float(movementLine.getP1(),newPoint);
+    }
+
+    public static Line2D getAbilityLine(Point2D location, Point2D dest, float abilityRange){
+        double x = location.getX();
+        double y = location.getY();
+        double dx = dest.getX() - location.getX();
+        double dy = dest.getY() - location.getY();
+        double length = Math.sqrt(dx * dx + dy * dy);
+        double unitX = dx/length;
+        double unitY = dy/length;
+        double extendedX = x + abilityRange * unitX;
+        double extendedY = y + abilityRange * unitY;
+        Point2D lineEndPoint = new Point2D.Double(extendedX,extendedY);
+        return new Line2D.Double(location,lineEndPoint);
     }
 
     public static HashMap<ActorState, Boolean> getBlankStates(){

@@ -37,7 +37,7 @@ public class Lemongrab extends UserActor {
             String iconName = "lemon"+this.unacceptableLevels;
             ExtensionCommands.removeStatusIcon(parentExt,player,lastIcon);
             this.lastIcon = iconName;
-            ExtensionCommands.addStatusIcon(parentExt,player,iconName,"UNACCEPTABLE!!!!!","icon_lemongrab_p"+this.unacceptableLevels,0f);
+            ExtensionCommands.addStatusIcon(parentExt,player,iconName,"UNACCEPTABLE!!!!!","icon_lemongrab_p"+this.unacceptableLevels,2000f);
             String voiceLinePassive = "";
             switch(this.unacceptableLevels){
                 case 1:
@@ -115,7 +115,7 @@ public class Lemongrab extends UserActor {
             case 3:
                 this.canCast[2] = false;
                 this.isCastingUlt = true;
-                ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),gCooldown);
+                ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"e",true,getReducedCooldown(cooldown),1000);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"fx_target_ring_2.5",this.id+"_jailRing",castDelay,(float)dest.getX(),(float)dest.getY(),true,this.team,0f);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new LemonAbilityHandler(ability,spellData,cooldown,gCooldown,dest),1000,TimeUnit.MILLISECONDS);
                 String voiceLine = "lemongrab_dungeon_3hours";
