@@ -292,7 +292,7 @@ public class Tower extends Actor {
         if(!this.id.contains("gumball")){
             String[] towerIdComponents = this.id.split("_");
             if(!room.getGroupId().equalsIgnoreCase("practice")){
-                if(towerIdComponents[1].contains("blue")){
+                if(towerIdComponents[0].contains("blue")){
                     return BLUE_TOWER_NUM[(Integer.parseInt(towerIdComponents[1].replace("tower", "")))-1];
                 } else {
                     return PURPLE_TOWER_NUM[(Integer.parseInt(towerIdComponents[1].replace("tower", "")))-1];

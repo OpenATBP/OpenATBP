@@ -375,7 +375,9 @@ public class UserActor extends Actor {
     }
 
     public void autoAttack(Actor a){
-        this.stopMoving(250);
+        Console.debugLog("autoAttack");
+        if(!this.parentExt.getActorData(this.getAvatar()).get("attackType").asText().equalsIgnoreCase("MELEE")) this.stopMoving(250);
+        if(this.getAvatar().contains("finn") || this.getAvatar().contains("marceline")) this.stopMoving(500);
         this.attack(a);
     }
 

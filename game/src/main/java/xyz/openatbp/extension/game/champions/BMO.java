@@ -101,7 +101,6 @@ public class BMO extends UserActor {
                     this.canCast[2] = false;
                     this.wActive = true;
                     wStartTime = System.currentTimeMillis();
-                    ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,500,0);
                     Runnable secondUseDelay = () -> this.canCast[1] = true;
                     String pixelsAoeFx = (this.avatar.contains("noir")) ? "bmo_pixels_aoe_noire" : "bmo_pixels_aoe";
                     String remoteSpinFx = (this.avatar.contains("noir")) ? "bmo_remote_spin_noire" : "bmo_remote_spin";

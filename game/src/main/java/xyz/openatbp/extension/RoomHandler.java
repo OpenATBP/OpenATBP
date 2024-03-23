@@ -337,7 +337,7 @@ public class RoomHandler implements Runnable{
                 if(spawns.getInt(s) == 91){
                     for(UserActor u : players){
                         Point2D currentPoint = u.getLocation();
-                        if(insideHealth(currentPoint,getHealthNum(s))){
+                        if(insideHealth(currentPoint,getHealthNum(s)) && u.getHealth() > 0){
                             int team = u.getTeam();
                             Point2D healthLoc = getHealthLocation(getHealthNum(s));
                             ExtensionCommands.removeFx(parentExt,room,s+"_fx");

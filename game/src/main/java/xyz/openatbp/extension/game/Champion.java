@@ -7,6 +7,7 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.actors.Actor;
@@ -254,8 +255,8 @@ public class Champion {
 
         @Override
         public void run() {
-            if(this.attack.equalsIgnoreCase("basicAttack") && !this.attacker.canMove()) this.attacker.setCanMove(true);
             if(this.target.getHealth() <= 0) return;
+            if(this.attacker.getActorType() == ActorType.PLAYER && this.parentExt.getActorData(this.attacker.getAvatar()).get("attackType").asText().equalsIgnoreCase("MELEE") && !this.attacker.getAvatar().contains("finn") && !this.attacker.getAvatar().contains("marceline")) ((UserActor) this.attacker).stopMoving(500);
             if(this.attacker.getState(ActorState.BLINDED)){
                 if(this.attacker.getActorType() == ActorType.PLAYER) ExtensionCommands.playSound(parentExt, attacker.getRoom(),attacker.getId(),"sfx/sfx_attack_miss", attacker.getLocation());
                 return;
