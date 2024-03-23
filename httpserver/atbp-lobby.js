@@ -66,7 +66,7 @@ function leaveQueue(socket){
     socket.player.queue.type = null;
     socket.player.queue.started = -1;
     socket.player.queue.queueNum = -1;
-    var usersInQueue = users.filter(user => user.player != socket.player && user.player.queue.type == socket.player.queue.type && user.player.queue.queueNum == -1);
+    var usersInQueue = users.filter(user => user.player != socket.player && (user.player.queue.type != null && user.player.queue.type == socket.player.queue.type) && user.player.queue.queueNum == -1);
     var size = usersInQueue.length;
     if(size > 3) size = 3;
     else safeSendAll(usersInQueue, 'queue_update', {'size': size}).catch(console.error);
