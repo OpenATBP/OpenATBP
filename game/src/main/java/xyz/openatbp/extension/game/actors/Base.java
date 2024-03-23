@@ -5,6 +5,7 @@ import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MapData;
 import xyz.openatbp.extension.game.ActorState;
@@ -68,7 +69,7 @@ public class Base extends Actor {
 
     @Override
     public void attack(Actor a) {
-        System.out.println("Bases can't attack silly!");
+        Console.logWarning("Bases can't attack silly!");
     }
 
     @Override

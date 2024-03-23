@@ -118,7 +118,7 @@ public class Minion extends Actor{
 
     @Override
     public void die(Actor a) {
-        System.out.println(this.id + " has died! " + this.dead);
+        Console.debugLog(this.id + " has died! " + this.dead);
         this.currentHealth = 0;
         if(this.dead) return;
         this.stopMoving();
@@ -211,7 +211,7 @@ public class Minion extends Actor{
         if(MOVEMENT_DEBUG) ExtensionCommands.moveActor(parentExt,room,id+"_test",this.location,this.location,5f,false);
         switch(this.state){
             case IDLE:
-                Console.logWarning(this.id + " is idle!");
+               // Console.logWarning(this.id + " is idle!");
                 this.mainPathIndex = this.findPathIndex();
                 this.move(this.getPathPoint());
                 this.state = State.MOVING;
@@ -492,7 +492,6 @@ public class Minion extends Actor{
             else index--;
         }
         if(index == -1){
-            System.out.println("Restarting path finding!");
             this.movementLine = null;
             return this.findPathIndex();
         }

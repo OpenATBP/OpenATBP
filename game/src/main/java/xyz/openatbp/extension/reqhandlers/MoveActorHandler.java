@@ -24,7 +24,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
         RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId());
         if(roomHandler == null && (int)sender.getLastJoinedRoom().getProperty("state") != 2) ExtensionCommands.abortGame(parentExt,sender.getLastJoinedRoom());
         if(roomHandler == null){
-            System.out.println(sender.getId() + " tried to move in room " + sender.getLastJoinedRoom().getId() + " but failed!");
+            Console.logWarning(sender.getId() + " tried to move in room " + sender.getLastJoinedRoom().getId() + " but failed!");
             return;
         }
         UserActor user = roomHandler.getPlayer(String.valueOf(sender.getId()));
@@ -91,7 +91,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                 if(movementLine.getP1().distance(dest) >= 0.1f) user.move(params,dest);
                 else user.stopMoving();
             }
-        }else System.out.println("Can't move!");
+        }else Console.logWarning("Can't move!");
 
     }
 

@@ -1,6 +1,7 @@
 package xyz.openatbp.extension.game;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.actors.Actor;
@@ -74,7 +75,7 @@ public abstract class Projectile {
             return;
         }
         if(this.destination.distance(this.getLocation()) <= 0.01 || System.currentTimeMillis() - this.startTime > this.estimatedDuration){
-            System.out.println("Projectile being destroyed in update!");
+            Console.debugLog("Projectile being destroyed in update!");
             this.destroy();
         }
     }
@@ -111,7 +112,7 @@ public abstract class Projectile {
     }
 
     public void destroy(){
-        System.out.println("Projectile: " + id + " is being destroyed! " + this.destroyed);
+        Console.debugLog("Projectile: " + id + " is being destroyed! " + this.destroyed);
         if(!destroyed){
             ExtensionCommands.destroyActor(this.parentExt, owner.getRoom(), this.id);
         }

@@ -262,7 +262,6 @@ public class UserActor extends Actor {
             double critChance = this.getPlayerStat("criticalChance")/100d;
             double random = Math.random();
             boolean crit = random < critChance;
-            System.out.println("Crit: " + critChance + " vs " + random + " | " + crit);
             ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
             this.attackCooldown = this.getPlayerStat("attackSpeed");
             double damage = this.getPlayerStat("attackDamage");
@@ -349,11 +348,9 @@ public class UserActor extends Actor {
     public Point2D dash(Point2D dest, boolean noClip, double dashSpeed){
         Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
         if(dashPoint == null) dashPoint = this.location;
-        System.out.println("Dash: " + dashPoint);
         if(MOVEMENT_DEBUG) ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"gnome_a",this.id+"_test"+Math.random(),5000,(float)dashPoint.getX(),(float)dashPoint.getY(),false,0,0f);
         //if(noClip) dashPoint = Champion.getTeleportPoint(this.parentExt,this.player,this.location,dest);
         double time = dashPoint.distance(this.location)/dashSpeed;
-        System.out.println("Time stopped: " + time);
         this.stopMoving((int)(time*1000d));
         ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,dashPoint, (float) dashSpeed,true);
         this.setLocation(dashPoint);
@@ -366,7 +363,6 @@ public class UserActor extends Actor {
             double critChance = this.getPlayerStat("criticalChance")/100d;
             double random = Math.random();
             boolean crit = random < critChance;
-            System.out.println("Crit: " + critChance + " vs " + random + " | " + crit);
             ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
             this.attackCooldown = this.getPlayerStat("attackSpeed");
             return crit;
@@ -390,7 +386,7 @@ public class UserActor extends Actor {
 
     @Override
     public void die(Actor a) {
-        System.out.println(this.id + " has died! " + this.dead);
+        Console.debugLog(this.id + " has died! " + this.dead);
         try{
             if(this.dead) return;
             this.dead = true;
@@ -786,7 +782,7 @@ public class UserActor extends Actor {
         int teamNumber = parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id,this.team);
         Point2D respawnPoint = MapData.PURPLE_SPAWNS[teamNumber];
         if(this.team == 1 && respawnPoint.getX() < 0) respawnPoint = new Point2D.Double(respawnPoint.getX()*-1,respawnPoint.getY());
-        System.out.println("Respawning at: " + respawnPoint.getX() + "," + respawnPoint.getY() + " for team " + this.team);
+        Console.debugLog("Respawning at: " + respawnPoint.getX() + "," + respawnPoint.getY() + " for team " + this.team);
         this.location = respawnPoint;
         this.movementLine = new Line2D.Float(respawnPoint,respawnPoint);
         this.timeTraveled = 0f;
@@ -859,7 +855,7 @@ public class UserActor extends Actor {
             else if(tries == 1) attackNumber = "attack2";
             else if(tries == 2) attackNumber = "attack3";
             else{
-                System.out.println("Fourth attack detected!");
+                Console.logWarning("Fourth attack detected!");
             }
             ISFSObject attack1 = new SFSObject();
             attack1.putUtfString("atkName",attackData.get(precursor+"Name").asText());

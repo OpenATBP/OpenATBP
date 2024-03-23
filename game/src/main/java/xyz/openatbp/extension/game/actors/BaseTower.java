@@ -5,6 +5,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MapData;
 import xyz.openatbp.extension.game.ActorState;
@@ -98,7 +99,7 @@ public class BaseTower extends Actor {
     }
     @Override
     public void die(Actor a) {
-        System.out.println(this.id + " has died! " + this.destroyed);
+        Console.debugLog(this.id + " has died! " + this.destroyed);
         this.currentHealth = 0;
         if(!this.destroyed){
             this.destroyed = true;

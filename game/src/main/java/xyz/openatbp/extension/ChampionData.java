@@ -41,9 +41,7 @@ public class ChampionData {
             if(categoryPoints+1 < 3) works = true;
             else if(categoryPoints+1 == 3) works = spentPoints+1>=4; //Can't get a third level without spending 4 points
             else if(categoryPoints+1 == 4) works = spentPoints+1>=6; //Can't get a fourth level without spending 6 points
-            else System.out.println("Failed everything!");
-        }else{
-            System.out.println("Not enough skill points!");
+            else Console.logWarning("Failed everything!");
         }
         if(works){
             spellPoints--;
@@ -62,7 +60,6 @@ public class ChampionData {
                     if(previousValues.containsKey(stat.get("stat").asText())){
                         previousValue = previousValues.get(stat.get("stat").asText());
                     }
-                    System.out.println("Leveling up! Previous value: " + previousValue + " vs " + stat.get("value").asInt());
                     int packStat = stat.get("value").asInt() - previousValue;
                     if(stat.get("stat").asText().equalsIgnoreCase("health")){ //Health is tracked through 4 stats (health, currentHealth, maxHealth, and pHealth)
                         int maxHealth = ua.getMaxHealth();
@@ -93,7 +90,7 @@ public class ChampionData {
             toUpdate.putUtfString("id", String.valueOf(user.getId()));
             return toUpdate;
         }else{
-            System.out.println("Failed!: " + category);
+            Console.logWarning("Failed!: " + category);
         }
         return null;
     }
@@ -180,7 +177,6 @@ public class ChampionData {
                 }else if(k.contains("attackSpeed")){
                     ua.increaseStat(stat, (levelStat*-1));
                 }else{
-                    System.out.println("Level up! Increasing " + stat + " by " + levelStat);
                     ua.increaseStat(stat, levelStat);
                 }
             }
@@ -201,11 +197,8 @@ public class ChampionData {
             else if(categoryPoints+1 == 3) works = spentPoints+1>=4; //Can't get a third level without spending 4 points
             else if(categoryPoints+1 == 4) works = spentPoints+1>=6; //Can't get a fourth level without spending 6 points
             if(works){
-                System.out.println("Auto Leveling!");
                 ExtensionCommands.updateActorData(parentExt,ua.getRoom(),useSpellPoint(user,"category"+category,parentExt));
             }else{
-                System.out.println("CategoryPoints: " + categoryPoints);
-                System.out.println("SpentPoints: " + spentPoints);
                 for(int i = 0; i < buildPath.length; i++){
                     category = buildPath[i];
                     if(categoryPoints+1 < 3) works = true;

@@ -227,7 +227,7 @@ public abstract class Actor {
             }else{
                 if(data.containsKey("fxId") && System.currentTimeMillis() >= data.getLong("fxEndTime")){
                     int fxDuration = (int)(data.getLong("endTime")-System.currentTimeMillis());
-                    System.out.println("New effect playing for " + fxDuration);
+                    Console.debugLog("New effect playing for " + fxDuration);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,data.getUtfString("fxId"),fxDuration,this.id+"_"+data.getUtfString("fxId"),true,"",true,false,this.team);
                     this.activeBuffs.get(k).putLong("fxEndTime",data.getLong("endTime"));
                 }
