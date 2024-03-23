@@ -90,6 +90,7 @@ function leaveQueue(socket){
       }
 
     }else console.log("Left undefined queue!");
+    queues = queues.filter(q => q.players.length > 0);
   }
   socket.player.queue.type = null;
   socket.player.queue.started = -1;
@@ -515,6 +516,8 @@ function handleRequest (jsonString, socket) {
   if (response){
     console.log("->", response['cmd'], response['payload']);
     if(response['cmd'] == 'login'){
+      var existingUser = users.find(u => u.player.name == resonse['payload'].name);
+      if(existingUser != undefined) users = users.filter(u => u != existingUser);
       users.push(socket);
       socket.player = {
        'name': response['payload'].name,
