@@ -238,22 +238,26 @@ public class MovementManager {
     }
 
     public static List<Point2D> getPath(ATBPExtension parentExt, boolean practice, Point2D location, Point2D dest){
-        FloatArray path = new FloatArray();
-        if(!practice) parentExt.getMainMapPathFinder().findPath((float)location.getX()+50,(float)location.getY()+30,(float)dest.getX()+50,(float)dest.getY()+30,0.6f,path);
-        else parentExt.getPracticeMapPathFinder().findPath((float)location.getX()+50,(float)location.getY()+30,(float)dest.getX()+50,(float)dest.getY()+30,0.6f,path);
-        List<Point2D> pathList = new ArrayList<>();
-        float px = 0;
-        float py = 0;
-        for(int i = 0; i < path.size; i++){
-            if(i%2 == 0) px = path.get(i);
-            else py = path.get(i);
-            if(px != 0 && py != 0){
-                pathList.add(new Point2D.Float(px-50,py-30));
-                px = 0f;
-                py = 0f;
+        try{
+            FloatArray path = new FloatArray();
+            if(!practice) parentExt.getMainMapPathFinder().findPath((float)location.getX()+50,(float)location.getY()+30,(float)dest.getX()+50,(float)dest.getY()+30,0.6f,path);
+            else parentExt.getPracticeMapPathFinder().findPath((float)location.getX()+50,(float)location.getY()+30,(float)dest.getX()+50,(float)dest.getY()+30,0.6f,path);
+            List<Point2D> pathList = new ArrayList<>();
+            float px = 0;
+            float py = 0;
+            for(int i = 0; i < path.size; i++){
+                if(i%2 == 0) px = path.get(i);
+                else py = path.get(i);
+                if(px != 0 && py != 0){
+                    pathList.add(new Point2D.Float(px-50,py-30));
+                    px = 0f;
+                    py = 0f;
+                }
             }
+            return pathList;
+        }catch(Exception e) {
+            return new ArrayList<>();
         }
-        return pathList;
     }
 
     public static Point2D[] findAllPoints(Line2D line){ //Finds all points within a line
