@@ -225,7 +225,12 @@ public class RoomHandler implements Runnable{
                 t.update(mSecondsRan);
                 if(t.getHealth() <= 0){
                     if(mSecondsRan < 1000*60*13) this.playTowerMusic = true;
-                    baseTowers.get(t.getTeam()).unlockBaseTower();
+                    for(BaseTower b : baseTowers) {
+                        if (b.getTeam() == t.getTeam() && !b.isUnlocked()) {
+                            b.unlockBaseTower();
+                            break;
+                        }
+                    }
                     if(this.practiceMap) {
                         if(t.getTowerNum() == 0 || t.getTowerNum() == 3) bases[t.getTeam()].unlock();
                     }

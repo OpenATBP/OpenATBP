@@ -43,7 +43,6 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             //Console.debugLog("dx: " + dx + " dz: " + dz);
             FloatArray path = new FloatArray();
             try{
-                Console.debugLog("Is practice: " + parentExt.getRoomHandler(room.getId()).isPracticeMap());
                 if(!parentExt.getRoomHandler(room.getId()).isPracticeMap()) parentExt.getMainMapPathFinder().findPath(px+50,pz+30,dx+50,dz+30,0.6f,path);
                 else parentExt.getPracticeMapPathFinder().findPath(px+50,pz+30,dx+50,dz+30,0.6f,path);
                 if(path.size <= 2 || MovementManager.insideAnyObstacle(parentExt,parentExt.getRoomHandler(room.getId()).isPracticeMap(),new Point2D.Float(dx,dz))){

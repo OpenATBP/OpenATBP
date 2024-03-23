@@ -215,7 +215,7 @@ mongoClient.connect(err => {
             res.cookie('dname',data.dname);
             res.cookie('authpass',data.authpass);
             res.cookie('logged',true);
-            //res.redirect(config.httpserver.url);
+            res.redirect(config.httpserver.url);
           }).catch((err)=>{
             console.log(err);
             res.redirect(config.httpserver.url);
