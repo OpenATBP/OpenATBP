@@ -233,8 +233,16 @@ function joinQueue(sockets, type){
           safeSendAll(users.filter(u => players.includes(u.player) && u.player.team == 0), 'game_ready', gameData).then(() => {
             safeSendAll(users.filter(u => players.includes(u.player) && u.player.team == 0), 'team_update', {'players': queueObj.purple, 'team': 'PURPLE'}).catch(console.error);
           }).catch(console.error);
-          gameData.team = 'BLUE';
-          safeSendAll(users.filter(u => players.includes(u.player) && u.player.team == 1), 'game_ready', gameData).then(() => {
+          var gameDataBlue = {
+            'countdown': 60,
+            'ip': config.lobbyserver.gameIp,
+            'port': config.lobbyserver.gamePort,
+            'policy_port': config.sockpol.port,
+            'room_id': `GAME${queueObj.queueNum}_${type}`,
+            'password': '',
+            'team': 'BLUE'
+          };
+          safeSendAll(users.filter(u => players.includes(u.player) && u.player.team == 1), 'game_ready', gameDataBlue).then(() => {
             safeSendAll(users.filter(u => players.includes(u.player) && u.player.team == 1), 'team_update', {'players': queueObj.blue, 'team': 'BLUE'}).catch(console.error);
           }).catch(console.error);
         }else console.log("Invalid queue size!");

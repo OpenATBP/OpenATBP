@@ -238,7 +238,6 @@ mongoClient.connect(err => {
       if(p.username != req.body.username){
         test++;
       }else{
-        console.log(Date.now()-p.lastChecked);
         p.lastChecked = Date.now();
         p.username = req.body.username;
         p.level = options.level;
