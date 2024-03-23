@@ -254,6 +254,7 @@ function joinQueue(sockets, type){
 }
 
 function displayQueues(){
+  console.log(":::QUEUES:::");
   for(var q of queues){
     var blue = 0;
     var purple = 0;
@@ -267,6 +268,7 @@ function displayQueues(){
 }
 
 function displayTeams(){
+  console.log(":::TEAMS:::");
   for(var t of teams){
     console.log(`${t.teamLeader.name}'s Team: ${t.players.length} members, In Queue: ${t.queueNum != -1}'`);
   }
@@ -274,6 +276,7 @@ function displayTeams(){
 }
 
 function displayPlayers(){
+  console.log(":::PLAYERS:::");
   for(var u of users) {
     console.log(`${u.player.name} in game: ${u.player.queue.queueNum!=-1} | searching: ${u.player.queue.type != null} | onTeam: ${u.player.onTeam}`, u.player.queue);
   }
