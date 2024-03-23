@@ -182,7 +182,7 @@ public abstract class Actor {
         for(String k : keys){
             ISFSObject data = this.activeBuffs.get(k);
             if(System.currentTimeMillis() >= data.getLong("endTime")){ //Checks to see if the effect has ended
-                System.out.println("Effect: " + k + " is ending!");
+                Console.debugLog("Effect: " + k + " is ending!");
                 if(data.containsKey("newEndTime")){ //If the effect has been modified, run handler for restarting the effect
                     if(data.containsKey("state")) this.handleStateEnd(data);
                     else this.handleEffectEnd(k,data);
@@ -537,13 +537,7 @@ public abstract class Actor {
         for(String s : effectSet){
             ISFSObject data = this.activeBuffs.get(s);
             if(data.containsKey("fxId")) ExtensionCommands.removeFx(this.parentExt,this.room,data.getUtfString("fxId"));
-            if(data.containsKey("state")){
-                if(data.containsKey("stat")){
-                    this.setTempStat(data.getUtfString("stat"),this.getTempStat(data.getUtfString("stat"))*-1);
-                }
-            }else{
-                this.setTempStat(s,this.getTempStat(s)*-1);
-            }
+            this.tempStats = new HashMap<>(); //TODO: Might cause issues if this is used for cleanses
         }
         this.activeBuffs = new HashMap<>();
         this.setCanMove(true);

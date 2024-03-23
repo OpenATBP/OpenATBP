@@ -83,7 +83,6 @@ public class ExtensionCommands {
             }
             if(dub) data.putDouble(key,value);
             for(User u : room.getUserList()){
-                System.out.println("Sending: " + data.toJson() + " to " + u.getId());
                 parentExt.send("cmd_update_actor_data",data,u);
             }
         }catch(Exception e){
