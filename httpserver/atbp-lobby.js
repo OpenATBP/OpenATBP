@@ -519,7 +519,7 @@ function handleRequest (jsonString, socket) {
   if (response){
     console.log("->", response['cmd'], response['payload']);
     if(response['cmd'] == 'login'){
-      var existingUser = users.find(u => u.player.name == resonse['payload'].name);
+      var existingUser = users.find(u => u.player.name == response['payload'].name);
       if(existingUser != undefined) users = users.filter(u => u != existingUser);
       users.push(socket);
       socket.player = {

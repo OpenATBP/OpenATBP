@@ -36,12 +36,12 @@ var onlinePlayers = [];
 var onlineChecker = setInterval(() => {
   for(var p of onlinePlayers){
     if(Date.now()-p.lastChecked > 10000){
-      console.log(p.username + " offline!");
+      console.log(p.name + " offline!");
       onlinePlayers = onlinePlayers.filter((i) => {
         return i.username != p.username;
       });
     }else{
-      console.log(p.username + " online!");
+      console.log(p.name + " online!");
     }
   }
 }, 11000);
@@ -265,8 +265,6 @@ mongoClient.connect(err => {
         playerObj.friends = data.friends;
         onlinePlayers.push(playerObj);
       }).catch(console.error);
-    }else{
-      console.log("Players: " + onlinePlayers.length + " vs " + test);
     }
     res.send(postRequest.handlePresent(req.body));
   });
