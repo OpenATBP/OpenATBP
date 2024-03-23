@@ -61,178 +61,47 @@ function sendCommand (socket, command, response){
     });
 }
 
-function joinQueue(socket, queue){
-  var res = {};
-  queue.players.push(socket.player);
-  socket.player.queueNum = queue.queueNum;
-  displayTeams();
-  displayQueues();
-  if(queue.players.length < queue.max){
-  var size = queue.players.length;
-  if(size>3){
-    size = 3;
-    safeSendAll(users.filter(user => queue.players.includes(user.player) && user.player.onTeam),'team_full',{'full':true}).catch(console.error);
-  }
-    res = {
-      'cmd': 'queue_update',
-      'payload': {
-        'size': size
-      }
-    };
-
-    sendAll(users.filter(user => (queue.players.includes(user.player))), res);
-  }else{
-    safeSendAll(users.filter(user => queue.players.includes(user.player)),'team_full',{'full':true}).then(()=> {
-        var purpleTeam = [];
-        var blueTeam = [];
-
-        for(var p of queue.players){
-          var playerObj = {
-            'name': p.name,
-            'player': p.player,
-            'teg_id': `${p.teg_id}`,
-            'avatar': 'unassigned',
-            'is_ready': false
-          };
-          if(p.team == 0) purpleTeam.push(playerObj);
-          else blueTeam.push(playerObj);
-          p.inGame = true;
-        }
-
-        queue.purple = purpleTeam;
-        queue.blue = blueTeam;
-        queue.stage = 1;
-
-        safeSendAll(users.filter(user => queue.players.includes(user.player) && user.player.team == 0), 'game_ready',{
-          'countdown': 60,
-          'ip': config.lobbyserver.gameIp,
-          'port': config.lobbyserver.gamePort,
-          'policy_port': config.sockpol.port,
-          'room_id': `GAME${queue.queueNum}_${queue.type}`,
-          'password': '',
-          'team': 'PURPLE'
-        }).then(() => {
-          safeSendAll(users.filter(user => user.player.team == 0 && user.player.queueNum == queue.queueNum),'team_update', {
-            'players': purpleTeam,
-            'team': `PURPLE`
-          });
-        }).catch(console.error);
-
-        safeSendAll(users.filter(user => queue.players.includes(user.player) && user.player.team == 1), 'game_ready',{
-          'countdown': 60,
-          'ip': config.lobbyserver.gameIp,
-          'port': config.lobbyserver.gamePort,
-          'policy_port': config.sockpol.port,
-          'room_id': `GAME${queue.queueNum}_${queue.type}`,
-          'password': '',
-          'team': 'BLUE'
-        }).then(() => {
-          safeSendAll(users.filter(user => user.player.team == 1 && user.player.queueNum == queue.queueNum),'team_update', {
-            'players': blueTeam,
-            'team': `BLUE`
-          });
-        }).catch(console.error);
-    }).catch(console.error);
-  }
-}
-
 function leaveQueue(socket){
-  for(var q of queues){
-    if(q.players.includes(socket.player)){
-      q.players = q.players.filter(p => p != socket.player);
-      var res = {};
-      if(q.players.length == 0) break;
-      if(q.stage == 1){
-        safeSendAll(users.filter(u=> q.players.includes(u.player)), 'team_disband', {'reason': 'error_lobby_playerLeftMatch'}).catch(console.error);
-        q.players = [];
-        socket.player.inGame = false;
-      }else{
-        var size = q.players.length;
-        if(size > 3) size = 3;
-          res = {
-            'cmd': 'queue_update',
-            'payload': {
-              size: size
-            }
-          };
-        }
-        sendAll(users.filter(user => q.players.includes(user.player)),res);
-        break;
-      }
-    }
-  queues = queues.filter(q => q.players.length > 0);
-  socket.player.queueNum = -1;
-  socket.player.team = -1;
-  response = {
-    'cmd': 'queue_update',
-    'payload': {
-      'size': 0
-    }
-  };
-}
-
-function createQueue(socket, type, queueSize){
-  if(queueSize == 1){
-    var playerObj = {
-      'name': socket.player.name,
-      'player': socket.player.player,
-      'teg_id': `${socket.player.teg_id}`,
-      'avatar': 'unassigned',
-      'is_ready': false
-    };
-    socket.player.team = 0;
-    socket.player.inGame = true;
-    queues.push({
-      'type': type,
-      'players': [socket.player],
-      'queueNum': queueNum,
-      'blue': [],
-      'purple': [playerObj],
-      'ready': 0,
-      'max': queueSize,
-      'stage': 1
-    });
-    sendCommand(socket,'game_ready',{
-      'countdown': 60,
-      'ip': config.lobbyserver.gameIp,
-      'port': config.lobbyserver.gamePort,
-      'policy_port': config.sockpol.port,
-      'room_id': `${socket.player.name}_${type}`,
-      'password': '',
-      'team': 'PURPLE'
-    }).then(() => {
-      sendCommand(socket,'team_update', {
-        'players': [playerObj],
-        'team': `PURPLE`
-      });
-    }).catch(console.error);
+  if(socket.player.queue.queueNum == -1){ //Not in a game/champ select
+    socket.player.queue.type = null;
+    socket.player.queue.started = -1;
+    socket.player.queue.queueNum = -1;
+    var usersInQueue = users.filter(user => user.player != socket.player && (user.player.queue.type != null && user.player.queue.type == socket.player.queue.type) && user.player.queue.queueNum == -1);
+    var size = usersInQueue.length;
+    if(size > 3) size = 3;
+    else safeSendAll(usersInQueue, 'queue_update', {'size': size}).catch(console.error);
   }else{
-    response = {
-      'cmd': 'queue_update',
-      'payload': {
-        'size': 1
+    var queue = queues.find(q => q.players.includes(socket.player));
+    if(queue != undefined){
+      if(queue.inGame){
+        queue.players = queue.players.filter(pl => pl != socket.player);
+        socket.player.team = -1;
+        socket.player.queue.queueNum = -1;
+      }else{
+        safeSendAll(users.filter(u => queue.players.includes(u.player) && u != socket), 'team_disband', {'reason': 'error_lobby_playerLeftMatch'}).then(() => {
+          for(var u of users.filter(u => queue.players.includes(u.player))){
+            u.player.team = -1;
+            u.player.queue.type = null;
+            u.player.queue.started = -1;
+            u.player.queue.queueNum = -1;
+          }
+          queues = queues.filter(qu => qu != queue);
+        }).catch(console.error);
       }
-    };
-    queues.push({
-      'type': type,
-      'players': [socket.player],
-      'queueNum': queueNum,
-      'blue': [],
-      'purple': [],
-      'ready': 0,
-      'max': queueSize,
-      'stage': 0
-    });
+
+    }else console.log("Left undefined queue!");
+    queues = queues.filter(q => q.players.length > 0);
   }
-  socket.player.queueNum = queueNum;
-  socket.player.team = 0;
-  queueNum++;
+  socket.player.queue.type = null;
+  socket.player.queue.started = -1;
+  displayPlayers();
+  displayQueues();
 }
 
 function leaveTeam(socket){
+  socket.player.onTeam = false;
   var team = teams.find(t => t.players.includes(socket.player));
   if(team != undefined){
-    socket.player.onTeam = false;
     team.players = team.players.filter(p => p.name != socket.player.name);
     console.log(team.players);
     if(socket.player == team.teamLeader){
@@ -254,18 +123,146 @@ function leaveTeam(socket){
       safeSendAll(users.filter(u => team.players.includes(u.player)), 'team_update', {'players': teamObj, 'team': team.team}).catch(console.error);
       sendCommand(users.find(u => u.player == team.teamLeader), 'invite_declined', {'player': socket.player.teg_id}).catch(console.error);
     }
-    if(team.queueNum != -1){
+    if(team.queueNum != -1){ //Should kick everyone out of queue
       leaveQueue(socket);
-      for(var p of team.players){
-        leaveQueue(users.find(u=>u.player == p));
-      }
       team.queueNum = -1;
     }
     teams = teams.filter(t => t.teamLeader != undefined);
+  }else console.log("No team found when leaving!");
+  displayTeams();
+  displayPlayers();
+}
+
+function joinQueue(sockets, type){
+  var queueSize = 1;
+  if(type.includes('p') && type != 'practice') queueSize = Number(type.replace("p",""));
+  if(queueSize == 3) queueSize = 2; //Turns bots to 1v1
+  for(var i = 0; i < sockets.length; i++){
+    var socket = sockets[i];
+    socket.player.queue.type = type;
+    socket.player.queue.started = Date.now();
+    if(i+1 == sockets.length){
+      var usersInQueue = users.filter(u => u.player.queue.queueNum == -1 && u.player.queue.type == type && u.player.queue.started != -1);
+      var timeSort = function(a,b){
+        if(a.started < b.started) return -1;
+        if(a.started > b.started) return 1;
+        return 0;
+      }
+      usersInQueue = usersInQueue.sort(timeSort); //Sorts by who has been in the queue longest
+      if(usersInQueue.length >= queueSize){ //Runs if there's enough players queued up to maybe fill a game
+        var players = [];
+        for(var u of usersInQueue){
+          if(u.player.onTeam && !players.includes(u.player)){ //If player is on a team, make sure their teammates come with them
+            var team = teams.find(t => t.players.include(u.player));
+            if(team != undefined){
+              if(players.length + team.players.length <= queueSize){
+                for(var tp of team.players){
+                  players.push(tp);
+                }
+              }else console.log("Too many players on team to fill");
+            }else console.log("No team found!");
+          }else{
+            players.push(u.player);
+          }
+          if(players.length == queueSize) break;
+        }
+        if(players.length == queueSize){
+          var blue = [];
+          var purple = [];
+          for(var p of players){
+            if(p.onTeam && p.team == -1){
+              var team = teams.find(t => t.players.includes(p));
+              if(team != undefined){
+                team.queueNum = queueNum;
+                var teamToJoin = -1;
+                if(purple.length + team.players.length <= queueSize/3) teamToJoin = 0;
+                else if(blue.length + team.players.length <= queueSize/3) teamToJoin = 1;
+                if(teamToJoin != -1){
+                  for(var pt of team.players){
+                    if(teamToJoin == 0) purple.push(pt);
+                    else blue.push(pt);
+                    players.find(pl => pl == pt).team = teamToJoin;
+                  }
+                }else console.log("Team players can't join team!");
+              }
+            }
+          }
+
+          for(var p of players.filter(pl => pl.team == -1)){
+            var playerObj = {
+              'name': p.name,
+              'player': p.player,
+              'teg_id': `${p.teg_id}`,
+              'avatar': 'unassigned',
+              'is_ready': false
+            };
+            if(purple.length < queueSize/2){
+              purple.push(playerObj);
+              p.team = 0;
+            }
+            else if(blue.length < queueSize/2){
+              blue.push(playerObj);
+              p.team = 1;
+            }
+            else console.log("Can't place on team!");
+          }
+          var queueObj = {
+            'type': type,
+            'players': players,
+            'queueNum': queueNum,
+            'blue': blue,
+            'purple': purple,
+            'ready': 0,
+            'max': queueSize,
+            'inGame': false
+          };
+          for(var p of players){
+            p.queue.queueNum = queueNum;
+          }
+          queueNum++;
+          queues.push(queueObj);
+          var gameData = {
+            'countdown': 60,
+            'ip': config.lobbyserver.gameIp,
+            'port': config.lobbyserver.gamePort,
+            'policy_port': config.sockpol.port,
+            'room_id': `GAME${queueObj.queueNum}_${type}`,
+            'password': '',
+            'team': 'PURPLE'
+          };
+          safeSendAll(users.filter(u => players.includes(u.player) && u.player.team == 0), 'game_ready', gameData).then(() => {
+            safeSendAll(users.filter(u => players.includes(u.player) && u.player.team == 0), 'team_update', {'players': queueObj.purple, 'team': 'PURPLE'}).catch(console.error);
+          }).catch(console.error);
+          var gameDataBlue = {
+            'countdown': 60,
+            'ip': config.lobbyserver.gameIp,
+            'port': config.lobbyserver.gamePort,
+            'policy_port': config.sockpol.port,
+            'room_id': `GAME${queueObj.queueNum}_${type}`,
+            'password': '',
+            'team': 'BLUE'
+          };
+          safeSendAll(users.filter(u => players.includes(u.player) && u.player.team == 1), 'game_ready', gameDataBlue).then(() => {
+            safeSendAll(users.filter(u => players.includes(u.player) && u.player.team == 1), 'team_update', {'players': queueObj.blue, 'team': 'BLUE'}).catch(console.error);
+          }).catch(console.error);
+        }else console.log("Invalid queue size!");
+      }else{
+        var size = usersInQueue.length;
+        if(size > 3){
+          size = 3;
+          safeSendAll(usersInQueue.filter(u => u.onTeam), 'team_full', {'full':true}).catch(console.error);
+        }
+        safeSendAll(usersInQueue, 'queue_update', {'size': size}).catch(console.error);
+      }
+    }
   }
+  displayQueues();
+  displayPlayers();
+  displayTeams();
 }
 
 function displayQueues(){
+  console.log(":::QUEUES:::");
   for(var q of queues){
     var blue = 0;
     var purple = 0;
@@ -273,16 +270,24 @@ function displayQueues(){
       if(p.team == 0) purple++;
       else blue++;
     }
-    console.log(`QUEUE ${q.queueNum}: ${q.players.length} players, Type ${q.type}, Stage ${q.stage}, Blue: ${blue}, Purple: ${purple}`);
+    console.log(`QUEUE ${q.queueNum}: ${q.players.length} players, Type ${q.type}, In-Game ${q.inGame}, Blue: ${blue}, Purple: ${purple}`);
   }
   if(queues.length == 0) console.log("NO QUEUES");
 }
 
 function displayTeams(){
+  console.log(":::TEAMS:::");
   for(var t of teams){
     console.log(`${t.teamLeader.name}'s Team: ${t.players.length} members, In Queue: ${t.queueNum != -1}'`);
   }
   if(teams.length == 0) console.log("NO TEAMS");
+}
+
+function displayPlayers(){
+  console.log(":::PLAYERS:::");
+  for(var u of users) {
+    console.log(`${u.player.name} in game: ${u.player.queue.queueNum!=-1} | searching: ${u.player.queue.type != null} | onTeam: ${u.player.onTeam}`, u.player.queue);
+  }
 }
 
 // TODO: move out to separate file
@@ -317,65 +322,22 @@ function handleRequest (jsonString, socket) {
       break;
 
       case 'auto_join':
-        var tries = 0;
         var act = jsonObject['payload'].act.split("_");
         var type = act[act.length-1];
-        var res = {};
-        var queueSize = 1;
-        console.log("Joining type " + type);
-        if(type.includes('p') && type != 'practice') queueSize = Number(type.replace("p",""));
-        if(queueSize == 3) queueSize = 2; //Turns bots to 1v1
-        for(var q of queues){
-          if(q.type == type && q.players.length < q.max){ //Queue is the same type and has space
-            var blueTeam = 0;
-            var purpleTeam = 0;
-            var teamMax = q.max/2;
-            for(var p of q.players){
-              if(p.team == 0) purpleTeam++;
-              else blueTeam++;
-            }
-            var canJoinBlue = blueTeam < teamMax;
-            var canJoinPurple = purpleTeam < teamMax;
-            if (blueTeam < purpleTeam && canJoinPurple){ //Join purple
-              socket.player.team = 0;
-            }else if(purpleTeam < blueTeam && canJoinBlue){ // Join blue
-              socket.player.team = 1;
-            }else if (canJoinPurple){ // Join purple as last resort
-              socket.player.team = 0;
-            }else if(canJoinBlue){ // Join blue as last resort
-              socket.player.team = 1;
-            }else{
-              console.log("Can't join queue - Team Error");
-              tries++;
-              break;
-            }
-            // JOINS QUEUE
-            console.log("Joining queue...");
-            joinQueue(socket,q);
-            break;
-          } else{
-            //console.log("Can't join queue! ", q);
-            tries++;
-          }
-        }
-        if(tries == queues.length){
-          createQueue(socket,type, queueSize);
-        }
-        displayQueues();
-        displayTeams();
+        joinQueue([socket],type);
       break;
 
       case 'leave_team':
         if(socket.player.onTeam){
           leaveTeam(socket);
-        }else leaveQueue(socket);
-        displayQueues();
-        displayTeams();
+        }else{
+          leaveQueue(socket);
+        }
         break;
 
       case 'set_avatar':
         for(var q of queues){
-          if(q.queueNum == socket.player.queueNum){
+          if(q.queueNum == socket.player.queue.queueNum){
             if(q.ready == q.max) break;
             if(socket.player.team == 0){
               for(var pUser of q.purple){
@@ -385,7 +347,7 @@ function handleRequest (jsonString, socket) {
                   break;
                 }
               }
-                sendAll(users.filter(user => user.player.team == 0 && user.player.queueNum == q.queueNum), {
+                sendAll(users.filter(user => user.player.team == 0 && user.player.queue.queueNum == q.queueNum), {
                     'cmd': 'team_update',
                     'payload': {
                       'players': q.purple,
@@ -400,7 +362,7 @@ function handleRequest (jsonString, socket) {
                   break;
                 }
               }
-              sendAll(users.filter(user => user.player.team == 1 && user.player.queueNum == q.queueNum), {
+              sendAll(users.filter(user => user.player.team == 1 && user.player.queue.queueNum == q.queueNum), {
                   'cmd': 'team_update',
                   'payload': {
                   'players': q.blue,
@@ -415,7 +377,7 @@ function handleRequest (jsonString, socket) {
 
       case 'set_ready':
       for(var q of queues){
-        if(q.queueNum == socket.player.queueNum){
+        if(q.queueNum == socket.player.queue.queueNum){
             var blueTrigger = false;
             var purpleTrigger = false;
             for(var pUser of q.purple){
@@ -435,7 +397,7 @@ function handleRequest (jsonString, socket) {
               }
             }
             if(purpleTrigger){
-              sendAll(users.filter(user => user.player.team == 0 && user.player.queueNum == q.queueNum), {
+              sendAll(users.filter(user => user.player.team == 0 && user.player.queue.queueNum == q.queueNum), {
                 'cmd': 'team_update',
                 'payload': {
                   'players': q.purple,
@@ -443,7 +405,7 @@ function handleRequest (jsonString, socket) {
                 }
               });
             }else if(blueTrigger){
-              sendAll(users.filter(user => user.player.team == 1 && user.player.queueNum == q.queueNum), {
+              sendAll(users.filter(user => user.player.team == 1 && user.player.queue.queueNum == q.queueNum), {
                 'cmd': 'team_update',
                 'payload': {
                   'players': q.blue,
@@ -451,7 +413,11 @@ function handleRequest (jsonString, socket) {
                 }
               });
             }
-            if(q.ready == q.max) q.stage = 2;
+            if(q.ready == q.max){
+              q.inGame = true;
+              displayQueues();
+              displayPlayers();
+            }
           break;
         }
       }
@@ -461,7 +427,7 @@ function handleRequest (jsonString, socket) {
           var player = q.players.find(p => p.teg_id == jsonObject['payload'].teg_id);
           if(player != undefined) {
             for(var p of q.players){
-              var sock = users.find(u => u.player == p);
+              var sock = users.find(u => u.player == p && u.player.team == player.team);
               if(sock != undefined) sendCommand(sock,'chat_message',{'name':player.name,'teg_id':player.teg_id,'message_id':Number(jsonObject['payload'].message_id)}).catch(console.error);
               else console.log("No socket found!");
             }
@@ -550,72 +516,29 @@ function handleRequest (jsonString, socket) {
 
         case 'unlock_team':
           var team = teams.find(t => t.team == jsonObject['payload'].team);
-          var tries = 0;
+          var act = team.type.split("_");
+          var type = act[act.length-1];
           if(team != undefined){
-            for(var q of queues){
-              if(q.players.length + team.players.length <= q.max){
-                var blueTeam = 0;
-                var purpleTeam = 0;
-                var teamJoined = -1;
-                for(var p of q.players){
-                  if(p.team == 0) purpleTeam++;
-                  else blueTeam++;
-                }
-                if(blueTeam+team.players.length <= 3){
-                  teamJoined = 1;
-                }else if(purpleTeam+team.players.length <= 3){
-                  teamJoined = 0;
-                }else tries++;
-
-                if(teamJoined != -1){
-                  for(var user of users.filter(u => team.players.includes(u.player))){
-                    user.player.team = teamJoined;
-                    joinQueue(user,q);
-                  }
-                  break;
-                }
-              }
-            }
-            if(tries == queues.length){
-              for(var user of users.filter(u => team.players.includes(u.player))){
-                user.player.team = 0;
-                user.player.queueNum = queueNum;
-              }
-              //TODO: Change createQueue to make this work with it
-              var act = team.type.split("_");
-              var type = act[act.length-1];
-              var queueSize = 1;
-              if(type.includes('p') && type != 'practice') queueSize = Number(type.replace("p",""));
-              queues.push({
-                'type': type,
-                'players': [...team.players],
-                'queueNum': queueNum,
-                'blue': [],
-                'purple': [],
-                'ready': 0,
-                'max': queueSize,
-                'stage': 0
-              });
-              team.queueNum = queueNum;
-              queueNum++;
-
-            }
-          }
-          displayQueues();
-          displayTeams();
+            joinQueue(users.filter(u => team.players.includes(u.player)),type);
+          }else console.log("Can't unlock undefined team!");
           break;
   };
 
   if (response){
     console.log("->", response['cmd'], response['payload']);
     if(response['cmd'] == 'login'){
+      var existingUser = users.find(u => u.player.name == response['payload'].name);
+      if(existingUser != undefined) users = users.filter(u => u != existingUser);
       users.push(socket);
       socket.player = {
        'name': response['payload'].name,
        'teg_id': response['payload'].teg_id,
        'player': response['payload'].player,
-       'queueNum': -1,
-       'inGame': false,
+       'queue': {
+         'type': null,
+         'queueNum': -1,
+         'started': -1
+       },
        'team': -1,
        'onTeam': false
      };
