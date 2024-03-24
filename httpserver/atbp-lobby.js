@@ -153,7 +153,7 @@ function joinQueue(sockets, type){
         var players = [];
         for(var u of usersInQueue){
           if(u.player.onTeam && !players.includes(u.player)){ //If player is on a team, make sure their teammates come with them
-            var team = teams.find(t => t.players.include(u.player));
+            var team = teams.find(t => t.players.includes(u.player));
             if(team != undefined){
               if(players.length + team.players.length <= queueSize){
                 for(var tp of team.players){
