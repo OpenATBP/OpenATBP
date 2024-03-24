@@ -498,7 +498,6 @@ function handleRequest (jsonString, socket) {
                 if(team != undefined){
                   joinQueue(users.filter(u => team.players.includes(u.player)),type);
                 }else console.log("Can't unlock undefined team!");
-                break;
               }
             }).catch(console.error);
 
