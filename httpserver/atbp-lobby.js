@@ -175,8 +175,8 @@ function joinQueue(sockets, type){
               if(team != undefined){
                 team.queueNum = queueNum;
                 var teamToJoin = -1;
-                if(purple.length + team.players.length <= queueSize/3) teamToJoin = 0;
-                else if(blue.length + team.players.length <= queueSize/3) teamToJoin = 1;
+                if(purple.length + team.players.length <= queueSize/2) teamToJoin = 0;
+                else if(blue.length + team.players.length <= queueSize/2) teamToJoin = 1;
                 if(teamToJoin != -1){
                   for(var pt of team.players){
                     if(teamToJoin == 0) purple.push(pt);
