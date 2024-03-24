@@ -277,7 +277,7 @@ mongoClient.connect(err => {
   });
 
   app.post('/service/authenticate/user/:username', (req,res) => {
-    database.createNewUser(req.params.username,req.body.password, playerCollection).then((data) => {
+    database.createNewUser(req.params.username,req.body.password,'manual', playerCollection).then((data) => {
       res.send(JSON.stringify(data));
     }).catch(console.error);
   });

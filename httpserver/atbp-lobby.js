@@ -491,7 +491,17 @@ function handleRequest (jsonString, socket) {
                 'result': 'success'
               }
             };
-            safeSendAll(users.filter(u => team.players.includes(u.player)),'team_update',{'players': teamObjs, 'team': team.team}).catch(console.error);
+            safeSendAll(users.filter(u => team.players.includes(u.player)),'team_update',{'players': teamObjs, 'team': team.team}).then(() => {
+              if(team.players.length == 3){
+                var act = team.type.split("_");
+                var type = act[act.length-1];
+                if(team != undefined){
+                  joinQueue(users.filter(u => team.players.includes(u.player)),type);
+                }else console.log("Can't unlock undefined team!");
+                break;
+              }
+            }).catch(console.error);
+
           }else{
             response = {
               'cmd': 'invite_verified',
