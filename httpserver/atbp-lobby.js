@@ -195,7 +195,7 @@ function joinQueue(sockets, type){
           console.log(`BLUE TEAM: `, blue);
           console.log(`PURPLE TEAM: `, purple);
           for(var p of players.filter(pl => pl.team == -1)){
-            console.log(`Putting ${pl.name} onto a team...`);
+            console.log(`Putting ${p.name} onto a team...`);
             var playerObj = {
               'name': p.name,
               'player': p.player,
