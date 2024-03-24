@@ -162,7 +162,7 @@ function joinQueue(sockets, type){
                 }
               }else console.log("Too many players on team to fill");
             }else console.log("No team found!");
-          }else{
+          }else if(!u.player.onTeam){
             players.push(u.player);
           }
           if(players.length == queueSize) break;
