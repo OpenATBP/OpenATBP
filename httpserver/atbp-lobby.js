@@ -183,8 +183,15 @@ function joinQueue(sockets, type){
                 else if(blue.length + team.players.length <= queueSize/2) teamToJoin = 1;
                 if(teamToJoin != -1){
                   for(var pt of team.players){
-                    if(teamToJoin == 0) purple.push(pt);
-                    else if(teamToJoin == 1) blue.push(pt);
+                    var playerObj = {
+                      'name': pt.name,
+                      'player': pt.player,
+                      'teg_id': `${pt.teg_id}`,
+                      'avatar': 'unassigned',
+                      'is_ready': false
+                    };
+                    if(teamToJoin == 0) purple.push(playerObj);
+                    else if(teamToJoin == 1) blue.push(playerObj);
                     players.find(pl => pl == pt).team = teamToJoin;
                     console.log(pt.name + " set to " + teamToJoin);
                   }
