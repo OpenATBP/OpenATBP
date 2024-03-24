@@ -12,6 +12,7 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +26,10 @@ public class Billy extends UserActor {
     private long finalPassiveStart = 0;
     private long lastSoundPlayed = 0;
     private Point2D ultLoc = null;
+    private static final float OFFSET_DISTANCE = 1.0f;
+    private static final float ABILITY_LENGTH = 4.25f;
+    private static final int PERPENDICULAR_ANGLE_OFFSET = 90;
+    private static final int PARALLEL_ANGLE_OFFSET = 15;
 
     public Billy(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -77,18 +82,16 @@ public class Billy extends UserActor {
             case 1:
                 this.canCast[0] = false;
                 this.stopMoving();
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_billy_knock_back",this.location);
-                Line2D spellLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),2.8f);
-                for(Actor a : Champion.getActorsAlongLine(this.parentExt.getRoomHandler(this.room.getId()),spellLine,2d)){
-                    if(a.getTeam() != this.team){
-                        if(isNonStructure(a)){
-                            a.knockback(this.location);
-                            if(this.passiveUses == 3) a.addState(ActorState.STUNNED,0d,2000,null,false);
-                        }
-                        a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
+                Path2D quadrangle = createQuadrangle(location,dest);
+                for(UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()){
+                    if(ua.getTeam() != this.team && !ua.getId().equals(this.getId()) && quadrangle.contains(ua.getLocation().getX(), ua.getLocation().getY())){
+                        ua.knockback(this.location);
+                        ua.addToDamageQueue(this,getSpellDamage(spellData),spellData);
+                        if(this.passiveUses == 3) ua.addState(ActorState.STUNNED,0d,2000,null,false);
                     }
                 }
                 if(this.passiveUses == 3) this.usePassiveAbility();
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_billy_knock_back",this.location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new BillyAbilityHandler(ability,spellData,cooldown,gCooldown,dest),gCooldown, TimeUnit.MILLISECONDS);
                 break;
@@ -123,6 +126,33 @@ public class Billy extends UserActor {
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new BillyAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 break;
         }
+    }
+
+    private Path2D createQuadrangle(Point2D location, Point2D destination){
+        Line2D abilityLine = Champion.getAbilityLine(location,destination,ABILITY_LENGTH);
+        double angle = Math.atan2(abilityLine.getY2() - abilityLine.getY1(), abilityLine.getX2() - abilityLine.getX1());
+        Point2D startPoint1 = calculatePoint(abilityLine,OFFSET_DISTANCE,angle + Math.toRadians(PERPENDICULAR_ANGLE_OFFSET));
+        Point2D startPoint2 = calculatePoint(abilityLine,OFFSET_DISTANCE,angle - Math.toRadians(PERPENDICULAR_ANGLE_OFFSET));
+        Point2D endPoint1 = calculatePoint(abilityLine,ABILITY_LENGTH, angle + Math.toRadians(PARALLEL_ANGLE_OFFSET));
+        Point2D endPoint2 = calculatePoint(abilityLine,ABILITY_LENGTH, angle - Math.toRadians(PARALLEL_ANGLE_OFFSET));
+
+        Path2D.Float quadrangle = new Path2D.Float();
+        quadrangle.moveTo(startPoint1.getX(),startPoint1.getY());
+        quadrangle.lineTo(startPoint2.getX(),startPoint2.getY());
+        quadrangle.lineTo(endPoint1.getX(),endPoint1.getY());
+        quadrangle.lineTo(endPoint2.getX(),endPoint2.getY());
+
+        ExtensionCommands.createActor(this.parentExt,this.room,String.valueOf(Math.random()),"gunter",startPoint1,0f,this.team);
+        ExtensionCommands.createActor(this.parentExt,this.room,String.valueOf(Math.random()),"gunter",startPoint2,0f,this.team);
+        ExtensionCommands.createActor(this.parentExt,this.room,String.valueOf(Math.random()),"gunter",endPoint1,0f,this.team);
+        ExtensionCommands.createActor(this.parentExt,this.room,String.valueOf(Math.random()),"gunter",endPoint2,0f,this.team);
+        return quadrangle;
+    }
+
+    private Point2D calculatePoint(Line2D abilityLine, float distance, double angle){
+        float x = (float)(abilityLine.getX1() + distance * Math.cos(angle));
+        float y = (float)(abilityLine.getY1() + distance * Math.sin(angle));
+        return new Point2D.Float(x,y);
     }
 
     private class BillyAbilityHandler extends AbilityRunnable {

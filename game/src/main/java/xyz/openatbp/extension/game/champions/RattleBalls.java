@@ -47,7 +47,7 @@ public class RattleBalls extends UserActor {
                 int qTimeEffects = qTime*5;
                 if(this.qUse == 0){
                     String counterPrefix = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_" : "rattleballs_";
-                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+counterPrefix+"counter_stance",this.location);
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_counter_stance",this.location);
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_dash",this.location);
                     ExtensionCommands.actorAnimate(parentExt,room,id,"spell1a",qTimeEffects,true);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,counterPrefix+"dash_trail",qTimeEffects,this.id+"_q1Trail",true,"Bip001",true,false,this.team);
@@ -58,6 +58,7 @@ public class RattleBalls extends UserActor {
                     this.parryActive = false;
                     Line2D wDashLine = new Line2D.Double(ogLocation,finalDashPoint);
                     String dashPrefix = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_" : "rattleballs_";
+                    if(this.avatar.contains("spidotron")) ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_luchador_counter_stance",this.location);
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_dash",this.location);
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_rattle_balls_2",this.location);
                     ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell1c",qTimeEffects,false);
