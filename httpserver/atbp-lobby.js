@@ -157,7 +157,8 @@ function joinQueue(sockets, type){
             if(team != undefined){
               if(players.length + team.players.length <= queueSize){
                 for(var tp of team.players){
-                  players.push(tp);
+                  if(!players.includes(tp)) players.push(tp);
+                  else console.log(`${tp.name} is already in the game!`);
                 }
               }else console.log("Too many players on team to fill");
             }else console.log("No team found!");
@@ -167,6 +168,9 @@ function joinQueue(sockets, type){
           if(players.length == queueSize) break;
         }
         if(players.length == queueSize){
+          for(var p of players){
+            console.log(`QUEUE POPPED. ${p.name} JOINED!`);
+          }
           var blue = [];
           var purple = [];
           for(var p of players){
@@ -188,8 +192,10 @@ function joinQueue(sockets, type){
               }
             }
           }
-
+          console.log(`BLUE TEAM: `, blue);
+          console.log(`PURPLE TEAM: `, purple);
           for(var p of players.filter(pl => pl.team == -1)){
+            console.log(`Putting ${pl.name} onto a team...`);
             var playerObj = {
               'name': p.name,
               'player': p.player,
