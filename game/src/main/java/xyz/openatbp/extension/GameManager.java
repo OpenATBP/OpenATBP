@@ -26,7 +26,6 @@ public class GameManager {
     private static ObjectMapper objectMapper = new ObjectMapper();
 
     public static void addPlayer(Room room, ATBPExtension parentExt){ //Sends player info to client
-        System.out.println("Adding player!");
         for(User user : room.getUserList()){
             ISFSObject playerInfo = user.getVariable("player").getSFSObjectValue();
             int id = user.getId();
@@ -74,7 +73,7 @@ public class GameManager {
         int ready = 0;
         ArrayList<User> users = (ArrayList<User>) room.getUserList();
         for(int i = 0; i < users.size(); i++){
-            System.out.println(users.get(i).getSession());
+            Console.debugLog(users.get(i).getSession());
             if(users.get(i).getSession().getProperty("ready") == null) return false;
             if((boolean) users.get(i).getSession().getProperty("ready")) ready++;
         }
@@ -115,7 +114,6 @@ public class GameManager {
                 pz = (float) MapData.PURPLE_SPAWNS[blueNum].getY();
                 blueNum++;
             }
-            System.out.println("Original spawn is " + px + "," + pz);
             String id = String.valueOf(u.getId());
             String actor = playerInfo.getUtfString("avatar");
             Point2D location = new Point2D.Float(px,pz);
@@ -156,7 +154,7 @@ public class GameManager {
         try{ //Sets all the room variables once the game is about to begin
             setRoomVariables(room);
         }catch(SFSVariableException e){
-            System.out.println(e);
+            e.printStackTrace();
         }
 
         for(User u : room.getUserList()){

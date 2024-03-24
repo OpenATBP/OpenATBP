@@ -88,7 +88,6 @@ public class MovementManager {
             Line2D checkLine = extendLine(movementLine,10f);
             Point2D intPoint = getIntersectionPoint(checkLine,closestLine);
             if(intPoint != null){
-                System.out.println("Collider size: " + collider.size());
                 if(collider.size() > 25){
                     Point2D wallPoint = getPathIntersectionPoint(movementLine,collider);
                     if(wallPoint != null) return wallPoint;
@@ -97,7 +96,6 @@ public class MovementManager {
                 Point2D[] movementPoints = findAllPoints(checkLine);
                 Point2D[] colliderPoints = findAllPoints(closestLine);
                 if(colliderPoints.length > 600){
-                    System.out.println(colliderPoints.length + " size <-");
                     return movementLine.getP1();
                 }
                 for(int i = 0; i < movementPoints.length; i++){
@@ -215,7 +213,7 @@ public class MovementManager {
                     if(p.distance(allPoints[i]) <= 0.5f){
                         if(i != 0) return allPoints[i-1];
                         else{
-                            System.out.println("Inside collider!");
+                            Console.logWarning("Inside collider!");
                             return movementLine.getP1();
                         }
                     }

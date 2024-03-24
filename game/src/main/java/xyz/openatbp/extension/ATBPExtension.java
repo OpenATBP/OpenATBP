@@ -305,7 +305,7 @@ public class ATBPExtension extends SFSExtension {
             RoomHandler handler = new RoomHandler(this,room);
             roomHandlers.put(room.getId(),handler);
             roomTasks.put(room.getId(),SmartFoxServer.getInstance().getTaskScheduler().scheduleAtFixedRate(handler,100,100,TimeUnit.MILLISECONDS));
-        }
+        }else this.roomHandlers.remove(room.getId()); //This will kick all players out of the game if it tries to be initialized twice.
     }
 
     public void stopScript(int roomId){ //Stops a task scheduler when room is deleted

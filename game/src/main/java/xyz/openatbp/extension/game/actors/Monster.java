@@ -138,7 +138,6 @@ public class Monster extends Actor {
     }
     @Override
     public boolean setTempStat(String stat, double delta) {
-        System.out.println("Monster " + stat + " set to " + delta);
         boolean returnVal = super.setTempStat(stat,delta);
         if(stat.equalsIgnoreCase("speed")){
             if(movementLine != null){
@@ -199,7 +198,7 @@ public class Monster extends Actor {
 
     @Override
     public void die(Actor a) { //Called when monster dies
-        System.out.println(this.id + " has died! " + this.dead);
+        Console.debugLog(this.id + " has died! " + this.dead);
         if(!this.dead){ //No double deaths
             this.dead = true;
             this.stopMoving();
