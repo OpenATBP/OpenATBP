@@ -94,7 +94,6 @@ public class Tower extends Actor {
     }
     @Override
     public void die(Actor a) {
-        System.out.println(this.id + " has died! " + this.destroyed);
         this.currentHealth = 0;
         if(!this.destroyed){
             this.destroyed = true;

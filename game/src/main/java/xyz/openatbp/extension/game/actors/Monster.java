@@ -3,20 +3,14 @@ package xyz.openatbp.extension.game.actors;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.MovementManager;
-import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class Monster extends Actor {
@@ -144,7 +138,6 @@ public class Monster extends Actor {
     }
     @Override
     public boolean setTempStat(String stat, double delta) {
-        System.out.println("Monster " + stat + " set to " + delta);
         boolean returnVal = super.setTempStat(stat,delta);
         if(stat.equalsIgnoreCase("speed")){
             if(movementLine != null){
@@ -205,7 +198,7 @@ public class Monster extends Actor {
 
     @Override
     public void die(Actor a) { //Called when monster dies
-        System.out.println(this.id + " has died! " + this.dead);
+        Console.debugLog(this.id + " has died! " + this.dead);
         if(!this.dead){ //No double deaths
             this.dead = true;
             this.stopMoving();
@@ -339,7 +332,12 @@ public class Monster extends Actor {
 
     @Override
     public void moveWithCollision(Point2D dest){
-        List<Point2D> path = MovementManager.getPath(this.parentExt,this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),this.location,dest);
+        List<Point2D> path = new ArrayList<>();
+        try {
+            path = MovementManager.getPath(this.parentExt,this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),this.location,dest);
+        }catch(Exception e) {
+            Console.logWarning(this.id + " could not form a path.");
+        }
         if(path.size() > 2){
             this.setPath(path);
         }else{

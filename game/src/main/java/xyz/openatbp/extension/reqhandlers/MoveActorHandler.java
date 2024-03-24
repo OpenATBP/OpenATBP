@@ -24,7 +24,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
         RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId());
         if(roomHandler == null && (int)sender.getLastJoinedRoom().getProperty("state") != 2) ExtensionCommands.abortGame(parentExt,sender.getLastJoinedRoom());
         if(roomHandler == null){
-            System.out.println(sender.getId() + " tried to move in room " + sender.getLastJoinedRoom().getId() + " but failed!");
+            Console.logWarning(sender.getId() + " tried to move in room " + sender.getLastJoinedRoom().getId() + " but failed!");
             return;
         }
         UserActor user = roomHandler.getPlayer(String.valueOf(sender.getId()));
@@ -43,7 +43,6 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             //Console.debugLog("dx: " + dx + " dz: " + dz);
             FloatArray path = new FloatArray();
             try{
-                Console.debugLog("Is practice: " + parentExt.getRoomHandler(room.getId()).isPracticeMap());
                 if(!parentExt.getRoomHandler(room.getId()).isPracticeMap()) parentExt.getMainMapPathFinder().findPath(px+50,pz+30,dx+50,dz+30,0.6f,path);
                 else parentExt.getPracticeMapPathFinder().findPath(px+50,pz+30,dx+50,dz+30,0.6f,path);
                 if(path.size <= 2 || MovementManager.insideAnyObstacle(parentExt,parentExt.getRoomHandler(room.getId()).isPracticeMap(),new Point2D.Float(dx,dz))){
@@ -92,7 +91,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                 if(movementLine.getP1().distance(dest) >= 0.1f) user.move(params,dest);
                 else user.stopMoving();
             }
-        }else System.out.println("Can't move!");
+        }else Console.logWarning("Can't move!");
 
     }
 

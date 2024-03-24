@@ -83,7 +83,6 @@ public class ExtensionCommands {
             }
             if(dub) data.putDouble(key,value);
             for(User u : room.getUserList()){
-                System.out.println("Sending: " + data.toJson() + " to " + u.getId());
                 parentExt.send("cmd_update_actor_data",data,u);
             }
         }catch(Exception e){
@@ -620,7 +619,6 @@ public class ExtensionCommands {
     }
 
     public static void scaleActor(ATBPExtension parentExt, Room room, String id, float scale){
-        System.out.println("Scaling " + id + " to " + scale);
         ISFSObject data = new SFSObject();
         data.putUtfString("id",id);
         data.putFloat("scale",scale);

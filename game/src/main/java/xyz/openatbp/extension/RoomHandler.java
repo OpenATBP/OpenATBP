@@ -225,7 +225,12 @@ public class RoomHandler implements Runnable{
                 t.update(mSecondsRan);
                 if(t.getHealth() <= 0){
                     if(mSecondsRan < 1000*60*13) this.playTowerMusic = true;
-                    baseTowers.get(t.getTeam()).unlockBaseTower();
+                    for(BaseTower b : baseTowers) {
+                        if (b.getTeam() == t.getTeam() && !b.isUnlocked()) {
+                            b.unlockBaseTower();
+                            break;
+                        }
+                    }
                     if(this.practiceMap) {
                         if(t.getTowerNum() == 0 || t.getTowerNum() == 3) bases[t.getTeam()].unlock();
                     }
@@ -742,7 +747,7 @@ public class RoomHandler implements Runnable{
                         }
                         break;
                     case "buff":
-                        System.out.println(cooldown + " still being read!");
+                        Console.logWarning(cooldown + " still being read!");
                         break;
                 }
                 cooldowns.remove(key);
@@ -852,7 +857,7 @@ public class RoomHandler implements Runnable{
     }
 
     public void handleSpawnDeath(Actor a){
-        System.out.println("The room has killed " + a.getId());
+        Console.debugLog("The room has killed " + a.getId());
         String mons = a.getId().split("_")[0];
 
         for(String s : GameManager.SPAWNS){
@@ -1064,7 +1069,7 @@ public class RoomHandler implements Runnable{
                             Updates.set("player.largestMulti",largestMulti)
                     );
                     UpdateOptions options = new UpdateOptions().upsert(true);
-                    System.out.println(playerData.updateOne(data,updates,options));
+                    Console.debugLog(playerData.updateOne(data,updates,options));
                 }
             }
             parentExt.stopScript(room.getId());
@@ -1094,7 +1099,7 @@ public class RoomHandler implements Runnable{
                         Updates.set("player.elo",(int)newElo)
                 );
                 UpdateOptions options = new UpdateOptions().upsert(true);
-                System.out.println(playerData.updateOne(data,updates,options));
+                Console.debugLog(playerData.updateOne(data,updates,options));
             }
             int team = player.getTeam();
             this.players.removeIf(p -> p.getId().equalsIgnoreCase(String.valueOf(user.getId())));
@@ -1168,7 +1173,7 @@ public class RoomHandler implements Runnable{
 
     public void printActors(){
         for(Actor a : this.getActors()){
-            System.out.println("ROOM: " + this.room.getId() + " |  TYPE: " + a.getActorType().toString() + " | ID: " + a.getId() + " | " + a.getHealth());
+            Console.log("ROOM: " + this.room.getId() + " |  TYPE: " + a.getActorType().toString() + " | ID: " + a.getId() + " | " + a.getHealth());
         }
     }
 
