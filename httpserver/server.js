@@ -73,7 +73,8 @@ mongoClient.connect(err => {
   app.get('/', (req, res) => {
     res.render('index', {
       client_id: config.discord.client_id,
-      redirect: config.discord.redirect_url
+      redirect: config.discord.redirect_url,
+      discord_enabled: config.discord.enabled
     });
   });
 

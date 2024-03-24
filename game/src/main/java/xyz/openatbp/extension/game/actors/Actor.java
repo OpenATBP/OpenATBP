@@ -86,6 +86,7 @@ public abstract class Actor {
     public void stopMoving(){
         this.movementLine = new Line2D.Float(this.location,this.location);
         this.timeTraveled = 0f;
+        this.clearPath();
         ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,this.location, 5f, false);
     }
 
