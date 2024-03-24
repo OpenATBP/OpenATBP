@@ -26,5 +26,6 @@ config.discord.client_secret = 'client_secret';
 config.discord.oauth_url = 'https://discord.com/api/oauth2/authorize?client_id=&redirect_uri=';
 config.discord.redirect_url = 'http://127.0.0.1:8000/auth/';
 config.discord.backup = true;
+config.discord.enable = true;
 
 module.exports = config;
