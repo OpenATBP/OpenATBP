@@ -180,8 +180,9 @@ function joinQueue(sockets, type){
                 if(teamToJoin != -1){
                   for(var pt of team.players){
                     if(teamToJoin == 0) purple.push(pt);
-                    else blue.push(pt);
+                    else if(teamToJoin == 1) blue.push(pt);
                     players.find(pl => pl == pt).team = teamToJoin;
+                    console.log(pt.name + " set to " + teamToJoin);
                   }
                 }else console.log("Team players can't join team!");
               }
