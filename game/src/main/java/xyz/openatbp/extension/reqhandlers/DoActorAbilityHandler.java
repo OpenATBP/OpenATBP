@@ -7,13 +7,10 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.GameManager;
-import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.UserActor;
 
-import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,7 +46,7 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
         float x = params.getFloat("x");
         float y = 0f;
         float z = params.getFloat("z");
-        Console.debugLog(params.getDump());
+        //Console.debugLog(params.getDump());
         Point2D serverLocation = new Point2D.Float(params.getFloat("fx"), params.getFloat("fz"));
         player.setLocation(serverLocation);
         Point2D oldLocation = new Point2D.Float(x,z);

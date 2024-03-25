@@ -13,6 +13,7 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,10 @@ public class Lemongrab extends UserActor {
     private long lastHit = -1;
     private String lastIcon = "lemon0";
     private boolean isCastingUlt = false;
+    private static final float OFFSET_DISTANCE_BOTTOM = 1.5f;
+    private static final float OFFSET_DISTANCE_TOP = 4f;
+    private static final float ABILITY_LENGTH = 6f;
+    private static final int PERPENDICULAR_ANGLE_OFFSET = 90;
 
     public Lemongrab(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -86,17 +91,16 @@ public class Lemongrab extends UserActor {
         switch(ability){
             case 1:
                 this.canCast[0] = false;
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_lemongrab_sound_sword",this.location);
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_lemongrab_sound_sword",this.location);
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"lemongrab_sonic_sword_effect",750,this.id+"_sonicSword",true,"Sword",true,false,this.team);
-                Line2D ogLine = new Line2D.Float(this.location,dest);
-                List<Actor> affectedActors = Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),Champion.getMaxRangeLine(ogLine,6f),4f);
-                for(Actor a : affectedActors){
-                    if(a.getTeam() != this.team){
+                Path2D trapezoid = trapezoid(location,dest);
+                for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
+                    if(a.getTeam() != this.team && trapezoid.contains(a.getLocation())){
                         if(isNonStructure(a)) a.addState(ActorState.SLOWED,0.4d,2500,null,false);
                         a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
                     }
                 }
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_lemongrab_sound_sword",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_lemongrab_sound_sword",this.location);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"lemongrab_sonic_sword_effect",750,this.id+"_sonicSword",true,"Sword",true,false,this.team);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new LemonAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 break;
@@ -135,6 +139,27 @@ public class Lemongrab extends UserActor {
             case 4:
                 break;
         }
+    }
+
+    private Path2D trapezoid(Point2D location, Point2D destination){
+        Line2D abilityLine = Champion.getAbilityLine(location,destination,ABILITY_LENGTH);
+        double angle = Math.atan2(abilityLine.getY2() - abilityLine.getY1(), abilityLine.getX2() - abilityLine.getX1());
+        Point2D startPoint1 = Champion.calculatePolygonPoint(abilityLine.getP1(),OFFSET_DISTANCE_BOTTOM,angle + Math.toRadians(PERPENDICULAR_ANGLE_OFFSET));
+        Point2D startPoint2 = Champion.calculatePolygonPoint(abilityLine.getP1(),OFFSET_DISTANCE_BOTTOM,angle - Math.toRadians(PERPENDICULAR_ANGLE_OFFSET));
+        Point2D endPoint1 = Champion.calculatePolygonPoint(abilityLine.getP2(),OFFSET_DISTANCE_TOP, angle + Math.toRadians(PERPENDICULAR_ANGLE_OFFSET));
+        Point2D endPoint2 = Champion.calculatePolygonPoint(abilityLine.getP2(),OFFSET_DISTANCE_TOP, angle - Math.toRadians(PERPENDICULAR_ANGLE_OFFSET));
+
+        Path2D.Float trapezoid = new Path2D.Float();
+        trapezoid.moveTo(startPoint1.getX(),startPoint1.getY());
+        trapezoid.lineTo(endPoint1.getX(),endPoint1.getY());
+        trapezoid.lineTo(endPoint2.getX(),endPoint2.getY());
+        trapezoid.lineTo(startPoint2.getX(),startPoint2.getY());
+
+        ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"skully",String.valueOf(Math.random()),2000,(float)startPoint1.getX(),(float)startPoint1.getY(),false,this.team,0f);
+        ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"skully",String.valueOf(Math.random()),2000,(float)startPoint2.getX(),(float)startPoint2.getY(),false,this.team,0f);
+        ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"skully",String.valueOf(Math.random()),2000,(float)endPoint1.getX(),(float)endPoint1.getY(),false,this.team,0f);
+        ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"skully",String.valueOf(Math.random()),2000,(float)endPoint2.getX(),(float)endPoint2.getY(),false,this.team,0f);
+        return trapezoid;
     }
 
     private class LemonAbilityHandler extends AbilityRunnable{

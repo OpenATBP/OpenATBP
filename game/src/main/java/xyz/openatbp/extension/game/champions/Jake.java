@@ -12,6 +12,7 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +28,9 @@ public class Jake extends UserActor {
     private long qStartTime = 0;
     private boolean qUsed = false;
     private int qTime;
+    private static final float Q_FIRST_HALF_OFFSET = 0.75f;
+    private static final float Q_SECOND_HALF_OFFSET = 1.75f;
+    private static final float Q_SPELL_RANGE = 9;
 
     public Jake(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -125,10 +129,9 @@ public class Jake extends UserActor {
                     if(!this.interruputQ){
                         Actor closestTarget = null;
                         double closestDistance = 1000;
-                        Line2D abilityLine = new Line2D.Float(this.location,dest);
-                        Line2D maxAbilityLine = Champion.getMaxRangeLine(abilityLine,7f);
-                        for(Actor a : Champion.getActorsAlongLine(this.parentExt.getRoomHandler(this.room.getId()),maxAbilityLine,1.85d)){
-                            if(a.getTeam() != this.team){
+                        Path2D qPolygon = createOctagon(location,dest);
+                        for(Actor a : this.parentExt.getRoomHandler(room.getId()).getActors()){
+                            if(a.getTeam() != this.team && qPolygon.contains(a.getLocation())){
                                 if(a.getLocation().distance(this.location) < closestDistance){
                                     closestDistance = a.getLocation().distance(this.location);
                                     closestTarget = a;
@@ -226,6 +229,32 @@ public class Jake extends UserActor {
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new JakeAbilityHandler(ability,spellData,cooldown,gCooldown,dest),5000,TimeUnit.MILLISECONDS);
                 break;
         }
+    }
+
+    private Path2D createOctagon(Point2D location, Point2D destination){
+        Line2D abilityLine = Champion.getAbilityLine(location,destination,Q_SPELL_RANGE);
+        Line2D firstHalf = Champion.getAbilityLine(location,destination,5f);
+        double angle = Math.atan2(abilityLine.getY2() - abilityLine.getY1(), abilityLine.getX2() - abilityLine.getX1());
+        int PERPENDICULAR_ANGLE = 90;
+        Point2D bottomFirstHalf1 = Champion.calculatePolygonPoint(abilityLine.getP1(),Q_FIRST_HALF_OFFSET,angle + Math.toRadians(PERPENDICULAR_ANGLE));
+        Point2D bottomFirstHalf2 = Champion.calculatePolygonPoint(abilityLine.getP1(),Q_FIRST_HALF_OFFSET,angle - Math.toRadians(PERPENDICULAR_ANGLE));
+        Point2D topFirstHalf1 = Champion.calculatePolygonPoint(firstHalf.getP2(),Q_FIRST_HALF_OFFSET,angle + Math.toRadians(PERPENDICULAR_ANGLE));
+        Point2D topFirstHalf2 = Champion.calculatePolygonPoint(firstHalf.getP2(),Q_FIRST_HALF_OFFSET,angle - Math.toRadians(PERPENDICULAR_ANGLE));
+        Point2D bottomSecondHalf1 = Champion.calculatePolygonPoint(firstHalf.getP2(),Q_SECOND_HALF_OFFSET,angle + Math.toRadians(PERPENDICULAR_ANGLE));
+        Point2D bottomSecondHalf2 = Champion.calculatePolygonPoint(firstHalf.getP2(),Q_SECOND_HALF_OFFSET,angle - Math.toRadians(PERPENDICULAR_ANGLE));
+        Point2D topSecondHalf1 = Champion.calculatePolygonPoint(abilityLine.getP2(),Q_SECOND_HALF_OFFSET,angle + Math.toRadians(PERPENDICULAR_ANGLE));
+        Point2D topSecondHalf2 = Champion.calculatePolygonPoint(abilityLine.getP2(),Q_SECOND_HALF_OFFSET,angle - Math.toRadians(PERPENDICULAR_ANGLE));
+
+        Path2D octagon = new Path2D.Float();
+        octagon.moveTo(bottomFirstHalf1.getX(),bottomFirstHalf1.getY());
+        octagon.lineTo(topFirstHalf1.getX(),topFirstHalf1.getY());
+        octagon.lineTo(bottomSecondHalf1.getX(),bottomSecondHalf1.getY());
+        octagon.lineTo(topSecondHalf1.getX(),topSecondHalf1.getY());
+        octagon.lineTo(topSecondHalf2.getX(),topSecondHalf2.getY());
+        octagon.lineTo(bottomSecondHalf2.getX(),bottomSecondHalf2.getY());
+        octagon.lineTo(topFirstHalf2.getX(),topFirstHalf2.getY());
+        octagon.lineTo(bottomFirstHalf2.getX(),bottomFirstHalf2.getY());
+        return octagon;
     }
 
     public boolean canMove(){
