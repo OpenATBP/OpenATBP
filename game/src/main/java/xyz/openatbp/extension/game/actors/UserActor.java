@@ -264,6 +264,7 @@ public class UserActor extends Actor {
             boolean crit = random < critChance;
             ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
             this.attackCooldown = this.getPlayerStat("attackSpeed");
+            if(this.attackCooldown < 500) this.attackCooldown = 500;
             double damage = this.getPlayerStat("attackDamage");
             if(crit) damage*=2;
             Champion.DelayedAttack delayedAttack = new Champion.DelayedAttack(parentExt,this,a,(int)damage,"basicAttack");
@@ -365,13 +366,15 @@ public class UserActor extends Actor {
             boolean crit = random < critChance;
             ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
             this.attackCooldown = this.getPlayerStat("attackSpeed");
+            if(this.attackCooldown < 500) this.attackCooldown = 500;
             return crit;
         }
         return false;
     }
 
     public void autoAttack(Actor a){
-        this.stopMoving(250);
+        if(!this.parentExt.getActorData(this.getAvatar()).get("attackType").asText().equalsIgnoreCase("MELEE")) this.stopMoving(250);
+        if(this.getAvatar().contains("finn") || this.getAvatar().contains("marceline")) this.stopMoving(500);
         this.attack(a);
     }
 

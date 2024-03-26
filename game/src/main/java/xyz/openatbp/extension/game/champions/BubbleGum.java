@@ -88,6 +88,7 @@ public class BubbleGum extends UserActor {
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest){
         switch(ability){
             case 1: //Q
+                this.canCast[0] = false;
                 this.stopMoving();
                 String potionVo = (this.avatar.equals("princessbubblegum_skin_prince")) ? "vo/vo_gumball_potion" : (this.avatar.contains("young")) ? "vo/vo_bubblegum_young_potion" : "vo/vo_bubblegum_potion";
                 ExtensionCommands.playSound(parentExt,room,id,potionVo,this.location);
@@ -96,11 +97,13 @@ public class BubbleGum extends UserActor {
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 break;
             case 2: //W
+                this.canCast[1] = false;
                 this.stopMoving();
                 String turretVo = (this.avatar.equals("princessbubblegum_skin_prince")) ? "vo/vo_gumball_turret" : (this.avatar.contains("young")) ? "vo/vo_bubblegum_young_turret" : "vo/vo_bubblegum_turret";
                 ExtensionCommands.playSound(parentExt,room,id,turretVo,this.location);
                 this.spawnTurret(dest);
                 ExtensionCommands.actorAbilityResponse(parentExt,player,"w",true,getReducedCooldown(cooldown),gCooldown);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new PBAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 break;
             case 3: //E
                 if(!this.bombPlaced){
