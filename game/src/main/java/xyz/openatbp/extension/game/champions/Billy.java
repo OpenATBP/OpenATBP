@@ -11,7 +11,7 @@ import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
-import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +25,8 @@ public class Billy extends UserActor {
     private long finalPassiveStart = 0;
     private long lastSoundPlayed = 0;
     private Point2D ultLoc = null;
+    private static final float Q_OFFSET_DISTANCE = 1.5f;
+    private static final float Q_SPELL_RANGE = 4.5f;
 
     public Billy(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -77,18 +79,16 @@ public class Billy extends UserActor {
             case 1:
                 this.canCast[0] = false;
                 this.stopMoving();
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_billy_knock_back",this.location);
-                Line2D spellLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest),2.8f);
-                for(Actor a : Champion.getActorsAlongLine(this.parentExt.getRoomHandler(this.room.getId()),spellLine,2d)){
-                    if(a.getTeam() != this.team){
-                        if(isNonStructure(a)){
-                            a.knockback(this.location);
-                            if(this.passiveUses == 3) a.addState(ActorState.STUNNED,0d,2000,null,false);
-                        }
+                Path2D quadrangle = Champion.createRectangle(location,dest,Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
+                for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
+                    if(a.getTeam() != this.team && quadrangle.contains(a.getLocation())){
+                        a.knockback(this.location);
                         a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
+                        if(this.passiveUses == 3) a.addState(ActorState.STUNNED,0d,2000,null,false);
                     }
                 }
                 if(this.passiveUses == 3) this.usePassiveAbility();
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_billy_knock_back",this.location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new BillyAbilityHandler(ability,spellData,cooldown,gCooldown,dest),gCooldown, TimeUnit.MILLISECONDS);
                 break;

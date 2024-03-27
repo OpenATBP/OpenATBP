@@ -12,6 +12,7 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -20,6 +21,10 @@ public class Gunter extends UserActor{
 
     private boolean ultActivated = false;
     private Point2D ultPoint;
+    private static final float E_OFFSET_DISTANCE_BOTTOM = 0.5f;
+    private static final float E_OFFSET_DISTANCE_TOP = 5f;
+    private static final float E_SPELL_RANGE = 8f;
+    Path2D eTrapezoid = null;
     public Gunter(User u, ATBPExtension parentExt){
         super(u,parentExt);
     }
@@ -27,12 +32,10 @@ public class Gunter extends UserActor{
     @Override
     public void update(int msRan){ //Add something so armor/mr isn't weird
         super.update(msRan);
-        if(ultActivated && ultPoint != null){
+        if(this.ultActivated && this.eTrapezoid != null){
             JsonNode spellData = parentExt.getAttackData(getAvatar(),"spell3");
-            Line2D ogLine = new Line2D.Float(this.getRelativePoint(false),this.ultPoint);
-            List<Actor> affectedActors = Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),Champion.getMaxRangeLine(ogLine,7f),4f);
-            for(Actor a : affectedActors){
-                if(a.getTeam() != this.team){
+            for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
+                if(a.getTeam() != this.team && this.eTrapezoid.contains(a.getLocation())){
                     double damage = (double)getSpellDamage(spellData)/10;
                     a.addToDamageQueue(this,Math.round(damage),spellData);
                 }
@@ -40,7 +43,7 @@ public class Gunter extends UserActor{
         }
         if(ultActivated && this.hasInterrupingCC()){
             this.interruptE();
-            this.ultPoint = null;
+            this.eTrapezoid = null;
             this.ultActivated = false;
         }
     }
@@ -70,15 +73,15 @@ public class Gunter extends UserActor{
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new GunterAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),gCooldown,TimeUnit.MILLISECONDS);
                 break;
             case 3: //TODO: Last left off - actually make this do damage
-                this.ultPoint = dest;
+                this.eTrapezoid = Champion.createTrapezoid(location,dest,E_SPELL_RANGE,E_OFFSET_DISTANCE_BOTTOM,E_OFFSET_DISTANCE_TOP);
+                this.setCanMove(false);
+                this.ultActivated = true;
                 ExtensionCommands.createActorFX(parentExt,room,this.id,"gunter_powered_up",2500,this.id+"_gunterPower",true,"Bip01",true,false,team);
                 ExtensionCommands.createActorFX(parentExt,room,this.id,"gunter_bottle_cone",2500,this.id+"gunterUlt",true,"Bip01",true,false,team);
-                this.setCanMove(false);
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(new GunterAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),2500,TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAnimate(parentExt,room,this.id,"spell3b",2500,true);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,player,"e",this.canUseAbility(ability),getReducedCooldown(cooldown),gCooldown);
-                this.ultActivated = true;
                 ExtensionCommands.playSound(parentExt,room,this.id,"sfx_gunter_bottles_ultimate",this.location);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(new GunterAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),2500,TimeUnit.MILLISECONDS);
                 break;
         }
         this.canCast[ability-1] = false;
@@ -125,7 +128,7 @@ public class Gunter extends UserActor{
         super.die(a);
         if(this.ultActivated){
             this.ultActivated = false;
-            this.ultPoint = null;
+            this.eTrapezoid = null;
             ExtensionCommands.removeFx(parentExt,room,this.id+"_gunterPower");
             ExtensionCommands.removeFx(parentExt,room,this.id+"_gunterUlt");
         }
@@ -168,7 +171,7 @@ public class Gunter extends UserActor{
             canCast[2] = true;
             setCanMove(true);
             ultActivated = false;
-            ultPoint = null;
+            eTrapezoid = null;
         }
         @Override
         protected void spellPassive() {

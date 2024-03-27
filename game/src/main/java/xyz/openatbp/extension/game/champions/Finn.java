@@ -13,6 +13,7 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.concurrent.TimeUnit;
 
@@ -26,6 +27,7 @@ public class Finn extends UserActor {
     private long passiveStart = 0;
     private float ultX;
     private float ultY;
+    private static final float W_OFFSET_DISTANCE = 1.25f;
 
     public Finn(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -141,15 +143,14 @@ public class Finn extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
+                float W_SPELL_RANGE = this.location.distance(dest) >= 5 ? 5 : (float)this.location.distance(dest);
+                Path2D quadrangle = Champion.createRectangle(location,dest,W_SPELL_RANGE,W_OFFSET_DISTANCE);
                 Point2D ogLocation = this.location;
                 Point2D finalDashPoint = this.dash(dest,false,DASH_SPEED);
                 double time = ogLocation.distance(finalDashPoint)/DASH_SPEED;
                 int wTime = (int) (time*1000);
-                String sfxDash = (this.avatar.contains("guardian")) ? "sfx_finn_guardian_dash_attack" : "sfx_finn_dash_attack";
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,sfxDash,this.location);
-                Line2D wLine = new Line2D.Double(ogLocation,finalDashPoint);
-                for(Actor a : Champion.getActorsAlongLine(this.parentExt.getRoomHandler(this.room.getId()),wLine,2f)){
-                    if(a.getTeam() != this.team){
+                for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
+                    if(a.getTeam() != this.team && quadrangle.contains(a.getLocation())){
                         if(!isNonStructure(a)) a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
                         else {
                             a.addToDamageQueue(this,handlePassive(a,getSpellDamage(spellData)),spellData);
@@ -157,6 +158,8 @@ public class Finn extends UserActor {
                         }
                     }
                 }
+                String sfxDash = (this.avatar.contains("guardian")) ? "sfx_finn_guardian_dash_attack" : "sfx_finn_dash_attack";
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,sfxDash,this.location);
                 Runnable changeAnimation = () -> ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"run",100,false);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(changeAnimation,wTime,TimeUnit.MILLISECONDS);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new FinnAbilityHandler(ability,spellData,cooldown,gCooldown,finalDashPoint),wTime,TimeUnit.MILLISECONDS);

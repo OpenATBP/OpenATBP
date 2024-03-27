@@ -12,12 +12,11 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.concurrent.TimeUnit;
 
 public class CinnamonBun extends UserActor {
-
-    private Line2D wLine = null;
     private Point2D ultPoint = null;
     private Point2D ultPoint2 = null;
     private int ultUses = 0;
@@ -25,7 +24,11 @@ public class CinnamonBun extends UserActor {
     private long lastUltEffect = 0;
     private boolean canApplyUltEffects = false;
     private boolean ultEffectsApplied = false;
-    private Point2D endLocation = null;
+    private Path2D wPoly = null;
+    private static final float Q_OFFSET_DISTANCE = 1f;
+    private static final float Q_SPELL_RANGE = 3f;
+    private static final float W_OFFSET_DISTANCE = 0.75f;
+    private static final float W_SPELL_RANGE = 7f;
 
     public CinnamonBun(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -34,12 +37,12 @@ public class CinnamonBun extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if(this.wLine != null){
+        if(this.wPoly != null){
             JsonNode spellData = this.parentExt.getAttackData(this.avatar,"spell2");
             double percentage = 0.2d + ((double)(this.level) * 0.01d);
             int duration = 2000 + (this.level*100);
-            for(Actor a : Champion.getActorsAlongLine(this.parentExt.getRoomHandler(this.room.getId()),this.wLine,1.5d)){
-                if(a.getTeam() != this.team){
+            for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
+                if(a.getTeam() != this.team && this.wPoly.contains(a.getLocation())){
                     a.addToDamageQueue(this,getSpellDamage(spellData)/10d,spellData);
                     if(isNonStructure(a)) a.addState(ActorState.SLOWED,percentage,duration,null,false);
                 }
@@ -112,8 +115,9 @@ public class CinnamonBun extends UserActor {
                 ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_cb_power1",this.location);
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"cb_lance_jab_v2",500,this.id+"_jab",true,"",true,false,this.team);
                 this.changeHealth((int) ((double)(this.getMaxHealth())*0.05d));
-                for(Actor a : Champion.getActorsAlongLine(this.parentExt.getRoomHandler(this.room.getId()), new Line2D.Float(this.location,dest),2f)){
-                    if(a.getTeam() != this.team){
+                Path2D qRect = Champion.createRectangle(location,dest,Q_SPELL_RANGE,Q_OFFSET_DISTANCE);
+                for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
+                    if(a.getTeam() != this.team && qRect.contains(a.getLocation())){
                         a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
                     }
                 }
@@ -124,19 +128,24 @@ public class CinnamonBun extends UserActor {
             case 2:  //TODO: make target rect work
                 this.canCast[1] = false;
                 this.canMove = false;
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_cb_power2",this.location);
                 this.changeHealth((int) ((double)(this.getMaxHealth())*0.05d));
                 Point2D origLocation = this.location;
-                this.wLine = Champion.getAbilityLine(origLocation,dest,6.5f);
-                double slideX = Champion.getAbilityLine(origLocation,dest,1.5f).getP2().getX();
-                double slideY = Champion.getAbilityLine(origLocation,dest,1.5f).getP2().getY();
+                Line2D wLine = Champion.getAbilityLine(origLocation,dest,6.5f);
+                double slideX = Champion.getAbilityLine(origLocation,dest,1.5f).getX2();
+                double slideY = Champion.getAbilityLine(origLocation,dest,1.5f).getY2();
                 float rotation = getRotation(dest);
                 Point2D finalDashPoint = this.dash(wLine.getP2(),true,15d);
                 double time = origLocation.distance(finalDashPoint)/15d;
                 int wTime = (int) (time*1000);
+                Line2D wPolyStartLine = Champion.getAbilityLine(origLocation,dest,0.5f);
+                Line2D wPolyLengthLine = Champion.getAbilityLine(origLocation,dest,7f);
+                Point2D wPolyStartPoint = new Point2D.Float((float)wPolyStartLine.getX2(),(float)wPolyStartLine.getY2());
+                Point2D wPolyEndPoint = new Point2D.Float((float)wPolyLengthLine.getX2(),(float)wPolyLengthLine.getY2());
+                this.wPoly = Champion.createRectangle(wPolyStartPoint,wPolyEndPoint,W_SPELL_RANGE,W_OFFSET_DISTANCE);
+                Runnable dashEnd = () -> this.canMove = true;
                 ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_rect_7",5000,this.id+"w",false,"",true,true,this.team);
                 ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"cb_frosting_slide",this.id+"_slide",5000,(float)slideX,(float)slideY,false,this.team,rotation);
-                Runnable dashEnd = () -> this.canMove = true;
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_cb_power2",this.location);
                 ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell2b",wTime,false);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(dashEnd,wTime,TimeUnit.MILLISECONDS);
@@ -230,7 +239,7 @@ public class CinnamonBun extends UserActor {
 
         @Override
         protected void spellW() {
-            wLine = null;
+            wPoly = null;
             canCast[1] = true;
         }
 

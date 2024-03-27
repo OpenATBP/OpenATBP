@@ -110,12 +110,13 @@ public class Marceline extends UserActor {
                 this.canCast[0] = false;
                 Line2D abilityLine = Champion.getAbilityLine(this.location,dest,7f);
                 String projectileId = "projectile_marceline_dot";
-                String projectileVoPrefix = (this.avatar.contains("marshall")) ? "marshall_lee_" : (this.avatar.contains("young")) ? "marceline_young_" : "marceline_";
+                String humanPrefix = (this.avatar.contains("marshall")) ? "marshall_lee_" : (this.avatar.contains("young")) ? "marceline_young_" : "marceline_";
+                String beastPrefix = (this.avatar.contains("marshall")) ? "marshall_lee_" : "marceline_";
                 if(this.getState(ActorState.TRANSFORMED)){
                     projectileId = "projectile_marceline_root";
-                    ExtensionCommands.playSound(parentExt,room,this.id,"vo/vo_"+projectileVoPrefix+"projectile_beast", this.location);
+                    ExtensionCommands.playSound(parentExt,room,this.id,"vo/vo_"+beastPrefix+"projectile_beast", this.location);
                 }else{
-                    ExtensionCommands.playSound(parentExt,room,this.id,"vo/vo_"+projectileVoPrefix+"projectile_human", this.location);
+                    ExtensionCommands.playSound(parentExt,room,this.id,"vo/vo_"+humanPrefix+"projectile_human", this.location);
                 }
                 ExtensionCommands.playSound(this.parentExt,this.room,"","marceline_throw_projectile",this.location);
                 this.fireProjectile(new MarcelineProjectile(this.parentExt,this,abilityLine,8f,0.5f,this.id+projectileId,this.getState(ActorState.TRANSFORMED)),projectileId,this.location,dest,7f);

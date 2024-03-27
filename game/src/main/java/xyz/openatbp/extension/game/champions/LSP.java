@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.AbilityRunnable;
@@ -15,6 +14,7 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +26,8 @@ public class LSP extends UserActor {
     private boolean isCastingult = false;
     private boolean interruptE = false;
     private boolean wActive = false;
+    private static final float Q_OFFSET_DISTANCE = 0.75f;
+    private static final float Q_SPELL_RANGE = 7.5f;
 
     public LSP(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -110,10 +112,10 @@ public class LSP extends UserActor {
             ExtensionCommands.addStatusIcon(parentExt,player,"p0","lsp_spell_4_short_description","icon_lsp_passive",0f);
             lumps = 0;
             ExtensionCommands.createActorFX(parentExt,room,id,"lsp_drama_beam",1100,id+"q",false,"",true,false,team);
-            Line2D abilityLine = Champion.getAbilityLine(location,dest,7f);
+            Path2D qRect = Champion.createRectangle(location,dest,Q_SPELL_RANGE,Q_OFFSET_DISTANCE);
             List<Actor> affectedActors = new ArrayList<>();
-            for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),abilityLine,1.5d)){
-                if(isNonStructure(a)){
+            for(Actor a : parentExt.getRoomHandler(room.getId()).getActors()){
+                if(isNonStructure(a) && qRect.contains(a.getLocation())){
                     a.handleFear(LSP.this,3000);
                     a.addToDamageQueue(LSP.this,getSpellDamage(spellData),spellData);
                     affectedActors.add(a);
@@ -173,11 +175,11 @@ public class LSP extends UserActor {
             if(victim.getTeam() == LSP.this.team){
                 victim.changeHealth((int) (getSpellDamage(spellData)*(1-this.healReduction)));
                 this.healReduction+=0.3d;
-                if(this.healReduction > 0.9d) this.healReduction = 0.9d;
+                if(this.healReduction > 0.7d) this.healReduction = 0.7d;
             }else{
                 victim.addToDamageQueue(LSP.this,getSpellDamage(spellData)*(1-this.damageReduction),spellData);
                 this.damageReduction+=0.3d;
-                if(this.damageReduction > 0.9d) this.damageReduction = 0.9d;
+                if(this.damageReduction > 0.7d) this.damageReduction = 0.7d;
             }
         }
 

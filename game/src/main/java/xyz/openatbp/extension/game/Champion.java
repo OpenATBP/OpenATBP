@@ -3,6 +3,7 @@ package xyz.openatbp.extension.game;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.smartfoxserver.v2.SmartFoxServer;
+import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
@@ -15,6 +16,7 @@ import xyz.openatbp.extension.game.champions.*;
 
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -92,6 +94,46 @@ public class Champion {
         float y = slope1 * ((intercept2-intercept1)/(slope1-slope2)) + intercept1;
         if(Float.isNaN(x) || Float.isNaN(y)) return line.getP1();
         return new Point2D.Float(x,y);
+    }
+
+    public static Point2D calculatePolygonPoint(Point2D originalPoint, float distance, double angle){
+        float x = (float)(originalPoint.getX() + distance * Math.cos(angle));
+        float y = (float)(originalPoint.getY() + distance * Math.sin(angle));
+        return new Point2D.Float(x,y);
+    }
+
+    public static Path2D createTrapezoid(Point2D location, Point2D destination, float spellRange , float offsetDistanceBottom, float offsetDistanceTop){
+        Line2D abilityLine = Champion.getAbilityLine(location,destination,spellRange);
+        double angle = Math.atan2(abilityLine.getY2() - abilityLine.getY1(), abilityLine.getX2() - abilityLine.getX1());
+        int PERPENDICULAR_ANGLE = 90;
+        Point2D startPoint1 = calculatePolygonPoint(abilityLine.getP1(),offsetDistanceBottom,angle + Math.toRadians(PERPENDICULAR_ANGLE));
+        Point2D startPoint2 = calculatePolygonPoint(abilityLine.getP1(),offsetDistanceBottom,angle - Math.toRadians(PERPENDICULAR_ANGLE));
+        Point2D endPoint1 = calculatePolygonPoint(abilityLine.getP2(),offsetDistanceTop, angle + Math.toRadians(PERPENDICULAR_ANGLE));
+        Point2D endPoint2 = calculatePolygonPoint(abilityLine.getP2(),offsetDistanceTop, angle - Math.toRadians(PERPENDICULAR_ANGLE));
+
+        Path2D.Float trapezoid = new Path2D.Float();
+        trapezoid.moveTo(startPoint1.getX(),startPoint1.getY());
+        trapezoid.lineTo(endPoint1.getX(),endPoint1.getY());
+        trapezoid.lineTo(endPoint2.getX(),endPoint2.getY());
+        trapezoid.lineTo(startPoint2.getX(),startPoint2.getY());
+        return trapezoid;
+    }
+
+    public static Path2D createRectangle(Point2D location, Point2D destination, float spellRange, float offsetDistance){
+        Line2D abilityLine = getAbilityLine(location,destination,spellRange);
+        double angle = Math.atan2(abilityLine.getY2() - abilityLine.getY1(), abilityLine.getX2() - abilityLine.getX1());
+        int PERPENDICULAR_ANGLE = 90;
+        Point2D startPoint1 = calculatePolygonPoint(abilityLine.getP1(),offsetDistance,angle + Math.toRadians(PERPENDICULAR_ANGLE));
+        Point2D startPoint2 = calculatePolygonPoint(abilityLine.getP1(),offsetDistance,angle - Math.toRadians(PERPENDICULAR_ANGLE));
+        Point2D endPoint1 = calculatePolygonPoint(abilityLine.getP2(),offsetDistance, angle + Math.toRadians(PERPENDICULAR_ANGLE));
+        Point2D endPoint2 = calculatePolygonPoint(abilityLine.getP2(),offsetDistance, angle - Math.toRadians(PERPENDICULAR_ANGLE));
+
+        Path2D.Float trapezoid = new Path2D.Float();
+        trapezoid.moveTo(startPoint1.getX(),startPoint1.getY());
+        trapezoid.lineTo(endPoint1.getX(),endPoint1.getY());
+        trapezoid.lineTo(endPoint2.getX(),endPoint2.getY());
+        trapezoid.lineTo(startPoint2.getX(),startPoint2.getY());
+        return trapezoid;
     }
 
     @Deprecated
@@ -254,8 +296,8 @@ public class Champion {
 
         @Override
         public void run() {
-            if(this.attack.equalsIgnoreCase("basicAttack") && !this.attacker.canMove()) this.attacker.setCanMove(true);
             if(this.target.getHealth() <= 0) return;
+            if(this.attacker.getActorType() == ActorType.PLAYER && this.parentExt.getActorData(this.attacker.getAvatar()).get("attackType").asText().equalsIgnoreCase("MELEE") && !this.attacker.getAvatar().contains("finn") && !this.attacker.getAvatar().contains("marceline")) ((UserActor) this.attacker).stopMoving(500);
             if(this.attacker.getState(ActorState.BLINDED)){
                 if(this.attacker.getActorType() == ActorType.PLAYER) ExtensionCommands.playSound(parentExt, attacker.getRoom(),attacker.getId(),"sfx/sfx_attack_miss", attacker.getLocation());
                 return;

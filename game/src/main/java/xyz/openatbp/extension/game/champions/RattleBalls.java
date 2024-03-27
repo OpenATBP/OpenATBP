@@ -11,7 +11,7 @@ import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
-import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +28,9 @@ public class RattleBalls extends UserActor {
     private boolean ultActive = false;
     private long lastSoundTime = 0;
     private int qTime = 0;
+    private static final float Q_SPELL_RANGE = 6f;
+    private static final float Q_OFFSET_DISTANCE = 0.85f;
+    private Path2D qThrustRectangle = null;
     public RattleBalls(User u, ATBPExtension parentExt) {
         super(u, parentExt);
     }
@@ -40,6 +43,9 @@ public class RattleBalls extends UserActor {
                 this.canCast[0] = false;
                 this.canCast[1] = false;
                 this.canCast[2] = false;
+                if(this.qUse > 0){
+                    this.qThrustRectangle = Champion.createRectangle(location,dest,Q_SPELL_RANGE,Q_OFFSET_DISTANCE);
+                }
                 Point2D ogLocation = this.location;
                 Point2D finalDashPoint = this.dash(dest,false,DASH_SPEED);
                 double time = ogLocation.distance(finalDashPoint)/DASH_SPEED;
@@ -47,7 +53,7 @@ public class RattleBalls extends UserActor {
                 int qTimeEffects = qTime*5;
                 if(this.qUse == 0){
                     String counterPrefix = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_" : "rattleballs_";
-                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+counterPrefix+"counter_stance",this.location);
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_counter_stance",this.location);
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_dash",this.location);
                     ExtensionCommands.actorAnimate(parentExt,room,id,"spell1a",qTimeEffects,true);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,counterPrefix+"dash_trail",qTimeEffects,this.id+"_q1Trail",true,"Bip001",true,false,this.team);
@@ -56,18 +62,18 @@ public class RattleBalls extends UserActor {
                 }else{
                     this.qUse = 0;
                     this.parryActive = false;
-                    Line2D wDashLine = new Line2D.Double(ogLocation,finalDashPoint);
+                    for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
+                        if(a.getTeam() != this.team && isNonStructure(a) && this.qThrustRectangle.contains(a.getLocation())){
+                            a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
+                        }
+                    }
                     String dashPrefix = (this.avatar.contains("spidotron")) ? "rattleballs_luchador_" : "rattleballs_";
+                    if(this.avatar.contains("spidotron")) ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_luchador_counter_stance",this.location);
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_dash",this.location);
                     ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_rattleballs_rattle_balls_2",this.location);
                     ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell1c",qTimeEffects,false);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashPrefix+"dash_trail",qTimeEffects,this.id+"_q2Trail",true,"Bip001",true,false,this.team);
                     ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,dashPrefix+"dash_dust",qTimeEffects,this.id+"_q2Dust",true,"Bip001 Footsteps",true,false,this.team);
-                    for(Actor a : Champion.getActorsAlongLine(parentExt.getRoomHandler(this.room.getId()),wDashLine,2f)){
-                        if(a.getTeam() != this.team && isNonStructure(a)){
-                            a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
-                        }
-                    }
                     ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),qTime+250);
                 }
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new RattleAbilityHandler(ability,spellData,cooldown,gCooldown,finalDashPoint),qTime,TimeUnit.MILLISECONDS);
@@ -270,6 +276,7 @@ public class RattleBalls extends UserActor {
                 canCast[0] = true;
                 canCast[1] = true;
                 canCast[2] = true;
+                qThrustRectangle = null;
             }
         }
 

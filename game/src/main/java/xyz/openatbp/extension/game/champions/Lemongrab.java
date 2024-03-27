@@ -13,6 +13,7 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,9 @@ public class Lemongrab extends UserActor {
     private long lastHit = -1;
     private String lastIcon = "lemon0";
     private boolean isCastingUlt = false;
+    private static final float Q_OFFSET_DISTANCE_BOTTOM = 1.5f;
+    private static final float Q_OFFSET_DISTANCE_TOP = 4f;
+    private static final float Q_SPELL_RANGE = 6f;
 
     public Lemongrab(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -86,17 +90,16 @@ public class Lemongrab extends UserActor {
         switch(ability){
             case 1:
                 this.canCast[0] = false;
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_lemongrab_sound_sword",this.location);
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_lemongrab_sound_sword",this.location);
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"lemongrab_sonic_sword_effect",750,this.id+"_sonicSword",true,"Sword",true,false,this.team);
-                Line2D ogLine = new Line2D.Float(this.location,dest);
-                List<Actor> affectedActors = Champion.getActorsAlongLine(parentExt.getRoomHandler(room.getId()),Champion.getMaxRangeLine(ogLine,6f),4f);
-                for(Actor a : affectedActors){
-                    if(a.getTeam() != this.team){
+                Path2D trapezoid = Champion.createTrapezoid(location,dest,Q_SPELL_RANGE,Q_OFFSET_DISTANCE_BOTTOM,Q_OFFSET_DISTANCE_TOP);
+                for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
+                    if(a.getTeam() != this.team && trapezoid.contains(a.getLocation())){
                         if(isNonStructure(a)) a.addState(ActorState.SLOWED,0.4d,2500,null,false);
                         a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
                     }
                 }
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_lemongrab_sound_sword",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_lemongrab_sound_sword",this.location);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"lemongrab_sonic_sword_effect",750,this.id+"_sonicSword",true,"Sword",true,false,this.team);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new LemonAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 break;

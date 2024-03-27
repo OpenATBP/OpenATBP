@@ -11,6 +11,7 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +23,9 @@ public class BMO extends UserActor {
     private long wStartTime = 0;
     private long lastWSound = 0;
     private boolean ultSlowActive = false;
+    private static final float Q_OFFSET_DISTANCE_BOTTOM = 1.5f;
+    private static final float Q_OFFSET_DISTANCE_TOP = 4f;
+    private static final float Q_SPELL_RANGE = 6f;
 
     public BMO(User u, ATBPExtension parentExt){
         super(u, parentExt);
@@ -74,12 +78,9 @@ public class BMO extends UserActor {
         switch(ability){
             case 1:
                 this.canCast[0] = false;
-                String cameraFx = (this.avatar.contains("noir")) ? "bmo_camera_noire" : "bmo_camera";
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,cameraFx,500,this.id+"_camera",true,"",true,false,this.team);
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_bmo_camera",this.location);
-                Line2D spellLine = Champion.getMaxRangeLine(new Line2D.Float(this.location,dest), 6f);
-                for(Actor a : Champion.getActorsAlongLine(this.parentExt.getRoomHandler(this.room.getId()),spellLine,4f)){
-                    if(a.getTeam() != this.team){
+                Path2D trapezoid = Champion.createTrapezoid(location,dest,Q_SPELL_RANGE, Q_OFFSET_DISTANCE_BOTTOM, Q_OFFSET_DISTANCE_TOP);
+                for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
+                    if(a.getTeam() != this.team && trapezoid.contains(a.getLocation())){
                         if(isNonStructure(a)){
                             a.addState(ActorState.BLINDED,0.5d,2500,null,false);
                             if(passiveStacks == 3) a.addState(ActorState.SLOWED,0d,2500,null,false);
@@ -89,6 +90,9 @@ public class BMO extends UserActor {
                 }
                 if(passiveStacks == 3) usePassiveStacks();
                 else addPasiveStacks();
+                String cameraFx = (this.avatar.contains("noir")) ? "bmo_camera_noire" : "bmo_camera";
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,cameraFx,500,this.id+"_camera",true,"",true,false,this.team);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_bmo_camera",this.location);
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new BMOAbilityHandler(ability,spellData,cooldown,gCooldown,dest),castDelay,TimeUnit.MILLISECONDS);
                 break;
@@ -101,7 +105,6 @@ public class BMO extends UserActor {
                     this.canCast[2] = false;
                     this.wActive = true;
                     wStartTime = System.currentTimeMillis();
-                    ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,500,0);
                     Runnable secondUseDelay = () -> this.canCast[1] = true;
                     String pixelsAoeFx = (this.avatar.contains("noir")) ? "bmo_pixels_aoe_noire" : "bmo_pixels_aoe";
                     String remoteSpinFx = (this.avatar.contains("noir")) ? "bmo_remote_spin_noire" : "bmo_remote_spin";
@@ -253,7 +256,7 @@ public class BMO extends UserActor {
             ExtensionCommands.playSound(parentExt,room,"","akubat_projectileHit1",victim.getLocation());
             if(ultSlowActive) victim.addState(ActorState.SLOWED,0.5d,2500,null,false);
             this.damageReduction+=0.3d;
-            if(this.damageReduction > 0.9d) this.damageReduction = 0.9d;
+            if(this.damageReduction > 0.7d) this.damageReduction = 0.7d;
         }
 
         @Override
