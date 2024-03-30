@@ -264,7 +264,7 @@ public class BMO extends UserActor {
             for(Actor a : roomHandler.getActors()){
                 if(!this.victims.contains(a) && a.getTeam() != BMO.this.getTeam() && a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER && !a.getId().equalsIgnoreCase(BMO.this.id)){
                     double collisionRadius = parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
-                    if(a.getLocation().distance(location) <= hitbox + collisionRadius){
+                    if(a.getLocation().distance(location) <= hitbox + collisionRadius && !a.getAvatar().equalsIgnoreCase("neptr_mine")){
                         return a;
                     }
                 }

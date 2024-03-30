@@ -3,8 +3,6 @@ package xyz.openatbp.extension.game.champions;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
-import com.smartfoxserver.v2.entities.data.ISFSObject;
-import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MovementManager;
@@ -25,11 +23,10 @@ public class MagicMan extends UserActor {
     private boolean passiveActivated = false;
     private Point2D wLocation = null;
     private Point2D wDest = null;
-    private double wMoveTime = 0d;
-    private double wSpeed = 0d;
     private boolean ultStarted;
     private boolean interruptE = false;
     private ArrayList<Actor> playersHitBySnake = new ArrayList<>(3);
+    private MagicManClone magicManClone;
 
     public MagicMan(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -58,26 +55,11 @@ public class MagicMan extends UserActor {
             this.passiveActivated = false;
             ExtensionCommands.removeStatusIcon(this.parentExt,this.player,"passive");
         }
-
-        if(this.getState(ActorState.INVISIBLE) && wLocation != null){
-            this.wMoveTime+=0.1d;
-        }else if(!this.getState(ActorState.INVISIBLE) && wLocation != null){
-            Point2D explosionPoint = MovementManager.getRelativePoint(new Line2D.Float(this.wLocation,this.wDest),this.wSpeed,this.wMoveTime);
-            ExtensionCommands.moveActor(this.parentExt,this.room,this.id+"_decoy",explosionPoint,explosionPoint,5f,false);
-            ExtensionCommands.destroyActor(this.parentExt,this.room,this.id+"_decoy");
-            ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"magicman_eat_it",this.id+"_eatIt",2000,(float)explosionPoint.getX(),(float) explosionPoint.getY(), false,this.team,0f);
-            ExtensionCommands.playSound(this.parentExt,this.room,"","sfx_magicman_decoy",explosionPoint);
-            ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_magicman_decoy2",this.location);
-            JsonNode spellData = this.parentExt.getAttackData(this.avatar,"spell2");
-            for(Actor a : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),explosionPoint,2.5f)){
-                if(this.isNonStructure(a)){
-                    a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
-                }
-            }
-            this.wMoveTime = 0d;
+        if(this.magicManClone != null) this.magicManClone.update(msRan);
+        if(!this.getState(ActorState.INVISIBLE) && wLocation != null){
+            this.magicManClone.die(this);
             this.wLocation = null;
             this.wDest = null;
-            this.wSpeed = 0d;
             this.canCast[1] = true;
             this.setState(ActorState.REVEALED, true);
             ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,getReducedCooldown(25000),250);
@@ -125,26 +107,18 @@ public class MagicMan extends UserActor {
                 this.canCast[1] = false;
                 if(this.wLocation == null){
                     Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location,dest));
-                    if(this.location.distance(dashPoint) < 5) dashPoint = MovementManager.getDashPoint(this,Champion.getMaxRangeLine(new Line2D.Float(this.location,dashPoint),5f));
                     if(Double.isNaN(dashPoint.getY())) dashPoint = this.location;
                     this.addState(ActorState.INVISIBLE,0d,3000,null,false);
                     this.wLocation = new Point2D.Double(this.location.getX(),this.location.getY());
-                    Point2D endLocation = Champion.getDistanceLine(this.movementLine,100f).getP2();
+                    Point2D endLocation = Champion.getAbilityLine(this.wLocation,dest,100f).getP2();
                     if(this.location.distance(endLocation) <= 1d) endLocation = this.location;
                     this.wDest = endLocation;
-                    this.wSpeed = this.getPlayerStat("speed");
-                    ISFSObject data = new SFSObject();
-                    data.putInt("currentHealth", (int) this.currentHealth);
-                    data.putInt("maxHealth",(int) this.maxHealth);
-                    data.putDouble("pHealth",this.getPHealth());
-                    ExtensionCommands.updateActorData(this.parentExt,this.room,this.id+"_decoy",data);
+                    System.out.println("endLocation:"+endLocation);
                     ExtensionCommands.snapActor(this.parentExt,this.room,this.id,this.location,dashPoint,true);
-                    Point2D ogLocation = new Point2D.Double(this.location.getX(),this.location.getY());
                     System.out.println("DashX: " + dashPoint.getX() + " DashY: " + dashPoint.getY());
                     this.setLocation(dashPoint);
-                    ExtensionCommands.createActor(this.parentExt,this.room,this.id+"_decoy",this.avatar+"_decoy",ogLocation,0f,this.team);
-                    ExtensionCommands.moveActor(this.parentExt,this.room,this.id+"_decoy",ogLocation,endLocation, (float) this.getPlayerStat("speed"),true);
-                    ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"w",true,1000,0);
+                    this.magicManClone = new MagicManClone(this.wLocation);
+                    this.parentExt.getRoomHandler(this.room.getId()).addCompanion(this.magicManClone);
                     Runnable secondUseDelay = () -> this.canCast[1] = true;
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(secondUseDelay,1000,TimeUnit.MILLISECONDS);
                 }else{
@@ -175,6 +149,11 @@ public class MagicMan extends UserActor {
             if(this.getState(state)) return true;
         }
         return false;
+    }
+
+    private void handleCloneDeath(){
+        this.parentExt.getRoomHandler(this.room.getId()).removeCompanion(this.magicManClone);
+        this.magicManClone = null;
     }
 
     private class MagicManAbilityHandler extends AbilityRunnable {
@@ -246,6 +225,76 @@ public class MagicMan extends UserActor {
         @Override
         public void destroy() {
             super.destroy();
+        }
+    }
+
+    private class MagicManClone extends Actor {
+
+        private boolean dead;
+        private double timeTraveled = 0;
+
+        MagicManClone(Point2D location){
+            this.room = MagicMan.this.room;
+            this.parentExt = MagicMan.this.parentExt;
+            this.currentHealth = 99999;
+            this.maxHealth = 99999;
+            this.location = location;
+            this.avatar = MagicMan.this.avatar+"_decoy";
+            this.id = MagicMan.this+"_decoy";
+            this.team = MagicMan.this.team;
+            this.actorType = ActorType.COMPANION;
+            this.stats = initializeStats();
+            this.movementLine = new Line2D.Float(this.location,MagicMan.this.wDest);
+            ExtensionCommands.createActor(this.parentExt,this.room,this.id,this.avatar,this.location,0f,team);
+            ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.movementLine.getP1(),this.movementLine.getP2(),(float) MagicMan.this.getPlayerStat("speed"),true);
+        }
+
+        @Override
+        public void handleKill(Actor a, JsonNode attackData) {
+
+        }
+
+        @Override
+        public boolean damaged(Actor a, int damage, JsonNode attackData) {
+            return false;
+        }
+
+        @Override
+        public void attack(Actor a) {
+
+        }
+
+        @Override
+        public void die(Actor a) {
+            this.stopMoving();
+            ExtensionCommands.knockOutActor(this.parentExt,this.room,this.id,a.getId(),10000);
+            this.dead = true;
+            ExtensionCommands.createWorldFX(this.parentExt,this.room,this.id,"magicman_eat_it",this.id+"_eatIt",2000,(float) this.location.getX(),(float) this.location.getY(), false,this.team,0f);
+            ExtensionCommands.playSound(this.parentExt,this.room,"","sfx_magicman_decoy",this.location);
+            ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_magicman_decoy2",this.location);
+            JsonNode spellData = this.parentExt.getAttackData(this.avatar,"spell2");
+            for(Actor actor : Champion.getActorsInRadius(this.parentExt.getRoomHandler(this.room.getId()),this.location,2.5f)){
+                if(isNonStructure(actor)){
+                    actor.addToDamageQueue(MagicMan.this,getSpellDamage(spellData),spellData);
+                }
+            }
+            this.timeTraveled = 0;
+            ExtensionCommands.destroyActor(this.parentExt,this.room,this.id);
+            MagicMan.this.handleCloneDeath();
+        }
+
+        @Override
+        public void update(int msRan) {
+            this.handleDamageQueue();
+            if(this.dead) return;
+            this.timeTraveled+=0.1d;;
+            this.location = MovementManager.getRelativePoint(this.movementLine, (float) MagicMan.this.getPlayerStat("speed"),this.timeTraveled);
+            this.handlePathing();
+        }
+
+        @Override
+        public void setTarget(Actor a) {
+
         }
     }
 

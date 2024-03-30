@@ -116,7 +116,7 @@ public class LSP extends UserActor {
             List<Actor> affectedActors = new ArrayList<>();
             for(Actor a : parentExt.getRoomHandler(room.getId()).getActors()){
                 if(isNonStructure(a) && qRect.contains(a.getLocation())){
-                    a.handleFear(LSP.this,3000);
+                    if(!a.getId().contains("turret")) a.handleFear(LSP.this,3000);
                     a.addToDamageQueue(LSP.this,getSpellDamage(spellData),spellData);
                     affectedActors.add(a);
                 }
@@ -188,7 +188,7 @@ public class LSP extends UserActor {
             for(Actor a : roomHandler.getActors()){
                 if(!this.victims.contains(a) && a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER && !a.getId().equalsIgnoreCase(LSP.this.id)){
                     double collisionRadius = parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
-                    if(a.getLocation().distance(location) <= hitbox + collisionRadius){
+                    if(a.getLocation().distance(location) <= hitbox + collisionRadius && !a.getAvatar().equalsIgnoreCase("neptr_mine")){
                         return a;
                     }
                 }

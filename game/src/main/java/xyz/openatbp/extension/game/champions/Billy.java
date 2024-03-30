@@ -41,7 +41,7 @@ public class Billy extends UserActor {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar,"spell3");
             for(Actor a : impactedActors){
                 double damageReduction = 1-(0.15*impactedActors.size());
-                if(damageReduction >= 0.75d) damageReduction = 0.75d;
+                if(damageReduction >= 0.7d) damageReduction = 0.7d;
                 a.addToDamageQueue(this,(this.getSpellDamage(spellData)/5d)*damageReduction,spellData);
             }
         }else if(this.ultLocation != null && System.currentTimeMillis() - this.ultStartTime >= 4500){
@@ -82,7 +82,7 @@ public class Billy extends UserActor {
                 Path2D quadrangle = Champion.createRectangle(location,dest,Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
                 for(Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()){
                     if(a.getTeam() != this.team && quadrangle.contains(a.getLocation())){
-                        a.knockback(this.location);
+                        if(isNonStructure(a)) a.knockback(this.location);
                         a.addToDamageQueue(this,getSpellDamage(spellData),spellData);
                         if(this.passiveUses == 3) a.addState(ActorState.STUNNED,0d,2000,null,false);
                     }

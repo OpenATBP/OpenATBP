@@ -123,7 +123,7 @@ public class Lich extends UserActor{
                         if(slimedEnemies.containsKey(a.getId())){
                             if(System.currentTimeMillis() - slimedEnemies.get(a.getId()) >= 1000){
                                 a.addToDamageQueue(this,getSpellDamage(attackData),attackData);
-                                a.addState(ActorState.SLOWED,0.3d,1500,null,false);
+                                if(isNonStructure(a)) a.addState(ActorState.SLOWED,0.3d,1500,null,false);
                                 slimedEnemies.put(a.getId(),System.currentTimeMillis());
                                 break;
                             }
@@ -321,7 +321,7 @@ public class Lich extends UserActor{
             ExtensionCommands.playSound(parentExt,room,"","sfx_lich_charm_shot_hit",victim.getLocation());
             ExtensionCommands.createWorldFX(parentExt,room,this.id,"lich_charm_explosion",id+"_charmExplosion",500,(float)this.location.getX(),(float)this.location.getY(),false,team,0f);
             victim.addToDamageQueue(Lich.this,getSpellDamage(spellData),spellData);
-            victim.handleCharm(Lich.this,2000);
+            if(!victim.getId().contains("turret") || !victim.getId().contains("decoy")) victim.handleCharm(Lich.this,2000);
             destroy();
         }
 
