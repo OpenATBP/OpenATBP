@@ -37,7 +37,7 @@ public class Lich extends UserActor{
     @Override
     public void useAbility(int ability, JsonNode spellData, int cooldown, int gCooldown, int castDelay, Point2D dest) {
         if (skully == null && System.currentTimeMillis() - lastSkullySpawn > getReducedCooldown(40000)) {
-            this.spawnSkully();
+            this.spawnSkully(this.location);
         }
         switch (ability) {
             case 1: //Q
@@ -99,8 +99,8 @@ public class Lich extends UserActor{
     @Override
     public void die(Actor a){
         super.die(a);
-        if(this.skully != null) this.setSkullyTarget(a);
-        //this.skully.die(this.skully);
+        //if(this.skully != null) this.setSkullyTarget(a);
+        this.skully.die(this.skully);
     }
 
     @Override
@@ -123,7 +123,7 @@ public class Lich extends UserActor{
                         if(slimedEnemies.containsKey(a.getId())){
                             if(System.currentTimeMillis() - slimedEnemies.get(a.getId()) >= 1000){
                                 a.addToDamageQueue(this,getSpellDamage(attackData),attackData);
-                                a.addState(ActorState.SLOWED,0.3d,1500,null,false);
+                                if(isNonStructure(a)) a.addState(ActorState.SLOWED,0.3d,1500,null,false);
                                 slimedEnemies.put(a.getId(),System.currentTimeMillis());
                                 break;
                             }
@@ -155,8 +155,8 @@ public class Lich extends UserActor{
         }
     }
 
-    private void spawnSkully(){
-        this.skully = new Skully();
+    private void spawnSkully(Point2D location){
+        this.skully = new Skully(location);
         this.parentExt.getRoomHandler(this.room.getId()).addCompanion(this.skully);
         this.lastSkullySpawn = System.currentTimeMillis();
         ExtensionCommands.addStatusIcon(this.parentExt,this.player,"icon_lich_passive","lich_spell_4_short_description","icon_lich_passive",20000);
@@ -196,12 +196,12 @@ public class Lich extends UserActor{
         private Point2D lastTargetLocation;
         private long timeOfBirth;
 
-        Skully(){
+        Skully(Point2D spawnLocation){
             this.room = Lich.this.room;
             this.parentExt = Lich.this.parentExt;
             this.currentHealth = 500;
             this.maxHealth = 500;
-            this.location = Lich.this.location;
+            this.location = spawnLocation;
             this.avatar = "skully";
             this.id = "skully_"+Lich.this.id;
             this.team = Lich.this.team;
@@ -246,6 +246,7 @@ public class Lich extends UserActor{
                 this.die(this);
             }
             this.handleDamageQueue();
+            this.handleActiveEffects();
             if(this.attackCooldown > 0) this.attackCooldown-=100;
             if(!this.isStopped()) this.timeTraveled+=0.1f;
             this.location = MovementManager.getRelativePoint(this.movementLine,this.getPlayerStat("speed"),this.timeTraveled);
@@ -254,6 +255,7 @@ public class Lich extends UserActor{
                 if(this.movementLine.getP2().distance(Lich.this.location) > 0.1d && this.location.distance(Lich.this.location) > 2.5f) this.move(Lich.this.location);
                 if(!this.isStopped() && this.location.distance(Lich.this.location) <= 2f) this.stopMoving();
             }else{
+                if(this.target.getHealth() <= 0) this.resetTarget();
                 if(this.withinRange(this.target)){
                     if(!this.isStopped()) this.stopMoving();
                     if(this.canAttack()) this.attack(this.target);
@@ -321,7 +323,7 @@ public class Lich extends UserActor{
             ExtensionCommands.playSound(parentExt,room,"","sfx_lich_charm_shot_hit",victim.getLocation());
             ExtensionCommands.createWorldFX(parentExt,room,this.id,"lich_charm_explosion",id+"_charmExplosion",500,(float)this.location.getX(),(float)this.location.getY(),false,team,0f);
             victim.addToDamageQueue(Lich.this,getSpellDamage(spellData),spellData);
-            victim.handleCharm(Lich.this,2000);
+            if(!victim.getId().contains("turret") || !victim.getId().contains("decoy")) victim.handleCharm(Lich.this,2000);
             destroy();
         }
 

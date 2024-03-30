@@ -268,12 +268,11 @@ public class BubbleGum extends UserActor {
             this.stats = this.initializeStats();
             this.attackCooldown = this.getPlayerStat("attackSpeed");
             this.setStat("attackDamage",BubbleGum.this.getStat("attackDamage"));
-            this.timeOfBirth = System.currentTimeMillis();
             this.iconName = "Turret #" + turretNum;
             ExtensionCommands.addStatusIcon(parentExt,player,iconName,"Turret placed!","icon_pb_s2",60000f);
             ExtensionCommands.createActor(parentExt,room,this.id,this.avatar,this.location,0f,this.team);
             ExtensionCommands.playSound(parentExt,room,this.id,"sfx_bubblegum_turret_spawn",this.location);
-            ExtensionCommands.createWorldFX(parentExt,room,this.id,"fx_target_ring_3",this.id+"_ring", 60000, (float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
+            ExtensionCommands.createActorFX(parentExt,room,id,"fx_target_ring_3",60000,this.id+"_ring",true,"",false,true,this.team);
             this.addState(ActorState.IMMUNITY,0d,1000*60*15,null,false);
         }
 

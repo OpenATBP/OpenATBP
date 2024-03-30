@@ -171,7 +171,7 @@ public class Hunson extends UserActor {
             for(Actor a : Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()),dest,2.5f)){
                 if(isNonStructure(a)){
                     a.addToDamageQueue(Hunson.this,getSpellDamage(spellData),spellData);
-                    a.handleFear(Hunson.this,1500);
+                    if(!a.getId().contains("turret") || !a.getId().contains("decoy")) a.handleFear(Hunson.this,1500);
                 }
             }
         }
