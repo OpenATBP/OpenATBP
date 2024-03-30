@@ -94,6 +94,13 @@ function leaveQueue(socket){
   }
   socket.player.queue.type = null;
   socket.player.queue.started = -1;
+  var invalidQueues = []; //Should clean up errors, if applicable, where queues contains incorrect players
+  for(var q of queues){
+    var queuedUsers = users.filter(u => u.player.queue.queueNum == q.queueNum);
+    console.log(`QUEUE ${q.queueNum} is invalid!`);
+    if(queuedUsers.length == 0) invalidQueues.push(q);
+  }
+  queues = queues.filter(q => !invalidQueues.contains(q));
   displayPlayers();
   displayQueues();
 }
@@ -128,7 +135,10 @@ function leaveTeam(socket){
       team.queueNum = -1;
     }
     teams = teams.filter(t => t.teamLeader != undefined);
-  }else console.log("No team found when leaving!");
+  }else{
+    leaveQueue(socket);
+    console.log("No team found when leaving!");
+  }
   displayTeams();
   displayPlayers();
 }
