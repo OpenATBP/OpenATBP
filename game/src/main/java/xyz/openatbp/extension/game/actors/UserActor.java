@@ -364,7 +364,11 @@ public class UserActor extends Actor {
             double critChance = this.getPlayerStat("criticalChance")/100d;
             double random = Math.random();
             boolean crit = random < critChance;
-            ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
+            if(crit && (this.avatar.equalsIgnoreCase("princessbubblegum_skin_hoth") || this.avatar.equalsIgnoreCase("princessbubblegum_skin_warrior"))){
+                ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),false,true);
+            } else {
+                ExtensionCommands.attackActor(parentExt,room,this.id,a.getId(), (float) a.getLocation().getX(), (float) a.getLocation().getY(),crit,true);
+            }
             this.attackCooldown = this.getPlayerStat("attackSpeed");
             if(this.attackCooldown < 500) this.attackCooldown = 500;
             return crit;
@@ -1034,28 +1038,6 @@ public class UserActor extends Actor {
         Point2D lineEndPoint = new Point2D.Double(extendedX,extendedY);
         double speed = parentExt.getActorStats(projectileId).get("speed").asDouble();
         ExtensionCommands.createProjectile(parentExt,this.room,this,id,projectileId,location,lineEndPoint,(float)speed);
-        this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
-    }
-
-    public void fireProjectile(Projectile projectile, String id, Point2D dest, float range){
-        double x = dest.getX();
-        double z = dest.getY();
-        Point2D endLocation = new Point2D.Double(x,z);
-        Line2D skillShotLine = new Line2D.Float(this.location,endLocation);
-        Line2D maxRangeLine = Champion.getMaxRangeLine(skillShotLine,range);
-        double speed = parentExt.getActorStats(id).get("speed").asDouble();
-        ExtensionCommands.createProjectile(parentExt,this.room,this,id, maxRangeLine.getP1(), maxRangeLine.getP2(), (float)speed);
-        this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
-    }
-
-    public void fireProjectile(Projectile projectile, String id, String projectileId, Point2D dest, float range){
-        double x = dest.getX();
-        double z = dest.getY();
-        Point2D endLocation = new Point2D.Double(x,z);
-        Line2D skillShotLine = new Line2D.Float(this.location,endLocation);
-        Line2D maxRangeLine = Champion.getMaxRangeLine(skillShotLine,range);
-        double speed = parentExt.getActorStats(projectileId).get("speed").asDouble();
-        ExtensionCommands.createProjectile(parentExt,room,this,id,projectileId, maxRangeLine.getP1(), maxRangeLine.getP2(), (float)speed);
         this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
     }
 
