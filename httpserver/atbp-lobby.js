@@ -94,6 +94,13 @@ function leaveQueue(socket){
   }
   socket.player.queue.type = null;
   socket.player.queue.started = -1;
+  var invalidQueues = []; //Should clean up errors, if applicable, where queues contains incorrect players
+  for(var q of queues){
+    var queuedUsers = users.filter(u => u.player.queue.queueNum == q.queueNum);
+    console.log(`QUEUE ${q.queueNum} is invalid!`);
+    if(queuedUsers.length == 0) invalidQueues.push(q);
+  }
+  queues = queues.filter(q => !invalidQueues.contains(q));
   displayPlayers();
   displayQueues();
 }
@@ -128,7 +135,10 @@ function leaveTeam(socket){
       team.queueNum = -1;
     }
     teams = teams.filter(t => t.teamLeader != undefined);
-  }else console.log("No team found when leaving!");
+  }else{
+    leaveQueue(socket);
+    console.log("No team found when leaving!");
+  }
   displayTeams();
   displayPlayers();
 }
@@ -153,20 +163,24 @@ function joinQueue(sockets, type){
         var players = [];
         for(var u of usersInQueue){
           if(u.player.onTeam && !players.includes(u.player)){ //If player is on a team, make sure their teammates come with them
-            var team = teams.find(t => t.players.include(u.player));
+            var team = teams.find(t => t.players.includes(u.player));
             if(team != undefined){
               if(players.length + team.players.length <= queueSize){
                 for(var tp of team.players){
-                  players.push(tp);
+                  if(!players.includes(tp)) players.push(tp);
+                  else console.log(`${tp.name} is already in the game!`);
                 }
               }else console.log("Too many players on team to fill");
             }else console.log("No team found!");
-          }else{
+          }else if(!u.player.onTeam){
             players.push(u.player);
           }
           if(players.length == queueSize) break;
         }
         if(players.length == queueSize){
+          for(var p of players){
+            console.log(`QUEUE POPPED. ${p.name} JOINED!`);
+          }
           var blue = [];
           var purple = [];
           for(var p of players){
@@ -175,20 +189,30 @@ function joinQueue(sockets, type){
               if(team != undefined){
                 team.queueNum = queueNum;
                 var teamToJoin = -1;
-                if(purple.length + team.players.length <= queueSize/3) teamToJoin = 0;
-                else if(blue.length + team.players.length <= queueSize/3) teamToJoin = 1;
+                if(purple.length + team.players.length <= queueSize/2) teamToJoin = 0;
+                else if(blue.length + team.players.length <= queueSize/2) teamToJoin = 1;
                 if(teamToJoin != -1){
                   for(var pt of team.players){
-                    if(teamToJoin == 0) purple.push(pt);
-                    else blue.push(pt);
+                    var playerObj = {
+                      'name': pt.name,
+                      'player': pt.player,
+                      'teg_id': `${pt.teg_id}`,
+                      'avatar': 'unassigned',
+                      'is_ready': false
+                    };
+                    if(teamToJoin == 0) purple.push(playerObj);
+                    else if(teamToJoin == 1) blue.push(playerObj);
                     players.find(pl => pl == pt).team = teamToJoin;
+                    console.log(pt.name + " set to " + teamToJoin);
                   }
                 }else console.log("Team players can't join team!");
               }
             }
           }
-
+          console.log(`BLUE TEAM: `, blue);
+          console.log(`PURPLE TEAM: `, purple);
           for(var p of players.filter(pl => pl.team == -1)){
+            console.log(`Putting ${p.name} onto a team...`);
             var playerObj = {
               'name': p.name,
               'player': p.player,
@@ -491,7 +515,16 @@ function handleRequest (jsonString, socket) {
                 'result': 'success'
               }
             };
-            safeSendAll(users.filter(u => team.players.includes(u.player)),'team_update',{'players': teamObjs, 'team': team.team}).catch(console.error);
+            safeSendAll(users.filter(u => team.players.includes(u.player)),'team_update',{'players': teamObjs, 'team': team.team}).then(() => {
+              if(team.players.length == 3){
+                var act = team.type.split("_");
+                var type = act[act.length-1];
+                if(team != undefined){
+                  joinQueue(users.filter(u => team.players.includes(u.player)),type);
+                }else console.log("Can't unlock undefined team!");
+              }
+            }).catch(console.error);
+
           }else{
             response = {
               'cmd': 'invite_verified',

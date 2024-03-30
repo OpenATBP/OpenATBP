@@ -34,15 +34,15 @@ module.exports = {
         } else {
           reject(new Error("Item not found"));
         }
-      } 
+      }
       catch(err) {
         reject(err);
       }
-    });    
+    });
   },
   handleFriendRequest: function(username, newFriend, collection){
     return new Promise(function(resolve, reject) {
-      collection.updateOne({"authToken":username},{ $push: {friends: newFriend}}).then(() => {
+      collection.updateOne({"authToken":username},{ $addToSet: {friends: newFriend}}).then(() => {
         resolve(JSON.stringify({}));
       }).catch((err) => {
         reject(err);

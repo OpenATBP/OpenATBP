@@ -13,7 +13,30 @@ const SocketPolicyServer = require('./socket-policy.js');
 
 const displayNames = require('./data/names.json');
 const shopData = require('./data/shop.json');
+/*
+Added to remove duplicate friends if needed...
+async function test(collection) {
+  try {
+    var cursor = collection.find();
+    for await (var doc of cursor){
+      //console.log(doc.friends);
+      var newFriends = [];
+      for(var friend of doc.friends){
+        if(!newFriends.includes(friend)) newFriends.push(friend);
+      }
+      var q = {"user.TEGid": doc.user.TEGid};
+      var o = {upsert: true};
+      var up = {$set: {friends: newFriends}};
 
+      var res = await collection.updateOne(q,up,o);
+      console.log(res);
+    }
+  }
+  finally {
+    console.log("Done!");
+  }
+}
+*/
 let config;
 try {
   config = require('./config.js');
@@ -53,6 +76,7 @@ mongoClient.connect(err => {
   }
 
   const playerCollection = mongoClient.db("openatbp").collection("players");
+  //test(playerCollection).catch(console.dir);
 
   if(!fs.existsSync("static/crossdomain.xml") || !fs.existsSync("static/config.xml")) {
     console.info("Copying default crossdomain.xml/config.xml");
@@ -277,7 +301,7 @@ mongoClient.connect(err => {
   });
 
   app.post('/service/authenticate/user/:username', (req,res) => {
-    database.createNewUser(req.params.username,req.body.password, playerCollection).then((data) => {
+    database.createNewUser(req.params.username,req.body.password,'manual', playerCollection).then((data) => {
       res.send(JSON.stringify(data));
     }).catch(console.error);
   });
