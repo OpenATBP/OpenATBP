@@ -128,12 +128,12 @@ public class Champion {
         Point2D endPoint1 = calculatePolygonPoint(abilityLine.getP2(),offsetDistance, angle + Math.toRadians(PERPENDICULAR_ANGLE));
         Point2D endPoint2 = calculatePolygonPoint(abilityLine.getP2(),offsetDistance, angle - Math.toRadians(PERPENDICULAR_ANGLE));
 
-        Path2D.Float trapezoid = new Path2D.Float();
-        trapezoid.moveTo(startPoint1.getX(),startPoint1.getY());
-        trapezoid.lineTo(endPoint1.getX(),endPoint1.getY());
-        trapezoid.lineTo(endPoint2.getX(),endPoint2.getY());
-        trapezoid.lineTo(startPoint2.getX(),startPoint2.getY());
-        return trapezoid;
+        Path2D.Float rectangle = new Path2D.Float();
+        rectangle.moveTo(startPoint1.getX(),startPoint1.getY());
+        rectangle.lineTo(endPoint1.getX(),endPoint1.getY());
+        rectangle.lineTo(endPoint2.getX(),endPoint2.getY());
+        rectangle.lineTo(startPoint2.getX(),startPoint2.getY());
+        return rectangle;
     }
 
     @Deprecated

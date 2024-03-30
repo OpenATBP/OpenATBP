@@ -94,7 +94,6 @@ public class Neptr extends UserActor {
         super.fireProjectile(projectile, id, location, dest, abilityRange);
         ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_neptr_boommeringue",this.location);
         ExtensionCommands.createActorFX(this.parentExt,this.room, this.id+id, "neptr_pie_trail", (int) projectile.getEstimatedDuration()+1000,this.id+id+"_fx",true,"Bip001",true,true,this.team);
-
     }
 
     @Override
@@ -306,7 +305,7 @@ public class Neptr extends UserActor {
             ExtensionCommands.createActor(parentExt,room,this.id,this.avatar,this.location,0f,this.team);
             ExtensionCommands.playSound(parentExt,this.room,Neptr.this.id,"vo/vo_neptr_mine",Neptr.this.location);
             ExtensionCommands.playSound(parentExt,room,this.id,"sfx_neptr_mine_spawn",this.location);
-            ExtensionCommands.createWorldFX(parentExt,room,this.id,"fx_target_ring_2",this.id+"_mine",30000,(float)this.location.getX(),(float)this.location.getY(),true,this.team,0f);
+            ExtensionCommands.createActorFX(parentExt,room,this.id,"fx_target_ring_2",30000,this.id+"_mine",true,"",false,true,this.team);
         }
 
         @Override

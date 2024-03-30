@@ -85,7 +85,7 @@ public abstract class Projectile {
         for(Actor a : roomHandler.getActors()){
             if((a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE) && !teammates.contains(a)){ //TODO: Change to not hit teammates
                 double collisionRadius = parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
-                if(a.getLocation().distance(location) <= hitbox + collisionRadius){
+                if(a.getLocation().distance(location) <= hitbox + collisionRadius && !a.getAvatar().equalsIgnoreCase("neptr_mine")){
                     return a;
                 }
             }

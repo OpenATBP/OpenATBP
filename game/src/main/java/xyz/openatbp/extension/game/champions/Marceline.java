@@ -245,10 +245,12 @@ public class Marceline extends UserActor {
                     if(a.getTeam() != team && a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE){
                         double damage = getSpellDamage(spellData);
                         a.addToDamageQueue(Marceline.this,damage,spellData);
-                        if(!getState(ActorState.TRANSFORMED)){
-                            a.handleCharm(Marceline.this,2000);
-                        }else{
-                            a.handleFear(Marceline.this,2000);
+                        if(!a.getId().contains("turret") || !a.getId().contains("decoy")){
+                            if(!getState(ActorState.TRANSFORMED)){
+                                a.handleCharm(Marceline.this,2000);
+                            }else{
+                                a.handleFear(Marceline.this,2000);
+                            }
                         }
                     }
                 }

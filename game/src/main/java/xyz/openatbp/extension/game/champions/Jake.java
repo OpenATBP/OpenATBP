@@ -5,9 +5,12 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.MovementManager;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
@@ -15,6 +18,7 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -28,6 +32,9 @@ public class Jake extends UserActor {
     private long qStartTime = 0;
     private boolean qUsed = false;
     private int qTime;
+    private Actor qVictim;
+    private Path2D qPolygon;
+    private boolean doGrab = false;
     private static final float Q_FIRST_HALF_OFFSET = 0.75f;
     private static final float Q_SECOND_HALF_OFFSET = 1.75f;
     private static final float Q_SPELL_RANGE = 9;
@@ -73,8 +80,13 @@ public class Jake extends UserActor {
 
     @Override
     public boolean canAttack() {
-        if(this.ultActivated) return false;
+        if(this.ultActivated || this.qUsed) return false;
         return super.canAttack();
+    }
+
+    public boolean canMove(){
+        if(dashActive) return false;
+        return super.canMove;
     }
 
     @Override
@@ -110,6 +122,51 @@ public class Jake extends UserActor {
         }
         if(this.qUsed && System.currentTimeMillis() - this.qStartTime <= 300 && this.hasInterrupingCC()){
             this.interruputQ = true;
+            this.qTime = 0;
+            this.dashActive = false;
+            this.qPolygon = null;
+            this.qUsed = false;
+            ExtensionCommands.playSound(parentExt,room,id,"sfx_skill_interrupted",location);
+            ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"idle",500,false);
+        }
+        if(this.doGrab && this.qVictim != null && this.qPolygon.contains(this.qVictim.getLocation())){
+            JsonNode spellData = this.parentExt.getAttackData("jake","spell2");
+            this.dashActive = true;
+            this.resetTarget();
+            double speed = 20d;
+            double distance = this.location.distance(this.qVictim.getLocation());
+            double time = (distance / speed)*1000d;
+            this.stopMoving((int) (time));
+            Runnable delayedDamage = () -> {
+                double newTime = (distance / 15d)*1000d;
+                Runnable animationDelay = () -> ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell1c",250,false);
+                Runnable canCast = () -> {
+                    this.dashActive = false;
+                    this.qUsed = false;
+                    this.canCast[1] = true;
+                    this.canCast[2] = true;
+                };
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(animationDelay,(int)newTime,TimeUnit.MILLISECONDS);
+                SmartFoxServer.getInstance().getTaskScheduler().schedule(canCast,(int)newTime+500,TimeUnit.MILLISECONDS);
+                ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell1b",(int)newTime,true);
+                Point2D dashPoint = MovementManager.getDashPoint(this,new Line2D.Float(this.location, this.qVictim.getLocation()));
+                ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location, dashPoint, (float) 15d,true);
+                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"jake_trail",(int) newTime,this.id,true,"",true,false,this.team);
+                this.setLocation(dashPoint);
+                double percentage = distance/7d;
+                if(percentage < 0.5d) percentage = 0.5d;
+                System.out.println("percentage "+percentage);
+                double spellModifer = this.getPlayerStat("spellDamage")*percentage;
+                if(isNonStructure(this.qVictim)) this.qVictim.addState(ActorState.STUNNED,0d,2000,null,false);
+                this.qVictim.addToDamageQueue(this,35+spellModifer,spellData);
+                if(distance >= 5.5d){
+                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_oildrum_dead",this.qVictim.getLocation());
+                    ExtensionCommands.createActorFX(this.parentExt,this.room, this.qVictim.getId(), "jake_stomp_fx",500,this.id+"_jake_q_fx",false,"",false,false,this.team);
+
+                }
+            };
+            SmartFoxServer.getInstance().getTaskScheduler().schedule(delayedDamage,0/*(int)time*/, TimeUnit.MILLISECONDS);
+            this.doGrab = false;
         }
     }
 
@@ -123,71 +180,17 @@ public class Jake extends UserActor {
                 this.canCast[2] = false;
                 canMove = false;
                 this.qUsed = true;
+
                 this.qStartTime = System.currentTimeMillis();
                 this.qTime = 1300;
-                Runnable qDelay = () -> {
-                    if(!this.interruputQ){
-                        Actor closestTarget = null;
-                        double closestDistance = 1000;
-                        Path2D qPolygon = createOctagon(location,dest);
-                        for(Actor a : this.parentExt.getRoomHandler(room.getId()).getActors()){
-                            if(a.getTeam() != this.team && qPolygon.contains(a.getLocation())){
-                                if(a.getLocation().distance(this.location) < closestDistance){
-                                    closestDistance = a.getLocation().distance(this.location);
-                                    closestTarget = a;
-                                }
-                            }
-                        }
-                        if(closestTarget != null){
-                            this.dashActive = true;
-                            double speed = 7d;
-                            double time = (closestDistance / speed)*1000d;
-                            this.stopMoving((int) (time));
-                            Actor finalClosestTarget = closestTarget;
-                            double finalClosestDistance = closestDistance;
-                            Runnable delayedDamage = () -> {
-                                double newTime = (finalClosestDistance / 15d)*1000d;
-                                Runnable animationDelay = () -> {
-                                    ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell1c",250,false);
-                                };
-                                Runnable canCast = () -> {
-                                    this.dashActive = false;
-                                    this.canCast[1] = true;
-                                    this.canCast[2] = true;
-                                };
-                                SmartFoxServer.getInstance().getTaskScheduler().schedule(animationDelay,(int)newTime,TimeUnit.MILLISECONDS);
-                                SmartFoxServer.getInstance().getTaskScheduler().schedule(canCast,(int)newTime+500,TimeUnit.MILLISECONDS);
-                                ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"spell1b",(int)newTime,true);
-                                ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location, finalClosestTarget.getLocation(), (float) 15d,true);
-                                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"jake_trail",(int) newTime,this.id,true,"",true,false,this.team);
-                                this.setLocation(finalClosestTarget.getLocation());
-                                double percentage = finalClosestDistance/7d;
-                                if(percentage < 0.5d) percentage = 0.5d;
-                                System.out.println("percentage "+percentage);
-                                double spellModifer = this.getPlayerStat("spellDamage")*percentage;
-                                finalClosestTarget.addState(ActorState.STUNNED,0d,2000,null,false);
-                                finalClosestTarget.addToDamageQueue(this,35+spellModifer,spellData);
-                                if(finalClosestDistance >= 5.5d){
-                                    ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_oildrum_dead",finalClosestTarget.getLocation());
-                                    ExtensionCommands.createActorFX(this.parentExt,this.room, finalClosestTarget.getId(), "jake_stomp_fx",500,this.id+"_jake_q_fx",false,"",false,false,this.team);
-
-                                }
-                            };
-                            SmartFoxServer.getInstance().getTaskScheduler().schedule(delayedDamage,(int)time, TimeUnit.MILLISECONDS);
-                        }
-                    } else {
-                        this.qTime = 0;
-                        this.dashActive = false;
-                        ExtensionCommands.playSound(parentExt,room,id,"sfx_skill_interrupted",location);
-                        ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"idle",500,false);
-                    }
-                };
-                String strechFxPrefix = (this.avatar.contains("cake")) ? "cake_" : (this.avatar.contains("randy")) ? "jake_butternubs_" : "jake_";
-                String strechSfxPrefix = (this.avatar.contains("guardian")) ? "jake_guardian_" : "jake_";
+                Line2D qLine = Champion.getAbilityLine(this.location,dest,Q_SPELL_RANGE);
+                this.qPolygon = createOctagon(this.location,dest);
+                fireQProjectile(new JakeQProjectile(this.parentExt,this,qLine,5f,1f,this.id+"stretchy_grab"),"stretchy_grab",this.location,dest,Q_SPELL_RANGE);
+                String stretchFxPrefix = (this.avatar.contains("cake")) ? "cake_" : (this.avatar.contains("randy")) ? "jake_butternubs_" : "jake_";
+                String stretchSfxPrefix = (this.avatar.contains("guardian")) ? "jake_guardian_" : "jake_";
                 ExtensionCommands.actorAbilityResponse(this.parentExt,this.player,"q",true,getReducedCooldown(cooldown),gCooldown);
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+strechSfxPrefix+"stretch",this.location);
-                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+strechFxPrefix+"stretch",this.location);
-                SmartFoxServer.getInstance().getTaskScheduler().schedule(qDelay,300,TimeUnit.MILLISECONDS);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"sfx_"+stretchSfxPrefix+"stretch",this.location);
+                ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_"+stretchFxPrefix+"stretch",this.location);
                 SmartFoxServer.getInstance().getTaskScheduler().schedule(new JakeAbilityHandler(ability,spellData,cooldown,gCooldown,dest),this.qTime,TimeUnit.MILLISECONDS);
                 break;
             case 2:
@@ -257,12 +260,23 @@ public class Jake extends UserActor {
         return octagon;
     }
 
-    public boolean canMove(){
-        if(dashActive) return false;
-        return super.canMove;
+    private void fireQProjectile(Projectile projectile, String id, Point2D location, Point2D dest, float abilityRange){
+        double x = location.getX();
+        double y = location.getY();
+        double dx = dest.getX() - location.getX();
+        double dy = dest.getY() - location.getY();
+        double length = Math.sqrt(dx * dx + dy * dy);
+        double unitX = dx/length;
+        double unitY = dy/length;
+        double extendedX = x + abilityRange * unitX;
+        double extendedY = y + abilityRange * unitY;
+        Point2D lineEndPoint = new Point2D.Double(extendedX,extendedY);
+        double speed = 5;
+        ExtensionCommands.createProjectile(parentExt,this.room,this,id, location, lineEndPoint, (float)speed);
+        this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
     }
 
-    private class JakeAbilityHandler extends AbilityRunnable{
+    private class JakeAbilityHandler extends AbilityRunnable {
 
         public JakeAbilityHandler(int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {
             super(ability, spellData, cooldown, gCooldown, dest);
@@ -300,6 +314,55 @@ public class Jake extends UserActor {
         @Override
         protected void spellPassive() {
 
+        }
+    }
+
+    private class JakeQProjectile extends Projectile {
+
+        public JakeQProjectile(ATBPExtension parentExt, UserActor owner, Line2D path, float speed, float hitboxRadius, String id) {
+            super(parentExt, owner, path, speed, hitboxRadius, id);
+        }
+
+
+        @Override
+        public Actor checkPlayerCollision(RoomHandler roomHandler) {
+            List<Actor> teammates = this.getTeammates(roomHandler);
+            for(Actor a : roomHandler.getActors()){
+                if(!teammates.contains(a) && a.getTeam() != owner.getTeam()){
+                    double collisionRadius = parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
+                    if(a.getLocation().distance(location) <= hitbox + collisionRadius && !a.getAvatar().equalsIgnoreCase("neptr_mine")){
+                        return a;
+                    }
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public void update(RoomHandler roomHandler){
+            if(destroyed) return;
+            if(!Jake.this.doGrab && (this.destination.distance(this.getLocation()) <= 0.01 || System.currentTimeMillis() - this.startTime > this.estimatedDuration)){
+                this.destroy();
+            }
+            this.updateTimeTraveled();
+            Actor hitActor = this.checkPlayerCollision(roomHandler);
+            if(hitActor != null){
+                this.hit(hitActor);
+                return;
+            }
+            if(this.destination.distance(this.getLocation()) <= 0.01 || System.currentTimeMillis() - this.startTime > this.estimatedDuration){
+                System.out.println("Projectile being destroyed in update!");
+                this.destroy();
+            }
+        }
+
+        @Override
+        protected void hit(Actor victim) {
+            if(Jake.this.qPolygon != null && Jake.this.qPolygon.contains(victim.getLocation())){
+                Jake.this.qVictim = victim;
+                Jake.this.doGrab = true;
+                this.destroy();
+            }
         }
     }
 }
