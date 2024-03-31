@@ -72,6 +72,7 @@ public class Lich extends UserActor{
                     SmartFoxServer.getInstance().getTaskScheduler().schedule(new LichAbilityRunnable(ability,spellData,cooldown,gCooldown,dest),1000,TimeUnit.MILLISECONDS);
                 }
                 else{
+                    ExtensionCommands.actorAnimate(this.parentExt,this.room,this.id,"idle",500,false);
                     if(this.ultTeleportsRemaining > 0){
                         Point2D testLocation = MovementManager.getDashPoint(this,new Line2D.Float(this.location,ultLocation));
                         ExtensionCommands.snapActor(parentExt,room,this.id,testLocation,testLocation,false);
