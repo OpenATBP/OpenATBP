@@ -9,6 +9,7 @@ import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.GameManager;
+import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 import java.awt.geom.Point2D;
@@ -65,6 +66,7 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
         int gCooldown = spellData.get("spellGlobalCoolDown").asInt();
         int castDelay = spellData.get("castDelay").asInt();
         player.useAbility(spellNum,spellData,cooldown,gCooldown,castDelay,oldLocation);
+        if(player.getState(ActorState.BRUSH)) player.setState(ActorState.REVEALED, true);
     }
 
     private JsonNode getSpellData(String avatar, int spell){

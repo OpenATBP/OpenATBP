@@ -345,7 +345,7 @@ public class Champion {
             }
 
              */
-            if(attacker.getActorType() == ActorType.MONSTER && !attacker.getId().contains("_")) attacker.setCanMove(true);
+            if(attacker.getActorType() == ActorType.MONSTER && !attacker.getId().contains("gnome")) attacker.setCanMove(true);
             this.target.addToDamageQueue(this.attacker,this.damage,attackData);
         }
     }

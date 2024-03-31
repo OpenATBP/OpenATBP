@@ -5,10 +5,9 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.game.AbilityRunnable;
-import xyz.openatbp.extension.game.ActorState;
-import xyz.openatbp.extension.game.Champion;
-import xyz.openatbp.extension.game.Projectile;
+import xyz.openatbp.extension.RoomHandler;
+
+import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
@@ -170,6 +169,19 @@ public class IceKing extends UserActor {
 
         public IceKingProjectile(ATBPExtension parentExt, UserActor owner, Line2D path, float speed, float hitboxRadius, String id) {
             super(parentExt, owner, path, speed, hitboxRadius, id);
+        }
+
+        public Actor checkPlayerCollision(RoomHandler roomHandler){
+            List<Actor> teammates = this.getTeammates(roomHandler);
+            for(Actor a : roomHandler.getActors()){
+                if(a.getActorType() != ActorType.TOWER && !teammates.contains(a)){ //TODO: Change to not hit teammates
+                    double collisionRadius = parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
+                    if(a.getLocation().distance(location) <= hitbox + collisionRadius && !a.getAvatar().equalsIgnoreCase("neptr_mine")){
+                        return a;
+                    }
+                }
+            }
+            return null;
         }
 
         @Override
