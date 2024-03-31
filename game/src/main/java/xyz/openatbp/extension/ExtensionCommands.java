@@ -539,7 +539,7 @@ public class ExtensionCommands {
         for(Actor a : aggressors.keySet()){ //Loops through each player in the set
             ObjectNode playerObj = mapper.createObjectNode();
             playerObj.put("name",a.getDisplayName());
-            playerObj.put("playerPortrait",a.getPortrait());
+            playerObj.put("playerPortrait",a.getFrame());
             for(String k : aggressors.get(a).getKeys()){ //Loops through each different attack
                 if(k.contains("attack")){
                     ISFSObject attackData = aggressors.get(a).getSFSObject(k);

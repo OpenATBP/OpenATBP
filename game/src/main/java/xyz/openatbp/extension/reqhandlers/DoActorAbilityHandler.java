@@ -66,6 +66,7 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
         int gCooldown = spellData.get("spellGlobalCoolDown").asInt();
         int castDelay = spellData.get("castDelay").asInt();
         player.useAbility(spellNum,spellData,cooldown,gCooldown,castDelay,oldLocation);
+        if(player.getState(ActorState.BRUSH)) player.setState(ActorState.REVEALED, true);
     }
 
     private JsonNode getSpellData(String avatar, int spell){
