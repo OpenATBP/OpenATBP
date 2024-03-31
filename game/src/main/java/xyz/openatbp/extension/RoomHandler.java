@@ -984,6 +984,7 @@ public class RoomHandler implements Runnable{
     }
 
     public void gameOver(int winningTeam){
+        if(this.gameOver) return;
         try{
             this.gameOver = true;
             this.room.setProperty("state",2);

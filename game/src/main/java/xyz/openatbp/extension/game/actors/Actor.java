@@ -158,10 +158,13 @@ public abstract class Actor {
 
     public boolean setTempStat(String stat, double delta){
         try{
+            double existingStat = this.stats.get(stat);
             if(this.tempStats.containsKey(stat)){
                 double tempStat = this.tempStats.get(stat);
                 double newStat = tempStat + delta;
+                if(existingStat + newStat < 0) newStat = existingStat*-1; //Stat can never drop below 0. May be redundant and can be removed
                 if(newStat == 0){
+                    Console.debugLog("Removing " + stat);
                     this.tempStats.remove(stat);
                     return true;
                 }else{
@@ -169,6 +172,7 @@ public abstract class Actor {
                     return false;
                 }
             }else{
+                if(existingStat + delta < 0) delta = existingStat*-1; //Stat can never drop below 0. May be redundant and can be removed
                 this.tempStats.put(stat,delta);
                 return false;
             }
@@ -421,6 +425,7 @@ public abstract class Actor {
     public double getPlayerStat(String stat){
         double currentStat = this.stats.get(stat);
         if(this.tempStats.containsKey(stat)){
+            if(currentStat + this.tempStats.get(stat) < 0) return 0; //Stat will never drop below 0
             return currentStat+this.tempStats.get(stat);
         }
         else return currentStat;
@@ -471,7 +476,6 @@ public abstract class Actor {
                 else if(damager.getId().contains("skully")){
                     damager = this.parentExt.getRoomHandler(this.room.getId()).getEnemyChampion(team, "lich");
                 }
-                Console.debugLog(damager.getId() + " killed " + this.id);
                 damager.handleKill(this,attackData);
                 this.die(damager);
                 return;
@@ -538,8 +542,8 @@ public abstract class Actor {
         for(String s : effectSet){
             ISFSObject data = this.activeBuffs.get(s);
             if(data.containsKey("fxId")) ExtensionCommands.removeFx(this.parentExt,this.room,data.getUtfString("fxId"));
-            this.tempStats = new HashMap<>(); //TODO: Might cause issues if this is used for cleanses
         }
+        this.tempStats = new HashMap<>(); //TODO: Might cause issues if this is used for cleanses
         this.activeBuffs = new HashMap<>();
         this.setCanMove(true);
     }

@@ -809,7 +809,6 @@ public class UserActor extends Actor {
                 xp*=multiplier;
             }
             this.xp+=xp;
-            Console.debugLog(this.id + " xp is " + this.xp);
             HashMap<String, Double> updateData = new HashMap<>(3);
             updateData.put("xp", (double) this.xp);
             int level = ChampionData.getXPLevel(this.xp);

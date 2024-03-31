@@ -42,6 +42,7 @@ function safeSendAll(sockets,command,response){
 }
 
 function sendCommand (socket, command, response){
+  if(socket == undefined) return;
     console.log(`Sending ${command} to ${socket.player.name}`);
     return new Promise(function(resolve, reject) {
       if(command == undefined && response == undefined) reject();

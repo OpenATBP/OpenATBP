@@ -101,7 +101,7 @@ public class Lich extends UserActor{
     public void die(Actor a){
         super.die(a);
         //if(this.skully != null) this.setSkullyTarget(a);
-        this.skully.die(this.skully);
+        if(this.skully != null) this.skully.die(this.skully);
     }
 
     @Override
