@@ -339,6 +339,17 @@ public class Jake extends UserActor {
         }
 
         @Override
+        public void destroy(){
+            super.destroy();
+            if(Jake.this.doGrab) return;
+            Jake.this.interruputQ = true;
+            Jake.this.qTime = 0;
+            Jake.this.dashActive = false;
+            Jake.this.qPolygon = null;
+            Jake.this.qUsed = false;
+        }
+
+        @Override
         public void update(RoomHandler roomHandler){
             if(destroyed) return;
             if(!Jake.this.doGrab && (this.destination.distance(this.getLocation()) <= 0.01 || System.currentTimeMillis() - this.startTime > this.estimatedDuration)){
