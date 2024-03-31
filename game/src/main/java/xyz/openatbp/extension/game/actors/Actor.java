@@ -650,6 +650,19 @@ public abstract class Actor {
         return this.getAvatar();
     }
 
+    public String getFrame(){
+        if(this.getActorType() == ActorType.PLAYER){
+            String[] frameComponents = this.getAvatar().split("_");
+            if(frameComponents.length > 1){
+                return frameComponents[0];
+            } else {
+                return this.getAvatar();
+            }
+        } else {
+            return this.getAvatar();
+        }
+    }
+
     public String getSkinAssetBundle(){
         return this.parentExt.getActorData(this.avatar).get("assetBundle").asText();
     }

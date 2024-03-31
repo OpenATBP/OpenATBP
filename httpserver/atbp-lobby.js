@@ -100,7 +100,7 @@ function leaveQueue(socket){
     console.log(`QUEUE ${q.queueNum} is invalid!`);
     if(queuedUsers.length == 0) invalidQueues.push(q);
   }
-  queues = queues.filter(q => !invalidQueues.contains(q));
+  queues = queues.filter(q => !invalidQueues.includes(q));
   displayPlayers();
   displayQueues();
 }

@@ -280,7 +280,7 @@ public class GameManager {
                 player.put("kills", ua.getStat("kills"));
                 player.put("deaths", ua.getStat("deaths"));
                 player.put("assists", ua.getStat("assists"));
-                player.put("playerName",ua.getAvatar());
+                player.put("playerName",ua.getFrame());
                 player.put("myElo",(double)playerVar.getInt("elo"));
                 player.put("coins",100); //Just going to have this be a flat amount for now
                 player.put("prestigePoints",10); //Just going to have this be a flat amount for now
