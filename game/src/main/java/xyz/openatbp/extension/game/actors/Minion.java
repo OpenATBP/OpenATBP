@@ -118,7 +118,6 @@ public class Minion extends Actor{
 
     @Override
     public void die(Actor a) {
-        Console.debugLog(this.id + " has died! " + this.dead);
         this.currentHealth = 0;
         if(this.dead) return;
         this.stopMoving();

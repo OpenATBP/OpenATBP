@@ -13,9 +13,9 @@ const SocketPolicyServer = require('./socket-policy.js');
 
 const displayNames = require('./data/names.json');
 const shopData = require('./data/shop.json');
-/*
-Added to remove duplicate friends if needed...
-async function test(collection) {
+
+//Added to remove duplicate friends if needed...
+async function removeDuplicateFriends(collection) {
   try {
     var cursor = collection.find();
     for await (var doc of cursor){
@@ -36,7 +36,7 @@ async function test(collection) {
     console.log("Done!");
   }
 }
-*/
+
 let config;
 try {
   config = require('./config.js');
@@ -76,7 +76,7 @@ mongoClient.connect(err => {
   }
 
   const playerCollection = mongoClient.db("openatbp").collection("players");
-  //test(playerCollection).catch(console.dir);
+  //removeDuplicateFriends(playerCollection).catch(console.dir);
 
   if(!fs.existsSync("static/crossdomain.xml") || !fs.existsSync("static/config.xml")) {
     console.info("Copying default crossdomain.xml/config.xml");
