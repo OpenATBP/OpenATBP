@@ -11,14 +11,14 @@ on:
   push:
     branches: [ "master" ]
     paths:
-    - game/src/**
-    - game/build.gradle
+    - ATBPExtension/src/**
+    - ATBPExtension/build.gradle
     - .github/workflows/gradle.yml
   pull_request:
     branches: [ "master" ]
     paths:
-    - game/src/**
-    - game/build.gradle
+    - ATBPExtension/src/**
+    - ATBPExtension/build.gradle
     - .github/workflows/gradle.yml
 
 permissions:
@@ -46,4 +46,4 @@ jobs:
       uses: actions/upload-artifact@v3.1.0
       with:
         name: ATBPExtension.jar
-        path: game/build/libs
+        path: ATBPExtension/build/libs
