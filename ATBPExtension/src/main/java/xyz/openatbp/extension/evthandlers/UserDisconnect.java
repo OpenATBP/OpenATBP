@@ -5,6 +5,7 @@ import com.smartfoxserver.v2.core.SFSEventParam;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.extensions.BaseServerEventHandler;
+
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
@@ -12,20 +13,23 @@ import xyz.openatbp.extension.RoomHandler;
 public class UserDisconnect extends BaseServerEventHandler {
 
     @Override
-    public void handleServerEvent(ISFSEvent event){
+    public void handleServerEvent(ISFSEvent event) {
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         User user = (User) event.getParameter(SFSEventParam.USER);
-        String roomID = user.getSession().getProperty("room_id").toString(); //Can probably find a better way to handle room names
-        if(roomID.length() >= 10) roomID = roomID.substring(0,10);
+        String roomID =
+                user.getSession()
+                        .getProperty("room_id")
+                        .toString(); // Can probably find a better way to handle room names
+        if (roomID.length() >= 10) roomID = roomID.substring(0, 10);
         Room room = user.getZone().getRoomByName(roomID);
         RoomHandler roomHandler = parentExt.getRoomHandler(room.getId());
         int roomState = (int) room.getProperty("state");
-        if(roomHandler != null){
+        if (roomHandler != null) {
             roomHandler.handlePlayerDC(user);
-        }else if(roomState != 2){
-            ExtensionCommands.abortGame(parentExt,room);
+        } else if (roomState != 2) {
+            ExtensionCommands.abortGame(parentExt, room);
         }
-        if(room.isEmpty()){ //If there is no one left in the room, delete the room
+        if (room.isEmpty()) { // If there is no one left in the room, delete the room
             parentExt.getApi().removeRoom(room);
         }
     }

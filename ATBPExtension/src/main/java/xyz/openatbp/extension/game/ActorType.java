@@ -1,4 +1,10 @@
 package xyz.openatbp.extension.game;
 
-public enum ActorType { MINION, TOWER, PLAYER, MONSTER, BASE, COMPANION
+public enum ActorType {
+    MINION,
+    TOWER,
+    PLAYER,
+    MONSTER,
+    BASE,
+    COMPANION
 }

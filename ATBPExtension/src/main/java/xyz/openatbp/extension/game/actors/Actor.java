@@ -1,9 +1,15 @@
 package xyz.openatbp.extension.game.actors;
 
+import java.awt.geom.Line2D;
+import java.awt.geom.Point2D;
+import java.util.*;
+
 import com.fasterxml.jackson.databind.JsonNode;
+
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
+
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
@@ -12,12 +18,12 @@ import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 
-import java.awt.geom.Line2D;
-import java.awt.geom.Point2D;
-import java.util.*;
-
 public abstract class Actor {
-    public enum AttackType{ PHYSICAL, SPELL}
+    public enum AttackType {
+        PHYSICAL,
+        SPELL
+    }
+
     protected double currentHealth;
     protected double maxHealth;
     protected Point2D location;
@@ -45,171 +51,219 @@ public abstract class Actor {
     protected String bundle;
     protected boolean towerAggroCompanion = false;
 
-    public double getPHealth(){
-        return currentHealth/maxHealth;
+    public double getPHealth() {
+        return currentHealth / maxHealth;
     }
 
-    public int getHealth(){
+    public int getHealth() {
         return (int) currentHealth;
     }
 
-    public int getMaxHealth(){
+    public int getMaxHealth() {
         return (int) maxHealth;
     }
 
-    public Point2D getLocation(){
+    public Point2D getLocation() {
         return this.location;
     }
 
-    public String getId(){return this.id;}
-    public int getTeam(){return this.team;}
-    public int getOppositeTeam(){
-        if(this.getTeam() == 1) return 0;
+    public String getId() {
+        return this.id;
+    }
+
+    public int getTeam() {
+        return this.team;
+    }
+
+    public int getOppositeTeam() {
+        if (this.getTeam() == 1) return 0;
         else return 1;
     }
 
-    public void setLocation(Point2D location){
+    public void setLocation(Point2D location) {
         this.location = location;
-        this.movementLine = new Line2D.Float(location,location);
+        this.movementLine = new Line2D.Float(location, location);
         this.timeTraveled = 0f;
     }
-    public String getAvatar(){return this.avatar;}
-    public ActorType getActorType(){return this.actorType;}
-    public void reduceAttackCooldown(){
-        this.attackCooldown-=100;
+
+    public String getAvatar() {
+        return this.avatar;
     }
 
-    public boolean withinRange(Actor a){
+    public ActorType getActorType() {
+        return this.actorType;
+    }
+
+    public void reduceAttackCooldown() {
+        this.attackCooldown -= 100;
+    }
+
+    public boolean withinRange(Actor a) {
         return a.getLocation().distance(this.location) <= this.getPlayerStat("attackRange");
     }
 
-    public void stopMoving(){
-        this.movementLine = new Line2D.Float(this.location,this.location);
+    public void stopMoving() {
+        this.movementLine = new Line2D.Float(this.location, this.location);
         this.timeTraveled = 0f;
         this.clearPath();
-        ExtensionCommands.moveActor(parentExt,this.room,this.id,this.location,this.location, 5f, false);
+        ExtensionCommands.moveActor(
+                parentExt, this.room, this.id, this.location, this.location, 5f, false);
     }
 
-    protected boolean isStopped(){
+    protected boolean isStopped() {
         return this.location.distance(this.movementLine.getP2()) < 0.01d;
     }
 
-    public void setCanMove(boolean move){
+    public void setCanMove(boolean move) {
         this.canMove = move;
     }
 
-    public double getSpeed(){return this.getPlayerStat("speed");}
-
-
-    public void setState(ActorState state, boolean enabled){
-        this.states.put(state,enabled);
-        ExtensionCommands.updateActorState(this.parentExt,this.room,this.id,state,enabled);
+    public double getSpeed() {
+        return this.getPlayerStat("speed");
     }
 
-    public double getStat(String stat){
+    public void setState(ActorState state, boolean enabled) {
+        this.states.put(state, enabled);
+        ExtensionCommands.updateActorState(this.parentExt, this.room, this.id, state, enabled);
+    }
+
+    public double getStat(String stat) {
         return this.stats.get(stat);
     }
 
-    public double getTempStat(String stat){
-        if(!this.hasTempStat(stat)) return 0d;
+    public double getTempStat(String stat) {
+        if (!this.hasTempStat(stat)) return 0d;
         return this.tempStats.get(stat);
     }
 
-    public void move(Point2D destination){
-        if(!this.canMove()) return;
-        this.movementLine = new Line2D.Float(this.location,destination);
+    public void move(Point2D destination) {
+        if (!this.canMove()) return;
+        this.movementLine = new Line2D.Float(this.location, destination);
         this.timeTraveled = 0f;
-        ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,destination, (float) this.getPlayerStat("speed"),true);
+        ExtensionCommands.moveActor(
+                this.parentExt,
+                this.room,
+                this.id,
+                this.location,
+                destination,
+                (float) this.getPlayerStat("speed"),
+                true);
     }
 
-    public boolean isNotAMonster(Actor a){
+    public boolean isNotAMonster(Actor a) {
         return a.getActorType() != ActorType.MONSTER;
     }
 
-    public void moveWithCollision(Point2D dest){
-        Line2D testLine = new Line2D.Float(this.location,dest);
-        Point2D newPoint = MovementManager.getPathIntersectionPoint(this.parentExt,this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),testLine);
-        if(newPoint != null){
+    public void moveWithCollision(Point2D dest) {
+        Line2D testLine = new Line2D.Float(this.location, dest);
+        Point2D newPoint =
+                MovementManager.getPathIntersectionPoint(
+                        this.parentExt,
+                        this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),
+                        testLine);
+        if (newPoint != null) {
             this.move(newPoint);
-        }else this.move(dest);
+        } else this.move(dest);
     }
 
-    public void setPath(List<Point2D> path){
-        if(path.size() == 0){
+    public void setPath(List<Point2D> path) {
+        if (path.size() == 0) {
             Console.logWarning(this.id + " was given a 0 length path");
             return;
         }
-        Line2D pathLine = new Line2D.Float(this.location,path.get(1));
-        Point2D dest = MovementManager.getPathIntersectionPoint(parentExt,this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),pathLine);
-        if(dest == null) dest = path.get(1);
+        Line2D pathLine = new Line2D.Float(this.location, path.get(1));
+        Point2D dest =
+                MovementManager.getPathIntersectionPoint(
+                        parentExt,
+                        this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),
+                        pathLine);
+        if (dest == null) dest = path.get(1);
         this.path = path;
         this.pathIndex = 1;
         this.move(dest);
     }
 
-    public void clearPath(){
+    public void clearPath() {
         this.path = null;
         this.pathIndex = 1;
     }
 
-    public int getXPWorth(){
+    public int getXPWorth() {
         return this.xpWorth;
     }
 
-    public boolean setTempStat(String stat, double delta){
-        try{
+    public boolean setTempStat(String stat, double delta) {
+        try {
             double existingStat = this.stats.get(stat);
-            if(this.tempStats.containsKey(stat)){
+            if (this.tempStats.containsKey(stat)) {
                 double tempStat = this.tempStats.get(stat);
                 double newStat = tempStat + delta;
-                if(existingStat + newStat < 0) newStat = existingStat*-1; //Stat can never drop below 0. May be redundant and can be removed
-                if(newStat == 0){
+                if (existingStat + newStat < 0)
+                    newStat =
+                            existingStat
+                                    * -1; // Stat can never drop below 0. May be redundant and can
+                // be removed
+                if (newStat == 0) {
                     Console.debugLog("Removing " + stat);
                     this.tempStats.remove(stat);
                     return true;
-                }else{
-                    this.tempStats.put(stat,newStat);
+                } else {
+                    this.tempStats.put(stat, newStat);
                     return false;
                 }
-            }else{
-                if(existingStat + delta < 0) delta = existingStat*-1; //Stat can never drop below 0. May be redundant and can be removed
-                this.tempStats.put(stat,delta);
+            } else {
+                if (existingStat + delta < 0)
+                    delta =
+                            existingStat
+                                    * -1; // Stat can never drop below 0. May be redundant and can
+                // be removed
+                this.tempStats.put(stat, delta);
                 return false;
             }
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return true;
         }
     }
 
-    protected void handleActiveEffects(){
+    protected void handleActiveEffects() {
         Set<String> keys = new HashSet<>(this.activeBuffs.keySet());
-        for(String k : keys){
+        for (String k : keys) {
             ISFSObject data = this.activeBuffs.get(k);
-            if(System.currentTimeMillis() >= data.getLong("endTime")){ //Checks to see if the effect has ended
+            if (System.currentTimeMillis()
+                    >= data.getLong("endTime")) { // Checks to see if the effect has ended
                 Console.debugLog("Effect: " + k + " is ending!");
-                if(data.containsKey("newEndTime")){ //If the effect has been modified, run handler for restarting the effect
-                    if(data.containsKey("state")) this.handleStateEnd(data);
-                    else this.handleEffectEnd(k,data);
-                }else{ //Runs if there is no modification and actor should go back to normal
-                    if(data.containsKey("state")){ //Runs if the effect is a state
+                if (data.containsKey(
+                        "newEndTime")) { // If the effect has been modified, run handler for
+                    // restarting the
+                    // effect
+                    if (data.containsKey("state")) this.handleStateEnd(data);
+                    else this.handleEffectEnd(k, data);
+                } else { // Runs if there is no modification and actor should go back to normal
+                    if (data.containsKey("state")) { // Runs if the effect is a state
                         ActorState state = (ActorState) data.getClass("state");
-                        this.setState(state,false);
-                        if(data.containsKey("delta")){ //If the state had a stat effect, reset it
-                            this.setTempStat(data.getUtfString("stat"),data.getDouble("delta")*-1);
+                        this.setState(state, false);
+                        if (data.containsKey("delta")) { // If the state had a stat effect, reset it
+                            this.setTempStat(
+                                    data.getUtfString("stat"), data.getDouble("delta") * -1);
                         }
-                        if(state == ActorState.POLYMORPH){
+                        if (state == ActorState.POLYMORPH) {
                             UserActor ua = (UserActor) this;
                             this.bundle = ua.getSkinAssetBundle();
                             boolean scale = false;
-                            if(ua.getState(ActorState.TRANSFORMED)){
-                                switch (ua.getAvatar()){
+                            if (ua.getState(ActorState.TRANSFORMED)) {
+                                switch (ua.getAvatar()) {
                                     case "flame":
                                         this.bundle = "flame_ult";
                                         scale = true;
                                         break;
                                     case "iceking":
-                                        this.bundle = this.avatar.contains("queen") ? "iceking2_icequeen2" : this.avatar.contains("young") ? "iceking2_young2" : "iceking2";
+                                        this.bundle =
+                                                this.avatar.contains("queen")
+                                                        ? "iceking2_icequeen2"
+                                                        : this.avatar.contains("young")
+                                                                ? "iceking2_young2"
+                                                                : "iceking2";
                                         break;
                                     case "marceline":
                                         this.bundle = "marceline_bat";
@@ -218,31 +272,58 @@ public abstract class Actor {
                                         this.bundle = "pepbut_feral";
                                 }
                             }
-                            ExtensionCommands.swapActorAsset(this.parentExt,this.room,this.id,this.bundle);
-                            if(scale){
-                                ExtensionCommands.scaleActor(this.parentExt,this.room,this.id,1f);
+                            ExtensionCommands.swapActorAsset(
+                                    this.parentExt, this.room, this.id, this.bundle);
+                            if (scale) {
+                                ExtensionCommands.scaleActor(
+                                        this.parentExt, this.room, this.id, 1f);
                             }
-                            if(!this.activeBuffs.containsKey(ActorState.SLOWED.toString())) this.setState(ActorState.SLOWED, false);
+                            if (!this.activeBuffs.containsKey(ActorState.SLOWED.toString()))
+                                this.setState(ActorState.SLOWED, false);
                         }
-                    }else{ //Resets stat back to normal by removing what it was modified by
-                        this.setTempStat(k,data.getDouble("delta")*-1);
+                    } else { // Resets stat back to normal by removing what it was modified by
+                        this.setTempStat(k, data.getDouble("delta") * -1);
                     }
                     this.activeBuffs.remove(k);
                 }
-            }else{
-                if(data.containsKey("fxId") && System.currentTimeMillis() >= data.getLong("fxEndTime")){
-                    int fxDuration = (int)(data.getLong("endTime")-System.currentTimeMillis());
+            } else {
+                if (data.containsKey("fxId")
+                        && System.currentTimeMillis() >= data.getLong("fxEndTime")) {
+                    int fxDuration = (int) (data.getLong("endTime") - System.currentTimeMillis());
                     Console.debugLog("New effect playing for " + fxDuration);
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,data.getUtfString("fxId"),fxDuration,this.id+"_"+data.getUtfString("fxId"),true,"",true,false,this.team);
-                    this.activeBuffs.get(k).putLong("fxEndTime",data.getLong("endTime"));
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            data.getUtfString("fxId"),
+                            fxDuration,
+                            this.id + "_" + data.getUtfString("fxId"),
+                            true,
+                            "",
+                            true,
+                            false,
+                            this.team);
+                    this.activeBuffs.get(k).putLong("fxEndTime", data.getLong("endTime"));
                 }
-                if(data.containsKey("state")){
+                if (data.containsKey("state")) {
                     ActorState state = (ActorState) data.getClass("state");
-                    if(state == ActorState.CHARMED && this.target != null){
-                        if(this.location.distance(this.movementLine.getP2()) < 0.01d){
-                            this.movementLine = MovementManager.getColliderLine(this.parentExt,this.room,new Line2D.Float(this.location, this.target.getLocation()));
+                    if (state == ActorState.CHARMED && this.target != null) {
+                        if (this.location.distance(this.movementLine.getP2()) < 0.01d) {
+                            this.movementLine =
+                                    MovementManager.getColliderLine(
+                                            this.parentExt,
+                                            this.room,
+                                            new Line2D.Float(
+                                                    this.location, this.target.getLocation()));
                             this.timeTraveled = 0f;
-                            ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,this.movementLine.getP2(), (float) this.getPlayerStat("speed"),true);
+                            ExtensionCommands.moveActor(
+                                    this.parentExt,
+                                    this.room,
+                                    this.id,
+                                    this.location,
+                                    this.movementLine.getP2(),
+                                    (float) this.getPlayerStat("speed"),
+                                    true);
                         }
                     }
                 }
@@ -250,51 +331,88 @@ public abstract class Actor {
         }
     }
 
-    protected void handleEffectEnd(String stat, ISFSObject data){
+    protected void handleEffectEnd(String stat, ISFSObject data) {
         double newDelta = data.getDouble("newDelta");
         double currentDelta = data.getDouble("delta");
-        double diff = newDelta-currentDelta;
-        this.setTempStat(stat,diff);
+        double diff = newDelta - currentDelta;
+        this.setTempStat(stat, diff);
         ISFSObject newData = new SFSObject();
-        newData.putDouble("delta",this.getTempStat(stat)); //Sets the change of the end of the effect to the total of the temp stat
-        //TODO: Potential issue - could be messy if the same stat is impacted twice (i.e. speed and slow/polymorph)
-        newData.putLong("endTime",data.getLong("newEndTime"));
-        newData.putBool("stacks",data.getBool("stacks"));
-        if(data.containsKey("newFxId")){ //Checks to see if an effect should be run at the expiration of the effect
+        newData.putDouble(
+                "delta",
+                this.getTempStat(
+                        stat)); // Sets the change of the end of the effect to the total of the temp
+        // stat
+        // TODO: Potential issue - could be messy if the same stat is impacted twice (i.e. speed and
+        // slow/polymorph)
+        newData.putLong("endTime", data.getLong("newEndTime"));
+        newData.putBool("stacks", data.getBool("stacks"));
+        if (data.containsKey(
+                "newFxId")) { // Checks to see if an effect should be run at the expiration of the
+            // effect
             String fxId = data.getUtfString("newFxId");
-            newData.putUtfString("fxId",fxId);
-            newData.putLong("fxEndTime",data.getLong("newEndTime"));
-            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,fxId,(int)(data.getLong("newEndTime")-System.currentTimeMillis()),this.id+"_"+fxId,true,"",true,false,this.team);
+            newData.putUtfString("fxId", fxId);
+            newData.putLong("fxEndTime", data.getLong("newEndTime"));
+            ExtensionCommands.createActorFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    fxId,
+                    (int) (data.getLong("newEndTime") - System.currentTimeMillis()),
+                    this.id + "_" + fxId,
+                    true,
+                    "",
+                    true,
+                    false,
+                    this.team);
         }
-        this.activeBuffs.put(stat,newData);
+        this.activeBuffs.put(stat, newData);
     }
 
-    protected void handleStateEnd(ISFSObject data){
+    protected void handleStateEnd(ISFSObject data) {
         ActorState state = (ActorState) data.getClass("state");
         ISFSObject newData = new SFSObject();
-        newData.putLong("endTime",data.getLong("newEndTime"));
-        newData.putClass("state",state);
-        if(state == ActorState.SLOWED){ //If the state is a slow, removes the difference between the modified stat and the original stat change
+        newData.putLong("endTime", data.getLong("newEndTime"));
+        newData.putClass("state", state);
+        if (state
+                == ActorState
+                        .SLOWED) { // If the state is a slow, removes the difference between the
+            // modified stat
+            // and the original stat change
             double newDelta = data.getDouble("newDelta");
             double currentDelta = data.getDouble("delta");
-            double diff = newDelta-currentDelta;
-            this.setTempStat("speed",diff);
-            newData.putUtfString("stat","speed");
-            //TODO: Potential issue that "delta" is not set again in newData but it seems to run fine right now? for some reason...
-            newData.putDouble("delta",diff);
+            double diff = newDelta - currentDelta;
+            this.setTempStat("speed", diff);
+            newData.putUtfString("stat", "speed");
+            // TODO: Potential issue that "delta" is not set again in newData but it seems to run
+            // fine
+            // right now? for some reason...
+            newData.putDouble("delta", diff);
         }
-        if(data.containsKey("newFxId")){ //Checks to see if an effect should be run at the expiration of the effect
+        if (data.containsKey(
+                "newFxId")) { // Checks to see if an effect should be run at the expiration of the
+            // effect
             String fxId = data.getUtfString("newFxId");
-            newData.putUtfString("fxId",fxId);
-            newData.putLong("fxEndTime",data.getLong("newEndTime"));
-            ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,fxId,(int)(data.getLong("newEndTime")-System.currentTimeMillis()),this.id+"_"+fxId,true,"",true,false,this.team);
+            newData.putUtfString("fxId", fxId);
+            newData.putLong("fxEndTime", data.getLong("newEndTime"));
+            ExtensionCommands.createActorFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    fxId,
+                    (int) (data.getLong("newEndTime") - System.currentTimeMillis()),
+                    this.id + "_" + fxId,
+                    true,
+                    "",
+                    true,
+                    false,
+                    this.team);
         }
-        this.activeBuffs.put(state.toString(),newData);
+        this.activeBuffs.put(state.toString(), newData);
     }
 
     public void addEffect(String stat, double delta, int duration, String fxId, boolean stacks) {
         ISFSObject data = new SFSObject();
-        if (!this.activeBuffs.containsKey(stat)) { //Runs if there is no existing stat effect
+        if (!this.activeBuffs.containsKey(stat)) { // Runs if there is no existing stat effect
             long endTime = System.currentTimeMillis() + duration;
             data.putDouble("delta", delta);
             data.putLong("endTime", endTime);
@@ -302,36 +420,60 @@ public abstract class Actor {
                 data.putUtfString("fxId", fxId);
                 data.putLong("fxEndTime", endTime);
                 data.putInt("fxDuration", duration);
-                ExtensionCommands.createActorFX(this.parentExt, this.room, this.id, fxId, duration, this.id + "_" + fxId, true, "", true, false, this.team);
+                ExtensionCommands.createActorFX(
+                        this.parentExt,
+                        this.room,
+                        this.id,
+                        fxId,
+                        duration,
+                        this.id + "_" + fxId,
+                        true,
+                        "",
+                        true,
+                        false,
+                        this.team);
             }
-            data.putBool("stacks",stacks);
+            data.putBool("stacks", stacks);
             this.setTempStat(stat, delta);
             this.activeBuffs.put(stat, data);
-        } else { //Runs if existing effect exists
+        } else { // Runs if existing effect exists
             ISFSObject currentData = this.activeBuffs.get(stat);
             double currentDelta = currentData.getDouble("delta");
-            if (currentDelta == delta) { //Runs if proposed stat change is the same as the current change
-                if(!currentData.getBool("stacks")){ //If there is not a stacking effect, just extend the current effect's time
+            if (currentDelta
+                    == delta) { // Runs if proposed stat change is the same as the current change
+                if (!currentData.getBool(
+                        "stacks")) { // If there is not a stacking effect, just extend the current
+                    // effect's time
                     currentData.putLong("endTime", System.currentTimeMillis() + duration);
-                }else{ //If the effect should stack, increase the current stack and set "newDelta" for future handling
+                } else { // If the effect should stack, increase the current stack and set
+                    // "newDelta" for
+                    // future handling
                     this.setTempStat(stat, delta);
-                    currentData.putLong("newEndTime",System.currentTimeMillis() + duration);
-                    currentData.putDouble("newDelta",delta);
+                    currentData.putLong("newEndTime", System.currentTimeMillis() + duration);
+                    currentData.putDouble("newDelta", delta);
                 }
-            } else { //Runs if proposed stat change is different from current change
-                if(currentData.containsKey("newDelta")){ //Checks to see if the effect has already been modified
+            } else { // Runs if proposed stat change is different from current change
+                if (currentData.containsKey(
+                        "newDelta")) { // Checks to see if the effect has already been modified
                     double currentNewDelta = currentData.getDouble("newDelta");
-                    if(currentNewDelta == delta){ //Checks to see if the modified stat change is the same as the proposed change
-                        if(stacks){ //If the effect should stack, increase the actor's stat and then change the effect's modified "delta"
-                            this.setTempStat(stat,delta);
-                            currentData.putDouble("newDelta",currentNewDelta+delta);
+                    if (currentNewDelta
+                            == delta) { // Checks to see if the modified stat change is the same as
+                        // the proposed
+                        // change
+                        if (stacks) { // If the effect should stack, increase the actor's stat and
+                            // then change
+                            // the effect's modified "delta"
+                            this.setTempStat(stat, delta);
+                            currentData.putDouble("newDelta", currentNewDelta + delta);
                         }
-                        currentData.putLong("newEndTime",System.currentTimeMillis() + duration);
+                        currentData.putLong("newEndTime", System.currentTimeMillis() + duration);
                     }
-                }else{ //Runs if the effect has not been modified | Increases the actor's stat and sets "newDelta" to be used later
+                } else { // Runs if the effect has not been modified | Increases the actor's stat
+                    // and sets
+                    // "newDelta" to be used later
                     this.setTempStat(stat, delta);
                     double currentNewDelta = 0d;
-                    currentData.putDouble("newDelta", currentNewDelta+delta);
+                    currentData.putDouble("newDelta", currentNewDelta + delta);
                     currentData.putLong("newEndTime", System.currentTimeMillis() + duration);
                 }
             }
@@ -339,325 +481,450 @@ public abstract class Actor {
         }
     }
 
-    public void addState(ActorState state, double delta, int duration, String fxId, boolean stacks){
-        if(this.getState(ActorState.IMMUNITY) && this.isCC(state)) return;
-        if(!this.activeBuffs.containsKey(state.toString())){ //Runs if there is no existing state/effect
+    public void addState(
+            ActorState state, double delta, int duration, String fxId, boolean stacks) {
+        if (this.getState(ActorState.IMMUNITY) && this.isCC(state)) return;
+        if (!this.activeBuffs.containsKey(
+                state.toString())) { // Runs if there is no existing state/effect
             ISFSObject data = new SFSObject();
-            long endTime = System.currentTimeMillis()+duration;
-            data.putClass("state",state);
-            data.putLong("endTime",endTime);
-            if(fxId != null){
-                data.putUtfString("fxId",fxId);
-                data.putLong("fxEndTime",endTime);
-                ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,fxId,duration,this.id+"_"+fxId,true,"",true,false,this.team);
+            long endTime = System.currentTimeMillis() + duration;
+            data.putClass("state", state);
+            data.putLong("endTime", endTime);
+            if (fxId != null) {
+                data.putUtfString("fxId", fxId);
+                data.putLong("fxEndTime", endTime);
+                ExtensionCommands.createActorFX(
+                        this.parentExt,
+                        this.room,
+                        this.id,
+                        fxId,
+                        duration,
+                        this.id + "_" + fxId,
+                        true,
+                        "",
+                        true,
+                        false,
+                        this.team);
             }
-            switch(state){
+            switch (state) {
                 case SLOWED:
-                    data.putUtfString("stat","speed");
-                    double speedRemoval = this.getStat("speed")*delta;
-                    this.setTempStat("speed",speedRemoval*-1);
-                    data.putDouble("delta",speedRemoval*-1);
+                    data.putUtfString("stat", "speed");
+                    double speedRemoval = this.getStat("speed") * delta;
+                    this.setTempStat("speed", speedRemoval * -1);
+                    data.putDouble("delta", speedRemoval * -1);
                     break;
                 case POLYMORPH:
-                    ExtensionCommands.swapActorAsset(parentExt,this.room, this.id,"flambit");
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"statusEffect_polymorph",1000,this.id+"_statusEffect_polymorph",true,"",true,false,this.team);
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"flambit_aoe",3000,this.id+"_flambit_aoe",true,"",true,false,this.team);
-                    ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"fx_target_ring_2",3000,this.id+"_flambit_ring_"+Math.random(),true,"",true,true,getOppositeTeam());
-                    data.putUtfString("stat","speed");
-                    double speedChange = this.getStat("speed")*-0.3;
-                    this.setTempStat("speed",speedChange);
-                    data.putDouble("delta",speedChange);
+                    ExtensionCommands.swapActorAsset(parentExt, this.room, this.id, "flambit");
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "statusEffect_polymorph",
+                            1000,
+                            this.id + "_statusEffect_polymorph",
+                            true,
+                            "",
+                            true,
+                            false,
+                            this.team);
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "flambit_aoe",
+                            3000,
+                            this.id + "_flambit_aoe",
+                            true,
+                            "",
+                            true,
+                            false,
+                            this.team);
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "fx_target_ring_2",
+                            3000,
+                            this.id + "_flambit_ring_" + Math.random(),
+                            true,
+                            "",
+                            true,
+                            true,
+                            getOppositeTeam());
+                    data.putUtfString("stat", "speed");
+                    double speedChange = this.getStat("speed") * -0.3;
+                    this.setTempStat("speed", speedChange);
+                    data.putDouble("delta", speedChange);
                     this.setState(ActorState.SLOWED, true);
                     break;
                 case ROOTED:
                 case STUNNED:
-                    if(!this.getState(ActorState.AIRBORNE)) this.stopMoving();
+                    if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
                     break;
             }
-            this.setState(state,true);
-            this.activeBuffs.put(state.toString(),data);
-        }else{ //Runs if there is an existing effect
-            if(state == ActorState.SLOWED){
+            this.setState(state, true);
+            this.activeBuffs.put(state.toString(), data);
+        } else { // Runs if there is an existing effect
+            if (state == ActorState.SLOWED) {
                 ISFSObject currentData = this.activeBuffs.get(state.toString());
                 double currentDelta = currentData.getDouble("delta");
-                double speedRemoval = this.getStat("speed")*delta*-1;
-                if (currentDelta == speedRemoval) { //If the current effect has the same stat change, just extend the length of the state
+                double speedRemoval = this.getStat("speed") * delta * -1;
+                if (currentDelta
+                        == speedRemoval) { // If the current effect has the same stat change, just
+                    // extend the
+                    // length of the state
                     currentData.putLong("endTime", System.currentTimeMillis() + duration);
-                } else { //If the change is different, adjust the current temp stat and put in the new speed diff for future handling
+                } else { // If the change is different, adjust the current temp stat and put in the
+                    // new
+                    // speed diff for future handling
                     this.setTempStat("speed", speedRemoval);
                     currentData.putDouble("newDelta", speedRemoval);
                     currentData.putLong("newEndTime", System.currentTimeMillis() + duration);
                 }
-            }else if(stacks){ //If the state stacks, extend the state duration
-                this.activeBuffs.get(state.toString()).putLong("endTime",System.currentTimeMillis()+duration);
+            } else if (stacks) { // If the state stacks, extend the state duration
+                this.activeBuffs
+                        .get(state.toString())
+                        .putLong("endTime", System.currentTimeMillis() + duration);
             }
         }
     }
 
-    public void handleCharm(UserActor charmer, int duration){
-        if(!this.states.get(ActorState.CHARMED)){
-            this.setState(ActorState.CHARMED,true);
+    public void handleCharm(UserActor charmer, int duration) {
+        if (!this.states.get(ActorState.CHARMED)) {
+            this.setState(ActorState.CHARMED, true);
             this.setTarget(charmer);
-            this.movementLine = new Line2D.Float(this.location,charmer.getLocation());
-            this.movementLine = MovementManager.getColliderLine(this.parentExt,this.room,this.movementLine);
+            this.movementLine = new Line2D.Float(this.location, charmer.getLocation());
+            this.movementLine =
+                    MovementManager.getColliderLine(this.parentExt, this.room, this.movementLine);
             this.timeTraveled = 0f;
-            this.addState(ActorState.CHARMED,0d,duration,null,false);
-            if(this.canMove) ExtensionCommands.moveActor(this.parentExt,this.room,this.id,this.location,this.movementLine.getP2(), (float) this.getSpeed(),true);
+            this.addState(ActorState.CHARMED, 0d, duration, null, false);
+            if (this.canMove)
+                ExtensionCommands.moveActor(
+                        this.parentExt,
+                        this.room,
+                        this.id,
+                        this.location,
+                        this.movementLine.getP2(),
+                        (float) this.getSpeed(),
+                        true);
         }
     }
 
-    public void handleFear(UserActor feared, int duration){
-        if(!this.states.get(ActorState.FEARED)){
-            this.setState(ActorState.FEARED,true);
-            Line2D oppositeLine = Champion.getMaxRangeLine(new Line2D.Float(feared.getLocation(),this.location),10f);
-            oppositeLine = MovementManager.getColliderLine(this.parentExt,this.room,oppositeLine);
-            this.movementLine = new Line2D.Float(this.location,oppositeLine.getP2());
+    public void handleFear(UserActor feared, int duration) {
+        if (!this.states.get(ActorState.FEARED)) {
+            this.setState(ActorState.FEARED, true);
+            Line2D oppositeLine =
+                    Champion.getMaxRangeLine(
+                            new Line2D.Float(feared.getLocation(), this.location), 10f);
+            oppositeLine = MovementManager.getColliderLine(this.parentExt, this.room, oppositeLine);
+            this.movementLine = new Line2D.Float(this.location, oppositeLine.getP2());
             this.timeTraveled = 0f;
-            this.addState(ActorState.FEARED,0d,duration,null,false);
-            ExtensionCommands.moveActor(parentExt,room,id,this.location, oppositeLine.getP2(), (float) this.getPlayerStat("speed"),true);
+            this.addState(ActorState.FEARED, 0d, duration, null, false);
+            ExtensionCommands.moveActor(
+                    parentExt,
+                    room,
+                    id,
+                    this.location,
+                    oppositeLine.getP2(),
+                    (float) this.getPlayerStat("speed"),
+                    true);
         }
     }
 
-    public boolean hasTempStat(String stat){
+    public boolean hasTempStat(String stat) {
         return this.tempStats.containsKey(stat);
     }
 
-    public double getPlayerStat(String stat){
+    public double getPlayerStat(String stat) {
         double currentStat = this.stats.get(stat);
-        if(this.tempStats.containsKey(stat)){
-            if(currentStat + this.tempStats.get(stat) < 0) return 0; //Stat will never drop below 0
-            return currentStat+this.tempStats.get(stat);
-        }
-        else return currentStat;
+        if (this.tempStats.containsKey(stat)) {
+            if (currentStat + this.tempStats.get(stat) < 0)
+                return 0; // Stat will never drop below 0
+            return currentStat + this.tempStats.get(stat);
+        } else return currentStat;
     }
-    public String getDisplayName(){ return this.displayName;}
+
+    public String getDisplayName() {
+        return this.displayName;
+    }
 
     public abstract void handleKill(Actor a, JsonNode attackData);
 
-    public boolean damaged(Actor a, int damage, JsonNode attackData){
-        this.currentHealth-=damage;
-        if(this.currentHealth <= 0) this.currentHealth = 0;
+    public boolean damaged(Actor a, int damage, JsonNode attackData) {
+        this.currentHealth -= damage;
+        if (this.currentHealth <= 0) this.currentHealth = 0;
         ISFSObject updateData = new SFSObject();
-        updateData.putUtfString("id",this.id);
+        updateData.putUtfString("id", this.id);
         updateData.putInt("currentHealth", (int) this.currentHealth);
         updateData.putDouble("pHealth", this.getPHealth());
         updateData.putInt("maxHealth", (int) this.maxHealth);
-        ExtensionCommands.updateActorData(parentExt,this.room,updateData);
-        return this.currentHealth<=0;
+        ExtensionCommands.updateActorData(parentExt, this.room, updateData);
+        return this.currentHealth <= 0;
     }
 
-    public void addToDamageQueue(Actor attacker, double damage, JsonNode attackData){
-        if(this.currentHealth <= 0) return;
+    public void addToDamageQueue(Actor attacker, double damage, JsonNode attackData) {
+        if (this.currentHealth <= 0) return;
         ISFSObject data = new SFSObject();
-        data.putClass("attacker",attacker);
-        data.putDouble("damage",damage);
-        data.putClass("attackData",attackData);
+        data.putClass("attacker", attacker);
+        data.putDouble("damage", damage);
+        data.putClass("attackData", attackData);
         this.damageQueue.add(data);
-        if(attacker.getActorType() == ActorType.PLAYER && this.getAttackType(attackData) == AttackType.SPELL){
+        if (attacker.getActorType() == ActorType.PLAYER
+                && this.getAttackType(attackData) == AttackType.SPELL) {
             UserActor ua = (UserActor) attacker;
             ua.handleSpellVamp(damage);
         }
     }
 
-    public void handleDamageQueue(){
+    public void handleDamageQueue() {
         List<ISFSObject> queue = new ArrayList<>(this.damageQueue);
         this.damageQueue = new ArrayList<>();
-        if(this.currentHealth <= 0){
+        if (this.currentHealth <= 0) {
             return;
         }
-        for(ISFSObject data : queue){
+        for (ISFSObject data : queue) {
             Actor damager = (Actor) data.getClass("attacker");
             double damage = data.getDouble("damage");
             JsonNode attackData = (JsonNode) data.getClass("attackData");
-            if(this.damaged(damager,(int)damage,attackData)){
-                if(damager.getId().contains("turret")){
-                    damager = this.parentExt.getRoomHandler(this.room.getId()).getEnemyChampion(team, "princessbubblegum");
+            if (this.damaged(damager, (int) damage, attackData)) {
+                if (damager.getId().contains("turret")) {
+                    damager =
+                            this.parentExt
+                                    .getRoomHandler(this.room.getId())
+                                    .getEnemyChampion(team, "princessbubblegum");
+                } else if (damager.getId().contains("skully")) {
+                    damager =
+                            this.parentExt
+                                    .getRoomHandler(this.room.getId())
+                                    .getEnemyChampion(team, "lich");
                 }
-                else if(damager.getId().contains("skully")){
-                    damager = this.parentExt.getRoomHandler(this.room.getId()).getEnemyChampion(team, "lich");
-                }
-                damager.handleKill(this,attackData);
+                damager.handleKill(this, attackData);
                 this.die(damager);
                 return;
             }
         }
     }
+
     public abstract void attack(Actor a);
+
     public abstract void die(Actor a);
 
     public abstract void update(int msRan);
-    public void rangedAttack(Actor a){
+
+    public void rangedAttack(Actor a) {
         System.out.println(this.id + " is using an undefined method.");
     }
 
-    public Room getRoom(){
+    public Room getRoom() {
         return this.room;
     }
-    public void changeHealth(int delta){
+
+    public void changeHealth(int delta) {
         ISFSObject data = new SFSObject();
-        this.currentHealth+=delta;
-        if(this.currentHealth > this.maxHealth) this.currentHealth = this.maxHealth;
-        else if(this.currentHealth < 0) this.currentHealth = 0;
+        this.currentHealth += delta;
+        if (this.currentHealth > this.maxHealth) this.currentHealth = this.maxHealth;
+        else if (this.currentHealth < 0) this.currentHealth = 0;
         data.putInt("currentHealth", (int) this.currentHealth);
-        data.putInt("maxHealth",(int) this.maxHealth);
-        data.putDouble("pHealth",this.getPHealth());
-        ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,data);
-    }
-    public void setHealth(int currentHealth, int maxHealth){
-        this.currentHealth = currentHealth;
-        this.maxHealth = maxHealth;
-        if(this.currentHealth > this.maxHealth) this.currentHealth = this.maxHealth;
-        else if(this.currentHealth < 0) this.currentHealth = 0;
-        ISFSObject data = new SFSObject();
-        data.putInt("currentHealth",(int)this.currentHealth);
         data.putInt("maxHealth", (int) this.maxHealth);
-        data.putDouble("pHealth",this.getPHealth());
-        data.putInt("health",(int)this.maxHealth);
-        ExtensionCommands.updateActorData(this.parentExt,this.room,this.id,data);
+        data.putDouble("pHealth", this.getPHealth());
+        ExtensionCommands.updateActorData(this.parentExt, this.room, this.id, data);
     }
 
-    public int getMitigatedDamage(double rawDamage, AttackType attackType, Actor attacker){
-        try{
-            double armor = this.getPlayerStat("armor")*(1-(attacker.getPlayerStat("armorPenetration")/100));
-            double spellResist = this.getPlayerStat("spellResist")*(1-(attacker.getPlayerStat("spellPenetration")/100));
-            if(armor < 0) armor = 0;
-            if(spellResist < 0) spellResist = 0;
+    public void setHealth(int currentHealth, int maxHealth) {
+        this.currentHealth = currentHealth;
+        this.maxHealth = maxHealth;
+        if (this.currentHealth > this.maxHealth) this.currentHealth = this.maxHealth;
+        else if (this.currentHealth < 0) this.currentHealth = 0;
+        ISFSObject data = new SFSObject();
+        data.putInt("currentHealth", (int) this.currentHealth);
+        data.putInt("maxHealth", (int) this.maxHealth);
+        data.putDouble("pHealth", this.getPHealth());
+        data.putInt("health", (int) this.maxHealth);
+        ExtensionCommands.updateActorData(this.parentExt, this.room, this.id, data);
+    }
+
+    public int getMitigatedDamage(double rawDamage, AttackType attackType, Actor attacker) {
+        try {
+            double armor =
+                    this.getPlayerStat("armor")
+                            * (1 - (attacker.getPlayerStat("armorPenetration") / 100));
+            double spellResist =
+                    this.getPlayerStat("spellResist")
+                            * (1 - (attacker.getPlayerStat("spellPenetration") / 100));
+            if (armor < 0) armor = 0;
+            if (spellResist < 0) spellResist = 0;
             double modifier;
-            if(attackType == AttackType.PHYSICAL){
-                modifier = 100/(100+armor);
-            }else modifier = 100/(100+spellResist);
-            return (int) Math.round(rawDamage*modifier);
-        }catch(Exception e){
+            if (attackType == AttackType.PHYSICAL) {
+                modifier = 100 / (100 + armor);
+            } else modifier = 100 / (100 + spellResist);
+            return (int) Math.round(rawDamage * modifier);
+        } catch (Exception e) {
             e.printStackTrace();
             return 0;
         }
-
     }
 
-    public void removeEffects(){
-        for(ActorState state : ActorState.values()){
-            if(state != ActorState.TRANSFORMED) this.setState(state,false);
+    public void removeEffects() {
+        for (ActorState state : ActorState.values()) {
+            if (state != ActorState.TRANSFORMED) this.setState(state, false);
         }
         Set<String> effectSet = this.activeBuffs.keySet();
-        for(String s : effectSet){
+        for (String s : effectSet) {
             ISFSObject data = this.activeBuffs.get(s);
-            if(data.containsKey("fxId")) ExtensionCommands.removeFx(this.parentExt,this.room,data.getUtfString("fxId"));
+            if (data.containsKey("fxId"))
+                ExtensionCommands.removeFx(this.parentExt, this.room, data.getUtfString("fxId"));
         }
-        this.tempStats = new HashMap<>(); //TODO: Might cause issues if this is used for cleanses
+        this.tempStats = new HashMap<>(); // TODO: Might cause issues if this is used for cleanses
         this.activeBuffs = new HashMap<>();
         this.setCanMove(true);
     }
 
-    public void setStat(String key, double value){
-        this.stats.put(key,value);
+    public void setStat(String key, double value) {
+        this.stats.put(key, value);
     }
 
-    protected HashMap<String, Double> initializeStats(){
+    protected HashMap<String, Double> initializeStats() {
         HashMap<String, Double> stats = new HashMap<>();
         JsonNode actorStats = this.parentExt.getActorStats(this.avatar);
         for (Iterator<String> it = actorStats.fieldNames(); it.hasNext(); ) {
             String k = it.next();
-            stats.put(k,actorStats.get(k).asDouble());
+            stats.put(k, actorStats.get(k).asDouble());
         }
         return stats;
     }
 
-    public void snap(Point2D newLocation){
-        ExtensionCommands.snapActor(this.parentExt,this.room,this.id,this.location,newLocation,true);
+    public void snap(Point2D newLocation) {
+        ExtensionCommands.snapActor(
+                this.parentExt, this.room, this.id, this.location, newLocation, true);
         this.location = newLocation;
         this.timeTraveled = 0f;
-        this.movementLine = new Line2D.Float(this.location,this.movementLine.getP2());
+        this.movementLine = new Line2D.Float(this.location, this.movementLine.getP2());
     }
 
-    protected AttackType getAttackType(JsonNode attackData){
-        if(attackData.has("spellType")) return AttackType.SPELL;
+    protected AttackType getAttackType(JsonNode attackData) {
+        if (attackData.has("spellType")) return AttackType.SPELL;
         String type = attackData.get("attackType").asText();
-        if(type.equalsIgnoreCase("physical")) return AttackType.PHYSICAL;
+        if (type.equalsIgnoreCase("physical")) return AttackType.PHYSICAL;
         else return AttackType.SPELL;
     }
 
-    public ATBPExtension getParentExt(){
+    public ATBPExtension getParentExt() {
         return this.parentExt;
     }
 
-    public void addDamageGameStat(UserActor ua, double value, AttackType type){
-        ua.addGameStat("damageDealtTotal",value);
-        if(type == AttackType.PHYSICAL) ua.addGameStat("damageDealtPhysical",value);
-        else ua.addGameStat("damageDealtSpell",value);
+    public void addDamageGameStat(UserActor ua, double value, AttackType type) {
+        ua.addGameStat("damageDealtTotal", value);
+        if (type == AttackType.PHYSICAL) ua.addGameStat("damageDealtPhysical", value);
+        else ua.addGameStat("damageDealtSpell", value);
     }
 
-    public boolean canMove(){
-        for(ActorState s : this.states.keySet()){
-            if(s == ActorState.ROOTED || s == ActorState.STUNNED || s == ActorState.FEARED || s == ActorState.CHARMED || s == ActorState.AIRBORNE){
-                if(this.states.get(s)) return false;
+    public boolean canMove() {
+        for (ActorState s : this.states.keySet()) {
+            if (s == ActorState.ROOTED
+                    || s == ActorState.STUNNED
+                    || s == ActorState.FEARED
+                    || s == ActorState.CHARMED
+                    || s == ActorState.AIRBORNE) {
+                if (this.states.get(s)) return false;
             }
         }
         return this.canMove;
     }
 
-    public boolean getState(ActorState state){
+    public boolean getState(ActorState state) {
         return this.states.get(state);
     }
 
-    private boolean isCC(ActorState state){
-        ActorState[] cc = {ActorState.SLOWED, ActorState.AIRBORNE, ActorState.STUNNED, ActorState.ROOTED, ActorState.BLINDED, ActorState.SILENCED, ActorState.FEARED, ActorState.CHARMED, ActorState.POLYMORPH};
-        for(ActorState c : cc){
-            if(state == c) return true;
+    private boolean isCC(ActorState state) {
+        ActorState[] cc = {
+            ActorState.SLOWED,
+            ActorState.AIRBORNE,
+            ActorState.STUNNED,
+            ActorState.ROOTED,
+            ActorState.BLINDED,
+            ActorState.SILENCED,
+            ActorState.FEARED,
+            ActorState.CHARMED,
+            ActorState.POLYMORPH
+        };
+        for (ActorState c : cc) {
+            if (state == c) return true;
         }
         return false;
     }
 
-    public boolean canAttack(){
-        for(ActorState s : this.states.keySet()){
-            if(s == ActorState.STUNNED || s == ActorState.FEARED || s == ActorState.CHARMED || s == ActorState.AIRBORNE || s == ActorState.POLYMORPH){
-                if(this.states.get(s)) return false;
+    public boolean canAttack() {
+        for (ActorState s : this.states.keySet()) {
+            if (s == ActorState.STUNNED
+                    || s == ActorState.FEARED
+                    || s == ActorState.CHARMED
+                    || s == ActorState.AIRBORNE
+                    || s == ActorState.POLYMORPH) {
+                if (this.states.get(s)) return false;
             }
         }
-        if(this.attackCooldown < 0) this.attackCooldown = 0;
+        if (this.attackCooldown < 0) this.attackCooldown = 0;
         return this.attackCooldown == 0;
     }
 
-    public void knockback(Point2D source){
+    public void knockback(Point2D source) {
         this.stopMoving();
-        Line2D originalLine = new Line2D.Double(source,this.location);
-        Line2D knockBackLine = Champion.extendLine(originalLine,5f);
-        Line2D finalLine = new Line2D.Double(this.location,MovementManager.getDashPoint(this,knockBackLine));
-        this.addState(ActorState.AIRBORNE,0d,250,null,false);
+        Line2D originalLine = new Line2D.Double(source, this.location);
+        Line2D knockBackLine = Champion.extendLine(originalLine, 5f);
+        Line2D finalLine =
+                new Line2D.Double(this.location, MovementManager.getDashPoint(this, knockBackLine));
+        this.addState(ActorState.AIRBORNE, 0d, 250, null, false);
         double speed = this.location.distance(finalLine.getP2()) / 0.275f;
-        ExtensionCommands.knockBackActor(this.parentExt,this.room,this.id,this.location, finalLine.getP2(), (float)speed, false);
+        ExtensionCommands.knockBackActor(
+                this.parentExt,
+                this.room,
+                this.id,
+                this.location,
+                finalLine.getP2(),
+                (float) speed,
+                false);
         this.setLocation(finalLine.getP2());
     }
 
-    public void handlePathing(){
-        if(this.path != null && this.location.distance(this.movementLine.getP2()) <= 0.9d){
-            if(this.pathIndex+1 != this.path.size()){
+    public void handlePathing() {
+        if (this.path != null && this.location.distance(this.movementLine.getP2()) <= 0.9d) {
+            if (this.pathIndex + 1 != this.path.size()) {
                 this.pathIndex++;
                 this.moveWithCollision(this.path.get(this.pathIndex));
-            }else{
+            } else {
                 this.path = null;
             }
         }
     }
 
-    public void pulled(Point2D source){
+    public void pulled(Point2D source) {
         this.stopMoving();
-        Line2D pullLine = new Line2D.Float(this.location,source);
-        Line2D newLine = new Line2D.Double(this.location,MovementManager.findPullPoint(pullLine,1.2f));
-        Line2D finalLine = new Line2D.Double(this.location,MovementManager.getDashPoint(this,newLine));
-        this.addState(ActorState.AIRBORNE,0d,250,null,false);
+        Line2D pullLine = new Line2D.Float(this.location, source);
+        Line2D newLine =
+                new Line2D.Double(this.location, MovementManager.findPullPoint(pullLine, 1.2f));
+        Line2D finalLine =
+                new Line2D.Double(this.location, MovementManager.getDashPoint(this, newLine));
+        this.addState(ActorState.AIRBORNE, 0d, 250, null, false);
         double speed = this.location.distance(finalLine.getP2()) / 0.25f;
-        ExtensionCommands.knockBackActor(this.parentExt,this.room,this.id,this.location, finalLine.getP2(), (float)speed, false);
+        ExtensionCommands.knockBackActor(
+                this.parentExt,
+                this.room,
+                this.id,
+                this.location,
+                finalLine.getP2(),
+                (float) speed,
+                false);
         this.setLocation(finalLine.getP2());
     }
 
-    public String getPortrait(){
+    public String getPortrait() {
         return this.getAvatar();
     }
 
-    public String getFrame(){
-        if(this.getActorType() == ActorType.PLAYER){
+    public String getFrame() {
+        if (this.getActorType() == ActorType.PLAYER) {
             String[] frameComponents = this.getAvatar().split("_");
-            if(frameComponents.length > 1){
+            if (frameComponents.length > 1) {
                 return frameComponents[0];
             } else {
                 return this.getAvatar();
@@ -667,7 +934,7 @@ public abstract class Actor {
         }
     }
 
-    public String getSkinAssetBundle(){
+    public String getSkinAssetBundle() {
         return this.parentExt.getActorData(this.avatar).get("assetBundle").asText();
     }
 

@@ -6,6 +6,7 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseServerEventHandler;
+
 import xyz.openatbp.extension.ATBPExtension;
 
 public class JoinZoneEventHandler extends BaseServerEventHandler {
@@ -16,6 +17,7 @@ public class JoinZoneEventHandler extends BaseServerEventHandler {
         trace("Joined zone! " + user.getDump());
         ISFSObject data = new SFSObject();
 
-        parentExt.send("cmd_player_loaded", data, user); //Tells the client that the player is connected
+        parentExt.send(
+                "cmd_player_loaded", data, user); // Tells the client that the player is connected
     }
 }
