@@ -50,13 +50,13 @@ config.properties
 config.js
 
 # Node Modules
-/httpserver/node_modules
+/ATBPServer/node_modules
 
 # Exclude game assets in static, while including files needed to render webpage
-/httpserver/static/*
-!/httpserver/static/css/
-!/httpserver/static/css/*
-!/httpserver/static/fonts/
-!/httpserver/static/fonts/*
-!/httpserver/static/js/
-!/httpserver/static/js/*
+/ATBPServer/static/*
+!/ATBPServer/static/css/
+!/ATBPServer/static/css/*
+!/ATBPServer/static/fonts/
+!/ATBPServer/static/fonts/*
+!/ATBPServer/static/js/
+!/ATBPServer/static/js/*

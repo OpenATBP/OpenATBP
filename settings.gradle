@@ -1,7 +1,4 @@
 rootProject.name = 'OpenATBP'
 
 include 'ATBPExtension'
-project(":ATBPExtension").projectDir = file("game")
-
-include 'ATBPLobby'
-project(":ATBPLobby").projectDir = file("lobby")
+project(":ATBPExtension").projectDir = file("ATBPExtension")
