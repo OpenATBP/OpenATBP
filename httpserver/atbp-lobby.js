@@ -42,23 +42,24 @@ function safeSendAll(sockets,command,response){
 }
 
 function sendCommand (socket, command, response){
-  if(socket == undefined) return;
-    console.log(`Sending ${command} to ${socket.player.name}`);
     return new Promise(function(resolve, reject) {
-      if(command == undefined && response == undefined) reject();
-      var package = {
-        'cmd': command,
-        'payload': response
-      };
-      console.log("Sent ", package);
-      package = JSON.stringify(package);
-      let lengthBytes = Buffer.alloc(2);
-      lengthBytes.writeInt16BE(Buffer.byteLength(package, 'utf8'));
-      socket.write(lengthBytes);
-      socket.write(package, () => {
-        console.log("Finished sending package to ", socket.player.name);
-        resolve();
-      });
+      if(socket != undefined){
+        console.log(`Sending ${command} to ${socket.player.name}`);
+        if(command == undefined && response == undefined) reject();
+        var package = {
+          'cmd': command,
+          'payload': response
+        };
+        console.log("Sent ", package);
+        package = JSON.stringify(package);
+        let lengthBytes = Buffer.alloc(2);
+        lengthBytes.writeInt16BE(Buffer.byteLength(package, 'utf8'));
+        socket.write(lengthBytes);
+        socket.write(package, () => {
+          console.log("Finished sending package to ", socket.player.name);
+          resolve();
+        });
+      }else reject();
     });
 }
 
