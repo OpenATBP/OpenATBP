@@ -38,8 +38,8 @@ This is unfortunately not available yet, but work is slowly being done. For the 
 1. Clone the repository: `git clone https://github.com/OpenATBP/OpenATBP.git`
 2. Open a new terminal inside of the `ATBPServer` directory
 3. In this new terminal window, run the following command to install dependencies and download required asset files - this may take a while! `npm install`
-4. Copy the example config in the httpserver directory: `cp config.js.example config.js` - once copied, edit it to include the connection string URI for your MongoDB server
-5. Run httpserver using the following command: `npm run start` - if done correctly you should see `Express server running on port 8000!` and 
+4. Copy the example config in the ATBPServer directory: `cp config.js.example config.js` - once copied, edit it to include the connection string URI for your MongoDB server
+5. Run ATBPServer using the following command: `npm run start` - if done correctly you should see `Express server running on port 8000!` and 
 `Lobby server running on port 6778!`
 6. Start SmartFoxServer2X once so it can generate the correct files and folders, then close it
 7. Open another terminal, this time in the root of the repository

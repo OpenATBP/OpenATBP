@@ -6,6 +6,7 @@ import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.exceptions.SFSJoinRoomException;
 import com.smartfoxserver.v2.extensions.BaseServerEventHandler;
+
 import xyz.openatbp.extension.ATBPExtension;
 
 public class RoomCreatedEventHandler extends BaseServerEventHandler {
@@ -15,7 +16,9 @@ public class RoomCreatedEventHandler extends BaseServerEventHandler {
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         Room room = (Room) event.getParameter(SFSEventParam.ROOM);
         User owner = room.getOwner();
-        room.setProperty("state",0);
-        parentExt.getApi().joinRoom(owner, room); //Triggers the JoinRoom event for the first player
+        room.setProperty("state", 0);
+        parentExt
+                .getApi()
+                .joinRoom(owner, room); // Triggers the JoinRoom event for the first player
     }
 }

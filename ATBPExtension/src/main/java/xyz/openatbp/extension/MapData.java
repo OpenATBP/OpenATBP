@@ -1,11 +1,12 @@
 package xyz.openatbp.extension;
-import com.smartfoxserver.v2.entities.data.ISFSObject;
-import com.smartfoxserver.v2.entities.data.SFSObject;
 
 import java.awt.geom.Point2D;
 import java.util.HashMap;
 
-//PURPLE NEGATIVE X, BLUE POSITIVE X
+import com.smartfoxserver.v2.entities.data.ISFSObject;
+import com.smartfoxserver.v2.entities.data.SFSObject;
+
+// PURPLE NEGATIVE X, BLUE POSITIVE X
 
 public class MapData {
     public static final float L1_TOWER_Z = (float) 0.55;
@@ -27,11 +28,23 @@ public class MapData {
     public static final float[] L2_BOT_BLUE_HEALTH = {(float) 27.68, (float) 3.03};
     public static final float[] L2_BOT_ALTAR = {(float) 14.47, (float) 27.08};
     public static final float[] L2_KEEOTH = {(float) 0.26, (float) 25.82};
-    public static final float[] HUGWOLF = {(float)8.15, (float)8.19};
-    public static final Point2D[] OWLS = {new Point2D.Double(9.57,-8.95),new Point2D.Double(8.41,-8.68),new Point2D.Double(8.42,-9.79)};
-    public static final float[] GRASS = {(float)-8.64, (float)-8.45};
-    public static final Point2D[] GNOMES = {new Point2D.Double(-9.29,8.03),new Point2D.Double(-8.10,8.26), new Point2D.Double(-9.47,8.84)};
-    public static final Point2D[] PURPLE_SPAWNS = {new Point2D.Float(-47.39f,-1.60f), new Point2D.Float(-47.26f,-0.31f),new Point2D.Float(-47.45f,1.17f)};
+    public static final float[] HUGWOLF = {(float) 8.15, (float) 8.19};
+    public static final Point2D[] OWLS = {
+        new Point2D.Double(9.57, -8.95),
+        new Point2D.Double(8.41, -8.68),
+        new Point2D.Double(8.42, -9.79)
+    };
+    public static final float[] GRASS = {(float) -8.64, (float) -8.45};
+    public static final Point2D[] GNOMES = {
+        new Point2D.Double(-9.29, 8.03),
+        new Point2D.Double(-8.10, 8.26),
+        new Point2D.Double(-9.47, 8.84)
+    };
+    public static final Point2D[] PURPLE_SPAWNS = {
+        new Point2D.Float(-47.39f, -1.60f),
+        new Point2D.Float(-47.26f, -0.31f),
+        new Point2D.Float(-47.45f, 1.17f)
+    };
     public static final float[] L1_PURPLE_TOWER_0 = {(float) -31.8, (float) 0.55};
     public static final float[] L1_PURPLE_TOWER_1 = {(float) -16.05, (float) 0.55};
     public static final float[] L1_BLUE_TOWER_3 = {(float) 31.7, (float) 0.55};
@@ -47,20 +60,19 @@ public class MapData {
     public static final float[] L2_PURPLE_BASE_TOWER = {(float) -34.36, (float) 0.0};
     public static final float[] L2_BLUE_BASE_TOWER = {(float) 34.51, (float) 0.0};
 
-
-    public static ISFSObject getBaseActorData(int team, String room){
+    public static ISFSObject getBaseActorData(int team, String room) {
         float x;
         float z;
-        if(room.equalsIgnoreCase("practice")){
-            if(team == 0){
+        if (room.equalsIgnoreCase("practice")) {
+            if (team == 0) {
                 x = L1_PURPLE_BASE[0];
                 z = L1_PURPLE_BASE[1];
             } else {
                 x = L1_BLUE_BASE[0];
                 z = L1_BLUE_BASE[1];
             }
-        }else{
-            if(team == 0){
+        } else {
+            if (team == 0) {
                 x = L2_PURPLE_BASE[0];
                 z = L2_PURPLE_BASE[1];
             } else {
@@ -69,15 +81,15 @@ public class MapData {
             }
         }
         String actor;
-        if(team == 1){
+        if (team == 1) {
             actor = "base_blue";
-        }else{
+        } else {
             actor = "base_purple";
         }
         ISFSObject base = new SFSObject();
         ISFSObject baseSpawn = new SFSObject();
-        base.putUtfString("id",actor);
-        base.putUtfString("actor",actor);
+        base.putUtfString("id", actor);
+        base.putUtfString("actor", actor);
         baseSpawn.putFloat("x", x);
         baseSpawn.putFloat("y", (float) 0.0);
         baseSpawn.putFloat("z", z);
@@ -87,28 +99,26 @@ public class MapData {
         return base;
     }
 
-    public static ISFSObject getBaseTowerActorData(int team, String room){
+    public static ISFSObject getBaseTowerActorData(int team, String room) {
         float x;
         float z;
         String id;
-        String towerID = "tower"+(1+team);
-        if(room.equalsIgnoreCase("practice")){
-            if(team == 0){
+        String towerID = "tower" + (1 + team);
+        if (room.equalsIgnoreCase("practice")) {
+            if (team == 0) {
                 x = L1_PURPLE_TOWER_0[0];
                 id = "purple_tower0";
-            }
-            else{
+            } else {
                 x = L1_BLUE_TOWER_3[0];
                 id = "blue_tower3";
             }
             z = L1_PURPLE_TOWER_0[1];
 
         } else {
-            if(team == 0){
+            if (team == 0) {
                 x = L2_PURPLE_BASE_TOWER[0];
                 id = "purple_tower3";
-            }
-            else {
+            } else {
                 x = L2_BLUE_BASE_TOWER[0];
                 id = "blue_tower3";
             }
@@ -127,13 +137,13 @@ public class MapData {
         return baseTower;
     }
 
-    public static HashMap<String, Point2D> getBaseTowerData(int team, String room){
+    public static HashMap<String, Point2D> getBaseTowerData(int team, String room) {
         HashMap<String, Point2D> baseTowers = new HashMap<>(2);
         String id;
         float x;
         float z;
-        if(room.equalsIgnoreCase("practice")){
-            if(team == 0){
+        if (room.equalsIgnoreCase("practice")) {
+            if (team == 0) {
                 x = L1_PURPLE_TOWER_0[0];
                 id = "purple_tower0";
             } else {
@@ -142,28 +152,27 @@ public class MapData {
             }
             z = L1_TOWER_Z;
         } else {
-            if(team == 0){
+            if (team == 0) {
                 x = L2_PURPLE_BASE_TOWER[0];
                 id = "purple_base_tower";
-            }
-            else{
+            } else {
                 id = "blue_base_tower";
                 x = L2_BLUE_BASE_TOWER[0];
             }
             z = L2_PURPLE_BASE_TOWER[1];
         }
         Point2D location = new Point2D.Float(x, z);
-        baseTowers.put(id,location);
+        baseTowers.put(id, location);
         return baseTowers;
     }
 
-    public static ISFSObject getTowerActorData(int team, int tower, String room){ //
+    public static ISFSObject getTowerActorData(int team, int tower, String room) { //
         float x = 0;
         float z = 0;
         String id;
-        String towerID = "tower"+(1+team);
-        if(room.equalsIgnoreCase("practice")){
-            switch (tower){
+        String towerID = "tower" + (1 + team);
+        if (room.equalsIgnoreCase("practice")) {
+            switch (tower) {
                 case 1:
                     x = L1_PURPLE_TOWER_1[0]; //
                     break;
@@ -172,10 +181,10 @@ public class MapData {
                     break;
             }
             z = L1_TOWER_Z;
-        }else{
-            switch (tower){
+        } else {
+            switch (tower) {
                 case 1:
-                    if(team == 0){
+                    if (team == 0) {
                         x = L2_PURPLE_TOWER_1[0];
                         z = L2_PURPLE_TOWER_1[1];
                     } else {
@@ -184,7 +193,7 @@ public class MapData {
                     }
                     break;
                 case 2:
-                    if(team == 0){
+                    if (team == 0) {
                         x = L2_PURPLE_TOWER_2[0];
                         z = L2_PURPLE_TOWER_2[1];
                     } else {
@@ -194,12 +203,12 @@ public class MapData {
                     break;
             }
         }
-        if(team == 1) id = "blue_tower"+tower;
-        else id = "purple_tower"+tower;
+        if (team == 1) id = "blue_tower" + tower;
+        else id = "purple_tower" + tower;
         ISFSObject towerObj = new SFSObject();
         ISFSObject towerSpawn = new SFSObject();
-        towerObj.putUtfString("id",id);
-        towerObj.putUtfString("actor",towerID);
+        towerObj.putUtfString("id", id);
+        towerObj.putUtfString("actor", towerID);
         towerSpawn.putFloat("x", x);
         towerSpawn.putFloat("y", (float) 0.0);
         towerSpawn.putFloat("z", z);
@@ -210,14 +219,14 @@ public class MapData {
         return towerObj;
     }
 
-    public static HashMap<String, Point2D> getMainMapTowerData(int team){
+    public static HashMap<String, Point2D> getMainMapTowerData(int team) {
         HashMap<String, Point2D> towers = new HashMap<>();
         float x = 0;
         float z = 0;
-        for(int towerNum = 1; towerNum < 3; towerNum++){
-            switch (towerNum){
+        for (int towerNum = 1; towerNum < 3; towerNum++) {
+            switch (towerNum) {
                 case 1:
-                    if(team == 0){
+                    if (team == 0) {
                         x = L2_PURPLE_TOWER_1[0];
                         z = L2_PURPLE_TOWER_1[1];
                     } else {
@@ -226,7 +235,7 @@ public class MapData {
                     }
                     break;
                 case 2:
-                    if(team == 0){
+                    if (team == 0) {
                         x = L2_PURPLE_TOWER_2[0];
                         z = L2_PURPLE_TOWER_2[1];
                     } else {
@@ -236,67 +245,64 @@ public class MapData {
                     break;
             }
             String id;
-            if(team == 0){
-                id = "purple_tower"+towerNum;
-            }
-            else id = "blue_tower"+towerNum;
-            Point2D location = new Point2D.Float(x,z);
+            if (team == 0) {
+                id = "purple_tower" + towerNum;
+            } else id = "blue_tower" + towerNum;
+            Point2D location = new Point2D.Float(x, z);
             towers.put(id, location);
         }
         return towers;
     }
 
-    public static HashMap<String, Point2D> getPTowerActorData(int team){
+    public static HashMap<String, Point2D> getPTowerActorData(int team) {
         HashMap<String, Point2D> practiceTowers = new HashMap<>();
         float x;
         String id;
-        if(team == 0){
+        if (team == 0) {
             x = L1_PURPLE_TOWER_1[0];
             id = "purple_tower1";
-        }
-        else{
+        } else {
             x = L1_BLUE_TOWER_4[0];
             id = "blue_tower4";
         }
         Point2D location = new Point2D.Float(x, L1_TOWER_Z);
-        practiceTowers.put(id,location);
+        practiceTowers.put(id, location);
         return practiceTowers;
     }
 
-    public static ISFSObject getAltarActorData(int type, String room){
+    public static ISFSObject getAltarActorData(int type, String room) {
         float x = (float) 0.0;
         float z = (float) 0.0;
-        String actorID = "altar_"+type;
-        if(room.equalsIgnoreCase("practice")){
-            if(type == 2){
+        String actorID = "altar_" + type;
+        if (room.equalsIgnoreCase("practice")) {
+            if (type == 2) {
                 z = L1_DALTAR_Z;
                 actorID = "altar_1";
-            }else{
+            } else {
                 z = L1_AALTAR_Z;
                 actorID = "altar_2";
             }
-        }else{
-            if(type == 0){
+        } else {
+            if (type == 0) {
                 x = L2_TOP_ALTAR[0];
                 z = L2_TOP_ALTAR[1];
                 actorID = "altar_1";
-            }else if(type == 2){
+            } else if (type == 2) {
                 x = L2_BOT_ALTAR[0];
                 z = L2_BOT_ALTAR[1];
                 actorID = "altar_1";
-            }else{
+            } else {
                 actorID = "altar_2";
             }
         }
-        String actor = "altar_"+type;
+        String actor = "altar_" + type;
         ISFSObject altar = new SFSObject();
         ISFSObject altarSpawn = new SFSObject();
-        altar.putUtfString("id",actor);
-        altar.putUtfString("actor",actorID);
+        altar.putUtfString("id", actor);
+        altar.putUtfString("actor", actorID);
         altarSpawn.putFloat("x", x);
         altarSpawn.putFloat("y", (float) 0.0);
         altarSpawn.putFloat("z", z);
-
 
         altar.putSFSObject("spawn_point", altarSpawn);
         altar.putFloat("rotation", (float) 0.0);
@@ -304,60 +310,60 @@ public class MapData {
         return altar;
     }
 
-    public static ISFSObject getHealthActorData(int team, String room, int type){
+    public static ISFSObject getHealthActorData(int team, String room, int type) {
         float x = 0;
         float z = 0;
-        if(room.equalsIgnoreCase("practice")){
+        if (room.equalsIgnoreCase("practice")) {
             x = L1_BLUE_HEALTH_X;
             z = L1_BLUE_HEALTH_Z;
-            if(team == 0){
-                x*=-1;
-                z*=-1;
+            if (team == 0) {
+                x *= -1;
+                z *= -1;
             }
-        }else{
-            if(type == 0){
+        } else {
+            if (type == 0) {
                 x = L2_BOT_BLUE_HEALTH[0];
                 z = L2_BOT_BLUE_HEALTH[1];
-            }else if(type == 1){
+            } else if (type == 1) {
                 x = L2_BOT_BLUE_HEALTH[0];
-                z = L2_BOT_BLUE_HEALTH[1]*-1;
-            }else if(type == 2){
+                z = L2_BOT_BLUE_HEALTH[1] * -1;
+            } else if (type == 2) {
                 x = L2_LEFT_HEALTH[0];
                 z = L2_LEFT_HEALTH[1];
             }
-            if(team == 0){
-                x*=-1;
+            if (team == 0) {
+                x *= -1;
             }
         }
-        String id = "health"+team+type;
+        String id = "health" + team + type;
         ISFSObject health = new SFSObject();
         ISFSObject healthSpawn = new SFSObject();
         health.putUtfString("id", id);
-        health.putUtfString("actor","pickup_health_1");
-        healthSpawn.putFloat("x",x);
+        health.putUtfString("actor", "pickup_health_1");
+        healthSpawn.putFloat("x", x);
         healthSpawn.putFloat("y", (float) 0.0);
         healthSpawn.putFloat("z", z);
         health.putSFSObject("spawn_point", healthSpawn);
-        health.putFloat("rotation",(float) 0.0);
-        health.putInt("team",team);
+        health.putFloat("rotation", (float) 0.0);
+        health.putInt("team", team);
         return health;
     }
 
-    public static ISFSObject getGuardianActorData(int team, String room){
+    public static ISFSObject getGuardianActorData(int team, String room) {
         float x = 0;
         float z = 0;
-        if(room.equalsIgnoreCase("practice")){
+        if (room.equalsIgnoreCase("practice")) {
             x = L1_GUARDIAN_X;
             z = L1_GUARDIAN_Z;
-        }else{
+        } else {
             x = L2_GUARDIAN1_X;
             z = L2_GUARDIAN1_Z;
         }
-        if(team == 0) x*=-1;
+        if (team == 0) x *= -1;
         ISFSObject guardian = new SFSObject();
         ISFSObject guardianSpawn = new SFSObject();
-        guardian.putUtfString("id","gumball"+team);
-        guardian.putUtfString("actor","gumball_guardian");
+        guardian.putUtfString("id", "gumball" + team);
+        guardian.putUtfString("actor", "gumball_guardian");
         guardianSpawn.putFloat("x", x);
         guardianSpawn.putFloat("y", 0f);
         guardianSpawn.putFloat("z", z);
@@ -368,18 +374,17 @@ public class MapData {
         return guardian;
     }
 
-    public static Point2D getGuardianLocationData(int team, String room){
+    public static Point2D getGuardianLocationData(int team, String room) {
         float x = 0;
         float z = 0;
-        if(room.equalsIgnoreCase("practice")){
+        if (room.equalsIgnoreCase("practice")) {
             x = L1_GUARDIAN_X;
             z = L1_GUARDIAN_Z;
-        }else{
+        } else {
             x = L2_GUARDIAN1_X;
             z = L2_GUARDIAN1_Z;
         }
-        if(team == 0) x*=-1;
-        return new Point2D.Float(x,z);
+        if (team == 0) x *= -1;
+        return new Point2D.Float(x, z);
     }
-
 }

@@ -1,11 +1,4 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
-
-name: Extension Build Status
+name: Check ATBPExtension Build
 
 on:
   push:
@@ -13,19 +6,19 @@ on:
     paths:
     - ATBPExtension/src/**
     - ATBPExtension/build.gradle
-    - .github/workflows/gradle.yml
+    - .github/workflows/build-extension.yml
   pull_request:
     branches: [ "master" ]
     paths:
     - ATBPExtension/src/**
     - ATBPExtension/build.gradle
-    - .github/workflows/gradle.yml
+    - .github/workflows/build-extension.yml
 
 permissions:
   contents: read
 
 jobs:
-  build:
+  build-extension:
 
     runs-on: ubuntu-latest
 
@@ -38,10 +31,10 @@ jobs:
         distribution: 'temurin'
     - name: Download SFS2X
       run: wget -qO- https://www.smartfoxserver.com/downloads/sfs2x/SFS2X_unix_2_19_0.tar.gz | tar xvz -C ~
-    - name: Build with Gradle
-      uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
-      with:
-        arguments: build
+    - name: Set up Gradle
+      uses: gradle/actions/setup-gradle@v3
+    - name: Execute Gradle build
+      run: ./gradlew ATBPExtension:build
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v3.1.0
       with:
