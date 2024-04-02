@@ -273,7 +273,7 @@ public class UserActor extends Actor {
                 if(projectileFx != null && projectileFx.length() > 0 && !parentExt.getActorData(this.avatar).get("attackType").asText().equalsIgnoreCase("MELEE")) SmartFoxServer.getInstance().getTaskScheduler().schedule(new RangedAttack(a,delayedAttack,projectileFx),500,TimeUnit.MILLISECONDS);
                 else delayedAttack.run();
             }catch(NullPointerException e){
-                e.printStackTrace();
+                //e.printStackTrace();
                 delayedAttack.run();
             }
         }

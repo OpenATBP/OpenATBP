@@ -99,8 +99,10 @@ function leaveQueue(socket){
   var invalidQueues = []; //Should clean up errors, if applicable, where queues contains incorrect players
   for(var q of queues){
     var queuedUsers = users.filter(u => u.player.queue.queueNum == q.queueNum);
-    console.log(`QUEUE ${q.queueNum} is invalid!`);
-    if(queuedUsers.length == 0) invalidQueues.push(q);
+    if(queuedUsers.length == 0){
+      invalidQueues.push(q);
+      console.log(`QUEUE ${q.queueNum} is invalid!`);
+    } 
   }
   queues = queues.filter(q => !invalidQueues.includes(q));
   displayPlayers();
@@ -455,7 +457,7 @@ function handleRequest (jsonString, socket) {
             for(var p of q.players){
               var sock = users.find(u => u.player == p && u.player.team == player.team);
               if(sock != undefined) sendCommand(sock,'chat_message',{'name':player.name,'teg_id':player.teg_id,'message_id':Number(jsonObject['payload'].message_id)}).catch(console.error);
-              else console.log("No socket found!");
+              else console.log("No socket found!"); //Seems to happen 3 times each chat message
             }
           }
         }

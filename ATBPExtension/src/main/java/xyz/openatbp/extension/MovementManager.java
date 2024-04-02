@@ -254,7 +254,6 @@ public class MovementManager {
             }
             return pathList;
         }catch(Exception e) {
-            e.printStackTrace();
             return new ArrayList<>();
         }
     }
