@@ -2,3 +2,6 @@ rootProject.name = 'OpenATBP'
 
 include 'ATBPExtension'
 project(":ATBPExtension").projectDir = file("ATBPExtension")
+
+include 'ATBPServer'
+project(":ATBPServer").projectDir = file("ATBPServer")

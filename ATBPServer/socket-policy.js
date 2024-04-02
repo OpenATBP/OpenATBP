@@ -13,8 +13,7 @@ module.exports = class SocketPolicyServer {
       socket.setTimeout(3000);
 
       socket.on('data', (data) => {
-        if (data === policyRequest)
-          socket.write(this.content); 
+        if (data === policyRequest) socket.write(this.content);
         socket.end();
       });
 
@@ -32,7 +31,6 @@ module.exports = class SocketPolicyServer {
     });
   }
   stop(callback) {
-    if (this.server)
-      this.server.close(callback());
+    if (this.server) this.server.close(callback());
   }
-}
+};

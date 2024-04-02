@@ -4,6 +4,7 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
+
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -14,8 +15,8 @@ public class PingHandler extends BaseClientRequestHandler {
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId());
         UserActor user = roomHandler.getPlayer(String.valueOf(sender.getId()));
-        for(UserActor ua : roomHandler.getPlayers()){
-            if(ua.getTeam() == user.getTeam()){
+        for (UserActor ua : roomHandler.getPlayers()) {
+            if (ua.getTeam() == user.getTeam()) {
                 ISFSObject data = new SFSObject();
                 data.putUtfString("id", String.valueOf(sender.getId()));
                 data.putInt("msg_type", params.getInt("msg_type"));
@@ -26,4 +27,3 @@ public class PingHandler extends BaseClientRequestHandler {
         }
     }
 }
-

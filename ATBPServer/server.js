@@ -18,87 +18,104 @@ const shopData = require('./data/shop.json');
 async function removeDuplicateFriends(collection) {
   try {
     var cursor = collection.find();
-    for await (var doc of cursor){
+    for await (var doc of cursor) {
       //console.log(doc.friends);
       var newFriends = [];
-      for(var friend of doc.friends){
-        if(!newFriends.includes(friend)) newFriends.push(friend);
+      for (var friend of doc.friends) {
+        if (!newFriends.includes(friend)) newFriends.push(friend);
       }
-      var q = {"user.TEGid": doc.user.TEGid};
-      var o = {upsert: true};
-      var up = {$set: {friends: newFriends}};
+      var q = { 'user.TEGid': doc.user.TEGid };
+      var o = { upsert: true };
+      var up = { $set: { friends: newFriends } };
 
-      var res = await collection.updateOne(q,up,o);
+      var res = await collection.updateOne(q, up, o);
       console.log(res);
     }
-  }
-  finally {
-    console.log("Done!");
+  } finally {
+    console.log('Done!');
   }
 }
 
 let config;
 try {
   config = require('./config.js');
-} catch(err) {
-  if (err instanceof Error && err.code === "MODULE_NOT_FOUND") {
-    console.error("FATAL: Could not find config.js. If this is your first time running the server,");
-    console.error("copy config.js.example to config.js. You can then edit it to add your MongoDB URI");
-    console.error("as well as customize other options. Once finished, restart the server.");
-  }
-  else
-    throw err;
+} catch (err) {
+  if (err instanceof Error && err.code === 'MODULE_NOT_FOUND') {
+    console.error(
+      'FATAL: Could not find config.js. If this is your first time running the server,'
+    );
+    console.error(
+      'copy config.js.example to config.js. You can then edit it to add your MongoDB URI'
+    );
+    console.error(
+      'as well as customize other options. Once finished, restart the server.'
+    );
+  } else throw err;
   process.exit(1);
 }
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const mongoClient = new MongoClient(config.httpserver.mongouri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+const mongoClient = new MongoClient(config.httpserver.mongouri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverApi: ServerApiVersion.v1,
+});
 
 var onlinePlayers = [];
 
 var onlineChecker = setInterval(() => {
-  for(var p of onlinePlayers){
-    if(Date.now()-p.lastChecked > 10000){
-      console.log(p.name + " offline!");
+  for (var p of onlinePlayers) {
+    if (Date.now() - p.lastChecked > 10000) {
+      console.log(p.name + ' offline!');
       onlinePlayers = onlinePlayers.filter((i) => {
         return i.username != p.username;
       });
-    }else{
-      console.log(p.name + " online!");
+    } else {
+      console.log(p.name + ' online!');
     }
   }
 }, 11000);
 
-mongoClient.connect(err => {
-  if(err){
-    console.error("FATAL: MongoDB connect failed: " + err);
+mongoClient.connect((err) => {
+  if (err) {
+    console.error('FATAL: MongoDB connect failed: ' + err);
     process.exit(1);
   }
 
-  const playerCollection = mongoClient.db("openatbp").collection("players");
+  const playerCollection = mongoClient.db('openatbp').collection('players');
   //removeDuplicateFriends(playerCollection).catch(console.dir);
 
-  if(!fs.existsSync("static/crossdomain.xml") || !fs.existsSync("static/config.xml")) {
-    console.info("Copying default crossdomain.xml/config.xml");
-    fs.copyFileSync("crossdomain.xml.example", "static/crossdomain.xml");
-    fs.copyFileSync("config.xml.example", "static/config.xml");
+  if (
+    !fs.existsSync('static/crossdomain.xml') ||
+    !fs.existsSync('static/config.xml')
+  ) {
+    console.info('Copying default crossdomain.xml/config.xml');
+    fs.copyFileSync('crossdomain.xml.example', 'static/crossdomain.xml');
+    fs.copyFileSync('config.xml.example', 'static/config.xml');
   }
 
-  if(!fs.existsSync("static/CNChampions.unity3d") || !fs.existsSync("static/assets")) {
-    console.warn("WARN: Asset files missing from static folder - the game will not work properly.");
-    console.warn("Please run 'npm run postinstall' to automatically download and extract them.")
+  if (
+    !fs.existsSync('static/CNChampions.unity3d') ||
+    !fs.existsSync('static/assets')
+  ) {
+    console.warn(
+      'WARN: Asset files missing from static folder - the game will not work properly.'
+    );
+    console.warn(
+      "Please run 'npm run postinstall' to automatically download and extract them."
+    );
   }
 
   app.set('view engine', 'ejs');
   app.use(express.static('static'));
-  app.use(bodyParser.urlencoded({extended:false}));
+  app.use(bodyParser.urlencoded({ extended: false }));
   app.use(bodyParser.json());
 
   app.get('/', (req, res) => {
     res.render('index', {
       client_id: config.discord.client_id,
       redirect: config.discord.redirect_url,
-      discord_enabled: config.discord.enabled
+      discord_enabled: config.discord.enabled,
     });
   });
 
@@ -107,63 +124,80 @@ mongoClient.connect(err => {
   });
 
   app.get('/service/authenticate/whoami', (req, res) => {
-    getRequest.handleWhoAmI(req.query.authToken,playerCollection).then((data) => {
-      res.send(data);
-    }).catch(console.error);
+    getRequest
+      .handleWhoAmI(req.query.authToken, playerCollection)
+      .then((data) => {
+        res.send(data);
+      })
+      .catch(console.error);
   });
 
-  app.get('/service/data/user/champions/tournament', (req,res) => {
+  app.get('/service/data/user/champions/tournament', (req, res) => {
     res.send(getRequest.handleTournamentData({}));
   });
 
-  app.get('/service/shop/inventory', (req,res) => {
+  app.get('/service/shop/inventory', (req, res) => {
     res.send(getRequest.handleShop(shopData));
   });
 
-  app.get('/service/data/config/champions/',(req,res) => {
+  app.get('/service/data/config/champions/', (req, res) => {
     res.send(getRequest.handleChampConfig());
   });
 
-  app.get('/service/shop/player', (req,res) => {
-    getRequest.handlePlayerInventory(req.query.authToken,playerCollection).then((data) => {
-      res.send(data);
-    }).catch(console.error);
+  app.get('/service/shop/player', (req, res) => {
+    getRequest
+      .handlePlayerInventory(req.query.authToken, playerCollection)
+      .then((data) => {
+        res.send(data);
+      })
+      .catch(console.error);
   });
 
-  app.get('/service/data/user/champions/profile',(req,res) => {
-    getRequest.handlePlayerChampions(req.query.authToken,playerCollection).then((data) => {
-      res.send(data);
-    }).catch(console.error);
+  app.get('/service/data/user/champions/profile', (req, res) => {
+    getRequest
+      .handlePlayerChampions(req.query.authToken, playerCollection)
+      .then((data) => {
+        res.send(data);
+      })
+      .catch(console.error);
   });
 
-  app.get('/service/presence/roster/:username', (req,res) => {
+  app.get('/service/presence/roster/:username', (req, res) => {
     var friendsList = [];
-    for(var p of onlinePlayers){
-      if(p.username == req.params.username){
+    for (var p of onlinePlayers) {
+      if (p.username == req.params.username) {
         friendsList = p.friends;
         break;
       }
     }
-    getRequest.handlePlayerFriends(req.params.username,onlinePlayers,friendsList).then((data) => {
-      res.send(data);
-    }).catch(console.error);
+    getRequest
+      .handlePlayerFriends(req.params.username, onlinePlayers, friendsList)
+      .then((data) => {
+        res.send(data);
+      })
+      .catch(console.error);
   });
 
-  app.get('/service/authenticate/user/:username', (req,res) => {
-    getRequest.handleBrowserLogin(req.params.username,playerCollection).then((data) => {
-      res.send(JSON.stringify(data));
-    }).catch(console.error);
+  app.get('/service/authenticate/user/:username', (req, res) => {
+    getRequest
+      .handleBrowserLogin(req.params.username, playerCollection)
+      .then((data) => {
+        res.send(JSON.stringify(data));
+      })
+      .catch(console.error);
   });
 
-  app.get('/backup/url/:code', (req,res) => {
-    res.send(`Open this in Pale Moon or Waterfox Classic ${config.httpserver.url}/backup/${req.params.code}`);
+  app.get('/backup/url/:code', (req, res) => {
+    res.send(
+      `Open this in Pale Moon or Waterfox Classic ${config.httpserver.url}/backup/${req.params.code}`
+    );
   });
 
-  app.get('/backup/:code', async(req,res) => {
+  app.get('/backup/:code', async (req, res) => {
     var code = req.params.code;
-    console.log("Code " + code);
-    if(code != undefined){
-      const token = await request('https://discord.com/api/oauth2/token',{
+    console.log('Code ' + code);
+    if (code != undefined) {
+      const token = await request('https://discord.com/api/oauth2/token', {
         method: 'POST',
         body: new URLSearchParams({
           client_id: config.discord.client_id,
@@ -179,38 +213,41 @@ mongoClient.connect(err => {
       });
       const oauthData = await token.body.json();
       console.log(oauthData);
-      if(oauthData != undefined){
-        const userResult = await request('https://discord.com/api/users/@me',{
+      if (oauthData != undefined) {
+        const userResult = await request('https://discord.com/api/users/@me', {
           headers: {
-            authorization: `${oauthData.token_type} ${oauthData.access_token}`
-          }
+            authorization: `${oauthData.token_type} ${oauthData.access_token}`,
+          },
         });
         var userInfo = await userResult.body.json();
-        if(userInfo != undefined){
-          database.findDiscordId(userInfo.id,playerCollection).then((data) => {
-            res.cookie('TEGid',data.TEGid);
-            res.cookie('authid',data.authid);
-            res.cookie('dname',data.dname);
-            res.cookie('authpass',data.authpass);
-            res.cookie('logged',true);
-            res.redirect(config.httpserver.url);
-          }).catch((err)=>{
-            console.log(err);
-            res.redirect(config.httpserver.url);
-          });
+        if (userInfo != undefined) {
+          database
+            .findDiscordId(userInfo.id, playerCollection)
+            .then((data) => {
+              res.cookie('TEGid', data.TEGid);
+              res.cookie('authid', data.authid);
+              res.cookie('dname', data.dname);
+              res.cookie('authpass', data.authpass);
+              res.cookie('logged', true);
+              res.redirect(config.httpserver.url);
+            })
+            .catch((err) => {
+              console.log(err);
+              res.redirect(config.httpserver.url);
+            });
         }
       }
     }
   });
 
-  app.get('/auth', async(req,res) => {
-    if(config.discord.backup){
+  app.get('/auth', async (req, res) => {
+    if (config.discord.backup) {
       res.redirect(`${config.httpserver.url}/backup/url/${req.query.code}`);
       return;
     }
     var code = req.query.code;
-    if(code != undefined){
-      const token = await request('https://discord.com/api/oauth2/token',{
+    if (code != undefined) {
+      const token = await request('https://discord.com/api/oauth2/token', {
         method: 'POST',
         body: new URLSearchParams({
           client_id: config.discord.client_id,
@@ -226,43 +263,49 @@ mongoClient.connect(err => {
       });
       const oauthData = await token.body.json();
       console.log(oauthData);
-      if(oauthData != undefined){
-        const userResult = await request('https://discord.com/api/users/@me',{
+      if (oauthData != undefined) {
+        const userResult = await request('https://discord.com/api/users/@me', {
           headers: {
-            authorization: `${oauthData.token_type} ${oauthData.access_token}`
-          }
+            authorization: `${oauthData.token_type} ${oauthData.access_token}`,
+          },
         });
         var userInfo = await userResult.body.json();
-        if(userInfo != undefined){
-          database.findDiscordId(userInfo.id,playerCollection).then((data) => {
-            res.cookie('TEGid',data.TEGid);
-            res.cookie('authid',data.authid);
-            res.cookie('dname',data.dname);
-            res.cookie('authpass',data.authpass);
-            res.cookie('logged',true);
-            res.redirect(config.httpserver.url);
-          }).catch((err)=>{
-            console.log(err);
-            res.redirect(config.httpserver.url);
-          });
+        if (userInfo != undefined) {
+          database
+            .findDiscordId(userInfo.id, playerCollection)
+            .then((data) => {
+              res.cookie('TEGid', data.TEGid);
+              res.cookie('authid', data.authid);
+              res.cookie('dname', data.dname);
+              res.cookie('authpass', data.authpass);
+              res.cookie('logged', true);
+              res.redirect(config.httpserver.url);
+            })
+            .catch((err) => {
+              console.log(err);
+              res.redirect(config.httpserver.url);
+            });
         }
       }
     }
   });
 
-  app.post('/service/authenticate/login', (req,res) => {
-    postRequest.handleLogin(req.body,playerCollection).then((data) => {
-      res.send(data);
-    }).catch(console.error);
+  app.post('/service/authenticate/login', (req, res) => {
+    postRequest
+      .handleLogin(req.body, playerCollection)
+      .then((data) => {
+        res.send(data);
+      })
+      .catch(console.error);
   });
 
-  app.post('/service/presence/present', (req,res) => {
+  app.post('/service/presence/present', (req, res) => {
     var test = 0;
     var options = JSON.parse(req.body.options);
-    for(var p of onlinePlayers){
-      if(p.username != req.body.username){
+    for (var p of onlinePlayers) {
+      if (p.username != req.body.username) {
         test++;
-      }else{
+      } else {
         p.lastChecked = Date.now();
         p.username = req.body.username;
         p.level = options.level;
@@ -273,8 +316,8 @@ mongoClient.connect(err => {
         break;
       }
     }
-    if(test == onlinePlayers.length){
-      console.log("Pushed!");
+    if (test == onlinePlayers.length) {
+      console.log('Pushed!');
       var playerObj = {
         username: req.body.username,
         level: options.level,
@@ -283,34 +326,60 @@ mongoClient.connect(err => {
         name: options.name,
         tier: options.tier,
         lastChecked: Date.now(),
-        friends: []
+        friends: [],
       };
-      playerCollection.findOne({"user.TEGid": req.body.username}).then((data) => {
-        playerObj.friends = data.friends;
-        onlinePlayers.push(playerObj);
-      }).catch(console.error);
+      playerCollection
+        .findOne({ 'user.TEGid': req.body.username })
+        .then((data) => {
+          playerObj.friends = data.friends;
+          onlinePlayers.push(playerObj);
+        })
+        .catch(console.error);
     }
     res.send(postRequest.handlePresent(req.body));
   });
 
-  app.post('/service/shop/purchase', (req,res) => {
+  app.post('/service/shop/purchase', (req, res) => {
     console.log(req.body);
-    postRequest.handlePurchase(req.query.authToken,req.body.data.item, playerCollection, shopData).then((data) => {
-      res.send(data);
-    }).catch(console.error);
+    postRequest
+      .handlePurchase(
+        req.query.authToken,
+        req.body.data.item,
+        playerCollection,
+        shopData
+      )
+      .then((data) => {
+        res.send(data);
+      })
+      .catch(console.error);
   });
 
-  app.post('/service/authenticate/user/:username', (req,res) => {
-    database.createNewUser(req.params.username,req.body.password,'manual', playerCollection).then((data) => {
-      res.send(JSON.stringify(data));
-    }).catch(console.error);
+  app.post('/service/authenticate/user/:username', (req, res) => {
+    database
+      .createNewUser(
+        req.params.username,
+        req.body.password,
+        'manual',
+        playerCollection
+      )
+      .then((data) => {
+        res.send(JSON.stringify(data));
+      })
+      .catch(console.error);
   });
 
-  app.post('/service/friend/request', (req,res) => {
+  app.post('/service/friend/request', (req, res) => {
     console.log(req.body);
-    postRequest.handleFriendRequest(req.query.authToken,req.body.toUserId,playerCollection).then((dat) => {
-      res.send(dat);
-    }).catch(console.error);
+    postRequest
+      .handleFriendRequest(
+        req.query.authToken,
+        req.body.toUserId,
+        playerCollection
+      )
+      .then((dat) => {
+        res.send(dat);
+      })
+      .catch(console.error);
   });
 
   app.listen(config.httpserver.port, () => {
@@ -318,12 +387,17 @@ mongoClient.connect(err => {
     if (config.lobbyserver.enable) {
       const lobbyServer = new ATBPLobbyServer(config.lobbyserver.port);
       lobbyServer.start(() => {
-        console.info(`Lobby server running on port ${config.lobbyserver.port}!`);
+        console.info(
+          `Lobby server running on port ${config.lobbyserver.port}!`
+        );
       });
     }
     if (config.sockpol.enable) {
       const policyContent = fs.readFileSync(config.sockpol.file, 'utf8');
-      const sockpol = new SocketPolicyServer(config.sockpol.port, policyContent);
+      const sockpol = new SocketPolicyServer(
+        config.sockpol.port,
+        policyContent
+      );
       sockpol.start(() => {
         console.info(`Socket policy running on port ${config.sockpol.port}!`);
       });

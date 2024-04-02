@@ -1,0 +1,11 @@
+# Node Modules
+node_modules
+
+# Exclude game assets in static, while including files needed to render webpage
+static/*
+!static/css/
+!static/css/*
+!static/fonts/
+!static/fonts/*
+!static/js/
+!static/js/*
