@@ -65,6 +65,8 @@ function sendCommand (socket, command, response){
   }
 
 function leaveQueue(socket) {
+  if(socket != undefined) console.log(socket.player.name + " left queue");
+  else console.log("Undefined socket left queue!");
   if (socket.player.queue.queueNum == -1) {
     //Not in a game/champ select
     socket.player.queue.type = null;
@@ -745,6 +747,7 @@ module.exports = class ATBPLobbyServer {
         //TODO: Add error handlers
         let jsonLength = socket.read(2);
         if (jsonLength == null || 0) {
+          console.log("Socket destroyed...");
           socket.destroy();
         } else {
           let packet = socket.read(jsonLength);
