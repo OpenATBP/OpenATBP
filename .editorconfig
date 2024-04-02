@@ -7,6 +7,11 @@ end_of_line = lf
 insert_final_newline = true
 
 # 4 space indentation
-[*.java,*.js]
+[*.ejs,*.gradle,*.java,*.xml]
 indent_style = space
 indent_size = 4
+
+# 2 space indentation
+[*.js,*.json,*.yml]
+indent_style = space
+indent_size = 2

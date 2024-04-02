@@ -323,6 +323,7 @@ function handleRequest (jsonString, socket) {
   }
 
   let response = null;
+  let unhandled = false;
   console.log("<-", jsonObject['req'], jsonObject['payload'])
 
   switch (jsonObject['req']) {
@@ -556,6 +557,8 @@ function handleRequest (jsonString, socket) {
             joinQueue(users.filter(u => team.players.includes(u.player)),type);
           }else console.log("Can't unlock undefined team!");
           break;
+        default:
+          unhandled = true;
   };
 
   if (response){
@@ -578,7 +581,9 @@ function handleRequest (jsonString, socket) {
      };
       console.log("Logged In ->", response['payload'].name);
     }
-  } else {
+  } 
+  if (unhandled)
+  {
     console.log("Unhandled request", jsonObject['req'])
   }
 

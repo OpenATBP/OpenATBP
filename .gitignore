@@ -48,15 +48,3 @@ lib/*
 # Config files
 config.properties
 config.js
-
-# Node Modules
-/ATBPServer/node_modules
-
-# Exclude game assets in static, while including files needed to render webpage
-/ATBPServer/static/*
-!/ATBPServer/static/css/
-!/ATBPServer/static/css/*
-!/ATBPServer/static/fonts/
-!/ATBPServer/static/fonts/*
-!/ATBPServer/static/js/
-!/ATBPServer/static/js/*

@@ -16,5 +16,8 @@
   },
   "scripts": {
     "postinstall": "node scripts/asset-downloader.js"
+  },
+  "devDependencies": {
+    "prettier": "3.2.5"
   }
 }
