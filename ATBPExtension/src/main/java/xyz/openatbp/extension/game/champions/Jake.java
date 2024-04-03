@@ -262,7 +262,7 @@ public class Jake extends UserActor {
                     };
             SmartFoxServer.getInstance()
                     .getTaskScheduler()
-                    .schedule(delayedDamage, 0 /*(int)time*/, TimeUnit.MILLISECONDS);
+                    .schedule(delayedDamage, (int) time, TimeUnit.MILLISECONDS);
             this.doGrab = false;
         }
     }
@@ -290,7 +290,12 @@ public class Jake extends UserActor {
                 this.qPolygon = createOctagon(this.location, dest);
                 fireQProjectile(
                         new JakeQProjectile(
-                                this.parentExt, this, qLine, 5f, 1f, this.id + "stretchy_grab"),
+                                this.parentExt,
+                                this,
+                                qLine,
+                                7f,
+                                1f,
+                                this.id + "stretchy_grab"),
                         "stretchy_grab",
                         this.location,
                         dest,
@@ -352,7 +357,7 @@ public class Jake extends UserActor {
                         this.room,
                         this.id,
                         ballFx,
-                        1000,
+                        2000,
                         this.id + "_ball",
                         true,
                         "displayBar",

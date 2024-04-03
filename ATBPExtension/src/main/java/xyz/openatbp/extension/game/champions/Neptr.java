@@ -48,7 +48,7 @@ public class Neptr extends UserActor {
                     this.room,
                     this.id,
                     "neptr_passive",
-                    500,
+                    750,
                     this.id + "_passive" + Math.random(),
                     true,
                     "targetNode",
@@ -59,8 +59,9 @@ public class Neptr extends UserActor {
                     this.parentExt, this.player, this.id, "sfx_neptr_passive", this.location);
             ExtensionCommands.playSound(
                     this.parentExt, this.room, this.id, "vo/vo_neptr_passive", this.location);
-            this.addEffect("speed", this.getStat("speed") * 0.35d, 3500, null, false);
-            this.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.25d, 3500, null, false);
+            this.addEffect("speed", this.getStat("speed") * 0.35d, 3500, null, "", false);
+            this.addEffect(
+                    "attackSpeed", this.getStat("attackSpeed") * -0.25d, 3500, null, "", false);
             if (this.passiveActive) {
                 ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "passive");
             }

@@ -187,8 +187,13 @@ public class Billy extends UserActor {
                         this.parentExt, this.room, this.id, "spell2", wTime, false);
                 if (this.passiveUses == 3) {
                     this.addEffect(
-                            "attackSpeed", this.getStat("attackSpeed") * -0.7d, 4000, null, false);
-                    this.addEffect("speed", 0.8d, 6000, null, true);
+                            "attackSpeed",
+                            this.getStat("attackSpeed") * -0.7d,
+                            4000,
+                            null,
+                            "",
+                            false);
+                    this.addEffect("speed", 0.8d, 6000, null, "", true);
                     this.usePassiveAbility();
                     ExtensionCommands.addStatusIcon(
                             this.parentExt,
@@ -289,20 +294,21 @@ public class Billy extends UserActor {
         @Override
         protected void spellW() {
             canCast[1] = true;
+            int CRATER_OFFSET = 1;
             ExtensionCommands.playSound(parentExt, room, id, "sfx_billy_ground_pound_temp", dest);
             ExtensionCommands.actorAnimate(parentExt, room, id, "spell2a", 500, false);
-            ExtensionCommands.createActorFX(
+            ExtensionCommands.createWorldFX(
                     parentExt,
                     room,
                     id,
                     "billy_ground_pound",
-                    500,
                     id + "_qLand",
+                    1500,
+                    (float) location.getX(),
+                    (float) location.getY() - CRATER_OFFSET,
                     false,
-                    "",
-                    false,
-                    false,
-                    team);
+                    team,
+                    0f);
             for (Actor a :
                     Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()), dest, 2f)) {
                 if (isNonStructure(a)) {

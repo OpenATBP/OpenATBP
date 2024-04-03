@@ -410,7 +410,8 @@ public abstract class Actor {
         this.activeBuffs.put(state.toString(), newData);
     }
 
-    public void addEffect(String stat, double delta, int duration, String fxId, boolean stacks) {
+    public void addEffect(
+            String stat, double delta, int duration, String fxId, String emit, boolean stacks) {
         ISFSObject data = new SFSObject();
         if (!this.activeBuffs.containsKey(stat)) { // Runs if there is no existing stat effect
             long endTime = System.currentTimeMillis() + duration;
@@ -428,7 +429,7 @@ public abstract class Actor {
                         duration,
                         this.id + "_" + fxId,
                         true,
-                        "",
+                        emit,
                         true,
                         false,
                         this.team);

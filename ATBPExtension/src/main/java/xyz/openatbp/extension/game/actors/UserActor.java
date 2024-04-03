@@ -1049,18 +1049,7 @@ public class UserActor extends Actor {
         ExtensionCommands.playSound(
                 this.parentExt, this.room, this.id, "sfx/sfx_champion_respawn", this.location);
         ExtensionCommands.respawnActor(this.parentExt, this.room, this.id);
-        ExtensionCommands.createActorFX(
-                this.parentExt,
-                this.room,
-                this.id,
-                "statusEffect_speed",
-                5000,
-                this.id + "_respawnSpeed",
-                true,
-                "Bip01 Footsteps",
-                true,
-                false,
-                this.team);
+        this.addEffect("speed", 2d, 5000, "statusEffect_speed", "targetNode", false);
         ExtensionCommands.createActorFX(
                 this.parentExt,
                 this.room,

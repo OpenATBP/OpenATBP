@@ -39,16 +39,11 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
             } else {
                 doAbility(parentExt, player, sender, params, spellNum);
             }
-        } else {
-            playSound = true;
         }
-        if (player.hasDashInterrupingCC() || playSound)
+        if (player.hasInterrupingCC() || playSound) {
             ExtensionCommands.playSound(
-                    parentExt,
-                    sender.getLastJoinedRoom(),
-                    String.valueOf(sender.getId()),
-                    "not_allowed_error",
-                    player.getLocation());
+                    parentExt, sender, "global", "not_allowed_error", new Point2D.Float(0, 0));
+        }
     }
 
     private void doAbility(
@@ -64,8 +59,14 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
         float y = 0f;
         float z = params.getFloat("z");
         // Console.debugLog(params.getDump());
-        Point2D serverLocation = new Point2D.Float(params.getFloat("fx"), params.getFloat("fz"));
-        player.setLocation(serverLocation);
+        String playerActor = player.getAvatar();
+        JsonNode spellData = getSpellData(playerActor, spellNum);
+        if (spellData.has("castType")
+                && spellData.get("castType").asText().equalsIgnoreCase("AIMED")) {
+            Point2D serverLocation =
+                    new Point2D.Float(params.getFloat("fx"), params.getFloat("fz"));
+            player.setLocation(serverLocation);
+        }
         Point2D oldLocation = new Point2D.Float(x, z);
         ISFSObject specialAttackData = new SFSObject();
         List<Float> locationArray = new ArrayList<>(Arrays.asList(x, y, z));
@@ -79,8 +80,6 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
         // Console.debugLog("Cx: " + x + " cy: " + y);
         // Console.debugLog("Px: " + player.getLocation().getX() + " py: " +
         // player.getLocation().getY());
-        String playerActor = player.getAvatar();
-        JsonNode spellData = getSpellData(playerActor, spellNum);
         int cooldown = spellData.get("spellCoolDown").asInt();
         int gCooldown = spellData.get("spellGlobalCoolDown").asInt();
         int castDelay = spellData.get("castDelay").asInt();

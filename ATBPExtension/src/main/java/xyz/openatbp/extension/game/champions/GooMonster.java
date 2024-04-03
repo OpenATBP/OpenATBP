@@ -89,6 +89,7 @@ public class GooMonster extends Monster {
                             u.getPlayerStat("speed") * 0.1d,
                             60000,
                             "jungle_buff_goo",
+                            "",
                             false);
                     Champion.handleStatusIcon(
                             this.parentExt,

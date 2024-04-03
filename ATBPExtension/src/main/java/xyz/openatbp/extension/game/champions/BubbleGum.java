@@ -95,7 +95,8 @@ public class BubbleGum extends UserActor {
                         if (isNonStructure(a))
                             a.addState(ActorState.SLOWED, 0.3d, 2000, null, false);
                     } else if (a.getId().equalsIgnoreCase(this.id)) {
-                        this.addEffect("speed", this.getStat("speed") * 0.4d, 2000, null, false);
+                        this.addEffect(
+                                "speed", this.getStat("speed") * 0.4d, 2000, null, "", false);
                         ExtensionCommands.createActorFX(
                                 this.parentExt,
                                 this.room,
@@ -394,7 +395,7 @@ public class BubbleGum extends UserActor {
                 double newDamage = (targetAttackSpeed * change);
                 if (getReducedSpeed / targetAttackSpeed >= 0.25) newDamage = 0;
                 System.out.println("PB is gumming up by " + newDamage);
-                this.target.addEffect("attackSpeed", newDamage, 3000, null, true);
+                this.target.addEffect("attackSpeed", newDamage, 3000, null, "", true);
             }
         }
     }

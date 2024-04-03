@@ -101,6 +101,7 @@ public class BMO extends UserActor {
         switch (ability) {
             case 1:
                 this.canCast[0] = false;
+                this.stopMoving();
                 Path2D trapezoid =
                         Champion.createTrapezoid(
                                 location,
@@ -127,7 +128,7 @@ public class BMO extends UserActor {
                         this.room,
                         this.id,
                         cameraFx,
-                        500,
+                        1000,
                         this.id + "_camera",
                         true,
                         "",
@@ -244,6 +245,8 @@ public class BMO extends UserActor {
                     ultSlowActive = true;
                     passiveStacks = 0;
                 } else addPasiveStacks();
+                ExtensionCommands.actorAnimate(
+                        this.parentExt, this.room, this.id, "spell3", 250, false);
                 ExtensionCommands.playSound(
                         this.parentExt, this.room, this.id, "sfx_bmo_ultimate", this.location);
                 ExtensionCommands.playSound(
@@ -358,7 +361,7 @@ public class BMO extends UserActor {
                 this.room,
                 this.id,
                 aoeExplodeFX,
-                750,
+                1000,
                 this.id + "_pixels_aoe_explode",
                 true,
                 "",
