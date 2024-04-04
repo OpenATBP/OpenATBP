@@ -70,7 +70,13 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
                     || params.getUtfString("room_id").contains("tutorial")) {
                 settings.setMaxUsers(1);
                 settings.setGroupId("Practice");
-            } else if (params.getUtfString("room_id").contains("3p")) {
+            } else if (params.getUtfString("room_id").contains("custom")) {
+                String[] roomIDSplit = params.getUtfString("room_id").split("_");
+                int roomSize =
+                        Integer.parseInt(roomIDSplit[roomIDSplit.length - 1].replace("p", ""));
+                settings.setMaxUsers(roomSize);
+                settings.setGroupId("PVP");
+            } else if (params.getUtfString("room_id").contains("3p")) { // Bot game mode
                 settings.setMaxUsers(2); // TODO: Testing value
                 settings.setGroupId("PVE");
             } else if (params.getUtfString("room_id").contains("6p")) {
