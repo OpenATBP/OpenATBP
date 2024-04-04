@@ -699,6 +699,68 @@ function handleRequest(jsonString, socket) {
         );
       } else console.log("Can't unlock undefined team!");
       break;
+
+      case 'custom_game_create':
+        var teamObj = {
+          teamLeader: socket.player,
+          players: [socket.player],
+          team: socket.player.teg_id,
+          queueNum: -1,
+          type: 'custom',
+        };
+        teams.push(teamObj);
+        socket.player.onTeam = true;
+      break;
+
+      case 'custom_game_join_side':
+        var team = teams.find((t) => t.players.includes(socket.player) && t.type == 'custom');
+        var teamToJoin = -1;
+        if(jsonObject['payload'].team == 'teamA') teamToJoin = 0;
+        else if(jsonObject['payload'].team == 'teamB') teamToJoin = 1;
+        socket.player.team = teamToJoin;
+        if(team != undefined){
+          var dataToSend = {
+            'teamN': [],
+            'teamA': [],
+            'teamB': [],
+            'ready': false
+          };
+          for(var p of team.players){
+            var playerObj = {
+              'name': p.name,
+              'teg_id': p.teg_id
+            };
+            if(p.team == 0) dataToSend.teamA.push(p);
+            else if(p.team == 1) dataToSend.teamB.push(p);
+            else dataToSend.teamN.push(p);
+          }
+          safeSendAll(users.filter((u) => team.players.includes(u.player)), 'custom_game_update', dataToSend).catch(console.error);
+        }else console.log(`${socket.player.name} tried to join an invalid custom game`);
+      break;
+
+      case 'custom_game_send_invite':
+        var invitedUser = users.find((u) => u.player.teg_id == jsonObject['payload'].player);
+        if(invitedUser != undefined){
+          var inviteObj = {
+            'name': socket.player.name,
+            'player': socket.player.player,
+            'act': 'm_moba_sports_6p_custom',
+            'vs': true,
+            'customGame': socket.player.teg_id
+          };
+          sendCommand(invitedUser,'custom_game_receive_invite',inviteObj).catch(console.error);
+        }else console.log(`Could not find user to send custom game invite to.`);
+      break;
+
+      case 'custom_game_join':
+        var team = teams.find((t) => t.team == jsonObject['payload'].name);
+        if(team != undefined){
+          socket.player.onTeam = true;
+          team.players.push(socket.player);
+          sendCommand(socket,'custom_game_invite_verified',{'result':'success'}).catch(console.error);
+        }
+      break;
+
     default:
       unhandled = true;
   }
@@ -765,7 +827,8 @@ module.exports = class ATBPLobbyServer {
 
       socket.on('error', (error) => {
         console.error('Socket error:', error);
-        socket.destroy();
+        if(socket.player == undefined) socket.destroy();
+        else console.log(`${socket.player.name} had an error... and we ignored it.`);
       });
 
       socket.on('close', (err) => {
