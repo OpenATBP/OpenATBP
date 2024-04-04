@@ -354,6 +354,7 @@ public class UserActor extends Actor {
                                     TimeUnit.MILLISECONDS);
                 else delayedAttack.run();
             } catch (NullPointerException e) {
+                // e.printStackTrace();
                 delayedAttack.run();
             }
         }
