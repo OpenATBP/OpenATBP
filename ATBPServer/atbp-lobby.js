@@ -129,6 +129,10 @@ function leaveQueue(socket) {
   displayQueues();
 }
 
+function updateCustomGame(team){
+
+}
+
 function leaveTeam(socket) {
   socket.player.onTeam = false;
   var team = teams.find((t) => t.players.includes(socket.player));
@@ -810,7 +814,8 @@ module.exports = class ATBPLobbyServer {
         let jsonLength = socket.read(2);
         if (jsonLength == null || 0) {
           console.log("Socket destroyed...");
-          socket.destroy();
+          if(socket.player != undefined) console.log(`${socket.player.name} has had their socket destroyed.`);
+          else socket.destroy();
         } else {
           let packet = socket.read(jsonLength);
           let response = handleRequest(packet, socket);
