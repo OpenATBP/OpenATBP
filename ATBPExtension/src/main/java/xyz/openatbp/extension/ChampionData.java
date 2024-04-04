@@ -214,7 +214,6 @@ public class ChampionData {
         ua.setStat("availableSpellPoints", spellPoints);
         toUpdate.putUtfString("id", String.valueOf(user.getId()));
         if (user.getVariable("champion").getSFSObjectValue().getBool("autoLevel")) {
-            level++;
             int[] buildPath = getBuildPath(ua.getAvatar(), ua.getBackpack());
             int category = buildPath[level - 1];
             int categoryPoints = (int) ua.getStat("sp_category" + category);
@@ -222,9 +221,9 @@ public class ChampionData {
             boolean works = false;
             if (categoryPoints + 1 < 3) works = true;
             else if (categoryPoints + 1 == 3)
-                works = spentPoints + 1 >= 4; // Can't get a third level without spending 4 points
+                works = spentPoints >= 4; // Can't get a third level without spending 4 points
             else if (categoryPoints + 1 == 4)
-                works = spentPoints + 1 >= 6; // Can't get a fourth level without spending 6 points
+                works = spentPoints >= 6; // Can't get a fourth level without spending 6 points
             if (works) {
                 ExtensionCommands.updateActorData(
                         parentExt,
@@ -236,11 +235,11 @@ public class ChampionData {
                     if (categoryPoints + 1 < 3) works = true;
                     else if (categoryPoints + 1 == 3)
                         works =
-                                spentPoints + 1
+                                spentPoints
                                         >= 4; // Can't get a third level without spending 4 points
                     else if (categoryPoints + 1 == 4)
                         works =
-                                spentPoints + 1
+                                spentPoints
                                         >= 6; // Can't get a fourth level without spending 6 points
                     if (works) {
                         ExtensionCommands.updateActorData(

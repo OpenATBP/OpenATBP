@@ -485,18 +485,18 @@ public class Neptr extends UserActor {
                     parentExt, this.room, Neptr.this.id, "vo/vo_neptr_mine", Neptr.this.location);
             ExtensionCommands.playSound(
                     parentExt, room, this.id, "sfx_neptr_mine_spawn", this.location);
-            ExtensionCommands.createActorFX(
-                    parentExt,
-                    room,
+            ExtensionCommands.createWorldFX(
+                    this.parentExt,
+                    this.room,
                     this.id,
                     "fx_target_ring_2",
-                    30000,
                     this.id + "_mine",
+                    30000,
+                    (float) this.location.getX(),
+                    (float) this.location.getY(),
                     true,
-                    "",
-                    false,
-                    true,
-                    this.team);
+                    this.team,
+                    0f);
         }
 
         @Override

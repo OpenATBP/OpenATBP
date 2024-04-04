@@ -22,6 +22,7 @@ import xyz.openatbp.extension.game.actors.UserActor;
 @MultiHandler
 public class DoActorAbilityHandler extends BaseClientRequestHandler {
     public void handleClientRequest(User sender, ISFSObject params) {
+        // Console.debugLog(params.getDump());
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         UserActor player =
                 parentExt

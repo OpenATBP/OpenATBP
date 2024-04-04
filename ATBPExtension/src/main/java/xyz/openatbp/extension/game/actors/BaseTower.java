@@ -206,8 +206,8 @@ public class BaseTower extends Actor {
                 ExtensionCommands.removeFx(parentExt, u, this.id + "_target");
                 if (this.target != null && this.target.getActorType() == ActorType.PLAYER)
                     ExtensionCommands.removeFx(parentExt, u, this.id + "_aggro");
-                this.parentExt.getRoomHandler(this.room.getId()).addScore(null, a.getTeam(), 50);
             }
+            this.parentExt.getRoomHandler(this.room.getId()).addScore(null, a.getTeam(), 50);
             for (UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()) {
                 if (ua.getTeam() == this.team) {
                     ExtensionCommands.playSound(
@@ -317,7 +317,10 @@ public class BaseTower extends Actor {
                                         (float) this.getPlayerStat("attackRange"))) {
                             if (a.getActorType() == ActorType.COMPANION
                                     && a.getTeam() != this.team
-                                    && a.towerAggroCompanion) {
+                                    && a.towerAggroCompanion
+                                    && a.getHealth() > 0
+                                    && this.target != null
+                                    && this.target.getId().equalsIgnoreCase(a.getId())) {
                                 this.target = a;
                                 ExtensionCommands.removeFx(
                                         this.parentExt, this.room, this.id + "_target");
@@ -339,7 +342,10 @@ public class BaseTower extends Actor {
                     }
                     if (!isFocusingPlayer && !isFocusingCompanion) {
                         for (UserActor ua : getUserActorsInTowerRadius()) {
-                            if (ua.getActorType() == ActorType.PLAYER) {
+                            if (ua.getActorType() == ActorType.PLAYER
+                                    && ua.getHealth() > 0
+                                    && this.target != null
+                                    && !this.target.getId().equalsIgnoreCase(ua.getId())) {
                                 if (ua.getTeam() != this.team && ua.changeTowerAggro) {
                                     this.target = ua;
                                     this.targetPlayer(ua);
@@ -362,7 +368,6 @@ public class BaseTower extends Actor {
                             }
                         }
                     }
-
                     if (this.attackCooldown > 0) this.reduceAttackCooldown();
                     if (nearbyActors.isEmpty()) {
                         if (this.target.getActorType() == ActorType.PLAYER) {
