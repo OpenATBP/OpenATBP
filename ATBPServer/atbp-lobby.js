@@ -69,9 +69,6 @@ function leaveQueue(socket) {
   else console.log("Undefined socket left queue!");
   if (socket.player.queue.queueNum == -1) {
     //Not in a game/champ select
-    socket.player.queue.type = null;
-    socket.player.queue.started = -1;
-    socket.player.queue.queueNum = -1;
     var usersInQueue = users.filter(
       (user) =>
         user.player != socket.player &&
@@ -99,15 +96,13 @@ function leaveQueue(socket) {
           { reason: 'error_lobby_playerLeftMatch' }
         )
           .then(() => {
-            for (var u of users.filter((u) =>
-              queue.players.includes(u.player)
-            )) {
-              u.player.team = -1;
-              u.player.queue.type = null;
-              u.player.queue.started = -1;
-              u.player.queue.queueNum = -1;
+            for(var p of queue.players){
+              p.queue.type = null;
+              p.queue.started = -1;
+              p.queue.queueNum = -1;
             }
-            queues = queues.filter((qu) => qu != queue);
+            queue.players = [];
+            queues = queues.filter((qu) => qu.players.length > 0);
           })
           .catch(console.error);
       }
@@ -116,6 +111,7 @@ function leaveQueue(socket) {
   }
   socket.player.queue.type = null;
   socket.player.queue.started = -1;
+  socket.player.queue.queueNum = -1;
   var invalidQueues = []; //Should clean up errors, if applicable, where queues contains incorrect players
   for(var q of queues){
     var queuedUsers = users.filter(u => u.player.queue.queueNum == q.queueNum);
@@ -125,50 +121,72 @@ function leaveQueue(socket) {
     }
   }
   queues = queues.filter((q) => !invalidQueues.includes(q));
-  displayPlayers();
-  displayQueues();
 }
 
 function updateCustomGame(team){
-
+  if(team != undefined){
+    var dataToSend = {
+      'teamN': [],
+      'teamA': [],
+      'teamB': [],
+      'ready': team.players.length > 1
+    };
+    for(var p of team.players){
+      var playerObj = {
+        'name': p.name,
+        'teg_id': p.teg_id
+      };
+      if(p.team == 0) dataToSend.teamA.push(p);
+      else if(p.team == 1) dataToSend.teamB.push(p);
+      else dataToSend.teamN.push(p);
+    }
+    safeSendAll(users.filter((u) => team.players.includes(u.player)), 'custom_game_update', dataToSend).catch(console.error);
+  }
 }
 
 function leaveTeam(socket) {
+  console.log(socket.player.name + ' is leaving their team.');
   socket.player.onTeam = false;
+  socket.player.team = -1;
+  if(socket.player.queue.queueNum != -1) leaveQueue(socket);
   var team = teams.find((t) => t.players.includes(socket.player));
   if (team != undefined) {
     team.players = team.players.filter((p) => p.name != socket.player.name);
-    console.log(team.players);
     if (socket.player == team.teamLeader) {
       safeSendAll(
         users.filter((u) => team.players.includes(u.player)),
         'team_disband',
         { reason: 'error_lobby_teamLeader' }
       ).catch(console.error);
-      for (var p of team.players) {
-        p.onTeam = false;
+      for(var user of users.filter((u) => team.players.includes(u.player))){
+        leaveTeam(user);
       }
       team.teamLeader = undefined;
     } else {
-      var teamObj = [];
-      for (var p of team.players) {
-        var playerObj = {
-          name: p.name,
-          teg_id: p.teg_id,
-          player: p.player,
-        };
-        teamObj.push(playerObj);
+      if(team.type == 'custom'){
+        updateCustomGame(team);
+        socket.player.team = -1;
+      }else{
+        var teamObj = [];
+        for (var p of team.players) {
+          var playerObj = {
+            name: p.name,
+            teg_id: p.teg_id,
+            player: p.player,
+          };
+          teamObj.push(playerObj);
+        }
+        safeSendAll(
+          users.filter((u) => team.players.includes(u.player)),
+          'team_update',
+          { players: teamObj, team: team.team }
+        ).catch(console.error);
+        sendCommand(
+          users.find((u) => u.player == team.teamLeader),
+          'invite_declined',
+          { player: socket.player.teg_id }
+        ).catch(console.error);
       }
-      safeSendAll(
-        users.filter((u) => team.players.includes(u.player)),
-        'team_update',
-        { players: teamObj, team: team.team }
-      ).catch(console.error);
-      sendCommand(
-        users.find((u) => u.player == team.teamLeader),
-        'invite_declined',
-        { player: socket.player.teg_id }
-      ).catch(console.error);
     }
     if (team.queueNum != -1) {
       //Should kick everyone out of queue
@@ -180,8 +198,6 @@ function leaveTeam(socket) {
     leaveQueue(socket);
     console.log('No team found when leaving!');
   }
-  displayTeams();
-  displayPlayers();
 }
 
 function joinQueue(sockets, type) {
@@ -363,9 +379,6 @@ function joinQueue(sockets, type) {
       }
     }
   }
-  displayQueues();
-  displayPlayers();
-  displayTeams();
 }
 
 function displayQueues() {
@@ -375,7 +388,7 @@ function displayQueues() {
     var purple = 0;
     for (var p of q.players) {
       if (p.team == 0) purple++;
-      else blue++;
+      else if(p.team == 1) blue++;
     }
     console.log(
       `QUEUE ${q.queueNum}: ${q.players.length} players, Type ${q.type}, In-Game ${q.inGame}, Blue: ${blue}, Purple: ${purple}`
@@ -403,6 +416,14 @@ function displayPlayers() {
     );
   }
 }
+
+setInterval(() => {
+  teams = teams.filter((t) => t.players.length > 0);
+  queues = queues.filter((q) => q.players.length > 0);
+  displayTeams();
+  displayQueues();
+  displayPlayers();
+}, 30000);
 
 // TODO: move out to separate file
 function handleRequest(jsonString, socket) {
@@ -558,8 +579,6 @@ function handleRequest(jsonString, socket) {
           }
           if (q.ready == q.max) {
             q.inGame = true;
-            displayQueues();
-            displayPlayers();
           }
           break;
         }
@@ -578,6 +597,13 @@ function handleRequest(jsonString, socket) {
           }
         }
         break;
+
+    case 'custom_game_chat_message':
+      var team = teams.find((t) => t.players.includes(socket.player));
+      if(team != undefined){
+        safeSendAll(users.filter((u) => team.players.includes(u.player)), 'custom_game_chat_message', {'name': socket.player.name, 'teg_id': socket.player.teg_id, 'message_id':Number(jsonObject['payload'].message_id)}).catch(console.error);
+      }
+      break;
 
     case 'create_team':
       var playerObj = {
@@ -601,7 +627,6 @@ function handleRequest(jsonString, socket) {
       };
       socket.player.onTeam = true;
       teams.push(teamObj);
-      displayTeams();
       break;
 
     case 'send_invite':
@@ -671,10 +696,10 @@ function handleRequest(jsonString, socket) {
           },
         };
       }
-      displayTeams();
       break;
 
     case 'decline_invite':
+    case 'custom_game_decline_invite':
       var partyLeader = jsonObject['payload'].party_leader;
       if (partyLeader != undefined) {
         var teamLeader = users.find(
@@ -683,10 +708,13 @@ function handleRequest(jsonString, socket) {
             500
         );
       } else console.log(jsonObject['payload']);
-      if (teamLeader != undefined)
-        sendCommand(teamLeader, 'invite_declined', {
+      if (teamLeader != undefined){
+        var command = 'invite_declined';
+        if(jsonObject['req'].includes("custom")) command = 'custom_game_'+command;
+        sendCommand(teamLeader, command, {
           player: socket.player.teg_id,
         });
+      }
       else {
         console.log('No leader found!');
       }
@@ -710,7 +738,7 @@ function handleRequest(jsonString, socket) {
           players: [socket.player],
           team: socket.player.teg_id,
           queueNum: -1,
-          type: 'custom',
+          type: 'custom'
         };
         teams.push(teamObj);
         socket.player.onTeam = true;
@@ -722,24 +750,7 @@ function handleRequest(jsonString, socket) {
         if(jsonObject['payload'].team == 'teamA') teamToJoin = 0;
         else if(jsonObject['payload'].team == 'teamB') teamToJoin = 1;
         socket.player.team = teamToJoin;
-        if(team != undefined){
-          var dataToSend = {
-            'teamN': [],
-            'teamA': [],
-            'teamB': [],
-            'ready': false
-          };
-          for(var p of team.players){
-            var playerObj = {
-              'name': p.name,
-              'teg_id': p.teg_id
-            };
-            if(p.team == 0) dataToSend.teamA.push(p);
-            else if(p.team == 1) dataToSend.teamB.push(p);
-            else dataToSend.teamN.push(p);
-          }
-          safeSendAll(users.filter((u) => team.players.includes(u.player)), 'custom_game_update', dataToSend).catch(console.error);
-        }else console.log(`${socket.player.name} tried to join an invalid custom game`);
+        updateCustomGame(team);
       break;
 
       case 'custom_game_send_invite':
@@ -758,11 +769,90 @@ function handleRequest(jsonString, socket) {
 
       case 'custom_game_join':
         var team = teams.find((t) => t.team == jsonObject['payload'].name);
-        if(team != undefined){
+        if(team != undefined && team.players.length < 6 && team.queueNum == -1){
           socket.player.onTeam = true;
           team.players.push(socket.player);
           sendCommand(socket,'custom_game_invite_verified',{'result':'success'}).catch(console.error);
+        }else response = {
+          cmd: 'invite_verified',
+          payload: {
+            result: 'failed',
+          },
+        };
+      break;
+
+      case 'custom_game_start':
+        var team = teams.find((t) => t.players.includes(socket.player));
+        var blue = [];
+        var purple = [];
+        for(var p of team.players){
+          var playerObj = {
+            name: p.name,
+            player: p.player,
+            teg_id: `${p.teg_id}`,
+            avatar: 'unassigned',
+            is_ready: false,
+          };
+          if(p.team == 0) purple.push(playerObj);
+          else if(p.team == 1) blue.push(playerObj);
+          else{
+            p.onTeam = false;
+            sendCommand(users.find((u) => u.player == p), 'team_disband', {'reason': 'error_send_room_fail'}).catch(console.error);
+          }
         }
+        team.players = team.players.filter((p) => p.team != -1);
+        var queueObj = {
+          type: `custom_${team.players.length}p`,
+          players: team.players,
+          queueNum: queueNum,
+          blue: blue,
+          purple: purple,
+          ready: 0,
+          max: 6,
+          inGame: false,
+        };
+        console.log(queueObj);
+        for (var p of team.players) {
+          p.queue.queueNum = queueNum;
+        }
+        queueNum++;
+        queues.push(queueObj);
+        var gameDataPurple = {
+          countdown: 60,
+          ip: config.lobbyserver.gameIp,
+          port: config.lobbyserver.gamePort,
+          policy_port: config.sockpol.port,
+          room_id: `GAME${queueObj.queueNum}_${queueObj.type}`,
+          password: '',
+          team: 'PURPLE',
+        };
+        var gameDataBlue = {
+          countdown: 60,
+          ip: config.lobbyserver.gameIp,
+          port: config.lobbyserver.gamePort,
+          policy_port: config.sockpol.port,
+          room_id: `GAME${queueObj.queueNum}_${queueObj.type}`,
+          password: '',
+          team: 'BLUE',
+        };
+        safeSendAll(users.filter((u) => team.players.includes(u.player) && u.player.team == 0), 'game_ready', gameDataPurple).then(()=> {
+          safeSendAll(
+            users.filter(
+              (u) => team.players.includes(u.player) && u.player.team == 0
+            ),
+            'team_update',
+            { players: queueObj.purple, team: 'PURPLE' }
+          ).catch(console.error);
+        }).catch(console.error);
+        safeSendAll(users.filter((u) => team.players.includes(u.player) && u.player.team == 1), 'game_ready', gameDataBlue).then(()=>{
+          safeSendAll(
+            users.filter(
+              (u) =>team.players.includes(u.player) && u.player.team == 1
+            ),
+            'team_update',
+            { players: queueObj.blue, team: 'BLUE' }
+          ).catch(console.error);
+        }).catch(console.error);
       break;
 
     default:
@@ -846,7 +936,6 @@ module.exports = class ATBPLobbyServer {
           }
         }
         users = users.filter((user) => !user._readableState.ended);
-        displayQueues();
       });
     });
 
