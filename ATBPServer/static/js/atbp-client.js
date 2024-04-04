@@ -1,7 +1,7 @@
-var unity
+var unity;
 window.onload = function () {
   unity = document.getElementById('unity_player');
-}
+};
 
 function OnResize() {
   unity.style.width = window.innerWidth + 'px';
