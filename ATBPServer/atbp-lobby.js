@@ -42,31 +42,31 @@ function safeSendAll(sockets, command, response) {
   });
 }
 
-function sendCommand (socket, command, response){
-    return new Promise(function(resolve, reject) {
-      if(socket != undefined){
-        console.log(`Sending ${command} to ${socket.player.name}`);
-        if(command == undefined && response == undefined) reject();
-        var package = {
-          'cmd': command,
-          'payload': response
-        };
-        console.log("Sent ", package);
-        package = JSON.stringify(package);
-        let lengthBytes = Buffer.alloc(2);
-        lengthBytes.writeInt16BE(Buffer.byteLength(package, 'utf8'));
-        socket.write(lengthBytes);
-        socket.write(package, () => {
-          console.log("Finished sending package to ", socket.player.name);
-          resolve();
-        });
-      }else reject();
-    });
-  }
+function sendCommand(socket, command, response) {
+  return new Promise(function (resolve, reject) {
+    if (socket != undefined) {
+      console.log(`Sending ${command} to ${socket.player.name}`);
+      if (command == undefined && response == undefined) reject();
+      var package = {
+        cmd: command,
+        payload: response,
+      };
+      console.log('Sent ', package);
+      package = JSON.stringify(package);
+      let lengthBytes = Buffer.alloc(2);
+      lengthBytes.writeInt16BE(Buffer.byteLength(package, 'utf8'));
+      socket.write(lengthBytes);
+      socket.write(package, () => {
+        console.log('Finished sending package to ', socket.player.name);
+        resolve();
+      });
+    } else reject();
+  });
+}
 
 function leaveQueue(socket) {
-  if(socket != undefined) console.log(socket.player.name + " left queue");
-  else console.log("Undefined socket left queue!");
+  if (socket != undefined) console.log(socket.player.name + ' left queue');
+  else console.log('Undefined socket left queue!');
   if (socket.player.queue.queueNum == -1) {
     //Not in a game/champ select
     var usersInQueue = users.filter(
@@ -96,7 +96,7 @@ function leaveQueue(socket) {
           { reason: 'error_lobby_playerLeftMatch' }
         )
           .then(() => {
-            for(var p of queue.players){
+            for (var p of queue.players) {
               p.queue.type = null;
               p.queue.started = -1;
               p.queue.queueNum = -1;
@@ -113,9 +113,11 @@ function leaveQueue(socket) {
   socket.player.queue.started = -1;
   socket.player.queue.queueNum = -1;
   var invalidQueues = []; //Should clean up errors, if applicable, where queues contains incorrect players
-  for(var q of queues){
-    var queuedUsers = users.filter(u => u.player.queue.queueNum == q.queueNum);
-    if(queuedUsers.length == 0){
+  for (var q of queues) {
+    var queuedUsers = users.filter(
+      (u) => u.player.queue.queueNum == q.queueNum
+    );
+    if (queuedUsers.length == 0) {
       invalidQueues.push(q);
       console.log(`QUEUE ${q.queueNum} is invalid!`);
     }
@@ -123,24 +125,28 @@ function leaveQueue(socket) {
   queues = queues.filter((q) => !invalidQueues.includes(q));
 }
 
-function updateCustomGame(team){
-  if(team != undefined){
+function updateCustomGame(team) {
+  if (team != undefined) {
     var dataToSend = {
-      'teamN': [],
-      'teamA': [],
-      'teamB': [],
-      'ready': team.players.length > 1
+      teamN: [],
+      teamA: [],
+      teamB: [],
+      ready: team.players.length > 1,
     };
-    for(var p of team.players){
+    for (var p of team.players) {
       var playerObj = {
-        'name': p.name,
-        'teg_id': p.teg_id
+        name: p.name,
+        teg_id: p.teg_id,
       };
-      if(p.team == 0) dataToSend.teamA.push(p);
-      else if(p.team == 1) dataToSend.teamB.push(p);
+      if (p.team == 0) dataToSend.teamA.push(p);
+      else if (p.team == 1) dataToSend.teamB.push(p);
       else dataToSend.teamN.push(p);
     }
-    safeSendAll(users.filter((u) => team.players.includes(u.player)), 'custom_game_update', dataToSend).catch(console.error);
+    safeSendAll(
+      users.filter((u) => team.players.includes(u.player)),
+      'custom_game_update',
+      dataToSend
+    ).catch(console.error);
   }
 }
 
@@ -148,7 +154,7 @@ function leaveTeam(socket) {
   console.log(socket.player.name + ' is leaving their team.');
   socket.player.onTeam = false;
   socket.player.team = -1;
-  if(socket.player.queue.queueNum != -1) leaveQueue(socket);
+  if (socket.player.queue.queueNum != -1) leaveQueue(socket);
   var team = teams.find((t) => t.players.includes(socket.player));
   if (team != undefined) {
     team.players = team.players.filter((p) => p.name != socket.player.name);
@@ -158,15 +164,15 @@ function leaveTeam(socket) {
         'team_disband',
         { reason: 'error_lobby_teamLeader' }
       ).catch(console.error);
-      for(var user of users.filter((u) => team.players.includes(u.player))){
+      for (var user of users.filter((u) => team.players.includes(u.player))) {
         leaveTeam(user);
       }
       team.teamLeader = undefined;
     } else {
-      if(team.type == 'custom'){
+      if (team.type == 'custom') {
         updateCustomGame(team);
         socket.player.team = -1;
-      }else{
+      } else {
         var teamObj = [];
         for (var p of team.players) {
           var playerObj = {
@@ -388,7 +394,7 @@ function displayQueues() {
     var purple = 0;
     for (var p of q.players) {
       if (p.team == 0) purple++;
-      else if(p.team == 1) blue++;
+      else if (p.team == 1) blue++;
     }
     console.log(
       `QUEUE ${q.queueNum}: ${q.players.length} players, Type ${q.type}, In-Game ${q.inGame}, Blue: ${blue}, Purple: ${purple}`
@@ -585,23 +591,40 @@ function handleRequest(jsonString, socket) {
       }
       break;
 
-      case 'chat_message':
-        for(var q of queues){
-          var player = q.players.find(p => p.teg_id == jsonObject['payload'].teg_id);
-          if(player != undefined) {
-            for(var p of q.players){
-              var sock = users.find(u => u.player == p && u.player.team == player.team);
-              if(sock != undefined) sendCommand(sock,'chat_message',{'name':player.name,'teg_id':player.teg_id,'message_id':Number(jsonObject['payload'].message_id)}).catch(console.error);
-              else console.log("No socket found!"); //Seems to happen 3 times each chat message
-            }
+    case 'chat_message':
+      for (var q of queues) {
+        var player = q.players.find(
+          (p) => p.teg_id == jsonObject['payload'].teg_id
+        );
+        if (player != undefined) {
+          for (var p of q.players) {
+            var sock = users.find(
+              (u) => u.player == p && u.player.team == player.team
+            );
+            if (sock != undefined)
+              sendCommand(sock, 'chat_message', {
+                name: player.name,
+                teg_id: player.teg_id,
+                message_id: Number(jsonObject['payload'].message_id),
+              }).catch(console.error);
+            else console.log('No socket found!'); //Seems to happen 3 times each chat message
           }
         }
-        break;
+      }
+      break;
 
     case 'custom_game_chat_message':
       var team = teams.find((t) => t.players.includes(socket.player));
-      if(team != undefined){
-        safeSendAll(users.filter((u) => team.players.includes(u.player)), 'custom_game_chat_message', {'name': socket.player.name, 'teg_id': socket.player.teg_id, 'message_id':Number(jsonObject['payload'].message_id)}).catch(console.error);
+      if (team != undefined) {
+        safeSendAll(
+          users.filter((u) => team.players.includes(u.player)),
+          'custom_game_chat_message',
+          {
+            name: socket.player.name,
+            teg_id: socket.player.teg_id,
+            message_id: Number(jsonObject['payload'].message_id),
+          }
+        ).catch(console.error);
       }
       break;
 
@@ -708,14 +731,14 @@ function handleRequest(jsonString, socket) {
             500
         );
       } else console.log(jsonObject['payload']);
-      if (teamLeader != undefined){
+      if (teamLeader != undefined) {
         var command = 'invite_declined';
-        if(jsonObject['req'].includes("custom")) command = 'custom_game_'+command;
+        if (jsonObject['req'].includes('custom'))
+          command = 'custom_game_' + command;
         sendCommand(teamLeader, command, {
           player: socket.player.teg_id,
         });
-      }
-      else {
+      } else {
         console.log('No leader found!');
       }
       break;
@@ -732,48 +755,57 @@ function handleRequest(jsonString, socket) {
       } else console.log("Can't unlock undefined team!");
       break;
 
-      case 'custom_game_create':
-        var teamObj = {
-          teamLeader: socket.player,
-          players: [socket.player],
-          team: socket.player.teg_id,
-          queueNum: -1,
-          type: 'custom'
+    case 'custom_game_create':
+      var teamObj = {
+        teamLeader: socket.player,
+        players: [socket.player],
+        team: socket.player.teg_id,
+        queueNum: -1,
+        type: 'custom',
+      };
+      teams.push(teamObj);
+      socket.player.onTeam = true;
+      break;
+
+    case 'custom_game_join_side':
+      var team = teams.find(
+        (t) => t.players.includes(socket.player) && t.type == 'custom'
+      );
+      var teamToJoin = -1;
+      if (jsonObject['payload'].team == 'teamA') teamToJoin = 0;
+      else if (jsonObject['payload'].team == 'teamB') teamToJoin = 1;
+      socket.player.team = teamToJoin;
+      updateCustomGame(team);
+      break;
+
+    case 'custom_game_send_invite':
+      var invitedUser = users.find(
+        (u) => u.player.teg_id == jsonObject['payload'].player
+      );
+      if (invitedUser != undefined) {
+        var inviteObj = {
+          name: socket.player.name,
+          player: socket.player.player,
+          act: 'm_moba_sports_6p_custom',
+          vs: true,
+          customGame: socket.player.teg_id,
         };
-        teams.push(teamObj);
+        sendCommand(invitedUser, 'custom_game_receive_invite', inviteObj).catch(
+          console.error
+        );
+      } else console.log(`Could not find user to send custom game invite to.`);
+      break;
+
+    case 'custom_game_join':
+      var team = teams.find((t) => t.team == jsonObject['payload'].name);
+      if (team != undefined && team.players.length < 6 && team.queueNum == -1) {
         socket.player.onTeam = true;
-      break;
-
-      case 'custom_game_join_side':
-        var team = teams.find((t) => t.players.includes(socket.player) && t.type == 'custom');
-        var teamToJoin = -1;
-        if(jsonObject['payload'].team == 'teamA') teamToJoin = 0;
-        else if(jsonObject['payload'].team == 'teamB') teamToJoin = 1;
-        socket.player.team = teamToJoin;
-        updateCustomGame(team);
-      break;
-
-      case 'custom_game_send_invite':
-        var invitedUser = users.find((u) => u.player.teg_id == jsonObject['payload'].player);
-        if(invitedUser != undefined){
-          var inviteObj = {
-            'name': socket.player.name,
-            'player': socket.player.player,
-            'act': 'm_moba_sports_6p_custom',
-            'vs': true,
-            'customGame': socket.player.teg_id
-          };
-          sendCommand(invitedUser,'custom_game_receive_invite',inviteObj).catch(console.error);
-        }else console.log(`Could not find user to send custom game invite to.`);
-      break;
-
-      case 'custom_game_join':
-        var team = teams.find((t) => t.team == jsonObject['payload'].name);
-        if(team != undefined && team.players.length < 6 && team.queueNum == -1){
-          socket.player.onTeam = true;
-          team.players.push(socket.player);
-          sendCommand(socket,'custom_game_invite_verified',{'result':'success'}).catch(console.error);
-        }else response = {
+        team.players.push(socket.player);
+        sendCommand(socket, 'custom_game_invite_verified', {
+          result: 'success',
+        }).catch(console.error);
+      } else
+        response = {
           cmd: 'invite_verified',
           payload: {
             result: 'failed',
@@ -781,61 +813,72 @@ function handleRequest(jsonString, socket) {
         };
       break;
 
-      case 'custom_game_start':
-        var team = teams.find((t) => t.players.includes(socket.player));
-        var blue = [];
-        var purple = [];
-        for(var p of team.players){
-          var playerObj = {
-            name: p.name,
-            player: p.player,
-            teg_id: `${p.teg_id}`,
-            avatar: 'unassigned',
-            is_ready: false,
-          };
-          if(p.team == 0) purple.push(playerObj);
-          else if(p.team == 1) blue.push(playerObj);
-          else{
-            p.onTeam = false;
-            sendCommand(users.find((u) => u.player == p), 'team_disband', {'reason': 'error_send_room_fail'}).catch(console.error);
-          }
+    case 'custom_game_start':
+      var team = teams.find((t) => t.players.includes(socket.player));
+      var blue = [];
+      var purple = [];
+      for (var p of team.players) {
+        var playerObj = {
+          name: p.name,
+          player: p.player,
+          teg_id: `${p.teg_id}`,
+          avatar: 'unassigned',
+          is_ready: false,
+        };
+        if (p.team == 0) purple.push(playerObj);
+        else if (p.team == 1) blue.push(playerObj);
+        else {
+          p.onTeam = false;
+          sendCommand(
+            users.find((u) => u.player == p),
+            'team_disband',
+            { reason: 'error_send_room_fail' }
+          ).catch(console.error);
         }
-        team.players = team.players.filter((p) => p.team != -1);
-        var queueObj = {
-          type: `custom_${team.players.length}p`,
-          players: team.players,
-          queueNum: queueNum,
-          blue: blue,
-          purple: purple,
-          ready: 0,
-          max: 6,
-          inGame: false,
-        };
-        console.log(queueObj);
-        for (var p of team.players) {
-          p.queue.queueNum = queueNum;
-        }
-        queueNum++;
-        queues.push(queueObj);
-        var gameDataPurple = {
-          countdown: 60,
-          ip: config.lobbyserver.gameIp,
-          port: config.lobbyserver.gamePort,
-          policy_port: config.sockpol.port,
-          room_id: `GAME${queueObj.queueNum}_${queueObj.type}`,
-          password: '',
-          team: 'PURPLE',
-        };
-        var gameDataBlue = {
-          countdown: 60,
-          ip: config.lobbyserver.gameIp,
-          port: config.lobbyserver.gamePort,
-          policy_port: config.sockpol.port,
-          room_id: `GAME${queueObj.queueNum}_${queueObj.type}`,
-          password: '',
-          team: 'BLUE',
-        };
-        safeSendAll(users.filter((u) => team.players.includes(u.player) && u.player.team == 0), 'game_ready', gameDataPurple).then(()=> {
+      }
+      team.players = team.players.filter((p) => p.team != -1);
+      var queueObj = {
+        type: `custom_${team.players.length}p`,
+        players: team.players,
+        queueNum: queueNum,
+        blue: blue,
+        purple: purple,
+        ready: 0,
+        max: 6,
+        inGame: false,
+      };
+      console.log(queueObj);
+      for (var p of team.players) {
+        p.queue.queueNum = queueNum;
+      }
+      queueNum++;
+      queues.push(queueObj);
+      var gameDataPurple = {
+        countdown: 60,
+        ip: config.lobbyserver.gameIp,
+        port: config.lobbyserver.gamePort,
+        policy_port: config.sockpol.port,
+        room_id: `GAME${queueObj.queueNum}_${queueObj.type}`,
+        password: '',
+        team: 'PURPLE',
+      };
+      var gameDataBlue = {
+        countdown: 60,
+        ip: config.lobbyserver.gameIp,
+        port: config.lobbyserver.gamePort,
+        policy_port: config.sockpol.port,
+        room_id: `GAME${queueObj.queueNum}_${queueObj.type}`,
+        password: '',
+        team: 'BLUE',
+      };
+      safeSendAll(
+        users.filter(
+          (u) => team.players.includes(u.player) && u.player.team == 0
+        ),
+        'game_ready',
+        gameDataPurple
+      )
+        .then(() => {
           safeSendAll(
             users.filter(
               (u) => team.players.includes(u.player) && u.player.team == 0
@@ -843,16 +886,25 @@ function handleRequest(jsonString, socket) {
             'team_update',
             { players: queueObj.purple, team: 'PURPLE' }
           ).catch(console.error);
-        }).catch(console.error);
-        safeSendAll(users.filter((u) => team.players.includes(u.player) && u.player.team == 1), 'game_ready', gameDataBlue).then(()=>{
+        })
+        .catch(console.error);
+      safeSendAll(
+        users.filter(
+          (u) => team.players.includes(u.player) && u.player.team == 1
+        ),
+        'game_ready',
+        gameDataBlue
+      )
+        .then(() => {
           safeSendAll(
             users.filter(
-              (u) =>team.players.includes(u.player) && u.player.team == 1
+              (u) => team.players.includes(u.player) && u.player.team == 1
             ),
             'team_update',
             { players: queueObj.blue, team: 'BLUE' }
           ).catch(console.error);
-        }).catch(console.error);
+        })
+        .catch(console.error);
       break;
 
     default:
@@ -903,8 +955,11 @@ module.exports = class ATBPLobbyServer {
         //TODO: Add error handlers
         let jsonLength = socket.read(2);
         if (jsonLength == null || 0) {
-          console.log("Socket destroyed...");
-          if(socket.player != undefined) console.log(`${socket.player.name} has had their socket destroyed.`);
+          console.log('Socket destroyed...');
+          if (socket.player != undefined)
+            console.log(
+              `${socket.player.name} has had their socket destroyed.`
+            );
           else socket.destroy();
         } else {
           let packet = socket.read(jsonLength);
@@ -922,8 +977,11 @@ module.exports = class ATBPLobbyServer {
 
       socket.on('error', (error) => {
         console.error('Socket error:', error);
-        if(socket.player == undefined) socket.destroy();
-        else console.log(`${socket.player.name} had an error... and we ignored it.`);
+        if (socket.player == undefined) socket.destroy();
+        else
+          console.log(
+            `${socket.player.name} had an error... and we ignored it.`
+          );
       });
 
       socket.on('close', (err) => {
