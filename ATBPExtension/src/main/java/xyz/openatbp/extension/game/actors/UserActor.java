@@ -1050,18 +1050,7 @@ public class UserActor extends Actor {
         ExtensionCommands.playSound(
                 this.parentExt, this.room, this.id, "sfx/sfx_champion_respawn", this.location);
         ExtensionCommands.respawnActor(this.parentExt, this.room, this.id);
-        ExtensionCommands.createActorFX(
-                this.parentExt,
-                this.room,
-                this.id,
-                "statusEffect_speed",
-                5000,
-                this.id + "_respawnSpeed",
-                true,
-                "Bip01 Footsteps",
-                true,
-                false,
-                this.team);
+        this.addEffect("speed", 2d, 5000, "statusEffect_speed", "targetNode", false);
         ExtensionCommands.createActorFX(
                 this.parentExt,
                 this.room,
@@ -1163,7 +1152,8 @@ public class UserActor extends Actor {
             attack1.putUtfString("atkName", attackData.get(precursor + "Name").asText());
             attack1.putInt("atkDamage", damage);
             String attackType = "physical";
-            if (precursor.equalsIgnoreCase("spell")) attackType = "spell";
+            if (precursor.equalsIgnoreCase("spell") && isRegularAttack(attackData))
+                attackType = "spell";
             attack1.putUtfString("atkType", attackType);
             attack1.putUtfString("atkIcon", attackData.get(precursor + "IconImage").asText());
             this.aggressors.get(a).putSFSObject(attackNumber, attack1);
@@ -1174,12 +1164,27 @@ public class UserActor extends Actor {
             attackObj.putUtfString("atkName", attackData.get(precursor + "Name").asText());
             attackObj.putInt("atkDamage", damage);
             String attackType = "physical";
-            if (precursor.equalsIgnoreCase("spell")) attackType = "spell";
+            if (precursor.equalsIgnoreCase("spell") && isRegularAttack(attackData))
+                attackType = "spell";
             attackObj.putUtfString("atkType", attackType);
             attackObj.putUtfString("atkIcon", attackData.get(precursor + "IconImage").asText());
             playerData.putSFSObject("attack1", attackObj);
             this.aggressors.put(a, playerData);
         }
+    }
+
+    public boolean isRegularAttack(JsonNode attackData) {
+        if (attackData.has("spellName")
+                && attackData.get("spellName").asText().equalsIgnoreCase("rattleballs_spell_1_name")
+                && attackData.has("counterAttack")) {
+            return false;
+        }
+        String[] spellNames = {"princess_bubblegum_spell_2_name", "lich_spell_4_name"};
+        for (String name : spellNames) {
+            if (attackData.has("spellName")
+                    && attackData.get("spellName").asText().equalsIgnoreCase(name)) return false;
+        }
+        return true;
     }
 
     protected HashMap<String, Double> initializeStats() {

@@ -82,7 +82,7 @@ public class IceKing extends UserActor {
                                     this.room,
                                     a.getId(),
                                     "fx_ice_explosion1",
-                                    500,
+                                    1000,
                                     a.getId() + "_" + Math.random(),
                                     true,
                                     "",
@@ -100,7 +100,7 @@ public class IceKing extends UserActor {
                                 this.room,
                                 a.getId(),
                                 "fx_ice_explosion1",
-                                500,
+                                1000,
                                 a.getId() + "_" + Math.random(),
                                 true,
                                 "",
@@ -121,7 +121,7 @@ public class IceKing extends UserActor {
                             5.5f)) {
                 if (a.getTeam() != this.team || a.getId().equalsIgnoreCase(this.id)) {
                     if (a.getId().equalsIgnoreCase(this.id)) {
-                        this.addEffect("speed", this.getStat("speed"), 500, null, false);
+                        this.addEffect("speed", this.getStat("speed"), 500, null, "", false);
                     } else {
                         JsonNode spellData = this.parentExt.getAttackData("iceking", "spell3");
                         a.addToDamageQueue(this, getSpellDamage(spellData) / 10d, spellData);
@@ -172,7 +172,7 @@ public class IceKing extends UserActor {
                 && attackData.get("attackName").asText().contains("basic_attack")
                 && this.iceShield) {
             a.addState(ActorState.SLOWED, 0.25d, 2000, null, false);
-            a.addEffect("attackSpeed", a.getStat("attackSpeed") * 0.33d, 2000, null, true);
+            a.addEffect("attackSpeed", a.getStat("attackSpeed") * 0.33d, 2000, null, "", true);
             this.iceShield = false;
             this.lastAbilityUsed = System.currentTimeMillis() + 5000;
             Runnable handlePassiveCooldown =
@@ -245,7 +245,7 @@ public class IceKing extends UserActor {
                         this.room,
                         this.id,
                         "ice_king_spell_casting_hand",
-                        500,
+                        1000,
                         this.id + "_lHand",
                         true,
                         "Bip001 L Hand",
@@ -257,7 +257,7 @@ public class IceKing extends UserActor {
                         this.room,
                         this.id,
                         "ice_king_spell_casting_hand",
-                        500,
+                        1000,
                         this.id + "_rHand",
                         true,
                         "Bip001 R Hand",

@@ -51,7 +51,7 @@ public class Lich extends UserActor {
         switch (ability) {
             case 1: // Q
                 double statIncrease = this.getStat("speed") * 0.25d;
-                this.addEffect("speed", statIncrease, 6000, null, false);
+                this.addEffect("speed", statIncrease, 6000, null, "", false);
                 qActivated = true;
                 slimePath = new ArrayList<>();
                 slimedEnemies = new HashMap<>();
@@ -162,7 +162,7 @@ public class Lich extends UserActor {
                                 room,
                                 this.id,
                                 "lich_teleport",
-                                500,
+                                1000,
                                 this.id + "_lichTeleport",
                                 true,
                                 "Bip01",
@@ -276,7 +276,7 @@ public class Lich extends UserActor {
                 this.room,
                 this.id,
                 "lich_skeleton_poof",
-                500,
+                1000,
                 this.id + "_skeleton_poof",
                 false,
                 "",
@@ -485,7 +485,7 @@ public class Lich extends UserActor {
                     this.id,
                     "lich_charm_explosion",
                     id + "_charmExplosion",
-                    500,
+                    1000,
                     (float) this.location.getX(),
                     (float) this.location.getY(),
                     false,

@@ -44,9 +44,9 @@ public class Keeoth extends Monster {
                         || a.getActorType() == ActorType.COMPANION)) {
             for (UserActor u : parentExt.getRoomHandler(this.room.getId()).getPlayers()) {
                 if (u.getTeam() == a.getTeam()) {
-                    u.addEffect("lifeSteal", 35d, 60000, "jungle_buff_keeoth", false);
-                    u.addEffect("spellVamp", 35d, 60000, null, false);
-                    u.addEffect("criticalChance", 35d, 60000, null, false);
+                    u.addEffect("lifeSteal", 35d, 60000, "jungle_buff_keeoth", "", false);
+                    u.addEffect("spellVamp", 35d, 60000, null, "", false);
+                    u.addEffect("criticalChance", 35d, 60000, null, "", false);
                     double healthChange = (double) u.getHealth() * 0.3d;
                     u.changeHealth((int) healthChange);
                     Champion.handleStatusIcon(

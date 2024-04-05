@@ -273,7 +273,11 @@ public class FlamePrincess extends UserActor {
                                 .schedule(ultUseDelay, dashTime, TimeUnit.MILLISECONDS);
                     } else {
                         ExtensionCommands.playSound(
-                                this.parentExt, this.player, this.id, "not_allowed_error");
+                                this.parentExt,
+                                this.player,
+                                this.id,
+                                "not_allowed_error",
+                                new Point2D.Float(0, 0));
                     }
                     if (ultUses == 0) {
                         SmartFoxServer.getInstance()
@@ -406,7 +410,7 @@ public class FlamePrincess extends UserActor {
                     room,
                     this.id,
                     "flame_princess_projectile_large_explosion",
-                    200,
+                    1000,
                     "flame_explosion",
                     false,
                     "",
@@ -418,7 +422,7 @@ public class FlamePrincess extends UserActor {
                     room,
                     this.id,
                     "flame_princess_cone_of_flames",
-                    300,
+                    1500,
                     "flame_cone",
                     false,
                     "",

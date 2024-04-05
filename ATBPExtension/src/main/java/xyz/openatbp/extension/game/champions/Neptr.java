@@ -48,7 +48,7 @@ public class Neptr extends UserActor {
                     this.room,
                     this.id,
                     "neptr_passive",
-                    500,
+                    750,
                     this.id + "_passive" + Math.random(),
                     true,
                     "targetNode",
@@ -59,8 +59,9 @@ public class Neptr extends UserActor {
                     this.parentExt, this.player, this.id, "sfx_neptr_passive", this.location);
             ExtensionCommands.playSound(
                     this.parentExt, this.room, this.id, "vo/vo_neptr_passive", this.location);
-            this.addEffect("speed", this.getStat("speed") * 0.35d, 3500, null, false);
-            this.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.25d, 3500, null, false);
+            this.addEffect("speed", this.getStat("speed") * 0.35d, 3500, null, "", false);
+            this.addEffect(
+                    "attackSpeed", this.getStat("attackSpeed") * -0.25d, 3500, null, "", false);
             if (this.passiveActive) {
                 ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "passive");
             }
@@ -484,18 +485,18 @@ public class Neptr extends UserActor {
                     parentExt, this.room, Neptr.this.id, "vo/vo_neptr_mine", Neptr.this.location);
             ExtensionCommands.playSound(
                     parentExt, room, this.id, "sfx_neptr_mine_spawn", this.location);
-            ExtensionCommands.createActorFX(
-                    parentExt,
-                    room,
+            ExtensionCommands.createWorldFX(
+                    this.parentExt,
+                    this.room,
                     this.id,
                     "fx_target_ring_2",
-                    30000,
                     this.id + "_mine",
+                    30000,
+                    (float) this.location.getX(),
+                    (float) this.location.getY(),
                     true,
-                    "",
-                    false,
-                    true,
-                    this.team);
+                    this.team,
+                    0f);
         }
 
         @Override

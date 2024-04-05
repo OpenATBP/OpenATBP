@@ -460,6 +460,7 @@ public class Champion {
                                 this.target.getPlayerStat("attackSpeed") * -0.1,
                                 3000,
                                 null,
+                                "",
                                 false);
                 } else if (ua.hasBackpackItem("junk_4_grob_gob_glob_grod")
                         && ua.getStat("sp_category4") > 0) {
@@ -469,6 +470,7 @@ public class Champion {
                                 this.target.getPlayerStat("spellDamage") * -0.1,
                                 3000,
                                 null,
+                                "",
                                 false);
                 }
                 if (this.attack.contains("basic")) ua.handleLifeSteal();
