@@ -92,7 +92,7 @@ public class Jake extends UserActor {
 
     public boolean canMove() {
         if (dashActive) return false;
-        return super.canMove;
+        else return super.canMove();
     }
 
     @Override
@@ -262,7 +262,7 @@ public class Jake extends UserActor {
                     };
             SmartFoxServer.getInstance()
                     .getTaskScheduler()
-                    .schedule(delayedDamage, 0 /*(int)time*/, TimeUnit.MILLISECONDS);
+                    .schedule(delayedDamage, (int) time, TimeUnit.MILLISECONDS);
             this.doGrab = false;
         }
     }
@@ -285,12 +285,12 @@ public class Jake extends UserActor {
                 this.qUsed = true;
 
                 this.qStartTime = System.currentTimeMillis();
-                this.qTime = 1300;
+                this.qTime = 1500;
                 Line2D qLine = Champion.getAbilityLine(this.location, dest, Q_SPELL_RANGE);
                 this.qPolygon = createOctagon(this.location, dest);
                 fireQProjectile(
                         new JakeQProjectile(
-                                this.parentExt, this, qLine, 5f, 1f, this.id + "stretchy_grab"),
+                                this.parentExt, this, qLine, 7f, 1f, this.id + "stretchy_grab"),
                         "stretchy_grab",
                         this.location,
                         dest,
@@ -352,10 +352,10 @@ public class Jake extends UserActor {
                         this.room,
                         this.id,
                         ballFx,
-                        1000,
+                        2000,
                         this.id + "_ball",
                         true,
-                        "displayBar",
+                        "targetNode",
                         true,
                         false,
                         this.team);
@@ -578,7 +578,7 @@ public class Jake extends UserActor {
         double extendedX = x + abilityRange * unitX;
         double extendedY = y + abilityRange * unitY;
         Point2D lineEndPoint = new Point2D.Double(extendedX, extendedY);
-        double speed = 5;
+        double speed = 7;
         ExtensionCommands.createProjectile(
                 parentExt, this.room, this, id, location, lineEndPoint, (float) speed);
         this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);

@@ -95,7 +95,8 @@ public class BubbleGum extends UserActor {
                         if (isNonStructure(a))
                             a.addState(ActorState.SLOWED, 0.3d, 2000, null, false);
                     } else if (a.getId().equalsIgnoreCase(this.id)) {
-                        this.addEffect("speed", this.getStat("speed") * 0.4d, 2000, null, false);
+                        this.addEffect(
+                                "speed", this.getStat("speed") * 0.4d, 2000, null, "", false);
                         ExtensionCommands.createActorFX(
                                 this.parentExt,
                                 this.room,
@@ -394,7 +395,7 @@ public class BubbleGum extends UserActor {
                 double newDamage = (targetAttackSpeed * change);
                 if (getReducedSpeed / targetAttackSpeed >= 0.25) newDamage = 0;
                 System.out.println("PB is gumming up by " + newDamage);
-                this.target.addEffect("attackSpeed", newDamage, 3000, null, true);
+                this.target.addEffect("attackSpeed", newDamage, 3000, null, "", true);
             }
         }
     }
@@ -424,20 +425,30 @@ public class BubbleGum extends UserActor {
                     parentExt, player, iconName, "Turret placed!", "icon_pb_s2", 60000f);
             ExtensionCommands.createActor(
                     parentExt, room, this.id, this.avatar, this.location, 0f, this.team);
-            ExtensionCommands.playSound(
-                    parentExt, room, this.id, "sfx_bubblegum_turret_spawn", this.location);
-            ExtensionCommands.createActorFX(
-                    parentExt,
-                    room,
-                    id,
-                    "fx_target_ring_3",
-                    60000,
-                    this.id + "_ring",
-                    true,
-                    "",
-                    false,
-                    true,
-                    this.team);
+            Runnable creationDelay =
+                    () -> {
+                        ExtensionCommands.playSound(
+                                parentExt,
+                                room,
+                                this.id,
+                                "sfx_bubblegum_turret_spawn",
+                                this.location);
+                        ExtensionCommands.createActorFX(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                "fx_target_ring_3",
+                                60000,
+                                this.id + "_ring",
+                                true,
+                                "",
+                                false,
+                                true,
+                                this.team);
+                    };
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(creationDelay, 150, TimeUnit.MILLISECONDS);
             this.addState(ActorState.IMMUNITY, 0d, 1000 * 60 * 15, null, false);
         }
 

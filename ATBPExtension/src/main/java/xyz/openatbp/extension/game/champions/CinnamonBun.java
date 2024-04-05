@@ -73,12 +73,14 @@ public class CinnamonBun extends UserActor {
                                 this.getStat("attackSpeed") * -0.2d,
                                 4500,
                                 null,
+                                "",
                                 false);
                         a.addEffect(
                                 "attackDamage",
                                 this.getStat("attackDamage") * 0.2d,
                                 4500,
                                 null,
+                                "",
                                 false);
                         ExtensionCommands.addStatusIcon(
                                 this.parentExt,

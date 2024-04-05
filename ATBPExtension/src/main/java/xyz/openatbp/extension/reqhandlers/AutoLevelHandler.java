@@ -33,13 +33,9 @@ public class AutoLevelHandler extends BaseClientRequestHandler {
                 boolean works = false;
                 if (categoryPoints + 1 < 3) works = true;
                 else if (categoryPoints + 1 == 3)
-                    works =
-                            spentPoints + 1
-                                    >= 4; // Can't get a third level without spending 4 points
+                    works = spentPoints >= 4; // Can't get a third level without spending 4 points
                 else if (categoryPoints + 1 == 4)
-                    works =
-                            spentPoints + 1
-                                    >= 6; // Can't get a fourth level without spending 6 points
+                    works = spentPoints >= 6; // Can't get a fourth level without spending 6 points
                 if (works) {
                     ExtensionCommands.updateActorData(
                             parentExt,

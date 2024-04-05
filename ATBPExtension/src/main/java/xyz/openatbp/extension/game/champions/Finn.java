@@ -100,7 +100,7 @@ public class Finn extends UserActor {
                     this.room,
                     this.id,
                     shatterPrefix + "shieldShatter",
-                    500,
+                    1000,
                     this.id + "_qShatter",
                     true,
                     "",
@@ -205,9 +205,9 @@ public class Finn extends UserActor {
                         true,
                         false,
                         this.team);
-                this.addEffect("armor", this.getStat("armor") * 0.25d, 3000, null, false);
+                this.addEffect("armor", this.getStat("armor") * 0.25d, 3000, null, "", false);
                 this.addEffect(
-                        "attackSpeed", this.getStat("attackSpeed") * -0.20d, 3000, null, false);
+                        "attackSpeed", this.getStat("attackSpeed") * -0.20d, 3000, null, "", false);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -471,7 +471,7 @@ public class Finn extends UserActor {
                                 this.room,
                                 this.id,
                                 shatterPrefix + "shieldShatter",
-                                500,
+                                1000,
                                 this.id + "_qShatter",
                                 true,
                                 "",
