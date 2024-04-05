@@ -62,7 +62,7 @@ const mongoClient = new MongoClient(config.httpserver.mongouri, {
 });
 
 var onlinePlayers = [];
-
+/*
 var onlineChecker = setInterval(() => {
   for (var p of onlinePlayers) {
     if (Date.now() - p.lastChecked > 10000) {
@@ -75,7 +75,7 @@ var onlineChecker = setInterval(() => {
     }
   }
 }, 11000);
-
+*/
 mongoClient.connect((err) => {
   if (err) {
     console.error('FATAL: MongoDB connect failed: ' + err);

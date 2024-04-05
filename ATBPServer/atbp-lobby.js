@@ -20,7 +20,7 @@ function tryParseJSONObject(jsonString) {
 function sendAll(sockets, response) {
   response = JSON.stringify(response);
   for (var socket of sockets) {
-    console.log('Sending to ' + socket.player.name + '->', response);
+    //    console.log('Sending to ' + socket.player.name + '->', response);
     let lengthBytes = Buffer.alloc(2);
     lengthBytes.writeInt16BE(Buffer.byteLength(response, 'utf8'));
     socket.write(lengthBytes);
@@ -45,19 +45,19 @@ function safeSendAll(sockets, command, response) {
 function sendCommand(socket, command, response) {
   return new Promise(function (resolve, reject) {
     if (socket != undefined) {
-      console.log(`Sending ${command} to ${socket.player.name}`);
+      //  console.log(`Sending ${command} to ${socket.player.name}`);
       if (command == undefined && response == undefined) reject();
       var package = {
         cmd: command,
         payload: response,
       };
-      console.log('Sent ', package);
+      //  console.log('Sent ', package);
       package = JSON.stringify(package);
       let lengthBytes = Buffer.alloc(2);
       lengthBytes.writeInt16BE(Buffer.byteLength(package, 'utf8'));
       socket.write(lengthBytes);
       socket.write(package, () => {
-        console.log('Finished sending package to ', socket.player.name);
+        //  console.log('Finished sending package to ', socket.player.name);
         resolve();
       });
     } else reject();
@@ -68,6 +68,7 @@ function leaveQueue(socket) {
   if (socket != undefined) console.log(socket.player.name + ' left queue');
   else console.log('Undefined socket left queue!');
   if (socket.player.queue.queueNum == -1) {
+    console.log(`${socket.player.name} left matchmaking!`);
     //Not in a game/champ select
     var usersInQueue = users.filter(
       (user) =>
@@ -86,10 +87,12 @@ function leaveQueue(socket) {
     var queue = queues.find((q) => q.players.includes(socket.player));
     if (queue != undefined) {
       if (queue.inGame) {
+        console.log(`${socket.player.name} left a game!`);
         queue.players = queue.players.filter((pl) => pl != socket.player);
         socket.player.team = -1;
         socket.player.queue.queueNum = -1;
       } else {
+        console.log(`${socket.player.name} left champ select!`);
         safeSendAll(
           users.filter((u) => queue.players.includes(u.player) && u != socket),
           'team_disband',
@@ -282,8 +285,6 @@ function joinQueue(sockets, type) {
               }
             }
           }
-          console.log(`BLUE TEAM: `, blue);
-          console.log(`PURPLE TEAM: `, purple);
           for (var p of players.filter((pl) => pl.team == -1)) {
             console.log(`Putting ${p.name} onto a team...`);
             var playerObj = {
@@ -423,7 +424,35 @@ function displayPlayers() {
   }
 }
 
+function cleanUpPlayers() {
+  for (var t of teams) {
+    var invalidTeamPlayers = [];
+    for (var tp of t.players) {
+      if (!tp.onTeam || users.find((u) => u.player == tp) == undefined) {
+        invalidTeamPlayers.push(tp);
+        console.log(`${tp.name} is an invalid team member!`);
+      }
+    }
+    t.players = t.players.filter((tp) => !invalidTeamPlayers.includes(tp));
+  }
+
+  for (var q of queues) {
+    var invalidQueuePlayers = [];
+    for (var qp of q.players) {
+      if (
+        qp.queue.queueNum != q.queueNum ||
+        users.find((u) => u.player == qp) == undefined
+      ) {
+        invalidQueuePlayers.push(qp);
+        console.log(`${qp.name} is an invalid queue member!`);
+      }
+    }
+    q.players = q.players.filter((qp) => !invalidQueuePlayers.includes(qp));
+  }
+}
+
 setInterval(() => {
+  cleanUpPlayers();
   teams = teams.filter((t) => t.players.length > 0);
   queues = queues.filter((q) => q.players.length > 0);
   displayTeams();
@@ -440,6 +469,7 @@ function handleRequest(jsonString, socket) {
 
   let response = null;
   let unhandled = false;
+  if (socket.player != undefined) console.log('!', socket.player.name);
   console.log('<-', jsonObject['req'], jsonObject['payload']);
 
   switch (jsonObject['req']) {
@@ -649,6 +679,7 @@ function handleRequest(jsonString, socket) {
         },
       };
       socket.player.onTeam = true;
+      teams = teams.filter((t) => t.teamLeader != socket.player);
       teams.push(teamObj);
       break;
 
@@ -730,7 +761,7 @@ function handleRequest(jsonString, socket) {
             Math.abs(jsonObject['payload'].party_leader - user.player.player) <=
             500
         );
-      } else console.log(jsonObject['payload']);
+      }
       if (teamLeader != undefined) {
         var command = 'invite_declined';
         if (jsonObject['req'].includes('custom'))
@@ -763,6 +794,7 @@ function handleRequest(jsonString, socket) {
         queueNum: -1,
         type: 'custom',
       };
+      teams = teams.filter((t) => t.teamLeader != socket.player);
       teams.push(teamObj);
       socket.player.onTeam = true;
       break;
@@ -847,7 +879,6 @@ function handleRequest(jsonString, socket) {
         max: 6,
         inGame: false,
       };
-      console.log(queueObj);
       for (var p of team.players) {
         p.queue.queueNum = queueNum;
       }
@@ -912,7 +943,7 @@ function handleRequest(jsonString, socket) {
   }
 
   if (response) {
-    console.log('->', response['cmd'], response['payload']);
+    //console.log('->', response['cmd'], response['payload']);
     if (response['cmd'] == 'login') {
       var existingUser = users.find(
         (u) => u.player.name == response['payload'].name
@@ -955,12 +986,12 @@ module.exports = class ATBPLobbyServer {
         //TODO: Add error handlers
         let jsonLength = socket.read(2);
         if (jsonLength == null || 0) {
-          console.log('Socket destroyed...');
-          if (socket.player != undefined)
+          if (socket.player != undefined) {
             console.log(
               `${socket.player.name} has had their socket destroyed.`
             );
-          else socket.destroy();
+          }
+          socket.destroy();
         } else {
           let packet = socket.read(jsonLength);
           let response = handleRequest(packet, socket);
@@ -987,7 +1018,7 @@ module.exports = class ATBPLobbyServer {
       socket.on('close', (err) => {
         console.log(err);
         for (var user of users) {
-          if (user._readableState.ended) {
+          if (user._readableState.ended || user == socket) {
             console.log(user.player.name + ' logged out');
             if (user.player.onTeam) leaveTeam(user);
             else leaveQueue(user);
