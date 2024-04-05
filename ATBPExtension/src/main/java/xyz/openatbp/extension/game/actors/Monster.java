@@ -194,8 +194,8 @@ public class Monster extends Actor {
     }
 
     @Override
-    public void pulled(Point2D source) {
-        super.pulled(source);
+    public void handlePull(Point2D source, double pullDistance) {
+        super.handlePull(source, pullDistance);
         this.attackRangeOverride = true;
     }
 

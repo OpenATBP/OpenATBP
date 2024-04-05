@@ -325,6 +325,15 @@ public class RattleBalls extends UserActor {
         }
     }
 
+    private void endCounterStance() {
+        this.parryActive = false;
+        this.qUse = 0;
+        if (!this.hasInterrupingCC()) this.canMove = true;
+        this.canCast[1] = true;
+        this.canCast[2] = true;
+        this.abilityEnded();
+    }
+
     @Override
     public boolean canAttack() {
         if (this.ultActive || this.parryActive) return false;
@@ -431,7 +440,8 @@ public class RattleBalls extends UserActor {
                         this.location);
             }
             if (this.ultActive && this.dead
-                    || this.ultActive && System.currentTimeMillis() - this.eStartTime >= 3500) {
+                    || this.ultActive && System.currentTimeMillis() - this.eStartTime >= 3500
+                    || this.hasInterrupingCC()) {
                 this.ultActive = false;
                 this.eCounter = 0;
                 this.canCast[0] = true;
@@ -442,6 +452,16 @@ public class RattleBalls extends UserActor {
                 ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultSparkles");
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt, this.player, "e", true, getReducedCooldown(60000), 250);
+                ExtensionCommands.actorAnimate(
+                        this.parentExt, this.room, this.id, "idle", 100, false);
+                if (this.hasInterrupingCC()) {
+                    ExtensionCommands.playSound(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "sfx_skill_interrupted",
+                            this.location);
+                }
             }
             for (Actor a :
                     Champion.getActorsInRadius(
@@ -457,23 +477,15 @@ public class RattleBalls extends UserActor {
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         if (this.parryActive && this.getAttackType(attackData) == AttackType.SPELL) {
-            this.parryActive = false;
-            this.qUse = 0;
-            this.canCast[1] = true;
-            this.canCast[2] = true;
+            this.endCounterStance();
             this.playFailSound = true;
             ExtensionCommands.actorAbilityResponse(
                     this.parentExt, this.player, "q", true, getReducedCooldown(12000), 0);
             ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "idle", 100, false);
         }
-        if (this.parryActive) {
-            this.qUse = 0;
-            this.parryActive = false;
-            this.canMove = true;
-            this.canCast[1] = true;
-            this.canCast[2] = true;
+        if (this.parryActive && this.getAttackType(attackData) == AttackType.PHYSICAL) {
             this.handleLifeSteal();
-            this.abilityEnded();
+            this.endCounterStance();
             JsonNode counterAttackData = counterAttackData();
             a.addToDamageQueue(this, this.getPlayerStat("attackDamage") * 2, counterAttackData);
             String counterSFx =
@@ -630,7 +642,7 @@ public class RattleBalls extends UserActor {
                     Champion.getActorsInRadius(
                             parentExt.getRoomHandler(room.getId()), location, 5f)) {
                 if (isNonStructure(a)) {
-                    a.pulled(location);
+                    a.handlePull(location, 1.2);
                     a.addToDamageQueue(RattleBalls.this, getSpellDamage(spellData), spellData);
                 }
             }

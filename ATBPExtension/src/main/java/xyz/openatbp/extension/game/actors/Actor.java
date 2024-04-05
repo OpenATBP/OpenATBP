@@ -918,6 +918,27 @@ public abstract class Actor {
         this.setLocation(finalLine.getP2());
     }
 
+    public void handlePull(Point2D source, double pullDistance) {
+        this.stopMoving();
+        double distance = this.location.distance(source);
+        if (distance < pullDistance) pullDistance = distance;
+        Line2D pullingLine = Champion.getAbilityLine(this.location, source, (float) pullDistance);
+        Point2D pullDestination = MovementManager.getDashPoint(this, pullingLine);
+        double finalDistance = this.location.distance(pullDestination);
+        double speed = finalDistance / 0.25;
+        double pullTime = (finalDistance / speed) * 1000;
+        this.addState(ActorState.AIRBORNE, 0d, (int) pullTime, null, false);
+        ExtensionCommands.knockBackActor(
+                this.parentExt,
+                this.room,
+                this.id,
+                this.location,
+                pullDestination,
+                (float) speed,
+                true);
+        this.setLocation(pullDestination);
+    }
+
     public String getPortrait() {
         return this.getAvatar();
     }

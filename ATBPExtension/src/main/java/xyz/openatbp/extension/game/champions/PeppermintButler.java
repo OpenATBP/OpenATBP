@@ -11,6 +11,7 @@ import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.MapData;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Champion;
@@ -74,7 +75,8 @@ public class PeppermintButler extends UserActor {
         if (this.isStopped()
                 && !qActive
                 && !stopPassive
-                && !this.getState(ActorState.TRANSFORMED)) {
+                && !this.getState(ActorState.TRANSFORMED)
+                && !isCapturingAltar()) {
             timeStopped += 100;
             if (this.timeStopped >= 1750 && !this.getState(ActorState.STEALTH)) {
                 this.setState(ActorState.STEALTH, true);
@@ -109,8 +111,7 @@ public class PeppermintButler extends UserActor {
             this.timeStopped = 0;
             if (this.stopPassive) this.stopPassive = false;
             if (this.getState(ActorState.STEALTH)) {
-                ExtensionCommands.actorAnimate(
-                        this.parentExt, this.room, this.id, "idle", 1, false);
+                ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "run", 1, false);
                 this.setState(ActorState.STEALTH, false);
                 this.setState(ActorState.INVISIBLE, false);
                 if (!this.getState(ActorState.BRUSH)) this.setState(ActorState.REVEALED, true);
@@ -408,6 +409,30 @@ public class PeppermintButler extends UserActor {
                         .schedule(delay, castDelay, TimeUnit.MILLISECONDS);
                 break;
         }
+    }
+
+    private boolean isCapturingAltar() {
+        if (!this.room.getGroupId().equalsIgnoreCase("practice")) {
+            Point2D botAltar = new Point2D.Float(MapData.L2_BOT_ALTAR[0], MapData.L2_BOT_ALTAR[1]);
+            Point2D topAltar = new Point2D.Float(MapData.L2_TOP_ALTAR[0], MapData.L2_TOP_ALTAR[1]);
+            Point2D midAltar = new Point2D.Float(0f, 0f);
+            Point2D[] altarLocations = {botAltar, topAltar, midAltar};
+            Point2D currentAltar = null;
+            for (Point2D altarLocation : altarLocations) {
+                if (this.location.distance(altarLocation) <= 2f) {
+                    currentAltar = altarLocation;
+                    break;
+                }
+            }
+            if (currentAltar != null) {
+                int altarStatus =
+                        this.parentExt
+                                .getRoomHandler(this.room.getId())
+                                .getAltarStatus(currentAltar);
+                return altarStatus < 10;
+            }
+        }
+        return false;
     }
 
     private class PeppermintAbilityHandler extends AbilityRunnable {
