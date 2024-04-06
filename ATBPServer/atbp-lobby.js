@@ -1008,11 +1008,8 @@ module.exports = class ATBPLobbyServer {
 
       socket.on('error', (error) => {
         console.error('Socket error:', error);
-        if (socket.player == undefined) socket.destroy();
-        else
-          console.log(
-            `${socket.player.name} had an error... and we ignored it.`
-          );
+        if(socket.player != undefined) console.log(socket.player.name + " had an error.");
+        socket.destroy();
       });
 
       socket.on('close', (err) => {
