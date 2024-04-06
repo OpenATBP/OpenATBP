@@ -211,14 +211,7 @@ public class Jake extends UserActor {
                                         this,
                                         new Line2D.Float(
                                                 this.location, this.qVictim.getLocation()));
-                        ExtensionCommands.moveActor(
-                                this.parentExt,
-                                this.room,
-                                this.id,
-                                this.location,
-                                dashPoint,
-                                (float) 15d,
-                                true);
+                        this.dash(dashPoint, true, 15);
                         ExtensionCommands.createActorFX(
                                 this.parentExt,
                                 this.room,
@@ -231,7 +224,6 @@ public class Jake extends UserActor {
                                 true,
                                 false,
                                 this.team);
-                        this.setLocation(dashPoint);
                         double percentage = distance / 7d;
                         if (percentage < 0.5d) percentage = 0.5d;
                         System.out.println("percentage " + percentage);

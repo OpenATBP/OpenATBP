@@ -328,13 +328,7 @@ public class Monster extends Actor {
             this.moveWithCollision(this.startingLocation);
             this.target = null;
         }
-        if (this.headingBack
-                && this.type == MonsterType.SMALL
-                && this.location.distance(startingLocation) <= 1f) {
-            this.headingBack = false;
-        } else if (this.headingBack
-                && this.type == MonsterType.BIG
-                && this.location.equals(startingLocation)) {
+        if (this.headingBack && this.location.distance(startingLocation) <= 1f) {
             this.headingBack = false;
         }
         if (msRan % 1000 * 60

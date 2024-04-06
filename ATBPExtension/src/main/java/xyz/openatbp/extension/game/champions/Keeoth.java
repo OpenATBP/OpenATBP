@@ -108,7 +108,7 @@ public class Keeoth extends Monster {
                                 id,
                                 "keeoth_explosion",
                                 id + "_explosion",
-                                1000,
+                                2000,
                                 (float) playerLoc.getX(),
                                 (float) playerLoc.getY(),
                                 true,

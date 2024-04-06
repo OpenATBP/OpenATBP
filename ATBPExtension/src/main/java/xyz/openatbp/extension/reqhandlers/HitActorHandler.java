@@ -29,7 +29,7 @@ public class HitActorHandler extends BaseClientRequestHandler {
         UserActor actor = handler.getPlayer(String.valueOf(sender.getId()));
         String roomGroup = sender.getLastJoinedRoom().getGroupId();
 
-        if (actor != null) {
+        if (actor != null && !actor.getIsDashing()) {
             String targetId = params.getUtfString("target_id");
             Actor target = handler.getActor(targetId);
             if (target == null) {

@@ -271,22 +271,8 @@ public class RattleBalls extends UserActor {
                             this.team);
                     this.addEffect("speed", this.getStat("speed") * 0.14d, 3500, null, "", true);
                 } else {
-                    this.canCast[0] = true;
-                    this.canCast[1] = true;
                     this.canCast[2] = false;
-                    this.ultActive = false;
-                    ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultRing");
-                    ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultSpin");
-                    ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultSparkles");
-                    ExtensionCommands.actorAnimate(
-                            this.parentExt, this.room, this.id, "idle", 1, false);
-                    ExtensionCommands.actorAbilityResponse(
-                            this.parentExt,
-                            this.player,
-                            "e",
-                            true,
-                            getReducedCooldown(cooldown),
-                            gCooldown);
+                    this.endUlt();
                 }
                 int eDelay = this.eCounter < 2 ? 500 : gCooldown;
                 SmartFoxServer.getInstance()
@@ -332,6 +318,24 @@ public class RattleBalls extends UserActor {
         this.canCast[1] = true;
         this.canCast[2] = true;
         this.abilityEnded();
+    }
+
+    private void endUlt() {
+        this.ultActive = false;
+        this.eCounter = 0;
+        this.canCast[0] = true;
+        this.canCast[1] = true;
+        if (!this.dead) this.abilityEnded();
+        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultRing");
+        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultSpin");
+        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultSparkles");
+        ExtensionCommands.actorAbilityResponse(
+                this.parentExt, this.player, "e", true, getReducedCooldown(60000), 250);
+        if (isStopped()) {
+            ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "idle", 100, false);
+        } else {
+            ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "run", 100, false);
+        }
     }
 
     @Override
@@ -442,18 +446,7 @@ public class RattleBalls extends UserActor {
             if (this.ultActive && this.dead
                     || this.ultActive && System.currentTimeMillis() - this.eStartTime >= 3500
                     || this.hasInterrupingCC()) {
-                this.ultActive = false;
-                this.eCounter = 0;
-                this.canCast[0] = true;
-                this.canCast[1] = true;
-                if (!this.dead) this.abilityEnded();
-                ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultRing");
-                ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultSpin");
-                ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultSparkles");
-                ExtensionCommands.actorAbilityResponse(
-                        this.parentExt, this.player, "e", true, getReducedCooldown(60000), 250);
-                ExtensionCommands.actorAnimate(
-                        this.parentExt, this.room, this.id, "idle", 100, false);
+                this.endUlt();
                 if (this.hasInterrupingCC()) {
                     ExtensionCommands.playSound(
                             this.parentExt,
@@ -510,7 +503,7 @@ public class RattleBalls extends UserActor {
                     this.room,
                     this.id,
                     counterCritFx,
-                    1000,
+                    1500,
                     this.id,
                     true,
                     "",
@@ -650,16 +643,7 @@ public class RattleBalls extends UserActor {
 
         @Override
         protected void spellE() {
-            if (eCounter == 1) {
-                canCast[2] = true;
-            } else {
-                canCast[0] = true;
-                canCast[1] = true;
-                canCast[2] = true;
-                ultActive = false;
-                eCounter = 0;
-                abilityEnded();
-            }
+            canCast[2] = true;
         }
 
         @Override

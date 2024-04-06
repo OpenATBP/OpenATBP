@@ -904,26 +904,6 @@ public abstract class Actor {
         }
     }
 
-    public void pulled(Point2D source) {
-        this.stopMoving();
-        Line2D pullLine = new Line2D.Float(this.location, source);
-        Line2D newLine =
-                new Line2D.Double(this.location, MovementManager.findPullPoint(pullLine, 1.2f));
-        Line2D finalLine =
-                new Line2D.Double(this.location, MovementManager.getDashPoint(this, newLine));
-        this.addState(ActorState.AIRBORNE, 0d, 250, null, false);
-        double speed = this.location.distance(finalLine.getP2()) / 0.25f;
-        ExtensionCommands.knockBackActor(
-                this.parentExt,
-                this.room,
-                this.id,
-                this.location,
-                finalLine.getP2(),
-                (float) speed,
-                false);
-        this.setLocation(finalLine.getP2());
-    }
-
     public void handlePull(Point2D source, double pullDistance) {
         this.stopMoving();
         double distance = this.location.distance(source);
