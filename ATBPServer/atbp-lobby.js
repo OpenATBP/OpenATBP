@@ -226,8 +226,8 @@ function joinQueue(sockets, type) {
           u.player.queue.started != -1
       );
       var timeSort = function (a, b) {
-        if (a.started < b.started) return -1;
-        if (a.started > b.started) return 1;
+        if (a.player.queue.started < b.player.queue.started) return -1;
+        if (a.player.queue.started > b.player.queue.started) return 1;
         return 0;
       };
       usersInQueue = usersInQueue.sort(timeSort); //Sorts by who has been in the queue longest
