@@ -209,7 +209,7 @@ public class RoomHandler implements Runnable {
                 if (minionWave != this.currentMinionWave) {
                     int minionNum = secondsRan % 10;
                     if (minionNum == 5) this.currentMinionWave = minionWave;
-                    if (minionNum <= 4) { // TODO: Set to test!
+                    if (minionNum <= 4) {
                         this.addMinion(1, minionNum, minionWave, 0);
                         this.addMinion(0, minionNum, minionWave, 0);
                         if (!this.practiceMap) {
