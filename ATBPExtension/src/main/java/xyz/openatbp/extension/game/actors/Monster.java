@@ -321,9 +321,7 @@ public class Monster extends Actor {
         this.handleDamageQueue();
         this.handleActiveEffects();
         if (this.dead) return;
-        if (this.target != null
-                && (this.target.getState(ActorState.INVISIBLE)
-                        || this.target.getState(ActorState.BRUSH))) {
+        if (this.target != null && (this.target.getState(ActorState.INVISIBLE))) {
             this.state = AggroState.PASSIVE;
             this.moveWithCollision(this.startingLocation);
             this.target = null;
