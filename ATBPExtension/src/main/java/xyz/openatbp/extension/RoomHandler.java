@@ -126,9 +126,7 @@ public class RoomHandler implements Runnable {
                 }
                 secondsRan++;
                 if (secondsRan % 5 == 0) {
-                    for (UserActor player : this.players) {
-                        player.addXP(2);
-                    }
+                    this.handlePassiveXP();
                 }
                 if (mSecondsRan == 1000
                         || this.playMainMusic && secondsRan < (60 * 13) && !this.gameOver) {
@@ -286,6 +284,27 @@ public class RoomHandler implements Runnable {
             if (this.room.getUserList().size() == 0) parentExt.stopScript(this.room.getId());
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void handlePassiveXP() {
+        double purpleLevel = 0;
+        double blueLevel = 0;
+        for (UserActor player : this.players) {
+            if (player.getTeam() == 0) purpleLevel += player.getLevel();
+            else if (player.getTeam() == 1) blueLevel += player.getLevel();
+        }
+        // Get the average level of players
+        purpleLevel = (int) Math.floor(purpleLevel / ((double) this.players.size() / 2));
+        blueLevel = (int) Math.floor(blueLevel / ((double) this.players.size() / 2));
+        for (UserActor player : this.players) {
+            int additionalXP =
+                    2; // Get more XP if you are below the average level of the enemy and get less
+            // xp if you are above.
+            if (player.getTeam() == 0) additionalXP *= (blueLevel - player.getLevel());
+            else if (player.getTeam() == 1) additionalXP *= (purpleLevel - player.getLevel());
+            if (additionalXP < -2) additionalXP = -2;
+            player.addXP(5 + additionalXP);
         }
     }
 
@@ -1068,8 +1087,8 @@ public class RoomHandler implements Runnable {
         for (UserActor actor : actors) {
             if (!actor.getId().equalsIgnoreCase(a.getId())
                     && actor.getActorType() == ActorType.PLAYER) {
-                actor.addXP(
-                        (int) Math.round(xp / 2)); // <-- classic dividing an integer hehe haha hehe
+                actor.addXP((int) Math.round(xp / 2d)); // <-- classic dividing an integer hehe haha
+                // hehe --- I FIXED IT DON'T WORRY :D
             }
         }
     }
