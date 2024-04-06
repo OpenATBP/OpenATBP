@@ -388,7 +388,10 @@ public class Champion {
 
         @Override
         public void run() {
-            if (this.target.getHealth() <= 0) return;
+            if (this.target.getHealth() <= 0) {
+                if (this.attacker.getActorType() == ActorType.MINION) attacker.setCanMove(true);
+                return;
+            }
             if (this.attacker.getActorType() == ActorType.PLAYER
                     && this.parentExt
                             .getActorData(this.attacker.getAvatar())

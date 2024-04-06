@@ -208,15 +208,15 @@ public class RoomHandler implements Runnable {
                 int minionWave = secondsRan / 30;
                 if (minionWave != this.currentMinionWave) {
                     int minionNum = secondsRan % 10;
-                    if (minionNum == 5) this.currentMinionWave = minionWave;
-                    if (minionNum <= 4) {
+                    if (minionNum == 4) this.currentMinionWave = minionWave;
+                    if (minionNum <= 3) {
                         this.addMinion(1, minionNum, minionWave, 0);
                         this.addMinion(0, minionNum, minionWave, 0);
                         if (!this.practiceMap) {
                             this.addMinion(1, minionNum, minionWave, 1);
                             this.addMinion(0, minionNum, minionWave, 1);
                         }
-                    } else if (minionNum == 5) {
+                    } else if (minionNum == 4) {
                         for (int i = 0; i < 2; i++) { // i = lane
                             if (this.practiceMap && i == 1) break;
                             for (int g = 0; g < 2; g++) {

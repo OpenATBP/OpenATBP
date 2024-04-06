@@ -13,7 +13,6 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 
 import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.game.ActorState;
@@ -71,11 +70,11 @@ public class Minion extends Actor {
         this.team = team;
         this.parentExt = parentExt;
         String typeString = "super";
-        if (minionNum <= 2) {
+        if (minionNum <= 1) {
             typeString = "melee" + minionNum;
             this.type = MinionType.MELEE;
             this.maxHealth = 450;
-        } else if (minionNum <= 4) {
+        } else if (minionNum <= 3) {
             typeString = "ranged" + minionNum;
             this.avatar += "_ranged";
             this.type = MinionType.RANGED;
@@ -209,8 +208,6 @@ public class Minion extends Actor {
 
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
-        if (this.type == MinionType.MELEE && a.getActorType() == ActorType.PLAYER)
-            Console.debugLog(this.id + ": " + this.state);
         try {
             if (this.dead) return true;
             if (a.getActorType() == ActorType.PLAYER) {
@@ -293,13 +290,12 @@ public class Minion extends Actor {
                     this.moveAlongPath();
                     return;
                 } else if (this.isStopped()) {
+                    // this.canMove = true;
                     this.move(this.getPathPoint());
                     return;
                 }
                 Actor potentialTarget = this.searchForTarget();
                 if (potentialTarget != null) {
-                    if (this.type == MinionType.MELEE)
-                        Console.debugLog(this.id + " has a target now.");
                     this.setTarget(potentialTarget);
                     this.state = State.TARGETING;
                 }
