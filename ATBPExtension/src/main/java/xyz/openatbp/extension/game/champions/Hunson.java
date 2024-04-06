@@ -328,7 +328,7 @@ public class Hunson extends UserActor {
                 if (isNonStructure(a)) {
                     a.addToDamageQueue(Hunson.this, getSpellDamage(spellData), spellData);
                     if (!a.getId().contains("turret") || !a.getId().contains("decoy"))
-                        a.handleFear(Hunson.this, 1500);
+                        a.handleFear(Hunson.this.location, 1500);
                 }
             }
         }

@@ -475,7 +475,7 @@ public class Marceline extends UserActor {
                             if (!getState(ActorState.TRANSFORMED)) {
                                 a.handleCharm(Marceline.this, 2000);
                             } else {
-                                a.handleFear(Marceline.this, 2000);
+                                a.handleFear(Marceline.this.location, 2000);
                             }
                         }
                     }

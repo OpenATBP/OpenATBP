@@ -66,7 +66,7 @@ public class MagicMan extends UserActor {
         }
         if (this.magicManClone != null) this.magicManClone.update(msRan);
         if (!this.getState(ActorState.INVISIBLE) && wLocation != null) {
-            this.magicManClone.die(this);
+            if (this.magicManClone != null) this.magicManClone.die(this);
             this.wLocation = null;
             this.wDest = null;
             this.canCast[1] = true;
@@ -79,6 +79,12 @@ public class MagicMan extends UserActor {
         }
         if (System.currentTimeMillis() - this.qStartTime > this.estimatedQDuration)
             this.playersHitBySnake.clear();
+    }
+
+    @Override
+    public void die(Actor a) {
+        super.die(a);
+        if (this.magicManClone != null) this.magicManClone.die(this);
     }
 
     @Override
@@ -225,8 +231,8 @@ public class MagicMan extends UserActor {
                 this.ultStarted = true;
                 Point2D firstLocation =
                         new Point2D.Double(this.location.getX(), this.location.getY());
-                Point2D dashPoint = this.dash(dest, true, 15d);
-                double dashTime = dashPoint.distance(firstLocation) / 15f;
+                Point2D dashPoint = this.dash(dest, true, 10d);
+                double dashTime = dashPoint.distance(firstLocation) / 10f;
                 int timeMs = (int) (dashTime * 1000d);
                 ExtensionCommands.playSound(
                         this.parentExt,
@@ -242,7 +248,7 @@ public class MagicMan extends UserActor {
                         "e",
                         true,
                         getReducedCooldown(cooldown),
-                        gCooldown);
+                        (int) (timeMs * 0.8) + gCooldown);
                 SmartFoxServer.getInstance()
                         .getTaskScheduler()
                         .schedule(
@@ -450,7 +456,6 @@ public class MagicMan extends UserActor {
             this.handleDamageQueue();
             if (this.dead) return;
             this.timeTraveled += 0.1d;
-            ;
             this.location =
                     MovementManager.getRelativePoint(
                             this.movementLine,

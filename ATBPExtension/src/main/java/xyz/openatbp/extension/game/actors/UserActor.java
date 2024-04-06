@@ -526,7 +526,7 @@ public class UserActor extends Actor {
             this.dead = true;
             this.timeKilled = System.currentTimeMillis();
             this.canMove = false;
-            this.stopMoving();
+            if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
             this.setHealth(0, (int) this.maxHealth);
             this.target = null;
             this.killingSpree = 0;

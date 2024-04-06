@@ -611,14 +611,20 @@ public abstract class Actor {
         }
     }
 
-    public void handleFear(UserActor feared, int duration) {
+    public void handleFear(Point2D source, int duration) {
         if (!this.states.get(ActorState.FEARED)) {
             this.setState(ActorState.FEARED, true);
-            Line2D oppositeLine =
-                    Champion.getMaxRangeLine(
-                            new Line2D.Float(feared.getLocation(), this.location), 10f);
-            oppositeLine = MovementManager.getColliderLine(this.parentExt, this.room, oppositeLine);
-            this.movementLine = new Line2D.Float(this.location, oppositeLine.getP2());
+            double distance = source.distance(this.location);
+            double dx = (this.location.getX() - source.getX());
+            double dy = (this.location.getY() - source.getY());
+            double unitX = dx / distance;
+            double unitY = dy / distance;
+            double extX = this.location.getX() + 3 * unitX;
+            double extY = this.location.getY() + 3 * -unitY;
+            Point2D extendedPoint = new Point2D.Double(extX, extY);
+            Line2D perpendicularLine = new Line2D.Double(this.location, extendedPoint);
+            Point2D fearEndPoint = MovementManager.getDashPoint(this, perpendicularLine);
+            this.movementLine = new Line2D.Float(this.location, fearEndPoint);
             this.timeTraveled = 0f;
             this.addState(ActorState.FEARED, 0d, duration, null, false);
             ExtensionCommands.moveActor(
@@ -626,7 +632,7 @@ public abstract class Actor {
                     room,
                     id,
                     this.location,
-                    oppositeLine.getP2(),
+                    fearEndPoint,
                     (float) this.getPlayerStat("speed"),
                     true);
         }
