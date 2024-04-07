@@ -199,6 +199,12 @@ public class Minion extends Actor {
             }
         } else {
             ExtensionCommands.knockOutActor(parentExt, this.room, this.id, a.getId(), 30);
+            for (UserActor user :
+                    Champion.getUserActorsInRadius(
+                            this.parentExt.getRoomHandler(this.room.getId()), this.location, 10f)) {
+                if (user.getTeam() != this.team)
+                    user.addXP((int) Math.floor((double) this.xpWorth / 2d));
+            }
         }
         ExtensionCommands.destroyActor(parentExt, this.room, this.id);
         // this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,aggressors.keySet(),
@@ -309,6 +315,9 @@ public class Minion extends Actor {
                     if (this.withinRange(this.target) && conflictingMinion == null) {
                         this.stopMoving();
                         this.state = State.ATTACKING;
+                    } else if (conflictingMinion == null) {
+                        if (this.target.getLocation().distance(this.movementLine.getP2()) > 0.1)
+                            this.move(this.target.getLocation());
                     }
                 } else {
                     this.resetTarget();

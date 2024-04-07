@@ -304,7 +304,8 @@ public class RoomHandler implements Runnable {
             if (player.getTeam() == 0) additionalXP *= (blueLevel - player.getLevel());
             else if (player.getTeam() == 1) additionalXP *= (purpleLevel - player.getLevel());
             if (additionalXP < -2) additionalXP = -2;
-            player.addXP(5 + additionalXP);
+            if (purpleLevel == 0 || blueLevel == 0) additionalXP = 0;
+            player.addXP(3 + additionalXP);
         }
     }
 
@@ -1066,16 +1067,7 @@ public class RoomHandler implements Runnable {
         }
     }
 
-    public void handleXPShare(UserActor a, int xp) {
-        a.addXP(xp);
-        for (UserActor p : players) {
-            if (!p.getId().equalsIgnoreCase(a.getId()) && p.getTeam() == a.getTeam()) {
-                int newXP = (int) Math.floor(xp * 0.2);
-                p.addXP(newXP);
-            }
-        }
-    }
-
+    @Deprecated
     public void handleAssistXP(
             Actor a,
             Set<UserActor> actors,
