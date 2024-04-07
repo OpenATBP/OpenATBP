@@ -30,7 +30,6 @@ public class Monster extends Actor {
     private AggroState state = AggroState.PASSIVE;
     private final Point2D startingLocation;
     private final MonsterType type;
-    protected boolean dead = false;
     private static final boolean MOVEMENT_DEBUG = false;
     private boolean attackRangeOverride = false;
     private boolean headingBack = false;

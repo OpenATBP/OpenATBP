@@ -28,6 +28,7 @@ public abstract class Actor {
     protected double maxHealth;
     protected Point2D location;
     protected Line2D movementLine;
+    protected boolean dead = false;
     protected float timeTraveled;
     protected String id;
     protected Room room;
@@ -680,7 +681,7 @@ public abstract class Actor {
     public void handleDamageQueue() {
         List<ISFSObject> queue = new ArrayList<>(this.damageQueue);
         this.damageQueue = new ArrayList<>();
-        if (this.currentHealth <= 0) {
+        if (this.currentHealth <= 0 || this.dead) {
             return;
         }
         for (ISFSObject data : queue) {
@@ -689,6 +690,7 @@ public abstract class Actor {
             JsonNode attackData = (JsonNode) data.getClass("attackData");
             if (this.damaged(damager, (int) damage, attackData)) {
                 if (damager.getId().contains("turret")) {
+                    damager.handleKill(this, attackData);
                     damager =
                             this.parentExt
                                     .getRoomHandler(this.room.getId())

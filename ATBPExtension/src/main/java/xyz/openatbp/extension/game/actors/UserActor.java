@@ -28,7 +28,6 @@ public class UserActor extends Actor {
     protected boolean autoAttackEnabled = false;
     protected int xp = 0;
     private int deathTime = 10;
-    protected boolean dead = false;
     private long timeKilled;
     protected Map<Actor, ISFSObject> aggressors = new HashMap<>();
     protected String backpack;

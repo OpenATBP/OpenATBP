@@ -61,7 +61,6 @@ public class Minion extends Actor {
     private Map<UserActor, Integer> aggressors;
     private final boolean MOVEMENT_DEBUG = false;
     private State state;
-    private boolean dead;
 
     public Minion(ATBPExtension parentExt, Room room, int team, int minionNum, int wave, int lane) {
         this.avatar = "creep" + team;
