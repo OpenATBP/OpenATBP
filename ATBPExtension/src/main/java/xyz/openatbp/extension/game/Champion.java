@@ -388,7 +388,10 @@ public class Champion {
 
         @Override
         public void run() {
-            if (this.target.getHealth() <= 0) return;
+            if (this.target.getHealth() <= 0) {
+                if (this.attacker.getActorType() == ActorType.MINION) attacker.setCanMove(true);
+                return;
+            }
             if (this.attacker.getState(ActorState.BLINDED)) {
                 if (this.attacker.getActorType() == ActorType.PLAYER)
                     ExtensionCommands.playSound(
@@ -418,11 +421,12 @@ public class Champion {
                     false,
                     target.getTeam());
             JsonNode attackData;
-            if (this.attacker.getActorType() == ActorType.MINION)
+            if (this.attacker.getActorType() == ActorType.MINION) {
                 attackData =
                         this.parentExt.getAttackData(
                                 this.attacker.getAvatar().replace("0", ""), this.attack);
-            else {
+                this.attacker.setCanMove(true);
+            } else {
                 switch (this
                         .attack) { // these attacks need to be physical so that Rattle can actually
                         // counter-attack them

@@ -126,9 +126,7 @@ public class RoomHandler implements Runnable {
                 }
                 secondsRan++;
                 if (secondsRan % 5 == 0) {
-                    for (UserActor player : this.players) {
-                        player.addXP(2);
-                    }
+                    this.handlePassiveXP();
                 }
                 if (mSecondsRan == 1000
                         || this.playMainMusic && secondsRan < (60 * 13) && !this.gameOver) {
@@ -208,15 +206,15 @@ public class RoomHandler implements Runnable {
                 int minionWave = secondsRan / 30;
                 if (minionWave != this.currentMinionWave) {
                     int minionNum = secondsRan % 10;
-                    if (minionNum == 5) this.currentMinionWave = minionWave;
-                    if (minionNum <= 4) { // TODO: Set to test!
+                    if (minionNum == 4) this.currentMinionWave = minionWave;
+                    if (minionNum <= 3) {
                         this.addMinion(1, minionNum, minionWave, 0);
                         this.addMinion(0, minionNum, minionWave, 0);
                         if (!this.practiceMap) {
                             this.addMinion(1, minionNum, minionWave, 1);
                             this.addMinion(0, minionNum, minionWave, 1);
                         }
-                    } else if (minionNum == 5) {
+                    } else if (minionNum == 4) {
                         for (int i = 0; i < 2; i++) { // i = lane
                             if (this.practiceMap && i == 1) break;
                             for (int g = 0; g < 2; g++) {
@@ -286,6 +284,28 @@ public class RoomHandler implements Runnable {
             if (this.room.getUserList().size() == 0) parentExt.stopScript(this.room.getId());
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void handlePassiveXP() {
+        double purpleLevel = 0;
+        double blueLevel = 0;
+        for (UserActor player : this.players) {
+            if (player.getTeam() == 0) purpleLevel += player.getLevel();
+            else if (player.getTeam() == 1) blueLevel += player.getLevel();
+        }
+        // Get the average level of players
+        purpleLevel = (int) Math.floor(purpleLevel / ((double) this.players.size() / 2));
+        blueLevel = (int) Math.floor(blueLevel / ((double) this.players.size() / 2));
+        for (UserActor player : this.players) {
+            int additionalXP =
+                    2; // Get more XP if you are below the average level of the enemy and get less
+            // xp if you are above.
+            if (player.getTeam() == 0) additionalXP *= (blueLevel - player.getLevel());
+            else if (player.getTeam() == 1) additionalXP *= (purpleLevel - player.getLevel());
+            if (additionalXP < -2) additionalXP = -2;
+            if (purpleLevel == 0 || blueLevel == 0) additionalXP = 0;
+            player.addXP(3 + additionalXP);
         }
     }
 
@@ -1053,16 +1073,7 @@ public class RoomHandler implements Runnable {
         }
     }
 
-    public void handleXPShare(UserActor a, int xp) {
-        a.addXP(xp);
-        for (UserActor p : players) {
-            if (!p.getId().equalsIgnoreCase(a.getId()) && p.getTeam() == a.getTeam()) {
-                int newXP = (int) Math.floor(xp * 0.2);
-                p.addXP(newXP);
-            }
-        }
-    }
-
+    @Deprecated
     public void handleAssistXP(
             Actor a,
             Set<UserActor> actors,
@@ -1074,8 +1085,8 @@ public class RoomHandler implements Runnable {
         for (UserActor actor : actors) {
             if (!actor.getId().equalsIgnoreCase(a.getId())
                     && actor.getActorType() == ActorType.PLAYER) {
-                actor.addXP(
-                        (int) Math.round(xp / 2)); // <-- classic dividing an integer hehe haha hehe
+                actor.addXP((int) Math.round(xp / 2d)); // <-- classic dividing an integer hehe haha
+                // hehe --- I FIXED IT DON'T WORRY :D
             }
         }
     }

@@ -30,7 +30,6 @@ public class Monster extends Actor {
     private AggroState state = AggroState.PASSIVE;
     private final Point2D startingLocation;
     private final MonsterType type;
-    protected boolean dead = false;
     private static final boolean MOVEMENT_DEBUG = false;
     private boolean attackRangeOverride = false;
     private boolean headingBack = false;
@@ -101,15 +100,21 @@ public class Monster extends Actor {
                 this.addDamageGameStat((UserActor) a, newDamage, attackType);
             boolean returnVal = super.damaged(a, newDamage, attackData);
             if (!this.headingBack
-                    && isProperActor(a)) { // If being attacked while minding own business, it
+                    && isProperActor(a)
+                    && this.state
+                            != AggroState
+                                    .ATTACKED) { // If being attacked while minding own business, it
                 // will
                 // target player
                 double distance = this.location.distance(a.getLocation());
                 this.attackersInCampRadius.put(a, distance);
                 state = AggroState.ATTACKED;
                 target = findClosestAttacker();
-                this.timeTraveled = 0f;
-                this.moveTowardsActor();
+                if (!this.withinRange(this.target)) {
+                    this.timeTraveled = 0f;
+                    this.moveTowardsActor();
+                }
+
                 if (target != null && target.getActorType() == ActorType.PLAYER)
                     ExtensionCommands.setTarget(
                             parentExt, ((UserActor) target).getUser(), this.id, target.getId());
@@ -372,7 +377,7 @@ public class Monster extends Actor {
             }
         } else { // Monster is pissed!!
             if ((this.location.distance(this.startingLocation) >= 10 && !this.attackRangeOverride)
-                    || this.target != null && this.target.getHealth() <= 0) {
+                    || (this.target != null && this.target.getHealth() <= 0)) {
                 this.state = AggroState.PASSIVE; // Far from camp, heading back
                 this.moveWithCollision(this.startingLocation);
                 this.target = null;

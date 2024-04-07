@@ -61,7 +61,6 @@ public class Minion extends Actor {
     private Map<UserActor, Integer> aggressors;
     private final boolean MOVEMENT_DEBUG = false;
     private State state;
-    private boolean dead;
 
     public Minion(ATBPExtension parentExt, Room room, int team, int minionNum, int wave, int lane) {
         this.avatar = "creep" + team;
@@ -70,11 +69,11 @@ public class Minion extends Actor {
         this.team = team;
         this.parentExt = parentExt;
         String typeString = "super";
-        if (minionNum <= 2) {
+        if (minionNum <= 1) {
             typeString = "melee" + minionNum;
             this.type = MinionType.MELEE;
             this.maxHealth = 450;
-        } else if (minionNum <= 4) {
+        } else if (minionNum <= 3) {
             typeString = "ranged" + minionNum;
             this.avatar += "_ranged";
             this.type = MinionType.RANGED;
@@ -200,6 +199,12 @@ public class Minion extends Actor {
             }
         } else {
             ExtensionCommands.knockOutActor(parentExt, this.room, this.id, a.getId(), 30);
+            for (UserActor user :
+                    Champion.getUserActorsInRadius(
+                            this.parentExt.getRoomHandler(this.room.getId()), this.location, 10f)) {
+                if (user.getTeam() != this.team)
+                    user.addXP((int) Math.floor((double) this.xpWorth / 2d));
+            }
         }
         ExtensionCommands.destroyActor(parentExt, this.room, this.id);
         // this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,aggressors.keySet(),
@@ -277,6 +282,7 @@ public class Minion extends Actor {
         if (MOVEMENT_DEBUG)
             ExtensionCommands.moveActor(
                     parentExt, room, id + "_test", this.location, this.location, 5f, false);
+
         switch (this.state) {
             case IDLE:
                 // Console.logWarning(this.id + " is idle!");
@@ -285,11 +291,18 @@ public class Minion extends Actor {
                 this.state = State.MOVING;
                 break;
             case MOVING:
-                if (this.location.distance(this.movementLine.getP2()) <= 0.1d) this.moveAlongPath();
+                if (this.location.distance(this.getPathPoint()) <= 0.1d) {
+                    this.moveAlongPath();
+                    return;
+                } else if (this.isStopped()) {
+                    // this.canMove = true;
+                    this.move(this.getPathPoint());
+                    return;
+                }
                 Actor potentialTarget = this.searchForTarget();
                 if (potentialTarget != null) {
-                    this.state = State.TARGETING;
                     this.setTarget(potentialTarget);
+                    this.state = State.TARGETING;
                 }
                 break;
             case TARGETING:
@@ -297,10 +310,14 @@ public class Minion extends Actor {
                     this.state = State.IDLE;
                     return;
                 }
-                if (this.withinAggroRange(this.target.getLocation())) {
+                if (this.withinAggroRange(this.target.getLocation())
+                        && this.target.getHealth() > 0) {
                     if (this.withinRange(this.target) && conflictingMinion == null) {
                         this.stopMoving();
                         this.state = State.ATTACKING;
+                    } else if (conflictingMinion == null) {
+                        if (this.target.getLocation().distance(this.movementLine.getP2()) > 0.1)
+                            this.move(this.target.getLocation());
                     }
                 } else {
                     this.resetTarget();
@@ -535,6 +552,8 @@ public class Minion extends Actor {
     }
 
     private void moveTowardsTarget() {
+        // if (this.type == MinionType.MELEE) Console.debugLog(this.id + " is moving towards
+        // target");
         this.move(this.target.getLocation());
     }
 

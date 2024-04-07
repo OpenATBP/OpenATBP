@@ -351,7 +351,7 @@ public class ExtensionCommands {
     public static void destroyActor(ATBPExtension parentExt, Room room, String id) {
         RoomHandler roomHandler = parentExt.getRoomHandler(room.getId());
         if (roomHandler.hasDestroyedId(id)) return;
-        System.out.println("Destroying: " + id);
+        // System.out.println("Destroying: " + id);
         roomHandler.addDestroyedId(id);
         for (User u : room.getUserList()) {
             ISFSObject data = new SFSObject();
