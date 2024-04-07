@@ -78,7 +78,6 @@ public class Neptr extends UserActor {
 
     @Override
     public void move(ISFSObject params, Point2D destination) {
-        System.out.println("Moved!");
         if (this.isStopped())
             ExtensionCommands.playSound(
                     this.parentExt, this.player, this.id, "sfx_neptr_move_start", this.location);

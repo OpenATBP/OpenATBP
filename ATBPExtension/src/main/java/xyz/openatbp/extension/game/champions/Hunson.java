@@ -161,7 +161,7 @@ public class Hunson extends UserActor {
                 } else {
                     this.qUses--;
                     if (this.qUses == 0) {
-                        this.qActivated = false;
+                        // this.qActivated = false;
                         ExtensionCommands.actorAbilityResponse(
                                 this.parentExt,
                                 this.player,
@@ -310,7 +310,7 @@ public class Hunson extends UserActor {
 
         @Override
         protected void spellQ() {
-            canCast[0] = true;
+            // canCast[0] = true;
             if (qActivated) {
                 qActivated = false;
                 qUses = 0;

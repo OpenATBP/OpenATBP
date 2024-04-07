@@ -328,7 +328,10 @@ public class MovementManager {
             }
             return pathList;
         } catch (Exception e) {
-            return new ArrayList<>();
+            ArrayList<Point2D> newPath = new ArrayList<>(2);
+            newPath.add(location);
+            newPath.add(dest);
+            return newPath;
         }
     }
 
