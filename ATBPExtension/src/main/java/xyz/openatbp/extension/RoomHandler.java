@@ -377,6 +377,14 @@ public class RoomHandler implements Runnable {
         else return bases[0];
     }
 
+    public int getAltarStatus(Point2D location) { // 0 is top, 1 is mid, 2 is bot
+        Point2D botAltar = new Point2D.Float(MapData.L2_BOT_ALTAR[0], MapData.L2_BOT_ALTAR[1]);
+        Point2D midAltar = new Point2D.Float(0f, 0f);
+        if (location.equals(botAltar)) return this.altarStatus[2];
+        else if (location.equals(midAltar)) return this.altarStatus[1];
+        else return this.altarStatus[0];
+    }
+
     private void handleHealth() {
         for (String s : GameManager.SPAWNS) {
             if (s.length() == 3) {
@@ -631,10 +639,10 @@ public class RoomHandler implements Runnable {
             if (blueCounter == 0 && purpleCounter == 0 || blueCounter == 2 || purpleCounter == 2) {
                 if (purpleCounter == 2) {
                     fastPurpleCapture = false;
-                    altarChange[i] = 6 - Math.abs(altarStatus[i]);
+                    altarChange[i] = 5 - Math.abs(altarStatus[i]);
                 } else if (blueCounter == 2) {
                     fastBlueCapture = false;
-                    altarChange[i] = (6 - Math.abs(altarStatus[i])) * -1;
+                    altarChange[i] = (5 - Math.abs(altarStatus[i])) * -1;
                 } else if (altarChange[i] > 0) altarChange[i] = 1;
                 else if (altarChange[i] < 0) altarChange[i] = -1;
                 else if (altarChange[i] == 0 && !hasPlayerInside[i]) {
@@ -656,32 +664,30 @@ public class RoomHandler implements Runnable {
                 if (altarStatus[i] > 0) team = 0;
                 else team = 1;
                 String altarId = "altar_" + i;
-                if (Math.abs(altarStatus[i]) >= 6 && altarStatus[i] != 10) {
+                if (Math.abs(altarStatus[i]) >= 5 && altarStatus[i] != 10) {
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            altarId,
+                            "fx_altar_5",
+                            500,
+                            "fx_altar_" + 5 + i,
+                            false,
+                            "Bip01",
+                            false,
+                            true,
+                            team);
                     if (blueCounter == 2 || purpleCounter == 2) {
-                        ExtensionCommands.createActorFX(
-                                this.parentExt,
-                                this.room,
-                                altarId,
-                                "fx_altar_5",
-                                500,
-                                "fx_altar_" + 5 + i,
-                                false,
-                                "Bip01",
-                                false,
-                                true,
-                                team);
                         if (blueCounter == 2) blueCounter = 0;
                         if (purpleCounter == 2) purpleCounter = 0;
-                        int finalI = i;
-                        int finalTeam = team;
-                        Runnable fastAltarLock = () -> captureAltar(finalI, finalTeam, altarId);
-                        SmartFoxServer.getInstance()
-                                .getTaskScheduler()
-                                .schedule(fastAltarLock, 400, TimeUnit.MILLISECONDS);
-                    } else {
-                        captureAltar(i, team, altarId);
                     }
-                } else if (Math.abs(altarStatus[i]) <= 5 && altarStatus[i] != 0) {
+                    int finalI1 = i;
+                    int finalTeam1 = team;
+                    Runnable captureDelay = () -> captureAltar(finalI1, finalTeam1, altarId);
+                    SmartFoxServer.getInstance()
+                            .getTaskScheduler()
+                            .schedule(captureDelay, 400, TimeUnit.MILLISECONDS);
+                } else if (Math.abs(altarStatus[i]) <= 4 && altarStatus[i] != 0) {
                     int stage = Math.abs(altarStatus[i]);
                     ExtensionCommands.createActorFX(
                             this.parentExt,

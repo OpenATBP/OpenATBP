@@ -44,6 +44,7 @@ public class BubbleGum extends UserActor {
 
     @Override
     public void attack(Actor a) {
+        this.applyStopMovingDuringAttack();
         SmartFoxServer.getInstance()
                 .getTaskScheduler()
                 .schedule(
@@ -508,7 +509,9 @@ public class BubbleGum extends UserActor {
             }
             if (this.attackCooldown > 0) this.reduceAttackCooldown();
             if (this.target != null && this.target.getHealth() > 0) {
-                if (this.withinRange(this.target) && this.canAttack()) this.attack(this.target);
+                if (this.withinRange(this.target)
+                        && this.canAttack()
+                        && isNonStructure(this.target)) this.attack(this.target);
                 else if (!this.withinRange(this.target)) {
                     this.target = null;
                     this.findTarget();

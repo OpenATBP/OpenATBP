@@ -328,7 +328,7 @@ public class Hunson extends UserActor {
                 if (isNonStructure(a)) {
                     a.addToDamageQueue(Hunson.this, getSpellDamage(spellData), spellData);
                     if (!a.getId().contains("turret") || !a.getId().contains("decoy"))
-                        a.handleFear(Hunson.this, 1500);
+                        a.handleFear(Hunson.this.location, 1500);
                 }
             }
         }
@@ -384,7 +384,7 @@ public class Hunson extends UserActor {
             } else {
                 qVictims.put(victim, 1);
             }
-            victim.pulled(Hunson.this.location);
+            victim.handlePull(Hunson.this.location, 1.2);
             victim.addToDamageQueue(Hunson.this, damage, spellData);
             victim.addState(ActorState.SLOWED, 0.1d, 2000, null, false);
             ExtensionCommands.playSound(

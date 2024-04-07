@@ -37,6 +37,7 @@ public class Finn extends UserActor {
 
     @Override
     public void attack(Actor a) {
+        this.applyStopMovingDuringAttack();
         SmartFoxServer.getInstance()
                 .getTaskScheduler()
                 .schedule(new PassiveAttack(a, this.handleAttack(a)), 250, TimeUnit.MILLISECONDS);

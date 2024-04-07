@@ -34,6 +34,7 @@ public class Monster extends Actor {
     private static final boolean MOVEMENT_DEBUG = false;
     private boolean attackRangeOverride = false;
     private boolean headingBack = false;
+    private HashMap<Actor, Double> attackersInCampRadius = new HashMap<>();
 
     public Monster(
             ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName) {
@@ -84,8 +85,11 @@ public class Monster extends Actor {
             // passive)
             // after dying
             if (Champion.getUserActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()), this.location, 10f)
-                    .isEmpty()) return false;
+                                    this.parentExt.getRoomHandler(this.room.getId()),
+                                    this.location,
+                                    10f)
+                            .isEmpty()
+                    && this.state == AggroState.PASSIVE) return false;
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
                 if (ua.hasBackpackItem("junk_1_demon_blood_sword")
@@ -97,12 +101,11 @@ public class Monster extends Actor {
                 this.addDamageGameStat((UserActor) a, newDamage, attackType);
             boolean returnVal = super.damaged(a, newDamage, attackData);
             if (!this.headingBack
-                    && Champion.getActorsInRadius(
-                                    this.parentExt.getRoomHandler(this.room.getId()),
-                                    this.location,
-                                    10f)
-                            .contains(a)) { // If being attacked while minding own business, it will
+                    && isProperActor(a)) { // If being attacked while minding own business, it
+                // will
                 // target player
+                double distance = this.location.distance(a.getLocation());
+                this.attackersInCampRadius.put(a, distance);
                 state = AggroState.ATTACKED;
                 target = findClosestAttacker();
                 this.timeTraveled = 0f;
@@ -128,30 +131,27 @@ public class Monster extends Actor {
         }
     }
 
-    public Actor findClosestAttacker() {
-        List<Actor> actorsInCamp =
+    public boolean isProperActor(Actor a) {
+        List<Actor> actors =
                 Champion.getActorsInRadius(
-                        parentExt.getRoomHandler(this.room.getId()), startingLocation, 10f);
-        HashMap<Actor, Double> actorLocations = new HashMap<>();
-        for (Actor a : actorsInCamp) {
-            if (!Objects.equals(a.getId(), this.getId())
-                    && a.getActorType() != ActorType.MONSTER
-                    && a.getActorType() != ActorType.MINION) {
-                double distance = a.getLocation().distance(this.location);
-                actorLocations.put(a, distance);
-            }
-        }
-        Actor clostestActor = null;
+                        this.parentExt.getRoomHandler(this.room.getId()), this.location, 10f);
+        return actors.contains(a)
+                && a.getActorType() != ActorType.MINION
+                && a.getActorType() != ActorType.MONSTER;
+    }
+
+    public Actor findClosestAttacker() {
+        Actor closestActor = null;
         double minDistance = Double.MAX_VALUE;
-        for (Map.Entry<Actor, Double> entry : actorLocations.entrySet()) {
+        for (Map.Entry<Actor, Double> entry : this.attackersInCampRadius.entrySet()) {
             Actor actor = entry.getKey();
             double distance = entry.getValue();
             if (distance < minDistance) {
                 minDistance = distance;
-                clostestActor = actor;
+                closestActor = actor;
             }
         }
-        return clostestActor;
+        return closestActor;
     }
 
     public void setAggroState(AggroState state, Actor a) {
@@ -194,8 +194,8 @@ public class Monster extends Actor {
     }
 
     @Override
-    public void pulled(Point2D source) {
-        super.pulled(source);
+    public void handlePull(Point2D source, double pullDistance) {
+        super.handlePull(source, pullDistance);
         this.attackRangeOverride = true;
     }
 
@@ -267,7 +267,7 @@ public class Monster extends Actor {
         Console.debugLog(this.id + " has died! " + this.dead);
         if (!this.dead) { // No double deaths
             this.dead = true;
-            this.stopMoving();
+            if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
             this.currentHealth = -1;
             RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getId());
             int scoreValue = parentExt.getActorStats(this.id).get("valueScore").asInt();
@@ -321,12 +321,12 @@ public class Monster extends Actor {
         this.handleDamageQueue();
         this.handleActiveEffects();
         if (this.dead) return;
-        if (this.target != null && this.target.getState(ActorState.INVISIBLE)) {
-            this.state = AggroState.PASSIVE; //
+        if (this.target != null && (this.target.getState(ActorState.INVISIBLE))) {
+            this.state = AggroState.PASSIVE;
             this.moveWithCollision(this.startingLocation);
             this.target = null;
         }
-        if (this.headingBack && this.location.equals(startingLocation)) {
+        if (this.headingBack && this.location.distance(startingLocation) <= 1f) {
             this.headingBack = false;
         }
         if (msRan % 1000 * 60
@@ -337,6 +337,16 @@ public class Monster extends Actor {
                 this.maxHealth += parentExt.getHealthScaling(this.id) * levelDiff;
                 this.level = averagePLevel;
                 Champion.updateServerHealth(this.parentExt, this);
+            }
+            Iterator<Map.Entry<Actor, Double>> iterator =
+                    this.attackersInCampRadius.entrySet().iterator();
+            while (iterator.hasNext()) { // remove players if they leave the camp or die
+                Map.Entry<Actor, Double> entry = iterator.next();
+                Actor actor = entry.getKey();
+                double distance = actor.getLocation().distance(this.startingLocation);
+                if (distance > 10f || actor.getHealth() <= 0) {
+                    iterator.remove();
+                }
             }
         }
         if (this.movementLine != null)
