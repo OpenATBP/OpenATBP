@@ -65,6 +65,7 @@ public class LSP extends UserActor {
 
     @Override
     public void attack(Actor a) {
+        this.applyStopMovingDuringAttack();
         SmartFoxServer.getInstance()
                 .getTaskScheduler()
                 .schedule(
@@ -237,7 +238,7 @@ public class LSP extends UserActor {
             List<Actor> affectedActors = new ArrayList<>();
             for (Actor a : parentExt.getRoomHandler(room.getId()).getActors()) {
                 if (isNonStructure(a) && qRect.contains(a.getLocation())) {
-                    if (!a.getId().contains("turret")) a.handleFear(LSP.this, 3000);
+                    if (!a.getId().contains("turret")) a.handleFear(LSP.this.location, 3000);
                     a.addToDamageQueue(LSP.this, getSpellDamage(spellData), spellData);
                     affectedActors.add(a);
                 }

@@ -167,7 +167,7 @@ public class Minion extends Actor {
     public void die(Actor a) {
         this.currentHealth = 0;
         if (this.dead) return;
-        this.stopMoving();
+        if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
         this.dead = true;
         if (a.getActorType() == ActorType.PLAYER || a.getActorType() == ActorType.COMPANION) {
             UserActor ua = null;

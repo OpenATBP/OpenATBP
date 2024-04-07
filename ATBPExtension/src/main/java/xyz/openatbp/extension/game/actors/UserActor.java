@@ -45,9 +45,11 @@ public class UserActor extends Actor {
     protected int idleTime = 0;
     protected static final double DASH_SPEED = 20d;
     protected boolean changeTowerAggro = false;
+    protected boolean isDashing = false;
     private static final boolean MOVEMENT_DEBUG = false;
     private static final boolean INVINCIBLE_DEBUG = false;
     private static final boolean ABILITY_DEBUG = false;
+    private static final boolean SPEED_DEBUG = false;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -79,6 +81,7 @@ public class UserActor extends Actor {
                     this.location,
                     0f,
                     2);
+        if (SPEED_DEBUG) this.setStat("speed", 20);
     }
 
     public void setAutoAttackEnabled(boolean enabled) {
@@ -139,6 +142,10 @@ public class UserActor extends Actor {
         return this.stats.get(stat);
     }
 
+    public boolean[] getCanCast() {
+        return canCast;
+    }
+
     @Override
     public boolean setTempStat(String stat, double delta) {
         boolean returnVal = super.setTempStat(stat, delta);
@@ -170,6 +177,10 @@ public class UserActor extends Actor {
 
     public User getUser() {
         return this.player;
+    }
+
+    public boolean getIsDashing() {
+        return this.isDashing;
     }
 
     public void move(ISFSObject params, Point2D destination) {
@@ -313,6 +324,7 @@ public class UserActor extends Actor {
     @Override
     public void attack(Actor a) {
         if (this.attackCooldown == 0) {
+            this.applyStopMovingDuringAttack();
             double critChance = this.getPlayerStat("criticalChance") / 100d;
             double random = Math.random();
             boolean crit = random < critChance;
@@ -355,6 +367,26 @@ public class UserActor extends Actor {
             } catch (NullPointerException e) {
                 // e.printStackTrace();
                 delayedAttack.run();
+            }
+        }
+    }
+
+    public void applyStopMovingDuringAttack() {
+        if (this.parentExt.getActorData(this.getAvatar()).has("attackType")) {
+            String attackType =
+                    this.parentExt.getActorData(this.getAvatar()).get("attackType").asText();
+            switch (attackType) {
+                case "MELEE":
+                    this.stopMoving(500);
+                    Console.debugLog("melee attack");
+                    break;
+                case "RANGED":
+                    this.stopMoving(250);
+                    Console.debugLog("ranged attack");
+                    break;
+                default:
+                    this.stopMoving(250);
+                    Console.debugLog("undefined attack");
             }
         }
     }
@@ -426,6 +458,7 @@ public class UserActor extends Actor {
     }
 
     public Point2D dash(Point2D dest, boolean noClip, double dashSpeed) {
+        this.isDashing = true;
         Point2D dashPoint =
                 MovementManager.getDashPoint(this, new Line2D.Float(this.location, dest));
         if (dashPoint == null) dashPoint = this.location;
@@ -445,7 +478,12 @@ public class UserActor extends Actor {
         // if(noClip) dashPoint =
         // Champion.getTeleportPoint(this.parentExt,this.player,this.location,dest);
         double time = dashPoint.distance(this.location) / dashSpeed;
-        this.stopMoving((int) (time * 1000d));
+        int timeMs = (int) (time * 1000d);
+        this.stopMoving(timeMs);
+        Runnable setIsDashing = () -> this.isDashing = false;
+        SmartFoxServer.getInstance()
+                .getTaskScheduler()
+                .schedule(setIsDashing, timeMs, TimeUnit.MILLISECONDS);
         ExtensionCommands.moveActor(
                 this.parentExt,
                 this.room,
@@ -496,13 +534,6 @@ public class UserActor extends Actor {
     }
 
     public void autoAttack(Actor a) {
-        if (!this.parentExt
-                .getActorData(this.getAvatar())
-                .get("attackType")
-                .asText()
-                .equalsIgnoreCase("MELEE")) this.stopMoving(250);
-        if (this.getAvatar().contains("finn") || this.getAvatar().contains("marceline"))
-            this.stopMoving(500);
         this.attack(a);
     }
 
@@ -543,7 +574,7 @@ public class UserActor extends Actor {
             this.updateXPWorth("death");
             this.timeKilled = System.currentTimeMillis();
             this.canMove = false;
-            this.stopMoving();
+            if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
             this.setHealth(0, (int) this.maxHealth);
             this.target = null;
             this.killingSpree = 0;
@@ -995,7 +1026,7 @@ public class UserActor extends Actor {
         }
     }
 
-    public boolean isDash(String avatar, int ability) { // all chars except fp
+    public boolean isCastingDashAbility(String avatar, int ability) { // all chars except fp
         String defaultAvatar = getDefaultCharacterName(avatar);
         switch (defaultAvatar) {
             case "billy":

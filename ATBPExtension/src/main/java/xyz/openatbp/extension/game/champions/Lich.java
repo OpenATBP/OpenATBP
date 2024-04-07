@@ -181,6 +181,7 @@ public class Lich extends UserActor {
 
     @Override
     public void attack(Actor a) {
+        this.applyStopMovingDuringAttack();
         SmartFoxServer.getInstance()
                 .getTaskScheduler()
                 .schedule(
@@ -319,6 +320,7 @@ public class Lich extends UserActor {
         private Point2D lastLichLocation;
         private Point2D lastTargetLocation;
         private long timeOfBirth;
+        private boolean dead = false;
 
         Skully(Point2D spawnLocation) {
             this.room = Lich.this.room;
@@ -368,7 +370,9 @@ public class Lich extends UserActor {
 
         @Override
         public void die(Actor a) {
-            this.stopMoving();
+            this.dead = true;
+            this.currentHealth = 0;
+            if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
             System.out.println(this.id + " has died! ");
             ExtensionCommands.knockOutActor(parentExt, room, this.id, a.getId(), 40000);
             Lich.this.handleSkullyDeath();
@@ -377,6 +381,7 @@ public class Lich extends UserActor {
 
         @Override
         public void update(int msRan) {
+            if (this.dead) return;
             if (System.currentTimeMillis() - timeOfBirth >= 20 * 1000) {
                 this.die(this);
             }

@@ -288,7 +288,7 @@ public class Gunter extends UserActor {
                     room,
                     id,
                     "gunter_belly_slide_bottles",
-                    1000,
+                    1500,
                     id + "_slide_bottles",
                     false,
                     "",
