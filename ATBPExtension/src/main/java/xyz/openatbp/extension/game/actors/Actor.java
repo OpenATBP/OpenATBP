@@ -205,10 +205,11 @@ public abstract class Actor {
                                     * -1; // Stat can never drop below 0. May be redundant and can
                 // be removed
                 if (newStat == 0) {
-                    Console.debugLog("Removing " + stat);
+                    //  Console.debugLog(this.displayName + ": " + "Removing " + stat);
                     this.tempStats.remove(stat);
                     return true;
                 } else {
+                    // Console.debugLog(this.displayName + ": " + "Adding " + stat);
                     this.tempStats.put(stat, newStat);
                     return false;
                 }
@@ -245,8 +246,8 @@ public abstract class Actor {
                         ActorState state = (ActorState) data.getClass("state");
                         this.setState(state, false);
                         if (data.containsKey("delta")) { // If the state had a stat effect, reset it
-                            this.setTempStat(
-                                    data.getUtfString("stat"), data.getDouble("delta") * -1);
+                            String stat = data.getUtfString("stat");
+                            this.setTempStat(stat, this.getTempStat(stat) * -1);
                         }
                         if (state == ActorState.POLYMORPH) {
                             UserActor ua = (UserActor) this;
@@ -283,7 +284,7 @@ public abstract class Actor {
                                 this.setState(ActorState.SLOWED, false);
                         }
                     } else { // Resets stat back to normal by removing what it was modified by
-                        this.setTempStat(k, data.getDouble("delta") * -1);
+                        this.setTempStat(k, this.getTempStat(k) * -1);
                     }
                     this.activeBuffs.remove(k);
                 }
@@ -370,6 +371,7 @@ public abstract class Actor {
     }
 
     protected void handleStateEnd(ISFSObject data) {
+        Console.debugLog("Handing state end for " + this.displayName);
         ActorState state = (ActorState) data.getClass("state");
         ISFSObject newData = new SFSObject();
         newData.putLong("endTime", data.getLong("newEndTime"));

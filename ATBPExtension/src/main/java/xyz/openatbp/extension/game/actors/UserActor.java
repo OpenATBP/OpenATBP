@@ -155,7 +155,6 @@ public class UserActor extends Actor {
             if (this.hasTempStat("healthRegen") && this.getTempStat("healthRegen") <= 0)
                 this.tempStats.remove("healthRegen");
         }
-        parentExt.trace("Temp Stat for " + stat + " set to " + delta);
         ExtensionCommands.updateActorData(
                 this.parentExt, this.room, this.id, stat, this.getPlayerStat(stat));
         return returnVal;
