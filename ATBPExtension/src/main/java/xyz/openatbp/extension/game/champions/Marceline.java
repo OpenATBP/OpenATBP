@@ -44,7 +44,8 @@ public class Marceline extends UserActor {
         super.update(msRan);
         if (this.currentHealth < this.maxHealth
                 && !this.healthRegenEffectActive
-                && this.states.get(ActorState.TRANSFORMED)) {
+                && this.states.get(ActorState.TRANSFORMED)
+                && !this.dead) {
             System.out.println("Starting marceline effect");
             ExtensionCommands.createActorFX(
                     this.parentExt,
@@ -59,7 +60,8 @@ public class Marceline extends UserActor {
                     false,
                     this.team);
             this.healthRegenEffectActive = true;
-        } else if (healthRegenEffectActive && this.currentHealth == this.maxHealth) {
+        } else if (healthRegenEffectActive && this.currentHealth == this.maxHealth
+                || healthRegenEffectActive && this.getState(ActorState.TRANSFORMED) && this.dead) {
             System.out.println("Ending marceline effect");
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_batRegen");
             this.healthRegenEffectActive = false;
@@ -106,6 +108,7 @@ public class Marceline extends UserActor {
 
     @Override
     public void attack(Actor a) {
+        this.applyStopMovingDuringAttack();
         if (this.attackCooldown == 0) {
             SmartFoxServer.getInstance()
                     .getTaskScheduler()

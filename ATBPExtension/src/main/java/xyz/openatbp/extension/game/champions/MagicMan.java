@@ -36,6 +36,7 @@ public class MagicMan extends UserActor {
 
     @Override
     public void attack(Actor a) {
+        this.applyStopMovingDuringAttack();
         if (this.getState(ActorState.INVISIBLE)) {
             this.setState(ActorState.INVISIBLE, false);
         }

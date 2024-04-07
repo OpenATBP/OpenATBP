@@ -35,6 +35,7 @@ public class BMO extends UserActor {
 
     @Override
     public void attack(Actor a) {
+        this.applyStopMovingDuringAttack();
         String projectileFx =
                 (this.avatar.contains("noir")) ? "bmo_projectile_noire" : "bmo_projectile";
         SmartFoxServer.getInstance()

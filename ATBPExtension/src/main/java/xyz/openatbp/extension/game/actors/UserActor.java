@@ -50,6 +50,7 @@ public class UserActor extends Actor {
     private static final boolean MOVEMENT_DEBUG = false;
     private static final boolean INVINCIBLE_DEBUG = false;
     private static final boolean ABILITY_DEBUG = false;
+    private static final boolean SPEED_DEBUG = false;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -81,6 +82,7 @@ public class UserActor extends Actor {
                     this.location,
                     0f,
                     2);
+        if (SPEED_DEBUG) this.setStat("speed", 20);
     }
 
     public void setAutoAttackEnabled(boolean enabled) {
@@ -323,6 +325,7 @@ public class UserActor extends Actor {
     @Override
     public void attack(Actor a) {
         if (this.attackCooldown == 0) {
+            this.applyStopMovingDuringAttack();
             double critChance = this.getPlayerStat("criticalChance") / 100d;
             double random = Math.random();
             boolean crit = random < critChance;
@@ -365,6 +368,26 @@ public class UserActor extends Actor {
             } catch (NullPointerException e) {
                 // e.printStackTrace();
                 delayedAttack.run();
+            }
+        }
+    }
+
+    public void applyStopMovingDuringAttack() {
+        if (this.parentExt.getActorData(this.getAvatar()).has("attackType")) {
+            String attackType =
+                    this.parentExt.getActorData(this.getAvatar()).get("attackType").asText();
+            switch (attackType) {
+                case "MELEE":
+                    this.stopMoving(500);
+                    Console.debugLog("melee attack");
+                    break;
+                case "RANGED":
+                    this.stopMoving(250);
+                    Console.debugLog("ranged attack");
+                    break;
+                default:
+                    this.stopMoving(250);
+                    Console.debugLog("undefined attack");
             }
         }
     }
@@ -512,13 +535,6 @@ public class UserActor extends Actor {
     }
 
     public void autoAttack(Actor a) {
-        if (!this.parentExt
-                .getActorData(this.getAvatar())
-                .get("attackType")
-                .asText()
-                .equalsIgnoreCase("MELEE")) this.stopMoving(250);
-        if (this.getAvatar().contains("finn") || this.getAvatar().contains("marceline"))
-            this.stopMoving(500);
         this.attack(a);
     }
 

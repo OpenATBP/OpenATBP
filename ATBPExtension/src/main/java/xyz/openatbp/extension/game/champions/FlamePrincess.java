@@ -297,6 +297,7 @@ public class FlamePrincess extends UserActor {
 
     @Override
     public void attack(Actor a) {
+        this.applyStopMovingDuringAttack();
         SmartFoxServer.getInstance()
                 .getTaskScheduler()
                 .schedule(

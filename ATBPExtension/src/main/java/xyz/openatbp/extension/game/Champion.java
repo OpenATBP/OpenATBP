@@ -389,15 +389,6 @@ public class Champion {
         @Override
         public void run() {
             if (this.target.getHealth() <= 0) return;
-            if (this.attacker.getActorType() == ActorType.PLAYER
-                    && this.parentExt
-                            .getActorData(this.attacker.getAvatar())
-                            .get("attackType")
-                            .asText()
-                            .equalsIgnoreCase("MELEE")
-                    && !this.attacker.getAvatar().contains("finn")
-                    && !this.attacker.getAvatar().contains("marceline"))
-                ((UserActor) this.attacker).stopMoving(500);
             if (this.attacker.getState(ActorState.BLINDED)) {
                 if (this.attacker.getActorType() == ActorType.PLAYER)
                     ExtensionCommands.playSound(
@@ -473,7 +464,10 @@ public class Champion {
                                 "",
                                 false);
                 }
-                if (this.attack.contains("basic")) ua.handleLifeSteal();
+                if (this.attack.contains("basic")
+                        && this.target != null
+                        && this.target.getActorType() != ActorType.TOWER
+                        && this.target.getActorType() != ActorType.BASE) ua.handleLifeSteal();
             }
             /*
             if(this.target.getActorType() == ActorType.PLAYER){
