@@ -128,6 +128,6 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                 if (movementLine.getP1().distance(dest) >= 0.1f) user.move(params, dest);
                 else user.stopMoving();
             }
-        } else Console.logWarning("Can't move!");
+        }
     }
 }

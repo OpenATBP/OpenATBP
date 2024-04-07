@@ -378,15 +378,15 @@ public class UserActor extends Actor {
             switch (attackType) {
                 case "MELEE":
                     this.stopMoving(500);
-                    Console.debugLog("melee attack");
+                    // Console.debugLog("melee attack");
                     break;
                 case "RANGED":
                     this.stopMoving(250);
-                    Console.debugLog("ranged attack");
+                    // Console.debugLog("ranged attack");
                     break;
                 default:
                     this.stopMoving(250);
-                    Console.debugLog("undefined attack");
+                    Console.logWarning(this.displayName + ": " + "undefined attack: " + attackType);
             }
         }
     }

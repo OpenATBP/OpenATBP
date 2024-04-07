@@ -75,7 +75,7 @@ var onlineChecker = setInterval(() => {
 
 var playerList = setInterval(() => {
   for (var p of onlinePlayers) {
-    console.log(p.username + ' is online!');
+    console.log(p.name + ' is online!');
   }
 }, 60000);
 
