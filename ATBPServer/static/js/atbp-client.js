@@ -68,10 +68,7 @@ var UnityRequest = function (
 var LoginModule = function () {};
 
 LoginModule.showLoginWindow = function () {
-  var client_id = '<%- client_id %>';
-  var redirect = encodeURIComponent('<%- redirect %>');
-  var discordEnabled = '<%- discord_enabled %>';
-  if (discordEnabled == 'true') {
+  if (discord_enabled == 'true') {
     window.location.href =
       'https://discord.com/api/oauth2/authorize?client_id=' +
       client_id +
@@ -79,7 +76,7 @@ LoginModule.showLoginWindow = function () {
       redirect +
       '&response_type=code&scope=identify';
   } else {
-    console.log(discordEnabled);
+    console.log(discord_enabled);
     var userName = prompt('Enter name');
     if (userName != null) {
       try {
