@@ -684,7 +684,9 @@ public abstract class Actor {
         if (attacker.getActorType() == ActorType.PLAYER
                 && this.getAttackType(attackData) == AttackType.SPELL) {
             UserActor ua = (UserActor) attacker;
-            ua.handleSpellVamp(damage);
+            ua.handleSpellVamp(
+                    this.getMitigatedDamage(damage, AttackType.SPELL, ua),
+                    attackData.get("castType").asText().equalsIgnoreCase("aimed"));
         }
     }
 

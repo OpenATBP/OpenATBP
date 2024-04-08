@@ -4,6 +4,7 @@ import static com.mongodb.client.model.Filters.eq;
 
 import java.awt.geom.Point2D;
 import java.util.*;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -56,6 +57,7 @@ public class RoomHandler implements Runnable {
     private boolean playMainMusic = false;
     private boolean playTowerMusic = false;
     private long lastPointLeadTime = 0;
+    private ScheduledFuture<?> scriptHandler;
 
     public RoomHandler(ATBPExtension parentExt, Room room) {
         this.parentExt = parentExt;
@@ -105,6 +107,14 @@ public class RoomHandler implements Runnable {
         this.companions = new ArrayList<>();
         // this.campMonsters = GameManager.initializeCamps(parentExt,room);
 
+    }
+
+    public void setScriptHandler(ScheduledFuture<?> handler) {
+        this.scriptHandler = handler;
+    }
+
+    public void stopScript() {
+        this.scriptHandler.cancel(true);
     }
 
     @Override

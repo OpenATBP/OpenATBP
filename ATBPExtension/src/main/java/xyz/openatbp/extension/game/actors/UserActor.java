@@ -1266,9 +1266,10 @@ public class UserActor extends Actor {
         return (int) Math.round(cooldown * ratio);
     }
 
-    public void handleSpellVamp(double damage) {
+    public void handleSpellVamp(double damage, boolean area) {
         double percentage = this.getPlayerStat("spellVamp") / 100;
         int healing = (int) Math.round(damage * percentage);
+        if (area) healing *= 0.33d;
         this.changeHealth(healing);
     }
 

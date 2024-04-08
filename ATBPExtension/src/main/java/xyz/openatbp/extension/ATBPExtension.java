@@ -7,7 +7,6 @@ import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import com.dongbat.walkable.PathHelper;
@@ -51,7 +50,6 @@ public class ATBPExtension extends SFSExtension {
     HashMap<String, List<String>> tips = new HashMap<>();
 
     HashMap<Integer, RoomHandler> roomHandlers = new HashMap<>();
-    HashMap<Integer, ScheduledFuture<?>> roomTasks = new HashMap<>();
     MongoClient mongoClient;
     MongoDatabase database;
     MongoCollection<Document> playerDatabase;
@@ -107,8 +105,8 @@ public class ATBPExtension extends SFSExtension {
     @Override
     public void destroy() { // Destroys all room tasks to prevent memory leaks
         super.destroy();
-        for (Integer key : roomTasks.keySet()) {
-            if (roomTasks.get(key) != null) roomTasks.get(key).cancel(true);
+        for (Integer key : roomHandlers.keySet()) {
+            if (roomHandlers.get(key) != null) roomHandlers.get(key).stopScript();
         }
     }
 
@@ -323,15 +321,14 @@ public class ATBPExtension extends SFSExtension {
     }
 
     public void startScripts(Room room) { // Creates a new task scheduler for a room
-        System.out.println("Starting script for room!");
+        Console.debugLog("Starting script for room!");
         if (!this.roomHandlers.containsKey(room.getId())) {
             RoomHandler handler = new RoomHandler(this, room);
-            roomHandlers.put(room.getId(), handler);
-            roomTasks.put(
-                    room.getId(),
+            handler.setScriptHandler(
                     SmartFoxServer.getInstance()
                             .getTaskScheduler()
                             .scheduleAtFixedRate(handler, 100, 100, TimeUnit.MILLISECONDS));
+            roomHandlers.put(room.getId(), handler);
         } else {
             this.stopScript(
                     room.getId()); // This will kick all players out of the game if it tries to
@@ -342,8 +339,7 @@ public class ATBPExtension extends SFSExtension {
 
     public void stopScript(int roomId) { // Stops a task scheduler when room is deleted
         trace("Stopping script!");
-        roomTasks.get(roomId).cancel(true); // TODO: Returning null after game ends
-        roomTasks.remove(roomId);
+        roomHandlers.get(roomId).stopScript();
         roomHandlers.remove(roomId);
     }
 
