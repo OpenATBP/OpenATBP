@@ -217,6 +217,7 @@ function joinQueue(sockets, type) {
   if (queueSize == 3) queueSize = 2; //Turns bots to 1v1
   for (var i = 0; i < sockets.length; i++) {
     var socket = sockets[i];
+    if(!socket.player.onTeam) socket.player.team = -1;
     socket.player.queue.type = type;
     socket.player.queue.started = Date.now();
     if (i + 1 == sockets.length) {
