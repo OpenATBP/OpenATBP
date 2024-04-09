@@ -3,8 +3,15 @@
 	<head>
 		<title>Adventure Time Battle Party</title>
 
+        <script type="text/javascript">
+              var client_id = '<%- client_id %>';
+              var redirect = encodeURIComponent('<%- redirect %>');
+              var discord_enabled = '<%- discord_enabled %>';
+        </script>
+		<script type="text/javascript" src="js/atbp-client.js"></script>
+
 		<style type="text/css">
-			body {
+			html, body {
 				margin: 0;
 				padding: 0;
 				width: 100%;
@@ -19,126 +26,10 @@
 				clear: both;
 			}
 		</style>
-
-		<script type="text/javascript">
-			function OnResize() {
-				var unity = document.getElementById('unity_player');
-				unity.style.width = window.innerWidth + 'px';
-				unity.style.height = window.innerHeight + 'px';
-			}
-		</script>
-
-		<script type="text/javascript">
-			var unity = document.getElementById('unity_player');
-
-			function Fireteam_CheckMSIBLoggedIn(name, callback){
-				returnOK = document.cookie.split('; ').find(row => row.startsWith('logged'))?.split("=")[1];
-				console.log(returnOK);
-				if(returnOK == undefined) returnOK = "false";
-				unity.SendMessage(name, callback, returnOK);
-			}
-
-			function Fireteam_GetCookies(name, callback){
-				unity.SendMessage(name, callback, document.cookie);
-			}
-
-			function Fireteam_AspenInit(name, callback){
-				// stubbed
-			}
-
-			function AchievementUnityComm(){
-				// stubbed
-			}
-
-			AchievementUnityComm.doUnityLoaded = function (){
-				// stubbed
-			}
-
-			AchievementUnityComm.doUnityGameStarted = function (){
-				// stubbed
-			}
-		</script>
 	</head>
 	<body onresize="OnResize()">
 		<div id="container">
 			<embed src="CNChampions.unity3d" id="unity_player" bgColor=#000000 logoimage="logoimage.png" progressbarimage="progressbarimage.png" progressframeimage="progressframeimage.png" width=100% height=100% type="application/vnd.unity" backgroundcolor="021E2F" bordercolor="DF2900" textcolor="DF2900" disablecontextmenu="true" disablefullscreen="false">
 		</div>
-		<script type="text/javascript">
-		  	var unity = document.getElementById('unity_player');
-				OnResize();
-				var Fireteam_AspenSend = function(name, callback){
-					console.log("Fireteam!");
-					console.log(name);
-					console.log(callback);
-				};
-				var LoginModule = function() {};
-				var UnityRequest = function(go_name, responce_func, request_name, request_param ){
-					alert("llego msg!" + "obj: " + go_name + "." + responce_func + "()");
-					alert(request_name);
-					if( request_name == "isLoggedIn" ){
-						unity.SendMessage( go_name, responce_func, "LOGGED" );
-					}
-					else if( request_name == "checkAuthorization" ){
-						unity.SendMessage( go_name, responce_func, "AUTHORIZED" );
-					}
-					else if( request_name == "readCookie" ){
-						unity.SendMessage( go_name, responce_func, "" );
-					}
-				};
-				LoginModule.showLoginWindow = function(){
-					var client_id = "<%- client_id %>";
-					var redirect = encodeURIComponent("<%- redirect %>");
-					var discordEnabled = "<%- discord_enabled %>";
-					if(discordEnabled == 'true'){
-						window.location.href = 'https://discord.com/api/oauth2/authorize?client_id=' + client_id + '&redirect_uri=' + redirect + '&response_type=code&scope=identify';
-					}else{
-						console.log(discordEnabled);
-						var userName = prompt("Enter name");
-						if(userName != null){
-							try{fetch(`service/authenticate/user/${userName.replace("%20","")}`,{ //If user exists, requests the user information to authenticate
-										Method: "GET",
-										Body: JSON.stringify({"username":userName}),
-										Mode: 'cors',
-										Cache: 'default'
-									}).then((res) => res.json()).then((data) => {
-										if(data != null){
-											document.cookie = `TEGid=${data.user.TEGid}`,
-											document.cookie = `authid=${data.user.authid}`;
-											document.cookie = `dname=${data.user.dname}`;
-											document.cookie = `authpass=${data.user.authpass}`;
-											document.cookie = "logged=true"
-											unity.SendMessage("MainGameController","HandleLogin","");
-										}else{ //If user does not exist, it asks for a password to add as the authpass to the database. If passwords are stored, will need to hash
-											var password = prompt("New user! Enter password");
-											if(password != null){
-												var xhr = new XMLHttpRequest();
-												xhr.open("POST", `service/authenticate/user/${userName.replace("%20"," ")}`);
-
-												xhr.onload = () => {
-													var userData = JSON.parse(xhr.response);
-
-													document.cookie = `TEGid=${userData.TEGid}`,
-													document.cookie = `authid=${userData.authid}`;
-													document.cookie = `dname=${userData.dname}`;
-													document.cookie = `authpass=${userData.authpass}`;
-													document.cookie = "logged=true"
-													unity.SendMessage("MainGameController","HandleLogin","");
-
-												};
-
-												xhr.send(JSON.stringify({"password": password}));
-											}
-										}
-									}).catch((err) => {
-										console.log(err);
-									});
-
-							}catch(e){
-								console.log(e);
-							}
-						}
-					}
-				};
-		</script>
 	</body>
 </html>

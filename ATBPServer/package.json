@@ -1,23 +1,25 @@
 {
-  "name": "httpserver",
+  "name": "ATBPServer",
   "version": "1.0.0",
-  "description": "Server to handle HTTP requests sent by the ATBP client",
+  "description": "Server to handle HTTP and Lobby requests sent by the ATBP client",
   "main": "server.js",
   "author": "OpenATBP Contributors",
   "license": "MIT",
   "dependencies": {
     "body-parser": "^1.20.0",
     "ejs": "^3.1.9",
-    "express": "^4.18.1",
-    "extract-zip": "^2.0.1",
-    "mongodb": "^4.8.1",
-    "node-downloader-helper": "^2.1.9",
-    "undici": "^5.25.2"
-  },
-  "scripts": {
-    "postinstall": "node scripts/asset-downloader.js"
+    "express": "^4.19.2",
+    "mongodb": "^4.17.2",
+    "undici": "^5.28.4"
   },
   "devDependencies": {
-    "prettier": "3.2.5"
+    "extract-zip": "^2.0.1",
+    "node-downloader-helper": "^2.1.9",
+    "prettier": "^3.2.5"
+  },
+  "scripts": {
+    "check": "prettier --check .",
+    "format": "prettier --write .",
+    "postinstall": "node scripts/asset-downloader.js"
   }
 }
