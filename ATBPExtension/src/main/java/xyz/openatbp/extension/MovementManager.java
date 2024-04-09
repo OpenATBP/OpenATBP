@@ -105,7 +105,8 @@ public class MovementManager {
                             vectorLines);
             if (closestLine == null) return movementLine.getP2();
             if (closestLine.getP1().distance(player.getLocation()) > 5
-                    && player.getAvatar().contains("finn"))
+                    && (player.getAvatar().contains("finn")
+                            || player.getAvatar().contains("flame")))
                 closestLine = findClosestLine(movementLine, vectorLines);
             if (collider.size() < 25
                     && !playerIntersectsWithCollider(movementLine.getP2(), collider)) {
