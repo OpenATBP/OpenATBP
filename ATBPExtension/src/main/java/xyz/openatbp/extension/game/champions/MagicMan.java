@@ -194,11 +194,8 @@ public class MagicMan extends UserActor {
                             Champion.getAbilityLine(this.wLocation, dest, 100f).getP2();
                     if (this.location.distance(endLocation) <= 1d) endLocation = this.location;
                     this.wDest = endLocation;
-                    System.out.println("endLocation:" + endLocation);
                     ExtensionCommands.snapActor(
                             this.parentExt, this.room, this.id, this.location, dashPoint, true);
-                    System.out.println(
-                            "DashX: " + dashPoint.getX() + " DashY: " + dashPoint.getY());
                     this.setLocation(dashPoint);
                     this.magicManClone = new MagicManClone(this.wLocation);
                     this.parentExt

@@ -55,14 +55,10 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             // Console.debugLog("dx: " + dx + " dz: " + dz);
             FloatArray path = new FloatArray();
             try {
-                if (!parentExt.getRoomHandler(room.getId()).isPracticeMap())
-                    parentExt
-                            .getMainMapPathFinder()
-                            .findPath(px + 50, pz + 30, dx + 50, dz + 30, 0.6f, path);
-                else
-                    parentExt
-                            .getPracticeMapPathFinder()
-                            .findPath(px + 50, pz + 30, dx + 50, dz + 30, 0.6f, path);
+                parentExt
+                        .getRoomHandler(room.getId())
+                        .getPathHelper()
+                        .findPath(px + 50, pz + 30, dx + 50, dz + 30, 0.6f, path);
                 if (path.size <= 2
                         || MovementManager.insideAnyObstacle(
                                 parentExt,
@@ -128,6 +124,6 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                 if (movementLine.getP1().distance(dest) >= 0.1f) user.move(params, dest);
                 else user.stopMoving();
             }
-        } else Console.logWarning("Can't move!");
+        }
     }
 }

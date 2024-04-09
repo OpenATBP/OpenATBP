@@ -281,23 +281,21 @@ public class Monster extends Actor {
                             == ActorType.COMPANION) { // Adds score + party xp when killed by player
                 UserActor ua = null;
                 if (a.getActorType() == ActorType.COMPANION) {
-                    int team = 0;
-                    if (a.getTeam() == 0) team = 1;
                     if (a.getId().contains("skully"))
                         ua =
                                 this.parentExt
                                         .getRoomHandler(this.room.getId())
-                                        .getEnemyChampion(team, "lich");
+                                        .getEnemyChampion(a.getTeam(), "lich");
                     else if (a.getId().contains("turret"))
                         ua =
                                 this.parentExt
                                         .getRoomHandler(this.room.getId())
-                                        .getEnemyChampion(team, "princessbubblegum");
+                                        .getEnemyChampion(a.getTeam(), "princessbubblegum");
                     else if (a.getId().contains("mine"))
                         ua =
                                 this.parentExt
                                         .getRoomHandler(this.room.getId())
-                                        .getEnemyChampion(team, "neptr");
+                                        .getEnemyChampion(a.getTeam(), "neptr");
                 } else ua = (UserActor) a;
                 if (ua != null) {
                     ua.addGameStat("jungleMobs", 1);
@@ -458,10 +456,7 @@ public class Monster extends Actor {
         try {
             path =
                     MovementManager.getPath(
-                            this.parentExt,
-                            this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),
-                            this.location,
-                            dest);
+                            this.parentExt.getRoomHandler(this.room.getId()), this.location, dest);
         } catch (Exception e) {
             Console.logWarning(this.id + " could not form a path.");
         }

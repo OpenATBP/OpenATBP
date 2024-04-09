@@ -226,6 +226,7 @@ public class GameManager {
                 "music",
                 "",
                 new Point2D.Float(0, 0)); // turn off char select music
+        parentExt.startScripts(room); // Starts the background scripts for the game
     }
 
     private static void setRoomVariables(Room room) throws SFSVariableException {

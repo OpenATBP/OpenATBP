@@ -267,7 +267,6 @@ public class Gunter extends UserActor {
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
         super.handleKill(a, attackData);
-        System.out.println(attackData.toString());
         if (attackData.has("spellName") && attackData.get("spellName").asText().contains("spell_2"))
             this.shatter(a);
         else if (attackData.has("attackName")

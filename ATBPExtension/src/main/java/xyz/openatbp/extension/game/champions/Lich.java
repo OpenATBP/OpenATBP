@@ -373,7 +373,6 @@ public class Lich extends UserActor {
             this.dead = true;
             this.currentHealth = 0;
             if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
-            System.out.println(this.id + " has died! ");
             ExtensionCommands.knockOutActor(parentExt, room, this.id, a.getId(), 40000);
             Lich.this.handleSkullyDeath();
             ExtensionCommands.destroyActor(parentExt, room, this.id);
@@ -408,10 +407,7 @@ public class Lich extends UserActor {
                     if (this.movementLine.getP2().distance(this.target.getLocation()) > 0.1d)
                         this.setPath(
                                 MovementManager.getPath(
-                                        this.parentExt,
-                                        this.parentExt
-                                                .getRoomHandler(this.room.getId())
-                                                .isPracticeMap(),
+                                        this.parentExt.getRoomHandler(this.room.getId()),
                                         this.location,
                                         this.target.getLocation()));
                 }

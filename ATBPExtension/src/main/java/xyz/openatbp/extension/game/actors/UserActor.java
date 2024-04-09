@@ -155,7 +155,6 @@ public class UserActor extends Actor {
             if (this.hasTempStat("healthRegen") && this.getTempStat("healthRegen") <= 0)
                 this.tempStats.remove("healthRegen");
         }
-        parentExt.trace("Temp Stat for " + stat + " set to " + delta);
         ExtensionCommands.updateActorData(
                 this.parentExt, this.room, this.id, stat, this.getPlayerStat(stat));
         return returnVal;
@@ -363,10 +362,15 @@ public class UserActor extends Actor {
                                     new RangedAttack(a, delayedAttack, projectileFx),
                                     500,
                                     TimeUnit.MILLISECONDS);
-                else delayedAttack.run();
+                else
+                    SmartFoxServer.getInstance()
+                            .getTaskScheduler()
+                            .schedule(delayedAttack, 300, TimeUnit.MILLISECONDS);
             } catch (NullPointerException e) {
                 // e.printStackTrace();
-                delayedAttack.run();
+                SmartFoxServer.getInstance()
+                        .getTaskScheduler()
+                        .schedule(delayedAttack, 300, TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -378,15 +382,15 @@ public class UserActor extends Actor {
             switch (attackType) {
                 case "MELEE":
                     this.stopMoving(500);
-                    Console.debugLog("melee attack");
+                    // Console.debugLog("melee attack");
                     break;
                 case "RANGED":
                     this.stopMoving(250);
-                    Console.debugLog("ranged attack");
+                    // Console.debugLog("ranged attack");
                     break;
                 default:
                     this.stopMoving(250);
-                    Console.debugLog("undefined attack");
+                    Console.logWarning(this.displayName + ": " + "undefined attack: " + attackType);
             }
         }
     }
@@ -794,10 +798,7 @@ public class UserActor extends Actor {
                             > 0.1f) {
                         this.setPath(
                                 MovementManager.getPath(
-                                        this.parentExt,
-                                        this.parentExt
-                                                .getRoomHandler(this.room.getId())
-                                                .isPracticeMap(),
+                                        this.parentExt.getRoomHandler(this.room.getId()),
                                         this.location,
                                         this.target.getLocation()));
                     }
@@ -1267,9 +1268,10 @@ public class UserActor extends Actor {
         return (int) Math.round(cooldown * ratio);
     }
 
-    public void handleSpellVamp(double damage) {
+    public void handleSpellVamp(double damage, boolean area) {
         double percentage = this.getPlayerStat("spellVamp") / 100;
         int healing = (int) Math.round(damage * percentage);
+        if (area) healing *= 0.33d;
         this.changeHealth(healing);
     }
 

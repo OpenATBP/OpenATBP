@@ -46,7 +46,6 @@ public class Marceline extends UserActor {
                 && !this.healthRegenEffectActive
                 && this.states.get(ActorState.TRANSFORMED)
                 && !this.dead) {
-            System.out.println("Starting marceline effect");
             ExtensionCommands.createActorFX(
                     this.parentExt,
                     this.room,
@@ -62,7 +61,6 @@ public class Marceline extends UserActor {
             this.healthRegenEffectActive = true;
         } else if (healthRegenEffectActive && this.currentHealth == this.maxHealth
                 || healthRegenEffectActive && this.getState(ActorState.TRANSFORMED) && this.dead) {
-            System.out.println("Ending marceline effect");
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_batRegen");
             this.healthRegenEffectActive = false;
         }
@@ -371,7 +369,6 @@ public class Marceline extends UserActor {
             }
             if (!getState(ActorState.TRANSFORMED) && isNonStructure(this.target)) passiveHits++;
             if (wActive && getState(ActorState.TRANSFORMED)) {
-                System.out.println("Marceline hit with the W");
                 wActive = false;
                 ExtensionCommands.playSound(
                         parentExt, room, id, "sfx_marceline_beast_crit_hit", location);
@@ -388,9 +385,6 @@ public class Marceline extends UserActor {
                         false,
                         target.getTeam());
                 ExtensionCommands.removeFx(parentExt, room, id + "_beastHands");
-            } else {
-                System.out.println(
-                        "W active: " + wActive + " | " + getState(ActorState.TRANSFORMED));
             }
             new Champion.DelayedAttack(
                             parentExt, Marceline.this, target, (int) damage, "basicAttack")

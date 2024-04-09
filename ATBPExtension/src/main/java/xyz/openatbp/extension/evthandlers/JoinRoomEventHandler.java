@@ -9,6 +9,7 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.extensions.BaseServerEventHandler;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.GameManager;
 
 public class JoinRoomEventHandler extends BaseServerEventHandler {
@@ -16,6 +17,7 @@ public class JoinRoomEventHandler extends BaseServerEventHandler {
     public void handleServerEvent(ISFSEvent event) { // Initialize everything
         Room room = (Room) event.getParameter(SFSEventParam.ROOM);
         User sender = (User) event.getParameter(SFSEventParam.USER);
+        Console.debugLog(sender.getName() + " has joined room!");
         sender.setProperty("joined", true);
         ArrayList<User> users = (ArrayList<User>) room.getUserList();
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
@@ -24,11 +26,8 @@ public class JoinRoomEventHandler extends BaseServerEventHandler {
         if (GameManager.playersLoaded(
                 users, maxPlayers)) { // If all players have loaded into the room
             room.setProperty("state", 1);
-            System.out.println("Last to join is " + sender.getName());
             GameManager.addPlayer(room, parentExt); // Add users to the game
             GameManager.loadPlayers(room, parentExt); // Load the players into the map
         }
-
-        System.out.println("Joined room!");
     }
 }

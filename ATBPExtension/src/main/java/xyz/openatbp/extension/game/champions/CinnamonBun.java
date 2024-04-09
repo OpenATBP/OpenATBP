@@ -317,8 +317,6 @@ public class CinnamonBun extends UserActor {
                                 TimeUnit.MILLISECONDS);
                 break;
             case 3:
-                System.out.println("Ult uses: " + this.ultUses);
-                System.out.println("Point2 Exists: " + (this.ultPoint2 == null));
                 this.canCast[2] = false;
                 this.stopMoving();
                 if (this.ultUses == 0) {
@@ -474,7 +472,6 @@ public class CinnamonBun extends UserActor {
                         }
                     }
                     if (this.ultPoint2 != null) {
-                        System.out.println("Here!");
                         ExtensionCommands.createWorldFX(
                                 this.parentExt,
                                 this.room,

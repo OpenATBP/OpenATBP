@@ -100,6 +100,8 @@ public abstract class Actor {
     }
 
     public boolean withinRange(Actor a) {
+        if (a.getActorType() == ActorType.BASE)
+            return a.getLocation().distance(this.location) - 1 <= this.getPlayerStat("attackRange");
         return a.getLocation().distance(this.location) <= this.getPlayerStat("attackRange");
     }
 
@@ -112,6 +114,8 @@ public abstract class Actor {
     }
 
     protected boolean isStopped() {
+        if (this.movementLine == null)
+            this.movementLine = new Line2D.Float(this.location, this.location);
         return this.location.distance(this.movementLine.getP2()) < 0.01d;
     }
 
@@ -170,6 +174,7 @@ public abstract class Actor {
     public void setPath(List<Point2D> path) {
         if (path.size() == 0) {
             Console.logWarning(this.id + " was given a 0 length path");
+            this.path = null;
             return;
         }
         Line2D pathLine = new Line2D.Float(this.location, path.get(1));
@@ -205,10 +210,11 @@ public abstract class Actor {
                                     * -1; // Stat can never drop below 0. May be redundant and can
                 // be removed
                 if (newStat == 0) {
-                    Console.debugLog("Removing " + stat);
+                    //  Console.debugLog(this.displayName + ": " + "Removing " + stat);
                     this.tempStats.remove(stat);
                     return true;
                 } else {
+                    // Console.debugLog(this.displayName + ": " + "Adding " + stat);
                     this.tempStats.put(stat, newStat);
                     return false;
                 }
@@ -245,8 +251,8 @@ public abstract class Actor {
                         ActorState state = (ActorState) data.getClass("state");
                         this.setState(state, false);
                         if (data.containsKey("delta")) { // If the state had a stat effect, reset it
-                            this.setTempStat(
-                                    data.getUtfString("stat"), data.getDouble("delta") * -1);
+                            String stat = data.getUtfString("stat");
+                            this.setTempStat(stat, this.getTempStat(stat) * -1);
                         }
                         if (state == ActorState.POLYMORPH) {
                             UserActor ua = (UserActor) this;
@@ -283,7 +289,7 @@ public abstract class Actor {
                                 this.setState(ActorState.SLOWED, false);
                         }
                     } else { // Resets stat back to normal by removing what it was modified by
-                        this.setTempStat(k, data.getDouble("delta") * -1);
+                        this.setTempStat(k, this.getTempStat(k) * -1);
                     }
                     this.activeBuffs.remove(k);
                 }
@@ -370,6 +376,7 @@ public abstract class Actor {
     }
 
     protected void handleStateEnd(ISFSObject data) {
+        Console.debugLog("Handing state end for " + this.displayName);
         ActorState state = (ActorState) data.getClass("state");
         ISFSObject newData = new SFSObject();
         newData.putLong("endTime", data.getLong("newEndTime"));
@@ -614,7 +621,6 @@ public abstract class Actor {
 
     public void handleFear(Point2D source, int duration) {
         if (!this.states.get(ActorState.FEARED)) {
-            this.setState(ActorState.FEARED, true);
             double distance = source.distance(this.location);
             double dx = (this.location.getX() - source.getX());
             double dy = (this.location.getY() - source.getY());
@@ -625,17 +631,8 @@ public abstract class Actor {
             Point2D extendedPoint = new Point2D.Double(extX, extY);
             Line2D perpendicularLine = new Line2D.Double(this.location, extendedPoint);
             Point2D fearEndPoint = MovementManager.getDashPoint(this, perpendicularLine);
-            this.movementLine = new Line2D.Float(this.location, fearEndPoint);
-            this.timeTraveled = 0f;
+            this.moveWithCollision(fearEndPoint);
             this.addState(ActorState.FEARED, 0d, duration, null, false);
-            ExtensionCommands.moveActor(
-                    parentExt,
-                    room,
-                    id,
-                    this.location,
-                    fearEndPoint,
-                    (float) this.getPlayerStat("speed"),
-                    true);
         }
     }
 
@@ -680,7 +677,9 @@ public abstract class Actor {
         if (attacker.getActorType() == ActorType.PLAYER
                 && this.getAttackType(attackData) == AttackType.SPELL) {
             UserActor ua = (UserActor) attacker;
-            ua.handleSpellVamp(damage);
+            ua.handleSpellVamp(
+                    this.getMitigatedDamage(damage, AttackType.SPELL, ua),
+                    attackData.get("castType").asText().equalsIgnoreCase("aimed"));
         }
     }
 
@@ -754,18 +753,16 @@ public abstract class Actor {
 
     public int getMitigatedDamage(double rawDamage, AttackType attackType, Actor attacker) {
         try {
-            double armor =
-                    this.getPlayerStat("armor")
-                            * (1 - (attacker.getPlayerStat("armorPenetration") / 100));
+            double armor = this.getPlayerStat("armor") - attacker.getPlayerStat("armorPenetration");
             double spellResist =
-                    this.getPlayerStat("spellResist")
-                            * (1 - (attacker.getPlayerStat("spellPenetration") / 100));
+                    this.getPlayerStat("spellResist") - attacker.getPlayerStat("spellPenetration");
             if (armor < 0) armor = 0;
             if (spellResist < 0) spellResist = 0;
             double modifier;
             if (attackType == AttackType.PHYSICAL) {
                 modifier = 100 / (100 + armor);
             } else modifier = 100 / (100 + spellResist);
+
             return (int) Math.round(rawDamage * modifier);
         } catch (Exception e) {
             e.printStackTrace();

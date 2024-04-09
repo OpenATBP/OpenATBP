@@ -96,7 +96,7 @@ function leaveQueue(socket) {
         safeSendAll(
           users.filter((u) => queue.players.includes(u.player) && u != socket),
           'team_disband',
-          { reason: 'error_lobby_playerLeftMatch' }
+          { reason: `${socket.player.name} dodged!` }
         )
           .then(() => {
             for (var p of queue.players) {
@@ -115,6 +115,7 @@ function leaveQueue(socket) {
   socket.player.queue.type = null;
   socket.player.queue.started = -1;
   socket.player.queue.queueNum = -1;
+  socket.player.team = -1;
   var invalidQueues = []; //Should clean up errors, if applicable, where queues contains incorrect players
   for (var q of queues) {
     var queuedUsers = users.filter(
@@ -216,6 +217,7 @@ function joinQueue(sockets, type) {
   if (queueSize == 3) queueSize = 2; //Turns bots to 1v1
   for (var i = 0; i < sockets.length; i++) {
     var socket = sockets[i];
+    if (!socket.player.onTeam) socket.player.team = -1;
     socket.player.queue.type = type;
     socket.player.queue.started = Date.now();
     if (i + 1 == sockets.length) {
@@ -253,7 +255,7 @@ function joinQueue(sockets, type) {
         }
         if (players.length == queueSize) {
           for (var p of players) {
-            console.log(`QUEUE POPPED. ${p.name} JOINED!`);
+            console.log(`QUEUE POPPED. ${p.name} JOINED!`, p);
           }
           var blue = [];
           var purple = [];
