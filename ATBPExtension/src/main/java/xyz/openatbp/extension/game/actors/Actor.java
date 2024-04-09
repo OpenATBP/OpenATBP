@@ -114,6 +114,8 @@ public abstract class Actor {
     }
 
     protected boolean isStopped() {
+        if (this.movementLine == null)
+            this.movementLine = new Line2D.Float(this.location, this.location);
         return this.location.distance(this.movementLine.getP2()) < 0.01d;
     }
 
@@ -172,6 +174,7 @@ public abstract class Actor {
     public void setPath(List<Point2D> path) {
         if (path.size() == 0) {
             Console.logWarning(this.id + " was given a 0 length path");
+            this.path = null;
             return;
         }
         Line2D pathLine = new Line2D.Float(this.location, path.get(1));
@@ -618,7 +621,6 @@ public abstract class Actor {
 
     public void handleFear(Point2D source, int duration) {
         if (!this.states.get(ActorState.FEARED)) {
-            this.setState(ActorState.FEARED, true);
             double distance = source.distance(this.location);
             double dx = (this.location.getX() - source.getX());
             double dy = (this.location.getY() - source.getY());
@@ -629,17 +631,8 @@ public abstract class Actor {
             Point2D extendedPoint = new Point2D.Double(extX, extY);
             Line2D perpendicularLine = new Line2D.Double(this.location, extendedPoint);
             Point2D fearEndPoint = MovementManager.getDashPoint(this, perpendicularLine);
-            this.movementLine = new Line2D.Float(this.location, fearEndPoint);
-            this.timeTraveled = 0f;
+            this.moveWithCollision(fearEndPoint);
             this.addState(ActorState.FEARED, 0d, duration, null, false);
-            ExtensionCommands.moveActor(
-                    parentExt,
-                    room,
-                    id,
-                    this.location,
-                    fearEndPoint,
-                    (float) this.getPlayerStat("speed"),
-                    true);
         }
     }
 
