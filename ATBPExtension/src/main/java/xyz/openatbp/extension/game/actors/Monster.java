@@ -458,10 +458,7 @@ public class Monster extends Actor {
         try {
             path =
                     MovementManager.getPath(
-                            this.parentExt,
-                            this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),
-                            this.location,
-                            dest);
+                            this.parentExt.getRoomHandler(this.room.getId()), this.location, dest);
         } catch (Exception e) {
             Console.logWarning(this.id + " could not form a path.");
         }

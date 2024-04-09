@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import com.dongbat.walkable.PathHelper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -53,9 +52,6 @@ public class ATBPExtension extends SFSExtension {
     MongoClient mongoClient;
     MongoDatabase database;
     MongoCollection<Document> playerDatabase;
-
-    PathHelper mainMapPathFinder;
-    PathHelper practiceMapPathFinder;
 
     public void init() {
         this.addEventHandler(SFSEventType.USER_JOIN_ROOM, JoinRoomEventHandler.class);
@@ -161,7 +157,6 @@ public class ATBPExtension extends SFSExtension {
         mapColliders = new ArrayList[colliders.size()];
         mapPaths = new ArrayList<>(colliders.size());
         practiceMapObstacles = new ArrayList<>(colliders.size());
-        practiceMapPathFinder = new PathHelper(100f, 100f);
         for (int i = 0;
                 i < colliders.size();
                 i++) { // Reads all colliders and makes a list of their vertices
@@ -187,14 +182,6 @@ public class ATBPExtension extends SFSExtension {
             mapPaths.add(path);
             mapColliders[i] = vecs;
             practiceMapObstacles.add(new Obstacle(path, vecs));
-            float[] verts = new float[vecs.size() * 2];
-            int index = 0;
-            for (Vector<Float> v : vecs) {
-                verts[index] = v.get(0) + 50;
-                verts[index + 1] = v.get(1) + 30;
-                index += 2;
-            }
-            practiceMapPathFinder.addPolyline(verts);
         }
 
         // Process main map. This can probably be optimized.
@@ -203,7 +190,6 @@ public class ATBPExtension extends SFSExtension {
         mainMapColliders = new ArrayList[colliders.size()];
         mainMapPaths = new ArrayList<>(colliders.size());
         mainMapObstacles = new ArrayList<>(colliders.size());
-        mainMapPathFinder = new PathHelper(100f, 100f);
         for (int i = 0; i < colliders.size(); i++) {
             Path2D path = new Path2D.Float();
             ArrayNode vertices = (ArrayNode) colliders.get(i).get("vertex");
@@ -227,27 +213,11 @@ public class ATBPExtension extends SFSExtension {
             mainMapPaths.add(path);
             mainMapColliders[i] = vecs;
             mainMapObstacles.add(new Obstacle(path, vecs));
-            float[] verts = new float[vecs.size() * 2];
-            int index = 0;
-            for (Vector<Float> v : vecs) {
-                verts[index] = v.get(0) + 50;
-                verts[index + 1] = v.get(1) + 30;
-                index += 2;
-            }
-            mainMapPathFinder.addPolyline(verts);
         }
-    }
-
-    public PathHelper getMainMapPathFinder() {
-        return this.mainMapPathFinder;
     }
 
     public List<Obstacle> getMainMapObstacles() {
         return this.mainMapObstacles;
-    }
-
-    public PathHelper getPracticeMapPathFinder() {
-        return this.practiceMapPathFinder;
     }
 
     public List<Obstacle> getPracticeMapObstacles() {

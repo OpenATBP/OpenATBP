@@ -290,30 +290,18 @@ public class MovementManager {
         return null;
     }
 
-    public static List<Point2D> getPath(
-            ATBPExtension parentExt, boolean practice, Point2D location, Point2D dest) {
+    public static List<Point2D> getPath(RoomHandler roomHandler, Point2D location, Point2D dest) {
         try {
             FloatArray path = new FloatArray();
-            if (!practice)
-                parentExt
-                        .getMainMapPathFinder()
-                        .findPath(
-                                (float) location.getX() + 50,
-                                (float) location.getY() + 30,
-                                (float) dest.getX() + 50,
-                                (float) dest.getY() + 30,
-                                0.6f,
-                                path);
-            else
-                parentExt
-                        .getPracticeMapPathFinder()
-                        .findPath(
-                                (float) location.getX() + 50,
-                                (float) location.getY() + 30,
-                                (float) dest.getX() + 50,
-                                (float) dest.getY() + 30,
-                                0.6f,
-                                path);
+            roomHandler
+                    .getPathHelper()
+                    .findPath(
+                            (float) location.getX() + 50,
+                            (float) location.getY() + 30,
+                            (float) dest.getX() + 50,
+                            (float) dest.getY() + 30,
+                            0.6f,
+                            path);
             List<Point2D> pathList = new ArrayList<>();
             float px = 0;
             float py = 0;

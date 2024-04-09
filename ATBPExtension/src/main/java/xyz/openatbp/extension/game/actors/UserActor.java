@@ -793,10 +793,7 @@ public class UserActor extends Actor {
                             > 0.1f) {
                         this.setPath(
                                 MovementManager.getPath(
-                                        this.parentExt,
-                                        this.parentExt
-                                                .getRoomHandler(this.room.getId())
-                                                .isPracticeMap(),
+                                        this.parentExt.getRoomHandler(this.room.getId()),
                                         this.location,
                                         this.target.getLocation()));
                     }
