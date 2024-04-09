@@ -203,6 +203,8 @@ public class MovementManager {
 
     public static Point2D getIntersectionPoint(
             Line2D line, Line2D line2) { // Finds the intersection of two lines
+        if (line == null) return null;
+        if (line2 == null) return line.getP1();
         float slope1 =
                 (float)
                         ((line.getP2().getY() - line.getP1().getY())
