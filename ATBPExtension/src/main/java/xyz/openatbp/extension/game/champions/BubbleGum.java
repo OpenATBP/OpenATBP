@@ -395,7 +395,6 @@ public class BubbleGum extends UserActor {
                 double getReducedSpeed = this.target.getTempStat("attackSpeed");
                 double newDamage = (targetAttackSpeed * change);
                 if (getReducedSpeed / targetAttackSpeed >= 0.25) newDamage = 0;
-                System.out.println("PB is gumming up by " + newDamage);
                 this.target.addEffect("attackSpeed", newDamage, 3000, null, "", true);
             }
         }

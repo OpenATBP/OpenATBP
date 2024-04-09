@@ -52,15 +52,12 @@ public class Jake extends UserActor {
             if (!lastPassiveTime.isEmpty()) {
                 if (lastPassiveTime.containsKey(target.getId())) {
                     if (System.currentTimeMillis() - lastPassiveTime.get(target.getId()) >= 8000) {
-                        System.out.println("8 sec");
                         doPassive();
                     }
                 } else {
-                    System.out.println("new target " + target.getId());
                     doPassive();
                 }
             } else {
-                System.out.println("first target " + target.getId());
                 doPassive();
             }
         }
@@ -226,7 +223,6 @@ public class Jake extends UserActor {
                                 this.team);
                         double percentage = distance / 7d;
                         if (percentage < 0.5d) percentage = 0.5d;
-                        System.out.println("percentage " + percentage);
                         double spellModifer = this.getPlayerStat("spellDamage") * percentage;
                         if (isNonStructure(this.qVictim))
                             this.qVictim.addState(ActorState.STUNNED, 0d, 2000, null, false);
@@ -676,7 +672,6 @@ public class Jake extends UserActor {
             }
             if (this.destination.distance(this.getLocation()) <= 0.01
                     || System.currentTimeMillis() - this.startTime > this.estimatedDuration) {
-                System.out.println("Projectile being destroyed in update!");
                 this.destroy();
             }
         }

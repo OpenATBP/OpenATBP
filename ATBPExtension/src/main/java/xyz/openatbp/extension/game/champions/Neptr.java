@@ -423,11 +423,6 @@ public class Neptr extends UserActor {
                         true,
                         this.owner.getTeam());
             }
-            System.out.println("Estimated Duration: " + this.estimatedDuration);
-            System.out.println(
-                    "Case 2 inside: "
-                            + (System.currentTimeMillis() - this.startTime
-                                    > this.estimatedDuration));
             this.timeTraveled = 0f;
             ExtensionCommands.moveActor(
                     this.parentExt,

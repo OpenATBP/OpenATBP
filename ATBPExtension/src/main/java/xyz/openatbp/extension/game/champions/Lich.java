@@ -373,7 +373,6 @@ public class Lich extends UserActor {
             this.dead = true;
             this.currentHealth = 0;
             if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
-            System.out.println(this.id + " has died! ");
             ExtensionCommands.knockOutActor(parentExt, room, this.id, a.getId(), 40000);
             Lich.this.handleSkullyDeath();
             ExtensionCommands.destroyActor(parentExt, room, this.id);
