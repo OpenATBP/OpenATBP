@@ -28,6 +28,7 @@ public class MagicMan extends UserActor {
     private boolean ultStarted;
     private boolean interruptE = false;
     private ArrayList<Actor> playersHitBySnake = new ArrayList<>(3);
+    private int eDashTime;
     private MagicManClone magicManClone;
 
     public MagicMan(User u, ATBPExtension parentExt) {
@@ -98,10 +99,10 @@ public class MagicMan extends UserActor {
             Point2D dest) {
         switch (ability) {
             case 1:
+                this.canCast[0] = false;
                 if (this.getState(ActorState.INVISIBLE)) {
                     this.setState(ActorState.INVISIBLE, false);
                 }
-                this.canCast[0] = false;
                 this.stopMoving(castDelay);
                 this.qStartTime = System.currentTimeMillis();
                 ExtensionCommands.playSound(
@@ -179,10 +180,10 @@ public class MagicMan extends UserActor {
                                 TimeUnit.MILLISECONDS);
                 break;
             case 2:
+                this.canCast[1] = false;
                 if (this.getState(ActorState.INVISIBLE)) {
                     this.setState(ActorState.INVISIBLE, false);
                 }
-                this.canCast[1] = false;
                 if (this.wLocation == null) {
                     Point2D dashPoint =
                             MovementManager.getDashPoint(
@@ -204,10 +205,6 @@ public class MagicMan extends UserActor {
                     this.parentExt
                             .getRoomHandler(this.room.getId())
                             .addCompanion(this.magicManClone);
-                    Runnable secondUseDelay = () -> this.canCast[1] = true;
-                    SmartFoxServer.getInstance()
-                            .getTaskScheduler()
-                            .schedule(secondUseDelay, 1000, TimeUnit.MILLISECONDS);
                 } else {
                     this.setState(ActorState.INVISIBLE, false);
                     ExtensionCommands.actorAbilityResponse(
@@ -217,14 +214,16 @@ public class MagicMan extends UserActor {
                             true,
                             getReducedCooldown(cooldown),
                             gCooldown);
-                    SmartFoxServer.getInstance()
-                            .getTaskScheduler()
-                            .schedule(
-                                    new MagicManAbilityHandler(
-                                            ability, spellData, cooldown, gCooldown, dest),
-                                    gCooldown,
-                                    TimeUnit.MILLISECONDS);
                 }
+                int abilityDelay =
+                        this.getState(ActorState.INVISIBLE) ? 1000 : getReducedCooldown(cooldown);
+                SmartFoxServer.getInstance()
+                        .getTaskScheduler()
+                        .schedule(
+                                new MagicManAbilityHandler(
+                                        ability, spellData, cooldown, gCooldown, dest),
+                                abilityDelay,
+                                TimeUnit.MILLISECONDS);
                 break;
             case 3:
                 this.canCast[2] = false;
@@ -234,7 +233,7 @@ public class MagicMan extends UserActor {
                         new Point2D.Double(this.location.getX(), this.location.getY());
                 Point2D dashPoint = this.dash(dest, true, 10d);
                 double dashTime = dashPoint.distance(firstLocation) / 10f;
-                int timeMs = (int) (dashTime * 1000d);
+                this.eDashTime = (int) (dashTime * 1000d);
                 ExtensionCommands.playSound(
                         this.parentExt,
                         this.room,
@@ -242,20 +241,20 @@ public class MagicMan extends UserActor {
                         "sfx_magicman_explode_roll",
                         this.location);
                 ExtensionCommands.actorAnimate(
-                        this.parentExt, this.room, this.id, "spell3", timeMs, true);
+                        this.parentExt, this.room, this.id, "spell3", eDashTime, true);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
                         "e",
                         true,
                         getReducedCooldown(cooldown),
-                        (int) (timeMs * 0.8) + gCooldown);
+                        (int) (eDashTime * 0.8) + gCooldown);
                 SmartFoxServer.getInstance()
                         .getTaskScheduler()
                         .schedule(
                                 new MagicManAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, dashPoint),
-                                timeMs,
+                                eDashTime,
                                 TimeUnit.MILLISECONDS);
                 break;
         }
@@ -283,7 +282,14 @@ public class MagicMan extends UserActor {
 
         @Override
         protected void spellQ() {
-            canCast[0] = true;
+            int Q_CAST_DELAY = 500;
+            Runnable enableQCasting = () -> canCast[0] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableQCasting,
+                            getReducedCooldown(cooldown) - Q_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
             attackCooldown = 0;
         }
 
@@ -294,7 +300,14 @@ public class MagicMan extends UserActor {
 
         @Override
         protected void spellE() {
-            canCast[2] = true;
+            int E_CAST_DELAY = eDashTime;
+            Runnable enableECasting = () -> canCast[2] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableECasting,
+                            getReducedCooldown(cooldown) - E_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
             canMove = true;
             ultStarted = false;
             if (!interruptE) {

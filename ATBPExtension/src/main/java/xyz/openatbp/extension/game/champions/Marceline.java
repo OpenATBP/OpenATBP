@@ -95,6 +95,7 @@ public class Marceline extends UserActor {
         }
         if (wActive && System.currentTimeMillis() - wStartTime >= 4500) {
             wActive = false;
+            humanWActive = false;
         }
         if (this.getState(ActorState.TRANSFORMED)
                 && this.currentHealth < this.maxHealth
@@ -215,7 +216,7 @@ public class Marceline extends UserActor {
                         .schedule(
                                 new MarcelineAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                castDelay,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
             case 2: // W
@@ -297,7 +298,7 @@ public class Marceline extends UserActor {
                         .schedule(
                                 new MarcelineAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                4500,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
             case 3: // E
@@ -367,7 +368,8 @@ public class Marceline extends UserActor {
                 if (crit) damage *= 4;
                 else damage *= 2;
                 double lifesteal = 1d;
-                changeHealth((int) Math.round(damage * lifesteal));
+                if (this.target != null && isNonStructure(this.target))
+                    changeHealth((int) Math.round(damage * lifesteal));
             }
             if (!getState(ActorState.TRANSFORMED) && isNonStructure(this.target)) passiveHits++;
             if (wActive && getState(ActorState.TRANSFORMED)) {
@@ -413,13 +415,18 @@ public class Marceline extends UserActor {
         @Override
         protected void spellW() {
             canCast[1] = true;
-            wActive = false;
-            humanWActive = false;
         }
 
         @Override
         protected void spellE() {
-            canCast[2] = true;
+            int E_CAST_DELAY = 750;
+            Runnable enableECasting = () -> canCast[2] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableECasting,
+                            getReducedCooldown(cooldown) - E_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
             wActive = false;
             if (canTransform) {
                 if (getState(ActorState.TRANSFORMED)) {

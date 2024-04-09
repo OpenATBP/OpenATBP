@@ -23,12 +23,12 @@ public class FlamePrincess extends UserActor {
     private boolean ultFinished = false;
     private boolean passiveEnabled = false;
     private long lastPassiveUsage = 0;
-    private long lastUltUsage = -1;
     private boolean ultStarted = false;
     private int ultUses = 3;
     private int dashTime = 0;
     private boolean wUsed = false;
     private boolean polymorphActive = false;
+    private long ultStartTime = 0;
     private long lastPolymorphTime = 0;
 
     public FlamePrincess(User u, ATBPExtension parentExt) {
@@ -38,9 +38,19 @@ public class FlamePrincess extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if (this.ultStarted && lastUltUsage == -1) lastUltUsage = msRan;
-        if (this.ultStarted && !this.ultFinished) {
-            lastUltUsage = msRan;
+        if (this.ultStarted && System.currentTimeMillis() - this.ultStartTime >= 5000
+                || this.ultFinished) {
+            setState(ActorState.TRANSFORMED, false);
+            ExtensionCommands.removeFx(parentExt, room, id + "flameE");
+            ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
+            ExtensionCommands.actorAbilityResponse(
+                    parentExt, player, "e", true, getReducedCooldown(60000), 0);
+            ExtensionCommands.scaleActor(parentExt, room, id, 0.6667f);
+            this.ultStarted = false;
+            this.ultFinished = false;
+            this.ultUses = 3;
+        }
+        if (this.ultStarted) {
             for (Actor a :
                     Champion.getActorsInRadius(
                             parentExt.getRoomHandler(this.room.getId()), this.location, 2)) {
@@ -214,13 +224,17 @@ public class FlamePrincess extends UserActor {
                                 TimeUnit.MILLISECONDS);
                 break;
             case 3: // E
+                this.canCast[2] = false;
                 if (!ultStarted && ultUses == 3) {
-                    int duration =
-                            Champion.getSpellData(parentExt, getAvatar(), ability)
-                                    .get("spellDuration")
-                                    .asInt();
-                    ultStarted = true;
-                    ultFinished = false;
+                    SmartFoxServer.getInstance()
+                            .getTaskScheduler()
+                            .schedule(
+                                    new FlameAbilityRunnable(
+                                            ability, spellData, cooldown, gCooldown, dest),
+                                    200,
+                                    TimeUnit.MILLISECONDS);
+                    this.ultStartTime = System.currentTimeMillis();
+                    this.ultStarted = true;
                     this.setState(ActorState.TRANSFORMED, true);
                     ExtensionCommands.playSound(
                             this.parentExt,
@@ -249,16 +263,8 @@ public class FlamePrincess extends UserActor {
                             false,
                             this.team);
                     ExtensionCommands.scaleActor(this.parentExt, this.room, this.id, 1.5f);
-                    SmartFoxServer.getInstance()
-                            .getTaskScheduler()
-                            .schedule(
-                                    new FlameAbilityRunnable(
-                                            ability, spellData, cooldown, gCooldown, dest),
-                                    duration,
-                                    TimeUnit.MILLISECONDS);
                 } else {
-                    if (ultUses > 0 && canDash()) {
-                        this.canCast[2] = false;
+                    if (this.ultUses > 0 && canDash()) {
                         // TODO: Fix so FP can dash and still get health packs
                         Point2D ogLocation = this.location;
                         Point2D dashLocation = this.dash(dest, false, 15d);
@@ -266,11 +272,7 @@ public class FlamePrincess extends UserActor {
                         this.dashTime = (int) (time * 1000);
                         ExtensionCommands.actorAnimate(
                                 this.parentExt, this.room, this.id, "run", this.dashTime, false);
-                        ultUses--;
-                        Runnable ultUseDelay = () -> this.canCast[2] = true;
-                        SmartFoxServer.getInstance()
-                                .getTaskScheduler()
-                                .schedule(ultUseDelay, dashTime, TimeUnit.MILLISECONDS);
+                        this.ultUses--;
                     } else {
                         ExtensionCommands.playSound(
                                 this.parentExt,
@@ -279,7 +281,15 @@ public class FlamePrincess extends UserActor {
                                 "not_allowed_error",
                                 new Point2D.Float(0, 0));
                     }
-                    if (ultUses == 0) {
+                    if (this.ultUses > 0) {
+                        SmartFoxServer.getInstance()
+                                .getTaskScheduler()
+                                .schedule(
+                                        new FlameAbilityRunnable(
+                                                ability, spellData, cooldown, gCooldown, dest),
+                                        this.dashTime,
+                                        TimeUnit.MILLISECONDS);
+                    } else {
                         SmartFoxServer.getInstance()
                                 .getTaskScheduler()
                                 .schedule(
@@ -324,8 +334,15 @@ public class FlamePrincess extends UserActor {
 
         @Override
         protected void spellQ() {
-            canCast[0] = true;
             attackCooldown = 0;
+            int Q_GLOBAL_COOLDOWN = 250;
+            Runnable enableQCasting = () -> canCast[0] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableQCasting,
+                            getReducedCooldown(cooldown) - Q_GLOBAL_COOLDOWN,
+                            TimeUnit.MILLISECONDS);
         }
 
         @Override
@@ -351,32 +368,29 @@ public class FlamePrincess extends UserActor {
                             newDamage,
                             parentExt.getAttackData(getAvatar(), "spell2"));
             }
-            canCast[1] = true;
+            int W_CAST_DELAY = 1000;
+            Runnable enableWCasting = () -> canCast[1] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableWCasting,
+                            getReducedCooldown(cooldown) - W_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
         }
 
         @Override
         protected void spellE() {
-            if (!ultFinished && ultStarted) {
-                setState(ActorState.TRANSFORMED, false);
-                ExtensionCommands.removeFx(parentExt, room, id + "flameE");
-                ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
-                ExtensionCommands.actorAbilityResponse(
-                        parentExt,
-                        player,
-                        "e",
-                        canUseAbility(2),
-                        getReducedCooldown(cooldown),
-                        gCooldown);
-                ExtensionCommands.scaleActor(parentExt, room, id, 0.6667f);
-                ultStarted = false;
+            if (ultUses > 0) canCast[2] = true;
+            if (ultUses == 0) {
                 ultFinished = true;
-                ultUses = 3;
-                lastUltUsage = -1;
-            } else if (ultFinished) {
-                ultStarted = false;
-                ultFinished = false;
-                ultUses = 3;
-                lastUltUsage = -1;
+                int E_DASH_TIME = dashTime + 100;
+                Runnable enableECasting = () -> canCast[2] = true;
+                SmartFoxServer.getInstance()
+                        .getTaskScheduler()
+                        .schedule(
+                                enableECasting,
+                                getReducedCooldown(cooldown) - E_DASH_TIME,
+                                TimeUnit.MILLISECONDS);
             }
         }
 

@@ -30,6 +30,8 @@ public class IceKing extends UserActor {
     private Point2D ultLocation = null;
     private boolean assetSwapped = false;
     private boolean hasDefaultAsset = true;
+    private long wStartTime = 0;
+    private long ultStartTime = 0;
     private long lastWhirlwindTime = 0;
 
     public IceKing(User u, ATBPExtension parentExt) {
@@ -40,6 +42,18 @@ public class IceKing extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
+        if (this.wLocation != null && System.currentTimeMillis() - this.wStartTime >= 3000) {
+            this.lastWHit = null;
+            this.wLocation = null;
+        }
+        if (this.ultActive && System.currentTimeMillis() - this.ultStartTime >= 6000) {
+            this.assetSwapped = false;
+            this.hasDefaultAsset = true;
+            this.ultLocation = null;
+            this.ultActive = false;
+            ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
+            setState(ActorState.TRANSFORMED, false);
+        }
         if (System.currentTimeMillis() - lastAbilityUsed > 10000) {
             if (!this.iceShield) {
                 this.iceShield = true;
@@ -228,6 +242,7 @@ public class IceKing extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
+                this.wStartTime = System.currentTimeMillis();
                 this.wLocation = dest;
                 this.lastWHit = new HashMap<>();
                 String hailStormSfx =
@@ -300,13 +315,14 @@ public class IceKing extends UserActor {
                         .schedule(
                                 new IceKingAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                3000,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
             case 3:
                 this.canCast[2] = false;
                 this.ultActive = true;
                 this.ultLocation = this.location;
+                this.ultStartTime = System.currentTimeMillis();
                 String ultimateSfx =
                         (this.avatar.contains("queen"))
                                 ? "vo/vo_ice_queen_ultimate"
@@ -353,13 +369,6 @@ public class IceKing extends UserActor {
                         false,
                         this.team,
                         0f);
-                SmartFoxServer.getInstance()
-                        .getTaskScheduler()
-                        .schedule(
-                                new IceKingAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                6000,
-                                TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -367,6 +376,13 @@ public class IceKing extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
+                SmartFoxServer.getInstance()
+                        .getTaskScheduler()
+                        .schedule(
+                                new IceKingAbilityHandler(
+                                        ability, spellData, cooldown, gCooldown, dest),
+                                getReducedCooldown(cooldown),
+                                TimeUnit.MILLISECONDS);
                 break;
         }
     }
@@ -425,7 +441,14 @@ public class IceKing extends UserActor {
 
         @Override
         protected void spellQ() {
-            canCast[0] = true;
+            int Q_CAST_DELAY = 250;
+            Runnable enableQCasting = () -> canCast[0] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableQCasting,
+                            getReducedCooldown(cooldown) - Q_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
             Line2D abilityLine = Champion.getAbilityLine(location, dest, 7.5f);
             fireProjectile(
                     new IceKingProjectile(
@@ -444,21 +467,11 @@ public class IceKing extends UserActor {
         @Override
         protected void spellW() {
             canCast[1] = true;
-            wLocation = null;
-            lastWHit = null;
         }
 
         @Override
         protected void spellE() {
             canCast[2] = true;
-            if (ultActive) {
-                ultActive = false;
-                assetSwapped = false;
-                hasDefaultAsset = true;
-                ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
-                setState(ActorState.TRANSFORMED, false);
-            }
-            ultLocation = null;
         }
 
         @Override

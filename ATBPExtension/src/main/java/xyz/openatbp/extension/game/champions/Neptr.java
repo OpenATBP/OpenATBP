@@ -150,7 +150,6 @@ public class Neptr extends UserActor {
         switch (ability) {
             case 1:
                 this.canCast[0] = false;
-                // ExtensionCommands.playSound(this.parentExt,this.room,this.id,"vo/vo_neptr_boommeringue",this.location);
                 Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
                 this.fireProjectile(
                         new NeptrProjectile(
@@ -176,7 +175,7 @@ public class Neptr extends UserActor {
                         .schedule(
                                 new NeptrAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                gCooldown,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
             case 2:
@@ -194,7 +193,7 @@ public class Neptr extends UserActor {
                         .schedule(
                                 new NeptrAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                gCooldown,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
             case 3:
@@ -296,7 +295,14 @@ public class Neptr extends UserActor {
 
         @Override
         protected void spellE() {
-            canCast[2] = true;
+            int E_CAST_DELAY = 500;
+            Runnable enableECasting = () -> canCast[2] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableECasting,
+                            getReducedCooldown(cooldown) - E_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
             ultDamageStartTime = System.currentTimeMillis();
             ultImpactedActors = new ArrayList<>();
             for (Actor a :
@@ -481,22 +487,32 @@ public class Neptr extends UserActor {
                     parentExt, player, iconName, "Mine placed!", "icon_neptr_s2", 30000f);
             ExtensionCommands.createActor(
                     parentExt, room, this.id, this.avatar, this.location, 0f, this.team);
-            ExtensionCommands.playSound(
-                    parentExt, this.room, Neptr.this.id, "vo/vo_neptr_mine", Neptr.this.location);
-            ExtensionCommands.playSound(
-                    parentExt, room, this.id, "sfx_neptr_mine_spawn", this.location);
-            ExtensionCommands.createWorldFX(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    "fx_target_ring_2",
-                    this.id + "_mine",
-                    30000,
-                    (float) this.location.getX(),
-                    (float) this.location.getY(),
-                    true,
-                    this.team,
-                    0f);
+            Runnable creationDelay =
+                    () -> {
+                        ExtensionCommands.playSound(
+                                parentExt,
+                                this.room,
+                                Neptr.this.id,
+                                "vo/vo_neptr_mine",
+                                Neptr.this.location);
+                        ExtensionCommands.playSound(
+                                parentExt, room, this.id, "sfx_neptr_mine_spawn", this.location);
+                        ExtensionCommands.createWorldFX(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                "fx_target_ring_2",
+                                this.id + "_mine",
+                                30000,
+                                (float) this.location.getX(),
+                                (float) this.location.getY(),
+                                true,
+                                this.team,
+                                0f);
+                    };
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(creationDelay, 150, TimeUnit.MILLISECONDS);
         }
 
         @Override

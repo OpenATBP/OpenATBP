@@ -173,7 +173,7 @@ public class Lemongrab extends UserActor {
                         .schedule(
                                 new LemonAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                castDelay,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
             case 2:
@@ -288,7 +288,14 @@ public class Lemongrab extends UserActor {
 
         @Override
         protected void spellW() {
-            canCast[1] = true;
+            int W_CAST_DELAY = 1000;
+            Runnable enableWCasting = () -> canCast[1] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableWCasting,
+                            getReducedCooldown(cooldown) - W_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
             ExtensionCommands.createWorldFX(
                     parentExt,
                     room,
@@ -323,7 +330,14 @@ public class Lemongrab extends UserActor {
 
         @Override
         protected void spellE() {
-            canCast[2] = true;
+            int E_CAST_DELAY = 1000;
+            Runnable enableECasting = () -> canCast[2] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableECasting,
+                            getReducedCooldown(cooldown) - E_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
             isCastingUlt = false;
             ExtensionCommands.createWorldFX(
                     parentExt,

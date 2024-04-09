@@ -27,6 +27,9 @@ public class PeppermintButler extends UserActor {
     private boolean removeFx = false;
     private boolean wActive = false;
     private boolean interruptW = false;
+    private long qStartTime = 0;
+    private long ultStartTime = 0;
+    private AtomicInteger wRunTime;
 
     public PeppermintButler(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -72,6 +75,16 @@ public class PeppermintButler extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
+        if (this.ultActive && System.currentTimeMillis() - this.ultStartTime >= 7000) {
+            setState(ActorState.TRANSFORMED, false);
+            String[] statsToUpdate = {"speed", "attackSpeed", "attackDamage"};
+            updateStatMenu(statsToUpdate);
+            ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
+            this.ultActive = false;
+        }
+        if (this.wActive && System.currentTimeMillis() - this.qStartTime >= 5000) {
+            this.wActive = false;
+        }
         if (this.isStopped()
                 && !qActive
                 && !stopPassive
@@ -209,6 +222,7 @@ public class PeppermintButler extends UserActor {
         switch (ability) {
             case 1:
                 canCast[0] = false;
+                this.qStartTime = System.currentTimeMillis();
                 ExtensionCommands.createActorFX(
                         this.parentExt,
                         this.room,
@@ -248,7 +262,7 @@ public class PeppermintButler extends UserActor {
                         .schedule(
                                 new PeppermintAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                5000,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
             case 2:
@@ -257,7 +271,7 @@ public class PeppermintButler extends UserActor {
                 this.setCanMove(false);
                 this.wActive = true;
                 double time = dest.distance(this.location) / 15d;
-                AtomicInteger runtime = new AtomicInteger((int) (time * 1000));
+                this.wRunTime = new AtomicInteger((int) (time * 1000));
                 String hohoVoPrefix =
                         (this.avatar.contains("zombie")) ? "pepbut_zombie_" : "pepbut_";
                 ExtensionCommands.playSound(
@@ -272,7 +286,7 @@ public class PeppermintButler extends UserActor {
                         this.id,
                         "fx_target_ring_2.5",
                         this.id + "_wRing",
-                        runtime.get() + 500,
+                        wRunTime.get() + 500,
                         (float) dest.getX(),
                         (float) dest.getY(),
                         true,
@@ -292,14 +306,14 @@ public class PeppermintButler extends UserActor {
                                         this.room,
                                         this.id,
                                         "spell2b",
-                                        runtime.get(),
+                                        wRunTime.get(),
                                         true);
                                 ExtensionCommands.createActorFX(
                                         this.parentExt,
                                         this.room,
                                         this.id,
                                         "pepbut_dig_rocks",
-                                        runtime.get(),
+                                        wRunTime.get(),
                                         this.id + "_digRocks",
                                         true,
                                         "",
@@ -307,15 +321,16 @@ public class PeppermintButler extends UserActor {
                                         false,
                                         this.team);
                                 this.dash(dest, true, 15d);
-                            } else runtime.set(0);
+                            } else wRunTime.set(0);
                             SmartFoxServer.getInstance()
                                     .getTaskScheduler()
                                     .schedule(
                                             new PeppermintAbilityHandler(
                                                     ability, spellData, cooldown, gCooldown, dest),
-                                            runtime.get(),
+                                            wRunTime.get(),
                                             TimeUnit.MILLISECONDS);
                         };
+
                 SmartFoxServer.getInstance()
                         .getTaskScheduler()
                         .schedule(animationDelay, 500, TimeUnit.MILLISECONDS);
@@ -329,12 +344,13 @@ public class PeppermintButler extends UserActor {
                 break;
             case 3:
                 canCast[2] = false;
-                this.ultActive = true;
-                this.ultFxRemoved = false;
                 ExtensionCommands.playSound(
                         this.parentExt, this.room, this.id, "sfx_pepbut_feral", this.location);
                 Runnable delay =
                         () -> {
+                            this.ultActive = true;
+                            this.ultFxRemoved = false;
+                            this.ultStartTime = System.currentTimeMillis();
                             this.attackCooldown = 0;
                             this.setState(ActorState.TRANSFORMED, true);
                             String[] statsToUpdate = {"speed", "attackSpeed", "attackDamage"};
@@ -394,16 +410,16 @@ public class PeppermintButler extends UserActor {
                                 ExtensionCommands.removeFx(
                                         this.parentExt, this.room, this.id + "_aoe");
                             }
-                            SmartFoxServer.getInstance()
-                                    .getTaskScheduler()
-                                    .schedule(
-                                            new PeppermintAbilityHandler(
-                                                    ability, spellData, cooldown, gCooldown, dest),
-                                            7000,
-                                            TimeUnit.MILLISECONDS);
                         };
                 ExtensionCommands.actorAbilityResponse(
                         parentExt, player, "e", true, getReducedCooldown(cooldown), gCooldown);
+                SmartFoxServer.getInstance()
+                        .getTaskScheduler()
+                        .schedule(
+                                new PeppermintAbilityHandler(
+                                        ability, spellData, cooldown, gCooldown, dest),
+                                getReducedCooldown(cooldown),
+                                TimeUnit.MILLISECONDS);
                 SmartFoxServer.getInstance()
                         .getTaskScheduler()
                         .schedule(delay, castDelay, TimeUnit.MILLISECONDS);
@@ -445,12 +461,18 @@ public class PeppermintButler extends UserActor {
         @Override
         protected void spellQ() {
             canCast[0] = true;
-            qActive = false;
         }
 
         @Override
         protected void spellW() {
-            canCast[1] = true;
+            int W_CAST_DELAY = wRunTime.get() + 500;
+            Runnable enableWCasting = () -> canCast[1] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableWCasting,
+                            getReducedCooldown(cooldown) - W_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
             wActive = false;
             canMove = true;
             if (!interruptW) {
@@ -490,11 +512,6 @@ public class PeppermintButler extends UserActor {
         @Override
         protected void spellE() {
             canCast[2] = true;
-            ultActive = false;
-            setState(ActorState.TRANSFORMED, false);
-            String[] statsToUpdate = {"speed", "attackSpeed", "attackDamage"};
-            updateStatMenu(statsToUpdate);
-            ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
         }
 
         @Override

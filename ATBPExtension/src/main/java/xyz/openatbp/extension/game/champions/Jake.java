@@ -13,10 +13,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.MovementManager;
-import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Champion;
@@ -30,13 +27,15 @@ public class Jake extends UserActor {
     private boolean stompSoundChange = false;
     private boolean dashActive = false;
     private Map<String, Long> lastPassiveTime = new HashMap<>();
-    private boolean interruputQ = false;
+    private boolean interruptQ = false;
     private long qStartTime = 0;
     private boolean qUsed = false;
     private int qTime;
     private Actor qVictim;
     private Path2D qPolygon;
     private boolean doGrab = false;
+    private long ultStartTime = 0;
+    private long testTime = 0;
     private static final float Q_FIRST_HALF_OFFSET = 0.75f;
     private static final float Q_SECOND_HALF_OFFSET = 1.75f;
     private static final float Q_SPELL_RANGE = 9;
@@ -109,6 +108,11 @@ public class Jake extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
+        if (this.ultActivated && System.currentTimeMillis() - this.ultStartTime >= 5000) {
+            ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
+            ExtensionCommands.removeFx(parentExt, room, id + "_stomp");
+            this.ultActivated = false;
+        }
         if (this.ultActivated && !this.isStopped()) {
             if (System.currentTimeMillis() - this.lastStomped >= 500) {
                 this.lastStomped = System.currentTimeMillis();
@@ -161,7 +165,7 @@ public class Jake extends UserActor {
         if (this.qUsed
                 && System.currentTimeMillis() - this.qStartTime <= 300
                 && this.hasInterrupingCC()) {
-            this.interruputQ = true;
+            this.interruptQ = true;
             this.qTime = 0;
             this.dashActive = false;
             this.qPolygon = null;
@@ -171,11 +175,12 @@ public class Jake extends UserActor {
         }
         if (this.doGrab
                 && this.qVictim != null
+                && this.qPolygon != null
                 && this.qPolygon.contains(this.qVictim.getLocation())) {
             JsonNode spellData = this.parentExt.getAttackData("jake", "spell2");
             this.dashActive = true;
             this.resetTarget();
-            double speed = 20d;
+            double speed = 15d;
             double distance = this.location.distance(this.qVictim.getLocation());
             double time = (distance / speed) * 1000d;
             this.stopMoving((int) (time));
@@ -231,6 +236,8 @@ public class Jake extends UserActor {
                         if (isNonStructure(this.qVictim))
                             this.qVictim.addState(ActorState.STUNNED, 0d, 2000, null, false);
                         this.qVictim.addToDamageQueue(this, 35 + spellModifer, spellData);
+                        Console.debugLog(
+                                "damage delay: " + (System.currentTimeMillis() - testTime));
                         if (distance >= 5.5d) {
                             ExtensionCommands.playSound(
                                     this.parentExt,
@@ -293,13 +300,6 @@ public class Jake extends UserActor {
                                 : (this.avatar.contains("randy")) ? "jake_butternubs_" : "jake_";
                 String stretchSfxPrefix =
                         (this.avatar.contains("guardian")) ? "jake_guardian_" : "jake_";
-                ExtensionCommands.actorAbilityResponse(
-                        this.parentExt,
-                        this.player,
-                        "q",
-                        true,
-                        getReducedCooldown(cooldown),
-                        gCooldown);
                 ExtensionCommands.playSound(
                         this.parentExt,
                         this.room,
@@ -312,12 +312,19 @@ public class Jake extends UserActor {
                         this.id,
                         "vo/vo_" + stretchFxPrefix + "stretch",
                         this.location);
+                ExtensionCommands.actorAbilityResponse(
+                        this.parentExt,
+                        this.player,
+                        "q",
+                        true,
+                        getReducedCooldown(cooldown),
+                        gCooldown);
                 SmartFoxServer.getInstance()
                         .getTaskScheduler()
                         .schedule(
                                 new JakeAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                this.qTime,
+                                qTime,
                                 TimeUnit.MILLISECONDS);
                 break;
             case 2:
@@ -415,7 +422,7 @@ public class Jake extends UserActor {
                         .schedule(
                                 new JakeAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                gCooldown,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
             case 3:
@@ -435,6 +442,7 @@ public class Jake extends UserActor {
                 ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bigFx);
                 this.cleanseEffects();
                 this.ultActivated = true;
+                this.ultStartTime = System.currentTimeMillis();
                 ExtensionCommands.createActorFX(
                         parentExt,
                         room,
@@ -491,7 +499,7 @@ public class Jake extends UserActor {
                         .schedule(
                                 new JakeAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                5000,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
         }
@@ -585,10 +593,17 @@ public class Jake extends UserActor {
 
         @Override
         protected void spellQ() {
-            canCast[0] = true;
+            int Q_CAST_DELAY = 1500;
+            Runnable enableQCasting = () -> canCast[0] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableQCasting,
+                            getReducedCooldown(cooldown) - Q_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
             canMove = true;
             qStartTime = 0;
-            if (!dashActive && !interruputQ)
+            if (!dashActive && !interruptQ)
                 ExtensionCommands.actorAnimate(parentExt, room, id, "spell1c", 500, false);
             Runnable castDelay =
                     () -> {
@@ -600,7 +615,7 @@ public class Jake extends UserActor {
             SmartFoxServer.getInstance()
                     .getTaskScheduler()
                     .schedule(castDelay, 500, TimeUnit.MILLISECONDS);
-            interruputQ = false;
+            interruptQ = false;
         }
 
         @Override
@@ -611,9 +626,6 @@ public class Jake extends UserActor {
         @Override
         protected void spellE() {
             canCast[2] = true;
-            ultActivated = false;
-            ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
-            ExtensionCommands.removeFx(parentExt, room, id + "_stomp");
         }
 
         @Override
@@ -652,7 +664,7 @@ public class Jake extends UserActor {
         public void destroy() {
             super.destroy();
             if (Jake.this.doGrab) return;
-            Jake.this.interruputQ = true;
+            Jake.this.interruptQ = true;
             Jake.this.qTime = 0;
             Jake.this.dashActive = false;
             Jake.this.qPolygon = null;
@@ -684,6 +696,8 @@ public class Jake extends UserActor {
         @Override
         protected void hit(Actor victim) {
             if (Jake.this.qPolygon != null && Jake.this.qPolygon.contains(victim.getLocation())) {
+                Console.debugLog("hit: " + victim);
+                Jake.this.testTime = System.currentTimeMillis();
                 Jake.this.qVictim = victim;
                 Jake.this.doGrab = true;
                 this.destroy();

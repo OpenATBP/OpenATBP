@@ -29,6 +29,9 @@ public class Fionna extends UserActor {
     private SwordType swordType = SwordType.FEARLESS;
     private boolean ultActivated = false;
     private double previousAttackDamage;
+    private int qTime;
+    private double qCooldown;
+    private long ultStartTime = 0;
     private double previousSpellDamage;
 
     public Fionna(User u, ATBPExtension parentExt) {
@@ -68,6 +71,10 @@ public class Fionna extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
+        if (this.ultActivated && System.currentTimeMillis() - this.ultStartTime >= 6000) {
+            this.ultActivated = false;
+            ExtensionCommands.removeStatusIcon(parentExt, player, "fionna_ult");
+        }
         if (System.currentTimeMillis() - dashTime >= 3000 && this.dashesRemaining > 0) {
             ExtensionCommands.removeStatusIcon(
                     parentExt, player, this.id + "_dash" + this.dashesRemaining);
@@ -97,6 +104,7 @@ public class Fionna extends UserActor {
             Point2D dest) {
         switch (ability) {
             case 1:
+                this.canCast[0] = false;
                 if (this.dashTime == -1) {
                     this.dashTime = System.currentTimeMillis();
                     this.dashesRemaining = 3;
@@ -106,15 +114,14 @@ public class Fionna extends UserActor {
                     Point2D origLocation = this.location;
                     Point2D dashPoint = this.dash(dest, false, 15d);
                     double time = origLocation.distance(dashPoint) / 15d;
-                    int qTime = (int) (time * 1000);
+                    this.qTime = (int) (time * 1000);
                     this.dashesRemaining--;
                     if (this.dashesRemaining == 0) {
                         this.dashTime = -1;
-                        this.canCast[0] = false;
-                        double newCooldown = getReducedCooldown(cooldown);
-                        if (!this.hitWithDash) newCooldown *= 0.7d;
+                        this.qCooldown = getReducedCooldown(cooldown);
+                        if (!this.hitWithDash) this.qCooldown *= 0.7d;
                         ExtensionCommands.actorAbilityResponse(
-                                parentExt, player, "q", true, (int) newCooldown, gCooldown);
+                                parentExt, player, "q", true, (int) qCooldown, gCooldown);
                         ExtensionCommands.actorAnimate(
                                 parentExt, room, id, "spell1c", qTime, false);
                     } else if (this.dashesRemaining == 1) {
@@ -155,7 +162,6 @@ public class Fionna extends UserActor {
                     int gruntNum = 3 - this.dashesRemaining;
                     ExtensionCommands.playSound(
                             parentExt, room, this.id, "fionna_grunt" + gruntNum, this.location);
-
                     SmartFoxServer.getInstance()
                             .getTaskScheduler()
                             .schedule(
@@ -177,13 +183,14 @@ public class Fionna extends UserActor {
                         .schedule(
                                 new FionnaAbilityRunnable(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                250,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
             case 3:
                 this.stopMoving(500);
                 this.canCast[2] = false;
                 this.ultActivated = true;
+                this.ultStartTime = System.currentTimeMillis();
                 ExtensionCommands.addStatusIcon(
                         this.parentExt,
                         this.player,
@@ -219,7 +226,7 @@ public class Fionna extends UserActor {
                         .schedule(
                                 new FionnaAbilityRunnable(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                6000,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
             case 4:
@@ -345,13 +352,21 @@ public class Fionna extends UserActor {
 
         @Override
         protected void spellQ() {
+            if (dashesRemaining > 0) canCast[0] = true;
             int dashInt = dashesRemaining + 1;
             float range = 1f;
             String explosionFx = "fionna_dash_explode_small";
             if (dashInt == 1) {
+                int Q_TIME = qTime;
                 range = 2f;
                 explosionFx = "fionna_dash_explode";
-                canCast[0] = true;
+                Runnable enableQCasting = () -> canCast[0] = true;
+                SmartFoxServer.getInstance()
+                        .getTaskScheduler()
+                        .schedule(
+                                enableQCasting,
+                                getReducedCooldown(qCooldown) - Q_TIME,
+                                TimeUnit.MILLISECONDS);
             }
             ExtensionCommands.createWorldFX(
                     parentExt,
@@ -386,9 +401,7 @@ public class Fionna extends UserActor {
 
         @Override
         protected void spellE() {
-            ultActivated = false;
             canCast[2] = true;
-            ExtensionCommands.removeStatusIcon(parentExt, player, "fionna_ult");
         }
 
         @Override

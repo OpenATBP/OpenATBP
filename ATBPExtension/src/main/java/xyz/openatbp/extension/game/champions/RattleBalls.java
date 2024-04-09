@@ -220,12 +220,12 @@ public class RattleBalls extends UserActor {
                                 TimeUnit.MILLISECONDS);
                 break;
             case 3:
+                this.canCast[2] = false;
                 this.eCounter++;
                 this.eStartTime = System.currentTimeMillis();
                 if (!this.ultActive) {
                     this.canCast[0] = false;
                     this.canCast[1] = false;
-                    this.canCast[2] = false;
                     this.ultActive = true;
                     String ultPrefix =
                             (this.avatar.contains("spidotron"))
@@ -271,10 +271,9 @@ public class RattleBalls extends UserActor {
                             this.team);
                     this.addEffect("speed", this.getStat("speed") * 0.14d, 3500, null, "", true);
                 } else {
-                    this.canCast[2] = false;
                     this.endUlt();
                 }
-                int eDelay = this.eCounter < 2 ? 500 : gCooldown;
+                int eDelay = this.eCounter == 1 ? 500 : getReducedCooldown(cooldown);
                 SmartFoxServer.getInstance()
                         .getTaskScheduler()
                         .schedule(
@@ -369,7 +368,10 @@ public class RattleBalls extends UserActor {
         if (this.parryActive
                 && System.currentTimeMillis() - this.parryCooldown >= 1500
                 && !this.dead) {
-            this.canCast[0] = true;
+            Runnable enableQCasting = () -> canCast[0] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(enableQCasting, getReducedCooldown(12000), TimeUnit.MILLISECONDS);
             this.canCast[1] = true;
             this.canCast[2] = true;
             this.parryActive = false;
@@ -604,7 +606,14 @@ public class RattleBalls extends UserActor {
                         .schedule(flipDelay, qTime, TimeUnit.MILLISECONDS);
             } else {
                 abilityEnded();
-                canCast[0] = true;
+                int Q_CAST_DELAY = qTime;
+                Runnable enableQCasting = () -> canCast[0] = true;
+                SmartFoxServer.getInstance()
+                        .getTaskScheduler()
+                        .schedule(
+                                enableQCasting,
+                                getReducedCooldown(cooldown) - Q_CAST_DELAY,
+                                TimeUnit.MILLISECONDS);
                 canCast[1] = true;
                 canCast[2] = true;
                 qThrustRectangle = null;
@@ -613,7 +622,14 @@ public class RattleBalls extends UserActor {
 
         @Override
         protected void spellW() {
-            canCast[1] = true;
+            int W_CAST_DELAY = 500;
+            Runnable enableWCasting = () -> canCast[1] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableWCasting,
+                            getReducedCooldown(cooldown) - W_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
             String pullFx =
                     (avatar.contains("spidotron"))
                             ? "rattleballs_luchador_pull"

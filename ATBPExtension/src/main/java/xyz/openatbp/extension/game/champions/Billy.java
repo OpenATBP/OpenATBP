@@ -160,17 +160,17 @@ public class Billy extends UserActor {
                         .schedule(
                                 new BillyAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                gCooldown,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
             case 2:
                 this.canCast[1] = false;
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "sfx_billy_jump", this.location);
                 Point2D ogLocation = this.location;
                 Point2D finalDashPoint = this.dash(dest, true, 14d);
                 double time = ogLocation.distance(finalDashPoint) / 14d;
                 int wTime = (int) (time * 1000);
+                ExtensionCommands.playSound(
+                        this.parentExt, this.room, this.id, "sfx_billy_jump", this.location);
                 ExtensionCommands.createActorFX(
                         this.parentExt,
                         this.room,
@@ -279,6 +279,12 @@ public class Billy extends UserActor {
         }
     }
 
+    @Override
+    public void die(Actor a) {
+        super.die(a);
+        if (!canCast[0]) canCast[0] = true;
+    }
+
     private class BillyAbilityHandler extends AbilityRunnable {
 
         public BillyAbilityHandler(
@@ -293,7 +299,13 @@ public class Billy extends UserActor {
 
         @Override
         protected void spellW() {
-            canCast[1] = true;
+            Runnable enableWCasting = () -> canCast[1] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableWCasting,
+                            getReducedCooldown(cooldown),
+                            TimeUnit.MILLISECONDS); // cast delay is 0
             int CRATER_OFFSET = 1;
             ExtensionCommands.playSound(parentExt, room, id, "sfx_billy_ground_pound_temp", dest);
             ExtensionCommands.actorAnimate(parentExt, room, id, "spell2a", 500, false);
@@ -319,7 +331,14 @@ public class Billy extends UserActor {
 
         @Override
         protected void spellE() {
-            canCast[2] = true;
+            int E_CAST_DELAY = 750;
+            Runnable enableECasting = () -> canCast[2] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableECasting,
+                            getReducedCooldown(cooldown) - E_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
             ExtensionCommands.playSound(parentExt, room, "", "sfx_billy_nothung_skyfall", ultLoc);
             int duration = 1000;
             if (passiveUses == 3) {
