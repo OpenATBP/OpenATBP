@@ -59,7 +59,6 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
         userVariables.add(actorVar);
         parentExt.getApi().setUserVariables(sender, userVariables);
         String name = params.getUtfString("room_id");
-        if (name.length() >= 10) name = name.substring(0, 10);
         Room requestedRoom = sender.getZone().getRoomByName(name); // Tries to find existing room
         boolean createdRoom = false;
         if (requestedRoom == null) { // If the room is not created yet, create it.
