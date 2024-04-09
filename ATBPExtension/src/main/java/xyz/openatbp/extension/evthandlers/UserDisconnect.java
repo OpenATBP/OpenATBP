@@ -20,7 +20,6 @@ public class UserDisconnect extends BaseServerEventHandler {
                 user.getSession()
                         .getProperty("room_id")
                         .toString(); // Can probably find a better way to handle room names
-        if (roomID.length() >= 10) roomID = roomID.substring(0, 10);
         Room room = user.getZone().getRoomByName(roomID);
         RoomHandler roomHandler = parentExt.getRoomHandler(room.getId());
         int roomState = (int) room.getProperty("state");
