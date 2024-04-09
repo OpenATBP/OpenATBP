@@ -173,7 +173,7 @@ function updateElo(socket){
   if(playerCollection != null){
     playerCollection.findOne({"user.TEGid": socket.player.teg_id}).then((res) => {
       if(res != null) socket.player.elo = res.player.elo;
-      else socket.closed();
+      else socket.close();
       console.log(`${socket.player.name} has ${socket.player.elo} ELO!`);
     }).catch((e) => {
       console.log(e);
@@ -183,13 +183,12 @@ function updateElo(socket){
 }
 
 function updateMatchmaking(){
-  console.log("Updating matchmaking!");
   var types = [];
   for(var u of users){
     if(u.player.queue.type != null && u.player.queue.queueNum == -1 && !types.includes(u.player.queue.type)) types.push(u.player.queue.type);
   }
   for(var t of types){
-    console.log(`Updating: ${t}`);
+    var maxQueueSize = 0;
     var queueSize = 1;
     if (t.includes('p') && t != 'practice')
       queueSize = Number(t.replace('p', ''));
@@ -212,12 +211,12 @@ function updateMatchmaking(){
       var validQueuePlayers = [u.player];
       for(var u2 of usersInQueue){
         if(u != u2 && !validQueuePlayers.includes(u2.player)){
-          if(Math.abs(u.player.elo - u2.player.elo) < 50 + (Date.now() - u2.player.queue.started) / 1000){
+          if(Math.abs(u.player.elo - u2.player.elo) < 50 + ((Date.now() - u2.player.queue.started) / 1000)*12){
             if(u2.player.onTeam){
               var team = teams.find((t) => t.players.includes(u2.player));
               if(team != undefined && validQueuePlayers.length + team.players.length <= queueSize){
                 for(var tp of team.players){
-                  if(Math.abs(u.player.elo - tp.player.elo) < 50 + (Date.now() - tp.player.queue.started) / 1000 && !validQueuePlayers.includes(tp)) validQueuePlayers.push(tp);
+                  if(Math.abs(u.player.elo - tp.player.elo) < 50 + ((Date.now() - tp.player.queue.started) / 1000)*12 && !validQueuePlayers.includes(tp)) validQueuePlayers.push(tp);
                 }
               }else leaveTeam(u2);
             }else validQueuePlayers.push(u2.player);
@@ -227,8 +226,11 @@ function updateMatchmaking(){
       if(validQueuePlayers.length == queueSize){
         startGame(validQueuePlayers,t);
         break;
-      }else console.log(`${validQueuePlayers.length} players in queue and there is a required ${queueSize}`);
+      }else{
+        if(maxQueueSize < validQueuePlayers.length) maxQueueSize = validQueuePlayers.length;
+      }
     }
+    console.log(`Matchmaking for ${t} has ${usersInQueue.length} players but could only match ${maxQueueSize} players`);
   }
 }
 

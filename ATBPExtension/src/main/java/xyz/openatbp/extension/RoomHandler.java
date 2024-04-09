@@ -1298,6 +1298,8 @@ public class RoomHandler implements Runnable {
                         if (gameMulti > currentMulti) largestMulti = (int) gameMulti;
                     }
 
+                    if(this.room.getMaxUsers() != 6 || this.room.getName().contains("custom") || this.room.getName().contains("practice")) eloGain=0;
+
                     Bson updates =
                             Updates.combine(
                                     Updates.inc("player.playsPVP", 1),
