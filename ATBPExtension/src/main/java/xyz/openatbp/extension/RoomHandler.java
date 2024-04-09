@@ -113,17 +113,21 @@ public class RoomHandler implements Runnable {
     }
 
     private void initializePathFinder() {
-        ArrayList<Vector<Float>>[] colliders = this.parentExt.getColliders(this.room.getGroupId());
-        this.pathHelper = new PathHelper(1000, 1000);
-        for (ArrayList<Vector<Float>> c : colliders) {
-            float[] verts = new float[c.size() * 2];
-            int index = 0;
-            for (Vector<Float> v : c) {
-                verts[index] = v.get(0) + 50;
-                verts[index + 1] = v.get(1) + 30;
-                index += 2;
+        try{
+            ArrayList<Vector<Float>>[] colliders = this.parentExt.getColliders(this.room.getGroupId());
+            this.pathHelper = new PathHelper(1000, 1000);
+            for (ArrayList<Vector<Float>> c : colliders) {
+                float[] verts = new float[c.size() * 2];
+                int index = 0;
+                for (Vector<Float> v : c) {
+                    verts[index] = v.get(0) + 50;
+                    verts[index + 1] = v.get(1) + 30;
+                    index += 2;
+                }
+                this.pathHelper.addPolygon(verts);
             }
-            this.pathHelper.addPolygon(verts);
+        }catch(Exception e){
+            e.printStackTrace();
         }
     }
 
