@@ -47,7 +47,7 @@ public class UserActor extends Actor {
     protected boolean changeTowerAggro = false;
     protected boolean isDashing = false;
     private static final boolean MOVEMENT_DEBUG = false;
-    private static final boolean INVINCIBLE_DEBUG = true;
+    private static final boolean INVINCIBLE_DEBUG = false;
     private static final boolean ABILITY_DEBUG = false;
     private static final boolean SPEED_DEBUG = false;
 
