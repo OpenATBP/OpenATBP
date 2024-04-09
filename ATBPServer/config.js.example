@@ -13,9 +13,6 @@ config.sockpol.enable = true;
 config.sockpol.port = 843;
 config.sockpol.file = "static/crossdomain.xml";
 
-config.lobby.port = 6778;
-config.lobby.enable = false;
-
 config.lobbyserver.enable = true;
 config.lobbyserver.port = 6778;
 config.lobbyserver.gameIp = '127.0.0.1';
