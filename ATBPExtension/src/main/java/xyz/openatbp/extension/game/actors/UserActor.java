@@ -48,7 +48,7 @@ public class UserActor extends Actor {
     protected boolean isDashing = false;
     private static final boolean MOVEMENT_DEBUG = false;
     private static final boolean INVINCIBLE_DEBUG = false;
-    private static final boolean ABILITY_DEBUG = false;
+    private static final boolean ABILITY_DEBUG = true;
     private static final boolean SPEED_DEBUG = false;
 
     // TODO: Add all stats into UserActor object instead of User Variables

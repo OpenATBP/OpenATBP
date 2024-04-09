@@ -104,6 +104,9 @@ public class MovementManager {
                             new Line2D.Float(movementLine.getP2(), movementLine.getP1()),
                             vectorLines);
             if (closestLine == null) return movementLine.getP2();
+            if (closestLine.getP1().distance(player.getLocation()) > 5
+                    && player.getAvatar().contains("finn"))
+                closestLine = findClosestLine(movementLine, vectorLines);
             if (collider.size() < 25
                     && !playerIntersectsWithCollider(movementLine.getP2(), collider)) {
                 return movementLine.getP2();
@@ -128,8 +131,10 @@ public class MovementManager {
                         Point2D currentPoint = movementPoints[i];
                         if (currentPoint.distance(p) <= 0.6d) {
                             if (i == 0) return currentPoint;
-                            else if (!playerIntersectsWithCollider(movementPoints[i - 1], collider))
+                            else if (!playerIntersectsWithCollider(
+                                    movementPoints[i - 1], collider)) {
                                 return movementPoints[i - 1];
+                            }
                         }
                     }
                 }
