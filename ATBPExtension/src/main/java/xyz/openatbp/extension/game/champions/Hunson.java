@@ -62,7 +62,9 @@ public class Hunson extends UserActor {
                 this.ultActivated = false;
             }
         }
-        if (this.qActivated && System.currentTimeMillis() - this.qStartTime >= 6000) {
+        if (this.qActivated
+                && System.currentTimeMillis() - this.qStartTime >= 6000
+                && this.qUses > 0) {
             this.qUses = 0;
             ExtensionCommands.actorAbilityResponse(
                     parentExt, player, "q", true, getReducedCooldown(12000), 250);
@@ -179,6 +181,9 @@ public class Hunson extends UserActor {
                         this.location,
                         dest,
                         8f);
+                if (this.qUses == 0) {
+                    this.qActivated = false;
+                }
 
                 break;
             case 2:
