@@ -1,4 +1,4 @@
-package xyz.openatbp.extension;
+package xyz.openatbp.extension.pathfinding;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
@@ -9,10 +9,11 @@ import java.util.List;
 import java.util.Vector;
 import java.util.stream.Collectors;
 
-import com.dongbat.walkable.FloatArray;
-
 import com.smartfoxserver.v2.entities.Room;
 
+import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.Obstacle;
 import xyz.openatbp.extension.game.actors.Actor;
@@ -300,35 +301,20 @@ public class MovementManager {
 
     public static List<Point2D> getPath(RoomHandler roomHandler, Point2D location, Point2D dest) {
         try {
-            FloatArray path = new FloatArray();
-            roomHandler
-                    .getPathHelper()
-                    .findPath(
-                            (float) location.getX() + 50,
-                            (float) location.getY() + 30,
-                            (float) dest.getX() + 50,
-                            (float) dest.getY() + 30,
-                            0.6f,
-                            path);
-            List<Point2D> pathList = new ArrayList<>();
-            float px = 0;
-            float py = 0;
-            for (int i = 0; i < path.size; i++) {
-                if (i % 2 == 0) px = path.get(i);
-                else py = path.get(i);
-                if (px != 0 && py != 0) {
-                    pathList.add(new Point2D.Float(px - 50, py - 30));
-                    px = 0f;
-                    py = 0f;
-                }
-            }
-            return pathList;
+            Node currentNode = Node.getNodeAtLocation(roomHandler.getParentExt(), location);
+            Line2D movementLine = new Line2D.Float(location, dest);
+            if (getPathIntersectionPoint(
+                            roomHandler.getParentExt(), roomHandler.isPracticeMap(), movementLine)
+                    != null)
+                return Node.getPath(
+                        roomHandler.getParentExt(),
+                        currentNode,
+                        currentNode,
+                        Node.getNodeAtLocation(roomHandler.getParentExt(), dest));
         } catch (Exception e) {
-            ArrayList<Point2D> newPath = new ArrayList<>(2);
-            newPath.add(location);
-            newPath.add(dest);
-            return newPath;
+            e.printStackTrace();
         }
+        return new ArrayList<>();
     }
 
     public static Point2D[] findAllPoints(Line2D line) { // Finds all points within a line

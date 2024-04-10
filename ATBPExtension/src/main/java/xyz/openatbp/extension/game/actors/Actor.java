@@ -13,10 +13,10 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public abstract class Actor {
     public enum AttackType {
@@ -896,9 +896,9 @@ public abstract class Actor {
 
     public void handlePathing() {
         if (this.path != null && this.location.distance(this.movementLine.getP2()) <= 0.9d) {
-            if (this.pathIndex + 1 != this.path.size()) {
+            if (this.pathIndex + 1 < this.path.size()) {
                 this.pathIndex++;
-                this.moveWithCollision(this.path.get(this.pathIndex));
+                this.move(this.path.get(this.pathIndex));
             } else {
                 this.path = null;
             }

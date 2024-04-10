@@ -27,6 +27,8 @@ import com.smartfoxserver.v2.extensions.SFSExtension;
 import xyz.openatbp.extension.evthandlers.*;
 import xyz.openatbp.extension.game.Obstacle;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.pathfinding.MovementManager;
+import xyz.openatbp.extension.pathfinding.Node;
 import xyz.openatbp.extension.reqhandlers.*;
 
 public class ATBPExtension extends SFSExtension {
@@ -52,6 +54,8 @@ public class ATBPExtension extends SFSExtension {
     MongoClient mongoClient;
     MongoDatabase database;
     MongoCollection<Document> playerDatabase;
+
+    Node[][] mainMapNodes = new Node[120][60];
 
     public void init() {
         this.addEventHandler(SFSEventType.USER_JOIN_ROOM, JoinRoomEventHandler.class);
@@ -157,6 +161,19 @@ public class ATBPExtension extends SFSExtension {
         mapColliders = new ArrayList[colliders.size()];
         mapPaths = new ArrayList<>(colliders.size());
         practiceMapObstacles = new ArrayList<>(colliders.size());
+
+        int col = 0;
+        int row = 0;
+
+        while (col < 120 && row < 60) {
+            mainMapNodes[col][row] = new Node(col, row);
+            col++;
+            if (col == 120) {
+                col = 0;
+                row++;
+            }
+        }
+
         for (int i = 0;
                 i < colliders.size();
                 i++) { // Reads all colliders and makes a list of their vertices
@@ -214,6 +231,17 @@ public class ATBPExtension extends SFSExtension {
             mainMapColliders[i] = vecs;
             mainMapObstacles.add(new Obstacle(path, vecs));
         }
+
+        for (Node[] nodes : mainMapNodes) {
+            for (Node n : nodes) {
+                if (MovementManager.insideAnyObstacle(
+                        this, false, new Point2D.Float(n.getX(), n.getY()))) n.setSolid(true);
+            }
+        }
+    }
+
+    public Node[][] getMainMapNodes() {
+        return this.mainMapNodes;
     }
 
     public List<Obstacle> getMainMapObstacles() {
