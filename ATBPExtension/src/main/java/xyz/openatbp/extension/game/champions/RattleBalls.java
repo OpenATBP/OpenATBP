@@ -49,7 +49,6 @@ public class RattleBalls extends UserActor {
             int gCooldown,
             int castDelay,
             Point2D dest) {
-        System.out.println("Ability used: " + ability);
         switch (ability) {
             case 1:
                 this.canCast[0] = false;
@@ -362,7 +361,6 @@ public class RattleBalls extends UserActor {
                     this.location);
         }
         if (this.passiveActive && System.currentTimeMillis() - this.passiveStart >= 3000) {
-            System.out.println("Passive ending update");
             this.endPassive();
         }
         if (this.parryActive
@@ -548,7 +546,6 @@ public class RattleBalls extends UserActor {
             ExtensionCommands.playSound(
                     this.parentExt, this.room, this.id, "sfx_rattleballs_regen", this.location);
             if (this.passiveHits <= 0) {
-                System.out.println("Passive ending here");
                 this.endPassive();
             } else {
                 ExtensionCommands.removeStatusIcon(

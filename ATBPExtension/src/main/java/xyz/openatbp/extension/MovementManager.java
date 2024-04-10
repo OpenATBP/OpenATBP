@@ -104,6 +104,10 @@ public class MovementManager {
                             new Line2D.Float(movementLine.getP2(), movementLine.getP1()),
                             vectorLines);
             if (closestLine == null) return movementLine.getP2();
+            if (closestLine.getP1().distance(player.getLocation()) > 5
+                    && (player.getAvatar().contains("finn")
+                            || player.getAvatar().contains("flame")))
+                closestLine = findClosestLine(movementLine, vectorLines);
             if (collider.size() < 25
                     && !playerIntersectsWithCollider(movementLine.getP2(), collider)) {
                 return movementLine.getP2();
@@ -128,8 +132,10 @@ public class MovementManager {
                         Point2D currentPoint = movementPoints[i];
                         if (currentPoint.distance(p) <= 0.6d) {
                             if (i == 0) return currentPoint;
-                            else if (!playerIntersectsWithCollider(movementPoints[i - 1], collider))
+                            else if (!playerIntersectsWithCollider(
+                                    movementPoints[i - 1], collider)) {
                                 return movementPoints[i - 1];
+                            }
                         }
                     }
                 }
@@ -197,6 +203,8 @@ public class MovementManager {
 
     public static Point2D getIntersectionPoint(
             Line2D line, Line2D line2) { // Finds the intersection of two lines
+        if (line == null) return null;
+        if (line2 == null) return line.getP1();
         float slope1 =
                 (float)
                         ((line.getP2().getY() - line.getP1().getY())
@@ -290,30 +298,18 @@ public class MovementManager {
         return null;
     }
 
-    public static List<Point2D> getPath(
-            ATBPExtension parentExt, boolean practice, Point2D location, Point2D dest) {
+    public static List<Point2D> getPath(RoomHandler roomHandler, Point2D location, Point2D dest) {
         try {
             FloatArray path = new FloatArray();
-            if (!practice)
-                parentExt
-                        .getMainMapPathFinder()
-                        .findPath(
-                                (float) location.getX() + 50,
-                                (float) location.getY() + 30,
-                                (float) dest.getX() + 50,
-                                (float) dest.getY() + 30,
-                                0.6f,
-                                path);
-            else
-                parentExt
-                        .getPracticeMapPathFinder()
-                        .findPath(
-                                (float) location.getX() + 50,
-                                (float) location.getY() + 30,
-                                (float) dest.getX() + 50,
-                                (float) dest.getY() + 30,
-                                0.6f,
-                                path);
+            roomHandler
+                    .getPathHelper()
+                    .findPath(
+                            (float) location.getX() + 50,
+                            (float) location.getY() + 30,
+                            (float) dest.getX() + 50,
+                            (float) dest.getY() + 30,
+                            0.6f,
+                            path);
             List<Point2D> pathList = new ArrayList<>();
             float px = 0;
             float py = 0;
@@ -328,7 +324,10 @@ public class MovementManager {
             }
             return pathList;
         } catch (Exception e) {
-            return new ArrayList<>();
+            ArrayList<Point2D> newPath = new ArrayList<>(2);
+            newPath.add(location);
+            newPath.add(dest);
+            return newPath;
         }
     }
 

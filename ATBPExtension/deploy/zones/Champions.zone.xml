@@ -11,7 +11,7 @@
   <maxUserVariablesAllowed>5</maxUserVariablesAllowed>
   <maxRoomVariablesAllowed>5</maxRoomVariablesAllowed>
   <minRoomNameChars>3</minRoomNameChars>
-  <maxRoomNameChars>10</maxRoomNameChars>
+  <maxRoomNameChars>20</maxRoomNameChars>
   <maxRooms>500</maxRooms>
   <maxRoomsCreatedPerUser>3</maxRoomsCreatedPerUser>
   <userCountChangeUpdateInterval>1000</userCountChangeUpdateInterval>

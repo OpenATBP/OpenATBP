@@ -9,6 +9,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MapData;
 import xyz.openatbp.extension.game.Champion;
@@ -18,7 +19,7 @@ public class GumballGuardian extends Tower {
     public GumballGuardian(
             ATBPExtension parentExt, Room room, String id, int team, Point2D location) {
         super(parentExt, room, id, team, location);
-        System.out.println("Invalid constructor used!");
+        Console.logWarning("Invalid constructor used!");
         this.avatar = "gumball_guardian";
         this.displayName = "Gumball Guardian";
         this.team = team;
@@ -76,7 +77,7 @@ public class GumballGuardian extends Tower {
 
     @Override
     public void die(Actor a) {
-        System.out.println(a.getDisplayName() + " somehow killed a guardian!");
+        Console.logWarning(a.getDisplayName() + " somehow killed a guardian!");
     }
 
     @Override

@@ -106,7 +106,6 @@ public class IceKing extends UserActor {
                             this.lastWHit.put(a.getId(), System.currentTimeMillis());
                         }
                     } else if (this.lastWHit != null && !this.lastWHit.containsKey(a.getId())) {
-                        System.out.println("First time attacking " + a.getId());
                         JsonNode spellData = this.parentExt.getAttackData("iceking", "spell2");
                         a.addToDamageQueue(this, getSpellDamage(spellData) / 2f, spellData);
                         ExtensionCommands.createActorFX(

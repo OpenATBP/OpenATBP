@@ -28,7 +28,6 @@ public class UserActor extends Actor {
     protected boolean autoAttackEnabled = false;
     protected int xp = 0;
     private int deathTime = 10;
-    protected boolean dead = false;
     private long timeKilled;
     protected Map<Actor, ISFSObject> aggressors = new HashMap<>();
     protected String backpack;
@@ -158,7 +157,6 @@ public class UserActor extends Actor {
             if (this.hasTempStat("healthRegen") && this.getTempStat("healthRegen") <= 0)
                 this.tempStats.remove("healthRegen");
         }
-        parentExt.trace("Temp Stat for " + stat + " set to " + delta);
         ExtensionCommands.updateActorData(
                 this.parentExt, this.room, this.id, stat, this.getPlayerStat(stat));
         return returnVal;
@@ -366,10 +364,15 @@ public class UserActor extends Actor {
                                     new RangedAttack(a, delayedAttack, projectileFx),
                                     500,
                                     TimeUnit.MILLISECONDS);
-                else delayedAttack.run();
+                else
+                    SmartFoxServer.getInstance()
+                            .getTaskScheduler()
+                            .schedule(delayedAttack, 300, TimeUnit.MILLISECONDS);
             } catch (NullPointerException e) {
                 // e.printStackTrace();
-                delayedAttack.run();
+                SmartFoxServer.getInstance()
+                        .getTaskScheduler()
+                        .schedule(delayedAttack, 300, TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -378,19 +381,18 @@ public class UserActor extends Actor {
         if (this.parentExt.getActorData(this.getAvatar()).has("attackType")) {
             String attackType =
                     this.parentExt.getActorData(this.getAvatar()).get("attackType").asText();
-            switch (attackType) { // don't know if It's supposed to be 500 for all or different
-                    // value depending on attackType
+            switch (attackType) {
                 case "MELEE":
                     this.stopMoving(500);
-                    Console.debugLog("melee attack");
+                    // Console.debugLog("melee attack");
                     break;
                 case "RANGED":
                     this.stopMoving(500);
-                    Console.debugLog("ranged attack");
+                   // Console.debugLog("ranged attack");
                     break;
                 default:
                     this.stopMoving(500);
-                    Console.debugLog("undefined attack");
+                    Console.logWarning(this.displayName + ": " + "undefined attack: " + attackType);
             }
         }
     }
@@ -552,12 +554,30 @@ public class UserActor extends Actor {
                 && a.getActorType() != ActorType.BASE;
     }
 
+    public void updateXPWorth(String event) {
+        switch (event) {
+            case "kill":
+                this.xpWorth += 5;
+                break;
+            case "death":
+                if (this.xpWorth > 25) this.xpWorth = 25;
+                else this.xpWorth -= 5;
+                break;
+            case "assist":
+                this.xpWorth += 2;
+                break;
+        }
+        if (this.xpWorth < 10) this.xpWorth = 10;
+        else if (xpWorth > 50) this.xpWorth = 50;
+    }
+
     @Override
     public void die(Actor a) {
         Console.debugLog(this.id + " has died! " + this.dead);
         try {
             if (this.dead) return;
             this.dead = true;
+            this.updateXPWorth("death");
             this.timeKilled = System.currentTimeMillis();
             this.canMove = false;
             if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
@@ -625,6 +645,7 @@ public class UserActor extends Actor {
                     if (actor.getActorType() == ActorType.PLAYER
                             && !actor.getId().equalsIgnoreCase(realKiller.getId())) {
                         UserActor ua = (UserActor) actor;
+                        ua.updateXPWorth("assist");
                         ua.increaseStat("assists", 1);
                         assistIds.add(ua);
                     }
@@ -641,12 +662,6 @@ public class UserActor extends Actor {
                     }
                 }
                 // Set<String> buffKeys = this.activeBuffs.keySet();
-                this.parentExt
-                        .getRoomHandler(this.room.getId())
-                        .handleAssistXP(
-                                realKiller,
-                                assistIds,
-                                50); // TODO: Not sure if this is the correct xp value
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -785,10 +800,7 @@ public class UserActor extends Actor {
                             > 0.1f) {
                         this.setPath(
                                 MovementManager.getPath(
-                                        this.parentExt,
-                                        this.parentExt
-                                                .getRoomHandler(this.room.getId())
-                                                .isPracticeMap(),
+                                        this.parentExt.getRoomHandler(this.room.getId()),
                                         this.location,
                                         this.target.getLocation()));
                     }
@@ -1107,6 +1119,7 @@ public class UserActor extends Actor {
                 xp *= multiplier;
             }
             this.xp += xp;
+            if (xp >= 10) Console.debugLog(this.displayName + " has gained " + xp + " xp!");
             HashMap<String, Double> updateData = new HashMap<>(3);
             updateData.put("xp", (double) this.xp);
             int level = ChampionData.getXPLevel(this.xp);
@@ -1257,9 +1270,10 @@ public class UserActor extends Actor {
         return (int) Math.round(cooldown * ratio);
     }
 
-    public void handleSpellVamp(double damage) {
+    public void handleSpellVamp(double damage, boolean area) {
         double percentage = this.getPlayerStat("spellVamp") / 100;
         int healing = (int) Math.round(damage * percentage);
+        if (area) healing *= 0.33d;
         this.changeHealth(healing);
     }
 
@@ -1295,6 +1309,7 @@ public class UserActor extends Actor {
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
         this.addXP(a.getXPWorth());
+        if (a.getActorType() == ActorType.PLAYER) this.updateXPWorth("kill");
         for (Actor actor :
                 Champion.getActorsInRadius(
                         this.parentExt.getRoomHandler(this.room.getId()), this.location, 10f)) {
@@ -1302,7 +1317,7 @@ public class UserActor extends Actor {
                     && !actor.getId().equalsIgnoreCase(this.id)
                     && actor.getTeam() == this.team) {
                 UserActor ua = (UserActor) actor;
-                ua.addXP(a.getXPWorth() / 2);
+                ua.addXP((int) Math.floor((double) a.getXPWorth() / 2d));
             }
         }
     }

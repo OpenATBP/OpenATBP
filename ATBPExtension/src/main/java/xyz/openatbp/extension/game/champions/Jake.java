@@ -13,7 +13,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
-import xyz.openatbp.extension.*;
+import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.MovementManager;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Champion;
@@ -50,15 +53,12 @@ public class Jake extends UserActor {
             if (!lastPassiveTime.isEmpty()) {
                 if (lastPassiveTime.containsKey(target.getId())) {
                     if (System.currentTimeMillis() - lastPassiveTime.get(target.getId()) >= 8000) {
-                        System.out.println("8 sec");
                         doPassive();
                     }
                 } else {
-                    System.out.println("new target " + target.getId());
                     doPassive();
                 }
             } else {
-                System.out.println("first target " + target.getId());
                 doPassive();
             }
         }
@@ -678,7 +678,6 @@ public class Jake extends UserActor {
             }
             if (this.destination.distance(this.getLocation()) <= 0.01
                     || System.currentTimeMillis() - this.startTime > this.estimatedDuration) {
-                System.out.println("Projectile being destroyed in update!");
                 this.destroy();
             }
         }

@@ -66,15 +66,18 @@ var onlinePlayers = [];
 var onlineChecker = setInterval(() => {
   for (var p of onlinePlayers) {
     if (Date.now() - p.lastChecked > 10000) {
-      console.log(p.name + ' offline!');
       onlinePlayers = onlinePlayers.filter((i) => {
         return i.username != p.username;
       });
-    } else {
-      console.log(p.name + ' online!');
     }
   }
 }, 11000);
+
+var playerList = setInterval(() => {
+  for (var p of onlinePlayers) {
+    console.log(p.name + ' is online!');
+  }
+}, 60000);
 
 mongoClient.connect((err) => {
   if (err) {
@@ -115,7 +118,7 @@ mongoClient.connect((err) => {
     res.render('index', {
       client_id: config.discord.client_id,
       redirect: config.discord.redirect_url,
-      discord_enabled: config.discord.enabled,
+      discord_enabled: config.discord.enable,
     });
   });
 

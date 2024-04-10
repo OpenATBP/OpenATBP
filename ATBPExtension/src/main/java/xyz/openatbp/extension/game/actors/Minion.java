@@ -2,9 +2,7 @@ package xyz.openatbp.extension.game.actors;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -13,6 +11,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.game.ActorState;
@@ -61,7 +60,6 @@ public class Minion extends Actor {
     private Map<UserActor, Integer> aggressors;
     private final boolean MOVEMENT_DEBUG = false;
     private State state;
-    private boolean dead;
 
     public Minion(ATBPExtension parentExt, Room room, int team, int minionNum, int wave, int lane) {
         this.avatar = "creep" + team;
@@ -70,11 +68,11 @@ public class Minion extends Actor {
         this.team = team;
         this.parentExt = parentExt;
         String typeString = "super";
-        if (minionNum <= 2) {
+        if (minionNum <= 1) {
             typeString = "melee" + minionNum;
             this.type = MinionType.MELEE;
             this.maxHealth = 450;
-        } else if (minionNum <= 4) {
+        } else if (minionNum <= 3) {
             typeString = "ranged" + minionNum;
             this.avatar += "_ranged";
             this.type = MinionType.RANGED;
@@ -134,6 +132,7 @@ public class Minion extends Actor {
 
     @Override
     public void attack(Actor a) {
+        this.stopMoving();
         this.canMove = false;
         this.attackCooldown = this.getPlayerStat("attackSpeed");
         ExtensionCommands.attackActor(
@@ -200,6 +199,12 @@ public class Minion extends Actor {
             }
         } else {
             ExtensionCommands.knockOutActor(parentExt, this.room, this.id, a.getId(), 30);
+            for (UserActor user :
+                    Champion.getUserActorsInRadius(
+                            this.parentExt.getRoomHandler(this.room.getId()), this.location, 10f)) {
+                if (user.getTeam() != this.team)
+                    user.addXP((int) Math.floor((double) this.xpWorth / 2d));
+            }
         }
         ExtensionCommands.destroyActor(parentExt, this.room, this.id);
         // this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,aggressors.keySet(),
@@ -277,19 +282,27 @@ public class Minion extends Actor {
         if (MOVEMENT_DEBUG)
             ExtensionCommands.moveActor(
                     parentExt, room, id + "_test", this.location, this.location, 5f, false);
+
         switch (this.state) {
             case IDLE:
                 // Console.logWarning(this.id + " is idle!");
                 this.mainPathIndex = this.findPathIndex();
-                this.move(this.getPathPoint());
+                this.moveWithCollision(this.getPathPoint());
                 this.state = State.MOVING;
                 break;
             case MOVING:
-                if (this.location.distance(this.movementLine.getP2()) <= 0.1d) this.moveAlongPath();
+                if (this.location.distance(this.getPathPoint()) <= 0.1d) {
+                    this.moveAlongPath();
+                    return;
+                } else if (this.isStopped()) {
+                    // this.canMove = true;
+                    this.moveWithCollision(this.getPathPoint());
+                    return;
+                }
                 Actor potentialTarget = this.searchForTarget();
                 if (potentialTarget != null) {
-                    this.state = State.TARGETING;
                     this.setTarget(potentialTarget);
+                    this.state = State.TARGETING;
                 }
                 break;
             case TARGETING:
@@ -297,10 +310,13 @@ public class Minion extends Actor {
                     this.state = State.IDLE;
                     return;
                 }
-                if (this.withinAggroRange(this.target.getLocation())) {
+                if (this.withinAggroRange(this.target.getLocation())
+                        && this.target.getHealth() > 0) {
                     if (this.withinRange(this.target) && conflictingMinion == null) {
-                        this.stopMoving();
                         this.state = State.ATTACKING;
+                    } else if (conflictingMinion == null) {
+                        if (this.target.getLocation().distance(this.movementLine.getP2()) > 0.1)
+                            this.moveWithCollision(this.target.getLocation());
                     }
                 } else {
                     this.resetTarget();
@@ -323,6 +339,31 @@ public class Minion extends Actor {
                     }
                 }
                 break;
+        }
+    }
+
+    @Override
+    public void moveWithCollision(Point2D dest) {
+        List<Point2D> path = new ArrayList<>();
+        try {
+            path =
+                    MovementManager.getPath(
+                            this.parentExt.getRoomHandler(this.room.getId()), this.location, dest);
+        } catch (Exception e) {
+            Console.logWarning(this.id + " could not form a path.");
+        }
+        if (path.size() > 2) {
+            this.setPath(path);
+        } else {
+            Line2D testLine = new Line2D.Float(this.location, dest);
+            Point2D newPoint =
+                    MovementManager.getPathIntersectionPoint(
+                            this.parentExt,
+                            this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),
+                            testLine);
+            if (newPoint != null) {
+                this.move(newPoint);
+            } else this.move(dest);
         }
     }
 
@@ -535,7 +576,9 @@ public class Minion extends Actor {
     }
 
     private void moveTowardsTarget() {
-        this.move(this.target.getLocation());
+        // if (this.type == MinionType.MELEE) Console.debugLog(this.id + " is moving towards
+        // target");
+        this.moveWithCollision(this.target.getLocation());
     }
 
     private Minion isInsideMinion() {
