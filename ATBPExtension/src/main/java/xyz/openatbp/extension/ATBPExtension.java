@@ -250,13 +250,15 @@ public class ATBPExtension extends SFSExtension {
         for (Node[] nodes : mainMapNodes) {
             for (Node n : nodes) {
                 if (MovementManager.insideAnyObstacle(
-                        this, false, new Point2D.Float(n.getX(), n.getY()))) n.setSolid(true);
+                                this, false, new Point2D.Float(n.getX(), n.getY()))
+                        || MovementManager.nearStructures(false, n.getLocation())) n.setSolid(true);
             }
         }
         for (Node[] nodes : practiceMapNodes) {
             for (Node n : nodes) {
                 if (MovementManager.insideAnyObstacle(
-                        this, true, new Point2D.Float(n.getX(), n.getY()))) n.setSolid(true);
+                                this, true, new Point2D.Float(n.getX(), n.getY()))
+                        || MovementManager.nearStructures(true, n.getLocation())) n.setSolid(true);
             }
         }
     }

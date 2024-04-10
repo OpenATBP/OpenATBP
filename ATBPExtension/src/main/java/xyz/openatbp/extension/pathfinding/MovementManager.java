@@ -6,14 +6,13 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Vector;
 import java.util.stream.Collectors;
 
 import com.smartfoxserver.v2.entities.Room;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.Console;
-import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.Obstacle;
 import xyz.openatbp.extension.game.actors.Actor;
@@ -261,6 +260,43 @@ public class MovementManager {
         return false;
     }
 
+    public static Point2D getPointFromFloats(float[] values, boolean inverseX, boolean inverseY) {
+        return new Point2D.Float(values[0] * (inverseX ? -1 : 1), values[1] * (inverseY ? -1 : 1));
+    }
+
+    public static boolean nearStructures(boolean practice, Point2D point) {
+        List<Point2D> bases = new ArrayList<>();
+        List<Point2D> towers = new ArrayList<>();
+        if (practice) {
+            bases.add(getPointFromFloats(MapData.L1_BLUE_BASE, false, false));
+            bases.add(getPointFromFloats(MapData.L1_BLUE_BASE, true, false));
+            Map<String, Point2D> practiceTowers = MapData.getPTowerActorData(0);
+            Map<String, Point2D> practiceTowers2 = MapData.getPTowerActorData(1);
+            towers.addAll(practiceTowers.values());
+            towers.addAll(practiceTowers2.values());
+            towers.add(getPointFromFloats(MapData.L1_PURPLE_TOWER_0, false, false));
+            towers.add(getPointFromFloats(MapData.L1_BLUE_TOWER_3, false, false));
+        } else {
+            bases.add(getPointFromFloats(MapData.L2_BLUE_BASE, false, false));
+            bases.add(getPointFromFloats(MapData.L2_BLUE_BASE, true, false));
+            Map<String, Point2D> mainTowers = MapData.getMainMapTowerData(0);
+            Map<String, Point2D> mainTowers2 = MapData.getMainMapTowerData(1);
+            towers.addAll(mainTowers.values());
+            towers.addAll(mainTowers2.values());
+            towers.add(getPointFromFloats(MapData.L2_BLUE_BASE_TOWER, false, false));
+            towers.add(getPointFromFloats(MapData.L2_PURPLE_BASE_TOWER, false, false));
+        }
+        for (Point2D b : bases) {
+            if (b.distance(point) <= 1.2) return true;
+        }
+        for (Point2D t : towers) {
+            if (t.distance(point) <= 2) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static Point2D getPathIntersectionPoint(
             Line2D movementLine, List<Vector<Float>> collider) {
         Point2D[] allPoints = findAllPoints(movementLine);
@@ -322,6 +358,7 @@ public class MovementManager {
     }
 
     public static Point2D[] findAllPoints(Line2D line) { // Finds all points within a line
+        if (line == null) return null;
         int arrayLength =
                 (int) (line.getP1().distance(line.getP2()))
                         * 30; // Longer movement have more precision when checking collisions
