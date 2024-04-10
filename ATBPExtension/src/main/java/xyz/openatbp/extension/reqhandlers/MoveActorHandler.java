@@ -54,7 +54,6 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             float dx = params.getFloat("dest_x");
             float dz = params.getFloat("dest_z");
             // Console.debugLog("dx: " + dx + " dz: " + dz);
-
             try {
                 List<Point2D> path = new ArrayList<>(0);
                 Line2D movementLine = new Line2D.Float(px, pz, dx, dz);
@@ -72,7 +71,11 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                                     parentExt,
                                     Node.getCurrentNode(parentExt, user),
                                     Node.getCurrentNode(parentExt, user),
-                                    Node.getNodeAtLocation(parentExt, new Point2D.Float(dx, dz)));
+                                    Node.getNodeAtLocation(
+                                            parentExt,
+                                            new Point2D.Float(dx, dz),
+                                            parentExt.getRoomHandler(room.getId()).isPracticeMap()),
+                                    parentExt.getRoomHandler(room.getId()).isPracticeMap());
                 }
 
                 if (path.size() <= 2

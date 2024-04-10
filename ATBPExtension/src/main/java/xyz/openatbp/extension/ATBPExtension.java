@@ -54,8 +54,12 @@ public class ATBPExtension extends SFSExtension {
     MongoClient mongoClient;
     MongoDatabase database;
     MongoCollection<Document> playerDatabase;
+    public static final int MAX_COL = 120;
+    public static final int MAX_MAIN_ROW = 60;
+    public static final int MAX_PRAC_ROW = 34;
 
-    Node[][] mainMapNodes = new Node[120][60];
+    Node[][] mainMapNodes = new Node[MAX_COL][MAX_MAIN_ROW];
+    Node[][] practiceMapNodes = new Node[MAX_COL][MAX_PRAC_ROW];
 
     public void init() {
         this.addEventHandler(SFSEventType.USER_JOIN_ROOM, JoinRoomEventHandler.class);
@@ -165,10 +169,21 @@ public class ATBPExtension extends SFSExtension {
         int col = 0;
         int row = 0;
 
-        while (col < 120 && row < 60) {
-            mainMapNodes[col][row] = new Node(col, row);
+        while (col < MAX_COL && row < MAX_MAIN_ROW) {
+            mainMapNodes[col][row] = new Node(col, row, false);
             col++;
-            if (col == 120) {
+            if (col == MAX_COL) {
+                col = 0;
+                row++;
+            }
+        }
+
+        col = 0;
+        row = 0;
+        while (col < MAX_COL && row < MAX_PRAC_ROW) {
+            practiceMapNodes[col][row] = new Node(col, row, true);
+            col++;
+            if (col == MAX_COL) {
                 col = 0;
                 row++;
             }
@@ -238,10 +253,20 @@ public class ATBPExtension extends SFSExtension {
                         this, false, new Point2D.Float(n.getX(), n.getY()))) n.setSolid(true);
             }
         }
+        for (Node[] nodes : practiceMapNodes) {
+            for (Node n : nodes) {
+                if (MovementManager.insideAnyObstacle(
+                        this, true, new Point2D.Float(n.getX(), n.getY()))) n.setSolid(true);
+            }
+        }
     }
 
     public Node[][] getMainMapNodes() {
         return this.mainMapNodes;
+    }
+
+    public Node[][] getPracticeMapNodes() {
+        return this.practiceMapNodes;
     }
 
     public List<Obstacle> getMainMapObstacles() {

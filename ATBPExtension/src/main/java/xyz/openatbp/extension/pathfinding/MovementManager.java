@@ -301,7 +301,9 @@ public class MovementManager {
 
     public static List<Point2D> getPath(RoomHandler roomHandler, Point2D location, Point2D dest) {
         try {
-            Node currentNode = Node.getNodeAtLocation(roomHandler.getParentExt(), location);
+            Node currentNode =
+                    Node.getNodeAtLocation(
+                            roomHandler.getParentExt(), location, roomHandler.isPracticeMap());
             Line2D movementLine = new Line2D.Float(location, dest);
             if (getPathIntersectionPoint(
                             roomHandler.getParentExt(), roomHandler.isPracticeMap(), movementLine)
@@ -310,7 +312,9 @@ public class MovementManager {
                         roomHandler.getParentExt(),
                         currentNode,
                         currentNode,
-                        Node.getNodeAtLocation(roomHandler.getParentExt(), dest));
+                        Node.getNodeAtLocation(
+                                roomHandler.getParentExt(), dest, roomHandler.isPracticeMap()),
+                        roomHandler.isPracticeMap());
         } catch (Exception e) {
             e.printStackTrace();
         }
