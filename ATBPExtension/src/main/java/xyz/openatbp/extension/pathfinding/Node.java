@@ -52,7 +52,7 @@ public class Node {
         int likelyRow = (int) Math.round(actor.getLocation().getY() + 30);
         if (likelyCol < 0) likelyCol = 0;
         if (likelyRow < 0) likelyRow = 0;
-        Console.debugLog("Col: " + likelyCol + " Row: " + likelyRow);
+       // Console.debugLog("Col: " + likelyCol + " Row: " + likelyRow);
         try {
             return nodes[likelyCol][likelyRow];
         } catch (ArrayIndexOutOfBoundsException e) {
@@ -67,7 +67,7 @@ public class Node {
         int likelyRow = (int) Math.round(dest.getY() + 30);
         if (likelyCol < 0) likelyCol = 0;
         if (likelyRow < 0) likelyRow = 0;
-        Console.debugLog("Col: " + likelyCol + " Row: " + likelyRow);
+       // Console.debugLog("Col: " + likelyCol + " Row: " + likelyRow);
         try {
             return nodes[likelyCol][likelyRow];
         } catch (ArrayIndexOutOfBoundsException e) {
@@ -171,7 +171,7 @@ public class Node {
             int bestNodefCost = 999;
 
             for (int i = 0; i < openNodes.size(); i++) {
-                Console.debugLog("Best F Cost:" + bestNodefCost);
+                //Console.debugLog("Best F Cost:" + bestNodefCost);
                 // openNodes.get(i).printCosts(startNode, goalNode);
                 if (openNodes.get(i).getFCost(startNode, goalNode) < bestNodefCost) {
                     bestNodefCost = openNodes.get(i).getFCost(startNode, goalNode);
