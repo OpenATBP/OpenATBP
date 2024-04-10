@@ -675,7 +675,9 @@ public abstract class Actor {
         data.putClass("attackData", attackData);
         this.damageQueue.add(data);
         if (attacker.getActorType() == ActorType.PLAYER
-                && this.getAttackType(attackData) == AttackType.SPELL) {
+                && this.getAttackType(attackData) == AttackType.SPELL
+                && this.getActorType() != ActorType.TOWER
+                && this.getActorType() != ActorType.BASE) {
             UserActor ua = (UserActor) attacker;
             ua.handleSpellVamp(
                     this.getMitigatedDamage(damage, AttackType.SPELL, ua),

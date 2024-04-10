@@ -27,6 +27,7 @@ public class CinnamonBun extends UserActor {
     private boolean canApplyUltEffects = false;
     private boolean ultEffectsApplied = false;
     private Path2D wPoly = null;
+    private long wStartTime = 0;
     private static final float Q_OFFSET_DISTANCE = 1f;
     private static final float Q_SPELL_RANGE = 3f;
     private static final float W_OFFSET_DISTANCE = 0.75f;
@@ -39,6 +40,9 @@ public class CinnamonBun extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
+        if (this.wPoly != null && System.currentTimeMillis() - this.wStartTime >= 5000) {
+            this.wPoly = null;
+        }
         if (this.wPoly != null) {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
             double percentage = 0.2d + ((double) (this.level) * 0.01d);
@@ -243,12 +247,13 @@ public class CinnamonBun extends UserActor {
                         .schedule(
                                 new CinnamonAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                gCooldown,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
             case 2: // TODO: make target rect work
                 this.canCast[1] = false;
                 this.canMove = false;
+                this.wStartTime = System.currentTimeMillis();
                 this.changeHealth((int) ((double) (this.getMaxHealth()) * 0.05d));
                 Point2D origLocation = this.location;
                 Line2D wLine = Champion.getAbilityLine(origLocation, dest, 6.5f);
@@ -313,7 +318,7 @@ public class CinnamonBun extends UserActor {
                         .schedule(
                                 new CinnamonAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, finalDashPoint),
-                                5000,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
             case 3:
@@ -521,7 +526,6 @@ public class CinnamonBun extends UserActor {
                             true,
                             getReducedCooldown(cooldown),
                             gCooldown);
-                    this.ultUses = 0;
                 }
                 break;
         }
@@ -541,13 +545,23 @@ public class CinnamonBun extends UserActor {
 
         @Override
         protected void spellW() {
-            wPoly = null;
             canCast[1] = true;
         }
 
         @Override
         protected void spellE() {
             canCast[2] = true;
+            if (ultUses == 3) {
+                int E_GLBAL_COOLDOWN = 500;
+                Runnable enableQCasting = () -> canCast[2] = true;
+                SmartFoxServer.getInstance()
+                        .getTaskScheduler()
+                        .schedule(
+                                enableQCasting,
+                                getReducedCooldown(cooldown) - E_GLBAL_COOLDOWN,
+                                TimeUnit.MILLISECONDS);
+                ultUses = 0;
+            }
         }
 
         @Override

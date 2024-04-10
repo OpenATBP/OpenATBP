@@ -50,6 +50,7 @@ public class Lich extends UserActor {
         }
         switch (ability) {
             case 1: // Q
+                this.canCast[0] = false;
                 double statIncrease = this.getStat("speed") * 0.25d;
                 this.addEffect("speed", statIncrease, 6000, null, "", false);
                 qActivated = true;
@@ -74,21 +75,17 @@ public class Lich extends UserActor {
                         .getTaskScheduler()
                         .schedule(new TrailHandler(), 6000, TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAbilityResponse(
-                        parentExt,
-                        player,
-                        "q",
-                        this.canUseAbility(ability),
-                        getReducedCooldown(cooldown),
-                        gCooldown);
+                        parentExt, player, "q", true, getReducedCooldown(cooldown), gCooldown);
                 SmartFoxServer.getInstance()
                         .getTaskScheduler()
                         .schedule(
                                 new LichAbilityRunnable(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                gCooldown,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
             case 2: // W
+                this.canCast[1] = false;
                 this.stopMoving();
                 ExtensionCommands.playSound(
                         parentExt, room, this.id, "sfx_lich_charm_shot", this.location);
@@ -108,22 +105,18 @@ public class Lich extends UserActor {
                         dest,
                         8f);
                 ExtensionCommands.actorAbilityResponse(
-                        parentExt,
-                        player,
-                        "w",
-                        this.canUseAbility(ability),
-                        getReducedCooldown(cooldown),
-                        gCooldown);
+                        parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
                 SmartFoxServer.getInstance()
                         .getTaskScheduler()
                         .schedule(
                                 new LichAbilityRunnable(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                gCooldown,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
 
                 break;
             case 3: // E
+                this.canCast[2] = false;
                 if (!this.ultStarted) {
                     this.canMove = false;
                     this.stopMoving();
@@ -176,7 +169,6 @@ public class Lich extends UserActor {
             case 4: // Passive
                 break;
         }
-        this.canCast[ability - 1] = false;
     }
 
     @Override

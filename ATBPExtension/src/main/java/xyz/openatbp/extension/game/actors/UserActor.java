@@ -50,6 +50,7 @@ public class UserActor extends Actor {
     private static final boolean INVINCIBLE_DEBUG = false;
     private static final boolean ABILITY_DEBUG = false;
     private static final boolean SPEED_DEBUG = false;
+    private static final boolean DMG_DEBUG = false;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -82,6 +83,7 @@ public class UserActor extends Actor {
                     0f,
                     2);
         if (SPEED_DEBUG) this.setStat("speed", 20);
+        if (DMG_DEBUG) this.setStat("attackDamage", 1000);
     }
 
     public void setAutoAttackEnabled(boolean enabled) {
@@ -385,11 +387,11 @@ public class UserActor extends Actor {
                     // Console.debugLog("melee attack");
                     break;
                 case "RANGED":
-                    this.stopMoving(250);
+                    this.stopMoving(500);
                     // Console.debugLog("ranged attack");
                     break;
                 default:
-                    this.stopMoving(250);
+                    this.stopMoving(500);
                     Console.logWarning(this.displayName + ": " + "undefined attack: " + attackType);
             }
         }

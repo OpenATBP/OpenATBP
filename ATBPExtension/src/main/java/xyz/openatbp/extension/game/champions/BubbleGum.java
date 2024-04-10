@@ -33,6 +33,7 @@ public class BubbleGum extends UserActor {
     private int turretNum = 0;
     private boolean bombPlaced;
     private Point2D bombLocation;
+    private long bombPlaceTime = 0;
     private static final boolean DEBUG = false;
 
     public BubbleGum(User u, ATBPExtension parentExt) {
@@ -119,6 +120,9 @@ public class BubbleGum extends UserActor {
         for (Turret t : turrets) {
             t.update(msRan);
         }
+        if (this.bombPlaced && System.currentTimeMillis() - this.bombPlaceTime >= 4000) {
+            this.useBomb(getReducedCooldown(currentHealth), 250);
+        }
     }
 
     @Override
@@ -132,6 +136,13 @@ public class BubbleGum extends UserActor {
         switch (ability) {
             case 1: // Q
                 this.canCast[0] = false;
+                SmartFoxServer.getInstance()
+                        .getTaskScheduler()
+                        .schedule(
+                                new PBAbilityRunnable(
+                                        ability, spellData, cooldown, gCooldown, dest),
+                                castDelay,
+                                TimeUnit.MILLISECONDS);
                 this.stopMoving();
                 String potionVo =
                         (this.avatar.equals("princessbubblegum_skin_prince"))
@@ -152,13 +163,6 @@ public class BubbleGum extends UserActor {
                         true,
                         this.team,
                         0f);
-                SmartFoxServer.getInstance()
-                        .getTaskScheduler()
-                        .schedule(
-                                new PBAbilityRunnable(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                castDelay,
-                                TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAbilityResponse(
                         parentExt, player, "q", true, getReducedCooldown(cooldown), gCooldown);
                 break;
@@ -180,13 +184,15 @@ public class BubbleGum extends UserActor {
                         .schedule(
                                 new PBAbilityRunnable(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                castDelay,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
             case 3: // E
+                this.canCast[2] = false;
                 if (!this.bombPlaced) {
-                    this.canCast[2] = false;
+                    this.bombPlaced = true;
                     this.stopMoving();
+                    this.bombPlaceTime = System.currentTimeMillis();
                     String bombVo =
                             (this.avatar.equals("princessbubblegum_skin_prince"))
                                     ? "vo/vo_gumball_bomb_hup"
@@ -220,23 +226,22 @@ public class BubbleGum extends UserActor {
                             this.team,
                             0f);
                     this.bombLocation = dest;
-                    Runnable bombDelay =
-                            () -> {
-                                bombPlaced = true;
-                                canCast[2] = true;
-                            };
-                    SmartFoxServer.getInstance()
-                            .getTaskScheduler()
-                            .schedule(bombDelay, 750, TimeUnit.MILLISECONDS);
                     SmartFoxServer.getInstance()
                             .getTaskScheduler()
                             .schedule(
                                     new PBAbilityRunnable(
                                             ability, spellData, cooldown, gCooldown, dest),
-                                    4000,
+                                    750,
                                     TimeUnit.MILLISECONDS);
                 } else {
                     this.useBomb(getReducedCooldown(cooldown), gCooldown);
+                    SmartFoxServer.getInstance()
+                            .getTaskScheduler()
+                            .schedule(
+                                    new PBAbilityRunnable(
+                                            ability, spellData, cooldown, gCooldown, dest),
+                                    getReducedCooldown(cooldown),
+                                    TimeUnit.MILLISECONDS);
                 }
                 break;
         }
@@ -330,7 +335,14 @@ public class BubbleGum extends UserActor {
 
         @Override
         protected void spellQ() {
-            canCast[0] = true;
+            int Q_CAST_DELAY = 750;
+            Runnable enableQCasting = () -> canCast[0] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableQCasting,
+                            getReducedCooldown(cooldown) - Q_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
             potionActivated = true;
             potionLocation = dest;
             potionSpawn = System.currentTimeMillis();
@@ -356,9 +368,7 @@ public class BubbleGum extends UserActor {
 
         @Override
         protected void spellE() {
-            if (bombPlaced) {
-                useBomb(getReducedCooldown(cooldown), gCooldown);
-            }
+            canCast[2] = true;
         }
 
         @Override

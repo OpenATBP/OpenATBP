@@ -27,6 +27,7 @@ public class Hunson extends UserActor {
     private int qUses = 0;
     private boolean ultActivated = false;
     private boolean passiveActivated = false;
+    private long qStartTime = 0;
     private long ultStart = 0;
 
     public Hunson(User u, ATBPExtension parentExt) {
@@ -60,6 +61,12 @@ public class Hunson extends UserActor {
                 ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultSuck");
                 this.ultActivated = false;
             }
+        }
+        if (this.qActivated && System.currentTimeMillis() - this.qStartTime >= 6000) {
+            this.qUses = 0;
+            ExtensionCommands.actorAbilityResponse(
+                    parentExt, player, "q", true, getReducedCooldown(12000), 250);
+            this.qActivated = false;
         }
     }
 
@@ -145,32 +152,18 @@ public class Hunson extends UserActor {
             Point2D dest) {
         switch (ability) {
             case 1:
+                this.qStartTime = System.currentTimeMillis();
                 this.canCast[0] = false;
                 this.stopMoving();
                 if (!this.qActivated) {
                     this.qActivated = true;
                     this.qVictims = new HashMap<>(3);
-                    this.qUses = 2;
-                    SmartFoxServer.getInstance()
-                            .getTaskScheduler()
-                            .schedule(
-                                    new HunsonAbilityHandler(
-                                            ability, spellData, cooldown, gCooldown, dest),
-                                    6000,
-                                    TimeUnit.MILLISECONDS);
-                } else {
-                    this.qUses--;
-                    if (this.qUses == 0) {
-                        // this.qActivated = false;
-                        ExtensionCommands.actorAbilityResponse(
-                                this.parentExt,
-                                this.player,
-                                "q",
-                                true,
-                                getReducedCooldown(cooldown),
-                                gCooldown);
-                    }
+                    this.qUses = 3;
                 }
+                this.qUses--;
+                int abilityCooldown = this.qUses > 0 ? 850 : getReducedCooldown(cooldown);
+                ExtensionCommands.actorAbilityResponse(
+                        this.parentExt, this.player, "q", true, abilityCooldown, gCooldown);
                 ExtensionCommands.playSound(
                         this.parentExt, this.room, this.id, "sfx_hunson_scream2", this.location);
                 Line2D spellLine = Champion.getAbilityLine(this.location, dest, 8f);
@@ -186,6 +179,7 @@ public class Hunson extends UserActor {
                         this.location,
                         dest,
                         8f);
+
                 break;
             case 2:
                 this.canCast[1] = false;
@@ -310,18 +304,19 @@ public class Hunson extends UserActor {
 
         @Override
         protected void spellQ() {
-            // canCast[0] = true;
-            if (qActivated) {
-                qActivated = false;
-                qUses = 0;
-                ExtensionCommands.actorAbilityResponse(
-                        parentExt, player, "q", true, getReducedCooldown(cooldown), gCooldown);
-            }
+            canCast[0] = true;
         }
 
         @Override
         protected void spellW() {
-            canCast[1] = true;
+            int W_CAST_DELAY = 400;
+            Runnable enableWCasting = () -> canCast[1] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableWCasting,
+                            getReducedCooldown(cooldown) - W_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
             for (Actor a :
                     Champion.getActorsInRadius(
                             parentExt.getRoomHandler(room.getId()), dest, 2.5f)) {
@@ -335,7 +330,14 @@ public class Hunson extends UserActor {
 
         @Override
         protected void spellE() {
-            canCast[2] = true;
+            int E_CAST_DELAY = 750;
+            Runnable enableECasting = () -> canCast[2] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableECasting,
+                            getReducedCooldown(cooldown) - E_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
             ExtensionCommands.createActorFX(
                     parentExt,
                     room,

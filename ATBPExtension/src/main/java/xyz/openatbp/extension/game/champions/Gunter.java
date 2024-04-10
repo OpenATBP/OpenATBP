@@ -22,7 +22,8 @@ import xyz.openatbp.extension.game.actors.UserActor;
 public class Gunter extends UserActor {
 
     private boolean ultActivated = false;
-    private Point2D ultPoint;
+    private long ultStartTime = 0;
+    private int qTime;
     private static final float E_OFFSET_DISTANCE_BOTTOM = 0.5f;
     private static final float E_OFFSET_DISTANCE_TOP = 5f;
     private static final float E_SPELL_RANGE = 8f;
@@ -33,7 +34,7 @@ public class Gunter extends UserActor {
     }
 
     @Override
-    public void update(int msRan) { // Add something so armor/mr isn't weird
+    public void update(int msRan) {
         super.update(msRan);
         if (this.ultActivated && this.eTrapezoid != null) {
             JsonNode spellData = parentExt.getAttackData(getAvatar(), "spell3");
@@ -44,10 +45,14 @@ public class Gunter extends UserActor {
                 }
             }
         }
-        if (ultActivated && this.hasInterrupingCC()) {
+        if (this.ultActivated && this.hasInterrupingCC()) {
             this.interruptE();
             this.eTrapezoid = null;
             this.ultActivated = false;
+        }
+        if (this.ultActivated && System.currentTimeMillis() - this.ultStartTime >= 2500) {
+            ultActivated = false;
+            eTrapezoid = null;
         }
     }
 
@@ -62,10 +67,11 @@ public class Gunter extends UserActor {
         super.useAbility(ability, spellData, cooldown, gCooldown, castDelay, dest);
         switch (ability) {
             case 1:
+                this.canCast[0] = false;
                 Point2D ogLocation = this.location;
                 Point2D finalDastPoint = this.dash(dest, true, DASH_SPEED);
                 double time = ogLocation.distance(finalDastPoint) / DASH_SPEED;
-                int qTime = (int) (time * 1000);
+                this.qTime = (int) (time * 1000);
                 ExtensionCommands.playSound(
                         parentExt, this.room, this.id, "sfx_gunter_slide", this.location);
                 ExtensionCommands.createActorFX(
@@ -93,10 +99,8 @@ public class Gunter extends UserActor {
                         false,
                         team);
                 ExtensionCommands.actorAnimate(parentExt, room, id, "spell1b", qTime, false);
-                Runnable castReset =
-                        () -> {
-                            canCast[0] = true;
-                        };
+                ExtensionCommands.actorAbilityResponse(
+                        this.parentExt, player, "q", true, getReducedCooldown(cooldown), gCooldown);
                 SmartFoxServer.getInstance()
                         .getTaskScheduler()
                         .schedule(
@@ -104,18 +108,9 @@ public class Gunter extends UserActor {
                                         ability, spellData, cooldown, gCooldown, finalDastPoint),
                                 qTime,
                                 TimeUnit.MILLISECONDS);
-                SmartFoxServer.getInstance()
-                        .getTaskScheduler()
-                        .schedule(castReset, 250, TimeUnit.MILLISECONDS);
-                ExtensionCommands.actorAbilityResponse(
-                        this.parentExt,
-                        player,
-                        "q",
-                        this.canUseAbility(ability),
-                        getReducedCooldown(cooldown),
-                        gCooldown);
                 break;
             case 2:
+                this.canCast[1] = false;
                 Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 7f);
                 ExtensionCommands.playSound(
                         this.parentExt, this.room, "", "sfx_gunter_wing_it", this.location);
@@ -132,21 +127,19 @@ public class Gunter extends UserActor {
                         dest,
                         8f);
                 ExtensionCommands.actorAbilityResponse(
-                        this.parentExt,
-                        player,
-                        "w",
-                        this.canUseAbility(ability),
-                        getReducedCooldown(cooldown),
-                        gCooldown);
+                        this.parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
                 SmartFoxServer.getInstance()
                         .getTaskScheduler()
                         .schedule(
                                 new GunterAbilityRunnable(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                gCooldown,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
             case 3: // TODO: Last left off - actually make this do damage
+                this.canCast[2] = false;
+                this.ultStartTime = System.currentTimeMillis();
+                this.ultActivated = true;
                 this.eTrapezoid =
                         Champion.createTrapezoid(
                                 location,
@@ -154,15 +147,8 @@ public class Gunter extends UserActor {
                                 E_SPELL_RANGE,
                                 E_OFFSET_DISTANCE_BOTTOM,
                                 E_OFFSET_DISTANCE_TOP);
-                this.setCanMove(false);
                 ExtensionCommands.actorAbilityResponse(
-                        this.parentExt,
-                        player,
-                        "e",
-                        this.canUseAbility(ability),
-                        getReducedCooldown(cooldown),
-                        gCooldown);
-                this.ultActivated = true;
+                        this.parentExt, player, "e", true, getReducedCooldown(cooldown), gCooldown);
                 ExtensionCommands.createActorFX(
                         parentExt,
                         room,
@@ -195,11 +181,10 @@ public class Gunter extends UserActor {
                         .schedule(
                                 new GunterAbilityRunnable(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                2500,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
         }
-        this.canCast[ability - 1] = false;
     }
 
     public void shatter(Actor a) {
@@ -282,6 +267,14 @@ public class Gunter extends UserActor {
 
         @Override
         protected void spellQ() {
+            int Q_DASH_TIME = qTime;
+            Runnable enableQCasting = () -> canCast[0] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableQCasting,
+                            getReducedCooldown(cooldown) - Q_DASH_TIME,
+                            TimeUnit.MILLISECONDS);
             ExtensionCommands.createActorFX(
                     parentExt,
                     room,
@@ -314,9 +307,6 @@ public class Gunter extends UserActor {
         @Override
         protected void spellE() {
             canCast[2] = true;
-            setCanMove(true);
-            ultActivated = false;
-            eTrapezoid = null;
         }
 
         @Override
