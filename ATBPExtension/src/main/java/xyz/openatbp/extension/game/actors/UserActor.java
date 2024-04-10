@@ -388,7 +388,7 @@ public class UserActor extends Actor {
                     break;
                 case "RANGED":
                     this.stopMoving(500);
-                   // Console.debugLog("ranged attack");
+                    // Console.debugLog("ranged attack");
                     break;
                 default:
                     this.stopMoving(500);
