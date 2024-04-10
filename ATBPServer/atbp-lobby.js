@@ -632,7 +632,8 @@ function handleRequest(jsonString, socket) {
             for (var pUser of q.purple) {
               if (pUser.name == socket.player.name) {
                 if (pUser.is_ready) shouldSend = false;
-                pUser.avatar = jsonObject['payload'].name;
+                var sameCharacter = q.purple.find((pu) => pu.avatar == jsonObject['payload'].name);
+                if(sameCharacter == undefined) pUser.avatar = jsonObject['payload'].name;
                 break;
               }
             }
@@ -654,7 +655,8 @@ function handleRequest(jsonString, socket) {
             for (var pUser of q.blue) {
               if (pUser.name == socket.player.name) {
                 if (pUser.is_ready) shouldSend = false;
-                pUser.avatar = jsonObject['payload'].name;
+                var sameCharacter = q.purple.find((pu) => pu.avatar == jsonObject['payload'].name);
+                if(sameCharacter == undefined) pUser.avatar = jsonObject['payload'].name;
                 break;
               }
             }
