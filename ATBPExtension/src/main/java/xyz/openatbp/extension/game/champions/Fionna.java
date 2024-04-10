@@ -108,6 +108,7 @@ public class Fionna extends UserActor {
                     this.actorsHitWithQ = new ArrayList<>();
                     this.dashTime = System.currentTimeMillis();
                     this.dashesRemaining = 3;
+                    this.qCooldown = getReducedCooldown(cooldown);
                 }
                 if (dashesRemaining > 0) {
                     this.dashTime = System.currentTimeMillis();
@@ -118,7 +119,6 @@ public class Fionna extends UserActor {
                     this.dashesRemaining--;
                     if (this.dashesRemaining == 0) {
                         this.dashTime = -1;
-                        this.qCooldown = getReducedCooldown(cooldown);
                         if (this.actorsHitWithQ.isEmpty()) this.qCooldown *= 0.7d;
                         ExtensionCommands.actorAbilityResponse(
                                 parentExt, player, "q", true, (int) qCooldown, gCooldown);
