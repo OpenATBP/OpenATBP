@@ -17,7 +17,6 @@ import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.pathfinding.MovementManager;
-import xyz.openatbp.extension.pathfinding.Node;
 
 public abstract class Actor {
     public enum AttackType {
@@ -52,24 +51,9 @@ public abstract class Actor {
     protected int xpWorth;
     protected String bundle;
     protected boolean towerAggroCompanion = false;
-    protected Node startNode;
-    protected Node currentNode;
-    protected Node goalNode;
 
     public double getPHealth() {
         return currentHealth / maxHealth;
-    }
-
-    public Node getCurrentNode() {
-        return this.currentNode;
-    }
-
-    public Node getStartNode() {
-        return this.startNode;
-    }
-
-    public Node getGoalNode() {
-        return this.goalNode;
     }
 
     public int getHealth() {
@@ -159,19 +143,6 @@ public abstract class Actor {
 
     public void move(Point2D destination) {
         if (!this.canMove()) return;
-        if (this.actorType == ActorType.PLAYER) {
-            this.currentNode = Node.getCurrentNode(this.parentExt, this);
-            if (currentNode != null) {
-                currentNode.display(this.parentExt, this.room);
-                this.startNode = this.currentNode;
-            }
-            this.goalNode = Node.getNodeAtLocation(this.parentExt, destination);
-            Node.getPath(
-                    this,
-                    Node.getCurrentNode(this.parentExt, this),
-                    Node.getCurrentNode(this.parentExt, this),
-                    Node.getNodeAtLocation(this.parentExt, destination));
-        }
         this.movementLine = new Line2D.Float(this.location, destination);
         this.timeTraveled = 0f;
         ExtensionCommands.moveActor(
@@ -923,9 +894,9 @@ public abstract class Actor {
 
     public void handlePathing() {
         if (this.path != null && this.location.distance(this.movementLine.getP2()) <= 0.9d) {
-            if (this.pathIndex + 1 != this.path.size()) {
+            if (this.pathIndex + 1 < this.path.size()) {
                 this.pathIndex++;
-                this.moveWithCollision(this.path.get(this.pathIndex));
+                this.move(this.path.get(this.pathIndex));
             } else {
                 this.path = null;
             }

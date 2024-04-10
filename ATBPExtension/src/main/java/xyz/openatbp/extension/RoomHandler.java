@@ -7,7 +7,6 @@ import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import com.dongbat.walkable.PathHelper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.MongoCollection;
@@ -59,7 +58,6 @@ public class RoomHandler implements Runnable {
     private boolean playTowerMusic = false;
     private long lastPointLeadTime = 0;
     private ScheduledFuture<?> scriptHandler;
-    private PathHelper pathHelper;
 
     public RoomHandler(ATBPExtension parentExt, Room room) {
         this.parentExt = parentExt;
@@ -70,7 +68,6 @@ public class RoomHandler implements Runnable {
         this.players = new ArrayList<>();
         this.campMonsters = new ArrayList<>();
         this.practiceMap = room.getGroupId().equalsIgnoreCase("practice");
-        this.initializePathFinder();
         HashMap<String, Point2D> towers0;
         HashMap<String, Point2D> towers1;
         if (!this.practiceMap) {
@@ -119,32 +116,12 @@ public class RoomHandler implements Runnable {
          */
     }
 
-    private void initializePathFinder() {
-        try {
-            ArrayList<Vector<Float>>[] colliders =
-                    this.parentExt.getColliders(this.room.getGroupId());
-            this.pathHelper = new PathHelper(100, 100);
-            for (ArrayList<Vector<Float>> c : colliders) {
-                float[] verts = new float[c.size() * 2];
-                int index = 0;
-                for (Vector<Float> v : c) {
-                    verts[index] = v.get(0) + 50;
-                    verts[index + 1] = v.get(1) + 30;
-                    index += 2;
-                }
-                this.pathHelper.addPolygon(verts);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public PathHelper getPathHelper() {
-        return this.pathHelper;
-    }
-
     public void setScriptHandler(ScheduledFuture<?> handler) {
         this.scriptHandler = handler;
+    }
+
+    public ATBPExtension getParentExt() {
+        return this.parentExt;
     }
 
     public void stopScript() {
