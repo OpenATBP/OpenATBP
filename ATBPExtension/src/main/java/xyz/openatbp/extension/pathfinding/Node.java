@@ -114,7 +114,8 @@ public class Node {
         List<Point2D> path = new ArrayList<>();
         Map<Node, Node> trackedNodes = new HashMap<>();
         int step = 0;
-        while (step < 300) {
+        while (step < 300) { // TODO: May lag the server if done unnecessarily. Seems to be an issue
+            // when players die sometimes
             if (currentNode == goalNode) {
                 Node current = goalNode;
                 int test = 0;

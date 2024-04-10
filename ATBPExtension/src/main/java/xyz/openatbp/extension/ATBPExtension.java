@@ -104,10 +104,10 @@ public class ATBPExtension extends SFSExtension {
 
     @Override
     public void destroy() { // Destroys all room tasks to prevent memory leaks
-        super.destroy();
         for (Integer key : roomHandlers.keySet()) {
             if (roomHandlers.get(key) != null) roomHandlers.get(key).stopScript();
         }
+        super.destroy();
     }
 
     private void loadDefinitions()

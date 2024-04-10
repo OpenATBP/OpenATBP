@@ -38,6 +38,7 @@ public class ChampionData {
             String category,
             ATBPExtension parentExt) { // TODO: Switch to using UserActor stats
         ISFSObject toUpdate = new SFSObject();
+        // Console.debugLog("Using spell point!");
         UserActor ua =
                 parentExt
                         .getRoomHandler(user.getLastJoinedRoom().getId())
@@ -67,17 +68,17 @@ public class ChampionData {
                                                     - 1))); // Gets category by looking at last
             // number in the string
             ArrayNode itemStats = getItemStats(parentExt, inventory[cat - 1]);
-            Map<String, Integer> previousValues = new HashMap<>();
+            Map<String, Double> previousValues = new HashMap<>();
             for (JsonNode stat : getItemPointVal(itemStats, categoryPoints)) {
                 if (stat.get("point").asInt() == categoryPoints - 1) {
-                    previousValues.put(stat.get("stat").asText(), stat.get("value").asInt());
+                    previousValues.put(stat.get("stat").asText(), stat.get("value").asDouble());
                 }
                 if (stat.get("point").asInt() == categoryPoints) {
-                    int previousValue = 0;
+                    double previousValue = 0;
                     if (previousValues.containsKey(stat.get("stat").asText())) {
                         previousValue = previousValues.get(stat.get("stat").asText());
                     }
-                    int packStat = stat.get("value").asInt() - previousValue;
+                    double packStat = stat.get("value").asDouble() - previousValue;
                     if (stat.get("stat")
                             .asText()
                             .equalsIgnoreCase(
@@ -100,6 +101,9 @@ public class ChampionData {
                         toUpdate.putDouble(stat.get("stat").asText(),maxHealth);
 
                          */
+                    } else if (stat.get("stat").asText().equalsIgnoreCase("attackRange")) {
+                        packStat -= previousValue;
+                        ua.setStat(stat.get("stat").asText(), ua.getStat("attackRange") * packStat);
                     } else {
                         ua.increaseStat(stat.get("stat").asText(), packStat);
                     }
@@ -143,7 +147,7 @@ public class ChampionData {
             ArrayNode itemStats = getItemStats(parentExt, inventory[i]);
             for (JsonNode stat : getItemPointVal(itemStats, categoryPoints)) {
                 if (stat.get("point").asInt() == categoryPoints) {
-                    int packStat = stat.get("value").asInt();
+                    double packStat = stat.get("value").asDouble();
                     if (stat.get("stat").asText().equalsIgnoreCase("health")) {
                         double maxHealth = ua.getMaxHealth();
                         double pHealth = ua.getPHealth();
@@ -151,6 +155,8 @@ public class ChampionData {
                         maxHealth -= packStat;
                         double currentHealth = (int) Math.floor(pHealth * maxHealth);
                         ua.setHealth((int) currentHealth, (int) maxHealth);
+                    } else if (stat.get("stat").asText().equalsIgnoreCase("attackRange")) {
+                        ua.setStat(stat.get("stat").asText(), ua.getStat("attackRange") / packStat);
                     } else {
                         ua.increaseStat(stat.get("stat").asText(), packStat * -1);
                     }

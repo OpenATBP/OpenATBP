@@ -87,6 +87,12 @@ public class UserActor extends Actor {
         if (DMG_DEBUG) this.setStat("attackDamage", 1000);
     }
 
+    @Override
+    public void setStat(String stat, double value) {
+        super.setStat(stat, value);
+        this.updateStatMenu(stat);
+    }
+
     public void setAutoAttackEnabled(boolean enabled) {
         this.autoAttackEnabled = enabled;
     }
@@ -709,6 +715,7 @@ public class UserActor extends Actor {
     }
 
     public void increaseStat(String key, double num) {
+        // Console.debugLog("Increasing " + key + " by " + num);
         if (key.equalsIgnoreCase("kills")) {
             this.killingSpree += num;
             this.multiKill++;
