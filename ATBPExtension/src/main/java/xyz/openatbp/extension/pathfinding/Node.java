@@ -1,6 +1,7 @@
 package xyz.openatbp.extension.pathfinding;
 
 import java.awt.geom.Point2D;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.smartfoxserver.v2.entities.Room;
@@ -116,57 +117,67 @@ public class Node {
         return this.getGCost(actor.getStartNode()) + this.getHCost(actor.getGoalNode());
     }
 
-    public static void getPath(
-            Actor a, Node currentNode, List<Node> checkedNodes, List<Node> openNodes) {
+    public int getFCost(Node startNode, Node goalNode) {
+        return this.getGCost(startNode) + this.getHCost(goalNode);
+    }
+
+    public static void getPath(Actor a, Node startNode, Node currentNode, Node goalNode) {
         ATBPExtension parentExt = a.getParentExt();
+        List<Node> checkedNodes = new ArrayList<>();
+        List<Node> openNodes = new ArrayList<>();
+        int step = 0;
         boolean goalReached = false;
-        if (currentNode.getRow() - 1 >= 0) {
-            Node upNode =
-                    parentExt.getMainMapNodes()[currentNode.getCol()][currentNode.getRow() - 1];
-            if (upNode.canBeOpened(checkedNodes, openNodes)) openNodes.add(upNode);
-        }
-        if (currentNode.getCol() - 1 >= 0) {
-            Node leftNode =
-                    parentExt.getMainMapNodes()[currentNode.getCol() - 1][currentNode.getRow()];
-            if (leftNode.canBeOpened(checkedNodes, openNodes)) openNodes.add(leftNode);
-        }
-        if (currentNode.getRow() + 1 < 60) {
-            Node downNode =
-                    parentExt.getMainMapNodes()[currentNode.getCol()][currentNode.getRow() + 1];
-            if (downNode.canBeOpened(checkedNodes, openNodes)) openNodes.add(downNode);
-        }
-        if (currentNode.getCol() + 1 < 120) {
-            Node rightNode =
-                    parentExt.getMainMapNodes()[currentNode.getCol() + 1][currentNode.getRow()];
-            if (rightNode.canBeOpened(checkedNodes, openNodes)) openNodes.add(rightNode);
-        }
+        while (!goalReached && step < 300) {
+            Console.debugLog("CurrentNode: x=" + currentNode.getX() + " y=" + currentNode.getY());
+            if (currentNode.getRow() - 1 >= 0) {
+                Node upNode =
+                        parentExt.getMainMapNodes()[currentNode.getCol()][currentNode.getRow() - 1];
+                if (upNode.canBeOpened(checkedNodes, openNodes)) openNodes.add(upNode);
+            }
+            if (currentNode.getCol() - 1 >= 0) {
+                Node leftNode =
+                        parentExt.getMainMapNodes()[currentNode.getCol() - 1][currentNode.getRow()];
+                if (leftNode.canBeOpened(checkedNodes, openNodes)) openNodes.add(leftNode);
+            }
+            if (currentNode.getRow() + 1 < 60) {
+                Node downNode =
+                        parentExt.getMainMapNodes()[currentNode.getCol()][currentNode.getRow() + 1];
+                if (downNode.canBeOpened(checkedNodes, openNodes)) openNodes.add(downNode);
+            }
+            if (currentNode.getCol() + 1 < 120) {
+                Node rightNode =
+                        parentExt.getMainMapNodes()[currentNode.getCol() + 1][currentNode.getRow()];
+                if (rightNode.canBeOpened(checkedNodes, openNodes)) openNodes.add(rightNode);
+            }
 
-        int bestNodeIndex = 0;
-        int bestNodefCost = 999;
+            int bestNodeIndex = 0;
+            int bestNodefCost = 999;
 
-        for (int i = 0; i < openNodes.size(); i++) {
-            if (openNodes.get(i).getFCost(a) < bestNodefCost) {
-                bestNodefCost = openNodes.get(i).getFCost(a);
-                bestNodeIndex = i;
-            } else if (openNodes.get(i).getFCost(a) == bestNodefCost) {
-                if (openNodes.get(i).getGCost(a.getStartNode())
-                        < openNodes.get(bestNodeIndex).getGCost(a.getStartNode())) {
+            for (int i = 0; i < openNodes.size(); i++) {
+                if (openNodes.get(i).getFCost(startNode, goalNode) < bestNodefCost) {
+                    bestNodefCost = openNodes.get(i).getFCost(startNode, goalNode);
                     bestNodeIndex = i;
+                } else if (openNodes.get(i).getFCost(startNode, goalNode) == bestNodefCost) {
+                    if (openNodes.get(i).getGCost(startNode)
+                            < openNodes.get(bestNodeIndex).getGCost(startNode)) {
+                        bestNodeIndex = i;
+                    }
                 }
             }
+            Node bestNode = openNodes.get(bestNodeIndex);
+            currentNode = bestNode;
+            Console.debugLog("NewNode: x=" + currentNode.getX() + " y=" + currentNode.getY());
+            if (currentNode == goalNode) goalReached = true;
+            ExtensionCommands.createActor(
+                    parentExt,
+                    a.getRoom(),
+                    "pathTest" + Math.random() * 1000,
+                    "gnome_b",
+                    bestNode.getLocation(),
+                    0f,
+                    2);
+            step++;
         }
-        Node bestNode = openNodes.get(bestNodeIndex);
-        if (bestNode == currentNode) return;
-        if (bestNode == a.getGoalNode()) goalReached = true;
-        ExtensionCommands.createActor(
-                parentExt,
-                a.getRoom(),
-                "pathTest" + Math.random() * 1000,
-                "gnome_b",
-                bestNode.getLocation(),
-                0f,
-                2);
-        if (!goalReached) getPath(a, bestNode, checkedNodes, openNodes);
     }
 
     public Point2D getLocation() {

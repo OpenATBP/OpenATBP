@@ -166,7 +166,11 @@ public abstract class Actor {
                 this.startNode = this.currentNode;
             }
             this.goalNode = Node.getNodeAtLocation(this.parentExt, destination);
-            Node.getPath(this, this.currentNode, new ArrayList<>(), new ArrayList<>());
+            Node.getPath(
+                    this,
+                    Node.getCurrentNode(this.parentExt, this),
+                    Node.getCurrentNode(this.parentExt, this),
+                    Node.getNodeAtLocation(this.parentExt, destination));
         }
         this.movementLine = new Line2D.Float(this.location, destination);
         this.timeTraveled = 0f;
