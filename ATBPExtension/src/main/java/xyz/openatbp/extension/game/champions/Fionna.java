@@ -1,6 +1,7 @@
 package xyz.openatbp.extension.game.champions;
 
 import java.awt.geom.Point2D;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -9,6 +10,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
@@ -24,7 +26,6 @@ public class Fionna extends UserActor {
     };
 
     private int dashesRemaining = 0;
-    private boolean hitWithDash = false;
     private long dashTime = -1;
     private SwordType swordType = SwordType.FEARLESS;
     private boolean ultActivated = false;
@@ -32,6 +33,7 @@ public class Fionna extends UserActor {
     private int qTime;
     private double qCooldown;
     private long ultStartTime = 0;
+    private ArrayList<Actor> actorsHitWithQ;
     private double previousSpellDamage;
 
     public Fionna(User u, ATBPExtension parentExt) {
@@ -80,10 +82,8 @@ public class Fionna extends UserActor {
                     parentExt, player, this.id + "_dash" + this.dashesRemaining);
             this.dashTime = -1;
             this.dashesRemaining = 0;
-            double cooldown = this.getReducedCooldown(14000d);
-            if (!this.hitWithDash) cooldown *= 0.7d;
-            this.hitWithDash = false;
-            ExtensionCommands.actorAbilityResponse(parentExt, player, "q", true, (int) cooldown, 0);
+            ExtensionCommands.actorAbilityResponse(
+                    parentExt, player, "q", true, (int) qCooldown, 0);
         }
         if (this.getPlayerStat("attackDamage") != this.previousAttackDamage) {
             this.updateStatMenu("attackDamage");
@@ -106,6 +106,7 @@ public class Fionna extends UserActor {
             case 1:
                 this.canCast[0] = false;
                 if (this.dashTime == -1) {
+                    this.actorsHitWithQ = new ArrayList<>();
                     this.dashTime = System.currentTimeMillis();
                     this.dashesRemaining = 3;
                 }
@@ -119,7 +120,7 @@ public class Fionna extends UserActor {
                     if (this.dashesRemaining == 0) {
                         this.dashTime = -1;
                         this.qCooldown = getReducedCooldown(cooldown);
-                        if (!this.hitWithDash) this.qCooldown *= 0.7d;
+                        if (this.actorsHitWithQ.isEmpty()) this.qCooldown *= 0.7d;
                         ExtensionCommands.actorAbilityResponse(
                                 parentExt, player, "q", true, (int) qCooldown, gCooldown);
                         ExtensionCommands.actorAnimate(
@@ -386,7 +387,7 @@ public class Fionna extends UserActor {
                 if (a.getTeam() != team
                         && a.getActorType() != ActorType.BASE
                         && a.getActorType() != ActorType.TOWER) {
-                    if (!hitWithDash) hitWithDash = true;
+                    actorsHitWithQ.add(a);
                     double damage = getSpellDamage(spellData);
                     a.addToDamageQueue(Fionna.this, damage, spellData);
                     if (dashInt == 1) a.addState(ActorState.SLOWED, 0.5d, 1000, null, false);

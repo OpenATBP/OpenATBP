@@ -371,7 +371,9 @@ public class Marceline extends UserActor {
                 if (this.target != null && isNonStructure(this.target))
                     changeHealth((int) Math.round(damage * lifesteal));
             }
-            if (!getState(ActorState.TRANSFORMED) && isNonStructure(this.target)) passiveHits++;
+            if (!getState(ActorState.TRANSFORMED)
+                    && isNonStructure(this.target)
+                    && !getState(ActorState.BLINDED)) passiveHits++;
             if (wActive && getState(ActorState.TRANSFORMED)) {
                 System.out.println("Marceline hit with the W");
                 wActive = false;
