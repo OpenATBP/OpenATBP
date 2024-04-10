@@ -13,10 +13,11 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.pathfinding.MovementManager;
+import xyz.openatbp.extension.pathfinding.Node;
 
 public abstract class Actor {
     public enum AttackType {
@@ -51,9 +52,24 @@ public abstract class Actor {
     protected int xpWorth;
     protected String bundle;
     protected boolean towerAggroCompanion = false;
+    protected Node startNode;
+    protected Node currentNode;
+    protected Node goalNode;
 
     public double getPHealth() {
         return currentHealth / maxHealth;
+    }
+
+    public Node getCurrentNode() {
+        return this.currentNode;
+    }
+
+    public Node getStartNode() {
+        return this.startNode;
+    }
+
+    public Node getGoalNode() {
+        return this.goalNode;
     }
 
     public int getHealth() {
@@ -143,6 +159,15 @@ public abstract class Actor {
 
     public void move(Point2D destination) {
         if (!this.canMove()) return;
+        if (this.actorType == ActorType.PLAYER) {
+            this.currentNode = Node.getCurrentNode(this.parentExt, this);
+            if (currentNode != null) {
+                currentNode.display(this.parentExt, this.room);
+                this.startNode = this.currentNode;
+            }
+            this.goalNode = Node.getNodeAtLocation(this.parentExt, destination);
+            Node.getPath(this, this.currentNode, new ArrayList<>(), new ArrayList<>());
+        }
         this.movementLine = new Line2D.Float(this.location, destination);
         this.timeTraveled = 0f;
         ExtensionCommands.moveActor(

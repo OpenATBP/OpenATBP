@@ -109,7 +109,14 @@ public class RoomHandler implements Runnable {
         this.campMonsters = new ArrayList<>();
         this.companions = new ArrayList<>();
         // this.campMonsters = GameManager.initializeCamps(parentExt,room);
+        /*
+        for (Node[] nodes : parentExt.mainMapNodes) {
+            for (Node n : nodes) {
+                if (n.isSolid()) n.display(parentExt, room);
+            }
+        }
 
+         */
     }
 
     private void initializePathFinder() {

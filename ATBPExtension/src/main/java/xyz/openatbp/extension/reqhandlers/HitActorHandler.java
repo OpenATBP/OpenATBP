@@ -10,7 +10,6 @@ import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.Console;
-import xyz.openatbp.extension.MovementManager;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
@@ -19,6 +18,7 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.Base;
 import xyz.openatbp.extension.game.actors.BaseTower;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.pathfinding.MovementManager;
 
 @MultiHandler
 public class HitActorHandler extends BaseClientRequestHandler {

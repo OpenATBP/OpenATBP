@@ -14,6 +14,7 @@ import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public class Monster extends Actor {
 

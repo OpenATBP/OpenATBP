@@ -15,13 +15,14 @@ import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 
 import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public class MoveActorHandler extends BaseClientRequestHandler {
     @Override
     public void handleClientRequest(
             User sender, ISFSObject params) { // Called when player clicks on the map to move
 
-        // trace(params.getDump());
+        Console.debugLog(params.getDump());
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
 
         RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId());

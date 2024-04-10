@@ -1,4 +1,4 @@
-package xyz.openatbp.extension;
+package xyz.openatbp.extension.pathfinding;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
@@ -13,6 +13,9 @@ import com.dongbat.walkable.FloatArray;
 
 import com.smartfoxserver.v2.entities.Room;
 
+import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.Obstacle;
 import xyz.openatbp.extension.game.actors.Actor;
