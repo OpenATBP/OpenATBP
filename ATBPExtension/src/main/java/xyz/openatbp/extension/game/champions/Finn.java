@@ -29,6 +29,8 @@ public class Finn extends UserActor {
     private long passiveStart = 0;
     private float ultX;
     private float ultY;
+    private long qStartTime = 0;
+    private long eStartTime = 0;
     private static final float W_OFFSET_DISTANCE = 1.25f;
 
     public Finn(User u, ATBPExtension parentExt) {
@@ -114,6 +116,15 @@ public class Finn extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
+        if (this.qActive && System.currentTimeMillis() - this.qStartTime >= 3000) {
+            this.qActive = false;
+            updateStatMenu("speed");
+        }
+        if (this.ultActivated && System.currentTimeMillis() - this.eStartTime >= 5000) {
+            this.wallLines = null;
+            this.wallsActivated = new boolean[] {false, false, false, false};
+            this.ultActivated = false;
+        }
         if (this.ultActivated) {
             for (int i = 0; i < this.wallLines.length; i++) {
                 if (this.wallsActivated[i]) {
@@ -185,6 +196,7 @@ public class Finn extends UserActor {
                 this.canCast[0] = false;
                 this.attackCooldown = 0;
                 this.qActive = true;
+                this.qStartTime = System.currentTimeMillis();
                 this.updateStatMenu("speed");
                 String shieldPrefix =
                         (this.avatar.contains("guardian")) ? "finn_guardian_" : "finn_";
@@ -221,7 +233,7 @@ public class Finn extends UserActor {
                         .schedule(
                                 new FinnAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                3000,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
             case 2:
@@ -281,6 +293,7 @@ public class Finn extends UserActor {
                 Runnable cast =
                         () -> {
                             this.ultActivated = true;
+                            this.eStartTime = System.currentTimeMillis();
                             double widthHalf = 3.675d;
                             Point2D p1 =
                                     new Point2D.Double(
@@ -394,17 +407,17 @@ public class Finn extends UserActor {
                                     true,
                                     getReducedCooldown(cooldown),
                                     gCooldown);
-                            SmartFoxServer.getInstance()
-                                    .getTaskScheduler()
-                                    .schedule(
-                                            new FinnAbilityHandler(
-                                                    ability, spellData, cooldown, gCooldown, dest),
-                                            5000,
-                                            TimeUnit.MILLISECONDS);
                         };
                 SmartFoxServer.getInstance()
                         .getTaskScheduler()
                         .schedule(cast, castDelay, TimeUnit.MILLISECONDS);
+                SmartFoxServer.getInstance()
+                        .getTaskScheduler()
+                        .schedule(
+                                new FinnAbilityHandler(
+                                        ability, spellData, cooldown, gCooldown, dest),
+                                getReducedCooldown(cooldown),
+                                TimeUnit.MILLISECONDS);
                 break;
         }
     }
@@ -541,8 +554,6 @@ public class Finn extends UserActor {
         @Override
         protected void spellQ() {
             canCast[0] = true;
-            qActive = false;
-            updateStatMenu("speed");
         }
 
         @Override
@@ -553,9 +564,6 @@ public class Finn extends UserActor {
         @Override
         protected void spellE() {
             canCast[2] = true;
-            wallLines = null;
-            wallsActivated = new boolean[] {false, false, false, false};
-            ultActivated = false;
         }
 
         @Override

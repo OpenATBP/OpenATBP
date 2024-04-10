@@ -209,7 +209,14 @@ public class LSP extends UserActor {
 
         @Override
         protected void spellQ() {
-            canCast[0] = true;
+            int Q_CAST_DELAY = 750;
+            Runnable enableQCasting = () -> canCast[0] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableQCasting,
+                            getReducedCooldown(cooldown) - Q_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
             double healthHealed = (double) getMaxHealth() * (0.03d * lumps);
             ExtensionCommands.playSound(parentExt, room, id, "sfx_lsp_drama_beam", location);
             ExtensionCommands.removeStatusIcon(parentExt, player, "p" + lumps);
@@ -250,7 +257,14 @@ public class LSP extends UserActor {
 
         @Override
         protected void spellW() {
-            canCast[1] = true;
+            int W_CAST_DELAY = 500;
+            Runnable enableWCasting = () -> canCast[1] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableWCasting,
+                            getReducedCooldown(cooldown) - W_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
             ExtensionCommands.playSound(parentExt, room, id, "sfx_lsp_lumps_aoe", location);
             ExtensionCommands.createActorFX(
                     parentExt,
@@ -268,7 +282,14 @@ public class LSP extends UserActor {
 
         @Override
         protected void spellE() {
-            canCast[2] = true;
+            int E_CAST_DELAY = 1250;
+            Runnable enableECasting = () -> canCast[2] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableECasting,
+                            getReducedCooldown(cooldown) - E_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
             isCastingult = false;
             if (!interruptE) {
                 Line2D projectileLine = Champion.getAbilityLine(location, dest, 100f);

@@ -68,6 +68,12 @@ public class BMO extends UserActor {
             this.canCast[2] = true;
             this.wActive = false;
         }
+        if (this.wActive && System.currentTimeMillis() - this.wStartTime >= 3000) {
+            this.wEnd(getReducedCooldown(16000), 250);
+            this.canCast[0] = true;
+            this.canCast[2] = true;
+            this.wActive = false;
+        }
 
         if (wActive) {
             for (Actor a :
@@ -150,19 +156,18 @@ public class BMO extends UserActor {
                         .schedule(
                                 new BMOAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                castDelay,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
                 break;
             case 2:
+                this.canCast[1] = false;
                 if (!this.wActive) {
                     this.setCanMove(false);
                     this.stopMoving();
                     this.canCast[0] = false;
-                    this.canCast[1] = false;
                     this.canCast[2] = false;
                     this.wActive = true;
                     wStartTime = System.currentTimeMillis();
-                    Runnable secondUseDelay = () -> this.canCast[1] = true;
                     String pixelsAoeFx =
                             (this.avatar.contains("noir"))
                                     ? "bmo_pixels_aoe_noire"
@@ -215,15 +220,14 @@ public class BMO extends UserActor {
                             this.team);
                     ExtensionCommands.actorAnimate(
                             this.parentExt, this.room, this.id, "spell2", 3000, true);
-                    SmartFoxServer.getInstance()
-                            .getTaskScheduler()
-                            .schedule(secondUseDelay, 500, TimeUnit.MILLISECONDS);
+                    ExtensionCommands.actorAbilityResponse(
+                            this.parentExt, this.player, "w", true, 500, 0);
                     SmartFoxServer.getInstance()
                             .getTaskScheduler()
                             .schedule(
                                     new BMOAbilityHandler(
                                             ability, spellData, cooldown, gCooldown, dest),
-                                    3000,
+                                    500,
                                     TimeUnit.MILLISECONDS);
                 } else {
                     this.canCast[0] = true;
@@ -235,7 +239,7 @@ public class BMO extends UserActor {
                             .schedule(
                                     new BMOAbilityHandler(
                                             ability, spellData, cooldown, gCooldown, dest),
-                                    250,
+                                    getReducedCooldown(cooldown),
                                     TimeUnit.MILLISECONDS);
                 }
                 break;
@@ -388,21 +392,19 @@ public class BMO extends UserActor {
 
         @Override
         protected void spellW() {
-            if (wActive) {
-                canCast[0] = true;
-                canCast[2] = true;
-                wEnd(cooldown, gCooldown);
-                ExtensionCommands.actorAbilityResponse(
-                        parentExt, player, "w", true, getReducedCooldown(cooldown), 250);
-            } else {
-                canCast[1] = true;
-            }
-            wActive = false;
+            canCast[1] = true;
         }
 
         @Override
         protected void spellE() {
-            canCast[2] = true;
+            int E_CAST_DELAY = 250;
+            Runnable enableECasting = () -> canCast[2] = true;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(
+                            enableECasting,
+                            getReducedCooldown(cooldown) - E_CAST_DELAY,
+                            TimeUnit.MILLISECONDS);
             Line2D abilityLine = Champion.getAbilityLine(location, dest, 16f);
             String ultProjectile =
                     (avatar.contains("noir")) ? "projectile_bmo_bee_noire" : "projectile_bmo_bee";
