@@ -269,6 +269,14 @@ public class Finn extends UserActor {
                         () ->
                                 ExtensionCommands.actorAnimate(
                                         this.parentExt, this.room, this.id, "run", 100, false);
+
+                ExtensionCommands.actorAbilityResponse(
+                        this.parentExt,
+                        this.player,
+                        "w",
+                        true,
+                        getReducedCooldown(cooldown),
+                        gCooldown);
                 SmartFoxServer.getInstance()
                         .getTaskScheduler()
                         .schedule(changeAnimation, wTime, TimeUnit.MILLISECONDS);
@@ -277,15 +285,8 @@ public class Finn extends UserActor {
                         .schedule(
                                 new FinnAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, finalDashPoint),
-                                wTime,
+                                getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
-                ExtensionCommands.actorAbilityResponse(
-                        this.parentExt,
-                        this.player,
-                        "w",
-                        true,
-                        getReducedCooldown(cooldown),
-                        gCooldown);
                 break;
             case 3:
                 this.stopMoving(castDelay);

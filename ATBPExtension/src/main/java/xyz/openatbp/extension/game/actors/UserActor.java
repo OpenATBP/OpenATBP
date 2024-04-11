@@ -632,12 +632,14 @@ public class UserActor extends Actor {
                 } else {
                     for (UserActor ua :
                             this.parentExt.getRoomHandler(this.room.getId()).getPlayers()) {
-                        String sound = "announcer/you_are_defeated";
-                        if (ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id))
-                            sound = "announcer/ally_defeated";
-                        else if (ua.getTeam() != this.team) sound = "announcer/enemy_defeated";
-                        ExtensionCommands.playSound(
-                                parentExt, ua.getUser(), "global", sound, new Point2D.Float(0, 0));
+                        if (ua.getTeam() != this.team) {
+                            ExtensionCommands.playSound(
+                                    parentExt,
+                                    ua.getUser(),
+                                    "global",
+                                    "announcer/enemy_defeated",
+                                    new Point2D.Float(0, 0));
+                        }
                     }
                 }
                 Set<UserActor> assistIds = new HashSet<>(2);

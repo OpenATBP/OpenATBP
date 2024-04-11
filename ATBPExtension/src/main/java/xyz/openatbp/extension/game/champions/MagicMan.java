@@ -29,6 +29,7 @@ public class MagicMan extends UserActor {
     private boolean interruptE = false;
     private ArrayList<Actor> playersHitBySnake = new ArrayList<>(3);
     private int eDashTime;
+    private int wUses = 0;
     private MagicManClone magicManClone;
 
     public MagicMan(User u, ATBPExtension parentExt) {
@@ -73,8 +74,13 @@ public class MagicMan extends UserActor {
             this.wDest = null;
             this.canCast[1] = true;
             this.setState(ActorState.REVEALED, true);
+            int wCooldown = getReducedCooldown(25000);
             ExtensionCommands.actorAbilityResponse(
-                    this.parentExt, this.player, "w", true, getReducedCooldown(25000), 250);
+                    this.parentExt, this.player, "w", true, wCooldown, 250);
+            Runnable resetWUses = () -> this.wUses = 0;
+            SmartFoxServer.getInstance()
+                    .getTaskScheduler()
+                    .schedule(resetWUses, wCooldown, TimeUnit.MILLISECONDS);
         }
         if (this.ultStarted && this.hasUltInterruptingCC()) {
             this.interruptE = true;
@@ -181,10 +187,11 @@ public class MagicMan extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
+                this.wUses++;
                 if (this.getState(ActorState.INVISIBLE)) {
                     this.setState(ActorState.INVISIBLE, false);
                 }
-                if (this.wLocation == null) {
+                if (this.wUses == 1) {
                     Point2D dashPoint =
                             MovementManager.getDashPoint(
                                     this, new Line2D.Float(this.location, dest));
@@ -212,8 +219,7 @@ public class MagicMan extends UserActor {
                             getReducedCooldown(cooldown),
                             gCooldown);
                 }
-                int abilityDelay =
-                        this.getState(ActorState.INVISIBLE) ? 1000 : getReducedCooldown(cooldown);
+                int abilityDelay = this.wUses == 1 ? 1000 : getReducedCooldown(cooldown);
                 SmartFoxServer.getInstance()
                         .getTaskScheduler()
                         .schedule(
@@ -293,6 +299,7 @@ public class MagicMan extends UserActor {
         @Override
         protected void spellW() {
             canCast[1] = true;
+            if (wUses == 2) wUses = 0;
         }
 
         @Override

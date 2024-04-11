@@ -82,14 +82,15 @@ public class PeppermintButler extends UserActor {
             ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
             this.ultActive = false;
         }
-        if (this.wActive && System.currentTimeMillis() - this.qStartTime >= 5000) {
-            this.wActive = false;
+        if (this.qActive && System.currentTimeMillis() - this.qStartTime >= 5000) {
+            this.qActive = false;
         }
         if (this.isStopped()
                 && !qActive
                 && !stopPassive
                 && !this.getState(ActorState.TRANSFORMED)
-                && !isCapturingAltar()) {
+                && !isCapturingAltar()
+                && !dead) {
             timeStopped += 100;
             if (this.timeStopped >= 1750 && !this.getState(ActorState.STEALTH)) {
                 this.setState(ActorState.STEALTH, true);
