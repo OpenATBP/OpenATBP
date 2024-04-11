@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
-import xyz.openatbp.extension.MovementManager;
+import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public class Obstacle {
 

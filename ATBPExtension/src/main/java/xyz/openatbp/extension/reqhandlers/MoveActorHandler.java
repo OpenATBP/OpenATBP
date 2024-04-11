@@ -5,7 +5,6 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.dongbat.walkable.FloatArray;
 import com.dongbat.walkable.PathfinderException;
 
 import com.smartfoxserver.v2.entities.Room;
@@ -15,13 +14,15 @@ import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 
 import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.pathfinding.MovementManager;
+import xyz.openatbp.extension.pathfinding.Node;
 
 public class MoveActorHandler extends BaseClientRequestHandler {
     @Override
     public void handleClientRequest(
             User sender, ISFSObject params) { // Called when player clicks on the map to move
 
-        // trace(params.getDump());
+        // Console.debugLog(params.getDump());
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
 
         RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId());
@@ -53,19 +54,33 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             float dx = params.getFloat("dest_x");
             float dz = params.getFloat("dest_z");
             // Console.debugLog("dx: " + dx + " dz: " + dz);
-            FloatArray path = new FloatArray();
+
             try {
-                parentExt
-                        .getRoomHandler(room.getId())
-                        .getPathHelper()
-                        .findPath(px + 50, pz + 30, dx + 50, dz + 30, 0.6f, path);
-                if (path.size <= 2
+                List<Point2D> path = new ArrayList<>(0);
+                Line2D movementLine = new Line2D.Float(px, pz, dx, dz);
+                if (MovementManager.getPathIntersectionPoint(
+                                        parentExt,
+                                        parentExt.getRoomHandler(room.getId()).isPracticeMap(),
+                                        movementLine)
+                                != null
+                        && !MovementManager.insideAnyObstacle(
+                                parentExt,
+                                parentExt.getRoomHandler(room.getId()).isPracticeMap(),
+                                new Point2D.Float(dx, dz))) {
+                    path =
+                            Node.getPath(
+                                    parentExt,
+                                    Node.getCurrentNode(parentExt, user),
+                                    Node.getCurrentNode(parentExt, user),
+                                    Node.getNodeAtLocation(parentExt, new Point2D.Float(dx, dz)));
+                }
+
+                if (path.size() <= 2
                         || MovementManager.insideAnyObstacle(
                                 parentExt,
                                 parentExt.getRoomHandler(room.getId()).isPracticeMap(),
                                 new Point2D.Float(dx, dz))) {
-                    Line2D movementLine =
-                            new Line2D.Float(px, pz, dx, dz); // Creates the path of the player
+                    // Creates the path of the player
                     // ExtensionCommands.createWorldFX(parentExt, user.getRoom(),
                     // "test","gnome_c","testBox"+Math.random(),5000,(float)playerBoundingBox.getCenterX(),(float)playerBoundingBox.getCenterY(),false,0,0f);
                     Point2D intersectionPoint =
@@ -87,19 +102,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                     if (movementLine.getP1().distance(dest) >= 0.1f) user.move(params, dest);
                     else user.stopMoving();
                 } else {
-                    List<Point2D> p = new ArrayList<>();
-                    float fx = 0;
-                    float fy = 0;
-                    for (int i = 0; i < path.size; i++) {
-                        if (i % 2 == 0) fx = path.get(i) - 50;
-                        else fy = path.get(i) - 30;
-                        if (fx != 0 && fy != 0) {
-                            p.add(new Point2D.Float(fx, fy));
-                            fx = 0;
-                            fy = 0;
-                        }
-                    }
-                    user.setPath(p);
+                    user.setPath(path);
                 }
             } catch (PathfinderException pe) {
                 Line2D movementLine =

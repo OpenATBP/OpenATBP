@@ -68,7 +68,8 @@ var UnityRequest = function (
 var LoginModule = function () {};
 
 LoginModule.showLoginWindow = function () {
-  if (discord_enabled == 'true') {
+  if (true) {
+    //TODO: Fix so it is variable
     window.location.href =
       'https://discord.com/api/oauth2/authorize?client_id=' +
       client_id +

@@ -17,6 +17,7 @@ config.lobbyserver.enable = true;
 config.lobbyserver.port = 6778;
 config.lobbyserver.gameIp = '127.0.0.1';
 config.lobbyserver.gamePort = '9933';
+config.lobbyserver.matchmakingEnabled = false;
 
 config.discord.client_id = 'client_id';
 config.discord.client_secret = 'client_secret';

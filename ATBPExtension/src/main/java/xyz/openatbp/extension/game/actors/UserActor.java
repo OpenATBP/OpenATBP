@@ -21,6 +21,7 @@ import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.champions.Fionna;
+import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public class UserActor extends Actor {
 
