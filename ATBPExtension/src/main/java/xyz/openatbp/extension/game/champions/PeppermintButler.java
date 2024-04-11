@@ -73,6 +73,12 @@ public class PeppermintButler extends UserActor {
     }
 
     @Override
+    public void die(Actor a) {
+        super.die(a);
+        if (this.ultActive) this.endUlt();
+    }
+
+    @Override
     public void update(int msRan) {
         super.update(msRan);
         if (this.ultActive && System.currentTimeMillis() - this.ultStartTime >= 7000) {
@@ -125,7 +131,10 @@ public class PeppermintButler extends UserActor {
             this.timeStopped = 0;
             if (this.stopPassive) this.stopPassive = false;
             if (this.getState(ActorState.STEALTH)) {
-                ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "run", 1, false);
+                String animation = "idle";
+                if (this.location.distance(this.movementLine.getP2()) > 0.1d) animation = "run";
+                ExtensionCommands.actorAnimate(
+                        this.parentExt, this.room, this.id, animation, 1, false);
                 this.setState(ActorState.STEALTH, false);
                 this.setState(ActorState.INVISIBLE, false);
                 if (!this.getState(ActorState.BRUSH)) this.setState(ActorState.REVEALED, true);
@@ -426,6 +435,16 @@ public class PeppermintButler extends UserActor {
                         .schedule(delay, castDelay, TimeUnit.MILLISECONDS);
                 break;
         }
+    }
+
+    private void endUlt() {
+        setState(ActorState.TRANSFORMED, false);
+        String[] statsToUpdate = {"speed", "attackSpeed", "attackDamage"};
+        updateStatMenu(statsToUpdate);
+        ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
+        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandL");
+        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandR");
+        this.ultActive = false;
     }
 
     private boolean isCapturingAltar() {
