@@ -696,17 +696,19 @@ public abstract class Actor {
             double damage = data.getDouble("damage");
             JsonNode attackData = (JsonNode) data.getClass("attackData");
             if (this.damaged(damager, (int) damage, attackData)) {
-                if (damager.getId().contains("turret")) {
-                    damager.handleKill(this, attackData);
-                    damager =
-                            this.parentExt
-                                    .getRoomHandler(this.room.getId())
-                                    .getEnemyChampion(team, "princessbubblegum");
-                } else if (damager.getId().contains("skully")) {
-                    damager =
-                            this.parentExt
-                                    .getRoomHandler(this.room.getId())
-                                    .getEnemyChampion(team, "lich");
+                if (damager.getId().contains("turret") || damager.getId().contains("skully")) {
+                    int enemyTeam = damager.getTeam() == 0 ? 1 : 0;
+                    if (damager.getId().contains("turret")) {
+                        damager =
+                                this.parentExt
+                                        .getRoomHandler(this.room.getId())
+                                        .getEnemyChampion(enemyTeam, "princessbubblegum");
+                    } else if (damager.getId().contains("skully")) {
+                        damager =
+                                this.parentExt
+                                        .getRoomHandler(this.room.getId())
+                                        .getEnemyChampion(enemyTeam, "lich");
+                    }
                 }
                 damager.handleKill(this, attackData);
                 this.die(damager);
