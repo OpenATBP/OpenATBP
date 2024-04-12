@@ -582,6 +582,20 @@ public class UserActor extends Actor {
             this.timeKilled = System.currentTimeMillis();
             this.canMove = false;
             if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
+            if (this.getState(ActorState.POLYMORPH)) {
+                boolean swapAsset = true;
+                if (this.getDefaultCharacterName(this.getAvatar()).equalsIgnoreCase("marceline")
+                        && this.getState(ActorState.TRANSFORMED)) swapAsset = false;
+                if (swapAsset) {
+                    ExtensionCommands.swapActorAsset(
+                            this.parentExt, this.room, this.getId(), getSkinAssetBundle());
+                }
+                ExtensionCommands.removeFx(
+                        this.parentExt, this.room, this.id + "_statusEffect_polymorph");
+                ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_flambit_aoe");
+                ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_flambit_ring_");
+                this.setState(ActorState.POLYMORPH, false);
+            }
             this.setHealth(0, (int) this.maxHealth);
             this.target = null;
             this.killingSpree = 0;

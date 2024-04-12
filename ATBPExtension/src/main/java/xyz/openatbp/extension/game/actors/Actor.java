@@ -554,7 +554,7 @@ public abstract class Actor {
                             this.id,
                             "fx_target_ring_2",
                             3000,
-                            this.id + "_flambit_ring_" + Math.random(),
+                            this.id + "_flambit_ring_",
                             true,
                             "",
                             true,

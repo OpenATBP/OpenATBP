@@ -30,6 +30,7 @@ public class PeppermintButler extends UserActor {
     private long qStartTime = 0;
     private long ultStartTime = 0;
     private AtomicInteger wRunTime;
+    private Point2D passiveLocation = null;
 
     public PeppermintButler(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -81,6 +82,10 @@ public class PeppermintButler extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
+        if (this.passiveLocation != null && this.location.distance(this.passiveLocation) > 0.001d) {
+            this.stopPassive = true;
+            this.timeStopped = 0;
+        }
         if (this.ultActive && System.currentTimeMillis() - this.ultStartTime >= 7000) {
             setState(ActorState.TRANSFORMED, false);
             String[] statsToUpdate = {"speed", "attackSpeed", "attackDamage"};
@@ -97,6 +102,7 @@ public class PeppermintButler extends UserActor {
                 && !this.getState(ActorState.TRANSFORMED)
                 && !isCapturingAltar()
                 && !dead) {
+            this.passiveLocation = this.location;
             timeStopped += 100;
             if (this.timeStopped >= 1750 && !this.getState(ActorState.STEALTH)) {
                 this.setState(ActorState.STEALTH, true);
@@ -130,6 +136,7 @@ public class PeppermintButler extends UserActor {
         } else {
             this.timeStopped = 0;
             if (this.stopPassive) this.stopPassive = false;
+            this.passiveLocation = null;
             if (this.getState(ActorState.STEALTH)) {
                 String animation = "idle";
                 if (this.location.distance(this.movementLine.getP2()) > 0.1d) animation = "run";
