@@ -122,7 +122,20 @@ public class Lich extends UserActor {
                     this.stopMoving();
                     ExtensionCommands.playSound(
                             parentExt, room, this.id, "sfx_lich_death_pool", this.location);
-                    ExtensionCommands.playSound(parentExt, room, "", "sfx_lich_well", dest);
+                    ExtensionCommands.playSound(parentExt, room, this.id, "sfx_lich_well", dest);
+                    ExtensionCommands.playSound(parentExt, room, this.id, "vo/vo_lich_well", dest);
+                    ExtensionCommands.createWorldFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "fx_target_ring_2.5",
+                            this.id + "_lichUltRing",
+                            6000,
+                            (float) dest.getX(),
+                            (float) dest.getY(),
+                            true,
+                            this.team,
+                            0f);
                     SmartFoxServer.getInstance()
                             .getTaskScheduler()
                             .schedule(

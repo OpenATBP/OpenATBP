@@ -179,7 +179,7 @@ public class Jake extends UserActor {
                 && this.qVictim != null
                 && this.qPolygon != null
                 && this.qPolygon.contains(this.qVictim.getLocation())) {
-            JsonNode spellData = this.parentExt.getAttackData("jake", "spell2");
+            JsonNode spellData = this.parentExt.getAttackData("jake", "spell1");
             this.dashActive = true;
             this.resetTarget();
             double distance = this.location.distance(this.qVictim.getLocation());
