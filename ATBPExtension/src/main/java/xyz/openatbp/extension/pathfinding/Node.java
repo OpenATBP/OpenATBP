@@ -212,6 +212,9 @@ public class Node {
                     }
                 }
             }
+            if (openNodes.size() == 0) {
+                return null;
+            }
             currentNode = openNodes.get(bestNodeIndex);
             // Console.debugLog("NewNode: x=" + currentNode.getX() + " y=" + currentNode.getY());
             step++;

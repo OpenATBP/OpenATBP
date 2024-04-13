@@ -52,8 +52,18 @@ public class GameManager {
             String backpack = playerInfo.getUtfString("backpack");
             String tid = playerInfo.getUtfString("tegid");
             int elo = parentExt.getElo(tid);
+            boolean tournamentEligible = playerInfo.getBool("isTournamentEligible");
             ExtensionCommands.addUser(
-                    parentExt, room, id, name, champion, team, tid, backpack, elo);
+                    parentExt,
+                    room,
+                    id,
+                    name,
+                    champion,
+                    team,
+                    tid,
+                    backpack,
+                    elo,
+                    tournamentEligible);
         }
     }
 

@@ -352,7 +352,7 @@ public class Minion extends Actor {
         } catch (Exception e) {
             Console.logWarning(this.id + " could not form a path.");
         }
-        if (path.size() > 2) {
+        if (path != null && path.size() > 2) {
             this.setPath(path);
         } else {
             Line2D testLine = new Line2D.Float(this.location, dest);

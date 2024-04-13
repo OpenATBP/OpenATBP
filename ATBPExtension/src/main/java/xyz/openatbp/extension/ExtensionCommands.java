@@ -765,7 +765,8 @@ public class ExtensionCommands {
             int team,
             String tid,
             String backpack,
-            int elo) {
+            int elo,
+            boolean tournamentEligible) {
         ISFSObject data = new SFSObject();
         data.putInt("id", id);
         data.putUtfString("name", name);
@@ -774,6 +775,7 @@ public class ExtensionCommands {
         data.putUtfString("tid", tid);
         data.putUtfString("backpack", backpack);
         data.putInt("elo", elo);
+        data.putBool("isTournamentEligible", tournamentEligible);
         parentExt.send("cmd_add_user", data, room.getUserList());
     }
 
