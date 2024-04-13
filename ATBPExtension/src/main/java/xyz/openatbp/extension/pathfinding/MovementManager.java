@@ -291,7 +291,7 @@ public class MovementManager {
             if (b.distance(point) <= 1.2) return true;
         }
         for (Point2D t : towers) {
-            if (t.distance(point) <= 2) {
+            if (t.distance(point) <= 1.5) {
                 return true;
             }
         }

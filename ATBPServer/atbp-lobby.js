@@ -44,6 +44,7 @@ function safeSendAll(sockets, command, response) {
   return new Promise(function (resolve, reject) {
     if (sockets.length == 0) resolve(true);
     else {
+      console.log(`Sending ${command} to ${sockets[0].player.name}: `, response);
       sendCommand(sockets[0], command, response)
         .then(() => {
           sockets.shift();
@@ -740,25 +741,34 @@ function handleRequest(jsonString, socket) {
       break;
 
     case 'chat_message':
-      for (var q of queues) {
-        var player = q.players.find(
-          (p) => p.teg_id == jsonObject['payload'].teg_id
-        );
-        if (player != undefined) {
-          for (var p of q.players) {
-            var sock = users.find(
-              (u) => u.player == p && u.player.team == player.team
-            );
-            if (sock != undefined)
-              sendCommand(sock, 'chat_message', {
-                name: player.name,
-                teg_id: player.teg_id,
-                message_id: Number(jsonObject['payload'].message_id),
-              }).catch(console.error);
-            else console.log('No socket found!'); //Seems to happen 3 times each chat message
+      var user = users.find((u) => u.player.teg_id == jsonObject['payload'].teg_id);
+      if(user != undefined){
+        var player = user.player;
+        var team = teams.find(t => t.players.includes(player));
+        if(team != undefined && team.queueNum == -1){
+          safeSendAll(users.filter((u) => team.players.includes(u.player)),'chat_message',{
+            name: player.name,
+            teg_id: player.teg_id,
+            message_id: Number(jsonObject['payload'].message_id)
+          }).catch(console.error);
+        }else{
+          //console.log(`${player.name} is not on a team!`);
+          var queue = queues.find((q) => q.players.includes(player));
+          if(queue != undefined){
+            for (var p of queue.players) {
+              var sock = users.find(
+                (u) => u.player == p && u.player.team == player.team
+              );
+              if (sock != undefined)
+                sendCommand(sock, 'chat_message', {
+                  name: player.name,
+                  teg_id: player.teg_id,
+                  message_id: Number(jsonObject['payload'].message_id),
+                }).catch(console.error);
+            }
           }
         }
-      }
+      }else console.log("User not found!");
       break;
 
     case 'custom_game_chat_message':
