@@ -14,11 +14,9 @@ const mongoClient = new MongoClient(config.httpserver.mongouri, {
   serverApi: ServerApiVersion.v1,
 });
 
-if (config.lobbyserver.matchmakingEnabled) {
   var matchMakingUpdate = setInterval(() => {
     updateMatchmaking();
   }, 2000);
-}
 
 function tryParseJSONObject(jsonString) {
   try {
@@ -186,6 +184,7 @@ function updateElo(socket) {
 }
 
 function updateMatchmaking() {
+  if(users.length < 12) return;
   var types = [];
   for (var u of users) {
     if (
@@ -446,7 +445,7 @@ function joinQueue(sockets, type) {
     if (!socket.player.onTeam) socket.player.team = -1;
     socket.player.queue.type = type;
     socket.player.queue.started = Date.now();
-    if (!config.lobbyserver.matchmakingEnabled || queueSize == 1) {
+    if (!config.lobbyserver.matchmakingEnabled || queueSize == 1 || users.length < 12) {
       if (i + 1 == sockets.length) {
         var usersInQueue = users.filter(
           (u) =>
