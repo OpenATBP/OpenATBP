@@ -21,11 +21,20 @@ module.exports = {
         });
     });
   },
-  handleTournamentData: function (data) {
+  handleTournamentData: function (data, collection) {
     // /service/data/user/champions/tournament?authToken={data.token} Useless unless we do a tournament
-    return JSON.stringify({
-      tournamentData: {},
+    return new Promise(function (resolve,reject) {
+      var authToken = data;
+      collection.findOne({authToken: authToken}).then((res) => {
+        if(res != null && res.betaTester != undefined){
+          resolve(JSON.stringify({eligible:res.betaTester}));
+        }else if(res != null) resolve(JSON.stringify({eligible:false}));
+        else reject();
+      }).catch((e) => {
+        reject(e);
+      });
     });
+    return JSON.stringify({eligible:true});
   },
   handleShop: function (shopData) {
     // /service/shop/inventory RETURNS all inventory data
