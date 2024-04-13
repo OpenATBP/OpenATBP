@@ -81,8 +81,8 @@ public class Fionna extends UserActor {
                     parentExt, player, this.id + "_dash" + this.dashesRemaining);
             this.dashTime = -1;
             this.dashesRemaining = 0;
-            ExtensionCommands.actorAbilityResponse(
-                    parentExt, player, "q", true, (int) qCooldown, 0);
+            double cooldown = this.actorsHitWithQ.isEmpty() ? qCooldown *= 0.7 : qCooldown;
+            ExtensionCommands.actorAbilityResponse(parentExt, player, "q", true, (int) cooldown, 0);
         }
         if (this.getPlayerStat("attackDamage") != this.previousAttackDamage) {
             this.updateStatMenu("attackDamage");

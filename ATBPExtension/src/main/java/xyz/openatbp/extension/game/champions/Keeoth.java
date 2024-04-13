@@ -144,7 +144,9 @@ public class Keeoth extends Monster {
                                                         parentExt.getRoomHandler(room.getId()),
                                                         playerLoc,
                                                         2.5f)) {
-                                            if (actor.getActorType() == ActorType.PLAYER) {
+                                            if (actor.getActorType() == ActorType.PLAYER
+                                                    || actor.getActorType()
+                                                            == ActorType.COMPANION) {
                                                 double dist =
                                                         actor.getLocation().distance(playerLoc);
                                                 if (dist > 1)
