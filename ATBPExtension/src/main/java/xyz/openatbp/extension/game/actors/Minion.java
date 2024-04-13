@@ -275,7 +275,7 @@ public class Minion extends Actor {
             Point2D snapLocation = extendedLine.getP2();
             Point2D finalLocation =
                     MovementManager.getStoppingPoint(snapLocation, this.target.getLocation(), 0.5f);
-            this.move(finalLocation);
+            if (!this.withinRange(this.target)) this.moveWithCollision(finalLocation);
             // if(this.target != null) this.moveTowardsTarget();
         }
         if (this.attackCooldown > 0) this.reduceAttackCooldown();
@@ -316,7 +316,7 @@ public class Minion extends Actor {
                         this.state = State.ATTACKING;
                     } else if (conflictingMinion == null) {
                         if (this.target.getLocation().distance(this.movementLine.getP2()) > 0.1)
-                            this.moveWithCollision(this.target.getLocation());
+                            this.moveTowardsTarget();
                     }
                 } else {
                     this.resetTarget();
@@ -337,6 +337,8 @@ public class Minion extends Actor {
                     } else {
                         this.resetTarget();
                     }
+                } else if (this.withinRange(this.target) && !this.isStopped()) {
+                    this.stopMoving();
                 }
                 break;
         }
@@ -578,7 +580,7 @@ public class Minion extends Actor {
     private void moveTowardsTarget() {
         // if (this.type == MinionType.MELEE) Console.debugLog(this.id + " is moving towards
         // target");
-        this.moveWithCollision(this.target.getLocation());
+        if (!this.withinRange(this.target)) this.moveWithCollision(this.target.getLocation());
     }
 
     private Minion isInsideMinion() {

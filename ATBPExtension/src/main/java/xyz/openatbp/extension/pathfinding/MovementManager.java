@@ -122,6 +122,7 @@ public class MovementManager {
                 }
                 Point2D[] movementPoints = findAllPoints(checkLine);
                 Point2D[] colliderPoints = findAllPoints(closestLine);
+                if (colliderPoints == null) return movementLine.getP2();
                 if (colliderPoints.length > 600) {
                     return movementLine.getP1();
                 }

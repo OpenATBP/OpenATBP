@@ -49,7 +49,7 @@ public class UserActor extends Actor {
     protected boolean isDashing = false;
     private static final boolean MOVEMENT_DEBUG = false;
     private static final boolean INVINCIBLE_DEBUG = false;
-    private static final boolean ABILITY_DEBUG = false;
+    private static final boolean ABILITY_DEBUG = true;
     private static final boolean SPEED_DEBUG = false;
     private static final boolean DMG_DEBUG = false;
 
@@ -90,7 +90,8 @@ public class UserActor extends Actor {
     @Override
     public void setStat(String stat, double value) {
         super.setStat(stat, value);
-        this.updateStatMenu(stat);
+        if (!stat.toLowerCase().contains("sp") && !stat.equalsIgnoreCase("speed"))
+            this.updateStatMenu(stat);
     }
 
     public void setAutoAttackEnabled(boolean enabled) {

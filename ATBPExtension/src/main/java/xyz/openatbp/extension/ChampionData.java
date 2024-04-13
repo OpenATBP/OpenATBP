@@ -102,8 +102,13 @@ public class ChampionData {
 
                          */
                     } else if (stat.get("stat").asText().equalsIgnoreCase("attackRange")) {
-                        packStat -= previousValue;
-                        ua.setStat(stat.get("stat").asText(), ua.getStat("attackRange") * packStat);
+                        packStat = stat.get("value").asDouble();
+                        double defaultAttackRange =
+                                parentExt
+                                        .getActorStats(ua.getAvatar())
+                                        .get("attackRange")
+                                        .asDouble();
+                        ua.setStat(stat.get("stat").asText(), defaultAttackRange * packStat);
                     } else {
                         ua.increaseStat(stat.get("stat").asText(), packStat);
                     }
