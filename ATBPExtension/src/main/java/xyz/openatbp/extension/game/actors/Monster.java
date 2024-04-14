@@ -99,15 +99,14 @@ public class Monster extends Actor {
             if (a.getActorType() == ActorType.PLAYER)
                 this.addDamageGameStat((UserActor) a, newDamage, attackType);
             boolean returnVal = super.damaged(a, newDamage, attackData);
-            if (!this.headingBack
-                    && isProperActor(a)) { // attacks the nearest attacker
+            if (!this.headingBack && isProperActor(a)) { // attacks the nearest attacker
                 state = AggroState.ATTACKED;
-                if (this.target == null
-                        || a.getLocation().distance(this.location)
+                if (!this.getState(ActorState.CHARMED) && this.target == null
+                        || a.getLocation().distance(this.getLocation())
                                 < this.target.getLocation().distance(this.location)) {
                     this.target = a;
                 }
-                if (!this.withinRange(this.target)) {
+                if (this.target != null && !this.withinRange(this.target)) {
                     this.timeTraveled = 0f;
                     this.moveTowardsActor();
                 }
@@ -131,6 +130,12 @@ public class Monster extends Actor {
             e.printStackTrace();
             return false;
         }
+    }
+
+    @Override
+    public void handleCharm(UserActor charmer, int duration) {
+        this.addState(ActorState.CHARMED, 0d, duration, null, false);
+        if (charmer != null) this.target = charmer;
     }
 
     public boolean isProperActor(Actor a) {
