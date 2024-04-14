@@ -320,12 +320,11 @@ public class RoomHandler implements Runnable {
         blueLevel = (int) Math.floor(blueLevel / ((double) this.players.size() / 2));
         for (UserActor player : this.players) {
             int additionalXP =
-                    2; // Get more XP if you are below the average level of the enemy and get less
+                    1; // Get more XP if you are below the average level of the enemy and get less
             // xp if you are above.
             if (player.getTeam() == 0) additionalXP *= (blueLevel - player.getLevel());
             else if (player.getTeam() == 1) additionalXP *= (purpleLevel - player.getLevel());
-            if (additionalXP < -2) additionalXP = -2;
-            if (purpleLevel == 0 || blueLevel == 0) additionalXP = 0;
+            if (purpleLevel == 0 || blueLevel == 0 || additionalXP < 0) additionalXP = 0;
             player.addXP(3 + additionalXP);
         }
     }
