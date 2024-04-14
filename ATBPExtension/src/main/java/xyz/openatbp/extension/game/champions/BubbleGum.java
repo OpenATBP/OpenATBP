@@ -34,7 +34,6 @@ public class BubbleGum extends UserActor {
     private boolean bombPlaced;
     private Point2D bombLocation;
     private long bombPlaceTime = 0;
-    private static final boolean DEBUG = false;
 
     public BubbleGum(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -394,7 +393,7 @@ public class BubbleGum extends UserActor {
             new Champion.DelayedAttack(
                             parentExt, this.attacker, this.target, (int) damage, "basicAttack")
                     .run();
-            if (this.target.getActorType() == ActorType.PLAYER || DEBUG) {
+            if (this.target.getActorType() == ActorType.PLAYER) {
                 gumStacks++;
                 lastGum = System.currentTimeMillis();
                 if (gumStacks > 3) {

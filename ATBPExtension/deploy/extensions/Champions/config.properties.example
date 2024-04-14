@@ -4,3 +4,4 @@ invincibleDebug=false
 abilityDebug=false
 speedDebug=false
 damageDebug=false
+monsterDebug=false
