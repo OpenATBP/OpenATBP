@@ -47,11 +47,12 @@ public class UserActor extends Actor {
     protected static final double DASH_SPEED = 20d;
     protected boolean changeTowerAggro = false;
     protected boolean isDashing = false;
-    private static final boolean MOVEMENT_DEBUG = false;
-    private static final boolean INVINCIBLE_DEBUG = false;
-    private static final boolean ABILITY_DEBUG = false;
-    private static final boolean SPEED_DEBUG = false;
-    private static final boolean DMG_DEBUG = false;
+    // Set debugging options via config.properties next to the extension jar
+    private static boolean movementDebug;
+    private static boolean invincibleDebug;
+    private static boolean abilityDebug;
+    private static boolean speedDebug;
+    private static boolean damageDebug;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -74,7 +75,13 @@ public class UserActor extends Actor {
         this.actorType = ActorType.PLAYER;
         this.backpack = u.getVariable("player").getSFSObjectValue().getUtfString("backpack");
         this.xpWorth = 25;
-        if (MOVEMENT_DEBUG)
+        Properties props = parentExt.getConfigProperties();
+        movementDebug = Boolean.parseBoolean(props.getProperty("movementDebug", "false"));
+        invincibleDebug = Boolean.parseBoolean(props.getProperty("invincibleDebug", "false"));
+        abilityDebug = Boolean.parseBoolean(props.getProperty("abilityDebug", "false"));
+        speedDebug = Boolean.parseBoolean(props.getProperty("speedDebug", "false"));
+        damageDebug = Boolean.parseBoolean(props.getProperty("damageDebug", "false"));
+        if (movementDebug)
             ExtensionCommands.createActor(
                     this.parentExt,
                     this.room,
@@ -83,8 +90,8 @@ public class UserActor extends Actor {
                     this.location,
                     0f,
                     2);
-        if (SPEED_DEBUG) this.setStat("speed", 20);
-        if (DMG_DEBUG) this.setStat("attackDamage", 1000);
+        if (speedDebug) this.setStat("speed", 20);
+        if (damageDebug) this.setStat("attackDamage", 1000);
     }
 
     public void setAutoAttackEnabled(boolean enabled) {
@@ -202,7 +209,7 @@ public class UserActor extends Actor {
 
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         try {
-            if (INVINCIBLE_DEBUG) return false;
+            if (invincibleDebug) return false;
             if (this.dead) return true;
             if (a.getActorType() == ActorType.PLAYER) checkTowerAggro((UserActor) a);
             if (a.getActorType() == ActorType.COMPANION) {
@@ -469,7 +476,7 @@ public class UserActor extends Actor {
         Point2D dashPoint =
                 MovementManager.getDashPoint(this, new Line2D.Float(this.location, dest));
         if (dashPoint == null) dashPoint = this.location;
-        if (MOVEMENT_DEBUG)
+        if (movementDebug)
             ExtensionCommands.createWorldFX(
                     this.parentExt,
                     this.room,
@@ -766,7 +773,7 @@ public class UserActor extends Actor {
         }
         this.location = this.getRelativePoint(false);
         this.handlePathing();
-        if (MOVEMENT_DEBUG)
+        if (movementDebug)
             ExtensionCommands.moveActor(
                     this.parentExt,
                     this.room,
@@ -1281,7 +1288,7 @@ public class UserActor extends Actor {
     }
 
     protected int getReducedCooldown(double cooldown) {
-        if (ABILITY_DEBUG) return 0;
+        if (abilityDebug) return 0;
         double cooldownReduction = this.getPlayerStat("coolDownReduction");
         double ratio = 1 - (cooldownReduction / 100);
         return (int) Math.round(cooldown * ratio);
