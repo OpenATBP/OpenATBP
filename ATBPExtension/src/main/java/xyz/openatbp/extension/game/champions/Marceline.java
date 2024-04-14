@@ -26,6 +26,7 @@ public class Marceline extends UserActor {
     private long regenSound = 0;
     private boolean canTransform = true;
     private boolean humanWActive = false;
+    private long humanWStartTime = 0;
     private boolean eUsed = false;
 
     public Marceline(User u, ATBPExtension parentExt) {
@@ -42,6 +43,9 @@ public class Marceline extends UserActor {
 
     public void update(int msRan) {
         super.update(msRan);
+        if (this.humanWActive && System.currentTimeMillis() - this.humanWStartTime >= 4500) {
+            this.humanWActive = false;
+        }
         if (this.currentHealth < this.maxHealth
                 && !this.healthRegenEffectActive
                 && this.states.get(ActorState.TRANSFORMED)
@@ -93,7 +97,6 @@ public class Marceline extends UserActor {
         }
         if (wActive && System.currentTimeMillis() - wStartTime >= 4500) {
             wActive = false;
-            humanWActive = false;
         }
         if (this.getState(ActorState.TRANSFORMED)
                 && this.currentHealth < this.maxHealth
@@ -221,6 +224,7 @@ public class Marceline extends UserActor {
                 this.canCast[1] = false;
                 wActive = true;
                 wStartTime = System.currentTimeMillis();
+                this.humanWStartTime = System.currentTimeMillis();
                 String bloodMistVo =
                         (this.avatar.contains("marshall"))
                                 ? "vo/vo_marshall_lee_blood_mist"

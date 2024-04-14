@@ -354,9 +354,9 @@ public class BMO extends UserActor {
                 (this.avatar.contains("noir"))
                         ? "bmo_pixels_aoe_explode_noire"
                         : "bmo_pixels_aoe_explode";
-        ExtensionCommands.removeFx(this.parentExt, this.player, this.id + "_pixels_aoe");
-        ExtensionCommands.removeFx(this.parentExt, this.player, this.id + "_bmo_remote");
-        ExtensionCommands.removeFx(this.parentExt, this.player, this.id + "_target_ring_4.5");
+        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_pixels_aoe");
+        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_bmo_remote");
+        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_target_ring_4.5");
         ExtensionCommands.playSound(
                 this.parentExt, this.room, this.id, "vo/vo_bmo_yay", this.location);
         ExtensionCommands.playSound(

@@ -511,6 +511,10 @@ public class CinnamonBun extends UserActor {
                     this.ultUses++;
                 }
                 int eUseDelay = ultUses < 2 ? 0 : gCooldown;
+                if (this.ultUses == 2) {
+                    ExtensionCommands.actorAbilityResponse(
+                            this.parentExt, this.player, "e", true, eUseDelay, 0);
+                }
                 SmartFoxServer.getInstance()
                         .getTaskScheduler()
                         .schedule(

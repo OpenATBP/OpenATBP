@@ -209,6 +209,8 @@ public class MagicMan extends UserActor {
                     this.parentExt
                             .getRoomHandler(this.room.getId())
                             .addCompanion(this.magicManClone);
+                    ExtensionCommands.actorAbilityResponse(
+                            this.parentExt, this.player, "w", true, 1000, 0);
                 } else {
                     this.setState(ActorState.INVISIBLE, false);
                     ExtensionCommands.actorAbilityResponse(
