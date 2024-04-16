@@ -405,16 +405,20 @@ public class BMO extends UserActor {
                             enableECasting,
                             getReducedCooldown(cooldown) - E_CAST_DELAY,
                             TimeUnit.MILLISECONDS);
-            Line2D abilityLine = Champion.getAbilityLine(location, dest, 16f);
-            String ultProjectile =
-                    (avatar.contains("noir")) ? "projectile_bmo_bee_noire" : "projectile_bmo_bee";
-            fireProjectile(
-                    new BMOUltProjectile(
-                            parentExt, BMO.this, abilityLine, 5f, 1.5f, id + ultProjectile),
-                    ultProjectile,
-                    location,
-                    dest,
-                    16f);
+            if (getHealth() > 0) {
+                Line2D abilityLine = Champion.getAbilityLine(location, dest, 16f);
+                String ultProjectile =
+                        (avatar.contains("noir"))
+                                ? "projectile_bmo_bee_noire"
+                                : "projectile_bmo_bee";
+                fireProjectile(
+                        new BMOUltProjectile(
+                                parentExt, BMO.this, abilityLine, 5f, 1.5f, id + ultProjectile),
+                        ultProjectile,
+                        location,
+                        dest,
+                        16f);
+            }
         }
 
         @Override

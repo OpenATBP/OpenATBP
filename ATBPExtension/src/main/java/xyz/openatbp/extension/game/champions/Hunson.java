@@ -337,13 +337,15 @@ public class Hunson extends UserActor {
                             enableWCasting,
                             getReducedCooldown(cooldown) - W_CAST_DELAY,
                             TimeUnit.MILLISECONDS);
-            for (Actor a :
-                    Champion.getActorsInRadius(
-                            parentExt.getRoomHandler(room.getId()), dest, 2.5f)) {
-                if (isNonStructure(a)) {
-                    a.addToDamageQueue(Hunson.this, getSpellDamage(spellData), spellData);
-                    if (!a.getId().contains("turret") || !a.getId().contains("decoy"))
-                        a.handleFear(Hunson.this.location, 1500);
+            if (getHealth() > 0) {
+                for (Actor a :
+                        Champion.getActorsInRadius(
+                                parentExt.getRoomHandler(room.getId()), dest, 2.5f)) {
+                    if (isNonStructure(a)) {
+                        a.addToDamageQueue(Hunson.this, getSpellDamage(spellData), spellData);
+                        if (!a.getId().contains("turret") || !a.getId().contains("decoy"))
+                            a.handleFear(Hunson.this.location, 1500);
+                    }
                 }
             }
         }

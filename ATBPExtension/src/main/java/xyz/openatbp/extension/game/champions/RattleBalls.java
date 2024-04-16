@@ -627,29 +627,32 @@ public class RattleBalls extends UserActor {
                             enableWCasting,
                             getReducedCooldown(cooldown) - W_CAST_DELAY,
                             TimeUnit.MILLISECONDS);
-            String pullFx =
-                    (avatar.contains("spidotron"))
-                            ? "rattleballs_luchador_pull"
-                            : "rattleballs_pull";
-            ExtensionCommands.createWorldFX(
-                    parentExt,
-                    room,
-                    id,
-                    pullFx,
-                    id + "_pull",
-                    1500,
-                    (float) location.getX(),
-                    (float) location.getY(),
-                    false,
-                    team,
-                    0f);
             abilityEnded();
-            for (Actor a :
-                    Champion.getActorsInRadius(
-                            parentExt.getRoomHandler(room.getId()), location, 5f)) {
-                if (isNonStructure(a)) {
-                    a.handlePull(location, 1.2);
-                    a.addToDamageQueue(RattleBalls.this, getSpellDamage(spellData), spellData);
+            if (getHealth() > 0) {
+                String pullFx =
+                        (avatar.contains("spidotron"))
+                                ? "rattleballs_luchador_pull"
+                                : "rattleballs_pull";
+                ExtensionCommands.createWorldFX(
+                        parentExt,
+                        room,
+                        id,
+                        pullFx,
+                        id + "_pull",
+                        1500,
+                        (float) location.getX(),
+                        (float) location.getY(),
+                        false,
+                        team,
+                        0f);
+
+                for (Actor a :
+                        Champion.getActorsInRadius(
+                                parentExt.getRoomHandler(room.getId()), location, 5f)) {
+                    if (isNonStructure(a)) {
+                        a.handlePull(location, 1.2);
+                        a.addToDamageQueue(RattleBalls.this, getSpellDamage(spellData), spellData);
+                    }
                 }
             }
         }

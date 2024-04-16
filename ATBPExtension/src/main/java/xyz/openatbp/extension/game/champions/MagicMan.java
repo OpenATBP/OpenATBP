@@ -316,7 +316,7 @@ public class MagicMan extends UserActor {
                             TimeUnit.MILLISECONDS);
             canMove = true;
             ultStarted = false;
-            if (!interruptE) {
+            if (!interruptE && getHealth() > 0) {
                 ExtensionCommands.actorAnimate(parentExt, room, id, "spell3b", 500, false);
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_magicman_explode", location);
                 ExtensionCommands.playSound(
@@ -344,7 +344,7 @@ public class MagicMan extends UserActor {
                         a.addState(ActorState.SLOWED, 0.3d, 3000, null, false);
                     }
                 }
-            } else {
+            } else if (interruptE) {
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_skill_interrupted", location);
             }
             interruptE = false;

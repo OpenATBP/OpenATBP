@@ -368,28 +368,30 @@ public class Fionna extends UserActor {
                                 getReducedCooldown(qCooldown) - Q_TIME,
                                 TimeUnit.MILLISECONDS);
             }
-            ExtensionCommands.createWorldFX(
-                    parentExt,
-                    room,
-                    id,
-                    explosionFx,
-                    id + "_explosion" + dashInt,
-                    1500,
-                    (float) dest.getX(),
-                    (float) dest.getY(),
-                    false,
-                    team,
-                    0f);
-            for (Actor a :
-                    Champion.getActorsInRadius(
-                            parentExt.getRoomHandler(room.getId()), dest, range)) {
-                if (a.getTeam() != team
-                        && a.getActorType() != ActorType.BASE
-                        && a.getActorType() != ActorType.TOWER) {
-                    actorsHitWithQ.add(a);
-                    double damage = getSpellDamage(spellData);
-                    a.addToDamageQueue(Fionna.this, damage, spellData);
-                    if (dashInt == 1) a.addState(ActorState.SLOWED, 0.5d, 1000, null, false);
+            if (getHealth() > 0) {
+                ExtensionCommands.createWorldFX(
+                        parentExt,
+                        room,
+                        id,
+                        explosionFx,
+                        id + "_explosion" + dashInt,
+                        1500,
+                        (float) dest.getX(),
+                        (float) dest.getY(),
+                        false,
+                        team,
+                        0f);
+                for (Actor a :
+                        Champion.getActorsInRadius(
+                                parentExt.getRoomHandler(room.getId()), dest, range)) {
+                    if (a.getTeam() != team
+                            && a.getActorType() != ActorType.BASE
+                            && a.getActorType() != ActorType.TOWER) {
+                        actorsHitWithQ.add(a);
+                        double damage = getSpellDamage(spellData);
+                        a.addToDamageQueue(Fionna.this, damage, spellData);
+                        if (dashInt == 1) a.addState(ActorState.SLOWED, 0.5d, 1000, null, false);
+                    }
                 }
             }
         }

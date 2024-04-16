@@ -428,7 +428,7 @@ public class Marceline extends UserActor {
                             getReducedCooldown(cooldown) - E_CAST_DELAY,
                             TimeUnit.MILLISECONDS);
             wActive = false;
-            if (canTransform) {
+            if (canTransform && getHealth() > 0) {
                 if (getState(ActorState.TRANSFORMED)) {
                     ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
                     setState(ActorState.TRANSFORMED, false);
@@ -492,7 +492,9 @@ public class Marceline extends UserActor {
                 }
             } else {
                 canMove = true;
-                ExtensionCommands.playSound(parentExt, room, id, "sfx_skill_interrupted", location);
+                if (!canTransform)
+                    ExtensionCommands.playSound(
+                            parentExt, room, id, "sfx_skill_interrupted", location);
                 if (getState(ActorState.TRANSFORMED)) {
                     if (!getState(ActorState.POLYMORPH))
                         ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
