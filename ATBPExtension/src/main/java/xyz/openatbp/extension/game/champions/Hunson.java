@@ -12,6 +12,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
@@ -66,8 +67,9 @@ public class Hunson extends UserActor {
                 && System.currentTimeMillis() - this.qStartTime >= 6000
                 && this.qUses > 0) {
             this.qUses = 0;
+            int baseQCooldown = ChampionData.getBaseAbilityCooldown(this, 1);
             ExtensionCommands.actorAbilityResponse(
-                    parentExt, player, "q", true, getReducedCooldown(12000), 250);
+                    parentExt, player, "q", true, getReducedCooldown(baseQCooldown), 250);
             this.qActivated = false;
         }
     }

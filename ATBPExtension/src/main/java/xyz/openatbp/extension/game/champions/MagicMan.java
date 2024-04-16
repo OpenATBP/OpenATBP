@@ -11,6 +11,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
@@ -74,7 +75,7 @@ public class MagicMan extends UserActor {
             this.wDest = null;
             this.canCast[1] = true;
             this.setState(ActorState.REVEALED, true);
-            int wCooldown = getReducedCooldown(25000);
+            int wCooldown = ChampionData.getBaseAbilityCooldown(this, 2);
             ExtensionCommands.actorAbilityResponse(
                     this.parentExt, this.player, "w", true, wCooldown, 250);
             Runnable resetWUses = () -> this.wUses = 0;

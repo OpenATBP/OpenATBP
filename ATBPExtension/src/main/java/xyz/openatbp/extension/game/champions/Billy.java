@@ -27,6 +27,8 @@ public class Billy extends UserActor {
     private long finalPassiveStart = 0;
     private long lastSoundPlayed = 0;
     private Point2D ultLoc = null;
+    private long lastPulseTime = 0;
+    private int pulseCounter = 0;
     private static final float Q_OFFSET_DISTANCE = 1.5f;
     private static final float Q_SPELL_RANGE = 4.5f;
 
@@ -70,14 +72,18 @@ public class Billy extends UserActor {
                     this.parentExt, this.room, "", "sfx_billy_nothung_pulse", this.ultLocation);
             lastSoundPlayed = System.currentTimeMillis();
         }
-        if (this.ultLocation != null && System.currentTimeMillis() - this.ultStartTime < 4500) {
+        if (ultLocation != null
+                && System.currentTimeMillis() - ultStartTime < 4500
+                && System.currentTimeMillis() - lastPulseTime >= 175) {
+            lastPulseTime = System.currentTimeMillis();
+            pulseCounter++;
             ExtensionCommands.createWorldFX(
                     this.parentExt,
                     this.room,
                     this.id,
                     "billy_nothung_pulse",
-                    this.id + "_ultPulse",
-                    200,
+                    this.id + "_ultPulse" + pulseCounter,
+                    1000,
                     (float) this.ultLocation.getX(),
                     (float) this.ultLocation.getY(),
                     false,
@@ -363,6 +369,18 @@ public class Billy extends UserActor {
                         "billy_nothung_skyfall",
                         id + "_ult",
                         duration,
+                        (float) ultLoc.getX(),
+                        (float) ultLoc.getY(),
+                        false,
+                        team,
+                        0f);
+                ExtensionCommands.createWorldFX(
+                        parentExt,
+                        room,
+                        id,
+                        "billy_nothung_pulse",
+                        id + "_ultPulseNotEmpowered",
+                        1000,
                         (float) ultLoc.getX(),
                         (float) ultLoc.getY(),
                         false,

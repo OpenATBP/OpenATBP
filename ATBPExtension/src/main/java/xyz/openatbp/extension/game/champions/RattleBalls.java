@@ -13,6 +13,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.Champion;
@@ -327,8 +328,9 @@ public class RattleBalls extends UserActor {
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultRing");
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultSpin");
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultSparkles");
+        int baseUltCooldown = ChampionData.getBaseAbilityCooldown(this, 3);
         ExtensionCommands.actorAbilityResponse(
-                this.parentExt, this.player, "e", true, getReducedCooldown(60000), 250);
+                this.parentExt, this.player, "e", true, getReducedCooldown(baseUltCooldown), 250);
         if (isStopped()) {
             ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "idle", 100, false);
         } else {
@@ -417,7 +419,12 @@ public class RattleBalls extends UserActor {
                     false,
                     this.team);
             ExtensionCommands.actorAbilityResponse(
-                    this.parentExt, this.player, "q", true, getReducedCooldown(12000), 250);
+                    this.parentExt,
+                    this.player,
+                    "q",
+                    true,
+                    getReducedCooldown(getBaseQCooldown()),
+                    250);
             List<Actor> affectedActors =
                     Champion.getActorsInRadius(
                             this.parentExt.getRoomHandler(this.room.getId()), this.location, 2f);
@@ -473,7 +480,12 @@ public class RattleBalls extends UserActor {
             this.endCounterStance();
             this.playFailSound = true;
             ExtensionCommands.actorAbilityResponse(
-                    this.parentExt, this.player, "q", true, getReducedCooldown(12000), 0);
+                    this.parentExt,
+                    this.player,
+                    "q",
+                    true,
+                    getReducedCooldown(getBaseQCooldown()),
+                    0);
             ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "idle", 100, false);
         }
         if (this.parryActive && this.getAttackType(attackData) == AttackType.PHYSICAL) {
@@ -511,7 +523,12 @@ public class RattleBalls extends UserActor {
                     false,
                     this.team);
             ExtensionCommands.actorAbilityResponse(
-                    this.parentExt, this.player, "q", true, getReducedCooldown(12000), 0);
+                    this.parentExt,
+                    this.player,
+                    "q",
+                    true,
+                    getReducedCooldown(getBaseQCooldown()),
+                    0);
             return false;
         }
         return super.damaged(a, damage, attackData);
@@ -524,6 +541,10 @@ public class RattleBalls extends UserActor {
         counterAttackData.put("attackType", "physical");
         counterAttackData.put("counterAttack", true);
         return counterAttackData;
+    }
+
+    private int getBaseQCooldown() {
+        return ChampionData.getBaseAbilityCooldown(this, 1);
     }
 
     @Override

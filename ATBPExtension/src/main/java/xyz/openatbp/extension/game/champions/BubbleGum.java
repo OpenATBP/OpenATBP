@@ -12,6 +12,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
@@ -121,7 +122,8 @@ public class BubbleGum extends UserActor {
             t.update(msRan);
         }
         if (this.bombPlaced && System.currentTimeMillis() - this.bombPlaceTime >= 4000) {
-            this.useBomb(getReducedCooldown(80000), 250);
+            int baseUltCooldown = ChampionData.getBaseAbilityCooldown(this, 3);
+            this.useBomb(getReducedCooldown(baseUltCooldown), 250);
         }
     }
 

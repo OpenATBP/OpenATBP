@@ -13,9 +13,7 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.GameManager;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.actors.UserActor;
 
@@ -81,10 +79,10 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
         // Console.debugLog("Cx: " + x + " cy: " + y);
         // Console.debugLog("Px: " + player.getLocation().getX() + " py: " +
         // player.getLocation().getY());
-        int cooldown = spellData.get("spellCoolDown").asInt();
         int gCooldown = spellData.get("spellGlobalCoolDown").asInt();
         int castDelay = spellData.get("castDelay").asInt();
-        player.useAbility(spellNum, spellData, cooldown, gCooldown, castDelay, oldLocation);
+        int baseCooldown = ChampionData.getBaseAbilityCooldown(player, spellNum);
+        player.useAbility(spellNum, spellData, baseCooldown, gCooldown, castDelay, oldLocation);
         if (player.getState(ActorState.BRUSH)) player.setState(ActorState.REVEALED, true);
     }
 

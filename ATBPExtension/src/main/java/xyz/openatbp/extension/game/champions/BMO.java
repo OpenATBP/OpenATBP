@@ -13,6 +13,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
@@ -54,27 +55,20 @@ public class BMO extends UserActor {
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_pixels_aoe");
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_target_ring_4.5");
             if (passiveStacks < 3) addPasiveStacks();
-            JsonNode spellData = parentExt.getAttackData(this.avatar, "spell2");
-            int cooldown = spellData.get("spellCoolDown").asInt();
-            int gCooldown = spellData.get("spellGlobalCoolDown").asInt();
+            int baseWCooldown = ChampionData.getBaseAbilityCooldown(this, 2);
             ExtensionCommands.actorAbilityResponse(
-                    this.parentExt,
-                    this.player,
-                    "w",
-                    true,
-                    getReducedCooldown(cooldown),
-                    gCooldown);
+                    this.parentExt, this.player, "w", true, getReducedCooldown(baseWCooldown), 250);
             this.canCast[0] = true;
             this.canCast[2] = true;
             this.wActive = false;
         }
         if (this.wActive && System.currentTimeMillis() - this.wStartTime >= 3000) {
-            this.wEnd(getReducedCooldown(16000), 250);
+            int baseWCooldown = ChampionData.getBaseAbilityCooldown(this, 2);
+            this.wEnd(getReducedCooldown(baseWCooldown), 250);
             this.canCast[0] = true;
             this.canCast[2] = true;
             this.wActive = false;
         }
-
         if (wActive) {
             for (Actor a :
                     Champion.getActorsInRadius(
