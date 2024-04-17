@@ -655,7 +655,7 @@ function handleRequest(jsonString, socket) {
             for (var pUser of q.blue) {
               if (pUser.name == socket.player.name) {
                 if (pUser.is_ready) shouldSend = false;
-                var sameCharacter = q.purple.find((pu) => pu.avatar == jsonObject['payload'].name);
+                var sameCharacter = q.blue.find((pu) => pu.avatar == jsonObject['payload'].name);
                 if(sameCharacter == undefined) pUser.avatar = jsonObject['payload'].name;
                 break;
               }
