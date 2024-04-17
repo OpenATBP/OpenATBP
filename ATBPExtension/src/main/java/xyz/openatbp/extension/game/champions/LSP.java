@@ -40,9 +40,9 @@ public class LSP extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if (this.wActive && this.currentHealth <= 0) {
+        if (this.wActive && this.getHealth() <= 0) {
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_wRing");
-            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_w");
+            ExtensionCommands.removeFx(parentExt, room, id + "_w");
             this.wActive = false;
         }
         if (this.wActive && System.currentTimeMillis() - this.wTime >= 3500) {
@@ -76,6 +76,14 @@ public class LSP extends UserActor {
                                 "Bip001 R Hand"),
                         500,
                         TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public void die(Actor a) {
+        super.die(a);
+        if (isCastingult)
+            ExtensionCommands.swapActorAsset(
+                    this.parentExt, this.room, this.id, getSkinAssetBundle());
     }
 
     @Override
@@ -217,41 +225,43 @@ public class LSP extends UserActor {
                             enableQCasting,
                             getReducedCooldown(cooldown) - Q_CAST_DELAY,
                             TimeUnit.MILLISECONDS);
-            double healthHealed = (double) getMaxHealth() * (0.03d * lumps);
-            ExtensionCommands.playSound(parentExt, room, id, "sfx_lsp_drama_beam", location);
-            ExtensionCommands.removeStatusIcon(parentExt, player, "p" + lumps);
-            ExtensionCommands.addStatusIcon(
-                    parentExt,
-                    player,
-                    "p0",
-                    "lsp_spell_4_short_description",
-                    "icon_lsp_passive",
-                    0f);
-            lumps = 0;
-            ExtensionCommands.createActorFX(
-                    parentExt,
-                    room,
-                    id,
-                    "lsp_drama_beam",
-                    1100,
-                    id + "q",
-                    false,
-                    "",
-                    true,
-                    false,
-                    team);
-            Path2D qRect =
-                    Champion.createRectangle(location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
-            List<Actor> affectedActors = new ArrayList<>();
-            for (Actor a : parentExt.getRoomHandler(room.getId()).getActors()) {
-                if (isNonStructure(a) && qRect.contains(a.getLocation())) {
-                    if (!a.getId().contains("turret")) a.handleFear(LSP.this.location, 3000);
-                    a.addToDamageQueue(LSP.this, getSpellDamage(spellData), spellData);
-                    affectedActors.add(a);
+            if (getHealth() > 0) {
+                double healthHealed = (double) getMaxHealth() * (0.03d * lumps);
+                ExtensionCommands.playSound(parentExt, room, id, "sfx_lsp_drama_beam", location);
+                ExtensionCommands.removeStatusIcon(parentExt, player, "p" + lumps);
+                ExtensionCommands.addStatusIcon(
+                        parentExt,
+                        player,
+                        "p0",
+                        "lsp_spell_4_short_description",
+                        "icon_lsp_passive",
+                        0f);
+                lumps = 0;
+                ExtensionCommands.createActorFX(
+                        parentExt,
+                        room,
+                        id,
+                        "lsp_drama_beam",
+                        1100,
+                        id + "q",
+                        false,
+                        "",
+                        true,
+                        false,
+                        team);
+                Path2D qRect =
+                        Champion.createRectangle(location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
+                List<Actor> affectedActors = new ArrayList<>();
+                for (Actor a : parentExt.getRoomHandler(room.getId()).getActors()) {
+                    if (isNonStructure(a) && qRect.contains(a.getLocation())) {
+                        if (!a.getId().contains("turret")) a.handleFear(LSP.this.location, 3000);
+                        a.addToDamageQueue(LSP.this, getSpellDamage(spellData), spellData);
+                        affectedActors.add(a);
+                    }
                 }
-            }
-            if (!affectedActors.isEmpty()) {
-                changeHealth((int) healthHealed);
+                if (!affectedActors.isEmpty()) {
+                    changeHealth((int) healthHealed);
+                }
             }
         }
 
@@ -265,19 +275,21 @@ public class LSP extends UserActor {
                             enableWCasting,
                             getReducedCooldown(cooldown) - W_CAST_DELAY,
                             TimeUnit.MILLISECONDS);
-            ExtensionCommands.playSound(parentExt, room, id, "sfx_lsp_lumps_aoe", location);
-            ExtensionCommands.createActorFX(
-                    parentExt,
-                    room,
-                    id,
-                    "lsp_the_lumps_aoe",
-                    3000,
-                    id + "_w",
-                    true,
-                    "",
-                    true,
-                    false,
-                    team);
+            if (getHealth() > 0) {
+                ExtensionCommands.playSound(parentExt, room, id, "sfx_lsp_lumps_aoe", location);
+                ExtensionCommands.createActorFX(
+                        parentExt,
+                        room,
+                        id,
+                        "lsp_the_lumps_aoe",
+                        3000,
+                        id + "_w",
+                        true,
+                        "",
+                        true,
+                        false,
+                        team);
+            }
         }
 
         @Override
@@ -291,7 +303,7 @@ public class LSP extends UserActor {
                             getReducedCooldown(cooldown) - E_CAST_DELAY,
                             TimeUnit.MILLISECONDS);
             isCastingult = false;
-            if (!interruptE) {
+            if (!interruptE && getHealth() > 0) {
                 Line2D projectileLine = Champion.getAbilityLine(location, dest, 100f);
                 ExtensionCommands.actorAnimate(parentExt, room, id, "spell3b", 500, false);
                 String ultProjectile =
@@ -307,7 +319,7 @@ public class LSP extends UserActor {
                         100f);
                 ExtensionCommands.playSound(
                         parentExt, room, "global", "sfx_lsp_cellphone_throw", location);
-            } else {
+            } else if (interruptE) {
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_skill_interrupted", location);
                 ExtensionCommands.actorAnimate(parentExt, room, id, "run", 500, false);
                 ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());

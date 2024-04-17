@@ -12,6 +12,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
@@ -66,8 +67,9 @@ public class Hunson extends UserActor {
                 && System.currentTimeMillis() - this.qStartTime >= 6000
                 && this.qUses > 0) {
             this.qUses = 0;
+            int baseQCooldown = ChampionData.getBaseAbilityCooldown(this, 1);
             ExtensionCommands.actorAbilityResponse(
-                    parentExt, player, "q", true, getReducedCooldown(12000), 250);
+                    parentExt, player, "q", true, getReducedCooldown(baseQCooldown), 250);
             this.qActivated = false;
         }
     }
@@ -337,13 +339,15 @@ public class Hunson extends UserActor {
                             enableWCasting,
                             getReducedCooldown(cooldown) - W_CAST_DELAY,
                             TimeUnit.MILLISECONDS);
-            for (Actor a :
-                    Champion.getActorsInRadius(
-                            parentExt.getRoomHandler(room.getId()), dest, 2.5f)) {
-                if (isNonStructure(a)) {
-                    a.addToDamageQueue(Hunson.this, getSpellDamage(spellData), spellData);
-                    if (!a.getId().contains("turret") || !a.getId().contains("decoy"))
-                        a.handleFear(Hunson.this.location, 1500);
+            if (getHealth() > 0) {
+                for (Actor a :
+                        Champion.getActorsInRadius(
+                                parentExt.getRoomHandler(room.getId()), dest, 2.5f)) {
+                    if (isNonStructure(a)) {
+                        a.addToDamageQueue(Hunson.this, getSpellDamage(spellData), spellData);
+                        if (!a.getId().contains("turret") || !a.getId().contains("decoy"))
+                            a.handleFear(Hunson.this.location, 1500);
+                    }
                 }
             }
         }

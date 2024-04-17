@@ -448,19 +448,21 @@ public class IceKing extends UserActor {
                             enableQCasting,
                             getReducedCooldown(cooldown) - Q_CAST_DELAY,
                             TimeUnit.MILLISECONDS);
-            Line2D abilityLine = Champion.getAbilityLine(location, dest, 7.5f);
-            fireProjectile(
-                    new IceKingProjectile(
-                            parentExt,
-                            IceKing.this,
-                            abilityLine,
-                            9f,
-                            0.5f,
-                            id + "projectile_iceking_deepfreeze"),
-                    "projectile_iceking_deepfreeze",
-                    location,
-                    dest,
-                    7.5f);
+            if (getHealth() > 0) {
+                Line2D abilityLine = Champion.getAbilityLine(location, dest, 7.5f);
+                fireProjectile(
+                        new IceKingProjectile(
+                                parentExt,
+                                IceKing.this,
+                                abilityLine,
+                                9f,
+                                0.5f,
+                                id + "projectile_iceking_deepfreeze"),
+                        "projectile_iceking_deepfreeze",
+                        location,
+                        dest,
+                        7.5f);
+            }
         }
 
         @Override

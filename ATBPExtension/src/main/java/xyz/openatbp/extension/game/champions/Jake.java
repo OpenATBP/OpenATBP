@@ -201,50 +201,52 @@ public class Jake extends UserActor {
             SmartFoxServer.getInstance()
                     .getTaskScheduler()
                     .schedule(canCast, (int) newTime + 500, TimeUnit.MILLISECONDS);
-            ExtensionCommands.actorAnimate(
-                    this.parentExt, this.room, this.id, "spell1b", (int) newTime, true);
-            Point2D dashPoint =
-                    MovementManager.getDashPoint(
-                            this, new Line2D.Float(this.location, this.qVictim.getLocation()));
-            this.dash(dashPoint, true, 15);
-            ExtensionCommands.createActorFX(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    "jake_trail",
-                    (int) newTime,
-                    this.id,
-                    true,
-                    "",
-                    true,
-                    false,
-                    this.team);
-            double percentage = distance / 7d;
-            if (percentage < 0.5d) percentage = 0.5d;
-            System.out.println("percentage " + percentage);
-            double spellModifer = this.getPlayerStat("spellDamage") * percentage;
-            if (isNonStructure(this.qVictim))
-                this.qVictim.addState(ActorState.STUNNED, 0d, 2000, null, false);
-            this.qVictim.addToDamageQueue(this, 35 + spellModifer, spellData);
-            if (distance >= 5.5d) {
-                ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "sfx_oildrum_dead",
-                        this.qVictim.getLocation());
+            if (this.getHealth() > 0) {
+                ExtensionCommands.actorAnimate(
+                        this.parentExt, this.room, this.id, "spell1b", (int) newTime, true);
+                Point2D dashPoint =
+                        MovementManager.getDashPoint(
+                                this, new Line2D.Float(this.location, this.qVictim.getLocation()));
+                this.dash(dashPoint, true, 15);
                 ExtensionCommands.createActorFX(
                         this.parentExt,
                         this.room,
-                        this.qVictim.getId(),
-                        "jake_stomp_fx",
-                        500,
-                        this.id + "_jake_q_fx",
-                        false,
+                        this.id,
+                        "jake_trail",
+                        (int) newTime,
+                        this.id,
+                        true,
                         "",
-                        false,
+                        true,
                         false,
                         this.team);
+                double percentage = distance / 7d;
+                if (percentage < 0.5d) percentage = 0.5d;
+                System.out.println("percentage " + percentage);
+                double spellModifer = this.getPlayerStat("spellDamage") * percentage;
+                if (isNonStructure(this.qVictim))
+                    this.qVictim.addState(ActorState.STUNNED, 0d, 2000, null, false);
+                this.qVictim.addToDamageQueue(this, 35 + spellModifer, spellData);
+                if (distance >= 5.5d) {
+                    ExtensionCommands.playSound(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "sfx_oildrum_dead",
+                            this.qVictim.getLocation());
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.qVictim.getId(),
+                            "jake_stomp_fx",
+                            500,
+                            this.id + "_jake_q_fx",
+                            false,
+                            "",
+                            false,
+                            false,
+                            this.team);
+                }
             }
             this.doGrab = false;
         }
@@ -271,7 +273,8 @@ public class Jake extends UserActor {
                 Line2D qLine = Champion.getAbilityLine(this.location, dest, Q_SPELL_RANGE);
                 this.qPolygon = createOctagon(this.location, dest);
                 Runnable projectileDelay =
-                        () ->
+                        () -> {
+                            if (this.getHealth() > 0) {
                                 fireQProjectile(
                                         new JakeQProjectile(
                                                 this.parentExt,
@@ -284,6 +287,8 @@ public class Jake extends UserActor {
                                         this.location,
                                         dest,
                                         Q_SPELL_RANGE);
+                            }
+                        };
                 SmartFoxServer.getInstance()
                         .getTaskScheduler()
                         .schedule(projectileDelay, 300, TimeUnit.MILLISECONDS);

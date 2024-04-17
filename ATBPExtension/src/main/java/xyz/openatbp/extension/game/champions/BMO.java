@@ -13,6 +13,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
@@ -54,27 +55,20 @@ public class BMO extends UserActor {
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_pixels_aoe");
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_target_ring_4.5");
             if (passiveStacks < 3) addPasiveStacks();
-            JsonNode spellData = parentExt.getAttackData(this.avatar, "spell2");
-            int cooldown = spellData.get("spellCoolDown").asInt();
-            int gCooldown = spellData.get("spellGlobalCoolDown").asInt();
+            int baseWCooldown = ChampionData.getBaseAbilityCooldown(this, 2);
             ExtensionCommands.actorAbilityResponse(
-                    this.parentExt,
-                    this.player,
-                    "w",
-                    true,
-                    getReducedCooldown(cooldown),
-                    gCooldown);
+                    this.parentExt, this.player, "w", true, getReducedCooldown(baseWCooldown), 250);
             this.canCast[0] = true;
             this.canCast[2] = true;
             this.wActive = false;
         }
         if (this.wActive && System.currentTimeMillis() - this.wStartTime >= 3000) {
-            this.wEnd(getReducedCooldown(16000), 250);
+            int baseWCooldown = ChampionData.getBaseAbilityCooldown(this, 2);
+            this.wEnd(getReducedCooldown(baseWCooldown), 250);
             this.canCast[0] = true;
             this.canCast[2] = true;
             this.wActive = false;
         }
-
         if (wActive) {
             for (Actor a :
                     Champion.getActorsInRadius(
@@ -354,9 +348,9 @@ public class BMO extends UserActor {
                 (this.avatar.contains("noir"))
                         ? "bmo_pixels_aoe_explode_noire"
                         : "bmo_pixels_aoe_explode";
-        ExtensionCommands.removeFx(this.parentExt, this.player, this.id + "_pixels_aoe");
-        ExtensionCommands.removeFx(this.parentExt, this.player, this.id + "_bmo_remote");
-        ExtensionCommands.removeFx(this.parentExt, this.player, this.id + "_target_ring_4.5");
+        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_pixels_aoe");
+        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_bmo_remote");
+        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_target_ring_4.5");
         ExtensionCommands.playSound(
                 this.parentExt, this.room, this.id, "vo/vo_bmo_yay", this.location);
         ExtensionCommands.playSound(
@@ -405,16 +399,20 @@ public class BMO extends UserActor {
                             enableECasting,
                             getReducedCooldown(cooldown) - E_CAST_DELAY,
                             TimeUnit.MILLISECONDS);
-            Line2D abilityLine = Champion.getAbilityLine(location, dest, 16f);
-            String ultProjectile =
-                    (avatar.contains("noir")) ? "projectile_bmo_bee_noire" : "projectile_bmo_bee";
-            fireProjectile(
-                    new BMOUltProjectile(
-                            parentExt, BMO.this, abilityLine, 5f, 1.5f, id + ultProjectile),
-                    ultProjectile,
-                    location,
-                    dest,
-                    16f);
+            if (getHealth() > 0) {
+                Line2D abilityLine = Champion.getAbilityLine(location, dest, 16f);
+                String ultProjectile =
+                        (avatar.contains("noir"))
+                                ? "projectile_bmo_bee_noire"
+                                : "projectile_bmo_bee";
+                fireProjectile(
+                        new BMOUltProjectile(
+                                parentExt, BMO.this, abilityLine, 5f, 1.5f, id + ultProjectile),
+                        ultProjectile,
+                        location,
+                        dest,
+                        16f);
+            }
         }
 
         @Override

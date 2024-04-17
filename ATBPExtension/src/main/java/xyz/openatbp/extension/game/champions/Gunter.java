@@ -244,8 +244,9 @@ public class Gunter extends UserActor {
         if (this.ultActivated) {
             this.ultActivated = false;
             this.eTrapezoid = null;
-            ExtensionCommands.removeFx(parentExt, room, this.id + "_gunterPower");
-            ExtensionCommands.removeFx(parentExt, room, this.id + "_gunterUlt");
+            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_gunterPower");
+            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "gunterUlt");
+            ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "run", 500, false);
         }
     }
 
@@ -275,26 +276,29 @@ public class Gunter extends UserActor {
                             enableQCasting,
                             getReducedCooldown(cooldown) - Q_DASH_TIME,
                             TimeUnit.MILLISECONDS);
-            ExtensionCommands.createActorFX(
-                    parentExt,
-                    room,
-                    id,
-                    "gunter_belly_slide_bottles",
-                    1500,
-                    id + "_slide_bottles",
-                    false,
-                    "",
-                    false,
-                    false,
-                    team);
-            ExtensionCommands.playSound(parentExt, room, id, "sfx_gunter_slide_shatter", location);
-            ExtensionCommands.actorAnimate(parentExt, room, id, "spell1c", 500, false);
-            List<Actor> affectedActors =
-                    Champion.getActorsInRadius(
-                            parentExt.getRoomHandler(room.getId()), location, 2f);
-            for (Actor a : affectedActors) {
-                if (a.getTeam() != team && isNonStructure(a)) {
-                    a.addToDamageQueue(Gunter.this, getSpellDamage(spellData), spellData);
+            if (getHealth() > 0) {
+                ExtensionCommands.createActorFX(
+                        parentExt,
+                        room,
+                        id,
+                        "gunter_belly_slide_bottles",
+                        1500,
+                        id + "_slide_bottles",
+                        false,
+                        "",
+                        false,
+                        false,
+                        team);
+                ExtensionCommands.playSound(
+                        parentExt, room, id, "sfx_gunter_slide_shatter", location);
+                ExtensionCommands.actorAnimate(parentExt, room, id, "spell1c", 500, false);
+                List<Actor> affectedActors =
+                        Champion.getActorsInRadius(
+                                parentExt.getRoomHandler(room.getId()), location, 2f);
+                for (Actor a : affectedActors) {
+                    if (a.getTeam() != team && isNonStructure(a)) {
+                        a.addToDamageQueue(Gunter.this, getSpellDamage(spellData), spellData);
+                    }
                 }
             }
         }

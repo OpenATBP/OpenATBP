@@ -144,6 +144,10 @@ public class UserActor extends Actor {
         return this.room;
     }
 
+    public int getXp() {
+        return this.xp;
+    }
+
     public Map<String, Double> getStats() {
         return this.stats;
     }
