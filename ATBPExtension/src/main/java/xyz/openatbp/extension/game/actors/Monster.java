@@ -31,7 +31,7 @@ public class Monster extends Actor {
     private AggroState state = AggroState.PASSIVE;
     private final Point2D startingLocation;
     private final MonsterType type;
-    private static final boolean MOVEMENT_DEBUG = false;
+    private static boolean movementDebug = false;
     private boolean attackRangeOverride = false;
     private boolean headingBack = false;
     private HashMap<Actor, Double> attackersInCampRadius = new HashMap<>();
@@ -53,7 +53,9 @@ public class Monster extends Actor {
         this.actorType = ActorType.MONSTER;
         this.displayName = parentExt.getDisplayName(monsterName);
         this.xpWorth = this.parentExt.getActorXP(this.id);
-        if (MOVEMENT_DEBUG)
+        Properties props = parentExt.getConfigProperties();
+        movementDebug = Boolean.parseBoolean(props.getProperty("movementDebug", "false"));
+        if (movementDebug)
             ExtensionCommands.createActor(
                     parentExt, room, id + "_test", "creep", this.location, 0f, 2);
     }
@@ -363,7 +365,7 @@ public class Monster extends Actor {
         this.handlePathing();
         if (this.target != null && this.target.getHealth() <= 0)
             this.setAggroState(AggroState.PASSIVE, null);
-        if (MOVEMENT_DEBUG && this.type == MonsterType.BIG)
+        if (movementDebug && this.type == MonsterType.BIG)
             ExtensionCommands.moveActor(
                     parentExt, room, this.id + "_test", this.location, this.location, 5f, false);
         if (this.state == AggroState.PASSIVE) {
