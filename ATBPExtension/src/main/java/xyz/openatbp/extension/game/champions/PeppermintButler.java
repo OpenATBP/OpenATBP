@@ -502,7 +502,7 @@ public class PeppermintButler extends UserActor {
                             TimeUnit.MILLISECONDS);
             wActive = false;
             canMove = true;
-            if (!interruptW) {
+            if (!interruptW && getHealth() > 0) {
                 String beholdVoPrefix = (avatar.contains("zombie")) ? "pepbut_zombie_" : "pepbut_";
                 ExtensionCommands.playSound(
                         parentExt, room, id, "sfx_pepbut_dig_emerge", this.dest);
@@ -530,7 +530,7 @@ public class PeppermintButler extends UserActor {
                         a.addState(ActorState.STUNNED, 0d, 1500, null, false);
                     }
                 }
-            } else {
+            } else if (interruptW) {
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_skill_interrupted", location);
             }
             interruptW = false;

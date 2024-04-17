@@ -27,6 +27,8 @@ public class Billy extends UserActor {
     private long finalPassiveStart = 0;
     private long lastSoundPlayed = 0;
     private Point2D ultLoc = null;
+    private long lastPulseTime = 0;
+    private int pulseCounter = 0;
     private static final float Q_OFFSET_DISTANCE = 1.5f;
     private static final float Q_SPELL_RANGE = 4.5f;
 
@@ -70,14 +72,18 @@ public class Billy extends UserActor {
                     this.parentExt, this.room, "", "sfx_billy_nothung_pulse", this.ultLocation);
             lastSoundPlayed = System.currentTimeMillis();
         }
-        if (this.ultLocation != null && System.currentTimeMillis() - this.ultStartTime < 4500) {
+        if (ultLocation != null
+                && System.currentTimeMillis() - ultStartTime < 4500
+                && System.currentTimeMillis() - lastPulseTime >= 175) {
+            lastPulseTime = System.currentTimeMillis();
+            pulseCounter++;
             ExtensionCommands.createWorldFX(
                     this.parentExt,
                     this.room,
                     this.id,
                     "billy_nothung_pulse",
-                    this.id + "_ultPulse",
-                    200,
+                    this.id + "_ultPulse" + pulseCounter,
+                    1000,
                     (float) this.ultLocation.getX(),
                     (float) this.ultLocation.getY(),
                     false,
@@ -306,25 +312,29 @@ public class Billy extends UserActor {
                             enableWCasting,
                             getReducedCooldown(cooldown),
                             TimeUnit.MILLISECONDS); // cast delay is 0
-            int CRATER_OFFSET = 1;
-            ExtensionCommands.playSound(parentExt, room, id, "sfx_billy_ground_pound_temp", dest);
-            ExtensionCommands.actorAnimate(parentExt, room, id, "spell2a", 500, false);
-            ExtensionCommands.createWorldFX(
-                    parentExt,
-                    room,
-                    id,
-                    "billy_ground_pound",
-                    id + "_qLand",
-                    1500,
-                    (float) location.getX(),
-                    (float) location.getY() - CRATER_OFFSET,
-                    false,
-                    team,
-                    0f);
-            for (Actor a :
-                    Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()), dest, 2f)) {
-                if (isNonStructure(a)) {
-                    a.addToDamageQueue(Billy.this, getSpellDamage(spellData), spellData);
+            if (getHealth() > 0) {
+                int CRATER_OFFSET = 1;
+                ExtensionCommands.playSound(
+                        parentExt, room, id, "sfx_billy_ground_pound_temp", dest);
+                ExtensionCommands.actorAnimate(parentExt, room, id, "spell2a", 500, false);
+                ExtensionCommands.createWorldFX(
+                        parentExt,
+                        room,
+                        id,
+                        "billy_ground_pound",
+                        id + "_qLand",
+                        1500,
+                        (float) location.getX(),
+                        (float) location.getY() - CRATER_OFFSET,
+                        false,
+                        team,
+                        0f);
+                for (Actor a :
+                        Champion.getActorsInRadius(
+                                parentExt.getRoomHandler(room.getId()), dest, 2f)) {
+                    if (isNonStructure(a)) {
+                        a.addToDamageQueue(Billy.this, getSpellDamage(spellData), spellData);
+                    }
                 }
             }
         }
@@ -339,33 +349,49 @@ public class Billy extends UserActor {
                             enableECasting,
                             getReducedCooldown(cooldown) - E_CAST_DELAY,
                             TimeUnit.MILLISECONDS);
-            ExtensionCommands.playSound(parentExt, room, "", "sfx_billy_nothung_skyfall", ultLoc);
-            int duration = 1000;
-            if (passiveUses == 3) {
-                ultLocation = ultLoc;
-                ultStartTime = System.currentTimeMillis();
-                lastUltTick = System.currentTimeMillis();
-                lastSoundPlayed = System.currentTimeMillis();
-                duration = 4500;
-                usePassiveAbility();
-            }
-            ExtensionCommands.createWorldFX(
-                    parentExt,
-                    room,
-                    id,
-                    "billy_nothung_skyfall",
-                    id + "_ult",
-                    duration,
-                    (float) ultLoc.getX(),
-                    (float) ultLoc.getY(),
-                    false,
-                    team,
-                    0f);
-            for (Actor a :
-                    Champion.getActorsInRadius(
-                            parentExt.getRoomHandler(room.getId()), ultLoc, 2.25f)) {
-                if (isNonStructure(a)) {
-                    a.addToDamageQueue(Billy.this, getSpellDamage(spellData), spellData);
+
+            if (getHealth() > 0) {
+                ExtensionCommands.playSound(
+                        parentExt, room, "", "sfx_billy_nothung_skyfall", ultLoc);
+                int duration = 1000;
+                if (passiveUses == 3) {
+                    ultLocation = ultLoc;
+                    ultStartTime = System.currentTimeMillis();
+                    lastUltTick = System.currentTimeMillis();
+                    lastSoundPlayed = System.currentTimeMillis();
+                    duration = 4500;
+                    usePassiveAbility();
+                }
+                ExtensionCommands.createWorldFX(
+                        parentExt,
+                        room,
+                        id,
+                        "billy_nothung_skyfall",
+                        id + "_ult",
+                        duration,
+                        (float) ultLoc.getX(),
+                        (float) ultLoc.getY(),
+                        false,
+                        team,
+                        0f);
+                ExtensionCommands.createWorldFX(
+                        parentExt,
+                        room,
+                        id,
+                        "billy_nothung_pulse",
+                        id + "_ultPulseNotEmpowered",
+                        1000,
+                        (float) ultLoc.getX(),
+                        (float) ultLoc.getY(),
+                        false,
+                        team,
+                        0f);
+                for (Actor a :
+                        Champion.getActorsInRadius(
+                                parentExt.getRoomHandler(room.getId()), ultLoc, 2.25f)) {
+                    if (isNonStructure(a)) {
+                        a.addToDamageQueue(Billy.this, getSpellDamage(spellData), spellData);
+                    }
                 }
             }
         }

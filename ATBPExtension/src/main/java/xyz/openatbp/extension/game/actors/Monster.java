@@ -31,10 +31,9 @@ public class Monster extends Actor {
     private AggroState state = AggroState.PASSIVE;
     private final Point2D startingLocation;
     private final MonsterType type;
-    private static final boolean MOVEMENT_DEBUG = false;
+    private static boolean movementDebug = false;
     private boolean attackRangeOverride = false;
     private boolean headingBack = false;
-    private HashMap<Actor, Double> attackersInCampRadius = new HashMap<>();
 
     public Monster(
             ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName) {
@@ -53,7 +52,9 @@ public class Monster extends Actor {
         this.actorType = ActorType.MONSTER;
         this.displayName = parentExt.getDisplayName(monsterName);
         this.xpWorth = this.parentExt.getActorXP(this.id);
-        if (MOVEMENT_DEBUG)
+        Properties props = parentExt.getConfigProperties();
+        movementDebug = Boolean.parseBoolean(props.getProperty("movementDebug", "false"));
+        if (movementDebug)
             ExtensionCommands.createActor(
                     parentExt, room, id + "_test", "creep", this.location, 0f, 2);
     }
@@ -100,18 +101,14 @@ public class Monster extends Actor {
             if (a.getActorType() == ActorType.PLAYER)
                 this.addDamageGameStat((UserActor) a, newDamage, attackType);
             boolean returnVal = super.damaged(a, newDamage, attackData);
-            if (!this.headingBack
-                    && isProperActor(a)
-                    && this.state
-                            != AggroState
-                                    .ATTACKED) { // If being attacked while minding own business, it
-                // will
-                // target player
-                double distance = this.location.distance(a.getLocation());
-                this.attackersInCampRadius.put(a, distance);
+            if (!this.headingBack && isProperActor(a)) { // attacks the nearest attacker
                 state = AggroState.ATTACKED;
-                target = findClosestAttacker();
-                if (!this.withinRange(this.target)) {
+                if (!this.getState(ActorState.CHARMED) && this.target == null
+                        || a.getLocation().distance(this.getLocation())
+                                < this.target.getLocation().distance(this.location)) {
+                    this.target = a;
+                }
+                if (this.target != null && !this.withinRange(this.target)) {
                     this.timeTraveled = 0f;
                     this.moveTowardsActor();
                 }
@@ -137,6 +134,12 @@ public class Monster extends Actor {
         }
     }
 
+    @Override
+    public void handleCharm(UserActor charmer, int duration) {
+        this.addState(ActorState.CHARMED, 0d, duration, null, false);
+        if (charmer != null) this.target = charmer;
+    }
+
     public boolean isProperActor(Actor a) {
         List<Actor> actors =
                 Champion.getActorsInRadius(
@@ -144,20 +147,6 @@ public class Monster extends Actor {
         return actors.contains(a)
                 && a.getActorType() != ActorType.MINION
                 && a.getActorType() != ActorType.MONSTER;
-    }
-
-    public Actor findClosestAttacker() {
-        Actor closestActor = null;
-        double minDistance = Double.MAX_VALUE;
-        for (Map.Entry<Actor, Double> entry : this.attackersInCampRadius.entrySet()) {
-            Actor actor = entry.getKey();
-            double distance = entry.getValue();
-            if (distance < minDistance) {
-                minDistance = distance;
-                closestActor = actor;
-            }
-        }
-        return closestActor;
     }
 
     public void setAggroState(AggroState state, Actor a) {
@@ -342,16 +331,6 @@ public class Monster extends Actor {
                 this.level = averagePLevel;
                 Champion.updateServerHealth(this.parentExt, this);
             }
-            Iterator<Map.Entry<Actor, Double>> iterator =
-                    this.attackersInCampRadius.entrySet().iterator();
-            while (iterator.hasNext()) { // remove players if they leave the camp or die
-                Map.Entry<Actor, Double> entry = iterator.next();
-                Actor actor = entry.getKey();
-                double distance = actor.getLocation().distance(this.startingLocation);
-                if (distance > 10f || actor.getHealth() <= 0) {
-                    iterator.remove();
-                }
-            }
         }
         if (this.movementLine != null)
             this.location =
@@ -363,7 +342,7 @@ public class Monster extends Actor {
         this.handlePathing();
         if (this.target != null && this.target.getHealth() <= 0)
             this.setAggroState(AggroState.PASSIVE, null);
-        if (MOVEMENT_DEBUG && this.type == MonsterType.BIG)
+        if (movementDebug && this.type == MonsterType.BIG)
             ExtensionCommands.moveActor(
                     parentExt, room, this.id + "_test", this.location, this.location, 5f, false);
         if (this.state == AggroState.PASSIVE) {

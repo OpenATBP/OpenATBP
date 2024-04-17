@@ -12,6 +12,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
@@ -34,7 +35,6 @@ public class BubbleGum extends UserActor {
     private boolean bombPlaced;
     private Point2D bombLocation;
     private long bombPlaceTime = 0;
-    private static final boolean DEBUG = false;
 
     public BubbleGum(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -121,7 +121,8 @@ public class BubbleGum extends UserActor {
             t.update(msRan);
         }
         if (this.bombPlaced && System.currentTimeMillis() - this.bombPlaceTime >= 4000) {
-            this.useBomb(getReducedCooldown(currentHealth), 250);
+            int baseUltCooldown = ChampionData.getBaseAbilityCooldown(this, 3);
+            this.useBomb(getReducedCooldown(baseUltCooldown), 250);
         }
     }
 
@@ -226,6 +227,8 @@ public class BubbleGum extends UserActor {
                             this.team,
                             0f);
                     this.bombLocation = dest;
+                    ExtensionCommands.actorAbilityResponse(
+                            this.parentExt, this.player, "e", true, 750, 0);
                     SmartFoxServer.getInstance()
                             .getTaskScheduler()
                             .schedule(
@@ -343,22 +346,26 @@ public class BubbleGum extends UserActor {
                             enableQCasting,
                             getReducedCooldown(cooldown) - Q_CAST_DELAY,
                             TimeUnit.MILLISECONDS);
-            potionActivated = true;
-            potionLocation = dest;
-            potionSpawn = System.currentTimeMillis();
-            ExtensionCommands.playSound(parentExt, room, "", "sfx_bubblegum_potion_aoe", dest);
-            ExtensionCommands.createWorldFX(
-                    parentExt,
-                    room,
-                    id,
-                    "bubblegum_ground_aoe",
-                    id + "_potionAoe",
-                    3000,
-                    (float) dest.getX(),
-                    (float) dest.getY(),
-                    false,
-                    team,
-                    0f);
+            if (getHealth() > 0) {
+                potionActivated = true;
+                potionLocation = dest;
+                potionSpawn = System.currentTimeMillis();
+                ExtensionCommands.playSound(parentExt, room, "", "sfx_bubblegum_potion_aoe", dest);
+                ExtensionCommands.createWorldFX(
+                        parentExt,
+                        room,
+                        id,
+                        "bubblegum_ground_aoe",
+                        id + "_potionAoe",
+                        3000,
+                        (float) dest.getX(),
+                        (float) dest.getY(),
+                        false,
+                        team,
+                        0f);
+            } else {
+                ExtensionCommands.removeFx(parentExt, room, id + "_potionArea");
+            }
         }
 
         @Override
@@ -394,7 +401,7 @@ public class BubbleGum extends UserActor {
             new Champion.DelayedAttack(
                             parentExt, this.attacker, this.target, (int) damage, "basicAttack")
                     .run();
-            if (this.target.getActorType() == ActorType.PLAYER || DEBUG) {
+            if (this.target.getActorType() == ActorType.PLAYER) {
                 gumStacks++;
                 lastGum = System.currentTimeMillis();
                 if (gumStacks > 3) {

@@ -136,6 +136,8 @@ public class Lich extends UserActor {
                             true,
                             this.team,
                             0f);
+                    ExtensionCommands.actorAbilityResponse(
+                            this.parentExt, this.player, "e", true, 1000, 0);
                     SmartFoxServer.getInstance()
                             .getTaskScheduler()
                             .schedule(

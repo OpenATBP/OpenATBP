@@ -58,7 +58,7 @@ public class Minion extends Actor {
     private int lane;
     private int mainPathIndex = 0;
     private Map<UserActor, Integer> aggressors;
-    private final boolean MOVEMENT_DEBUG = false;
+    private static boolean movementDebug = false;
     private State state;
 
     public Minion(ATBPExtension parentExt, Room room, int team, int minionNum, int wave, int lane) {
@@ -120,7 +120,9 @@ public class Minion extends Actor {
         this.stats = this.initializeStats();
         ExtensionCommands.createActor(
                 parentExt, room, this.id, this.getAvatar(), this.location, 0f, this.team);
-        if (MOVEMENT_DEBUG)
+        Properties props = parentExt.getConfigProperties();
+        movementDebug = Boolean.parseBoolean(props.getProperty("movementDebug", "false"));
+        if (movementDebug)
             ExtensionCommands.createActor(
                     parentExt, room, this.id + "_test", "gnome_a", this.location, 0f, this.team);
         this.attackCooldown = this.getPlayerStat("attackSpeed");
@@ -279,7 +281,7 @@ public class Minion extends Actor {
             // if(this.target != null) this.moveTowardsTarget();
         }
         if (this.attackCooldown > 0) this.reduceAttackCooldown();
-        if (MOVEMENT_DEBUG)
+        if (movementDebug)
             ExtensionCommands.moveActor(
                     parentExt, room, id + "_test", this.location, this.location, 5f, false);
 

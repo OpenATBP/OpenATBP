@@ -11,6 +11,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
@@ -121,10 +122,11 @@ public class CinnamonBun extends UserActor {
                 }
             }
         } else if (this.ultPoint != null && System.currentTimeMillis() - this.ultStart >= 4500) {
+            int baseCooldown = ChampionData.getBaseAbilityCooldown(this, 3);
             ExtensionCommands.playSound(
                     this.parentExt, this.room, "", "sfx_cb_power3_end", this.ultPoint);
             ExtensionCommands.actorAbilityResponse(
-                    this.parentExt, this.player, "e", true, getReducedCooldown(55000), 500);
+                    this.parentExt, this.player, "e", true, getReducedCooldown(baseCooldown), 500);
             float radius = 2f;
             if (this.ultUses > 1 && this.ultPoint2 == null) {
                 radius = 4f;
@@ -511,6 +513,10 @@ public class CinnamonBun extends UserActor {
                     this.ultUses++;
                 }
                 int eUseDelay = ultUses < 2 ? 0 : gCooldown;
+                if (this.ultUses == 2) {
+                    ExtensionCommands.actorAbilityResponse(
+                            this.parentExt, this.player, "e", true, eUseDelay, 0);
+                }
                 SmartFoxServer.getInstance()
                         .getTaskScheduler()
                         .schedule(

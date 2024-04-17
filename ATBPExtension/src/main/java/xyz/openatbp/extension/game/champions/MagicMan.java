@@ -11,6 +11,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
@@ -74,7 +75,7 @@ public class MagicMan extends UserActor {
             this.wDest = null;
             this.canCast[1] = true;
             this.setState(ActorState.REVEALED, true);
-            int wCooldown = getReducedCooldown(25000);
+            int wCooldown = ChampionData.getBaseAbilityCooldown(this, 2);
             ExtensionCommands.actorAbilityResponse(
                     this.parentExt, this.player, "w", true, wCooldown, 250);
             Runnable resetWUses = () -> this.wUses = 0;
@@ -209,6 +210,8 @@ public class MagicMan extends UserActor {
                     this.parentExt
                             .getRoomHandler(this.room.getId())
                             .addCompanion(this.magicManClone);
+                    ExtensionCommands.actorAbilityResponse(
+                            this.parentExt, this.player, "w", true, 1000, 0);
                 } else {
                     this.setState(ActorState.INVISIBLE, false);
                     ExtensionCommands.actorAbilityResponse(
@@ -314,7 +317,7 @@ public class MagicMan extends UserActor {
                             TimeUnit.MILLISECONDS);
             canMove = true;
             ultStarted = false;
-            if (!interruptE) {
+            if (!interruptE && getHealth() > 0) {
                 ExtensionCommands.actorAnimate(parentExt, room, id, "spell3b", 500, false);
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_magicman_explode", location);
                 ExtensionCommands.playSound(
@@ -342,7 +345,7 @@ public class MagicMan extends UserActor {
                         a.addState(ActorState.SLOWED, 0.3d, 3000, null, false);
                     }
                 }
-            } else {
+            } else if (interruptE) {
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_skill_interrupted", location);
             }
             interruptE = false;

@@ -48,7 +48,7 @@ public class RoomHandler implements Runnable {
     private boolean gameOver = false;
     private HashMap<String, Long> destroyedIds = new HashMap<>();
     private List<String> createdActorIds = new ArrayList<>();
-    private static final boolean MONSTER_DEBUG = false;
+    private static boolean monsterDebug = false;
     private boolean practiceMap;
     private boolean fastBlueCapture = false;
     private boolean fastPurpleCapture = false;
@@ -68,6 +68,8 @@ public class RoomHandler implements Runnable {
         this.players = new ArrayList<>();
         this.campMonsters = new ArrayList<>();
         this.practiceMap = room.getGroupId().equalsIgnoreCase("practice");
+        Properties props = parentExt.getConfigProperties();
+        monsterDebug = Boolean.parseBoolean(props.getProperty("monsterDebug", "false"));
         HashMap<String, Point2D> towers0;
         HashMap<String, Point2D> towers1;
         if (!this.practiceMap) {
@@ -201,7 +203,7 @@ public class RoomHandler implements Runnable {
                         int spawnRate = 45; // Mob spawn rate
                         if (s.equalsIgnoreCase("keeoth")) spawnRate = 120;
                         else if (s.equalsIgnoreCase("goomonster")) spawnRate = 90;
-                        if (MONSTER_DEBUG) spawnRate = 10;
+                        if (monsterDebug) spawnRate = 10;
                         if (spawns.getInt(s)
                                 == spawnRate) { // Mob timers will be set to 0 when killed or health
                             // when taken

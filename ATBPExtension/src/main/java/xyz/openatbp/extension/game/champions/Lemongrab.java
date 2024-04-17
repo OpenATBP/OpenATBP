@@ -296,34 +296,38 @@ public class Lemongrab extends UserActor {
                             enableWCasting,
                             getReducedCooldown(cooldown) - W_CAST_DELAY,
                             TimeUnit.MILLISECONDS);
-            ExtensionCommands.createWorldFX(
-                    parentExt,
-                    room,
-                    id,
-                    "lemongrab_head_splash",
-                    id + "_wHead",
-                    500,
-                    (float) dest.getX(),
-                    (float) dest.getY(),
-                    false,
-                    team,
-                    0f);
-            List<Actor> affectedActors = new ArrayList<>();
-            for (Actor a :
-                    Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()), dest, 1f)) {
-                if (isNonStructure(a)) {
-                    affectedActors.add(a);
-                    a.addToDamageQueue(Lemongrab.this, getSpellDamage(spellData), spellData);
-                    a.addState(ActorState.BLINDED, 0d, 4000, null, false);
-                    a.addState(ActorState.SILENCED, 0d, 2000, null, false);
+            if (getHealth() > 0) {
+                ExtensionCommands.createWorldFX(
+                        parentExt,
+                        room,
+                        id,
+                        "lemongrab_head_splash",
+                        id + "_wHead",
+                        500,
+                        (float) dest.getX(),
+                        (float) dest.getY(),
+                        false,
+                        team,
+                        0f);
+                List<Actor> affectedActors = new ArrayList<>();
+                for (Actor a :
+                        Champion.getActorsInRadius(
+                                parentExt.getRoomHandler(room.getId()), dest, 1f)) {
+                    if (isNonStructure(a)) {
+                        affectedActors.add(a);
+                        a.addToDamageQueue(Lemongrab.this, getSpellDamage(spellData), spellData);
+                        a.addState(ActorState.BLINDED, 0d, 4000, null, false);
+                        a.addState(ActorState.SILENCED, 0d, 2000, null, false);
+                    }
                 }
-            }
-            for (Actor a :
-                    Champion.getActorsInRadius(parentExt.getRoomHandler(room.getId()), dest, 2f)) {
-                if (isNonStructure(a) && !affectedActors.contains(a)) {
-                    double damage = 60d + (getPlayerStat("spellDamage") * 0.4d);
-                    a.addState(ActorState.BLINDED, 0d, 4000, null, false);
-                    a.addToDamageQueue(Lemongrab.this, damage, spellData);
+                for (Actor a :
+                        Champion.getActorsInRadius(
+                                parentExt.getRoomHandler(room.getId()), dest, 2f)) {
+                    if (isNonStructure(a) && !affectedActors.contains(a)) {
+                        double damage = 60d + (getPlayerStat("spellDamage") * 0.4d);
+                        a.addState(ActorState.BLINDED, 0d, 4000, null, false);
+                        a.addToDamageQueue(Lemongrab.this, damage, spellData);
+                    }
                 }
             }
         }
@@ -339,50 +343,58 @@ public class Lemongrab extends UserActor {
                             getReducedCooldown(cooldown) - E_CAST_DELAY,
                             TimeUnit.MILLISECONDS);
             isCastingUlt = false;
-            ExtensionCommands.createWorldFX(
-                    parentExt,
-                    room,
-                    id,
-                    "lemongrab_dungeon_hit",
-                    id + "_jailHit",
-                    1000,
-                    (float) dest.getX(),
-                    (float) dest.getY(),
-                    false,
-                    team,
-                    0f);
-            double damage = getSpellDamage(spellData);
-            double duration = 2000d;
-            damage *= (1d + (0.1d * unacceptableLevels));
-            duration *= (1d + (0.1d * unacceptableLevels));
-            for (Actor a :
-                    Champion.getActorsInRadius(
-                            parentExt.getRoomHandler(room.getId()), dest, 2.5f)) {
-                if (isNonStructure(a)) {
-                    a.addToDamageQueue(Lemongrab.this, damage, spellData);
-                    if (a.getActorType() == ActorType.PLAYER) {
-                        a.addState(ActorState.STUNNED, 0d, (int) duration, null, false);
+            if (getHealth() > 0) {
+                ExtensionCommands.createWorldFX(
+                        parentExt,
+                        room,
+                        id,
+                        "lemongrab_dungeon_hit",
+                        id + "_jailHit",
+                        1000,
+                        (float) dest.getX(),
+                        (float) dest.getY(),
+                        false,
+                        team,
+                        0f);
+                double damage = getSpellDamage(spellData);
+                double duration = 2000d;
+                damage *= (1d + (0.1d * unacceptableLevels));
+                duration *= (1d + (0.1d * unacceptableLevels));
+                for (Actor a :
+                        Champion.getActorsInRadius(
+                                parentExt.getRoomHandler(room.getId()), dest, 2.5f)) {
+                    if (isNonStructure(a)) {
+                        a.addToDamageQueue(Lemongrab.this, damage, spellData);
+                        if (a.getActorType() == ActorType.PLAYER) {
+                            a.addState(ActorState.STUNNED, 0d, (int) duration, null, false);
+                        }
+                        if (a.getActorType() == ActorType.PLAYER
+                                && !a.getState(ActorState.IMMUNITY))
+                            ExtensionCommands.createActorFX(
+                                    parentExt,
+                                    room,
+                                    a.getId(),
+                                    "lemongrab_lemon_jail",
+                                    (int) duration,
+                                    a.getId() + "_jailed",
+                                    true,
+                                    "",
+                                    true,
+                                    false,
+                                    team);
                     }
-                    if (a.getActorType() == ActorType.PLAYER && !a.getState(ActorState.IMMUNITY))
-                        ExtensionCommands.createActorFX(
-                                parentExt,
-                                room,
-                                a.getId(),
-                                "lemongrab_lemon_jail",
-                                (int) duration,
-                                a.getId() + "_jailed",
-                                true,
-                                "",
-                                true,
-                                false,
-                                team);
                 }
+                unacceptableLevels = 0;
+                ExtensionCommands.removeStatusIcon(parentExt, player, lastIcon);
+                ExtensionCommands.addStatusIcon(
+                        parentExt,
+                        player,
+                        "lemon0",
+                        "UNACCEPTABLE!!!",
+                        "icon_lemongrab_passive",
+                        0f);
+                lastIcon = "lemon0";
             }
-            unacceptableLevels = 0;
-            ExtensionCommands.removeStatusIcon(parentExt, player, lastIcon);
-            ExtensionCommands.addStatusIcon(
-                    parentExt, player, "lemon0", "UNACCEPTABLE!!!", "icon_lemongrab_passive", 0f);
-            lastIcon = "lemon0";
         }
 
         @Override

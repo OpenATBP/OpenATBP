@@ -267,6 +267,90 @@ public class ChampionData {
         ExtensionCommands.updateActorData(parentExt, ua.getRoom(), toUpdate);
     }
 
+    public static int getBaseAbilityCooldown(UserActor userActor, int abilityNumber) {
+        String championName = userActor.getDefaultCharacterName(userActor.getAvatar());
+        int championLevel = ChampionData.getXPLevel(userActor.getXp());
+        JsonNode abilityData =
+                userActor.getParentExt().getAttackData(championName, "spell" + abilityNumber);
+        int lv1Cooldown = abilityData.get("spellCoolDown").asInt();
+        if (championLevel > 1) {
+            int lv10Cooldown;
+            switch (championName) {
+                case "billy":
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 10000 : 45000;
+                    break;
+                case "bmo":
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 11000 : 37500;
+                    break;
+                case "cinnamonbun":
+                    lv10Cooldown = abilityNumber == 1 ? 4500 : abilityNumber == 2 ? 12000 : 42000;
+                    break;
+                case "finn":
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 7000 : 26000;
+                    break;
+                case "fionna":
+                    lv10Cooldown = abilityNumber == 1 ? 7000 : abilityNumber == 2 ? 5000 : 60000;
+                    break;
+                case "flame":
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 15000 : 45000;
+                    break;
+                case "gunter":
+                    lv10Cooldown = abilityNumber == 1 ? 9000 : abilityNumber == 2 ? 5000 : 42000;
+                    break;
+                case "hunson":
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 35000;
+                    break;
+                case "iceking":
+                    lv10Cooldown = abilityNumber == 1 ? 7000 : abilityNumber == 2 ? 8000 : 45000;
+                    break;
+                case "jake":
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 45000;
+                    break;
+                case "lemongrab":
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 10000 : 35000;
+                    break;
+                case "lich":
+                    lv10Cooldown = abilityNumber == 1 ? 10500 : abilityNumber == 2 ? 10000 : 45000;
+                    break;
+                case "lsp":
+                    lv10Cooldown = abilityNumber == 1 ? 12000 : abilityNumber == 2 ? 12000 : 30000;
+                    break;
+                case "magicman":
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 19000 : 40000;
+                    break;
+                case "marceline":
+                    lv10Cooldown = abilityNumber == 1 ? 7000 : abilityNumber == 2 ? 8000 : 19000;
+                    break;
+                case "neptr":
+                    lv10Cooldown = abilityNumber == 1 ? 6000 : abilityNumber == 2 ? 5000 : 42000;
+                    break;
+                case "peppermintbutler":
+                    lv10Cooldown = abilityNumber == 1 ? 13000 : abilityNumber == 2 ? 13000 : 25000;
+                    break;
+                case "princessbubblegum":
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 16000 : 40000;
+                    break;
+                case "rattleballs":
+                    lv10Cooldown = abilityNumber == 1 ? 10000 : abilityNumber == 2 ? 14000 : 50000;
+                    break;
+                default:
+                    lv10Cooldown = lv1Cooldown;
+                    break;
+            }
+            if (championLevel < 10) {
+                int startingLevel = 1;
+                int maxLevel = 10;
+                return (lv1Cooldown
+                        + ((lv10Cooldown - lv1Cooldown) * (championLevel - startingLevel))
+                                / maxLevel
+                        - startingLevel);
+            } else {
+                return lv10Cooldown;
+            }
+        }
+        return lv1Cooldown;
+    }
+
     public static int[] getBuildPath(String actor, String backpack) {
         int[] buildPath = {1, 1, 2, 2, 1, 2, 1, 2, 5, 5};
         String avatar = "";

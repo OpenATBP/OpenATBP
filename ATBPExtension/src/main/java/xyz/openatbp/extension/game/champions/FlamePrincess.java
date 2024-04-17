@@ -12,6 +12,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
@@ -44,7 +45,7 @@ public class FlamePrincess extends UserActor {
             ExtensionCommands.removeFx(parentExt, room, id + "flameE");
             ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
             ExtensionCommands.actorAbilityResponse(
-                    parentExt, player, "e", true, getReducedCooldown(60000), 0);
+                    parentExt, player, "e", true, getReducedCooldown(getBaseUltCooldown()), 0);
             ExtensionCommands.scaleActor(parentExt, room, id, 0.6667f);
             this.ultStarted = false;
             this.ultFinished = false;
@@ -97,7 +98,12 @@ public class FlamePrincess extends UserActor {
             ExtensionCommands.removeFx(parentExt, room, this.id + "flameE");
             ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
             ExtensionCommands.actorAbilityResponse(
-                    parentExt, player, "e", canUseAbility(2), getReducedCooldown(60000), 0);
+                    parentExt,
+                    player,
+                    "e",
+                    canUseAbility(2),
+                    getReducedCooldown(getBaseUltCooldown()),
+                    0);
             ExtensionCommands.scaleActor(parentExt, room, id, 0.6667f);
         }
         if (passiveEnabled) {
@@ -105,6 +111,10 @@ public class FlamePrincess extends UserActor {
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_flame_passive");
             ExtensionCommands.actorAbilityResponse(parentExt, player, "passive", true, 10000, 0);
         }
+    }
+
+    private int getBaseUltCooldown() {
+        return ChampionData.getBaseAbilityCooldown(this, 3);
     }
 
     @Override
