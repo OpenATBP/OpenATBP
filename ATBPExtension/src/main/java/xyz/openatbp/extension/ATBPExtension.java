@@ -346,8 +346,8 @@ public class ATBPExtension extends SFSExtension {
     }
 
     public void startScripts(Room room) { // Creates a new task scheduler for a room
-        Console.debugLog("Starting script for room!");
         if (!this.roomHandlers.containsKey(room.getId())) {
+            Console.debugLog("Starting script for room " + room.getId());
             RoomHandler handler = new RoomHandler(this, room);
             handler.setScriptHandler(
                     SmartFoxServer.getInstance()

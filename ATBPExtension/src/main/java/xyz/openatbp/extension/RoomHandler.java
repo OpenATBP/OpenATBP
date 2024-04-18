@@ -129,12 +129,15 @@ public class RoomHandler implements Runnable {
     }
 
     public void stopScript() {
+        ExtensionCommands.abortGame(parentExt, this.room);
         this.scriptHandler.cancel(true);
     }
 
     @Override
     public void run() {
         if (this.gameOver) return;
+        if (mSecondsRan == 0)
+            if (this.parentExt.getRoomHandler(this.room.getId()) == null) this.stopScript();
         mSecondsRan += 100;
         List<String> keysToRemove = new ArrayList<>(this.destroyedIds.size());
         Set<String> keys = this.destroyedIds.keySet();

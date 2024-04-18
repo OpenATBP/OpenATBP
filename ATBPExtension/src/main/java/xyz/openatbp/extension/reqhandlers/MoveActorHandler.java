@@ -5,8 +5,6 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.dongbat.walkable.PathfinderException;
-
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -107,7 +105,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                 } else {
                     user.setPath(path);
                 }
-            } catch (PathfinderException pe) {
+            } catch (Exception pe) {
                 Line2D movementLine =
                         new Line2D.Float(px, pz, dx, dz); // Creates the path of the player
                 // ExtensionCommands.createWorldFX(parentExt, user.getRoom(),

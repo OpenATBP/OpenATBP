@@ -96,8 +96,9 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
         requestedRoom.setPassword("");
         try {
             if (!createdRoom) {
-                if ((int) requestedRoom.getProperty("state") == 0)
-                    parentExt
+                if ((int) requestedRoom.getProperty("state")
+                        == 0) // TODO: Desync may cause this to be null, even when it shouldn't?
+                parentExt
                             .getApi()
                             .joinRoom(
                                     sender,
