@@ -556,18 +556,29 @@ public class Neptr extends UserActor {
             List<Actor> actors =
                     Champion.getActorsInRadius(
                             this.parentExt.getRoomHandler(this.room.getName()), this.location, 2f);
-            for (Actor a : actors) {
-                if (isNonStructure(a) && !this.mineActivated) {
-                    this.mineActivated = true;
-                    explodeMine();
-                    this.die(this);
-                    Neptr.this.handleMineDeath(this);
-                    break;
+            if (!actors.isEmpty()) {
+                for (Actor a : actors) {
+                    if (isNonStructure(a) && !this.mineActivated) {
+                        this.mineActivated = true;
+                        explodeMine();
+                        this.die(this);
+                        Neptr.this.handleMineDeath(this);
+                        break;
+                    }
                 }
             }
         }
 
         private void explodeMine() {
+            Runnable activate =
+                    () ->
+                            ExtensionCommands.playSound(
+                                    this.parentExt,
+                                    room,
+                                    this.id,
+                                    "sfx_neptr_mine_activate",
+                                    this.location);
+            parentExt.getTaskScheduler().schedule(activate, 500, TimeUnit.MILLISECONDS);
             Runnable mineExplosion =
                     () -> {
                         List<Actor> targets =
@@ -575,19 +586,18 @@ public class Neptr extends UserActor {
                                         this.parentExt.getRoomHandler(this.room.getName()),
                                         this.location,
                                         2f);
-                        for (Actor target : targets) {
-                            if (isNonStructure(target)) {
-                                JsonNode spellData =
-                                        this.parentExt.getAttackData(Neptr.this.avatar, "spell2");
-                                target.addToDamageQueue(
-                                        Neptr.this, getSpellDamage(spellData), spellData);
-                                target.addState(ActorState.SLOWED, 0.4d, 3000, null, false);
+                        if (!targets.isEmpty()) {
+                            for (Actor target : targets) {
+                                if (isNonStructure(target)) {
+                                    JsonNode spellData =
+                                            this.parentExt.getAttackData(
+                                                    Neptr.this.avatar, "spell2");
+                                    target.addToDamageQueue(
+                                            Neptr.this, getSpellDamage(spellData), spellData);
+                                    target.addState(ActorState.SLOWED, 0.4d, 3000, null, false);
+                                }
                             }
                         }
-                    };
-            parentExt.getTaskScheduler().schedule(mineExplosion, 1200, TimeUnit.MILLISECONDS);
-            Runnable explosionFX =
-                    () -> {
                         ExtensionCommands.createWorldFX(
                                 parentExt,
                                 room,
@@ -607,16 +617,7 @@ public class Neptr extends UserActor {
                         ExtensionCommands.destroyActor(parentExt, room, this.id);
                         this.parentExt.getRoomHandler(this.room.getName()).removeCompanion(this);
                     };
-            parentExt.getTaskScheduler().schedule(explosionFX, 1200, TimeUnit.MILLISECONDS);
-            Runnable activate =
-                    () ->
-                            ExtensionCommands.playSound(
-                                    this.parentExt,
-                                    room,
-                                    this.id,
-                                    "sfx_neptr_mine_activate",
-                                    this.location);
-            parentExt.getTaskScheduler().schedule(activate, 500, TimeUnit.MILLISECONDS);
+            parentExt.getTaskScheduler().schedule(mineExplosion, 1200, TimeUnit.MILLISECONDS);
         }
 
         @Override

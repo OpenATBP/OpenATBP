@@ -347,15 +347,15 @@ public class RoomHandler implements Runnable {
         int index = random.nextInt(3);
         String musicName = mainMusicStings[index];
         int duration = 0;
-        switch (musicName) {
+        switch (musicName) { // subtract 1 second from each, so they don't loop for a brief moment
             case "music_main1":
-                duration = 1000 * 130;
+                duration = 1000 * 129;
                 break;
             case "music_main2":
-                duration = 1000 * 178;
+                duration = 1000 * 177;
                 break;
             case "music_main3":
-                duration = 1000 * 140;
+                duration = 1000 * 139;
                 break;
         }
         ExtensionCommands.playSound(
