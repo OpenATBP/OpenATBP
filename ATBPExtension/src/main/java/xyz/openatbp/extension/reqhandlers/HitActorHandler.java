@@ -2,6 +2,7 @@ package xyz.openatbp.extension.reqhandlers;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.util.List;
 
 import com.smartfoxserver.v2.annotations.MultiHandler;
 import com.smartfoxserver.v2.entities.User;
@@ -13,7 +14,6 @@ import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
-import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.Base;
 import xyz.openatbp.extension.game.actors.BaseTower;
@@ -73,12 +73,14 @@ public class HitActorHandler extends BaseClientRequestHandler {
                 Line2D movementLine = new Line2D.Float(location, target.getLocation());
                 float targetDistance =
                         (float) target.getLocation().distance(location) - attackRange;
-                Line2D newPath = Champion.getDistanceLine(movementLine, targetDistance);
-                actor.setPath(
+                List<Point2D> newPath =
                         MovementManager.getPath(
                                 parentExt.getRoomHandler(actor.getRoom().getName()),
                                 location,
-                                target.getLocation()));
+                                target.getLocation());
+                if (newPath != null && newPath.size() > 1) {
+                    actor.setPath(newPath);
+                } else actor.moveWithCollision(target.getLocation());
             } else if (actor.withinRange(target)) {
                 actor.stopMoving();
             }

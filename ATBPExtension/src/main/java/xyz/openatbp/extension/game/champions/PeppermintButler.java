@@ -41,9 +41,11 @@ public class PeppermintButler extends UserActor {
             return super.getPlayerStat("healthRegen") + (this.maxHealth * 0.02d);
         else if (stat.equalsIgnoreCase("speed") && getState(ActorState.TRANSFORMED))
             return super.getPlayerStat("speed") + (this.getStat("speed") * 0.4d);
-        else if (stat.equalsIgnoreCase("attackSpeed") && getState(ActorState.TRANSFORMED))
-            return super.getPlayerStat("attackSpeed") - (this.getStat("attackSpeed") * 0.3d);
-        else if (stat.equalsIgnoreCase("attackDamage") && getState(ActorState.TRANSFORMED))
+        else if (stat.equalsIgnoreCase("attackSpeed") && getState(ActorState.TRANSFORMED)) {
+            double currentAttackSpeed = super.getPlayerStat("attackSpeed");
+            double modifier = (this.getStat("attackSpeed") * 0.3d);
+            return currentAttackSpeed - modifier < 500 ? 500 : currentAttackSpeed - modifier;
+        } else if (stat.equalsIgnoreCase("attackDamage") && getState(ActorState.TRANSFORMED))
             return super.getPlayerStat("attackDamage") + (this.getStat("attackDamage") * 0.3d);
         return super.getPlayerStat(stat);
     }

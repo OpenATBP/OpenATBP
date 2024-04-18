@@ -245,8 +245,13 @@ public class Fionna extends UserActor {
                     return super.getPlayerStat(stat) + (this.getStat("speed") * 0.2d);
                 break;
             case "attackSpeed":
-                if (this.swordType == SwordType.FIERCE)
-                    return super.getPlayerStat(stat) - (this.getStat("attackSpeed") * 0.2d);
+                if (this.swordType == SwordType.FIERCE) {
+                    double currentAttackSpeed = super.getPlayerStat(stat);
+                    double modifier = (this.getStat("attackSpeed") * 0.2d);
+                    return currentAttackSpeed - modifier < 500
+                            ? 500
+                            : currentAttackSpeed - modifier;
+                }
                 break;
             case "armor":
             case "spellResist":

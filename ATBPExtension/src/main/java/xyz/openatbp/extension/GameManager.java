@@ -100,7 +100,7 @@ public class GameManager {
         int ready = 0;
         ArrayList<User> users = (ArrayList<User>) room.getUserList();
         for (int i = 0; i < users.size(); i++) {
-            Console.debugLog(users.get(i).getSession());
+            // Console.debugLog(users.get(i).getSession());
             if (users.get(i).getSession().getProperty("ready") == null) return false;
             if ((boolean) users.get(i).getSession().getProperty("ready")) ready++;
         }

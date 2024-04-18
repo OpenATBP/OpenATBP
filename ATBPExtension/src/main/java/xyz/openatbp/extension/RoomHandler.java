@@ -1350,6 +1350,13 @@ public class RoomHandler implements Runnable {
                 double dcPercent = disconnects / playsPVP;
                 double elo = dataObj.get("player").get("elo").asInt();
                 double newElo = elo * (1 - dcPercent);
+                switch ((int) (newElo + 1)) {
+                    case 1:
+                    case 100:
+                    case 200:
+                    case 500:
+                        newElo++;
+                }
 
                 Bson updates =
                         Updates.combine(
@@ -1436,7 +1443,9 @@ public class RoomHandler implements Runnable {
                             + " |  TYPE: "
                             + a.getActorType().toString()
                             + " | ID: "
-                            + a.getId()
+                            + (a.getActorType() == ActorType.PLAYER
+                                    ? a.getDisplayName()
+                                    : a.getId())
                             + " | "
                             + a.getHealth());
         }

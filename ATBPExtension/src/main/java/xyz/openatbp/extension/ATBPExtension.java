@@ -476,7 +476,16 @@ public class ATBPExtension extends SFSExtension {
             if (playerData != null) {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode data = mapper.readTree(playerData.toJson());
-                return data.get("player").get("elo").asInt();
+                int elo = data.get("player").get("elo").asInt();
+                switch (elo + 1) {
+                    case 1:
+                    case 100:
+                    case 200:
+                    case 500:
+                        elo++;
+                        break;
+                }
+                return elo;
             } else return -1;
         } catch (Exception e) {
             e.printStackTrace();

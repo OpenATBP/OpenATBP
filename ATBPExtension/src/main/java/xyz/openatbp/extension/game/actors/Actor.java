@@ -173,7 +173,9 @@ public abstract class Actor {
 
     public void setPath(List<Point2D> path) {
         if (path.size() == 0) {
-            Console.logWarning(this.id + " was given a 0 length path");
+            Console.logWarning(
+                    (this.actorType == ActorType.PLAYER ? this.displayName : this.id)
+                            + " was given a 0 length path");
             this.path = null;
             return;
         }
@@ -645,8 +647,17 @@ public abstract class Actor {
         if (this.tempStats.containsKey(stat)) {
             if (currentStat + this.tempStats.get(stat) < 0)
                 return 0; // Stat will never drop below 0
-            return currentStat + this.tempStats.get(stat);
-        } else return currentStat;
+            return stat.equalsIgnoreCase("attackSpeed")
+                    ? getCappedAttackSpeed()
+                    : currentStat + this.tempStats.get(stat);
+        } else return stat.equalsIgnoreCase("attackSpeed") ? getCappedAttackSpeed() : currentStat;
+    }
+
+    private double getCappedAttackSpeed() {
+        double currentAttackSpeed = this.stats.get("attackSpeed");
+        currentAttackSpeed +=
+                (this.tempStats.containsKey("attackSpeed") ? this.tempStats.get("attackSpeed") : 0);
+        return currentAttackSpeed < 500 ? 500 : currentAttackSpeed;
     }
 
     public String getDisplayName() {
