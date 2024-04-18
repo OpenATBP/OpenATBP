@@ -37,7 +37,7 @@ async function removeDuplicateFriends(collection) {
 }
 
 //Added to make everyone in the database a beta tester
-async function addBetaTesters(collection){
+async function addBetaTesters(collection) {
   try {
     var cursor = collection.find();
     for await (var doc of cursor) {
@@ -155,9 +155,12 @@ mongoClient.connect((err) => {
   });
 
   app.get('/service/data/user/champions/tournament', (req, res) => {
-    getRequest.handleTournamentData(req.query.authToken,playerCollection).then((data) => {
-      res.send(data);
-    }).catch(console.error);
+    getRequest
+      .handleTournamentData(req.query.authToken, playerCollection)
+      .then((data) => {
+        res.send(data);
+      })
+      .catch(console.error);
   });
 
   app.get('/service/shop/inventory', (req, res) => {

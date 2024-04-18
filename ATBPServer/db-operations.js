@@ -48,7 +48,7 @@ var newUserFunction = function (username, displayName, authpass, collection) {
           inventory: inventoryArray,
           authToken: token,
           friends: [],
-          betaTester: true //TODO: Remove when open beta starts
+          betaTester: true, //TODO: Remove when open beta starts
         };
         const opt = { upsert: true };
         const update = { $set: playerFile };
