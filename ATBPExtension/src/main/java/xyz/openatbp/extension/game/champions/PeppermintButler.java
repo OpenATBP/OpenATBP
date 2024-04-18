@@ -75,6 +75,17 @@ public class PeppermintButler extends UserActor {
     }
 
     @Override
+    protected boolean canRegenHealth() {
+        if (this.isStopped()
+                && !qActive
+                && !stopPassive
+                && !this.getState(ActorState.TRANSFORMED)
+                && !isCapturingAltar()
+                && !dead) return true;
+        return super.canRegenHealth();
+    }
+
+    @Override
     public void die(Actor a) {
         super.die(a);
         if (this.ultActive) this.endUlt();

@@ -751,6 +751,13 @@ public class UserActor extends Actor {
                 this.parentExt, this.room, this.id, key, this.getPlayerStat(key));
     }
 
+    protected boolean
+            canRegenHealth() { // TODO: Does not account for health pots. Not sure if this should be
+        // added for balance reasons.
+        return (this.currentHealth < this.maxHealth && this.aggressors.isEmpty())
+                || this.getPlayerStat("healthRegen") < 0;
+    }
+
     @Override
     public void update(int msRan) {
         this.handleDamageQueue();
@@ -860,8 +867,7 @@ public class UserActor extends Actor {
             this.moonTimer++;
 
             // TODO: Move health regen to separate function
-            if ((this.currentHealth < this.maxHealth && this.aggressors.isEmpty())
-                    || this.getPlayerStat("healthRegen") < 0) {
+            if (this.canRegenHealth()) {
                 double healthRegen = this.getPlayerStat("healthRegen");
                 if (this.currentHealth + healthRegen <= 0)
                     healthRegen = (this.currentHealth - 1) * -1;
