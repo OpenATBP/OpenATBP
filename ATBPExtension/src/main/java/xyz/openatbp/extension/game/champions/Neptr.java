@@ -562,29 +562,30 @@ public class Neptr extends UserActor {
                     explodeMine();
                     this.die(this);
                     Neptr.this.handleMineDeath(this);
+                    break;
                 }
             }
         }
 
         private void explodeMine() {
-            List<Actor> targets =
-                    Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()), this.location, 2f);
-            for (Actor target : targets) {
-                if (isNonStructure(target)) {
-                    Runnable mineExplosion =
-                            () -> {
+            Runnable mineExplosion =
+                    () -> {
+                        List<Actor> targets =
+                                Champion.getActorsInRadius(
+                                        this.parentExt.getRoomHandler(this.room.getName()),
+                                        this.location,
+                                        2f);
+                        for (Actor target : targets) {
+                            if (isNonStructure(target)) {
                                 JsonNode spellData =
                                         this.parentExt.getAttackData(Neptr.this.avatar, "spell2");
                                 target.addToDamageQueue(
                                         Neptr.this, getSpellDamage(spellData), spellData);
                                 target.addState(ActorState.SLOWED, 0.4d, 3000, null, false);
-                            };
-                    parentExt
-                            .getTaskScheduler()
-                            .schedule(mineExplosion, 1200, TimeUnit.MILLISECONDS);
-                }
-            }
+                            }
+                        }
+                    };
+            parentExt.getTaskScheduler().schedule(mineExplosion, 1200, TimeUnit.MILLISECONDS);
             Runnable explosionFX =
                     () -> {
                         ExtensionCommands.createWorldFX(
