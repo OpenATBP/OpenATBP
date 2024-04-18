@@ -30,6 +30,7 @@ public class FlamePrincess extends UserActor {
     private boolean polymorphActive = false;
     private long ultStartTime = 0;
     private long lastPolymorphTime = 0;
+    private float fpScale = 1;
 
     public FlamePrincess(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -45,7 +46,10 @@ public class FlamePrincess extends UserActor {
             ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
             ExtensionCommands.actorAbilityResponse(
                     parentExt, player, "e", true, getReducedCooldown(getBaseUltCooldown()), 0);
-            ExtensionCommands.scaleActor(parentExt, room, id, 0.6667f);
+            if (this.fpScale == 1.5f) {
+                ExtensionCommands.scaleActor(parentExt, room, id, 0.6667f);
+                this.fpScale = 1;
+            }
             this.ultStarted = false;
             this.ultFinished = false;
             this.ultUses = 3;
@@ -103,7 +107,10 @@ public class FlamePrincess extends UserActor {
                     canUseAbility(2),
                     getReducedCooldown(getBaseUltCooldown()),
                     0);
-            ExtensionCommands.scaleActor(parentExt, room, id, 0.6667f);
+            if (this.fpScale == 1.5f) {
+                ExtensionCommands.scaleActor(parentExt, room, id, 0.6667f);
+                this.fpScale = 1;
+            }
         }
         if (passiveEnabled) {
             passiveEnabled = false;
@@ -270,6 +277,7 @@ public class FlamePrincess extends UserActor {
                             false,
                             this.team);
                     ExtensionCommands.scaleActor(this.parentExt, this.room, this.id, 1.5f);
+                    this.fpScale = 1.5f;
                 } else {
                     if (this.ultUses > 0 && canDash()) {
                         // TODO: Fix so FP can dash and still get health packs

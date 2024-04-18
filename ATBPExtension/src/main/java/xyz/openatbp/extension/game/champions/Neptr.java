@@ -555,7 +555,7 @@ public class Neptr extends UserActor {
             }
             List<Actor> actors =
                     Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()), this.location, 2f);
+                            this.parentExt.getRoomHandler(this.room.getName()), this.location, 2f);
             if (!actors.isEmpty()) {
                 for (Actor a : actors) {
                     if (isNonStructure(a) && !this.mineActivated) {
@@ -578,9 +578,7 @@ public class Neptr extends UserActor {
                                     this.id,
                                     "sfx_neptr_mine_activate",
                                     this.location);
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(activate, 500, TimeUnit.MILLISECONDS);
+            parentExt.getTaskScheduler().schedule(activate, 500, TimeUnit.MILLISECONDS);
             Runnable mineExplosion =
                     () -> {
                         List<Actor> targets =
@@ -619,9 +617,7 @@ public class Neptr extends UserActor {
                         ExtensionCommands.destroyActor(parentExt, room, this.id);
                         this.parentExt.getRoomHandler(this.room.getName()).removeCompanion(this);
                     };
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(mineExplosion, 1200, TimeUnit.MILLISECONDS);
+            parentExt.getTaskScheduler().schedule(mineExplosion, 1200, TimeUnit.MILLISECONDS);
         }
 
         @Override
