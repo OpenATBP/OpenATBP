@@ -363,7 +363,7 @@ public class ATBPExtension extends SFSExtension {
     }
 
     public void stopScript(int roomId) { // Stops a task scheduler when room is deleted
-        trace("Stopping script!");
+        Console.debugLog("Stopping rooom: " + roomId);
         roomHandlers.get(roomId).stopScript();
         roomHandlers.remove(roomId);
     }
