@@ -594,7 +594,10 @@ public class Neptr extends UserActor {
                                             this.parentExt.getAttackData(
                                                     Neptr.this.avatar, "spell2");
                                     target.addToDamageQueue(
-                                            Neptr.this, getSpellDamage(spellData), spellData, false);
+                                            Neptr.this,
+                                            getSpellDamage(spellData),
+                                            spellData,
+                                            false);
                                     target.addState(ActorState.SLOWED, 0.4d, 3000, null, false);
                                 }
                             }

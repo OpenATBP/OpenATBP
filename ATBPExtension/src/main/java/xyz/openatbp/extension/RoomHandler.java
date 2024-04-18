@@ -1072,7 +1072,7 @@ public class RoomHandler implements Runnable {
     }
 
     public void handleSpawnDeath(Actor a) {
-        //Console.debugLog("The room has killed " + a.getId());
+        // Console.debugLog("The room has killed " + a.getId());
         String mons = a.getId().split("_")[0];
 
         for (String s : GameManager.SPAWNS) {
