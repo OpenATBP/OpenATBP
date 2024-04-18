@@ -7,7 +7,6 @@ import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,7 +18,6 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.extensions.SFSExtension;
@@ -347,13 +345,8 @@ public class ATBPExtension extends SFSExtension {
 
     public void startScripts(Room room) { // Creates a new task scheduler for a room
         if (!this.roomHandlers.containsKey(room.getId())) {
+            roomHandlers.put(room.getId(), new RoomHandler(this, room));
             Console.debugLog("Starting script for room " + room.getId());
-            RoomHandler handler = new RoomHandler(this, room);
-            handler.setScriptHandler(
-                    SmartFoxServer.getInstance()
-                            .getTaskScheduler()
-                            .scheduleAtFixedRate(handler, 100, 100, TimeUnit.MILLISECONDS));
-            roomHandlers.put(room.getId(), handler);
         } else {
             this.stopScript(
                     room.getId()); // This will kick all players out of the game if it tries to

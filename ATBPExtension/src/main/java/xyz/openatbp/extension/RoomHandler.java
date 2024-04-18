@@ -116,8 +116,11 @@ public class RoomHandler implements Runnable {
                 if (n.isSolid()) n.display(parentExt, room);
             }
         }
-
          */
+        this.scriptHandler =
+                SmartFoxServer.getInstance()
+                        .getTaskScheduler()
+                        .scheduleAtFixedRate(this, 100, 100, TimeUnit.MILLISECONDS);
     }
 
     public void setScriptHandler(ScheduledFuture<?> handler) {
