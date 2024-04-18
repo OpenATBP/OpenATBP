@@ -241,7 +241,7 @@ public abstract class Actor {
             ISFSObject data = this.activeBuffs.get(k);
             if (System.currentTimeMillis()
                     >= data.getLong("endTime")) { // Checks to see if the effect has ended
-                Console.debugLog("Effect: " + k + " is ending!");
+                //Console.debugLog("Effect: " + k + " is ending!");
                 if (data.containsKey(
                         "newEndTime")) { // If the effect has been modified, run handler for
                     // restarting the

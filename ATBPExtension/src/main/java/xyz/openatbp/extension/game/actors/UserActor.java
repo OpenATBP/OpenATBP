@@ -1112,7 +1112,7 @@ public class UserActor extends Actor {
         if (this.team == 1 && respawnPoint.getX() < 0)
             respawnPoint = new Point2D.Double(respawnPoint.getX() * -1, respawnPoint.getY());
         Console.debugLog(
-                "Respawning at: "
+                this.displayName + " Respawning at: "
                         + respawnPoint.getX()
                         + ","
                         + respawnPoint.getY()
