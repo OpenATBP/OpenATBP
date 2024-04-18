@@ -52,8 +52,18 @@ public class GameManager {
             String backpack = playerInfo.getUtfString("backpack");
             String tid = playerInfo.getUtfString("tegid");
             int elo = parentExt.getElo(tid);
+            boolean tournamentEligible = playerInfo.getBool("isTournamentEligible");
             ExtensionCommands.addUser(
-                    parentExt, room, id, name, champion, team, tid, backpack, elo);
+                    parentExt,
+                    room,
+                    id,
+                    name,
+                    champion,
+                    team,
+                    tid,
+                    backpack,
+                    elo,
+                    tournamentEligible);
         }
     }
 
@@ -90,7 +100,7 @@ public class GameManager {
         int ready = 0;
         ArrayList<User> users = (ArrayList<User>) room.getUserList();
         for (int i = 0; i < users.size(); i++) {
-            Console.debugLog(users.get(i).getSession());
+            // Console.debugLog(users.get(i).getSession());
             if (users.get(i).getSession().getProperty("ready") == null) return false;
             if ((boolean) users.get(i).getSession().getProperty("ready")) ready++;
         }
@@ -363,7 +373,7 @@ public class GameManager {
         ObjectNode node = objectMapper.createObjectNode();
         for (User u : room.getUserList()) {
             UserActor ua =
-                    parentExt.getRoomHandler(room.getId()).getPlayer(String.valueOf(u.getId()));
+                    parentExt.getRoomHandler(room.getName()).getPlayer(String.valueOf(u.getId()));
             if (ua.getTeam() == team) {
                 ObjectNode player = objectMapper.createObjectNode();
                 ISFSObject playerVar = u.getVariable("player").getSFSObjectValue();

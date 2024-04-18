@@ -7,7 +7,6 @@ import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,10 +18,10 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.extensions.SFSExtension;
+import com.smartfoxserver.v2.util.TaskScheduler;
 
 import xyz.openatbp.extension.evthandlers.*;
 import xyz.openatbp.extension.game.Obstacle;
@@ -50,12 +49,17 @@ public class ATBPExtension extends SFSExtension {
     ArrayList<Path2D> practiceBrushPaths;
     HashMap<String, List<String>> tips = new HashMap<>();
 
-    HashMap<Integer, RoomHandler> roomHandlers = new HashMap<>();
+    HashMap<String, RoomHandler> roomHandlers = new HashMap<>();
     MongoClient mongoClient;
     MongoDatabase database;
     MongoCollection<Document> playerDatabase;
+    public static final int MAX_COL = 120;
+    public static final int MAX_MAIN_ROW = 60;
+    public static final int MAX_PRAC_ROW = 34;
 
-    Node[][] mainMapNodes = new Node[120][60];
+    Node[][] mainMapNodes = new Node[MAX_COL][MAX_MAIN_ROW];
+    Node[][] practiceMapNodes = new Node[MAX_COL][MAX_PRAC_ROW];
+    TaskScheduler taskScheduler;
 
     public void init() {
         this.addEventHandler(SFSEventType.USER_JOIN_ROOM, JoinRoomEventHandler.class);
@@ -82,6 +86,7 @@ public class ATBPExtension extends SFSExtension {
         this.addRequestHandler("req_auto_target", AutoTargetHandler.class);
         this.addRequestHandler("req_admin_command", Stub.class);
         this.addRequestHandler("req_spam", Stub.class);
+        this.taskScheduler = getApi().getNewScheduler(2);
         Properties props = getConfigProperties();
         if (!props.containsKey("mongoURI"))
             throw new RuntimeException(
@@ -104,10 +109,10 @@ public class ATBPExtension extends SFSExtension {
 
     @Override
     public void destroy() { // Destroys all room tasks to prevent memory leaks
-        super.destroy();
-        for (Integer key : roomHandlers.keySet()) {
-            if (roomHandlers.get(key) != null) roomHandlers.get(key).stopScript();
+        for (String key : roomHandlers.keySet()) {
+            if (roomHandlers.get(key) != null) roomHandlers.get(key).stopScript(true);
         }
+        super.destroy();
     }
 
     private void loadDefinitions()
@@ -133,6 +138,10 @@ public class ATBPExtension extends SFSExtension {
             JsonNode node = mapper.readTree(f);
             itemDefinitions.put(f.getName().replace(".json", ""), node);
         }
+    }
+
+    public TaskScheduler getTaskScheduler() {
+        return this.taskScheduler;
     }
 
     private void loadTips() throws IOException {
@@ -165,10 +174,21 @@ public class ATBPExtension extends SFSExtension {
         int col = 0;
         int row = 0;
 
-        while (col < 120 && row < 60) {
-            mainMapNodes[col][row] = new Node(col, row);
+        while (col < MAX_COL && row < MAX_MAIN_ROW) {
+            mainMapNodes[col][row] = new Node(col, row, false);
             col++;
-            if (col == 120) {
+            if (col == MAX_COL) {
+                col = 0;
+                row++;
+            }
+        }
+
+        col = 0;
+        row = 0;
+        while (col < MAX_COL && row < MAX_PRAC_ROW) {
+            practiceMapNodes[col][row] = new Node(col, row, true);
+            col++;
+            if (col == MAX_COL) {
                 col = 0;
                 row++;
             }
@@ -235,13 +255,25 @@ public class ATBPExtension extends SFSExtension {
         for (Node[] nodes : mainMapNodes) {
             for (Node n : nodes) {
                 if (MovementManager.insideAnyObstacle(
-                        this, false, new Point2D.Float(n.getX(), n.getY()))) n.setSolid(true);
+                                this, false, new Point2D.Float(n.getX(), n.getY()))
+                        || MovementManager.nearStructures(false, n.getLocation())) n.setSolid(true);
+            }
+        }
+        for (Node[] nodes : practiceMapNodes) {
+            for (Node n : nodes) {
+                if (MovementManager.insideAnyObstacle(
+                                this, true, new Point2D.Float(n.getX(), n.getY()))
+                        || MovementManager.nearStructures(true, n.getLocation())) n.setSolid(true);
             }
         }
     }
 
     public Node[][] getMainMapNodes() {
         return this.mainMapNodes;
+    }
+
+    public Node[][] getPracticeMapNodes() {
+        return this.practiceMapNodes;
     }
 
     public List<Obstacle> getMainMapObstacles() {
@@ -319,29 +351,20 @@ public class ATBPExtension extends SFSExtension {
     }
 
     public void startScripts(Room room) { // Creates a new task scheduler for a room
-        Console.debugLog("Starting script for room!");
-        if (!this.roomHandlers.containsKey(room.getId())) {
-            RoomHandler handler = new RoomHandler(this, room);
-            handler.setScriptHandler(
-                    SmartFoxServer.getInstance()
-                            .getTaskScheduler()
-                            .scheduleAtFixedRate(handler, 100, 100, TimeUnit.MILLISECONDS));
-            roomHandlers.put(room.getId(), handler);
-        } else {
-            this.stopScript(
-                    room.getId()); // This will kick all players out of the game if it tries to
-            // be initialized
-            // twice.
+        if (!this.roomHandlers.containsKey(room.getName())) {
+            roomHandlers.put(room.getName(), new RoomHandler(this, room));
+            Console.debugLog("Starting script for room " + room.getName());
         }
     }
 
-    public void stopScript(int roomId) { // Stops a task scheduler when room is deleted
-        trace("Stopping script!");
-        roomHandlers.get(roomId).stopScript();
+    public void stopScript(
+            String roomId, boolean abort) { // Stops a task scheduler when room is deleted
+        Console.debugLog("Stopping rooom: " + roomId);
+        roomHandlers.get(roomId).stopScript(abort);
         roomHandlers.remove(roomId);
     }
 
-    public RoomHandler getRoomHandler(int roomId) {
+    public RoomHandler getRoomHandler(String roomId) {
         return roomHandlers.get(roomId);
     }
 
@@ -453,7 +476,16 @@ public class ATBPExtension extends SFSExtension {
             if (playerData != null) {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode data = mapper.readTree(playerData.toJson());
-                return data.get("player").get("elo").asInt();
+                int elo = data.get("player").get("elo").asInt();
+                switch (elo + 1) {
+                    case 1:
+                    case 100:
+                    case 200:
+                    case 500:
+                        elo++;
+                        break;
+                }
+                return elo;
             } else return -1;
         } catch (Exception e) {
             e.printStackTrace();

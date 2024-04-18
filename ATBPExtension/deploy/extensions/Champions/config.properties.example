@@ -1,1 +1,8 @@
 mongoURI=mongodb://admin:password@127.0.0.1:27017
+movementDebug=false
+invincibleDebug=false
+abilityDebug=false
+speedDebug=false
+damageDebug=false
+monsterDebug=false
+xpDebug=false

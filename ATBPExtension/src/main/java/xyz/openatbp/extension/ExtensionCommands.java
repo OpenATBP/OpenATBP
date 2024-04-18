@@ -187,7 +187,7 @@ public class ExtensionCommands {
             Point2D spawn,
             float rotation,
             int team) {
-        RoomHandler handler = parentExt.getRoomHandler(room.getId());
+        RoomHandler handler = parentExt.getRoomHandler(room.getName());
         if (handler != null && handler.hasActorId(id)) return;
         else if (handler != null) handler.addActorId(id);
         for (User u : room.getUserList()) {
@@ -206,7 +206,7 @@ public class ExtensionCommands {
     }
 
     public static void createActor(ATBPExtension parentExt, Room room, ISFSObject data) {
-        RoomHandler handler = parentExt.getRoomHandler(room.getId());
+        RoomHandler handler = parentExt.getRoomHandler(room.getName());
         if (handler != null && handler.hasActorId(data.getUtfString("id"))) return;
         else if (handler != null) handler.addActorId(data.getUtfString("id"));
         for (User u : room.getUserList()) {
@@ -349,7 +349,7 @@ public class ExtensionCommands {
      * @param id - ID of actor being destroyed
      */
     public static void destroyActor(ATBPExtension parentExt, Room room, String id) {
-        RoomHandler roomHandler = parentExt.getRoomHandler(room.getId());
+        RoomHandler roomHandler = parentExt.getRoomHandler(room.getName());
         if (roomHandler.hasDestroyedId(id)) return;
         // System.out.println("Destroying: " + id);
         roomHandler.addDestroyedId(id);
@@ -765,7 +765,8 @@ public class ExtensionCommands {
             int team,
             String tid,
             String backpack,
-            int elo) {
+            int elo,
+            boolean tournamentEligible) {
         ISFSObject data = new SFSObject();
         data.putInt("id", id);
         data.putUtfString("name", name);
@@ -774,6 +775,7 @@ public class ExtensionCommands {
         data.putUtfString("tid", tid);
         data.putUtfString("backpack", backpack);
         data.putInt("elo", elo);
+        data.putBool("isTournamentEligible", tournamentEligible);
         parentExt.send("cmd_add_user", data, room.getUserList());
     }
 

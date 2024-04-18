@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -58,7 +57,7 @@ public class Minion extends Actor {
     private int lane;
     private int mainPathIndex = 0;
     private Map<UserActor, Integer> aggressors;
-    private final boolean MOVEMENT_DEBUG = false;
+    private static boolean movementDebug = false;
     private State state;
 
     public Minion(ATBPExtension parentExt, Room room, int team, int minionNum, int wave, int lane) {
@@ -95,7 +94,7 @@ public class Minion extends Actor {
                 y = (float) blueTopY[blueTopY.length - 1];
             }
         }
-        if (this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap()) {
+        if (this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
             if (team == 1) {
                 x = (float) practiceX[0];
                 y = (float) practiceY[0];
@@ -112,7 +111,7 @@ public class Minion extends Actor {
             if (lane == 0) mainPathIndex = blueTopX.length - 1;
             else mainPathIndex = blueBotX.length - 1;
         }
-        if (this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap()) {
+        if (this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
             if (team == 0) mainPathIndex = practiceX.length - 1;
         }
         this.movementLine = new Line2D.Float(this.location, this.location);
@@ -120,7 +119,9 @@ public class Minion extends Actor {
         this.stats = this.initializeStats();
         ExtensionCommands.createActor(
                 parentExt, room, this.id, this.getAvatar(), this.location, 0f, this.team);
-        if (MOVEMENT_DEBUG)
+        Properties props = parentExt.getConfigProperties();
+        movementDebug = Boolean.parseBoolean(props.getProperty("movementDebug", "false"));
+        if (movementDebug)
             ExtensionCommands.createActor(
                     parentExt, room, this.id + "_test", "gnome_a", this.location, 0f, this.team);
         this.attackCooldown = this.getPlayerStat("attackSpeed");
@@ -145,12 +146,12 @@ public class Minion extends Actor {
                 false,
                 true);
         if (this.type == MinionType.RANGED)
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             new Champion.DelayedRangedAttack(this, a), 500, TimeUnit.MILLISECONDS);
         else
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             new Champion.DelayedAttack(
@@ -175,24 +176,24 @@ public class Minion extends Actor {
                 if (a.getId().contains("skully"))
                     ua =
                             this.parentExt
-                                    .getRoomHandler(this.room.getId())
+                                    .getRoomHandler(this.room.getName())
                                     .getEnemyChampion(this.team, "lich");
                 else if (a.getId().contains("turret"))
                     ua =
                             this.parentExt
-                                    .getRoomHandler(this.room.getId())
+                                    .getRoomHandler(this.room.getName())
                                     .getEnemyChampion(this.team, "princessbubblegum");
                 else if (a.getId().contains("mine"))
                     ua =
                             this.parentExt
-                                    .getRoomHandler(this.room.getId())
+                                    .getRoomHandler(this.room.getName())
                                     .getEnemyChampion(this.team, "neptr");
             } else ua = (UserActor) a;
             if (ua != null) {
                 ua.addGameStat("minions", 1);
                 if (ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0)
                     ua.addNailStacks(2);
-                this.parentExt.getRoomHandler(this.room.getId()).addScore(ua, a.getTeam(), 1);
+                this.parentExt.getRoomHandler(this.room.getName()).addScore(ua, a.getTeam(), 1);
                 ExtensionCommands.knockOutActor(parentExt, this.room, this.id, ua.getId(), 30);
                 ExtensionCommands.playSound(
                         this.parentExt, ua.getUser(), ua.getId(), "sfx_gems_get", this.location);
@@ -201,13 +202,15 @@ public class Minion extends Actor {
             ExtensionCommands.knockOutActor(parentExt, this.room, this.id, a.getId(), 30);
             for (UserActor user :
                     Champion.getUserActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()), this.location, 10f)) {
+                            this.parentExt.getRoomHandler(this.room.getName()),
+                            this.location,
+                            10f)) {
                 if (user.getTeam() != this.team)
                     user.addXP((int) Math.floor((double) this.xpWorth / 2d));
             }
         }
         ExtensionCommands.destroyActor(parentExt, this.room, this.id);
-        // this.parentExt.getRoomHandler(this.room.getId()).handleAssistXP(a,aggressors.keySet(),
+        // this.parentExt.getRoomHandler(this.room.getName()).handleAssistXP(a,aggressors.keySet(),
         // this.xpWorth);
     }
 
@@ -275,11 +278,11 @@ public class Minion extends Actor {
             Point2D snapLocation = extendedLine.getP2();
             Point2D finalLocation =
                     MovementManager.getStoppingPoint(snapLocation, this.target.getLocation(), 0.5f);
-            this.move(finalLocation);
+            if (!this.withinRange(this.target)) this.moveWithCollision(finalLocation);
             // if(this.target != null) this.moveTowardsTarget();
         }
         if (this.attackCooldown > 0) this.reduceAttackCooldown();
-        if (MOVEMENT_DEBUG)
+        if (movementDebug)
             ExtensionCommands.moveActor(
                     parentExt, room, id + "_test", this.location, this.location, 5f, false);
 
@@ -316,7 +319,7 @@ public class Minion extends Actor {
                         this.state = State.ATTACKING;
                     } else if (conflictingMinion == null) {
                         if (this.target.getLocation().distance(this.movementLine.getP2()) > 0.1)
-                            this.moveWithCollision(this.target.getLocation());
+                            this.moveTowardsTarget();
                     }
                 } else {
                     this.resetTarget();
@@ -337,6 +340,8 @@ public class Minion extends Actor {
                     } else {
                         this.resetTarget();
                     }
+                } else if (this.withinRange(this.target) && !this.isStopped()) {
+                    this.stopMoving();
                 }
                 break;
         }
@@ -348,18 +353,20 @@ public class Minion extends Actor {
         try {
             path =
                     MovementManager.getPath(
-                            this.parentExt.getRoomHandler(this.room.getId()), this.location, dest);
+                            this.parentExt.getRoomHandler(this.room.getName()),
+                            this.location,
+                            dest);
         } catch (Exception e) {
             Console.logWarning(this.id + " could not form a path.");
         }
-        if (path.size() > 2) {
+        if (path != null && path.size() > 2) {
             this.setPath(path);
         } else {
             Line2D testLine = new Line2D.Float(this.location, dest);
             Point2D newPoint =
                     MovementManager.getPathIntersectionPoint(
                             this.parentExt,
-                            this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),
+                            this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap(),
                             testLine);
             if (newPoint != null) {
                 this.move(newPoint);
@@ -385,7 +392,7 @@ public class Minion extends Actor {
         double time = a.getLocation().distance(this.location) / 20d;
         ExtensionCommands.createProjectileFX(
                 this.parentExt, this.room, fxId, this.id, a.getId(), "emitNode", "", (float) time);
-        SmartFoxServer.getInstance()
+        parentExt
                 .getTaskScheduler()
                 .schedule(
                         new Champion.DelayedAttack(
@@ -414,7 +421,7 @@ public class Minion extends Actor {
     private Point2D getPathPoint() {
         double x;
         double y;
-        if (!this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap()) {
+        if (!this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
             if (this.lane == 0) {
                 x = blueTopX[this.mainPathIndex];
                 y = blueTopY[this.mainPathIndex];
@@ -433,7 +440,7 @@ public class Minion extends Actor {
     private Point2D getPathPoint(int mainPathIndex) {
         double x;
         double y;
-        if (!this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap()) {
+        if (!this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
             if (this.lane == 0) {
                 x = blueTopX[mainPathIndex];
                 y = blueTopY[mainPathIndex];
@@ -454,7 +461,7 @@ public class Minion extends Actor {
         else this.mainPathIndex--;
         if (this.mainPathIndex < 0) this.mainPathIndex = 0;
         else {
-            if (!this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap()) {
+            if (!this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
                 if (this.lane == 0 && this.mainPathIndex == blueTopX.length) this.mainPathIndex--;
                 else if (this.lane == 1 && this.mainPathIndex == blueBotX.length)
                     this.mainPathIndex--;
@@ -538,7 +545,7 @@ public class Minion extends Actor {
         Actor closestNonUser = null;
         double distance = 1000f;
         double distanceNonUser = 1000f;
-        for (Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()) {
+        for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
             if (a.getTeam() != this.team
                     && isNotAMonster(a)
                     && !a.getAvatar().equalsIgnoreCase("neptr_mine")
@@ -578,12 +585,14 @@ public class Minion extends Actor {
     private void moveTowardsTarget() {
         // if (this.type == MinionType.MELEE) Console.debugLog(this.id + " is moving towards
         // target");
-        this.moveWithCollision(this.target.getLocation());
+        if (!this.withinRange(this.target)) this.moveWithCollision(this.target.getLocation());
     }
 
     private Minion isInsideMinion() {
         for (Minion m :
-                this.parentExt.getRoomHandler(this.room.getId()).getMinions(this.team, this.lane)) {
+                this.parentExt
+                        .getRoomHandler(this.room.getName())
+                        .getMinions(this.team, this.lane)) {
             if (!m.getId().equalsIgnoreCase(this.id)
                     && m.getLocation().distance(this.location) <= 0.45d) return m;
         }
@@ -603,7 +612,7 @@ public class Minion extends Actor {
             pathX = blueTopX;
             pathY = blueTopY;
         }
-        if (this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap()) {
+        if (this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
             pathX = practiceX;
             pathY = practiceY;
         }
@@ -615,7 +624,7 @@ public class Minion extends Actor {
             if (lane == 0) p2 = blueTopX.length - 1;
             if (team == 0) {
                 p2 = 0;
-            } else if (this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap())
+            } else if (this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap())
                 p2 = practiceX.length - 1;
             testLine = new Line2D.Float(this.location, this.getPathPoint(p2));
         } else testLine = new Line2D.Float(this.location, this.movementLine.getP2());

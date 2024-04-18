@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -48,7 +47,7 @@ public class CinnamonBun extends UserActor {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
             double percentage = 0.2d + ((double) (this.level) * 0.01d);
             int duration = 2000 + (this.level * 100);
-            for (Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()) {
+            for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                 if (a.getTeam() != this.team && this.wPoly.contains(a.getLocation())) {
                     a.addToDamageQueue(this, getSpellDamage(spellData) / 10d, spellData);
                     if (isNonStructure(a))
@@ -63,7 +62,7 @@ public class CinnamonBun extends UserActor {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
             for (Actor a :
                     Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()),
+                            this.parentExt.getRoomHandler(this.room.getName()),
                             this.ultPoint,
                             radius)) {
                 if (a.getTeam() != this.team) {
@@ -159,7 +158,7 @@ public class CinnamonBun extends UserActor {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
             for (Actor a :
                     Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()),
+                            this.parentExt.getRoomHandler(this.room.getName()),
                             this.ultPoint,
                             radius)) {
                 if (a.getTeam() != this.team) {
@@ -169,7 +168,7 @@ public class CinnamonBun extends UserActor {
             if (this.ultPoint2 != null) {
                 for (Actor a :
                         Champion.getActorsInRadius(
-                                this.parentExt.getRoomHandler(this.room.getId()),
+                                this.parentExt.getRoomHandler(this.room.getName()),
                                 this.ultPoint2,
                                 radius)) {
                     if (a.getTeam() != this.team) {
@@ -231,7 +230,7 @@ public class CinnamonBun extends UserActor {
                 this.changeHealth((int) ((double) (this.getMaxHealth()) * 0.05d));
                 Path2D qRect =
                         Champion.createRectangle(location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
-                for (Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()) {
+                for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                     if (a.getTeam() != this.team && qRect.contains(a.getLocation())) {
                         a.addToDamageQueue(this, getSpellDamage(spellData), spellData);
                     }
@@ -244,7 +243,7 @@ public class CinnamonBun extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new CinnamonAbilityHandler(
@@ -312,10 +311,8 @@ public class CinnamonBun extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
-                        .getTaskScheduler()
-                        .schedule(dashEnd, wTime, TimeUnit.MILLISECONDS);
-                SmartFoxServer.getInstance()
+                parentExt.getTaskScheduler().schedule(dashEnd, wTime, TimeUnit.MILLISECONDS);
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new CinnamonAbilityHandler(
@@ -471,7 +468,7 @@ public class CinnamonBun extends UserActor {
                     }
                     for (Actor a :
                             Champion.getActorsInRadius(
-                                    this.parentExt.getRoomHandler(this.room.getId()),
+                                    this.parentExt.getRoomHandler(this.room.getName()),
                                     this.ultPoint,
                                     radius)) {
                         if (a.getTeam() != this.team) {
@@ -497,7 +494,7 @@ public class CinnamonBun extends UserActor {
                                 this.parentExt, this.room, this.id + "_smUltRing2");
                         for (Actor a :
                                 Champion.getActorsInRadius(
-                                        this.parentExt.getRoomHandler(this.room.getId()),
+                                        this.parentExt.getRoomHandler(this.room.getName()),
                                         this.ultPoint2,
                                         radius)) {
                             if (a.getTeam() != this.team) {
@@ -517,7 +514,7 @@ public class CinnamonBun extends UserActor {
                     ExtensionCommands.actorAbilityResponse(
                             this.parentExt, this.player, "e", true, eUseDelay, 0);
                 }
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new CinnamonAbilityHandler(
@@ -560,7 +557,7 @@ public class CinnamonBun extends UserActor {
             if (ultUses == 3) {
                 int E_GLBAL_COOLDOWN = 500;
                 Runnable enableQCasting = () -> canCast[2] = true;
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 enableQCasting,

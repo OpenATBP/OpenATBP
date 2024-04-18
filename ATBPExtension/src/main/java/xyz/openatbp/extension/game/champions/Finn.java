@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -40,7 +39,7 @@ public class Finn extends UserActor {
     @Override
     public void attack(Actor a) {
         this.applyStopMovingDuringAttack();
-        SmartFoxServer.getInstance()
+        parentExt
                 .getTaskScheduler()
                 .schedule(new PassiveAttack(a, this.handleAttack(a)), 250, TimeUnit.MILLISECONDS);
         passiveStart = System.currentTimeMillis();
@@ -83,7 +82,9 @@ public class Finn extends UserActor {
         if (qActive) {
             for (Actor actor :
                     Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()), this.location, 2f)) {
+                            this.parentExt.getRoomHandler(this.room.getName()),
+                            this.location,
+                            2f)) {
                 if (isNonStructure(actor)) {
                     JsonNode spellData = parentExt.getAttackData("finn", "spell1");
                     actor.addToDamageQueue(Finn.this, getSpellDamage(spellData), spellData);
@@ -128,7 +129,7 @@ public class Finn extends UserActor {
         if (this.ultActivated) {
             for (int i = 0; i < this.wallLines.length; i++) {
                 if (this.wallsActivated[i]) {
-                    for (Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()) {
+                    for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                         if (this.isNonStructure(a)
                                 && this.wallLines[i].ptSegDist(a.getLocation()) <= 0.5f) {
                             this.wallsActivated[i] = false;
@@ -228,7 +229,7 @@ public class Finn extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new FinnAbilityHandler(
@@ -248,7 +249,7 @@ public class Finn extends UserActor {
                 Point2D finalDashPoint = this.dash(dest, false, DASH_SPEED);
                 double time = ogLocation.distance(finalDashPoint) / DASH_SPEED;
                 int wTime = (int) (time * 1000);
-                for (Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()) {
+                for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                     if (a.getTeam() != this.team && quadrangle.contains(a.getLocation())) {
                         if (!isNonStructure(a))
                             a.addToDamageQueue(this, getSpellDamage(spellData), spellData);
@@ -277,10 +278,10 @@ public class Finn extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(changeAnimation, wTime, TimeUnit.MILLISECONDS);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new FinnAbilityHandler(
@@ -409,10 +410,8 @@ public class Finn extends UserActor {
                                     getReducedCooldown(cooldown),
                                     gCooldown);
                         };
-                SmartFoxServer.getInstance()
-                        .getTaskScheduler()
-                        .schedule(cast, castDelay, TimeUnit.MILLISECONDS);
-                SmartFoxServer.getInstance()
+                parentExt.getTaskScheduler().schedule(cast, castDelay, TimeUnit.MILLISECONDS);
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new FinnAbilityHandler(
@@ -462,7 +461,7 @@ public class Finn extends UserActor {
                     if (qActive) {
                         for (Actor actor :
                                 Champion.getActorsInRadius(
-                                        this.parentExt.getRoomHandler(this.room.getId()),
+                                        this.parentExt.getRoomHandler(this.room.getName()),
                                         this.location,
                                         2f)) {
                             if (isNonStructure(actor)) {

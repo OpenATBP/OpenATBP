@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -35,7 +34,6 @@ public class BubbleGum extends UserActor {
     private boolean bombPlaced;
     private Point2D bombLocation;
     private long bombPlaceTime = 0;
-    private static final boolean DEBUG = false;
 
     public BubbleGum(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -47,7 +45,7 @@ public class BubbleGum extends UserActor {
     @Override
     public void attack(Actor a) {
         this.applyStopMovingDuringAttack();
-        SmartFoxServer.getInstance()
+        parentExt
                 .getTaskScheduler()
                 .schedule(
                         new RangedAttack(
@@ -88,7 +86,7 @@ public class BubbleGum extends UserActor {
             } else {
                 List<Actor> affectedActors =
                         Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getId()), potionLocation, 2f);
+                                parentExt.getRoomHandler(room.getName()), potionLocation, 2f);
                 for (Actor a : affectedActors) {
                     if (a.getTeam() != this.team) {
                         JsonNode spellData =
@@ -138,7 +136,7 @@ public class BubbleGum extends UserActor {
         switch (ability) {
             case 1: // Q
                 this.canCast[0] = false;
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new PBAbilityRunnable(
@@ -181,7 +179,7 @@ public class BubbleGum extends UserActor {
                 this.spawnTurret(dest);
                 ExtensionCommands.actorAbilityResponse(
                         parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new PBAbilityRunnable(
@@ -230,7 +228,7 @@ public class BubbleGum extends UserActor {
                     this.bombLocation = dest;
                     ExtensionCommands.actorAbilityResponse(
                             this.parentExt, this.player, "e", true, 750, 0);
-                    SmartFoxServer.getInstance()
+                    parentExt
                             .getTaskScheduler()
                             .schedule(
                                     new PBAbilityRunnable(
@@ -239,7 +237,7 @@ public class BubbleGum extends UserActor {
                                     TimeUnit.MILLISECONDS);
                 } else {
                     this.useBomb(getReducedCooldown(cooldown), gCooldown);
-                    SmartFoxServer.getInstance()
+                    parentExt
                             .getTaskScheduler()
                             .schedule(
                                     new PBAbilityRunnable(
@@ -254,7 +252,9 @@ public class BubbleGum extends UserActor {
     protected void useBomb(int cooldown, int gCooldown) {
         for (Actor a :
                 Champion.getActorsInRadius(
-                        this.parentExt.getRoomHandler(this.room.getId()), this.bombLocation, 3f)) {
+                        this.parentExt.getRoomHandler(this.room.getName()),
+                        this.bombLocation,
+                        3f)) {
             if ((a.getTeam() != this.team || a.getId().equalsIgnoreCase(this.id))
                     && a.getActorType() != ActorType.BASE
                     && a.getActorType() != ActorType.TOWER) {
@@ -268,7 +268,7 @@ public class BubbleGum extends UserActor {
                             () ->
                                     ExtensionCommands.actorAnimate(
                                             parentExt, room, id, "spell3c", 350, false);
-                    SmartFoxServer.getInstance()
+                    parentExt
                             .getTaskScheduler()
                             .schedule(animationDelay, 325, TimeUnit.MILLISECONDS);
                 }
@@ -322,7 +322,7 @@ public class BubbleGum extends UserActor {
         if (this.turrets != null) {
             this.turretNum++;
             this.turrets.add(t);
-            this.parentExt.getRoomHandler(this.room.getId()).addCompanion(t);
+            this.parentExt.getRoomHandler(this.room.getName()).addCompanion(t);
         }
     }
 
@@ -341,7 +341,7 @@ public class BubbleGum extends UserActor {
         protected void spellQ() {
             int Q_CAST_DELAY = 750;
             Runnable enableQCasting = () -> canCast[0] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableQCasting,
@@ -402,7 +402,7 @@ public class BubbleGum extends UserActor {
             new Champion.DelayedAttack(
                             parentExt, this.attacker, this.target, (int) damage, "basicAttack")
                     .run();
-            if (this.target.getActorType() == ActorType.PLAYER || DEBUG) {
+            if (this.target.getActorType() == ActorType.PLAYER) {
                 gumStacks++;
                 lastGum = System.currentTimeMillis();
                 if (gumStacks > 3) {
@@ -427,8 +427,8 @@ public class BubbleGum extends UserActor {
         Turret(Point2D location, int turretNum) {
             this.room = BubbleGum.this.room;
             this.parentExt = BubbleGum.this.parentExt;
-            this.currentHealth = BubbleGum.this.maxHealth;
-            this.maxHealth = BubbleGum.this.maxHealth;
+            this.currentHealth = 100 + (BubbleGum.this.maxHealth * 0.3d);
+            this.maxHealth = this.currentHealth;
             this.location = location;
             this.avatar = "princessbubblegum_turret";
             this.id = "turret" + turretNum + "_" + BubbleGum.this.id;
@@ -464,9 +464,7 @@ public class BubbleGum extends UserActor {
                                 true,
                                 this.team);
                     };
-            SmartFoxServer.getInstance()
-                    .getTaskScheduler()
-                    .schedule(creationDelay, 150, TimeUnit.MILLISECONDS);
+            parentExt.getTaskScheduler().schedule(creationDelay, 150, TimeUnit.MILLISECONDS);
             this.addState(ActorState.IMMUNITY, 0d, 1000 * 60 * 15, null, false);
         }
 
@@ -490,7 +488,7 @@ public class BubbleGum extends UserActor {
                     "Bip01",
                     "targetNode",
                     time);
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             new Champion.DelayedAttack(
@@ -512,7 +510,7 @@ public class BubbleGum extends UserActor {
             ExtensionCommands.removeStatusIcon(parentExt, player, iconName);
             ExtensionCommands.removeFx(parentExt, room, this.id + "_ring");
             ExtensionCommands.destroyActor(parentExt, room, this.id);
-            this.parentExt.getRoomHandler(this.room.getId()).removeCompanion(this);
+            this.parentExt.getRoomHandler(this.room.getName()).removeCompanion(this);
         }
 
         @Override
@@ -541,7 +539,7 @@ public class BubbleGum extends UserActor {
 
         public void findTarget() {
             List<Actor> potentialTargets =
-                    this.parentExt.getRoomHandler(this.room.getId()).getActors();
+                    this.parentExt.getRoomHandler(this.room.getName()).getActors();
             List<Actor> users =
                     potentialTargets.stream()
                             .filter(a -> a.getActorType() == ActorType.PLAYER)

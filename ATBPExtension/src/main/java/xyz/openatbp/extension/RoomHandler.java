@@ -15,7 +15,6 @@ import com.mongodb.client.model.Updates;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -48,7 +47,8 @@ public class RoomHandler implements Runnable {
     private boolean gameOver = false;
     private HashMap<String, Long> destroyedIds = new HashMap<>();
     private List<String> createdActorIds = new ArrayList<>();
-git     private static final boolean MONSTER_DEBUG = false;
+    private static boolean monsterDebug = false;
+    private static boolean xpDebug = false;
     private boolean practiceMap;
     private boolean fastBlueCapture = false;
     private boolean fastPurpleCapture = false;
@@ -68,6 +68,9 @@ git     private static final boolean MONSTER_DEBUG = false;
         this.players = new ArrayList<>();
         this.campMonsters = new ArrayList<>();
         this.practiceMap = room.getGroupId().equalsIgnoreCase("practice");
+        Properties props = parentExt.getConfigProperties();
+        monsterDebug = Boolean.parseBoolean(props.getProperty("monsterDebug", "false"));
+        xpDebug = Boolean.parseBoolean(props.getProperty("xpDebug", "false"));
         HashMap<String, Point2D> towers0;
         HashMap<String, Point2D> towers1;
         if (!this.practiceMap) {
@@ -112,8 +115,11 @@ git     private static final boolean MONSTER_DEBUG = false;
                 if (n.isSolid()) n.display(parentExt, room);
             }
         }
-
          */
+        this.scriptHandler =
+                parentExt
+                        .getTaskScheduler()
+                        .scheduleAtFixedRate(this, 100, 100, TimeUnit.MILLISECONDS);
     }
 
     public void setScriptHandler(ScheduledFuture<?> handler) {
@@ -124,13 +130,17 @@ git     private static final boolean MONSTER_DEBUG = false;
         return this.parentExt;
     }
 
-    public void stopScript() {
-        this.scriptHandler.cancel(true);
+    public void stopScript(boolean abort) {
+        if (abort) ExtensionCommands.abortGame(parentExt, this.room);
+        this.scriptHandler.cancel(false);
     }
 
     @Override
     public void run() {
         if (this.gameOver) return;
+        if (mSecondsRan == 0)
+            if (this.parentExt.getRoomHandler(this.room.getName()) == null)
+                this.scriptHandler.cancel(true);
         mSecondsRan += 100;
         List<String> keysToRemove = new ArrayList<>(this.destroyedIds.size());
         Set<String> keys = this.destroyedIds.keySet();
@@ -188,7 +198,8 @@ git     private static final boolean MONSTER_DEBUG = false;
                     return;
                 }
                 if (room.getUserList().size() == 0)
-                    parentExt.stopScript(room.getId()); // If no one is in the room, stop running.
+                    parentExt.stopScript(
+                            room.getName(), true); // If no one is in the room, stop running.
                 else {
                     handleAltars();
                     ExtensionCommands.updateTime(parentExt, this.room, mSecondsRan);
@@ -201,7 +212,7 @@ git     private static final boolean MONSTER_DEBUG = false;
                         int spawnRate = 45; // Mob spawn rate
                         if (s.equalsIgnoreCase("keeoth")) spawnRate = 120;
                         else if (s.equalsIgnoreCase("goomonster")) spawnRate = 90;
-                        if (MONSTER_DEBUG) spawnRate = 10;
+                        if (monsterDebug) spawnRate = 10;
                         if (spawns.getInt(s)
                                 == spawnRate) { // Mob timers will be set to 0 when killed or health
                             // when taken
@@ -302,7 +313,8 @@ git     private static final boolean MONSTER_DEBUG = false;
             }
             bases[0].update(mSecondsRan);
             bases[1].update(mSecondsRan);
-            if (this.room.getUserList().size() == 0) parentExt.stopScript(this.room.getId());
+            if (this.room.getUserList().size() == 0)
+                parentExt.stopScript(this.room.getName(), true);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -320,13 +332,12 @@ git     private static final boolean MONSTER_DEBUG = false;
         blueLevel = (int) Math.floor(blueLevel / ((double) this.players.size() / 2));
         for (UserActor player : this.players) {
             int additionalXP =
-                    2; // Get more XP if you are below the average level of the enemy and get less
+                    1; // Get more XP if you are below the average level of the enemy and get less
             // xp if you are above.
             if (player.getTeam() == 0) additionalXP *= (blueLevel - player.getLevel());
             else if (player.getTeam() == 1) additionalXP *= (purpleLevel - player.getLevel());
-            if (additionalXP < -2) additionalXP = -2;
-            if (purpleLevel == 0 || blueLevel == 0) additionalXP = 0;
-            player.addXP(3 + additionalXP);
+            if (purpleLevel == 0 || blueLevel == 0 || additionalXP < 0) additionalXP = 0;
+            player.addXP(3 + additionalXP + (xpDebug ? 100 : 0));
         }
     }
 
@@ -350,9 +361,7 @@ git     private static final boolean MONSTER_DEBUG = false;
         ExtensionCommands.playSound(
                 parentExt, room, "music", "music/" + musicName, new Point2D.Float(0, 0));
         Runnable musicEnd = () -> this.playMainMusic = true;
-        SmartFoxServer.getInstance()
-                .getTaskScheduler()
-                .schedule(musicEnd, duration, TimeUnit.MILLISECONDS);
+        parentExt.getTaskScheduler().schedule(musicEnd, duration, TimeUnit.MILLISECONDS);
     }
 
     public void playTowerMusic() {
@@ -385,9 +394,7 @@ git     private static final boolean MONSTER_DEBUG = false;
         ExtensionCommands.playSound(
                 parentExt, room, "music", "music/" + stingName, new Point2D.Float(0, 0));
         Runnable stingEnd = () -> this.playMainMusic = true;
-        SmartFoxServer.getInstance()
-                .getTaskScheduler()
-                .schedule(stingEnd, duration, TimeUnit.MILLISECONDS);
+        parentExt.getTaskScheduler().schedule(stingEnd, duration, TimeUnit.MILLISECONDS);
     }
 
     public Tower findTower(String id) {
@@ -725,7 +732,7 @@ git     private static final boolean MONSTER_DEBUG = false;
                     int finalI1 = i;
                     int finalTeam1 = team;
                     Runnable captureDelay = () -> captureAltar(finalI1, finalTeam1, altarId);
-                    SmartFoxServer.getInstance()
+                    this.parentExt
                             .getTaskScheduler()
                             .schedule(captureDelay, 400, TimeUnit.MILLISECONDS);
                 } else if (Math.abs(altarStatus[i]) <= 4 && altarStatus[i] != 0) {
@@ -887,7 +894,7 @@ git     private static final boolean MONSTER_DEBUG = false;
                             }
                             lastPointLeadTime = System.currentTimeMillis();
                         };
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(playLeadSound, getLeadRemainingTime(), TimeUnit.MILLISECONDS);
             }
@@ -912,7 +919,7 @@ git     private static final boolean MONSTER_DEBUG = false;
                             }
                             lastPointLeadTime = System.currentTimeMillis();
                         };
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(playLeadSound2, getLeadRemainingTime(), TimeUnit.MILLISECONDS);
             }
@@ -1255,6 +1262,13 @@ git     private static final boolean MONSTER_DEBUG = false;
                     else win = 0d;
                     int eloGain = ChampionData.getEloGain(ua, this.players, win);
                     int currentElo = dataObj.get("player").get("elo").asInt();
+                    switch (currentElo + eloGain + 1) {
+                        case 1:
+                        case 100:
+                        case 200:
+                        case 500:
+                            eloGain++;
+                    }
                     if (currentElo + eloGain < 0) eloGain = currentElo * -1;
                     if (ua.getTeam() == winningTeam) wins++;
 
@@ -1283,12 +1297,13 @@ git     private static final boolean MONSTER_DEBUG = false;
                     }
 
                     if (this.room.getMaxUsers() != 6
-                            || this.room.getName().contains("custom")
-                            || this.room.getName().contains("practice")) eloGain = 0;
+                            || this.room.getGroupId().equalsIgnoreCase("PVE")) eloGain = 0;
 
                     Bson updates =
                             Updates.combine(
-                                    Updates.inc("player.playsPVP", 1),
+                                    Updates.inc(
+                                            "player.playsPVP",
+                                            this.room.getGroupId().equalsIgnoreCase("PVP") ? 1 : 0),
                                     Updates.inc("player.elo", eloGain),
                                     Updates.set("player.rankProgress", currentRankProgress),
                                     Updates.inc("player.winsPVP", wins),
@@ -1311,7 +1326,7 @@ git     private static final boolean MONSTER_DEBUG = false;
                     Console.debugLog(playerData.updateOne(data, updates, options));
                 }
             }
-            parentExt.stopScript(room.getId());
+            parentExt.stopScript(room.getName(), false);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -1335,6 +1350,13 @@ git     private static final boolean MONSTER_DEBUG = false;
                 double dcPercent = disconnects / playsPVP;
                 double elo = dataObj.get("player").get("elo").asInt();
                 double newElo = elo * (1 - dcPercent);
+                switch ((int) (newElo + 1)) {
+                    case 1:
+                    case 100:
+                    case 200:
+                    case 500:
+                        newElo++;
+                }
 
                 Bson updates =
                         Updates.combine(
@@ -1417,11 +1439,13 @@ git     private static final boolean MONSTER_DEBUG = false;
         for (Actor a : this.getActors()) {
             Console.log(
                     "ROOM: "
-                            + this.room.getId()
+                            + this.room.getName()
                             + " |  TYPE: "
                             + a.getActorType().toString()
                             + " | ID: "
-                            + a.getId()
+                            + (a.getActorType() == ActorType.PLAYER
+                                    ? a.getDisplayName()
+                                    : a.getId())
                             + " | "
                             + a.getHealth());
         }

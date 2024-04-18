@@ -12,11 +12,11 @@ public class AutoTargetHandler extends BaseClientRequestHandler {
     @Override
     public void handleClientRequest(User sender, ISFSObject params) {
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
-        RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId());
+        RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getName());
         if (roomHandler != null) {
             UserActor player =
                     parentExt
-                            .getRoomHandler(sender.getLastJoinedRoom().getId())
+                            .getRoomHandler(sender.getLastJoinedRoom().getName())
                             .getPlayer(String.valueOf(sender.getId()));
             if (player != null) {
                 player.setAutoAttackEnabled(params.getBool("enabled"));

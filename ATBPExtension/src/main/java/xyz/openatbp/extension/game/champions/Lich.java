@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -71,12 +70,12 @@ public class Lich extends UserActor {
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_lich_trail", this.location);
                 ExtensionCommands.playSound(
                         this.parentExt, this.room, this.id, "vo/vo_lich_trail", this.location);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(new TrailHandler(), 6000, TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAbilityResponse(
                         parentExt, player, "q", true, getReducedCooldown(cooldown), gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new LichAbilityRunnable(
@@ -106,7 +105,7 @@ public class Lich extends UserActor {
                         8f);
                 ExtensionCommands.actorAbilityResponse(
                         parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new LichAbilityRunnable(
@@ -138,7 +137,7 @@ public class Lich extends UserActor {
                             0f);
                     ExtensionCommands.actorAbilityResponse(
                             this.parentExt, this.player, "e", true, 1000, 0);
-                    SmartFoxServer.getInstance()
+                    parentExt
                             .getTaskScheduler()
                             .schedule(
                                     new LichAbilityRunnable(
@@ -189,7 +188,7 @@ public class Lich extends UserActor {
     @Override
     public void attack(Actor a) {
         this.applyStopMovingDuringAttack();
-        SmartFoxServer.getInstance()
+        parentExt
                 .getTaskScheduler()
                 .schedule(
                         new RangedAttack(
@@ -222,7 +221,7 @@ public class Lich extends UserActor {
         if (this.qActivated) {
             this.slimePath.add(this.location);
             for (Point2D slime : this.slimePath) {
-                for (Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()) {
+                for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                     if (a.getTeam() != this.team && a.getLocation().distance(slime) < 0.5) {
                         JsonNode attackData = this.parentExt.getAttackData(getAvatar(), "spell1");
                         if (slimedEnemies.containsKey(a.getId())) {
@@ -250,7 +249,7 @@ public class Lich extends UserActor {
             boolean damageDealt = false;
             for (Actor a :
                     Champion.getActorsInRadius(
-                            parentExt.getRoomHandler(this.room.getId()), ultLocation, 3f)) {
+                            parentExt.getRoomHandler(this.room.getName()), ultLocation, 3f)) {
                 if (a.getTeam() != this.team
                         && a.getActorType() != ActorType.BASE
                         && a.getActorType() != ActorType.TOWER) {
@@ -268,7 +267,7 @@ public class Lich extends UserActor {
 
     private void spawnSkully(Point2D location) {
         this.skully = new Skully(location);
-        this.parentExt.getRoomHandler(this.room.getId()).addCompanion(this.skully);
+        this.parentExt.getRoomHandler(this.room.getName()).addCompanion(this.skully);
         this.lastSkullySpawn = System.currentTimeMillis();
         ExtensionCommands.addStatusIcon(
                 this.parentExt,
@@ -298,7 +297,7 @@ public class Lich extends UserActor {
     }
 
     private void handleSkullyDeath() {
-        this.parentExt.getRoomHandler(this.room.getId()).removeCompanion(this.skully);
+        this.parentExt.getRoomHandler(this.room.getName()).removeCompanion(this.skully);
         this.skully = null;
         ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "icon_lich_passive");
     }
@@ -369,7 +368,7 @@ public class Lich extends UserActor {
                     (float) a.getLocation().getY(),
                     false,
                     true);
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(new PassiveAttack(this, a, false), 300, TimeUnit.MILLISECONDS);
             this.attackCooldown = 1000;
@@ -414,7 +413,7 @@ public class Lich extends UserActor {
                     if (this.movementLine.getP2().distance(this.target.getLocation()) > 0.1d)
                         this.setPath(
                                 MovementManager.getPath(
-                                        this.parentExt.getRoomHandler(this.room.getId()),
+                                        this.parentExt.getRoomHandler(this.room.getName()),
                                         this.location,
                                         this.target.getLocation()));
                 }
@@ -558,7 +557,7 @@ public class Lich extends UserActor {
                         false,
                         team,
                         0f);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new LichAbilityRunnable(spellData, cooldown, gCooldown, dest),

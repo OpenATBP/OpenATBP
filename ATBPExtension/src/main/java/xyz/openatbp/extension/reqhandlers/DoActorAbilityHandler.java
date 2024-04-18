@@ -24,7 +24,7 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         UserActor player =
                 parentExt
-                        .getRoomHandler(sender.getLastJoinedRoom().getId())
+                        .getRoomHandler(sender.getLastJoinedRoom().getName())
                         .getPlayer(String.valueOf(sender.getId()));
         int spellNum = getAbilityNum(params.getUtfString("id"));
         boolean playSound = false;

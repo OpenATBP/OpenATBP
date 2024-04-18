@@ -5,7 +5,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -67,7 +66,7 @@ public class GumballGuardian extends Tower {
                 "emitNode",
                 "Bip01",
                 time);
-        SmartFoxServer.getInstance()
+        this.parentExt
                 .getTaskScheduler()
                 .schedule(
                         new Champion.DelayedAttack(this.parentExt, this, a, 1000, "basicAttack"),

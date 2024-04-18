@@ -10,7 +10,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -121,7 +120,7 @@ public class Jake extends UserActor {
                 this.lastStomped = System.currentTimeMillis();
                 for (Actor a :
                         Champion.getActorsInRadius(
-                                this.parentExt.getRoomHandler(this.room.getId()),
+                                this.parentExt.getRoomHandler(this.room.getName()),
                                 this.location,
                                 2f)) {
                     if (this.isNonStructure(a)) {
@@ -195,10 +194,10 @@ public class Jake extends UserActor {
                         this.canCast[1] = true;
                         this.canCast[2] = true;
                     };
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(animationDelay, (int) newTime, TimeUnit.MILLISECONDS);
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(canCast, (int) newTime + 500, TimeUnit.MILLISECONDS);
             if (this.getHealth() > 0) {
@@ -289,9 +288,7 @@ public class Jake extends UserActor {
                                         Q_SPELL_RANGE);
                             }
                         };
-                SmartFoxServer.getInstance()
-                        .getTaskScheduler()
-                        .schedule(projectileDelay, 300, TimeUnit.MILLISECONDS);
+                parentExt.getTaskScheduler().schedule(projectileDelay, 300, TimeUnit.MILLISECONDS);
                 String stretchFxPrefix =
                         (this.avatar.contains("cake"))
                                 ? "cake_"
@@ -317,7 +314,7 @@ public class Jake extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new JakeAbilityHandler(
@@ -382,7 +379,7 @@ public class Jake extends UserActor {
                         this.team);
                 for (Actor a :
                         Champion.getActorsInRadius(
-                                this.parentExt.getRoomHandler(this.room.getId()),
+                                this.parentExt.getRoomHandler(this.room.getName()),
                                 this.location,
                                 3f)) {
                     if (this.isNonStructure(a)) {
@@ -415,7 +412,7 @@ public class Jake extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new JakeAbilityHandler(
@@ -492,7 +489,7 @@ public class Jake extends UserActor {
                         this.id,
                         "vo/vo_" + growVoPrefix + "grow",
                         this.location);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new JakeAbilityHandler(
@@ -579,7 +576,7 @@ public class Jake extends UserActor {
         double speed = 8.5;
         ExtensionCommands.createProjectile(
                 parentExt, this.room, this, id, location, lineEndPoint, (float) speed);
-        this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
+        this.parentExt.getRoomHandler(this.room.getName()).addProjectile(projectile);
     }
 
     private class JakeAbilityHandler extends AbilityRunnable {
@@ -593,7 +590,7 @@ public class Jake extends UserActor {
         protected void spellQ() {
             int Q_CAST_DELAY = 1300;
             Runnable enableQCasting = () -> canCast[0] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableQCasting,
@@ -607,7 +604,7 @@ public class Jake extends UserActor {
                             canCast[2] = true;
                         }
                     };
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(enableCastingAbilities, 500, TimeUnit.MILLISECONDS);
         }

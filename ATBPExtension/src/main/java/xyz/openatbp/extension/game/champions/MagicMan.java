@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -43,7 +42,7 @@ public class MagicMan extends UserActor {
         if (this.getState(ActorState.INVISIBLE)) {
             this.setState(ActorState.INVISIBLE, false);
         }
-        SmartFoxServer.getInstance()
+        parentExt
                 .getTaskScheduler()
                 .schedule(
                         new RangedAttack(
@@ -79,9 +78,7 @@ public class MagicMan extends UserActor {
             ExtensionCommands.actorAbilityResponse(
                     this.parentExt, this.player, "w", true, wCooldown, 250);
             Runnable resetWUses = () -> this.wUses = 0;
-            SmartFoxServer.getInstance()
-                    .getTaskScheduler()
-                    .schedule(resetWUses, wCooldown, TimeUnit.MILLISECONDS);
+            parentExt.getTaskScheduler().schedule(resetWUses, wCooldown, TimeUnit.MILLISECONDS);
         }
         if (this.ultStarted && this.hasUltInterruptingCC()) {
             this.interruptE = true;
@@ -178,7 +175,7 @@ public class MagicMan extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new MagicManAbilityHandler(
@@ -208,7 +205,7 @@ public class MagicMan extends UserActor {
                     this.setLocation(dashPoint);
                     this.magicManClone = new MagicManClone(this.wLocation);
                     this.parentExt
-                            .getRoomHandler(this.room.getId())
+                            .getRoomHandler(this.room.getName())
                             .addCompanion(this.magicManClone);
                     ExtensionCommands.actorAbilityResponse(
                             this.parentExt, this.player, "w", true, 1000, 0);
@@ -223,7 +220,7 @@ public class MagicMan extends UserActor {
                             gCooldown);
                 }
                 int abilityDelay = this.wUses == 1 ? 1000 : getReducedCooldown(cooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new MagicManAbilityHandler(
@@ -255,7 +252,7 @@ public class MagicMan extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         (int) (eDashTime * 0.8) + gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new MagicManAbilityHandler(
@@ -275,7 +272,7 @@ public class MagicMan extends UserActor {
     }
 
     private void handleCloneDeath() {
-        this.parentExt.getRoomHandler(this.room.getId()).removeCompanion(this.magicManClone);
+        this.parentExt.getRoomHandler(this.room.getName()).removeCompanion(this.magicManClone);
         this.magicManClone = null;
     }
 
@@ -290,7 +287,7 @@ public class MagicMan extends UserActor {
         protected void spellQ() {
             int Q_CAST_DELAY = 500;
             Runnable enableQCasting = () -> canCast[0] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableQCasting,
@@ -309,7 +306,7 @@ public class MagicMan extends UserActor {
         protected void spellE() {
             int E_CAST_DELAY = eDashTime;
             Runnable enableECasting = () -> canCast[2] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableECasting,
@@ -337,7 +334,7 @@ public class MagicMan extends UserActor {
                 double damageModifier = getPlayerStat("spellDamage") * 0.001d;
                 for (Actor a :
                         Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getId()), location, 4f)) {
+                                parentExt.getRoomHandler(room.getName()), location, 4f)) {
                     if (isNonStructure(a)) {
                         double damage = (double) (a.getHealth()) * (0.35d + damageModifier);
                         a.addToDamageQueue(MagicMan.this, damage, spellData);
@@ -460,7 +457,7 @@ public class MagicMan extends UserActor {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
             for (Actor actor :
                     Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()),
+                            this.parentExt.getRoomHandler(this.room.getName()),
                             this.location,
                             2.5f)) {
                 if (isNonStructure(actor)) {

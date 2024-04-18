@@ -13,7 +13,7 @@ public class PingHandler extends BaseClientRequestHandler {
     @Override
     public void handleClientRequest(User sender, ISFSObject params) {
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
-        RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId());
+        RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getName());
         UserActor user = roomHandler.getPlayer(String.valueOf(sender.getId()));
         for (UserActor ua : roomHandler.getPlayers()) {
             if (ua.getTeam() == user.getTeam()) {

@@ -35,6 +35,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
         playerInfo.putUtfString("tegid", (String) sender.getSession().getProperty("tegid"));
         playerInfo.putInt(
                 "elo", parentExt.getElo((String) sender.getSession().getProperty("tegid")));
+        playerInfo.putBool("isTournamentEligible", params.getBool("isTournamentEligible"));
         SFSUserVariable playerVar = new SFSUserVariable("player", playerInfo);
         ISFSObject location =
                 new SFSObject(); // Will need to be changed when we get actual spawn points made
@@ -74,7 +75,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
                 int roomSize =
                         Integer.parseInt(roomIDSplit[roomIDSplit.length - 1].replace("p", ""));
                 settings.setMaxUsers(roomSize);
-                settings.setGroupId("PVP");
+                settings.setGroupId("PVE");
             } else if (params.getUtfString("room_id").contains("3p")) { // Bot game mode
                 settings.setMaxUsers(2); // TODO: Testing value
                 settings.setGroupId("PVE");
@@ -83,7 +84,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
                 settings.setGroupId("PVP");
             } else {
                 settings.setMaxUsers(1);
-                settings.setGroupId("PVP");
+                settings.setGroupId("PVE");
             }
             try {
                 requestedRoom = parentExt.getApi().createRoom(sender.getZone(), settings, sender);
@@ -95,8 +96,9 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
         requestedRoom.setPassword("");
         try {
             if (!createdRoom) {
-                if ((int) requestedRoom.getProperty("state") == 0)
-                    parentExt
+                if ((int) requestedRoom.getProperty("state")
+                        == 0) // TODO: Desync may cause this to be null, even when it shouldn't?
+                parentExt
                             .getApi()
                             .joinRoom(
                                     sender,

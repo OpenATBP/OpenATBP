@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -112,7 +111,7 @@ public class RattleBalls extends UserActor {
                 } else {
                     this.qUse = 0;
                     this.parryActive = false;
-                    for (Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()) {
+                    for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                         if (a.getTeam() != this.team
                                 && isNonStructure(a)
                                 && this.qThrustRectangle.contains(a.getLocation())) {
@@ -176,7 +175,7 @@ public class RattleBalls extends UserActor {
                             getReducedCooldown(cooldown),
                             this.qTime + 250);
                 }
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new RattleAbilityHandler(
@@ -211,7 +210,7 @@ public class RattleBalls extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new RattleAbilityHandler(
@@ -274,7 +273,7 @@ public class RattleBalls extends UserActor {
                     this.endUlt();
                 }
                 int eDelay = this.eCounter == 1 ? 500 : getReducedCooldown(cooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new RattleAbilityHandler(
@@ -369,7 +368,7 @@ public class RattleBalls extends UserActor {
                 && System.currentTimeMillis() - this.parryCooldown >= 1500
                 && !this.dead) {
             Runnable enableQCasting = () -> canCast[0] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(enableQCasting, getReducedCooldown(12000), TimeUnit.MILLISECONDS);
             this.canCast[1] = true;
@@ -427,7 +426,7 @@ public class RattleBalls extends UserActor {
                     250);
             List<Actor> affectedActors =
                     Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()), this.location, 2f);
+                            this.parentExt.getRoomHandler(this.room.getName()), this.location, 2f);
             affectedActors =
                     affectedActors.stream()
                             .filter(this::isNonStructure)
@@ -465,7 +464,9 @@ public class RattleBalls extends UserActor {
             }
             for (Actor a :
                     Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()), this.location, 2f)) {
+                            this.parentExt.getRoomHandler(this.room.getName()),
+                            this.location,
+                            2f)) {
                 if (this.isNonStructure(a)) {
                     JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
                     a.addToDamageQueue(this, (double) getSpellDamage(spellData) / 10d, spellData);
@@ -619,14 +620,12 @@ public class RattleBalls extends UserActor {
                                     false,
                                     team);
                         };
-                SmartFoxServer.getInstance()
-                        .getTaskScheduler()
-                        .schedule(flipDelay, qTime, TimeUnit.MILLISECONDS);
+                parentExt.getTaskScheduler().schedule(flipDelay, qTime, TimeUnit.MILLISECONDS);
             } else {
                 abilityEnded();
                 int Q_CAST_DELAY = qTime;
                 Runnable enableQCasting = () -> canCast[0] = true;
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 enableQCasting,
@@ -642,7 +641,7 @@ public class RattleBalls extends UserActor {
         protected void spellW() {
             int W_CAST_DELAY = 500;
             Runnable enableWCasting = () -> canCast[1] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableWCasting,
@@ -669,7 +668,7 @@ public class RattleBalls extends UserActor {
 
                 for (Actor a :
                         Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getId()), location, 5f)) {
+                                parentExt.getRoomHandler(room.getName()), location, 5f)) {
                     if (isNonStructure(a)) {
                         a.handlePull(location, 1.2);
                         a.addToDamageQueue(RattleBalls.this, getSpellDamage(spellData), spellData);

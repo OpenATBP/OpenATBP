@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -85,7 +84,9 @@ public class IceKing extends UserActor {
         if (this.wLocation != null) {
             for (Actor a :
                     Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()), this.wLocation, 3f)) {
+                            this.parentExt.getRoomHandler(this.room.getName()),
+                            this.wLocation,
+                            3f)) {
                 if (this.isNonStructure(a)) {
                     if (this.lastWHit != null && this.lastWHit.containsKey(a.getId())) {
                         if (System.currentTimeMillis() >= this.lastWHit.get(a.getId()) + 500) {
@@ -129,7 +130,7 @@ public class IceKing extends UserActor {
         if (this.ultLocation != null) {
             for (Actor a :
                     Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()),
+                            this.parentExt.getRoomHandler(this.room.getName()),
                             this.ultLocation,
                             5.5f)) {
                 if (a.getTeam() != this.team || a.getId().equalsIgnoreCase(this.id)) {
@@ -147,7 +148,7 @@ public class IceKing extends UserActor {
                             : this.avatar.contains("young") ? "iceking2_young2" : "iceking2";
             List<Actor> affectedActors =
                     Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()), ultLocation, 5.5f);
+                            this.parentExt.getRoomHandler(this.room.getName()), ultLocation, 5.5f);
             if (affectedActors.contains(this)) {
                 if (!this.assetSwapped) {
                     ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, flyFx);
@@ -195,7 +196,7 @@ public class IceKing extends UserActor {
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_iceShield");
             ExtensionCommands.actorAbilityResponse(
                     this.parentExt, this.player, "passive", true, 5000, 0);
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(handlePassiveCooldown, 5000, TimeUnit.MILLISECONDS);
         }
@@ -231,7 +232,7 @@ public class IceKing extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new IceKingAbilityHandler(
@@ -309,7 +310,7 @@ public class IceKing extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new IceKingAbilityHandler(
@@ -375,7 +376,7 @@ public class IceKing extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new IceKingAbilityHandler(
@@ -442,7 +443,7 @@ public class IceKing extends UserActor {
         protected void spellQ() {
             int Q_CAST_DELAY = 250;
             Runnable enableQCasting = () -> canCast[0] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableQCasting,
