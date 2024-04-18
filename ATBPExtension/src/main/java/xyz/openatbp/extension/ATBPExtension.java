@@ -21,6 +21,7 @@ import org.bson.Document;
 import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.extensions.SFSExtension;
+import com.smartfoxserver.v2.util.TaskScheduler;
 
 import xyz.openatbp.extension.evthandlers.*;
 import xyz.openatbp.extension.game.Obstacle;
@@ -48,7 +49,7 @@ public class ATBPExtension extends SFSExtension {
     ArrayList<Path2D> practiceBrushPaths;
     HashMap<String, List<String>> tips = new HashMap<>();
 
-    HashMap<Integer, RoomHandler> roomHandlers = new HashMap<>();
+    HashMap<String, RoomHandler> roomHandlers = new HashMap<>();
     MongoClient mongoClient;
     MongoDatabase database;
     MongoCollection<Document> playerDatabase;
@@ -58,6 +59,7 @@ public class ATBPExtension extends SFSExtension {
 
     Node[][] mainMapNodes = new Node[MAX_COL][MAX_MAIN_ROW];
     Node[][] practiceMapNodes = new Node[MAX_COL][MAX_PRAC_ROW];
+    TaskScheduler taskScheduler;
 
     public void init() {
         this.addEventHandler(SFSEventType.USER_JOIN_ROOM, JoinRoomEventHandler.class);
@@ -84,6 +86,7 @@ public class ATBPExtension extends SFSExtension {
         this.addRequestHandler("req_auto_target", AutoTargetHandler.class);
         this.addRequestHandler("req_admin_command", Stub.class);
         this.addRequestHandler("req_spam", Stub.class);
+        this.taskScheduler = getApi().getNewScheduler(2);
         Properties props = getConfigProperties();
         if (!props.containsKey("mongoURI"))
             throw new RuntimeException(
@@ -106,8 +109,8 @@ public class ATBPExtension extends SFSExtension {
 
     @Override
     public void destroy() { // Destroys all room tasks to prevent memory leaks
-        for (Integer key : roomHandlers.keySet()) {
-            if (roomHandlers.get(key) != null) roomHandlers.get(key).stopScript();
+        for (String key : roomHandlers.keySet()) {
+            if (roomHandlers.get(key) != null) roomHandlers.get(key).stopScript(true);
         }
         super.destroy();
     }
@@ -135,6 +138,10 @@ public class ATBPExtension extends SFSExtension {
             JsonNode node = mapper.readTree(f);
             itemDefinitions.put(f.getName().replace(".json", ""), node);
         }
+    }
+
+    public TaskScheduler getTaskScheduler() {
+        return this.taskScheduler;
     }
 
     private void loadTips() throws IOException {
@@ -344,24 +351,20 @@ public class ATBPExtension extends SFSExtension {
     }
 
     public void startScripts(Room room) { // Creates a new task scheduler for a room
-        if (!this.roomHandlers.containsKey(room.getId())) {
-            roomHandlers.put(room.getId(), new RoomHandler(this, room));
-            Console.debugLog("Starting script for room " + room.getId());
-        } else {
-            this.stopScript(
-                    room.getId()); // This will kick all players out of the game if it tries to
-            // be initialized
-            // twice.
+        if (!this.roomHandlers.containsKey(room.getName())) {
+            roomHandlers.put(room.getName(), new RoomHandler(this, room));
+            Console.debugLog("Starting script for room " + room.getName());
         }
     }
 
-    public void stopScript(int roomId) { // Stops a task scheduler when room is deleted
+    public void stopScript(
+            String roomId, boolean abort) { // Stops a task scheduler when room is deleted
         Console.debugLog("Stopping rooom: " + roomId);
-        roomHandlers.get(roomId).stopScript();
+        roomHandlers.get(roomId).stopScript(abort);
         roomHandlers.remove(roomId);
     }
 
-    public RoomHandler getRoomHandler(int roomId) {
+    public RoomHandler getRoomHandler(String roomId) {
         return roomHandlers.get(roomId);
     }
 

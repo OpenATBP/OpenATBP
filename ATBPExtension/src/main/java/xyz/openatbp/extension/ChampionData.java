@@ -41,7 +41,7 @@ public class ChampionData {
         // Console.debugLog("Using spell point!");
         UserActor ua =
                 parentExt
-                        .getRoomHandler(user.getLastJoinedRoom().getId())
+                        .getRoomHandler(user.getLastJoinedRoom().getName())
                         .getPlayer(String.valueOf(user.getId()));
         int spellPoints = (int) ua.getStat("availableSpellPoints");
         int categoryPoints = (int) ua.getStat("sp_" + category);
@@ -137,7 +137,7 @@ public class ChampionData {
     public static ISFSObject resetSpellPoints(User user, ATBPExtension parentExt) {
         UserActor ua =
                 parentExt
-                        .getRoomHandler(user.getLastJoinedRoom().getId())
+                        .getRoomHandler(user.getLastJoinedRoom().getName())
                         .getPlayer(String.valueOf(user.getId()));
         ISFSObject toUpdate = new SFSObject();
         int spellPoints = (int) ua.getStat("availableSpellPoints");

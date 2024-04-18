@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 
 import xyz.openatbp.extension.*;
@@ -86,7 +85,7 @@ public class Monster extends Actor {
             // passive)
             // after dying
             if (Champion.getUserActorsInRadius(
-                                    this.parentExt.getRoomHandler(this.room.getId()),
+                                    this.parentExt.getRoomHandler(this.room.getName()),
                                     this.location,
                                     10f)
                             .isEmpty()
@@ -122,7 +121,9 @@ public class Monster extends Actor {
                     // target player when
                     // one is hit
                     for (Monster m :
-                            parentExt.getRoomHandler(this.room.getId()).getCampMonsters(this.id)) {
+                            parentExt
+                                    .getRoomHandler(this.room.getName())
+                                    .getCampMonsters(this.id)) {
                         m.setAggroState(AggroState.ATTACKED, a);
                     }
                 }
@@ -143,7 +144,7 @@ public class Monster extends Actor {
     public boolean isProperActor(Actor a) {
         List<Actor> actors =
                 Champion.getActorsInRadius(
-                        this.parentExt.getRoomHandler(this.room.getId()), this.location, 10f);
+                        this.parentExt.getRoomHandler(this.room.getName()), this.location, 10f);
         return actors.contains(a)
                 && a.getActorType() != ActorType.MINION
                 && a.getActorType() != ActorType.MONSTER;
@@ -153,7 +154,7 @@ public class Monster extends Actor {
         if (this.state == AggroState.ATTACKED && state == AggroState.PASSIVE) {
             double closestDistance = 1000;
             UserActor closestPlayer = null;
-            for (UserActor ua : parentExt.getRoomHandler(this.room.getId()).getPlayers()) {
+            for (UserActor ua : parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                 if (ua.getLocation().distance(this.location) < closestDistance) {
                     closestPlayer = ua;
                     closestDistance = ua.getLocation().distance(this.location);
@@ -212,14 +213,14 @@ public class Monster extends Actor {
                     false,
                     true);
             if (this.getId().contains("gnome"))
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new Champion.DelayedRangedAttack(this, a),
                                 300,
                                 TimeUnit.MILLISECONDS);
             else
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new Champion.DelayedAttack(
@@ -239,7 +240,7 @@ public class Monster extends Actor {
         ExtensionCommands.createProjectileFX(
                 this.parentExt, this.room, fxId, this.id, a.getId(), "Bip001", "Bip001", time);
 
-        SmartFoxServer.getInstance()
+        parentExt
                 .getTaskScheduler()
                 .schedule(
                         new Champion.DelayedAttack(
@@ -264,7 +265,7 @@ public class Monster extends Actor {
             this.dead = true;
             if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
             this.currentHealth = -1;
-            RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getId());
+            RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getName());
             int scoreValue = parentExt.getActorStats(this.id).get("valueScore").asInt();
             if (a.getActorType() == ActorType.PLAYER
                     || a.getActorType()
@@ -274,17 +275,17 @@ public class Monster extends Actor {
                     if (a.getId().contains("skully"))
                         ua =
                                 this.parentExt
-                                        .getRoomHandler(this.room.getId())
+                                        .getRoomHandler(this.room.getName())
                                         .getEnemyChampion(a.getTeam(), "lich");
                     else if (a.getId().contains("turret"))
                         ua =
                                 this.parentExt
-                                        .getRoomHandler(this.room.getId())
+                                        .getRoomHandler(this.room.getName())
                                         .getEnemyChampion(a.getTeam(), "princessbubblegum");
                     else if (a.getId().contains("mine"))
                         ua =
                                 this.parentExt
-                                        .getRoomHandler(this.room.getId())
+                                        .getRoomHandler(this.room.getName())
                                         .getEnemyChampion(a.getTeam(), "neptr");
                 } else ua = (UserActor) a;
                 if (ua != null) {
@@ -324,7 +325,8 @@ public class Monster extends Actor {
         }
         if (msRan % 1000 * 60
                 == 0) { // Every second it checks average player level and scales accordingly
-            int averagePLevel = parentExt.getRoomHandler(this.room.getId()).getAveragePlayerLevel();
+            int averagePLevel =
+                    parentExt.getRoomHandler(this.room.getName()).getAveragePlayerLevel();
             if (averagePLevel != level) {
                 int levelDiff = averagePLevel - level;
                 this.maxHealth += parentExt.getHealthScaling(this.id) * levelDiff;
@@ -436,7 +438,9 @@ public class Monster extends Actor {
         try {
             path =
                     MovementManager.getPath(
-                            this.parentExt.getRoomHandler(this.room.getId()), this.location, dest);
+                            this.parentExt.getRoomHandler(this.room.getName()),
+                            this.location,
+                            dest);
         } catch (Exception e) {
             Console.logWarning(this.id + " could not form a path.");
         }
@@ -447,7 +451,7 @@ public class Monster extends Actor {
             Point2D newPoint =
                     MovementManager.getPathIntersectionPoint(
                             this.parentExt,
-                            this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),
+                            this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap(),
                             testLine);
             if (newPoint != null) {
                 this.move(newPoint);

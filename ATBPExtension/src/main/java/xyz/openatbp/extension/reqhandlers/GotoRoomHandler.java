@@ -75,7 +75,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
                 int roomSize =
                         Integer.parseInt(roomIDSplit[roomIDSplit.length - 1].replace("p", ""));
                 settings.setMaxUsers(roomSize);
-                settings.setGroupId("PVP");
+                settings.setGroupId("PVE");
             } else if (params.getUtfString("room_id").contains("3p")) { // Bot game mode
                 settings.setMaxUsers(2); // TODO: Testing value
                 settings.setGroupId("PVE");
@@ -84,7 +84,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
                 settings.setGroupId("PVP");
             } else {
                 settings.setMaxUsers(1);
-                settings.setGroupId("PVP");
+                settings.setGroupId("PVE");
             }
             try {
                 requestedRoom = parentExt.getApi().createRoom(sender.getZone(), settings, sender);

@@ -373,7 +373,7 @@ public class GameManager {
         ObjectNode node = objectMapper.createObjectNode();
         for (User u : room.getUserList()) {
             UserActor ua =
-                    parentExt.getRoomHandler(room.getId()).getPlayer(String.valueOf(u.getId()));
+                    parentExt.getRoomHandler(room.getName()).getPlayer(String.valueOf(u.getId()));
             if (ua.getTeam() == team) {
                 ObjectNode player = objectMapper.createObjectNode();
                 ISFSObject playerVar = u.getVariable("player").getSFSObjectValue();

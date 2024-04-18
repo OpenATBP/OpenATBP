@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -125,7 +124,7 @@ public class UserActor extends Actor {
         double currentDist = speed * currentTime;
         float x = (float) (x1 + (currentDist / dist) * (x2 - x1));
         float y = (float) (y1 + (currentDist / dist) * (y2 - y1));
-        if (!this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap()) {
+        if (!this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
             if (x >= 52) x = 52;
             else if (x <= -52) x = -52;
         } else {
@@ -137,7 +136,7 @@ public class UserActor extends Actor {
         else if (y <= -30) y = -30;
         rPoint.setLocation(x, y);
         this.location = rPoint;
-        if (!this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap()) {
+        if (!this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
             if (x >= 52 || x <= -52 || y >= 30 || y <= -30) this.stopMoving();
         } else {
             if (x >= 62 || x <= -62 || y >= 30 || y <= -30) this.stopMoving();
@@ -238,9 +237,7 @@ public class UserActor extends Actor {
             if (this.states.get(ActorState.BRUSH)) {
                 Runnable runnable = () -> UserActor.this.setState(ActorState.REVEALED, false);
                 this.setState(ActorState.REVEALED, true);
-                SmartFoxServer.getInstance()
-                        .getTaskScheduler()
-                        .schedule(runnable, 3000, TimeUnit.MILLISECONDS);
+                parentExt.getTaskScheduler().schedule(runnable, 3000, TimeUnit.MILLISECONDS);
             }
             if (!moonActivated
                     && this.hasBackpackItem("junk_3_battle_moon")
@@ -250,7 +247,7 @@ public class UserActor extends Actor {
                 if (moonTimer > timer) {
                     this.moonActivated = true;
                     int duration = (int) (3 + (1 * getPlayerStat("sp_category3")));
-                    SmartFoxServer.getInstance()
+                    parentExt
                             .getTaskScheduler()
                             .schedule(new BattleMoon(), duration, TimeUnit.SECONDS);
                     ExtensionCommands.createActorFX(
@@ -377,21 +374,19 @@ public class UserActor extends Actor {
                                 .get("attackType")
                                 .asText()
                                 .equalsIgnoreCase("MELEE"))
-                    SmartFoxServer.getInstance()
+                    parentExt
                             .getTaskScheduler()
                             .schedule(
                                     new RangedAttack(a, delayedAttack, projectileFx),
                                     500,
                                     TimeUnit.MILLISECONDS);
                 else
-                    SmartFoxServer.getInstance()
+                    parentExt
                             .getTaskScheduler()
                             .schedule(delayedAttack, 300, TimeUnit.MILLISECONDS);
             } catch (NullPointerException e) {
                 // e.printStackTrace();
-                SmartFoxServer.getInstance()
-                        .getTaskScheduler()
-                        .schedule(delayedAttack, 300, TimeUnit.MILLISECONDS);
+                parentExt.getTaskScheduler().schedule(delayedAttack, 300, TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -474,7 +469,7 @@ public class UserActor extends Actor {
         }
         for (Point2D location : towerLocations) {
             if (Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()), location, 6f)
+                            this.parentExt.getRoomHandler(this.room.getName()), location, 6f)
                     .contains(a)) {
                 return true;
             }
@@ -506,9 +501,7 @@ public class UserActor extends Actor {
         int timeMs = (int) (time * 1000d);
         this.stopMoving(timeMs);
         Runnable setIsDashing = () -> this.isDashing = false;
-        SmartFoxServer.getInstance()
-                .getTaskScheduler()
-                .schedule(setIsDashing, timeMs, TimeUnit.MILLISECONDS);
+        parentExt.getTaskScheduler().schedule(setIsDashing, timeMs, TimeUnit.MILLISECONDS);
         ExtensionCommands.moveActor(
                 this.parentExt,
                 this.room,
@@ -661,10 +654,12 @@ public class UserActor extends Actor {
                     ua.increaseStat("kills", 1);
                     if (ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0)
                         ua.addNailStacks(5);
-                    this.parentExt.getRoomHandler(this.room.getId()).addScore(ua, ua.getTeam(), 25);
+                    this.parentExt
+                            .getRoomHandler(this.room.getName())
+                            .addScore(ua, ua.getTeam(), 25);
                 } else {
                     for (UserActor ua :
-                            this.parentExt.getRoomHandler(this.room.getId()).getPlayers()) {
+                            this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                         if (ua.getTeam() != this.team) {
                             ExtensionCommands.playSound(
                                     parentExt,
@@ -701,7 +696,7 @@ public class UserActor extends Actor {
                 e.printStackTrace();
             }
             this.addGameStat("timeDead", this.deathTime);
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             new Champion.RespawnCharacter(this), this.deathTime, TimeUnit.SECONDS);
@@ -748,7 +743,7 @@ public class UserActor extends Actor {
             this.killingSpree += num;
             this.multiKill++;
             this.lastKilled = System.currentTimeMillis();
-            for (UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()) {
+            for (UserActor ua : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                 if (ua.getTeam() == this.team) {
                     boolean ally = !ua.getId().equalsIgnoreCase(this.id);
                     String sound =
@@ -800,7 +795,7 @@ public class UserActor extends Actor {
         boolean insideBrush = false;
         for (Path2D brush :
                 this.parentExt.getBrushPaths(
-                        this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap())) {
+                        this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap())) {
             if (brush.contains(this.location)) {
                 insideBrush = true;
                 break;
@@ -836,7 +831,7 @@ public class UserActor extends Actor {
                             > 0.1f) {
                         this.setPath(
                                 MovementManager.getPath(
-                                        this.parentExt.getRoomHandler(this.room.getId()),
+                                        this.parentExt.getRoomHandler(this.room.getName()),
                                         this.location,
                                         this.target.getLocation()));
                     }
@@ -858,7 +853,7 @@ public class UserActor extends Actor {
                 double closestDistance = 1000;
                 for (Actor a :
                         Champion.getActorsInRadius(
-                                this.parentExt.getRoomHandler(room.getId()),
+                                this.parentExt.getRoomHandler(room.getName()),
                                 this.location,
                                 this.parentExt
                                         .getActorStats(this.avatar)
@@ -940,7 +935,7 @@ public class UserActor extends Actor {
             Point2D dest) {
         if (gCooldown > 0) {
             this.stopMoving(gCooldown);
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(new MovementStopper(true), castDelay, TimeUnit.MILLISECONDS);
         } else {
@@ -970,7 +965,7 @@ public class UserActor extends Actor {
                         () -> {
                             canCast[finalAbilityIndex] = true;
                         };
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(castReset, getReducedCooldown(cooldown), TimeUnit.MILLISECONDS);
             }
@@ -1094,7 +1089,7 @@ public class UserActor extends Actor {
         this.stopMoving();
         this.canMove = false;
         if (delay > 0) {
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(new MovementStopper(true), delay, TimeUnit.MILLISECONDS);
         } else this.canMove = true;
@@ -1111,7 +1106,7 @@ public class UserActor extends Actor {
         this.canMove = true;
         this.setHealth((int) this.maxHealth, (int) this.maxHealth);
         int teamNumber =
-                parentExt.getRoomHandler(this.room.getId()).getTeamNumber(this.id, this.team);
+                parentExt.getRoomHandler(this.room.getName()).getTeamNumber(this.id, this.team);
         Point2D respawnPoint = MapData.PURPLE_SPAWNS[teamNumber];
         if (this.team == 1 && respawnPoint.getX() < 0)
             respawnPoint = new Point2D.Double(respawnPoint.getX() * -1, respawnPoint.getY());
@@ -1198,12 +1193,12 @@ public class UserActor extends Actor {
         if (a.getId().contains("turret"))
             a =
                     this.parentExt
-                            .getRoomHandler(this.room.getId())
+                            .getRoomHandler(this.room.getName())
                             .getEnemyChampion(this.team, "princessbubblegum");
         if (a.getId().contains("skully"))
             a =
                     this.parentExt
-                            .getRoomHandler(this.room.getId())
+                            .getRoomHandler(this.room.getName())
                             .getEnemyChampion(this.team, "lich");
         String precursor = "attack";
         if (attackData.has("spellName")) precursor = "spell";
@@ -1348,7 +1343,7 @@ public class UserActor extends Actor {
         if (a.getActorType() == ActorType.PLAYER) this.updateXPWorth("kill");
         for (Actor actor :
                 Champion.getActorsInRadius(
-                        this.parentExt.getRoomHandler(this.room.getId()), this.location, 10f)) {
+                        this.parentExt.getRoomHandler(this.room.getName()), this.location, 10f)) {
             if (actor.getActorType() == ActorType.PLAYER
                     && !actor.getId().equalsIgnoreCase(this.id)
                     && actor.getTeam() == this.team) {
@@ -1419,7 +1414,7 @@ public class UserActor extends Actor {
         double speed = parentExt.getActorStats(id).get("speed").asDouble();
         ExtensionCommands.createProjectile(
                 parentExt, this.room, this, id, location, lineEndPoint, (float) speed);
-        this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
+        this.parentExt.getRoomHandler(this.room.getName()).addProjectile(projectile);
     }
 
     public void fireMMProjectile(
@@ -1449,7 +1444,7 @@ public class UserActor extends Actor {
                 location,
                 lineEndPoint,
                 (float) speed);
-        this.parentExt.getRoomHandler(this.room.getId()).addProjectile(projectile);
+        this.parentExt.getRoomHandler(this.room.getName()).addProjectile(projectile);
     }
 
     public void handleDCBuff(int teamSizeDiff, boolean removeSecondBuff) {
@@ -1628,7 +1623,7 @@ public class UserActor extends Actor {
             float time = (float) (target.getLocation().distance(location) / 10f);
             ExtensionCommands.createProjectileFX(
                     parentExt, room, projectile, id, target.getId(), emit, "targetNode", time);
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(attackRunnable, (int) (time * 1000), TimeUnit.MILLISECONDS);
         }

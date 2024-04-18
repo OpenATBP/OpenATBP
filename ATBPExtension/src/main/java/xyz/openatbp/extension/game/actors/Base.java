@@ -62,7 +62,7 @@ public class Base extends Actor {
             this.lastHit = System.currentTimeMillis();
             for (UserActor ua :
                     parentExt
-                            .getRoomHandler(room.getId())
+                            .getRoomHandler(room.getName())
                             .getPlayers()) { // TODO: Playing for enemy team?
                 if (ua.getTeam() == this.team)
                     ExtensionCommands.playSound(
@@ -93,7 +93,7 @@ public class Base extends Actor {
             try {
                 int oppositeTeam = 0;
                 if (this.team == 0) oppositeTeam = 1;
-                parentExt.getRoomHandler(this.room.getId()).gameOver(oppositeTeam);
+                parentExt.getRoomHandler(this.room.getName()).gameOver(oppositeTeam);
             } catch (Exception e) {
                 e.printStackTrace();
             }

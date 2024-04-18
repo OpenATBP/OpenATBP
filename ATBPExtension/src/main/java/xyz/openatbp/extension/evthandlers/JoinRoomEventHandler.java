@@ -23,8 +23,9 @@ public class JoinRoomEventHandler extends BaseServerEventHandler {
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         int maxPlayers = room.getMaxUsers();
         // if(true) maxPlayers = 4; //Remove after testing
-        if (GameManager.playersLoaded(
-                users, maxPlayers)) { // If all players have loaded into the room
+        if (GameManager.playersLoaded(users, maxPlayers)
+                && (int) room.getProperty("state")
+                        == 0) { // If all players have loaded into the room
             room.setProperty("state", 1);
             GameManager.addPlayer(room, parentExt); // Add users to the game
             GameManager.loadPlayers(room, parentExt); // Load the players into the map

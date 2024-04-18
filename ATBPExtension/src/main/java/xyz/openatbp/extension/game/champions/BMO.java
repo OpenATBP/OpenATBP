@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -39,7 +38,7 @@ public class BMO extends UserActor {
         this.applyStopMovingDuringAttack();
         String projectileFx =
                 (this.avatar.contains("noir")) ? "bmo_projectile_noire" : "bmo_projectile";
-        SmartFoxServer.getInstance()
+        parentExt
                 .getTaskScheduler()
                 .schedule(
                         new RangedAttack(a, new BMOPassive(a, this.handleAttack(a)), projectileFx),
@@ -72,7 +71,7 @@ public class BMO extends UserActor {
         if (wActive) {
             for (Actor a :
                     Champion.getActorsInRadius(
-                            parentExt.getRoomHandler(this.room.getId()), this.location, 4f)) {
+                            parentExt.getRoomHandler(this.room.getName()), this.location, 4f)) {
                 if (a.getTeam() != this.team && isNonStructure(a)) {
                     JsonNode spellData = parentExt.getAttackData("bmo", "spell2");
                     a.addToDamageQueue(this, (double) getSpellDamage(spellData) / 10d, spellData);
@@ -110,7 +109,7 @@ public class BMO extends UserActor {
                                 Q_SPELL_RANGE,
                                 Q_OFFSET_DISTANCE_BOTTOM,
                                 Q_OFFSET_DISTANCE_TOP);
-                for (Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()) {
+                for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                     if (a.getTeam() != this.team && trapezoid.contains(a.getLocation())) {
                         if (isNonStructure(a)) {
                             a.addState(ActorState.BLINDED, 0.5d, 2500, null, false);
@@ -145,7 +144,7 @@ public class BMO extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new BMOAbilityHandler(
@@ -216,7 +215,7 @@ public class BMO extends UserActor {
                             this.parentExt, this.room, this.id, "spell2", 3000, true);
                     ExtensionCommands.actorAbilityResponse(
                             this.parentExt, this.player, "w", true, 500, 0);
-                    SmartFoxServer.getInstance()
+                    parentExt
                             .getTaskScheduler()
                             .schedule(
                                     new BMOAbilityHandler(
@@ -228,7 +227,7 @@ public class BMO extends UserActor {
                     this.canCast[2] = true;
                     this.wActive = false;
                     this.wEnd(cooldown, gCooldown);
-                    SmartFoxServer.getInstance()
+                    parentExt
                             .getTaskScheduler()
                             .schedule(
                                     new BMOAbilityHandler(
@@ -257,7 +256,7 @@ public class BMO extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new BMOAbilityHandler(
@@ -332,7 +331,7 @@ public class BMO extends UserActor {
         canMove = true;
         for (Actor a :
                 Champion.getActorsInRadius(
-                        parentExt.getRoomHandler(this.room.getId()), this.location, 4f)) {
+                        parentExt.getRoomHandler(this.room.getName()), this.location, 4f)) {
             if (a.getTeam() != this.team && isNonStructure(a)) {
                 JsonNode spellData = parentExt.getAttackData("bmo", "spell2");
                 long wDuration = System.currentTimeMillis() - wStartTime;
@@ -393,7 +392,7 @@ public class BMO extends UserActor {
         protected void spellE() {
             int E_CAST_DELAY = 250;
             Runnable enableECasting = () -> canCast[2] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableECasting,

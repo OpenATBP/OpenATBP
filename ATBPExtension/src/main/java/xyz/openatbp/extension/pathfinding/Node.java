@@ -53,7 +53,7 @@ public class Node {
     public static Node getCurrentNode(ATBPExtension parentExt, Actor actor) {
         Node[][] nodes = parentExt.getMainMapNodes();
         int maxRow = ATBPExtension.MAX_MAIN_ROW;
-        if (parentExt.getRoomHandler(actor.getRoom().getId()).isPracticeMap()) {
+        if (parentExt.getRoomHandler(actor.getRoom().getName()).isPracticeMap()) {
             nodes = parentExt.getPracticeMapNodes();
             maxRow = ATBPExtension.MAX_PRAC_ROW;
         }

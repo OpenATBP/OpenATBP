@@ -15,7 +15,7 @@ public class AutoLevelHandler extends BaseClientRequestHandler {
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         UserActor ua =
                 parentExt
-                        .getRoomHandler(sender.getLastJoinedRoom().getId())
+                        .getRoomHandler(sender.getLastJoinedRoom().getName())
                         .getPlayer(String.valueOf(sender.getId()));
         sender.getVariable("champion")
                 .getSFSObjectValue()

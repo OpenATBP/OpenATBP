@@ -173,9 +173,18 @@ function updateElo(socket) {
     playerCollection
       .findOne({ 'user.TEGid': socket.player.teg_id })
       .then((res) => {
-        if (res != null) socket.player.elo = res.player.elo;
+        if (res != null){
+          switch(res.player.elo + 1){
+            case 1:
+            case 100:
+            case 200:
+            case 500:
+              res.player.elo++;
+              break;
+          }
+          socket.player.elo = res.player.elo;
+        }
         else socket.close();
-        console.log(`${socket.player.name} has ${socket.player.elo} ELO!`);
       })
       .catch((e) => {
         console.log(e);

@@ -164,7 +164,7 @@ public abstract class Actor {
         Point2D newPoint =
                 MovementManager.getPathIntersectionPoint(
                         this.parentExt,
-                        this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),
+                        this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap(),
                         testLine);
         if (newPoint != null) {
             this.move(newPoint);
@@ -181,7 +181,7 @@ public abstract class Actor {
         Point2D dest =
                 MovementManager.getPathIntersectionPoint(
                         parentExt,
-                        this.parentExt.getRoomHandler(this.room.getId()).isPracticeMap(),
+                        this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap(),
                         pathLine);
         if (dest == null) dest = path.get(1);
         this.path = path;
@@ -701,12 +701,12 @@ public abstract class Actor {
                     if (damager.getId().contains("turret")) {
                         damager =
                                 this.parentExt
-                                        .getRoomHandler(this.room.getId())
+                                        .getRoomHandler(this.room.getName())
                                         .getEnemyChampion(enemyTeam, "princessbubblegum");
                     } else if (damager.getId().contains("skully")) {
                         damager =
                                 this.parentExt
-                                        .getRoomHandler(this.room.getId())
+                                        .getRoomHandler(this.room.getName())
                                         .getEnemyChampion(enemyTeam, "lich");
                     }
                 }

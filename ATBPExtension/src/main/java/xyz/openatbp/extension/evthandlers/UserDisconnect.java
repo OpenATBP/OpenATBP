@@ -21,7 +21,7 @@ public class UserDisconnect extends BaseServerEventHandler {
                         .getProperty("room_id")
                         .toString(); // Can probably find a better way to handle room names
         Room room = user.getZone().getRoomByName(roomID);
-        RoomHandler roomHandler = parentExt.getRoomHandler(room.getId());
+        RoomHandler roomHandler = parentExt.getRoomHandler(room.getName());
         int roomState = (int) room.getProperty("state");
         if (roomHandler != null) {
             roomHandler.handlePlayerDC(user);

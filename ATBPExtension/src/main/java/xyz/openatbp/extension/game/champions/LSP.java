@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -52,7 +51,9 @@ public class LSP extends UserActor {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
             for (Actor a :
                     Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()), this.location, 3f)) {
+                            this.parentExt.getRoomHandler(this.room.getName()),
+                            this.location,
+                            3f)) {
                 if (this.isNonStructure(a)) {
                     a.addToDamageQueue(this, (double) getSpellDamage(spellData) / 10d, spellData);
                 }
@@ -66,7 +67,7 @@ public class LSP extends UserActor {
     @Override
     public void attack(Actor a) {
         this.applyStopMovingDuringAttack();
-        SmartFoxServer.getInstance()
+        parentExt
                 .getTaskScheduler()
                 .schedule(
                         new RangedAttack(
@@ -127,7 +128,7 @@ public class LSP extends UserActor {
                         true,
                         true,
                         this.team);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new LSPAbilityHandler(
@@ -168,7 +169,7 @@ public class LSP extends UserActor {
                         true,
                         true,
                         this.team);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new LSPAbilityHandler(
@@ -197,7 +198,7 @@ public class LSP extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new LSPAbilityHandler(
@@ -219,7 +220,7 @@ public class LSP extends UserActor {
         protected void spellQ() {
             int Q_CAST_DELAY = 750;
             Runnable enableQCasting = () -> canCast[0] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableQCasting,
@@ -252,7 +253,7 @@ public class LSP extends UserActor {
                 Path2D qRect =
                         Champion.createRectangle(location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
                 List<Actor> affectedActors = new ArrayList<>();
-                for (Actor a : parentExt.getRoomHandler(room.getId()).getActors()) {
+                for (Actor a : parentExt.getRoomHandler(room.getName()).getActors()) {
                     if (isNonStructure(a) && qRect.contains(a.getLocation())) {
                         if (!a.getId().contains("turret")) a.handleFear(LSP.this.location, 3000);
                         a.addToDamageQueue(LSP.this, getSpellDamage(spellData), spellData);
@@ -269,7 +270,7 @@ public class LSP extends UserActor {
         protected void spellW() {
             int W_CAST_DELAY = 500;
             Runnable enableWCasting = () -> canCast[1] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableWCasting,
@@ -296,7 +297,7 @@ public class LSP extends UserActor {
         protected void spellE() {
             int E_CAST_DELAY = 1250;
             Runnable enableECasting = () -> canCast[2] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableECasting,

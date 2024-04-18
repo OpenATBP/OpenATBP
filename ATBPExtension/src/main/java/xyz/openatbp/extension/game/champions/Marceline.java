@@ -6,7 +6,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -72,7 +71,9 @@ public class Marceline extends UserActor {
         if (this.humanWActive) {
             for (Actor a :
                     Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()), this.location, 2f)) {
+                            this.parentExt.getRoomHandler(this.room.getName()),
+                            this.location,
+                            2f)) {
                 if (a.getTeam() != this.team
                         && a.getActorType() != ActorType.TOWER
                         && a.getActorType() != ActorType.BASE) {
@@ -112,7 +113,7 @@ public class Marceline extends UserActor {
     public void attack(Actor a) {
         this.applyStopMovingDuringAttack();
         if (this.attackCooldown == 0) {
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             new MarcelineAttack(a, this.handleAttack(a)),
@@ -212,7 +213,7 @@ public class Marceline extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new MarcelineAbilityHandler(
@@ -295,7 +296,7 @@ public class Marceline extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new MarcelineAbilityHandler(
@@ -339,7 +340,7 @@ public class Marceline extends UserActor {
                         false,
                         true,
                         this.team);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new MarcelineAbilityHandler(
@@ -421,7 +422,7 @@ public class Marceline extends UserActor {
         protected void spellE() {
             int E_CAST_DELAY = 750;
             Runnable enableECasting = () -> canCast[2] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableECasting,
@@ -475,7 +476,7 @@ public class Marceline extends UserActor {
                 updateStatMenu("healthRegen");
                 for (Actor a :
                         Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getId()), dest, 3)) {
+                                parentExt.getRoomHandler(room.getName()), dest, 3)) {
                     if (a.getTeam() != team
                             && a.getActorType() != ActorType.TOWER
                             && a.getActorType() != ActorType.BASE) {
@@ -541,9 +542,7 @@ public class Marceline extends UserActor {
                             qVictim = null;
                             qHit = -1;
                         };
-                SmartFoxServer.getInstance()
-                        .getTaskScheduler()
-                        .schedule(endVictim, 1500, TimeUnit.MILLISECONDS);
+                parentExt.getTaskScheduler().schedule(endVictim, 1500, TimeUnit.MILLISECONDS);
                 victim.addState(ActorState.SLOWED, 0.15d, 1500, null, false);
             }
             JsonNode spellData = parentExt.getAttackData(avatar, "spell1");

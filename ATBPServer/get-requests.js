@@ -67,7 +67,17 @@ module.exports = {
       collection
         .findOne({ authToken: data })
         .then((dat) => {
-          if (dat != null) resolve(JSON.stringify(dat.player));
+          if (dat != null){
+            switch(dat.player.elo + 1){
+              case 1:
+              case 100:
+              case 200:
+              case 500:
+                dat.player.elo++;
+                break;
+            }
+            resolve(JSON.stringify(dat.player));
+          }
         })
         .catch((err) => {
           reject(err);

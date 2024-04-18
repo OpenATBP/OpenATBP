@@ -88,7 +88,7 @@ public class MovementManager {
     }
 
     public static Point2D getDashPoint(Actor player, Line2D movementLine) {
-        if (!player.getParentExt().getRoomHandler(player.getRoom().getId()).isPracticeMap()) {
+        if (!player.getParentExt().getRoomHandler(player.getRoom().getName()).isPracticeMap()) {
             if (Math.abs(movementLine.getP2().getX()) >= 51 || Math.abs(movementLine.getY2()) >= 31)
                 return movementLine.getP1();
         } else {

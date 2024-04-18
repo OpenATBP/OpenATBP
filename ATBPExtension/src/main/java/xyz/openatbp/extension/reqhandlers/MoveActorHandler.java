@@ -23,14 +23,14 @@ public class MoveActorHandler extends BaseClientRequestHandler {
         // Console.debugLog(params.getDump());
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
 
-        RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId());
+        RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getName());
         if (roomHandler == null && (int) sender.getLastJoinedRoom().getProperty("state") != 2)
             ExtensionCommands.abortGame(parentExt, sender.getLastJoinedRoom());
         if (roomHandler == null) {
             Console.logWarning(
                     sender.getId()
                             + " tried to move in room "
-                            + sender.getLastJoinedRoom().getId()
+                            + sender.getLastJoinedRoom().getName()
                             + " but failed!");
             return;
         }
@@ -57,12 +57,12 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                 Line2D movementLine = new Line2D.Float(px, pz, dx, dz);
                 if (MovementManager.getPathIntersectionPoint(
                                         parentExt,
-                                        parentExt.getRoomHandler(room.getId()).isPracticeMap(),
+                                        parentExt.getRoomHandler(room.getName()).isPracticeMap(),
                                         movementLine)
                                 != null
                         && !MovementManager.insideAnyObstacle(
                                 parentExt,
-                                parentExt.getRoomHandler(room.getId()).isPracticeMap(),
+                                parentExt.getRoomHandler(room.getName()).isPracticeMap(),
                                 new Point2D.Float(dx, dz))) {
                     path =
                             Node.getPath(
@@ -72,14 +72,16 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                                     Node.getNodeAtLocation(
                                             parentExt,
                                             new Point2D.Float(dx, dz),
-                                            parentExt.getRoomHandler(room.getId()).isPracticeMap()),
-                                    parentExt.getRoomHandler(room.getId()).isPracticeMap());
+                                            parentExt
+                                                    .getRoomHandler(room.getName())
+                                                    .isPracticeMap()),
+                                    parentExt.getRoomHandler(room.getName()).isPracticeMap());
                 }
 
                 if (path.size() <= 2
                         || MovementManager.insideAnyObstacle(
                                 parentExt,
-                                parentExt.getRoomHandler(room.getId()).isPracticeMap(),
+                                parentExt.getRoomHandler(room.getName()).isPracticeMap(),
                                 new Point2D.Float(dx, dz))) {
                     // Creates the path of the player
                     // ExtensionCommands.createWorldFX(parentExt, user.getRoom(),
@@ -87,7 +89,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                     Point2D intersectionPoint =
                             MovementManager.getPathIntersectionPoint(
                                     parentExt,
-                                    parentExt.getRoomHandler(room.getId()).isPracticeMap(),
+                                    parentExt.getRoomHandler(room.getName()).isPracticeMap(),
                                     movementLine);
 
                     float destx = (float) movementLine.getX2();
@@ -113,7 +115,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                 Point2D intersectionPoint =
                         MovementManager.getPathIntersectionPoint(
                                 parentExt,
-                                parentExt.getRoomHandler(room.getId()).isPracticeMap(),
+                                parentExt.getRoomHandler(room.getName()).isPracticeMap(),
                                 movementLine);
 
                 float destx = (float) movementLine.getX2();

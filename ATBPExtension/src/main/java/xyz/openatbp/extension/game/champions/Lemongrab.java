@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -130,7 +129,7 @@ public class Lemongrab extends UserActor {
                                 Q_SPELL_RANGE,
                                 Q_OFFSET_DISTANCE_BOTTOM,
                                 Q_OFFSET_DISTANCE_TOP);
-                for (Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()) {
+                for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                     if (a.getTeam() != this.team && trapezoid.contains(a.getLocation())) {
                         if (isNonStructure(a))
                             a.addState(ActorState.SLOWED, 0.4d, 2500, null, false);
@@ -168,7 +167,7 @@ public class Lemongrab extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new LemonAbilityHandler(
@@ -213,16 +212,14 @@ public class Lemongrab extends UserActor {
                                     team,
                                     0f);
                         };
-                SmartFoxServer.getInstance()
-                        .getTaskScheduler()
-                        .schedule(delayedJuice, 500, TimeUnit.MILLISECONDS);
+                parentExt.getTaskScheduler().schedule(delayedJuice, 500, TimeUnit.MILLISECONDS);
                 ExtensionCommands.playSound(
                         this.parentExt,
                         this.room,
                         this.id,
                         "vo/vo_lemongrab_my_juice",
                         this.location);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new LemonAbilityHandler(
@@ -247,7 +244,7 @@ public class Lemongrab extends UserActor {
                         true,
                         this.team,
                         0f);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new LemonAbilityHandler(
@@ -290,7 +287,7 @@ public class Lemongrab extends UserActor {
         protected void spellW() {
             int W_CAST_DELAY = 1000;
             Runnable enableWCasting = () -> canCast[1] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableWCasting,
@@ -312,7 +309,7 @@ public class Lemongrab extends UserActor {
                 List<Actor> affectedActors = new ArrayList<>();
                 for (Actor a :
                         Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getId()), dest, 1f)) {
+                                parentExt.getRoomHandler(room.getName()), dest, 1f)) {
                     if (isNonStructure(a)) {
                         affectedActors.add(a);
                         a.addToDamageQueue(Lemongrab.this, getSpellDamage(spellData), spellData);
@@ -322,7 +319,7 @@ public class Lemongrab extends UserActor {
                 }
                 for (Actor a :
                         Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getId()), dest, 2f)) {
+                                parentExt.getRoomHandler(room.getName()), dest, 2f)) {
                     if (isNonStructure(a) && !affectedActors.contains(a)) {
                         double damage = 60d + (getPlayerStat("spellDamage") * 0.4d);
                         a.addState(ActorState.BLINDED, 0d, 4000, null, false);
@@ -336,7 +333,7 @@ public class Lemongrab extends UserActor {
         protected void spellE() {
             int E_CAST_DELAY = 1000;
             Runnable enableECasting = () -> canCast[2] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableECasting,
@@ -362,7 +359,7 @@ public class Lemongrab extends UserActor {
                 duration *= (1d + (0.1d * unacceptableLevels));
                 for (Actor a :
                         Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getId()), dest, 2.5f)) {
+                                parentExt.getRoomHandler(room.getName()), dest, 2.5f)) {
                     if (isNonStructure(a)) {
                         a.addToDamageQueue(Lemongrab.this, damage, spellData);
                         if (a.getActorType() == ActorType.PLAYER) {

@@ -25,7 +25,7 @@ public class HitActorHandler extends BaseClientRequestHandler {
     public void handleClientRequest(User sender, ISFSObject params) {
 
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
-        RoomHandler handler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId());
+        RoomHandler handler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getName());
         UserActor actor = handler.getPlayer(String.valueOf(sender.getId()));
         String roomGroup = sender.getLastJoinedRoom().getGroupId();
 
@@ -76,7 +76,7 @@ public class HitActorHandler extends BaseClientRequestHandler {
                 Line2D newPath = Champion.getDistanceLine(movementLine, targetDistance);
                 actor.setPath(
                         MovementManager.getPath(
-                                parentExt.getRoomHandler(actor.getRoom().getId()),
+                                parentExt.getRoomHandler(actor.getRoom().getName()),
                                 location,
                                 target.getLocation()));
             } else if (actor.withinRange(target)) {
