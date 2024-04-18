@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 
@@ -133,7 +132,7 @@ public class Tower extends Actor {
                 false,
                 false,
                 this.team);
-        SmartFoxServer.getInstance()
+        parentExt
                 .getTaskScheduler()
                 .schedule(
                         new Champion.DelayedAttack(
@@ -190,9 +189,10 @@ public class Tower extends Actor {
                 if (this.target != null && this.target.getActorType() == ActorType.PLAYER)
                     ExtensionCommands.removeFx(parentExt, u, this.id + "_aggro");
             }
-            this.parentExt.getRoomHandler(this.room.getId()).addScore(null, a.getTeam(), 50);
+            this.parentExt.getRoomHandler(this.room.getName()).addScore(null, a.getTeam(), 50);
             if (this.getTowerNum() == 0 || this.getTowerNum() == 3) {
-                for (UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()) {
+                for (UserActor ua :
+                        this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                     if (ua.getTeam() == this.team) {
                         ExtensionCommands.playSound(
                                 parentExt, ua.getUser(), "global", "announcer/base_tower_down");
@@ -202,7 +202,8 @@ public class Tower extends Actor {
                     }
                 }
             } else {
-                for (UserActor ua : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()) {
+                for (UserActor ua :
+                        this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                     if (ua.getTeam() == this.team) {
                         ExtensionCommands.playSound(
                                 parentExt, ua.getUser(), "global", "announcer/your_tower_down");
@@ -217,7 +218,7 @@ public class Tower extends Actor {
 
     public List<UserActor> getUserActorsInTowerRadius() {
         ArrayList<UserActor> players =
-                this.parentExt.getRoomHandler(this.room.getId()).getPlayers();
+                this.parentExt.getRoomHandler(this.room.getName()).getPlayers();
         ArrayList<UserActor> playersInRadius = new ArrayList<>();
         for (UserActor ua : players) {
             if (ua.location.distance(this.location) <= (float) this.getPlayerStat("attackRange"))
@@ -234,7 +235,7 @@ public class Tower extends Actor {
                 if (this.destroyed) return;
                 nearbyActors =
                         Champion.getEnemyActorsInRadius(
-                                this.parentExt.getRoomHandler(this.room.getId()),
+                                this.parentExt.getRoomHandler(this.room.getName()),
                                 this.team,
                                 this.location,
                                 (float) this.getPlayerStat("attackRange"));
@@ -309,7 +310,7 @@ public class Tower extends Actor {
                     if (!isFocusingCompanion && !isFocusingPlayer) {
                         for (Actor a :
                                 Champion.getActorsInRadius(
-                                        this.parentExt.getRoomHandler(this.room.getId()),
+                                        this.parentExt.getRoomHandler(this.room.getName()),
                                         this.location,
                                         (float) this.getPlayerStat("attackRange"))) {
                             if (a.getActorType() == ActorType.COMPANION

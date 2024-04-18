@@ -14,7 +14,7 @@ public class ClientReadyHandler extends BaseClientRequestHandler {
     public void handleClientRequest(
             User sender, ISFSObject params) { // Sent when client has loaded all assets
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
-        trace(params.getDump());
+        // trace(params.getDump());
         int progress = params.getInt("progress");
         ISFSObject data = new SFSObject();
         data.putUtfString("id", String.valueOf(sender.getId()));

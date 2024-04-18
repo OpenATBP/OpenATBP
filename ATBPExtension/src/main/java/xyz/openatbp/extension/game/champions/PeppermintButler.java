@@ -6,7 +6,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -42,9 +41,11 @@ public class PeppermintButler extends UserActor {
             return super.getPlayerStat("healthRegen") + (this.maxHealth * 0.02d);
         else if (stat.equalsIgnoreCase("speed") && getState(ActorState.TRANSFORMED))
             return super.getPlayerStat("speed") + (this.getStat("speed") * 0.4d);
-        else if (stat.equalsIgnoreCase("attackSpeed") && getState(ActorState.TRANSFORMED))
-            return super.getPlayerStat("attackSpeed") - (this.getStat("attackSpeed") * 0.3d);
-        else if (stat.equalsIgnoreCase("attackDamage") && getState(ActorState.TRANSFORMED))
+        else if (stat.equalsIgnoreCase("attackSpeed") && getState(ActorState.TRANSFORMED)) {
+            double currentAttackSpeed = super.getPlayerStat("attackSpeed");
+            double modifier = (this.getStat("attackSpeed") * 0.3d);
+            return currentAttackSpeed - modifier < 500 ? 500 : currentAttackSpeed - modifier;
+        } else if (stat.equalsIgnoreCase("attackDamage") && getState(ActorState.TRANSFORMED))
             return super.getPlayerStat("attackDamage") + (this.getStat("attackDamage") * 0.3d);
         return super.getPlayerStat(stat);
     }
@@ -71,6 +72,17 @@ public class PeppermintButler extends UserActor {
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         this.stopPassive = true;
         return super.damaged(a, damage, attackData);
+    }
+
+    @Override
+    protected boolean canRegenHealth() {
+        if (this.isStopped()
+                && !qActive
+                && !stopPassive
+                && !this.getState(ActorState.TRANSFORMED)
+                && !isCapturingAltar()
+                && !dead) return true;
+        return super.canRegenHealth();
     }
 
     @Override
@@ -128,9 +140,7 @@ public class PeppermintButler extends UserActor {
                                 this.setState(ActorState.INVISIBLE, true);
                             }
                         };
-                SmartFoxServer.getInstance()
-                        .getTaskScheduler()
-                        .schedule(delayAnimation, 500, TimeUnit.MILLISECONDS);
+                parentExt.getTaskScheduler().schedule(delayAnimation, 500, TimeUnit.MILLISECONDS);
                 this.updateStatMenu("healthRegen");
             }
         } else {
@@ -175,7 +185,9 @@ public class PeppermintButler extends UserActor {
         if (this.qActive) {
             for (Actor a :
                     Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()), this.location, 3f)) {
+                            this.parentExt.getRoomHandler(this.room.getName()),
+                            this.location,
+                            3f)) {
                 if (this.isNonStructure(a)) {
                     JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell1");
                     double damage = this.getSpellDamage(spellData) / 10d;
@@ -274,7 +286,7 @@ public class PeppermintButler extends UserActor {
                         getReducedCooldown(cooldown),
                         gCooldown);
                 qActive = true;
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new PeppermintAbilityHandler(
@@ -339,7 +351,7 @@ public class PeppermintButler extends UserActor {
                                         this.team);
                                 this.dash(dest, true, 15d);
                             } else wRunTime.set(0);
-                            SmartFoxServer.getInstance()
+                            parentExt
                                     .getTaskScheduler()
                                     .schedule(
                                             new PeppermintAbilityHandler(
@@ -348,9 +360,7 @@ public class PeppermintButler extends UserActor {
                                             TimeUnit.MILLISECONDS);
                         };
 
-                SmartFoxServer.getInstance()
-                        .getTaskScheduler()
-                        .schedule(animationDelay, 500, TimeUnit.MILLISECONDS);
+                parentExt.getTaskScheduler().schedule(animationDelay, 500, TimeUnit.MILLISECONDS);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -430,16 +440,14 @@ public class PeppermintButler extends UserActor {
                         };
                 ExtensionCommands.actorAbilityResponse(
                         parentExt, player, "e", true, getReducedCooldown(cooldown), gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new PeppermintAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, dest),
                                 getReducedCooldown(cooldown),
                                 TimeUnit.MILLISECONDS);
-                SmartFoxServer.getInstance()
-                        .getTaskScheduler()
-                        .schedule(delay, castDelay, TimeUnit.MILLISECONDS);
+                parentExt.getTaskScheduler().schedule(delay, castDelay, TimeUnit.MILLISECONDS);
                 break;
         }
     }
@@ -470,7 +478,7 @@ public class PeppermintButler extends UserActor {
             if (currentAltar != null) {
                 int altarStatus =
                         this.parentExt
-                                .getRoomHandler(this.room.getId())
+                                .getRoomHandler(this.room.getName())
                                 .getAltarStatus(currentAltar);
                 return altarStatus < 10;
             }
@@ -494,7 +502,7 @@ public class PeppermintButler extends UserActor {
         protected void spellW() {
             int W_CAST_DELAY = wRunTime.get() + 500;
             Runnable enableWCasting = () -> canCast[1] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableWCasting,
@@ -523,7 +531,7 @@ public class PeppermintButler extends UserActor {
                         0f);
                 for (Actor a :
                         Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getId()), location, 2.5f)) {
+                                parentExt.getRoomHandler(room.getName()), location, 2.5f)) {
                     if (isNonStructure(a)) {
                         a.addToDamageQueue(
                                 PeppermintButler.this, getSpellDamage(spellData), spellData);

@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
@@ -363,7 +362,7 @@ public class Champion {
                 parentExt, player.getUser(), iconName, iconDesc, icon, duration);
         player.addIconHandler(
                 iconName,
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(endIcon, (int) duration, TimeUnit.MILLISECONDS));
     }

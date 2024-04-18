@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
@@ -52,7 +51,7 @@ public class GooMonster extends Monster {
                 try {
                     List<Actor> damagedActors =
                             Champion.getActorsInRadius(
-                                    parentExt.getRoomHandler(room.getId()), puddleLocation, 2f);
+                                    parentExt.getRoomHandler(room.getName()), puddleLocation, 2f);
                     JsonNode attackData = parentExt.getAttackData(this.avatar, "basicAttack");
                     ObjectMapper mapper = new ObjectMapper();
                     ISFSObject data = new SFSObject();
@@ -82,7 +81,7 @@ public class GooMonster extends Monster {
         if (!this.dead
                 && (a.getActorType() == ActorType.PLAYER
                         || a.getActorType() == ActorType.COMPANION)) {
-            for (UserActor u : parentExt.getRoomHandler(this.room.getId()).getPlayers()) {
+            for (UserActor u : parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                 if (u.getTeam() == a.getTeam()) {
                     u.addEffect(
                             "speed",
@@ -152,9 +151,7 @@ public class GooMonster extends Monster {
                                 team,
                                 0f);
                     };
-            SmartFoxServer.getInstance()
-                    .getTaskScheduler()
-                    .schedule(oozeAttack, 1250, TimeUnit.MILLISECONDS);
+            parentExt.getTaskScheduler().schedule(oozeAttack, 1250, TimeUnit.MILLISECONDS);
         } else if (!this.usingAbility) {
             this.attackCooldown = 1200;
             int attackDamage = (int) this.getPlayerStat("attackDamage");
@@ -167,7 +164,7 @@ public class GooMonster extends Monster {
                     (float) a.getLocation().getY(),
                     false,
                     true);
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             new Champion.DelayedRangedAttack(this, a), 1000, TimeUnit.MILLISECONDS);
@@ -188,7 +185,7 @@ public class GooMonster extends Monster {
                 "Bip01 R Hand",
                 "Bip01",
                 time);
-        SmartFoxServer.getInstance()
+        parentExt
                 .getTaskScheduler()
                 .schedule(
                         new Champion.DelayedAttack(parentExt, this, a, attackDamage, "basicAttack"),

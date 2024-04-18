@@ -5,8 +5,6 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.dongbat.walkable.PathfinderException;
-
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -25,20 +23,20 @@ public class MoveActorHandler extends BaseClientRequestHandler {
         // Console.debugLog(params.getDump());
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
 
-        RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getId());
+        RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getName());
         if (roomHandler == null && (int) sender.getLastJoinedRoom().getProperty("state") != 2)
             ExtensionCommands.abortGame(parentExt, sender.getLastJoinedRoom());
         if (roomHandler == null) {
             Console.logWarning(
                     sender.getId()
                             + " tried to move in room "
-                            + sender.getLastJoinedRoom().getId()
+                            + sender.getLastJoinedRoom().getName()
                             + " but failed!");
             return;
         }
         UserActor user = roomHandler.getPlayer(String.valueOf(sender.getId()));
+        if (user != null) user.resetTarget();
         if (user != null && user.canMove() && !user.getIsDashing()) {
-            user.resetTarget();
             user.resetIdleTime();
             user.clearPath();
             Room room = sender.getLastJoinedRoom();
@@ -54,31 +52,36 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             float dx = params.getFloat("dest_x");
             float dz = params.getFloat("dest_z");
             // Console.debugLog("dx: " + dx + " dz: " + dz);
-
             try {
                 List<Point2D> path = new ArrayList<>(0);
                 Line2D movementLine = new Line2D.Float(px, pz, dx, dz);
                 if (MovementManager.getPathIntersectionPoint(
                                         parentExt,
-                                        parentExt.getRoomHandler(room.getId()).isPracticeMap(),
+                                        parentExt.getRoomHandler(room.getName()).isPracticeMap(),
                                         movementLine)
                                 != null
                         && !MovementManager.insideAnyObstacle(
                                 parentExt,
-                                parentExt.getRoomHandler(room.getId()).isPracticeMap(),
+                                parentExt.getRoomHandler(room.getName()).isPracticeMap(),
                                 new Point2D.Float(dx, dz))) {
                     path =
                             Node.getPath(
                                     parentExt,
                                     Node.getCurrentNode(parentExt, user),
                                     Node.getCurrentNode(parentExt, user),
-                                    Node.getNodeAtLocation(parentExt, new Point2D.Float(dx, dz)));
+                                    Node.getNodeAtLocation(
+                                            parentExt,
+                                            new Point2D.Float(dx, dz),
+                                            parentExt
+                                                    .getRoomHandler(room.getName())
+                                                    .isPracticeMap()),
+                                    parentExt.getRoomHandler(room.getName()).isPracticeMap());
                 }
 
                 if (path.size() <= 2
                         || MovementManager.insideAnyObstacle(
                                 parentExt,
-                                parentExt.getRoomHandler(room.getId()).isPracticeMap(),
+                                parentExt.getRoomHandler(room.getName()).isPracticeMap(),
                                 new Point2D.Float(dx, dz))) {
                     // Creates the path of the player
                     // ExtensionCommands.createWorldFX(parentExt, user.getRoom(),
@@ -86,7 +89,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                     Point2D intersectionPoint =
                             MovementManager.getPathIntersectionPoint(
                                     parentExt,
-                                    parentExt.getRoomHandler(room.getId()).isPracticeMap(),
+                                    parentExt.getRoomHandler(room.getName()).isPracticeMap(),
                                     movementLine);
 
                     float destx = (float) movementLine.getX2();
@@ -104,7 +107,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                 } else {
                     user.setPath(path);
                 }
-            } catch (PathfinderException pe) {
+            } catch (Exception pe) {
                 Line2D movementLine =
                         new Line2D.Float(px, pz, dx, dz); // Creates the path of the player
                 // ExtensionCommands.createWorldFX(parentExt, user.getRoom(),
@@ -112,7 +115,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                 Point2D intersectionPoint =
                         MovementManager.getPathIntersectionPoint(
                                 parentExt,
-                                parentExt.getRoomHandler(room.getId()).isPracticeMap(),
+                                parentExt.getRoomHandler(room.getName()).isPracticeMap(),
                                 movementLine);
 
                 float destx = (float) movementLine.getX2();

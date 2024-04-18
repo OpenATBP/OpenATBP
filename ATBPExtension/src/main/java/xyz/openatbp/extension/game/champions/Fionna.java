@@ -6,7 +6,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -162,7 +161,7 @@ public class Fionna extends UserActor {
                     int gruntNum = 3 - this.dashesRemaining;
                     ExtensionCommands.playSound(
                             parentExt, room, this.id, "fionna_grunt" + gruntNum, this.location);
-                    SmartFoxServer.getInstance()
+                    parentExt
                             .getTaskScheduler()
                             .schedule(
                                     new FionnaAbilityRunnable(
@@ -178,7 +177,7 @@ public class Fionna extends UserActor {
                 ExtensionCommands.actorAbilityResponse(
                         parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
                 this.canCast[1] = false;
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new FionnaAbilityRunnable(
@@ -221,7 +220,7 @@ public class Fionna extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new FionnaAbilityRunnable(
@@ -246,8 +245,13 @@ public class Fionna extends UserActor {
                     return super.getPlayerStat(stat) + (this.getStat("speed") * 0.2d);
                 break;
             case "attackSpeed":
-                if (this.swordType == SwordType.FIERCE)
-                    return super.getPlayerStat(stat) - (this.getStat("attackSpeed") * 0.2d);
+                if (this.swordType == SwordType.FIERCE) {
+                    double currentAttackSpeed = super.getPlayerStat(stat);
+                    double modifier = (this.getStat("attackSpeed") * 0.2d);
+                    return currentAttackSpeed - modifier < 500
+                            ? 500
+                            : currentAttackSpeed - modifier;
+                }
                 break;
             case "armor":
             case "spellResist":
@@ -256,7 +260,11 @@ public class Fionna extends UserActor {
                 break;
             case "attackDamage":
             case "spellDamage":
-                return super.getPlayerStat(stat) + this.getPassiveAttackDamage(stat);
+                if (this.target != null
+                        && (this.target.getActorType() == ActorType.TOWER
+                                || this.target.getActorType() == ActorType.BASE))
+                    return super.getPlayerStat(stat);
+                else return super.getPlayerStat(stat) + this.getPassiveAttackDamage(stat);
         }
         return super.getPlayerStat(stat);
     }
@@ -361,7 +369,7 @@ public class Fionna extends UserActor {
                 range = 2f;
                 explosionFx = "fionna_dash_explode";
                 Runnable enableQCasting = () -> canCast[0] = true;
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 enableQCasting,
@@ -383,7 +391,7 @@ public class Fionna extends UserActor {
                         0f);
                 for (Actor a :
                         Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getId()), dest, range)) {
+                                parentExt.getRoomHandler(room.getName()), dest, range)) {
                     if (a.getTeam() != team
                             && a.getActorType() != ActorType.BASE
                             && a.getActorType() != ActorType.TOWER) {

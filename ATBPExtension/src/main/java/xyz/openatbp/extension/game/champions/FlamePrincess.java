@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -54,7 +53,7 @@ public class FlamePrincess extends UserActor {
         if (this.ultStarted) {
             for (Actor a :
                     Champion.getActorsInRadius(
-                            parentExt.getRoomHandler(this.room.getId()), this.location, 2)) {
+                            parentExt.getRoomHandler(this.room.getName()), this.location, 2)) {
                 if (a.getTeam() != this.team) {
                     JsonNode attackData = this.parentExt.getAttackData(getAvatar(), "spell3");
                     double damage = (double) this.getSpellDamage(attackData) / 10;
@@ -65,12 +64,12 @@ public class FlamePrincess extends UserActor {
             }
         }
         if (System.currentTimeMillis() - lastPolymorphTime <= 3000) {
-            for (Actor a : this.parentExt.getRoomHandler(this.room.getId()).getPlayers()) {
+            for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                 this.polymorphActive = a.getState(ActorState.POLYMORPH);
                 if (polymorphActive) {
                     List<Actor> actorsInRadius =
                             Champion.getActorsInRadius(
-                                    this.parentExt.getRoomHandler(this.room.getId()),
+                                    this.parentExt.getRoomHandler(this.room.getName()),
                                     a.getLocation(),
                                     2f);
                     actorsInRadius.remove(a);
@@ -178,7 +177,7 @@ public class FlamePrincess extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new FlameAbilityRunnable(
@@ -222,10 +221,8 @@ public class FlamePrincess extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
-                        .getTaskScheduler()
-                        .schedule(fxDelay, 500, TimeUnit.MILLISECONDS);
-                SmartFoxServer.getInstance()
+                parentExt.getTaskScheduler().schedule(fxDelay, 500, TimeUnit.MILLISECONDS);
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new FlameAbilityRunnable(
@@ -236,7 +233,7 @@ public class FlamePrincess extends UserActor {
             case 3: // E
                 this.canCast[2] = false;
                 if (!ultStarted && ultUses == 3) {
-                    SmartFoxServer.getInstance()
+                    parentExt
                             .getTaskScheduler()
                             .schedule(
                                     new FlameAbilityRunnable(
@@ -292,7 +289,7 @@ public class FlamePrincess extends UserActor {
                                 new Point2D.Float(0, 0));
                     }
                     if (this.ultUses > 0) {
-                        SmartFoxServer.getInstance()
+                        parentExt
                                 .getTaskScheduler()
                                 .schedule(
                                         new FlameAbilityRunnable(
@@ -300,7 +297,7 @@ public class FlamePrincess extends UserActor {
                                         this.dashTime,
                                         TimeUnit.MILLISECONDS);
                     } else {
-                        SmartFoxServer.getInstance()
+                        parentExt
                                 .getTaskScheduler()
                                 .schedule(
                                         new FlameAbilityRunnable(
@@ -318,7 +315,7 @@ public class FlamePrincess extends UserActor {
     @Override
     public void attack(Actor a) {
         this.applyStopMovingDuringAttack();
-        SmartFoxServer.getInstance()
+        parentExt
                 .getTaskScheduler()
                 .schedule(
                         new RangedAttack(
@@ -347,7 +344,7 @@ public class FlamePrincess extends UserActor {
             attackCooldown = 0;
             int Q_GLOBAL_COOLDOWN = 250;
             Runnable enableQCasting = () -> canCast[0] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableQCasting,
@@ -360,7 +357,8 @@ public class FlamePrincess extends UserActor {
             ExtensionCommands.playSound(
                     parentExt, room, "", "sfx_flame_princess_projectile_explode", this.dest);
             wUsed = false;
-            RoomHandler roomHandler = parentExt.getRoomHandler(player.getLastJoinedRoom().getId());
+            RoomHandler roomHandler =
+                    parentExt.getRoomHandler(player.getLastJoinedRoom().getName());
             List<Actor> affectedUsers =
                     Champion.getActorsInRadius(roomHandler, this.dest, 2).stream()
                             .filter(a -> a.getTeam() != FlamePrincess.this.team)
@@ -380,7 +378,7 @@ public class FlamePrincess extends UserActor {
             }
             int W_CAST_DELAY = 1000;
             Runnable enableWCasting = () -> canCast[1] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableWCasting,
@@ -395,7 +393,7 @@ public class FlamePrincess extends UserActor {
                 ultFinished = true;
                 int E_DASH_TIME = dashTime + 100;
                 Runnable enableECasting = () -> canCast[2] = true;
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 enableECasting,
@@ -456,7 +454,7 @@ public class FlamePrincess extends UserActor {
                     team);
             for (Actor a :
                     Champion.getActorsAlongLine(
-                            parentExt.getRoomHandler(room.getId()),
+                            parentExt.getRoomHandler(room.getName()),
                             Champion.extendLine(path, 0.75f),
                             0.75f)) {
                 if (!a.getId().equalsIgnoreCase(victim.getId()) && a.getTeam() != team) {
@@ -464,7 +462,7 @@ public class FlamePrincess extends UserActor {
                     a.addToDamageQueue(FlamePrincess.this, Math.round(newDamage), attackData);
                 }
             }
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(new DelayedProjectile(), 300, TimeUnit.MILLISECONDS);
         }
@@ -516,7 +514,7 @@ public class FlamePrincess extends UserActor {
                         false,
                         team);
                 for (int i = 0; i < 3; i++) {
-                    SmartFoxServer.getInstance()
+                    parentExt
                             .getTaskScheduler()
                             .schedule(
                                     new Champion.DelayedAttack(

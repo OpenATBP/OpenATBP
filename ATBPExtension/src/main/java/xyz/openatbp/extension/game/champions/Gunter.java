@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -38,7 +37,7 @@ public class Gunter extends UserActor {
         super.update(msRan);
         if (this.ultActivated && this.eTrapezoid != null) {
             JsonNode spellData = parentExt.getAttackData(getAvatar(), "spell3");
-            for (Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()) {
+            for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                 if (a.getTeam() != this.team && this.eTrapezoid.contains(a.getLocation())) {
                     double damage = (double) getSpellDamage(spellData) / 10;
                     a.addToDamageQueue(this, Math.round(damage), spellData);
@@ -101,7 +100,7 @@ public class Gunter extends UserActor {
                 ExtensionCommands.actorAnimate(parentExt, room, id, "spell1b", qTime, false);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt, player, "q", true, getReducedCooldown(cooldown), gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new GunterAbilityRunnable(
@@ -128,7 +127,7 @@ public class Gunter extends UserActor {
                         8f);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new GunterAbilityRunnable(
@@ -176,7 +175,7 @@ public class Gunter extends UserActor {
                 ExtensionCommands.actorAnimate(parentExt, room, this.id, "spell3b", 2500, true);
                 ExtensionCommands.playSound(
                         parentExt, room, this.id, "sfx_gunter_bottles_ultimate", this.location);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new GunterAbilityRunnable(
@@ -204,7 +203,7 @@ public class Gunter extends UserActor {
                 0f);
         for (Actor actor :
                 Champion.getActorsInRadius(
-                        this.parentExt.getRoomHandler(this.room.getId()), a.getLocation(), 2f)) {
+                        this.parentExt.getRoomHandler(this.room.getName()), a.getLocation(), 2f)) {
             if (actor.getTeam() != this.team && !a.getId().equalsIgnoreCase(actor.getId())) {
                 JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(), "spell4");
                 actor.addToDamageQueue(this, getSpellDamage(spellData), spellData);
@@ -270,7 +269,7 @@ public class Gunter extends UserActor {
         protected void spellQ() {
             int Q_DASH_TIME = qTime;
             Runnable enableQCasting = () -> canCast[0] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableQCasting,
@@ -294,7 +293,7 @@ public class Gunter extends UserActor {
                 ExtensionCommands.actorAnimate(parentExt, room, id, "spell1c", 500, false);
                 List<Actor> affectedActors =
                         Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getId()), location, 2f);
+                                parentExt.getRoomHandler(room.getName()), location, 2f);
                 for (Actor a : affectedActors) {
                     if (a.getTeam() != team && isNonStructure(a)) {
                         a.addToDamageQueue(Gunter.this, getSpellDamage(spellData), spellData);

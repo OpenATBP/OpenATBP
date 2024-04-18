@@ -10,7 +10,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 
@@ -169,7 +168,7 @@ public class Neptr extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new NeptrAbilityHandler(
@@ -187,7 +186,7 @@ public class Neptr extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new NeptrAbilityHandler(
@@ -234,7 +233,7 @@ public class Neptr extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new NeptrAbilityHandler(
@@ -258,7 +257,7 @@ public class Neptr extends UserActor {
         if (this.mines != null) {
             this.mineNum++;
             this.mines.add(m);
-            this.parentExt.getRoomHandler(this.room.getId()).addCompanion(m);
+            this.parentExt.getRoomHandler(this.room.getName()).addCompanion(m);
         }
     }
 
@@ -296,7 +295,7 @@ public class Neptr extends UserActor {
         protected void spellE() {
             int E_CAST_DELAY = 500;
             Runnable enableECasting = () -> canCast[2] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableECasting,
@@ -306,7 +305,7 @@ public class Neptr extends UserActor {
             ultImpactedActors = new ArrayList<>();
             for (Actor a :
                     Champion.getActorsInRadius(
-                            parentExt.getRoomHandler(room.getId()), ultLocation, 3f)) {
+                            parentExt.getRoomHandler(room.getName()), ultLocation, 3f)) {
                 if (isNonStructure(a)) {
                     a.knockback(Neptr.this.location);
                     a.addState(ActorState.SILENCED, 0d, 1000, null, false);
@@ -375,9 +374,7 @@ public class Neptr extends UserActor {
                                 this.damageReduction = 0d;
                                 this.moveTowardsNeptr();
                             };
-                    SmartFoxServer.getInstance()
-                            .getTaskScheduler()
-                            .schedule(handleIntermission, 1, TimeUnit.SECONDS);
+                    parentExt.getTaskScheduler().schedule(handleIntermission, 1, TimeUnit.SECONDS);
                 } else this.destroy();
             }
         }
@@ -504,9 +501,7 @@ public class Neptr extends UserActor {
                                 this.team,
                                 0f);
                     };
-            SmartFoxServer.getInstance()
-                    .getTaskScheduler()
-                    .schedule(creationDelay, 150, TimeUnit.MILLISECONDS);
+            parentExt.getTaskScheduler().schedule(creationDelay, 150, TimeUnit.MILLISECONDS);
         }
 
         @Override
@@ -523,7 +518,7 @@ public class Neptr extends UserActor {
                 ExtensionCommands.removeFx(parentExt, room, this.id + "_mine");
                 ExtensionCommands.removeStatusIcon(parentExt, player, this.iconName);
                 ExtensionCommands.destroyActor(parentExt, room, this.id);
-                this.parentExt.getRoomHandler(this.room.getId()).removeCompanion(this);
+                this.parentExt.getRoomHandler(this.room.getName()).removeCompanion(this);
             }
         }
 
@@ -560,36 +555,37 @@ public class Neptr extends UserActor {
             }
             List<Actor> actors =
                     Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()), this.location, 2f);
+                            this.parentExt.getRoomHandler(this.room.getName()), this.location, 2f);
             for (Actor a : actors) {
                 if (isNonStructure(a) && !this.mineActivated) {
                     this.mineActivated = true;
                     explodeMine();
                     this.die(this);
                     Neptr.this.handleMineDeath(this);
+                    break;
                 }
             }
         }
 
         private void explodeMine() {
-            List<Actor> targets =
-                    Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()), this.location, 2f);
-            for (Actor target : targets) {
-                if (isNonStructure(target)) {
-                    Runnable mineExplosion =
-                            () -> {
+            Runnable mineExplosion =
+                    () -> {
+                        List<Actor> targets =
+                                Champion.getActorsInRadius(
+                                        this.parentExt.getRoomHandler(this.room.getName()),
+                                        this.location,
+                                        2f);
+                        for (Actor target : targets) {
+                            if (isNonStructure(target)) {
                                 JsonNode spellData =
                                         this.parentExt.getAttackData(Neptr.this.avatar, "spell2");
                                 target.addToDamageQueue(
                                         Neptr.this, getSpellDamage(spellData), spellData);
                                 target.addState(ActorState.SLOWED, 0.4d, 3000, null, false);
-                            };
-                    SmartFoxServer.getInstance()
-                            .getTaskScheduler()
-                            .schedule(mineExplosion, 1200, TimeUnit.MILLISECONDS);
-                }
-            }
+                            }
+                        }
+                    };
+            parentExt.getTaskScheduler().schedule(mineExplosion, 1200, TimeUnit.MILLISECONDS);
             Runnable explosionFX =
                     () -> {
                         ExtensionCommands.createWorldFX(
@@ -609,11 +605,9 @@ public class Neptr extends UserActor {
                         ExtensionCommands.removeFx(parentExt, room, this.id + "_mine");
                         ExtensionCommands.removeStatusIcon(parentExt, player, this.iconName);
                         ExtensionCommands.destroyActor(parentExt, room, this.id);
-                        this.parentExt.getRoomHandler(this.room.getId()).removeCompanion(this);
+                        this.parentExt.getRoomHandler(this.room.getName()).removeCompanion(this);
                     };
-            SmartFoxServer.getInstance()
-                    .getTaskScheduler()
-                    .schedule(explosionFX, 1200, TimeUnit.MILLISECONDS);
+            parentExt.getTaskScheduler().schedule(explosionFX, 1200, TimeUnit.MILLISECONDS);
             Runnable activate =
                     () ->
                             ExtensionCommands.playSound(
@@ -622,9 +616,7 @@ public class Neptr extends UserActor {
                                     this.id,
                                     "sfx_neptr_mine_activate",
                                     this.location);
-            SmartFoxServer.getInstance()
-                    .getTaskScheduler()
-                    .schedule(activate, 500, TimeUnit.MILLISECONDS);
+            parentExt.getTaskScheduler().schedule(activate, 500, TimeUnit.MILLISECONDS);
         }
 
         @Override

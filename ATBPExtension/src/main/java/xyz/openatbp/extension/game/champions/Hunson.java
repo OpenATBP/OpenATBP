@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -42,7 +41,9 @@ public class Hunson extends UserActor {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
             for (Actor a :
                     Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getId()), this.location, 4f)) {
+                            this.parentExt.getRoomHandler(this.room.getName()),
+                            this.location,
+                            4f)) {
                 if (this.isNonStructure(a)) {
                     a.addToDamageQueue(this, this.getSpellDamage(spellData) / 10d, spellData);
                 }
@@ -132,7 +133,7 @@ public class Hunson extends UserActor {
             this.addEffect(
                     "attackSpeed", this.getStat("attackSpeed") * -0.4d, 5000, null, "", false);
             this.addEffect("speed", 0.8d, 5000, null, "", false);
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             new HunsonAbilityHandler(4, null, 0, 0, null),
@@ -230,7 +231,7 @@ public class Hunson extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new HunsonAbilityHandler(
@@ -253,9 +254,7 @@ public class Hunson extends UserActor {
                                     "hunson_power3a",
                                     this.location);
                         };
-                SmartFoxServer.getInstance()
-                        .getTaskScheduler()
-                        .schedule(soundDelay, 625, TimeUnit.MILLISECONDS);
+                parentExt.getTaskScheduler().schedule(soundDelay, 625, TimeUnit.MILLISECONDS);
                 ExtensionCommands.createActorFX(
                         this.parentExt,
                         this.room,
@@ -287,7 +286,7 @@ public class Hunson extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         3500 + castDelay);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new HunsonAbilityHandler(
@@ -333,7 +332,7 @@ public class Hunson extends UserActor {
         protected void spellW() {
             int W_CAST_DELAY = 400;
             Runnable enableWCasting = () -> canCast[1] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableWCasting,
@@ -342,7 +341,7 @@ public class Hunson extends UserActor {
             if (getHealth() > 0) {
                 for (Actor a :
                         Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getId()), dest, 2.5f)) {
+                                parentExt.getRoomHandler(room.getName()), dest, 2.5f)) {
                     if (isNonStructure(a)) {
                         a.addToDamageQueue(Hunson.this, getSpellDamage(spellData), spellData);
                         if (!a.getId().contains("turret") || !a.getId().contains("decoy"))
@@ -356,7 +355,7 @@ public class Hunson extends UserActor {
         protected void spellE() {
             int E_CAST_DELAY = 750;
             Runnable enableECasting = () -> canCast[2] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableECasting,

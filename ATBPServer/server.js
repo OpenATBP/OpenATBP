@@ -36,6 +36,24 @@ async function removeDuplicateFriends(collection) {
   }
 }
 
+//Added to make everyone in the database a beta tester
+async function addBetaTesters(collection) {
+  try {
+    var cursor = collection.find();
+    for await (var doc of cursor) {
+      //console.log(doc.friends);
+      var q = { 'user.TEGid': doc.user.TEGid };
+      var o = { upsert: true };
+      var up = { $set: { betaTester: true } };
+
+      var res = await collection.updateOne(q, up, o);
+      console.log(res);
+    }
+  } finally {
+    console.log('Done!');
+  }
+}
+
 let config;
 try {
   config = require('./config.js');
@@ -87,6 +105,7 @@ mongoClient.connect((err) => {
 
   const playerCollection = mongoClient.db('openatbp').collection('players');
   //removeDuplicateFriends(playerCollection).catch(console.dir);
+  //addBetaTesters(playerCollection).catch(console.dir);
 
   if (
     !fs.existsSync('static/crossdomain.xml') ||
@@ -136,7 +155,12 @@ mongoClient.connect((err) => {
   });
 
   app.get('/service/data/user/champions/tournament', (req, res) => {
-    res.send(getRequest.handleTournamentData({}));
+    getRequest
+      .handleTournamentData(req.query.authToken, playerCollection)
+      .then((data) => {
+        res.send(data);
+      })
+      .catch(console.error);
   });
 
   app.get('/service/shop/inventory', (req, res) => {

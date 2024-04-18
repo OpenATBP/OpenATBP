@@ -14,11 +14,9 @@ const mongoClient = new MongoClient(config.httpserver.mongouri, {
   serverApi: ServerApiVersion.v1,
 });
 
-if (config.lobbyserver.matchmakingEnabled) {
-  var matchMakingUpdate = setInterval(() => {
-    updateMatchmaking();
-  }, 2000);
-}
+var matchMakingUpdate = setInterval(() => {
+  updateMatchmaking();
+}, 2000);
 
 function tryParseJSONObject(jsonString) {
   try {
@@ -46,6 +44,10 @@ function safeSendAll(sockets, command, response) {
   return new Promise(function (resolve, reject) {
     if (sockets.length == 0) resolve(true);
     else {
+      console.log(
+        `Sending ${command} to ${sockets[0].player.name}: `,
+        response
+      );
       sendCommand(sockets[0], command, response)
         .then(() => {
           sockets.shift();
@@ -174,9 +176,17 @@ function updateElo(socket) {
     playerCollection
       .findOne({ 'user.TEGid': socket.player.teg_id })
       .then((res) => {
-        if (res != null) socket.player.elo = res.player.elo;
-        else socket.close();
-        console.log(`${socket.player.name} has ${socket.player.elo} ELO!`);
+        if (res != null) {
+          switch (res.player.elo + 1) {
+            case 1:
+            case 100:
+            case 200:
+            case 500:
+              res.player.elo++;
+              break;
+          }
+          socket.player.elo = res.player.elo;
+        } else socket.close();
       })
       .catch((e) => {
         console.log(e);
@@ -186,6 +196,7 @@ function updateElo(socket) {
 }
 
 function updateMatchmaking() {
+  if (users.length < 12) return;
   var types = [];
   for (var u of users) {
     if (
@@ -446,7 +457,11 @@ function joinQueue(sockets, type) {
     if (!socket.player.onTeam) socket.player.team = -1;
     socket.player.queue.type = type;
     socket.player.queue.started = Date.now();
-    if (!config.lobbyserver.matchmakingEnabled || queueSize == 1) {
+    if (
+      !config.lobbyserver.matchmakingEnabled ||
+      queueSize == 1 ||
+      users.length < 12
+    ) {
       if (i + 1 == sockets.length) {
         var usersInQueue = users.filter(
           (u) =>
@@ -632,7 +647,11 @@ function handleRequest(jsonString, socket) {
             for (var pUser of q.purple) {
               if (pUser.name == socket.player.name) {
                 if (pUser.is_ready) shouldSend = false;
-                pUser.avatar = jsonObject['payload'].name;
+                var sameCharacter = q.purple.find(
+                  (pu) => pu.avatar == jsonObject['payload'].name
+                );
+                if (sameCharacter == undefined)
+                  pUser.avatar = jsonObject['payload'].name;
                 break;
               }
             }
@@ -654,7 +673,11 @@ function handleRequest(jsonString, socket) {
             for (var pUser of q.blue) {
               if (pUser.name == socket.player.name) {
                 if (pUser.is_ready) shouldSend = false;
-                pUser.avatar = jsonObject['payload'].name;
+                var sameCharacter = q.blue.find(
+                  (pu) => pu.avatar == jsonObject['payload'].name
+                );
+                if (sameCharacter == undefined)
+                  pUser.avatar = jsonObject['payload'].name;
                 break;
               }
             }
@@ -739,25 +762,40 @@ function handleRequest(jsonString, socket) {
       break;
 
     case 'chat_message':
-      for (var q of queues) {
-        var player = q.players.find(
-          (p) => p.teg_id == jsonObject['payload'].teg_id
-        );
-        if (player != undefined) {
-          for (var p of q.players) {
-            var sock = users.find(
-              (u) => u.player == p && u.player.team == player.team
-            );
-            if (sock != undefined)
-              sendCommand(sock, 'chat_message', {
-                name: player.name,
-                teg_id: player.teg_id,
-                message_id: Number(jsonObject['payload'].message_id),
-              }).catch(console.error);
-            else console.log('No socket found!'); //Seems to happen 3 times each chat message
+      var user = users.find(
+        (u) => u.player.teg_id == jsonObject['payload'].teg_id
+      );
+      if (user != undefined) {
+        var player = user.player;
+        var team = teams.find((t) => t.players.includes(player));
+        if (team != undefined && team.queueNum == -1) {
+          safeSendAll(
+            users.filter((u) => team.players.includes(u.player)),
+            'chat_message',
+            {
+              name: player.name,
+              teg_id: player.teg_id,
+              message_id: Number(jsonObject['payload'].message_id),
+            }
+          ).catch(console.error);
+        } else {
+          //console.log(`${player.name} is not on a team!`);
+          var queue = queues.find((q) => q.players.includes(player));
+          if (queue != undefined) {
+            for (var p of queue.players) {
+              var sock = users.find(
+                (u) => u.player == p && u.player.team == player.team
+              );
+              if (sock != undefined)
+                sendCommand(sock, 'chat_message', {
+                  name: player.name,
+                  teg_id: player.teg_id,
+                  message_id: Number(jsonObject['payload'].message_id),
+                }).catch(console.error);
+            }
           }
         }
-      }
+      } else console.log('User not found!');
       break;
 
     case 'custom_game_chat_message':
@@ -1136,6 +1174,8 @@ module.exports = class ATBPLobbyServer {
           console.error('Socket error:', error);
           if (socket.player != undefined)
             console.log(socket.player.name + ' had an error.');
+          if (socket.player.onTeam) leaveTeam(socket);
+          else leaveQueue(socket);
           socket.destroy();
         });
 
@@ -1148,7 +1188,9 @@ module.exports = class ATBPLobbyServer {
               else leaveQueue(user);
             }
           }
-          users = users.filter((user) => !user._readableState.ended);
+          users = users.filter(
+            (user) => !user._readableState.ended && user != socket
+          );
         });
       });
 

@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -45,7 +44,7 @@ public class Billy extends UserActor {
             this.lastUltTick = System.currentTimeMillis();
             List<Actor> impactedActors =
                     Champion.getActorsInRadius(
-                                    this.parentExt.getRoomHandler(this.room.getId()),
+                                    this.parentExt.getRoomHandler(this.room.getName()),
                                     this.ultLocation,
                                     2.25f)
                             .stream()
@@ -139,7 +138,7 @@ public class Billy extends UserActor {
                 this.stopMoving();
                 Path2D quadrangle =
                         Champion.createRectangle(location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
-                for (Actor a : this.parentExt.getRoomHandler(this.room.getId()).getActors()) {
+                for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                     if (a.getTeam() != this.team && quadrangle.contains(a.getLocation())) {
                         if (isNonStructure(a)) a.knockback(this.location);
                         a.addToDamageQueue(this, getSpellDamage(spellData), spellData);
@@ -161,7 +160,7 @@ public class Billy extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new BillyAbilityHandler(
@@ -241,7 +240,7 @@ public class Billy extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new BillyAbilityHandler(
@@ -274,7 +273,7 @@ public class Billy extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                SmartFoxServer.getInstance()
+                parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new BillyAbilityHandler(
@@ -306,7 +305,7 @@ public class Billy extends UserActor {
         @Override
         protected void spellW() {
             Runnable enableWCasting = () -> canCast[1] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableWCasting,
@@ -331,7 +330,7 @@ public class Billy extends UserActor {
                         0f);
                 for (Actor a :
                         Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getId()), dest, 2f)) {
+                                parentExt.getRoomHandler(room.getName()), dest, 2f)) {
                     if (isNonStructure(a)) {
                         a.addToDamageQueue(Billy.this, getSpellDamage(spellData), spellData);
                     }
@@ -343,7 +342,7 @@ public class Billy extends UserActor {
         protected void spellE() {
             int E_CAST_DELAY = 750;
             Runnable enableECasting = () -> canCast[2] = true;
-            SmartFoxServer.getInstance()
+            parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableECasting,
@@ -388,7 +387,7 @@ public class Billy extends UserActor {
                         0f);
                 for (Actor a :
                         Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getId()), ultLoc, 2.25f)) {
+                                parentExt.getRoomHandler(room.getName()), ultLoc, 2.25f)) {
                     if (isNonStructure(a)) {
                         a.addToDamageQueue(Billy.this, getSpellDamage(spellData), spellData);
                     }

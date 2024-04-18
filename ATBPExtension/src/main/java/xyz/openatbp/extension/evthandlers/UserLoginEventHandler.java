@@ -17,7 +17,7 @@ public class UserLoginEventHandler extends BaseServerEventHandler {
                 (ISFSObject)
                         isfsEvent.getParameter(
                                 SFSEventParam.LOGIN_IN_DATA); // Given from the Lobby Server
-        trace(loginData.getDump());
+        // trace(loginData.getDump());
         session.setProperty("name", loginData.getUtfString("name").toUpperCase());
         session.setProperty("tegid", loginData.getUtfString("tid"));
         session.setProperty("id", loginData.getUtfString("authid"));

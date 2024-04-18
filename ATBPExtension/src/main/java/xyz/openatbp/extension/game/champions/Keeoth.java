@@ -6,7 +6,6 @@ import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
@@ -42,7 +41,7 @@ public class Keeoth extends Monster {
         if (!this.dead
                 && (a.getActorType() == ActorType.PLAYER
                         || a.getActorType() == ActorType.COMPANION)) {
-            for (UserActor u : parentExt.getRoomHandler(this.room.getId()).getPlayers()) {
+            for (UserActor u : parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                 if (u.getTeam() == a.getTeam()) {
                     u.addEffect("lifeSteal", 35d, 60000, "jungle_buff_keeoth", "", false);
                     u.addEffect("spellVamp", 35d, 60000, null, "", false);
@@ -54,7 +53,7 @@ public class Keeoth extends Monster {
                 }
             }
         }
-        for (UserActor u : parentExt.getRoomHandler(this.room.getId()).getPlayers()) {
+        for (UserActor u : parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
             if (u.getTeam() == a.getTeam())
                 ExtensionCommands.playSound(
                         parentExt, u.getUser(), "global", "announcer/you_keeoth");
@@ -141,7 +140,7 @@ public class Keeoth extends Monster {
 
                                         for (Actor actor :
                                                 Champion.getActorsInRadius(
-                                                        parentExt.getRoomHandler(room.getId()),
+                                                        parentExt.getRoomHandler(room.getName()),
                                                         playerLoc,
                                                         2.5f)) {
                                             if (actor.getActorType() == ActorType.PLAYER
@@ -161,13 +160,11 @@ public class Keeoth extends Monster {
                                         e.printStackTrace();
                                     }
                                 };
-                        SmartFoxServer.getInstance()
+                        parentExt
                                 .getTaskScheduler()
                                 .schedule(specialDamage, 1000, TimeUnit.MILLISECONDS);
                     };
-            SmartFoxServer.getInstance()
-                    .getTaskScheduler()
-                    .schedule(keeothSpecial, 1250, TimeUnit.MILLISECONDS);
+            parentExt.getTaskScheduler().schedule(keeothSpecial, 1250, TimeUnit.MILLISECONDS);
         } else if (!this.usingAbility) {
             super.attack(a);
         }
