@@ -1161,7 +1161,7 @@ module.exports = class ATBPLobbyServer {
               else leaveQueue(user);
             }
           }
-          users = users.filter((user) => !user._readableState.ended);
+          users = users.filter((user) => !user._readableState.ended && user != socket);
         });
       });
 

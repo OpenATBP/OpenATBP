@@ -49,6 +49,7 @@ public class RoomHandler implements Runnable {
     private HashMap<String, Long> destroyedIds = new HashMap<>();
     private List<String> createdActorIds = new ArrayList<>();
     private static boolean monsterDebug = false;
+    private static boolean xpDebug = false;
     private boolean practiceMap;
     private boolean fastBlueCapture = false;
     private boolean fastPurpleCapture = false;
@@ -70,6 +71,7 @@ public class RoomHandler implements Runnable {
         this.practiceMap = room.getGroupId().equalsIgnoreCase("practice");
         Properties props = parentExt.getConfigProperties();
         monsterDebug = Boolean.parseBoolean(props.getProperty("monsterDebug", "false"));
+        xpDebug = Boolean.parseBoolean(props.getProperty("xpDebug", "false"));
         HashMap<String, Point2D> towers0;
         HashMap<String, Point2D> towers1;
         if (!this.practiceMap) {
@@ -327,7 +329,7 @@ public class RoomHandler implements Runnable {
             if (player.getTeam() == 0) additionalXP *= (blueLevel - player.getLevel());
             else if (player.getTeam() == 1) additionalXP *= (purpleLevel - player.getLevel());
             if (purpleLevel == 0 || blueLevel == 0 || additionalXP < 0) additionalXP = 0;
-            player.addXP(3 + additionalXP);
+            player.addXP(3 + additionalXP + (xpDebug ? 100 : 0));
         }
     }
 

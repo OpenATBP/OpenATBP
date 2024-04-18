@@ -426,8 +426,8 @@ public class BubbleGum extends UserActor {
         Turret(Point2D location, int turretNum) {
             this.room = BubbleGum.this.room;
             this.parentExt = BubbleGum.this.parentExt;
-            this.currentHealth = BubbleGum.this.maxHealth;
-            this.maxHealth = BubbleGum.this.maxHealth;
+            this.currentHealth = 100 + (BubbleGum.this.maxHealth * 0.3d);
+            this.maxHealth = this.currentHealth;
             this.location = location;
             this.avatar = "princessbubblegum_turret";
             this.id = "turret" + turretNum + "_" + BubbleGum.this.id;

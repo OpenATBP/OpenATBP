@@ -5,3 +5,4 @@ abilityDebug=false
 speedDebug=false
 damageDebug=false
 monsterDebug=false
+xpDebug=false

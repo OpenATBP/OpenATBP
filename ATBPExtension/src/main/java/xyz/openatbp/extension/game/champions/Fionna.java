@@ -256,7 +256,10 @@ public class Fionna extends UserActor {
                 break;
             case "attackDamage":
             case "spellDamage":
-                return super.getPlayerStat(stat) + this.getPassiveAttackDamage(stat);
+                if (this.target.getActorType() == ActorType.TOWER
+                        || this.target.getActorType() == ActorType.BASE)
+                    return super.getPlayerStat(stat);
+                else return super.getPlayerStat(stat) + this.getPassiveAttackDamage(stat);
         }
         return super.getPlayerStat(stat);
     }
