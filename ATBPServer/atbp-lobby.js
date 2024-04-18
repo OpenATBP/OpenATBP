@@ -1147,8 +1147,8 @@ module.exports = class ATBPLobbyServer {
           console.error('Socket error:', error);
           if (socket.player != undefined)
             console.log(socket.player.name + ' had an error.');
-            if (socket.player.onTeam) leaveTeam(user);
-            else leaveQueue(user);
+            if (socket.player.onTeam) leaveTeam(socket);
+            else leaveQueue(socket);
           socket.destroy();
         });
 
