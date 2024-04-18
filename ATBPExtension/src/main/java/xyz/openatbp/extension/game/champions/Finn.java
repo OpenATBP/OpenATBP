@@ -87,7 +87,7 @@ public class Finn extends UserActor {
                             2f)) {
                 if (isNonStructure(actor)) {
                     JsonNode spellData = parentExt.getAttackData("finn", "spell1");
-                    actor.addToDamageQueue(Finn.this, getSpellDamage(spellData), spellData);
+                    actor.addToDamageQueue(Finn.this, getSpellDamage(spellData), spellData, false);
                 }
             }
             qActive = false;
@@ -136,7 +136,10 @@ public class Finn extends UserActor {
                             JsonNode spellData = this.parentExt.getAttackData("finn", "spell3");
                             a.addState(ActorState.ROOTED, 0d, 2000, null, false);
                             a.addToDamageQueue(
-                                    this, handlePassive(a, getSpellDamage(spellData)), spellData);
+                                    this,
+                                    handlePassive(a, getSpellDamage(spellData)),
+                                    spellData,
+                                    false);
                             passiveStart = System.currentTimeMillis();
                             String direction = "north";
                             if (i == 1) direction = "east";
@@ -252,10 +255,13 @@ public class Finn extends UserActor {
                 for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                     if (a.getTeam() != this.team && quadrangle.contains(a.getLocation())) {
                         if (!isNonStructure(a))
-                            a.addToDamageQueue(this, getSpellDamage(spellData), spellData);
+                            a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                         else {
                             a.addToDamageQueue(
-                                    this, handlePassive(a, getSpellDamage(spellData)), spellData);
+                                    this,
+                                    handlePassive(a, getSpellDamage(spellData)),
+                                    spellData,
+                                    false);
                             passiveStart = System.currentTimeMillis();
                         }
                     }
@@ -467,7 +473,7 @@ public class Finn extends UserActor {
                             if (isNonStructure(actor)) {
                                 JsonNode spellData = parentExt.getAttackData("finn", "spell1");
                                 actor.addToDamageQueue(
-                                        Finn.this, getSpellDamage(spellData), spellData);
+                                        Finn.this, getSpellDamage(spellData), spellData, false);
                             }
                         }
                         qActive = false;

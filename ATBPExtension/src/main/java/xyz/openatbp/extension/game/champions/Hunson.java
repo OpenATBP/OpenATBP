@@ -45,7 +45,7 @@ public class Hunson extends UserActor {
                             this.location,
                             4f)) {
                 if (this.isNonStructure(a)) {
-                    a.addToDamageQueue(this, this.getSpellDamage(spellData) / 10d, spellData);
+                    a.addToDamageQueue(this, this.getSpellDamage(spellData) / 10d, spellData, true);
                 }
             }
             if (System.currentTimeMillis() - this.ultStart >= 3500) {
@@ -343,7 +343,8 @@ public class Hunson extends UserActor {
                         Champion.getActorsInRadius(
                                 parentExt.getRoomHandler(room.getName()), dest, 2.5f)) {
                     if (isNonStructure(a)) {
-                        a.addToDamageQueue(Hunson.this, getSpellDamage(spellData), spellData);
+                        a.addToDamageQueue(
+                                Hunson.this, getSpellDamage(spellData), spellData, false);
                         if (!a.getId().contains("turret") || !a.getId().contains("decoy"))
                             a.handleFear(Hunson.this.location, 1500);
                     }
@@ -410,7 +411,7 @@ public class Hunson extends UserActor {
                 qVictims.put(victim, 1);
             }
             victim.handlePull(Hunson.this.location, 1.2);
-            victim.addToDamageQueue(Hunson.this, damage, spellData);
+            victim.addToDamageQueue(Hunson.this, damage, spellData, false);
             victim.addState(ActorState.SLOWED, 0.1d, 2000, null, false);
             ExtensionCommands.playSound(
                     parentExt, room, "", "akubat_projectileHit1", victim.getLocation());

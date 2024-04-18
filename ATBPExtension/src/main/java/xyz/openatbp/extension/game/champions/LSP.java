@@ -55,7 +55,8 @@ public class LSP extends UserActor {
                             this.location,
                             3f)) {
                 if (this.isNonStructure(a)) {
-                    a.addToDamageQueue(this, (double) getSpellDamage(spellData) / 10d, spellData);
+                    a.addToDamageQueue(
+                            this, (double) getSpellDamage(spellData) / 10d, spellData, true);
                 }
             }
         }
@@ -256,7 +257,7 @@ public class LSP extends UserActor {
                 for (Actor a : parentExt.getRoomHandler(room.getName()).getActors()) {
                     if (isNonStructure(a) && qRect.contains(a.getLocation())) {
                         if (!a.getId().contains("turret")) a.handleFear(LSP.this.location, 3000);
-                        a.addToDamageQueue(LSP.this, getSpellDamage(spellData), spellData);
+                        a.addToDamageQueue(LSP.this, getSpellDamage(spellData), spellData, false);
                         affectedActors.add(a);
                     }
                 }
@@ -361,7 +362,8 @@ public class LSP extends UserActor {
                 victim.addToDamageQueue(
                         LSP.this,
                         getSpellDamage(spellData) * (1 - this.damageReduction),
-                        spellData);
+                        spellData,
+                        false);
                 this.damageReduction += 0.3d;
                 if (this.damageReduction > 0.7d) this.damageReduction = 0.7d;
             }

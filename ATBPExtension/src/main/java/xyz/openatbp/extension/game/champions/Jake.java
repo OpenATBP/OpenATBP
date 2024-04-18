@@ -66,7 +66,7 @@ public class Jake extends UserActor {
     private void doPassive() {
         lastPassiveTime.put(target.getId(), System.currentTimeMillis());
         JsonNode attackData = this.parentExt.getAttackData("jake", "spell4");
-        target.addToDamageQueue(this, getPlayerStat("attackDamage") * 0.4d, attackData);
+        target.addToDamageQueue(this, getPlayerStat("attackDamage") * 0.4d, attackData, false);
         target.addState(ActorState.SLOWED, 0.5d, 1500, null, false);
         if (!this.avatar.contains("cake"))
             ExtensionCommands.playSound(
@@ -126,7 +126,7 @@ public class Jake extends UserActor {
                     if (this.isNonStructure(a)) {
                         JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
                         double damage = (double) (getSpellDamage(spellData)) / 2d;
-                        a.addToDamageQueue(this, (int) damage, spellData);
+                        a.addToDamageQueue(this, (int) damage, spellData, true);
                     }
                 }
                 String stompSfxPrefix =
@@ -225,7 +225,7 @@ public class Jake extends UserActor {
                 double spellModifer = this.getPlayerStat("spellDamage") * percentage;
                 if (isNonStructure(this.qVictim))
                     this.qVictim.addState(ActorState.STUNNED, 0d, 2000, null, false);
-                this.qVictim.addToDamageQueue(this, 35 + spellModifer, spellData);
+                this.qVictim.addToDamageQueue(this, 35 + spellModifer, spellData, false);
                 if (distance >= 5.5d) {
                     ExtensionCommands.playSound(
                             this.parentExt,
@@ -384,7 +384,7 @@ public class Jake extends UserActor {
                                 3f)) {
                     if (this.isNonStructure(a)) {
                         a.knockback(this.location);
-                        a.addToDamageQueue(this, getSpellDamage(spellData), spellData);
+                        a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                     }
                 }
                 String ballVoPrefix =

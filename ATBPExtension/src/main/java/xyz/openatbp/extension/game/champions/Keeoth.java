@@ -150,10 +150,10 @@ public class Keeoth extends Monster {
                                                         actor.getLocation().distance(playerLoc);
                                                 if (dist > 1)
                                                     actor.addToDamageQueue(
-                                                            Keeoth.this, 150, newAttackData);
+                                                            Keeoth.this, 150, newAttackData, false);
                                                 else
                                                     actor.addToDamageQueue(
-                                                            Keeoth.this, 450, newAttackData);
+                                                            Keeoth.this, 450, newAttackData, false);
                                             }
                                         }
                                     } catch (Exception e) {

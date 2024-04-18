@@ -488,7 +488,7 @@ public class Champion {
              */
             if (attacker.getActorType() == ActorType.MONSTER && !attacker.getId().contains("gnome"))
                 attacker.setCanMove(true);
-            this.target.addToDamageQueue(this.attacker, this.damage, attackData);
+            this.target.addToDamageQueue(this.attacker, this.damage, attackData, false);
         }
     }
 
