@@ -378,7 +378,7 @@ public class UserActor extends Actor {
                             .getTaskScheduler()
                             .schedule(
                                     new RangedAttack(a, delayedAttack, projectileFx),
-                                    500,
+                                    300,
                                     TimeUnit.MILLISECONDS);
                 else
                     parentExt
@@ -393,22 +393,8 @@ public class UserActor extends Actor {
 
     public void applyStopMovingDuringAttack() {
         if (this.parentExt.getActorData(this.getAvatar()).has("attackType")) {
-            String attackType =
-                    this.parentExt.getActorData(this.getAvatar()).get("attackType").asText();
-            switch (attackType) {
-                case "MELEE":
-                    this.stopMoving(500);
-                    // Console.debugLog("melee attack");
-                    break;
-                case "RANGED":
-                    this.stopMoving(500);
-                    // Console.debugLog("ranged attack");
-                    break;
-                default:
-                    this.stopMoving(500);
-                    Console.logWarning(this.displayName + ": " + "undefined attack: " + attackType);
-            }
-        }
+            this.stopMoving(300);
+        } else Console.logWarning(this.getDisplayName() + " used an undefined attack!");
     }
 
     public void checkTowerAggro(UserActor ua) {
