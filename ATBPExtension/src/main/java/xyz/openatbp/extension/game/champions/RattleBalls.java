@@ -115,7 +115,7 @@ public class RattleBalls extends UserActor {
                         if (a.getTeam() != this.team
                                 && isNonStructure(a)
                                 && this.qThrustRectangle.contains(a.getLocation())) {
-                            a.addToDamageQueue(this, getSpellDamage(spellData), spellData);
+                            a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                         }
                     }
                     String dashPrefix =
@@ -434,7 +434,7 @@ public class RattleBalls extends UserActor {
             for (Actor a : affectedActors) {
                 if (this.isNonStructure(a)) {
                     JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell1");
-                    a.addToDamageQueue(this, getSpellDamage(spellData) + 25, spellData);
+                    a.addToDamageQueue(this, getSpellDamage(spellData) + 25, spellData, false);
                 }
             }
         }
@@ -469,7 +469,8 @@ public class RattleBalls extends UserActor {
                             2f)) {
                 if (this.isNonStructure(a)) {
                     JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
-                    a.addToDamageQueue(this, (double) getSpellDamage(spellData) / 10d, spellData);
+                    a.addToDamageQueue(
+                            this, (double) getSpellDamage(spellData) / 10d, spellData, true);
                 }
             }
         }
@@ -493,7 +494,8 @@ public class RattleBalls extends UserActor {
             this.handleLifeSteal();
             this.endCounterStance();
             JsonNode counterAttackData = counterAttackData();
-            a.addToDamageQueue(this, this.getPlayerStat("attackDamage") * 2, counterAttackData);
+            a.addToDamageQueue(
+                    this, this.getPlayerStat("attackDamage") * 2, counterAttackData, false);
             String counterSFx =
                     (this.avatar.contains("spidotron"))
                             ? "sfx_rattleballs_luchador_counter_attack_crit"
@@ -671,7 +673,8 @@ public class RattleBalls extends UserActor {
                                 parentExt.getRoomHandler(room.getName()), location, 5f)) {
                     if (isNonStructure(a)) {
                         a.handlePull(location, 1.2);
-                        a.addToDamageQueue(RattleBalls.this, getSpellDamage(spellData), spellData);
+                        a.addToDamageQueue(
+                                RattleBalls.this, getSpellDamage(spellData), spellData, false);
                     }
                 }
             }

@@ -241,7 +241,7 @@ public abstract class Actor {
             ISFSObject data = this.activeBuffs.get(k);
             if (System.currentTimeMillis()
                     >= data.getLong("endTime")) { // Checks to see if the effect has ended
-                Console.debugLog("Effect: " + k + " is ending!");
+                // Console.debugLog("Effect: " + k + " is ending!");
                 if (data.containsKey(
                         "newEndTime")) { // If the effect has been modified, run handler for
                     // restarting the
@@ -678,7 +678,8 @@ public abstract class Actor {
         return this.currentHealth <= 0;
     }
 
-    public void addToDamageQueue(Actor attacker, double damage, JsonNode attackData) {
+    public void addToDamageQueue(
+            Actor attacker, double damage, JsonNode attackData, boolean dotDamage) {
         if (this.currentHealth <= 0) return;
         ISFSObject data = new SFSObject();
         data.putClass("attacker", attacker);
@@ -690,9 +691,8 @@ public abstract class Actor {
                 && this.getActorType() != ActorType.TOWER
                 && this.getActorType() != ActorType.BASE) {
             UserActor ua = (UserActor) attacker;
-            ua.handleSpellVamp(
-                    this.getMitigatedDamage(damage, AttackType.SPELL, ua),
-                    attackData.get("castType").asText().equalsIgnoreCase("aimed"));
+            ua.addHit(dotDamage);
+            ua.handleSpellVamp(this.getMitigatedDamage(damage, AttackType.SPELL, ua), dotDamage);
         }
     }
 

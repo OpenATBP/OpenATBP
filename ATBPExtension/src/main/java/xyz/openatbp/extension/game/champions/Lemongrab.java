@@ -133,7 +133,7 @@ public class Lemongrab extends UserActor {
                     if (a.getTeam() != this.team && trapezoid.contains(a.getLocation())) {
                         if (isNonStructure(a))
                             a.addState(ActorState.SLOWED, 0.4d, 2500, null, false);
-                        a.addToDamageQueue(this, getSpellDamage(spellData), spellData);
+                        a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                     }
                 }
                 ExtensionCommands.playSound(
@@ -312,7 +312,8 @@ public class Lemongrab extends UserActor {
                                 parentExt.getRoomHandler(room.getName()), dest, 1f)) {
                     if (isNonStructure(a)) {
                         affectedActors.add(a);
-                        a.addToDamageQueue(Lemongrab.this, getSpellDamage(spellData), spellData);
+                        a.addToDamageQueue(
+                                Lemongrab.this, getSpellDamage(spellData), spellData, false);
                         a.addState(ActorState.BLINDED, 0d, 4000, null, false);
                         a.addState(ActorState.SILENCED, 0d, 2000, null, false);
                     }
@@ -323,7 +324,7 @@ public class Lemongrab extends UserActor {
                     if (isNonStructure(a) && !affectedActors.contains(a)) {
                         double damage = 60d + (getPlayerStat("spellDamage") * 0.4d);
                         a.addState(ActorState.BLINDED, 0d, 4000, null, false);
-                        a.addToDamageQueue(Lemongrab.this, damage, spellData);
+                        a.addToDamageQueue(Lemongrab.this, damage, spellData, false);
                     }
                 }
             }
@@ -361,7 +362,7 @@ public class Lemongrab extends UserActor {
                         Champion.getActorsInRadius(
                                 parentExt.getRoomHandler(room.getName()), dest, 2.5f)) {
                     if (isNonStructure(a)) {
-                        a.addToDamageQueue(Lemongrab.this, damage, spellData);
+                        a.addToDamageQueue(Lemongrab.this, damage, spellData, false);
                         if (a.getActorType() == ActorType.PLAYER) {
                             a.addState(ActorState.STUNNED, 0d, (int) duration, null, false);
                         }

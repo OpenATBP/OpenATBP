@@ -448,10 +448,12 @@ public class Champion {
             if (this.attacker.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) this.attacker;
                 if (ua.hasBackpackItem("junk_1_numb_chucks") && ua.getStat("sp_category1") > 0) {
-                    if (!this.target.hasTempStat("attackSpeed"))
+                    if (!this.target.hasTempStat(
+                            "attackSpeed")) // TODO: This will make this not apply when people are
+                        // impacted by other attackSpeed debuffs/buffs
                         this.target.addEffect(
                                 "attackSpeed",
-                                this.target.getPlayerStat("attackSpeed") * -0.1,
+                                this.target.getPlayerStat("attackSpeed") * -0.25,
                                 3000,
                                 null,
                                 "",
@@ -488,7 +490,7 @@ public class Champion {
              */
             if (attacker.getActorType() == ActorType.MONSTER && !attacker.getId().contains("gnome"))
                 attacker.setCanMove(true);
-            this.target.addToDamageQueue(this.attacker, this.damage, attackData);
+            this.target.addToDamageQueue(this.attacker, this.damage, attackData, false);
         }
     }
 

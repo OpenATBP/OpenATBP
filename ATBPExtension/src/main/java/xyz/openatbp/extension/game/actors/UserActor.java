@@ -52,6 +52,7 @@ public class UserActor extends Actor {
     private static boolean abilityDebug;
     private static boolean speedDebug;
     private static boolean damageDebug;
+    protected double hits = 0;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -215,6 +216,11 @@ public class UserActor extends Actor {
                 destination,
                 (float) this.getPlayerStat("speed"),
                 params.getBool("orient"));
+    }
+
+    public void addHit(boolean dotDamage) {
+        if (!dotDamage) this.hits++;
+        else this.hits += 0.2d;
     }
 
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
@@ -771,6 +777,9 @@ public class UserActor extends Actor {
         if (!this.isStopped()) {
             this.updateMovementTime();
         }
+        if (this.hits > 0) {
+            this.hits -= 0.1d;
+        } else if (this.hits < 0) this.hits = 0;
         this.location = this.getRelativePoint(false);
         this.handlePathing();
         if (movementDebug)
@@ -1103,7 +1112,8 @@ public class UserActor extends Actor {
         if (this.team == 1 && respawnPoint.getX() < 0)
             respawnPoint = new Point2D.Double(respawnPoint.getX() * -1, respawnPoint.getY());
         Console.debugLog(
-                "Respawning at: "
+                this.displayName
+                        + " Respawning at: "
                         + respawnPoint.getX()
                         + ","
                         + respawnPoint.getY()
@@ -1293,10 +1303,15 @@ public class UserActor extends Actor {
         return (int) Math.round(cooldown * ratio);
     }
 
-    public void handleSpellVamp(double damage, boolean area) {
-        double percentage = this.getPlayerStat("spellVamp") / 100;
+    public void handleSpellVamp(double damage, boolean dotDamage) {
+        double spellVamp = this.getPlayerStat("spellVamp");
+        if (this.hits != 0) {
+            if (dotDamage) spellVamp /= this.hits;
+            else spellVamp /= (this.hits * 2);
+        }
+        double percentage = spellVamp / 100;
         int healing = (int) Math.round(damage * percentage);
-        if (area) healing *= 0.33d;
+        // Console.debugLog(this.displayName + " is healing for " + healing + " HP!");
         this.changeHealth(healing);
     }
 
