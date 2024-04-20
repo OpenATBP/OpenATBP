@@ -124,7 +124,7 @@ public class Finn extends UserActor {
                                 && this.wallLines[i].ptSegDist(a.getLocation()) <= 0.5f) {
                             this.wallsActivated[i] = false;
                             JsonNode spellData = this.parentExt.getAttackData("finn", "spell3");
-                            a.addState(ActorState.ROOTED, 0d, 2000, null, false);
+                            a.addState(ActorState.ROOTED, 0d, 2000);
                             a.addToDamageQueue(
                                     this,
                                     handlePassive(a, getSpellDamage(spellData)),

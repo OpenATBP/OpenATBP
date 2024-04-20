@@ -194,7 +194,7 @@ public class MagicMan extends UserActor {
                             MovementManager.getDashPoint(
                                     this, new Line2D.Float(this.location, dest));
                     if (Double.isNaN(dashPoint.getY())) dashPoint = this.location;
-                    this.addState(ActorState.INVISIBLE, 0d, 3000, null, false);
+                    this.addState(ActorState.INVISIBLE, 0d, 3000);
                     this.wLocation = new Point2D.Double(this.location.getX(), this.location.getY());
                     Point2D endLocation =
                             Champion.getAbilityLine(this.wLocation, dest, 100f).getP2();
@@ -339,7 +339,7 @@ public class MagicMan extends UserActor {
                         double damage = (double) (a.getHealth()) * (0.35d + damageModifier);
                         a.addToDamageQueue(MagicMan.this, damage, spellData, false);
                         a.addEffect("armor", a.getStat("armor") * -0.3d, 3000);
-                        a.addState(ActorState.SLOWED, 0.3d, 3000, null, false);
+                        a.addState(ActorState.SLOWED, 0.3d, 3000);
                     }
                 }
             } else if (interruptE) {
@@ -366,7 +366,7 @@ public class MagicMan extends UserActor {
 
         @Override
         protected void hit(Actor victim) {
-            victim.addState(ActorState.SILENCED, 0d, 1000, null, false);
+            victim.addState(ActorState.SILENCED, 0d, 1000);
             ExtensionCommands.createWorldFX(
                     this.parentExt,
                     this.owner.getRoom(),

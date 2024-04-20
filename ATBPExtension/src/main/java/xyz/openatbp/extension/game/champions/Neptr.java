@@ -307,7 +307,7 @@ public class Neptr extends UserActor {
                             parentExt.getRoomHandler(room.getName()), ultLocation, 3f)) {
                 if (isNonStructure(a)) {
                     a.knockback(Neptr.this.location);
-                    a.addState(ActorState.SILENCED, 0d, 1000, null, false);
+                    a.addState(ActorState.SILENCED, 0d, 1000);
                     ExtensionCommands.createActorFX(
                             parentExt,
                             room,
@@ -597,7 +597,7 @@ public class Neptr extends UserActor {
                                             getSpellDamage(spellData),
                                             spellData,
                                             false);
-                                    target.addState(ActorState.SLOWED, 0.4d, 3000, null, false);
+                                    target.addState(ActorState.SLOWED, 0.4d, 3000);
                                 }
                             }
                         }

@@ -374,7 +374,7 @@ public class FlamePrincess extends UserActor {
             for (Actor a : affectedUsers) {
                 if (a.getActorType() == ActorType.PLAYER) {
                     UserActor userActor = (UserActor) a;
-                    userActor.addState(ActorState.POLYMORPH, 0d, 3000, null, false);
+                    userActor.addState(ActorState.POLYMORPH, 0d, 3000);
                     lastPolymorphTime = System.currentTimeMillis();
                 }
                 double newDamage = getSpellDamage(spellData);

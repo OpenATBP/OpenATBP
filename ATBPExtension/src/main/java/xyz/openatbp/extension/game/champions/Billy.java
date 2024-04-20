@@ -145,8 +145,7 @@ public class Billy extends UserActor {
                     if (a.getTeam() != this.team && quadrangle.contains(a.getLocation())) {
                         if (isNonStructure(a)) a.knockback(this.location);
                         a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
-                        if (this.passiveUses == 3)
-                            a.addState(ActorState.STUNNED, 0d, 2000, null, false);
+                        if (this.passiveUses == 3) a.addState(ActorState.STUNNED, 0d, 2000);
                     }
                 }
                 if (this.passiveUses == 3) this.usePassiveAbility();

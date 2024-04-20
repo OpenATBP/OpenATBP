@@ -51,6 +51,7 @@ public abstract class Actor {
     protected String bundle;
     protected boolean towerAggroCompanion = false;
     protected Map<String, EffectHandler> effectHandlers = new HashMap<>();
+    protected List<String> activeEffects = new ArrayList<>();
 
     public double getPHealth() {
         return currentHealth / maxHealth;
@@ -205,6 +206,31 @@ public abstract class Actor {
         }
     }
 
+    public void addFx(String fxId, String emit, int duration) {
+        if (!this.activeEffects.contains(fxId)) {
+            this.activeEffects.add(fxId);
+            ExtensionCommands.createActorFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    fxId,
+                    duration,
+                    this.id + "_" + fxId,
+                    true,
+                    emit,
+                    true,
+                    true,
+                    this.team);
+        }
+    }
+
+    public void removeFx(String fxId) {
+        if (this.activeEffects.contains(fxId)) {
+            this.activeEffects.remove(fxId);
+            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_" + fxId);
+        }
+    }
+
     public void addEffect(String stat, double delta, int duration, String fxId, String emit) {
         if (!this.effectHandlers.containsKey(stat))
             this.effectHandlers.put(stat, new EffectHandler(this, stat));
@@ -218,12 +244,20 @@ public abstract class Actor {
         this.effectHandlers.get(stat).addEffect(delta, duration);
     }
 
-    public void addState(
-            ActorState state, double delta, int duration, String fxId, boolean stacks) {
+    public void addState(ActorState state, double delta, int duration) {
         if (this.getState(ActorState.IMMUNITY) && this.isCC(state)) return;
         if (!this.effectHandlers.containsKey(state.toString()))
             this.effectHandlers.put(state.toString(), new EffectHandler(this, state));
-        this.effectHandlers.get(state.toString()).addState(0.2d, 1000);
+        this.effectHandlers.get(state.toString()).addState(delta, duration);
+    }
+
+    @Deprecated
+    public void addState(ActorState state, double delta, int duration, String fxId, String emit) {
+        if (this.getState(ActorState.IMMUNITY) && this.isCC(state)) return;
+        if (!this.effectHandlers.containsKey(state.toString()))
+            this.effectHandlers.put(state.toString(), new EffectHandler(this, state));
+        this.effectHandlers.get(state.toString()).addState(delta, duration);
+        this.effectHandlers.get(state.toString()).addFx(fxId, emit, duration);
     }
 
     public void handleCharm(UserActor charmer, int duration) {
@@ -234,7 +268,7 @@ public abstract class Actor {
             this.movementLine =
                     MovementManager.getColliderLine(this.parentExt, this.room, this.movementLine);
             this.timeTraveled = 0f;
-            this.addState(ActorState.CHARMED, 0d, duration, null, false);
+            this.addState(ActorState.CHARMED, 0d, duration);
             if (this.canMove)
                 ExtensionCommands.moveActor(
                         this.parentExt,
@@ -260,7 +294,7 @@ public abstract class Actor {
             Line2D perpendicularLine = new Line2D.Double(this.location, extendedPoint);
             Point2D fearEndPoint = MovementManager.getDashPoint(this, perpendicularLine);
             this.moveWithCollision(fearEndPoint);
-            this.addState(ActorState.FEARED, 0d, duration, null, false);
+            this.addState(ActorState.FEARED, 0d, duration);
         }
     }
 
@@ -524,7 +558,7 @@ public abstract class Actor {
         Line2D knockBackLine = Champion.extendLine(originalLine, 5f);
         Line2D finalLine =
                 new Line2D.Double(this.location, MovementManager.getDashPoint(this, knockBackLine));
-        this.addState(ActorState.AIRBORNE, 0d, 250, null, false);
+        this.addState(ActorState.AIRBORNE, 0d, 250);
         double speed = this.location.distance(finalLine.getP2()) / 0.275f;
         ExtensionCommands.knockBackActor(
                 this.parentExt,
@@ -557,7 +591,7 @@ public abstract class Actor {
         double finalDistance = this.location.distance(pullDestination);
         double speed = finalDistance / 0.25;
         double pullTime = (finalDistance / speed) * 1000;
-        this.addState(ActorState.AIRBORNE, 0d, (int) pullTime, null, false);
+        this.addState(ActorState.AIRBORNE, 0d, (int) pullTime);
         ExtensionCommands.knockBackActor(
                 this.parentExt,
                 this.room,

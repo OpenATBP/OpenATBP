@@ -228,14 +228,13 @@ public class Lich extends UserActor {
                             if (System.currentTimeMillis() - slimedEnemies.get(a.getId()) >= 1000) {
                                 a.addToDamageQueue(
                                         this, getSpellDamage(attackData), attackData, true);
-                                if (isNonStructure(a))
-                                    a.addState(ActorState.SLOWED, 0.3d, 1500, null, false);
+                                if (isNonStructure(a)) a.addState(ActorState.SLOWED, 0.3d, 1500);
                                 slimedEnemies.put(a.getId(), System.currentTimeMillis());
                                 break;
                             }
                         } else {
                             a.addToDamageQueue(this, getSpellDamage(attackData), attackData, true);
-                            a.addState(ActorState.SLOWED, 0.3d, 1500, null, false);
+                            a.addState(ActorState.SLOWED, 0.3d, 1500);
                             slimedEnemies.put(a.getId(), System.currentTimeMillis());
                             break;
                         }

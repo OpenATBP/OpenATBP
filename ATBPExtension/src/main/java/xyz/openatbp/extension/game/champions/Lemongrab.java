@@ -131,8 +131,7 @@ public class Lemongrab extends UserActor {
                                 Q_OFFSET_DISTANCE_TOP);
                 for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                     if (a.getTeam() != this.team && trapezoid.contains(a.getLocation())) {
-                        if (isNonStructure(a))
-                            a.addState(ActorState.SLOWED, 0.4d, 2500, null, false);
+                        if (isNonStructure(a)) a.addState(ActorState.SLOWED, 0.4d, 2500);
                         a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                     }
                 }
@@ -314,8 +313,8 @@ public class Lemongrab extends UserActor {
                         affectedActors.add(a);
                         a.addToDamageQueue(
                                 Lemongrab.this, getSpellDamage(spellData), spellData, false);
-                        a.addState(ActorState.BLINDED, 0d, 4000, null, false);
-                        a.addState(ActorState.SILENCED, 0d, 2000, null, false);
+                        a.addState(ActorState.BLINDED, 0d, 4000);
+                        a.addState(ActorState.SILENCED, 0d, 2000);
                     }
                 }
                 for (Actor a :
@@ -323,7 +322,7 @@ public class Lemongrab extends UserActor {
                                 parentExt.getRoomHandler(room.getName()), dest, 2f)) {
                     if (isNonStructure(a) && !affectedActors.contains(a)) {
                         double damage = 60d + (getPlayerStat("spellDamage") * 0.4d);
-                        a.addState(ActorState.BLINDED, 0d, 4000, null, false);
+                        a.addState(ActorState.BLINDED, 0d, 4000);
                         a.addToDamageQueue(Lemongrab.this, damage, spellData, false);
                     }
                 }
@@ -364,7 +363,7 @@ public class Lemongrab extends UserActor {
                     if (isNonStructure(a)) {
                         a.addToDamageQueue(Lemongrab.this, damage, spellData, false);
                         if (a.getActorType() == ActorType.PLAYER) {
-                            a.addState(ActorState.STUNNED, 0d, (int) duration, null, false);
+                            a.addState(ActorState.STUNNED, 0d, (int) duration);
                         }
                         if (a.getActorType() == ActorType.PLAYER
                                 && !a.getState(ActorState.IMMUNITY))

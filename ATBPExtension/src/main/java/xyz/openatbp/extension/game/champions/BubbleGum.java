@@ -93,8 +93,7 @@ public class BubbleGum extends UserActor {
                                 this.parentExt.getAttackData("princessbubblegum", "spell1");
                         double damage = this.getSpellDamage(spellData) / 10f;
                         a.addToDamageQueue(this, damage, spellData, true);
-                        if (isNonStructure(a))
-                            a.addState(ActorState.SLOWED, 0.3d, 2000, null, false);
+                        if (isNonStructure(a)) a.addState(ActorState.SLOWED, 0.3d, 2000);
                     } else if (a.getId().equalsIgnoreCase(this.id)) {
                         this.addEffect("speed", this.getStat("speed") * 0.4d, 2000);
                         ExtensionCommands.createActorFX(
@@ -464,7 +463,7 @@ public class BubbleGum extends UserActor {
                                 this.team);
                     };
             parentExt.getTaskScheduler().schedule(creationDelay, 150, TimeUnit.MILLISECONDS);
-            this.addState(ActorState.IMMUNITY, 0d, 1000 * 60 * 15, null, false);
+            this.addState(ActorState.IMMUNITY, 0d, 1000 * 60 * 15);
         }
 
         @Override

@@ -1103,7 +1103,7 @@ public class UserActor extends Actor {
 
     public void handlePolymorph(boolean enable, int duration) {
         if (enable) {
-            this.addState(ActorState.SLOWED, 0.3d, duration, null, false);
+            this.addState(ActorState.SLOWED, 0.3d, duration);
             ExtensionCommands.swapActorAsset(parentExt, this.room, this.id, "flambit");
             ExtensionCommands.createActorFX(
                     this.parentExt,

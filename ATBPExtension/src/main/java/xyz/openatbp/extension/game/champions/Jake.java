@@ -67,7 +67,7 @@ public class Jake extends UserActor {
         lastPassiveTime.put(target.getId(), System.currentTimeMillis());
         JsonNode attackData = this.parentExt.getAttackData("jake", "spell4");
         target.addToDamageQueue(this, getPlayerStat("attackDamage") * 0.4d, attackData, false);
-        target.addState(ActorState.SLOWED, 0.5d, 1500, null, false);
+        target.addState(ActorState.SLOWED, 0.5d, 1500);
         if (!this.avatar.contains("cake"))
             ExtensionCommands.playSound(
                     this.parentExt, this.room, this.id, "vo/vo_jake_passive_1", this.location);
@@ -224,7 +224,7 @@ public class Jake extends UserActor {
                 System.out.println("percentage " + percentage);
                 double spellModifer = this.getPlayerStat("spellDamage") * percentage;
                 if (isNonStructure(this.qVictim))
-                    this.qVictim.addState(ActorState.STUNNED, 0d, 2000, null, false);
+                    this.qVictim.addState(ActorState.STUNNED, 0d, 2000);
                 this.qVictim.addToDamageQueue(this, 35 + spellModifer, spellData, false);
                 if (distance >= 5.5d) {
                     ExtensionCommands.playSound(
@@ -462,8 +462,8 @@ public class Jake extends UserActor {
                         true,
                         false,
                         this.team);
-                this.addState(ActorState.CLEANSED, 0d, 5000, null, false);
-                this.addState(ActorState.IMMUNITY, 0d, 5000, null, false);
+                this.addState(ActorState.CLEANSED, 0d, 5000);
+                this.addState(ActorState.IMMUNITY, 0d, 5000);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,

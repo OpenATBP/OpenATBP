@@ -187,7 +187,7 @@ public class IceKing extends UserActor {
         if (attackData.has("attackName")
                 && attackData.get("attackName").asText().contains("basic_attack")
                 && this.iceShield) {
-            a.addState(ActorState.SLOWED, 0.25d, 2000, null, false);
+            a.addState(ActorState.SLOWED, 0.25d, 2000);
             a.addEffect("attackSpeed", a.getStat("attackSpeed") * 0.33d, 2000);
             this.iceShield = false;
             this.lastAbilityUsed = System.currentTimeMillis() + 5000;
@@ -423,7 +423,7 @@ public class IceKing extends UserActor {
             qVictim = victim;
             qHitTime = System.currentTimeMillis() + 1750;
             victim.addToDamageQueue(IceKing.this, getSpellDamage(spellData), spellData, false);
-            victim.addState(ActorState.ROOTED, 0d, 1750, "iceKing_snare", true);
+            victim.addState(ActorState.ROOTED, 0d, 1750, "iceKing_snare", "");
             ExtensionCommands.playSound(
                     this.parentExt,
                     victim.getRoom(),

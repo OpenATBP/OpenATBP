@@ -137,7 +137,7 @@ public class Monster extends Actor {
 
     @Override
     public void handleCharm(UserActor charmer, int duration) {
-        this.addState(ActorState.CHARMED, 0d, duration, null, false);
+        this.addState(ActorState.CHARMED, 0d, duration);
         if (charmer != null) this.target = charmer;
     }
 

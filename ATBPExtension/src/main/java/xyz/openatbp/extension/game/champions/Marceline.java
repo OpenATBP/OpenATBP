@@ -467,7 +467,7 @@ public class Marceline extends UserActor {
                             false,
                             false,
                             team);
-                    Marceline.this.addState(ActorState.IMMUNITY, 0d, 2000, null, false);
+                    Marceline.this.addState(ActorState.IMMUNITY, 0d, 2000);
                     setState(ActorState.CLEANSED, true);
                     Marceline.this.cleanseEffects();
                     setState(ActorState.TRANSFORMED, true);
@@ -532,7 +532,7 @@ public class Marceline extends UserActor {
         @Override
         protected void hit(Actor victim) {
             if (transformed) {
-                victim.addState(ActorState.ROOTED, 0d, 3000, null, false);
+                victim.addState(ActorState.ROOTED, 0d, 3000);
             } else {
                 qVictim = victim;
                 qHit = System.currentTimeMillis();
@@ -542,7 +542,7 @@ public class Marceline extends UserActor {
                             qHit = -1;
                         };
                 parentExt.getTaskScheduler().schedule(endVictim, 1500, TimeUnit.MILLISECONDS);
-                victim.addState(ActorState.SLOWED, 0.15d, 1500, null, false);
+                victim.addState(ActorState.SLOWED, 0.15d, 1500);
             }
             JsonNode spellData = parentExt.getAttackData(avatar, "spell1");
             victim.addToDamageQueue(this.owner, getSpellDamage(spellData), spellData, false);

@@ -76,7 +76,7 @@ public class BMO extends UserActor {
                     JsonNode spellData = parentExt.getAttackData("bmo", "spell2");
                     a.addToDamageQueue(
                             this, (double) getSpellDamage(spellData) / 10d, spellData, true);
-                    if (passiveStacks == 3) a.addState(ActorState.SLOWED, 0.5d, 2500, null, false);
+                    if (passiveStacks == 3) a.addState(ActorState.SLOWED, 0.5d, 2500);
                 }
             }
             if (System.currentTimeMillis() - lastWSound >= 500) {
@@ -113,9 +113,8 @@ public class BMO extends UserActor {
                 for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                     if (a.getTeam() != this.team && trapezoid.contains(a.getLocation())) {
                         if (isNonStructure(a)) {
-                            a.addState(ActorState.BLINDED, 0.5d, 2500, null, false);
-                            if (passiveStacks == 3)
-                                a.addState(ActorState.SLOWED, 0d, 2500, null, false);
+                            a.addState(ActorState.BLINDED, 0.5d, 2500);
+                            if (passiveStacks == 3) a.addState(ActorState.SLOWED, 0d, 2500);
                         }
                         a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                     }
@@ -342,7 +341,7 @@ public class BMO extends UserActor {
                         (this.getSpellDamage(spellData)) * damageMultiplier,
                         spellData,
                         false);
-                a.addState(ActorState.STUNNED, 0d, 1000, null, false);
+                a.addState(ActorState.STUNNED, 0d, 1000);
             }
         }
         if (passiveStacks == 3) usePassiveStacks();
@@ -445,7 +444,7 @@ public class BMO extends UserActor {
                     BMO.this, getSpellDamage(spellData) * (1 - damageReduction), spellData, false);
             ExtensionCommands.playSound(
                     parentExt, room, "", "akubat_projectileHit1", victim.getLocation());
-            if (ultSlowActive) victim.addState(ActorState.SLOWED, 0.5d, 2500, null, false);
+            if (ultSlowActive) victim.addState(ActorState.SLOWED, 0.5d, 2500);
             this.damageReduction += 0.3d;
             if (this.damageReduction > 0.7d) this.damageReduction = 0.7d;
         }

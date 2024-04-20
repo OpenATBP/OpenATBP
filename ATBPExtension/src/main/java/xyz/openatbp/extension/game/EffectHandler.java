@@ -176,6 +176,10 @@ public class EffectHandler {
         for (Long k : badKeys) {
             this.statLog.remove(k);
         }
+        Set<String> effects = new HashSet<>(this.fxLog.keySet());
+        for (String effect : effects) {
+            if (this.fxLog.get(effect) > System.currentTimeMillis()) this.removeFx(effect);
+        }
         if (badKeys.size() > 0 && this.statLog.size() == 0) {
             if (this.state != null) this.parent.setState(state, false);
             return true;
@@ -198,14 +202,14 @@ public class EffectHandler {
             if (this.fxLog.get(fx) < System.currentTimeMillis() + duration)
                 this.fxLog.put(fx, System.currentTimeMillis() + duration);
         } else {
-            // TODO: Add code to add fx in the extension
+            this.parent.addFx(fx, emit, duration);
             this.fxLog.put(fx, System.currentTimeMillis() + duration);
         }
     }
 
     public void removeFx(String fx) {
-        // TODO: Add code to remove fx in the extension
         this.fxLog.remove(fx);
+        if (this.fxLog.size() == 0) this.parent.removeFx(fx);
     }
 
     public double getCurrentDelta() {

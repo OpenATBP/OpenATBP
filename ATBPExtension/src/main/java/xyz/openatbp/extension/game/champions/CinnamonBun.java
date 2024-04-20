@@ -50,8 +50,7 @@ public class CinnamonBun extends UserActor {
             for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                 if (a.getTeam() != this.team && this.wPoly.contains(a.getLocation())) {
                     a.addToDamageQueue(this, getSpellDamage(spellData) / 10d, spellData, true);
-                    if (isNonStructure(a))
-                        a.addState(ActorState.SLOWED, percentage, duration, null, false);
+                    if (isNonStructure(a)) a.addState(ActorState.SLOWED, percentage, duration);
                 }
             }
         }

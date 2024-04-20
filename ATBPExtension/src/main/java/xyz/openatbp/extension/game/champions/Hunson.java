@@ -411,7 +411,7 @@ public class Hunson extends UserActor {
             }
             victim.handlePull(Hunson.this.location, 1.2);
             victim.addToDamageQueue(Hunson.this, damage, spellData, false);
-            victim.addState(ActorState.SLOWED, 0.1d, 2000, null, false);
+            victim.addState(ActorState.SLOWED, 0.1d, 2000);
             ExtensionCommands.playSound(
                     parentExt, room, "", "akubat_projectileHit1", victim.getLocation());
             this.destroy();

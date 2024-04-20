@@ -65,7 +65,7 @@ public class GooMonster extends Monster {
                     JsonNode newAttackData = mapper.readTree(data.toJson());
                     for (Actor a : damagedActors) {
                         if (!a.getId().equalsIgnoreCase(this.id)) {
-                            a.addState(ActorState.SLOWED, 0.25d, 1000, null, false);
+                            a.addState(ActorState.SLOWED, 0.25d, 1000);
                             a.addToDamageQueue(this, 4, newAttackData, true);
                         }
                     }
