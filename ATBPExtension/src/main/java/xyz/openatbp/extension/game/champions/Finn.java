@@ -46,12 +46,6 @@ public class Finn extends UserActor {
     }
 
     @Override
-    public double getPlayerStat(String stat) {
-        if (stat.equalsIgnoreCase("speed") && this.qActive) return super.getPlayerStat(stat) * 1.5d;
-        return super.getPlayerStat(stat);
-    }
-
-    @Override
     public void handleKill(Actor a, JsonNode attackData) {
         super.handleKill(a, attackData);
         if (a.getActorType() == ActorType.PLAYER) {
@@ -117,10 +111,6 @@ public class Finn extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if (this.qActive && System.currentTimeMillis() - this.qStartTime >= 3000) {
-            this.qActive = false;
-            updateStatMenu("speed");
-        }
         if (this.ultActivated && System.currentTimeMillis() - this.eStartTime >= 5000) {
             this.wallLines = null;
             this.wallsActivated = new boolean[] {false, false, false, false};
@@ -199,7 +189,6 @@ public class Finn extends UserActor {
             case 1:
                 this.canCast[0] = false;
                 this.attackCooldown = 0;
-                this.qActive = true;
                 this.qStartTime = System.currentTimeMillis();
                 this.updateStatMenu("speed");
                 String shieldPrefix =
@@ -222,9 +211,9 @@ public class Finn extends UserActor {
                         true,
                         false,
                         this.team);
-                this.addEffect("armor", this.getStat("armor") * 0.25d, 3000, null, "", false);
-                this.addEffect(
-                        "attackSpeed", this.getStat("attackSpeed") * -0.20d, 3000, null, "", false);
+                this.addEffect("speed", this.getStat("speed") * 0.5d, 3000);
+                this.addEffect("armor", this.getStat("armor") * 0.25d, 3000);
+                this.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.20d, 3000);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,

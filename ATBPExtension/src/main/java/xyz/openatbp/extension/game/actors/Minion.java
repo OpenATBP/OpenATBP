@@ -521,17 +521,6 @@ public class Minion extends Actor {
         else return deltaX < 0 && p.getX() < line.getX1();
     }
 
-    @Override
-    public boolean setTempStat(String stat, double delta) {
-        boolean returnVal = super.setTempStat(stat, delta);
-        if (stat.equalsIgnoreCase("speed")) {
-            if (movementLine != null) {
-                this.move(movementLine.getP2());
-            }
-        }
-        return returnVal;
-    }
-
     public boolean isInvisOrInBrush(Actor a) {
         ActorState[] states = {ActorState.INVISIBLE, ActorState.BRUSH};
         for (ActorState state : states) {

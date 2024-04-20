@@ -84,12 +84,7 @@ public class GooMonster extends Monster {
             for (UserActor u : parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                 if (u.getTeam() == a.getTeam()) {
                     u.addEffect(
-                            "speed",
-                            u.getPlayerStat("speed") * 0.1d,
-                            60000,
-                            "jungle_buff_goo",
-                            "",
-                            false);
+                            "speed", u.getPlayerStat("speed") * 0.1d, 60000, "jungle_buff_goo", "");
                     Champion.handleStatusIcon(
                             this.parentExt,
                             u,

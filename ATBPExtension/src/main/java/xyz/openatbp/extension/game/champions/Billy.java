@@ -194,14 +194,8 @@ public class Billy extends UserActor {
                 ExtensionCommands.actorAnimate(
                         this.parentExt, this.room, this.id, "spell2", wTime, false);
                 if (this.passiveUses == 3) {
-                    this.addEffect(
-                            "attackSpeed",
-                            this.getStat("attackSpeed") * -0.7d,
-                            4000,
-                            null,
-                            "",
-                            false);
-                    this.addEffect("speed", 0.8d, 6000, null, "", true);
+                    this.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.7d, 4000);
+                    this.addEffect("speed", 0.8d, 6000);
                     this.usePassiveAbility();
                     ExtensionCommands.addStatusIcon(
                             this.parentExt,

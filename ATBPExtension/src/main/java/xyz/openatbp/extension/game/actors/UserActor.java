@@ -167,8 +167,9 @@ public class UserActor extends Actor {
         return canCast;
     }
 
-    @Override
+    @Deprecated
     public boolean setTempStat(String stat, double delta) {
+        /*
         boolean returnVal = super.setTempStat(stat, delta);
         if (stat.contains("speed") && this.canMove) {
             this.move(movementLine.getP2());
@@ -179,6 +180,9 @@ public class UserActor extends Actor {
         ExtensionCommands.updateActorData(
                 this.parentExt, this.room, this.id, stat, this.getPlayerStat(stat));
         return returnVal;
+
+         */
+        return false;
     }
 
     public void setPath(Point2D start, Point2D end) {
@@ -304,10 +308,7 @@ public class UserActor extends Actor {
             ExtensionCommands.damageActor(parentExt, this.room, this.id, newDamage);
             this.processHitData(a, attackData, newDamage);
             if (this.hasTempStat("healthRegen")) {
-                this.tempStats.remove("healthRegen");
-                this.updateStatMenu("healthRegen");
-                ExtensionCommands.removeFx(
-                        this.parentExt, this.room, this.id + "_" + "fx_health_regen");
+                this.effectHandlers.get("healthRegen").endAllEffects();
             }
 
             this.changeHealth(newDamage * -1);
@@ -905,10 +906,7 @@ public class UserActor extends Actor {
             }
             if (this.hasTempStat("healthRegen")) {
                 if (this.currentHealth == this.maxHealth) {
-                    this.tempStats.remove("healthRegen");
-                    this.updateStatMenu("healthRegen");
-                    ExtensionCommands.removeFx(
-                            this.parentExt, this.room, this.id + "_" + "fx_health_regen");
+                    this.effectHandlers.get("healthRegen").endAllEffects();
                 }
             }
         }
@@ -1103,6 +1101,77 @@ public class UserActor extends Actor {
         return (float) Math.toDegrees(angleRad) * -1 + 90f;
     }
 
+    public void handlePolymorph(boolean enable, int duration) {
+        if (enable) {
+            this.addState(ActorState.SLOWED, 0.3d, duration, null, false);
+            ExtensionCommands.swapActorAsset(parentExt, this.room, this.id, "flambit");
+            ExtensionCommands.createActorFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    "statusEffect_polymorph",
+                    1000,
+                    this.id + "_statusEffect_polymorph",
+                    true,
+                    "",
+                    true,
+                    false,
+                    this.team);
+            ExtensionCommands.createActorFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    "flambit_aoe",
+                    3000,
+                    this.id + "_flambit_aoe",
+                    true,
+                    "",
+                    true,
+                    false,
+                    this.team);
+            ExtensionCommands.createActorFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    "fx_target_ring_2",
+                    3000,
+                    this.id + "_flambit_ring_",
+                    true,
+                    "",
+                    true,
+                    true,
+                    getOppositeTeam());
+        } else {
+            this.bundle = this.getSkinAssetBundle();
+            boolean scale = false;
+            if (this.getState(ActorState.TRANSFORMED)) {
+                switch (this.getAvatar()) {
+                    case "flame":
+                        this.bundle = "flame_ult";
+                        scale = true;
+                        break;
+                    case "iceking":
+                        this.bundle =
+                                this.avatar.contains("queen")
+                                        ? "iceking2_icequeen2"
+                                        : this.avatar.contains("young")
+                                                ? "iceking2_young2"
+                                                : "iceking2";
+                        break;
+                    case "marceline":
+                        this.bundle = "marceline_bat";
+                        break;
+                    case "peppermintbutler":
+                        this.bundle = "pepbut_feral";
+                }
+            }
+            ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, this.bundle);
+            if (scale) {
+                ExtensionCommands.scaleActor(this.parentExt, this.room, this.id, 1f);
+            }
+        }
+    }
+
     public void respawn() {
         this.canMove = true;
         this.setHealth((int) this.maxHealth, (int) this.maxHealth);
@@ -1129,7 +1198,7 @@ public class UserActor extends Actor {
         ExtensionCommands.playSound(
                 this.parentExt, this.room, this.id, "sfx/sfx_champion_respawn", this.location);
         ExtensionCommands.respawnActor(this.parentExt, this.room, this.id);
-        this.addEffect("speed", 2d, 5000, "statusEffect_speed", "targetNode", false);
+        this.addEffect("speed", 2d, 5000, "statusEffect_speed", "targetNode");
         ExtensionCommands.createActorFX(
                 this.parentExt,
                 this.room,
@@ -1530,7 +1599,8 @@ public class UserActor extends Actor {
         return playerStats;
     }
 
-    protected void updateStatMenu(String stat) {
+    public void updateStatMenu(String stat) {
+        Console.debugLog("Updating stat menu: " + stat + " with " + this.getPlayerStat(stat));
         ExtensionCommands.updateActorData(
                 this.parentExt, this.room, this.id, stat, this.getPlayerStat(stat));
     }
@@ -1553,10 +1623,9 @@ public class UserActor extends Actor {
             ActorState.ROOTED,
             ActorState.CLEANSED
         };
-        this.setState(cleansedStats, false);
-        if (this.activeBuffs.containsKey("SLOWED")) {
-            this.setTempStat("speed", this.getTempStat("speed") * -1);
-            this.activeBuffs.remove("SLOWED");
+        for (ActorState s : cleansedStats) {
+            if (this.effectHandlers.containsKey(s.toString()))
+                this.effectHandlers.get(s.toString()).endAllEffects();
         }
     }
 

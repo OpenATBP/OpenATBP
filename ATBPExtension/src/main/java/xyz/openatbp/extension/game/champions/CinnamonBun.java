@@ -72,20 +72,8 @@ public class CinnamonBun extends UserActor {
                         lastUltEffect = System.currentTimeMillis();
                         this.canApplyUltEffects = false;
                         this.ultEffectsApplied = true;
-                        a.addEffect(
-                                "attackSpeed",
-                                this.getStat("attackSpeed") * -0.2d,
-                                4500,
-                                null,
-                                "",
-                                false);
-                        a.addEffect(
-                                "attackDamage",
-                                this.getStat("attackDamage") * 0.2d,
-                                4500,
-                                null,
-                                "",
-                                false);
+                        a.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.2d, 4500);
+                        a.addEffect("attackDamage", this.getStat("attackDamage") * 0.2d, 4500);
                         ExtensionCommands.addStatusIcon(
                                 this.parentExt,
                                 this.player,

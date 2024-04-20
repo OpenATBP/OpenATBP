@@ -459,7 +459,7 @@ public class RoomHandler implements Runnable {
                             ExtensionCommands.playSound(
                                     parentExt, u.getRoom(), "", "sfx_health_picked_up", healthLoc);
                             if (!u.hasTempStat("healthRegen")) u.changeHealth(90);
-                            u.addEffect("healthRegen", 20d, 15000, "fx_health_regen", "", false);
+                            u.addEffect("healthRegen", 20d, 15000, "fx_health_regen", "");
                             // Champion.giveBuff(parentExt,u.getUser(), Buff.HEALTH_PACK);
                             spawns.putInt(s, 0);
                             break;
@@ -786,15 +786,8 @@ public class RoomHandler implements Runnable {
                                 u.getStat("attackDamage") * 0.25d,
                                 1000 * 60,
                                 "altar_buff_offense",
-                                "",
-                                false);
-                        u.addEffect(
-                                "spellDamage",
-                                u.getStat("spellDamage") * 0.25d,
-                                1000 * 60,
-                                null,
-                                "",
-                                false);
+                                "");
+                        u.addEffect("spellDamage", u.getStat("spellDamage") * 0.25d, 1000 * 60);
                         Champion.handleStatusIcon(
                                 parentExt, u, "icon_altar_attack", "altar2_description", 1000 * 60);
                     } else {
@@ -802,8 +795,8 @@ public class RoomHandler implements Runnable {
                         double addMR = u.getStat("spellResist") * 0.5d;
                         if (addArmor == 0) addArmor = 5d;
                         if (addMR == 0) addMR = 5d;
-                        u.addEffect("armor", addArmor, 1000 * 60, "altar_buff_defense", "", true);
-                        u.addEffect("spellResist", addMR, 1000 * 60, null, "", true);
+                        u.addEffect("armor", addArmor, 1000 * 60, "altar_buff_defense", "");
+                        u.addEffect("spellResist", addMR, 1000 * 60, null, "");
                         Champion.handleStatusIcon(
                                 parentExt, u, "icon_altar_armor", "altar1_description", 1000 * 60);
                     }

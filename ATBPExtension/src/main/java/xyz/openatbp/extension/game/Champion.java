@@ -454,20 +454,14 @@ public class Champion {
                         this.target.addEffect(
                                 "attackSpeed",
                                 this.target.getPlayerStat("attackSpeed") * -0.25,
-                                3000,
-                                null,
-                                "",
-                                false);
+                                3000);
                 } else if (ua.hasBackpackItem("junk_4_grob_gob_glob_grod")
                         && ua.getStat("sp_category4") > 0) {
                     if (!this.target.hasTempStat("spellDamage"))
                         this.target.addEffect(
                                 "spellDamage",
                                 this.target.getPlayerStat("spellDamage") * -0.1,
-                                3000,
-                                null,
-                                "",
-                                false);
+                                3000);
                 }
                 if (this.attack.contains("basic")
                         && this.target != null

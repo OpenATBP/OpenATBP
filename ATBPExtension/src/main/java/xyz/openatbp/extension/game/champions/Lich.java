@@ -51,7 +51,7 @@ public class Lich extends UserActor {
             case 1: // Q
                 this.canCast[0] = false;
                 double statIncrease = this.getStat("speed") * 0.25d;
-                this.addEffect("speed", statIncrease, 6000, null, "", false);
+                this.addEffect("speed", statIncrease, 6000);
                 qActivated = true;
                 slimePath = new ArrayList<>();
                 slimedEnemies = new HashMap<>();

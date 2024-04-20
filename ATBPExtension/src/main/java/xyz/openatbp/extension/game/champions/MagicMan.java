@@ -338,7 +338,7 @@ public class MagicMan extends UserActor {
                     if (isNonStructure(a)) {
                         double damage = (double) (a.getHealth()) * (0.35d + damageModifier);
                         a.addToDamageQueue(MagicMan.this, damage, spellData, false);
-                        a.addEffect("armor", a.getStat("armor") * -0.3d, 3000, null, "", false);
+                        a.addEffect("armor", a.getStat("armor") * -0.3d, 3000);
                         a.addState(ActorState.SLOWED, 0.3d, 3000, null, false);
                     }
                 }
@@ -505,7 +505,7 @@ public class MagicMan extends UserActor {
                             parentExt, MagicMan.this, target, (int) damage, "basicAttack")
                     .run();
             if (this.target.getActorType() == ActorType.PLAYER) {
-                addEffect("speed", getStat("speed") * 0.2d, 3000, null, "", false);
+                addEffect("speed", getStat("speed") * 0.2d, 3000);
                 if (!passiveActivated)
                     ExtensionCommands.addStatusIcon(
                             parentExt,

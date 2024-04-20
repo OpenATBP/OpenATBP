@@ -130,9 +130,8 @@ public class Hunson extends UserActor {
                     "icon_hunson_passive",
                     "hunson_spell_4_short_description",
                     5000);
-            this.addEffect(
-                    "attackSpeed", this.getStat("attackSpeed") * -0.4d, 5000, null, "", false);
-            this.addEffect("speed", 0.8d, 5000, null, "", false);
+            this.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.4d, 5000);
+            this.addEffect("speed", 0.8d, 5000);
             parentExt
                     .getTaskScheduler()
                     .schedule(
@@ -374,8 +373,8 @@ public class Hunson extends UserActor {
                     true,
                     false,
                     team);
-            addEffect("armor", getStat("armor") * 0.5d, 3500, null, "", false);
-            addEffect("spellVamp", 45, 3500, null, "", false);
+            addEffect("armor", getStat("armor") * 0.5d, 3500);
+            addEffect("spellVamp", 45, 3500);
             ultActivated = true;
             ultStart = System.currentTimeMillis();
         }

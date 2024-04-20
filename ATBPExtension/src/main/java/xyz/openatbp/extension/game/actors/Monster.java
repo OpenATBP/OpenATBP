@@ -170,17 +170,6 @@ public class Monster extends Actor {
     }
 
     @Override
-    public boolean setTempStat(String stat, double delta) {
-        boolean returnVal = super.setTempStat(stat, delta);
-        if (stat.equalsIgnoreCase("speed")) {
-            if (movementLine != null) {
-                this.move(movementLine.getP2());
-            }
-        }
-        return returnVal;
-    }
-
-    @Override
     public void handleKill(Actor a, JsonNode attackData) {}
 
     @Override

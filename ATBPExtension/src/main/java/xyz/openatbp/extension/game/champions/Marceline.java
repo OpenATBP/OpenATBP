@@ -252,7 +252,7 @@ public class Marceline extends UserActor {
                             true,
                             false,
                             this.team);
-                    this.addEffect("speed", this.getStat("speed") * 0.4d, 4500, null, "", false);
+                    this.addEffect("speed", this.getStat("speed") * 0.4d, 4500);
                 } else {
                     this.humanWActive = true;
                     ExtensionCommands.playSound(
@@ -287,7 +287,7 @@ public class Marceline extends UserActor {
                             true,
                             false,
                             this.team);
-                    this.addEffect("speed", this.getStat("speed") * 0.3d, 4500, null, "", false);
+                    this.addEffect("speed", this.getStat("speed") * 0.3d, 4500);
                 }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
@@ -445,8 +445,7 @@ public class Marceline extends UserActor {
                     }
                     double currentAttackSpeed = getPlayerStat("attackSpeed");
                     attackCooldown = 0d;
-                    Marceline.this.addEffect(
-                            "attackSpeed", 500 - currentAttackSpeed, 3000, null, "", false);
+                    Marceline.this.addEffect("attackSpeed", 500 - currentAttackSpeed, 3000);
 
                 } else {
                     String morphBeastVo =
