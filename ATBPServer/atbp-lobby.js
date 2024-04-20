@@ -273,9 +273,6 @@ function updateMatchmaking() {
 }
 
 function startGame(players, type) {
-  for (var p of players) {
-    console.log('Starting game for: ', p);
-  }
   var queueSize = 1;
   if (type.includes('p') && type != 'practice')
     queueSize = Number(type.replace('p', ''));
@@ -496,7 +493,7 @@ function joinQueue(sockets, type) {
           }
           if (players.length == queueSize) {
             for (var p of players) {
-              console.log(`QUEUE POPPED. ${p.name} JOINED!`, p);
+              console.log(`QUEUE POPPED. ${p.name} JOINED!`);
             }
             startGame(players, type);
           } else console.log('Invalid queue size!');
@@ -601,7 +598,7 @@ function handleRequest(jsonString, socket) {
   let response = null;
   let unhandled = false;
   if (socket.player != undefined) console.log('!', socket.player.name);
-  console.log('<-', jsonObject['req'], jsonObject['payload']);
+  //console.log('<-', jsonObject['req'], jsonObject['payload']);
 
   switch (jsonObject['req']) {
     case 'handshake':

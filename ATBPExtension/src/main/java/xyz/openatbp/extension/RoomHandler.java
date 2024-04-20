@@ -1335,7 +1335,7 @@ public class RoomHandler implements Runnable {
                     playerData
                             .find(eq("user.TEGid", (String) user.getSession().getProperty("tegid")))
                             .first();
-            if (data != null) {
+            if (data != null && room.getGroupId().equalsIgnoreCase("PVP")) {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode dataObj = mapper.readTree(data.toJson());
                 double disconnects = dataObj.get("player").get("disconnects").asInt();

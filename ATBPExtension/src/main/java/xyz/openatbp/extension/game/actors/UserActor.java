@@ -46,6 +46,7 @@ public class UserActor extends Actor {
     protected static final double DASH_SPEED = 20d;
     protected boolean changeTowerAggro = false;
     protected boolean isDashing = false;
+    private long lastHit = 0;
     // Set debugging options via config.properties next to the extension jar
     private static boolean movementDebug;
     private static boolean invincibleDebug;
@@ -217,6 +218,7 @@ public class UserActor extends Actor {
             if (a.getActorType() == ActorType.COMPANION) {
                 checkTowerAggroCompanion(a);
             }
+            this.lastHit = System.currentTimeMillis();
             if (a.getActorType() == ActorType.TOWER) {
                 ExtensionCommands.playSound(
                         this.parentExt,
@@ -771,7 +773,8 @@ public class UserActor extends Actor {
     protected boolean
             canRegenHealth() { // TODO: Does not account for health pots. Not sure if this should be
         // added for balance reasons.
-        return (this.currentHealth < this.maxHealth && this.aggressors.isEmpty())
+        return (this.currentHealth < this.maxHealth
+                        && System.currentTimeMillis() > this.lastHit + 1000)
                 || this.getPlayerStat("healthRegen") < 0;
     }
 
@@ -898,7 +901,7 @@ public class UserActor extends Actor {
             List<Actor> actorsToRemove = new ArrayList<Actor>(this.aggressors.keySet().size());
             for (Actor a : this.aggressors.keySet()) {
                 ISFSObject damageData = this.aggressors.get(a);
-                if (System.currentTimeMillis() > damageData.getLong("lastAttacked") + 3000)
+                if (System.currentTimeMillis() > damageData.getLong("lastAttacked") + 5000)
                     actorsToRemove.add(a);
             }
             for (Actor a : actorsToRemove) {
