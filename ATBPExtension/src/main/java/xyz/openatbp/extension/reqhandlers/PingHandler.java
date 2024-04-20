@@ -7,7 +7,6 @@ import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.RoomHandler;
-import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class PingHandler extends BaseClientRequestHandler {
@@ -16,7 +15,7 @@ public class PingHandler extends BaseClientRequestHandler {
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
         RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getName());
         UserActor user = roomHandler.getPlayer(String.valueOf(sender.getId()));
-        //user.addState(ActorState.SLOWED, 0.2d, 1000, null, false);
+        // user.addState(ActorState.SLOWED, 0.2d, 1000, null, false);
         for (UserActor ua : roomHandler.getPlayers()) {
             if (ua.getTeam() == user.getTeam()) {
                 ISFSObject data = new SFSObject();
