@@ -13,10 +13,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.game.ActorState;
-import xyz.openatbp.extension.game.ActorType;
-import xyz.openatbp.extension.game.Champion;
-import xyz.openatbp.extension.game.EffectHandler;
+import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public abstract class Actor {
@@ -51,7 +48,7 @@ public abstract class Actor {
     protected String bundle;
     protected boolean towerAggroCompanion = false;
     protected Map<String, EffectHandler> effectHandlers = new HashMap<>();
-    protected List<String> activeEffects = new ArrayList<>();
+    protected Map<String, FxHandler> fxHandlers = new HashMap<>();
 
     public double getPHealth() {
         return currentHealth / maxHealth;
@@ -204,60 +201,59 @@ public abstract class Actor {
         for (String k : badKeys) {
             this.effectHandlers.remove(k);
         }
+        List<String> badFx = new ArrayList<>();
+        for (String k : this.fxHandlers.keySet()) {
+            if (this.fxHandlers.get(k).update()) badFx.add(k);
+        }
+        for (String k : badFx) {
+            this.fxHandlers.remove(k);
+        }
     }
 
     public void addFx(String fxId, String emit, int duration) {
-        if (!this.activeEffects.contains(fxId)) {
-            this.activeEffects.add(fxId);
-            ExtensionCommands.createActorFX(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    fxId,
-                    duration,
-                    this.id + "_" + fxId,
-                    true,
-                    emit,
-                    true,
-                    true,
-                    this.team);
+        if (this.fxHandlers.get(fxId) != null) {
+            this.fxHandlers.get(fxId).addFx(duration);
+        } else {
+            this.fxHandlers.put(fxId, new FxHandler(this, fxId, emit, duration));
         }
     }
 
     public void removeFx(String fxId) {
-        if (this.activeEffects.contains(fxId)) {
-            this.activeEffects.remove(fxId);
-            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_" + fxId);
+        if (this.fxHandlers.get(fxId) != null) {
+            this.fxHandlers.get(fxId).forceStopFx();
         }
     }
 
     public void addEffect(String stat, double delta, int duration, String fxId, String emit) {
+        if (this.actorType == ActorType.TOWER || this.actorType == ActorType.BASE) return;
         if (!this.effectHandlers.containsKey(stat))
             this.effectHandlers.put(stat, new EffectHandler(this, stat));
         this.effectHandlers.get(stat).addEffect(delta, duration);
-        this.effectHandlers.get(stat).addFx(fxId, emit, duration);
+        this.addFx(fxId, emit, duration);
     }
 
     public void addEffect(String stat, double delta, int duration) {
+        if (this.actorType == ActorType.TOWER || this.actorType == ActorType.BASE) return;
         if (!this.effectHandlers.containsKey(stat))
             this.effectHandlers.put(stat, new EffectHandler(this, stat));
         this.effectHandlers.get(stat).addEffect(delta, duration);
     }
 
     public void addState(ActorState state, double delta, int duration) {
+        if (this.actorType == ActorType.TOWER || this.actorType == ActorType.BASE) return;
         if (this.getState(ActorState.IMMUNITY) && this.isCC(state)) return;
         if (!this.effectHandlers.containsKey(state.toString()))
             this.effectHandlers.put(state.toString(), new EffectHandler(this, state));
         this.effectHandlers.get(state.toString()).addState(delta, duration);
     }
 
-    @Deprecated
     public void addState(ActorState state, double delta, int duration, String fxId, String emit) {
+        if (this.actorType == ActorType.TOWER || this.actorType == ActorType.BASE) return;
         if (this.getState(ActorState.IMMUNITY) && this.isCC(state)) return;
         if (!this.effectHandlers.containsKey(state.toString()))
             this.effectHandlers.put(state.toString(), new EffectHandler(this, state));
         this.effectHandlers.get(state.toString()).addState(delta, duration);
-        this.effectHandlers.get(state.toString()).addFx(fxId, emit, duration);
+        this.addFx(fxId, emit, duration);
     }
 
     public void handleCharm(UserActor charmer, int duration) {

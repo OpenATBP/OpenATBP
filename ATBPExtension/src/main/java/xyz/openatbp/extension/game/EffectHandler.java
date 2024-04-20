@@ -11,14 +11,13 @@ public class EffectHandler {
     private String stat;
     private ActorState state;
     private Map<Long, Double> statLog;
-    private Map<String, Long> fxLog;
+    private FxHandler attachedFx;
     private double currentDelta;
 
     public EffectHandler(Actor parent, String stat) {
         this.parent = parent;
         this.stat = stat;
         this.statLog = new HashMap<>();
-        this.fxLog = new HashMap<>();
         this.currentDelta = 0;
         Console.debugLog("Effect Handler created for " + stat);
     }
@@ -27,7 +26,6 @@ public class EffectHandler {
         this.parent = parent;
         this.state = state;
         this.statLog = new HashMap<>();
-        this.fxLog = new HashMap<>();
         this.currentDelta = 0;
         parent.setState(state, true);
         Console.debugLog("Effect Handler created for " + state.toString());
@@ -37,6 +35,8 @@ public class EffectHandler {
         long endTime = System.currentTimeMillis() + duration;
         if (this.statLog.containsKey(endTime)) endTime++;
         this.statLog.put(endTime, delta);
+        if (this.stat.equalsIgnoreCase("healthRegen"))
+            this.parent.addFx("fx_health_regen", "", duration);
         this.handleEffect(delta);
     }
 
@@ -48,6 +48,7 @@ public class EffectHandler {
         else this.handleState(duration);
     }
 
+    @Deprecated
     public void addStatPercentage(double percentage, int duration) {
         long endTime = System.currentTimeMillis() + duration;
         if (this.statLog.containsKey(endTime)) endTime++;
@@ -95,7 +96,7 @@ public class EffectHandler {
             this.currentDelta = delta;
             update = true;
         }
-        Console.debugLog("Setting currentDelta to " + this.currentDelta);
+        // Console.debugLog("Setting currentDelta to " + this.currentDelta);
         if (this.parent.getActorType() == ActorType.PLAYER) {
             UserActor ua = (UserActor) this.parent;
             if (ua.canMove() && this.stat.equalsIgnoreCase("speed"))
@@ -176,10 +177,6 @@ public class EffectHandler {
         for (Long k : badKeys) {
             this.statLog.remove(k);
         }
-        Set<String> effects = new HashSet<>(this.fxLog.keySet());
-        for (String effect : effects) {
-            if (this.fxLog.get(effect) > System.currentTimeMillis()) this.removeFx(effect);
-        }
         if (badKeys.size() > 0 && this.statLog.size() == 0) {
             if (this.state != null) this.parent.setState(state, false);
             return true;
@@ -195,21 +192,6 @@ public class EffectHandler {
         Console.debugLog(this.stat + " ending at " + key);
         this.changeToNextBuff(key, this.stat);
         this.statLog.remove(key);
-    }
-
-    public void addFx(String fx, String emit, int duration) {
-        if (this.fxLog.containsKey(fx)) {
-            if (this.fxLog.get(fx) < System.currentTimeMillis() + duration)
-                this.fxLog.put(fx, System.currentTimeMillis() + duration);
-        } else {
-            this.parent.addFx(fx, emit, duration);
-            this.fxLog.put(fx, System.currentTimeMillis() + duration);
-        }
-    }
-
-    public void removeFx(String fx) {
-        this.fxLog.remove(fx);
-        if (this.fxLog.size() == 0) this.parent.removeFx(fx);
     }
 
     public double getCurrentDelta() {

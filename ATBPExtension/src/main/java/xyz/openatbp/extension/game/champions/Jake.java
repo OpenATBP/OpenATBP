@@ -206,7 +206,7 @@ public class Jake extends UserActor {
                 Point2D dashPoint =
                         MovementManager.getDashPoint(
                                 this, new Line2D.Float(this.location, this.qVictim.getLocation()));
-                if (dashPoint != null) this.dash(dashPoint, true, 15);
+                if (dashPoint != null) this.dash(dashPoint, 15);
                 ExtensionCommands.createActorFX(
                         this.parentExt,
                         this.room,

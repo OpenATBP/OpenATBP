@@ -167,24 +167,6 @@ public class UserActor extends Actor {
         return canCast;
     }
 
-    @Deprecated
-    public boolean setTempStat(String stat, double delta) {
-        /*
-        boolean returnVal = super.setTempStat(stat, delta);
-        if (stat.contains("speed") && this.canMove) {
-            this.move(movementLine.getP2());
-        } else if (stat.contains("healthRegen")) {
-            if (this.hasTempStat("healthRegen") && this.getTempStat("healthRegen") <= 0)
-                this.tempStats.remove("healthRegen");
-        }
-        ExtensionCommands.updateActorData(
-                this.parentExt, this.room, this.id, stat, this.getPlayerStat(stat));
-        return returnVal;
-
-         */
-        return false;
-    }
-
     public void setPath(Point2D start, Point2D end) {
         this.movementLine = new Line2D.Float(start, end);
         this.timeTraveled = 0f;
@@ -506,6 +488,34 @@ public class UserActor extends Actor {
         this.setLocation(dashPoint);
         this.target = null;
         return dashPoint;
+    }
+
+    public void dash(Point2D dest, double dashSpeed) {
+        this.isDashing = true;
+        if (movementDebug)
+            ExtensionCommands.createWorldFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    "gnome_a",
+                    this.id + "_test" + Math.random(),
+                    5000,
+                    (float) dest.getX(),
+                    (float) dest.getY(),
+                    false,
+                    0,
+                    0f);
+        // if(noClip) dashPoint =
+        // Champion.getTeleportPoint(this.parentExt,this.player,this.location,dest);
+        double time = dest.distance(this.location) / dashSpeed;
+        int timeMs = (int) (time * 1000d);
+        this.stopMoving(timeMs);
+        Runnable setIsDashing = () -> this.isDashing = false;
+        parentExt.getTaskScheduler().schedule(setIsDashing, timeMs, TimeUnit.MILLISECONDS);
+        ExtensionCommands.moveActor(
+                this.parentExt, this.room, this.id, this.location, dest, (float) dashSpeed, true);
+        this.setLocation(dest);
+        this.target = null;
     }
 
     protected boolean handleAttack(

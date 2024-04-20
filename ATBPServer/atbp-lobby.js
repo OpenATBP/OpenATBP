@@ -45,8 +45,7 @@ function safeSendAll(sockets, command, response) {
     if (sockets.length == 0) resolve(true);
     else {
       console.log(
-        `Sending ${command} to ${sockets[0].player.name}: `,
-        response
+        `Sending ${command} to ${sockets[0].player.name}`
       );
       sendCommand(sockets[0], command, response)
         .then(() => {
@@ -113,7 +112,7 @@ function leaveQueue(socket) {
         safeSendAll(
           users.filter((u) => queue.players.includes(u.player) && u != socket),
           'team_disband',
-          { reason: `${socket.player.name} dodged!` }
+          { reason: `error_lobby_playerLeftMatch` }
         )
           .then(() => {
             for (var p of queue.players) {
@@ -1152,7 +1151,7 @@ module.exports = class ATBPLobbyServer {
           if (jsonLength == null || 0) {
             if (socket.player != undefined) {
               console.log(
-                `${socket.player.name} has had their socket destroyed.`
+                `${socket.player.name} has had their socket destroyed due to jsonLength 0.`
               );
             }
             socket.destroy();
@@ -1181,13 +1180,16 @@ module.exports = class ATBPLobbyServer {
 
         socket.on('close', (err) => {
           console.log(err);
+          var userExists = false;
           for (var user of users) {
             if (user._readableState.ended || user == socket) {
+              userExists = true;
               console.log(user.player.name + ' logged out');
               if (user.player.onTeam) leaveTeam(user);
               else leaveQueue(user);
             }
           }
+          if(!userExists) console.log("Socket left with no player: ", socket);
           users = users.filter(
             (user) => !user._readableState.ended && user != socket
           );

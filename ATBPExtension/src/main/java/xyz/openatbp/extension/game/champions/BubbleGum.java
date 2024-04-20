@@ -502,6 +502,19 @@ public class BubbleGum extends UserActor {
         }
 
         @Override
+        public void addState(ActorState state, double delta, int duration) {
+            if (state == ActorState.CHARMED || state == ActorState.FEARED) return;
+            super.addState(state, delta, duration);
+        }
+
+        @Override
+        public void addState(
+                ActorState state, double delta, int duration, String fxId, String emit) {
+            if (state == ActorState.CHARMED || state == ActorState.FEARED) return;
+            super.addState(state, delta, duration, fxId, emit);
+        }
+
+        @Override
         public void die(Actor a) {
             this.dead = true;
             this.currentHealth = 0;
@@ -514,6 +527,7 @@ public class BubbleGum extends UserActor {
         @Override
         public void update(int msRan) {
             this.handleDamageQueue();
+            this.handleActiveEffects();
             if (this.dead) return;
             if (System.currentTimeMillis() - this.timeOfBirth >= 60000) {
                 this.die(this);
