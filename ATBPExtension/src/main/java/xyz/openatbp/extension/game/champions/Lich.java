@@ -306,7 +306,6 @@ public class Lich extends UserActor {
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
         super.handleKill(a, attackData);
-        if (this.skully != null) this.skully.resetTarget();
         if (attackData.has("spellType")
                 && (attackData.get("spellType").asText().equalsIgnoreCase("spell1")
                         || attackData.get("spellType").asText().equalsIgnoreCase("passive")))
@@ -324,8 +323,6 @@ public class Lich extends UserActor {
 
     private class Skully extends Actor {
 
-        private Point2D lastLichLocation;
-        private Point2D lastTargetLocation;
         private long timeOfBirth;
         private boolean dead = false;
 
@@ -339,12 +336,20 @@ public class Lich extends UserActor {
             this.id = "skully_" + Lich.this.id;
             this.team = Lich.this.team;
             this.movementLine = new Line2D.Float(this.location, this.location);
-            this.lastLichLocation = Lich.this.getRelativePoint(false);
             this.timeOfBirth = System.currentTimeMillis();
             this.actorType = ActorType.COMPANION;
             this.stats = this.initializeStats();
             ExtensionCommands.createActor(
                     parentExt, room, this.id, this.avatar, this.location, 0f, this.team);
+            if (movementDebug)
+                ExtensionCommands.createActor(
+                        parentExt,
+                        room,
+                        id + "_movementDebug",
+                        "gnome_b",
+                        this.location,
+                        0f,
+                        this.team);
         }
 
         @Override
@@ -394,45 +399,89 @@ public class Lich extends UserActor {
             this.handleDamageQueue();
             this.handleActiveEffects();
             if (this.attackCooldown > 0) this.attackCooldown -= 100;
-            if (!this.isStopped()) this.timeTraveled += 0.1f;
+            if (!this.isStopped() && this.canMove()) this.timeTraveled += 0.1f;
             this.location =
                     MovementManager.getRelativePoint(
                             this.movementLine, this.getPlayerStat("speed"), this.timeTraveled);
             this.handlePathing();
-            if (this.target == null) {
-                if (this.movementLine.getP2().distance(Lich.this.location) > 0.1d
-                        && this.location.distance(Lich.this.location) > 2.5f)
-                    this.move(Lich.this.location);
-                if (!this.isStopped() && this.location.distance(Lich.this.location) <= 2f)
+            if (movementDebug)
+                ExtensionCommands.moveActor(
+                        this.parentExt,
+                        this.room,
+                        this.id + "_movementDebug",
+                        this.location,
+                        this.location,
+                        2f,
+                        false);
+            if (this.target == null) { // Should follow Lich around
+                if (this.location.distance(Lich.this.location) > 2.5d && !this.isLichNearEndPoint())
+                    this.moveWithCollision(Lich.this.location);
+                else if (!this.isStopped() && this.location.distance(Lich.this.location) <= 2.5)
                     this.stopMoving();
             } else {
                 if (this.target.getHealth() <= 0) this.resetTarget();
-                if (this.withinRange(this.target)) {
-                    if (!this.isStopped()) this.stopMoving();
-                    if (this.canAttack()) this.attack(this.target);
-                } else {
-                    if (this.movementLine.getP2().distance(this.target.getLocation()) > 0.1d)
-                        this.setPath(
-                                MovementManager.getPath(
-                                        this.parentExt.getRoomHandler(this.room.getName()),
-                                        this.location,
-                                        this.target.getLocation()));
+                else {
+                    if (!this.withinRange(this.target)
+                            && !this.isPointNearDestination(this.target.getLocation())) {
+                        this.moveWithCollision(this.target.getLocation());
+                    } else if (this.withinRange(this.target)) {
+                        if (!this.isStopped()) this.stopMoving();
+                        if (this.canAttack()) this.attack(this.target);
+                    }
                 }
             }
+        }
+
+        private boolean isLichNearEndPoint() {
+            if (this.path != null)
+                return Lich.this.location.distance(this.path.get(this.path.size() - 1)) <= 0.5d;
+            else return Lich.this.location.distance(this.movementLine.getP2()) <= 0.5d;
         }
 
         public void setTarget(Actor a) {
             if (this.target == a) return;
             this.target = a;
-            this.lastTargetLocation = a.getLocation();
-            this.move(a.getLocation());
-            this.timeTraveled = 0.1f;
+            this.moveWithCollision(a.getLocation());
+            this.timeTraveled = 0f;
         }
 
         public void resetTarget() {
             this.target = null;
-            this.movementLine = new Line2D.Float(this.location, Lich.this.getRelativePoint(false));
-            this.timeTraveled = 0.1f;
+            List<Actor> nearbyActors =
+                    Champion.getEnemyActorsInRadius(
+                            this.parentExt.getRoomHandler(this.room.getName()),
+                            this.team,
+                            this.location,
+                            4f);
+            Actor highestPriorityActor = null;
+            double actorDistance = 100d;
+            for (Actor a : nearbyActors) {
+                if (highestPriorityActor == null) {
+                    highestPriorityActor = a;
+                    actorDistance = a.getLocation().distance(this.location);
+                } else {
+                    if (a.getActorType() == ActorType.PLAYER) {
+                        if (highestPriorityActor.getActorType() != ActorType.PLAYER) {
+                            highestPriorityActor = a;
+                            actorDistance = a.getLocation().distance(this.location);
+                        } else if (actorDistance > a.getLocation().distance(this.location)) {
+                            highestPriorityActor = a;
+                            actorDistance = a.getLocation().distance(this.location);
+                        }
+                    } else {
+                        if (actorDistance > a.getLocation().distance(this.location)
+                                && highestPriorityActor.getActorType() != ActorType.PLAYER) {
+                            highestPriorityActor = a;
+                            actorDistance = a.getLocation().distance(this.location);
+                        }
+                    }
+                }
+            }
+            if (highestPriorityActor != null) this.setTarget(highestPriorityActor);
+            else {
+                if (this.location.distance(Lich.this.location) > 2.5d)
+                    this.moveWithCollision(Lich.this.location);
+            }
         }
 
         public Actor getTarget() {

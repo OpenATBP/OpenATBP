@@ -311,7 +311,8 @@ public class BubbleGum extends UserActor {
     @Override
     public void die(Actor a) {
         super.die(a);
-        for (Turret t : turrets) {
+        List<Turret> aliveTurrets = new ArrayList<>(this.turrets);
+        for (Turret t : aliveTurrets) {
             t.die(a);
         }
         this.turrets = new ArrayList<>();

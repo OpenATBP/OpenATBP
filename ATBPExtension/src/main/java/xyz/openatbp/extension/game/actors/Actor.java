@@ -114,6 +114,8 @@ public abstract class Actor {
     protected boolean isStopped() {
         if (this.movementLine == null)
             this.movementLine = new Line2D.Float(this.location, this.location);
+        if (this.path != null)
+            return this.path.get(this.path.size() - 1).distance(this.location) <= 0.01d;
         return this.location.distance(this.movementLine.getP2()) < 0.01d;
     }
 
@@ -564,6 +566,11 @@ public abstract class Actor {
                 this.path = null;
             }
         }
+    }
+
+    protected boolean isPointNearDestination(Point2D p) {
+        if (this.path != null) return this.path.get(this.path.size() - 1).distance(p) <= 0.2d;
+        else return this.movementLine.getP2().distance(p) <= 0.2d;
     }
 
     public void handlePull(Point2D source, double pullDistance) {

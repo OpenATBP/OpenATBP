@@ -48,7 +48,7 @@ public class UserActor extends Actor {
     protected boolean isDashing = false;
     private long lastHit = 0;
     // Set debugging options via config.properties next to the extension jar
-    private static boolean movementDebug;
+    protected static boolean movementDebug;
     private static boolean invincibleDebug;
     private static boolean abilityDebug;
     private static boolean speedDebug;
@@ -1613,7 +1613,7 @@ public class UserActor extends Actor {
     }
 
     public void updateStatMenu(String stat) {
-        Console.debugLog("Updating stat menu: " + stat + " with " + this.getPlayerStat(stat));
+        // Console.debugLog("Updating stat menu: " + stat + " with " + this.getPlayerStat(stat));
         ExtensionCommands.updateActorData(
                 this.parentExt, this.room, this.id, stat, this.getPlayerStat(stat));
     }
