@@ -92,7 +92,7 @@ public class BubbleGum extends UserActor {
                         JsonNode spellData =
                                 this.parentExt.getAttackData("princessbubblegum", "spell1");
                         double damage = this.getSpellDamage(spellData) / 10f;
-                        a.addToDamageQueue(this, damage, spellData);
+                        a.addToDamageQueue(this, damage, spellData, true);
                         if (isNonStructure(a))
                             a.addState(ActorState.SLOWED, 0.3d, 2000, null, false);
                     } else if (a.getId().equalsIgnoreCase(this.id)) {
@@ -261,7 +261,7 @@ public class BubbleGum extends UserActor {
                 a.knockback(this.bombLocation);
                 JsonNode spellData = parentExt.getAttackData("peebles", "spell3");
                 if (a.getTeam() != this.team)
-                    a.addToDamageQueue(this, getSpellDamage(spellData), spellData);
+                    a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                 else if (a.getId().equalsIgnoreCase(this.id)) {
                     ExtensionCommands.actorAnimate(parentExt, room, this.id, "spell3b", 325, false);
                     Runnable animationDelay =

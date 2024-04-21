@@ -337,7 +337,7 @@ public class MagicMan extends UserActor {
                                 parentExt.getRoomHandler(room.getName()), location, 4f)) {
                     if (isNonStructure(a)) {
                         double damage = (double) (a.getHealth()) * (0.35d + damageModifier);
-                        a.addToDamageQueue(MagicMan.this, damage, spellData);
+                        a.addToDamageQueue(MagicMan.this, damage, spellData, false);
                         a.addEffect("armor", a.getStat("armor") * -0.3d, 3000, null, "", false);
                         a.addState(ActorState.SLOWED, 0.3d, 3000, null, false);
                     }
@@ -382,7 +382,7 @@ public class MagicMan extends UserActor {
             if (!playersHitBySnake.contains(victim)) {
                 playersHitBySnake.add(victim);
                 JsonNode spellData = parentExt.getAttackData(MagicMan.this.avatar, "spell1");
-                victim.addToDamageQueue(MagicMan.this, getSpellDamage(spellData), spellData);
+                victim.addToDamageQueue(MagicMan.this, getSpellDamage(spellData), spellData, false);
             }
             this.destroy();
         }
@@ -461,7 +461,8 @@ public class MagicMan extends UserActor {
                             this.location,
                             2.5f)) {
                 if (isNonStructure(actor)) {
-                    actor.addToDamageQueue(MagicMan.this, getSpellDamage(spellData), spellData);
+                    actor.addToDamageQueue(
+                            MagicMan.this, getSpellDamage(spellData), spellData, false);
                 }
             }
             this.timeTraveled = 0;

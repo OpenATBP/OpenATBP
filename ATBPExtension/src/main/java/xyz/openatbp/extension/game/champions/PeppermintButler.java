@@ -191,7 +191,7 @@ public class PeppermintButler extends UserActor {
                 if (this.isNonStructure(a)) {
                     JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell1");
                     double damage = this.getSpellDamage(spellData) / 10d;
-                    a.addToDamageQueue(this, damage, spellData);
+                    a.addToDamageQueue(this, damage, spellData, true);
                     a.addState(ActorState.BLINDED, 0d, 500, null, true);
                 }
             }
@@ -534,7 +534,7 @@ public class PeppermintButler extends UserActor {
                                 parentExt.getRoomHandler(room.getName()), location, 2.5f)) {
                     if (isNonStructure(a)) {
                         a.addToDamageQueue(
-                                PeppermintButler.this, getSpellDamage(spellData), spellData);
+                                PeppermintButler.this, getSpellDamage(spellData), spellData, false);
                         a.addState(ActorState.STUNNED, 0d, 1500, null, false);
                     }
                 }

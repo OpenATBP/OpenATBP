@@ -226,14 +226,15 @@ public class Lich extends UserActor {
                         JsonNode attackData = this.parentExt.getAttackData(getAvatar(), "spell1");
                         if (slimedEnemies.containsKey(a.getId())) {
                             if (System.currentTimeMillis() - slimedEnemies.get(a.getId()) >= 1000) {
-                                a.addToDamageQueue(this, getSpellDamage(attackData), attackData);
+                                a.addToDamageQueue(
+                                        this, getSpellDamage(attackData), attackData, true);
                                 if (isNonStructure(a))
                                     a.addState(ActorState.SLOWED, 0.3d, 1500, null, false);
                                 slimedEnemies.put(a.getId(), System.currentTimeMillis());
                                 break;
                             }
                         } else {
-                            a.addToDamageQueue(this, getSpellDamage(attackData), attackData);
+                            a.addToDamageQueue(this, getSpellDamage(attackData), attackData, true);
                             a.addState(ActorState.SLOWED, 0.3d, 1500, null, false);
                             slimedEnemies.put(a.getId(), System.currentTimeMillis());
                             break;
@@ -255,7 +256,8 @@ public class Lich extends UserActor {
                         && a.getActorType() != ActorType.TOWER) {
                     if (!damageDealt) damageDealt = true;
                     JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(), "spell3");
-                    a.addToDamageQueue(this, (double) getSpellDamage(spellData) / 2, spellData);
+                    a.addToDamageQueue(
+                            this, (double) getSpellDamage(spellData) / 2, spellData, true);
                 }
             }
             if (damageDealt) {
@@ -498,7 +500,7 @@ public class Lich extends UserActor {
                     false,
                     team,
                     0f);
-            victim.addToDamageQueue(Lich.this, getSpellDamage(spellData), spellData);
+            victim.addToDamageQueue(Lich.this, getSpellDamage(spellData), spellData, false);
             if (!victim.getId().contains("turret") || !victim.getId().contains("decoy"))
                 victim.handleCharm(Lich.this, 2000);
             destroy();

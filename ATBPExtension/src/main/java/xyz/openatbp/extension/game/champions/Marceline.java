@@ -79,7 +79,7 @@ public class Marceline extends UserActor {
                         && a.getActorType() != ActorType.BASE) {
                     JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
                     double damage = getSpellDamage(spellData) / 10d;
-                    a.addToDamageQueue(this, damage, spellData);
+                    a.addToDamageQueue(this, damage, spellData, true);
                 }
             }
         }
@@ -93,7 +93,7 @@ public class Marceline extends UserActor {
                     this.qVictim.getId(),
                     "sfx_marceline_blood_hit",
                     this.qVictim.getLocation());
-            this.qVictim.addToDamageQueue(this, damage, spellData);
+            this.qVictim.addToDamageQueue(this, damage, spellData, true);
             this.qHit = System.currentTimeMillis();
         }
         if (wActive && System.currentTimeMillis() - wStartTime >= 4500) {
@@ -481,7 +481,7 @@ public class Marceline extends UserActor {
                             && a.getActorType() != ActorType.TOWER
                             && a.getActorType() != ActorType.BASE) {
                         double damage = getSpellDamage(spellData);
-                        a.addToDamageQueue(Marceline.this, damage, spellData);
+                        a.addToDamageQueue(Marceline.this, damage, spellData, false);
                         if (!a.getId().contains("turret") || !a.getId().contains("decoy")) {
                             if (!getState(ActorState.TRANSFORMED)) {
                                 a.handleCharm(Marceline.this, 2000);
@@ -546,7 +546,7 @@ public class Marceline extends UserActor {
                 victim.addState(ActorState.SLOWED, 0.15d, 1500, null, false);
             }
             JsonNode spellData = parentExt.getAttackData(avatar, "spell1");
-            victim.addToDamageQueue(this.owner, getSpellDamage(spellData), spellData);
+            victim.addToDamageQueue(this.owner, getSpellDamage(spellData), spellData, false);
             ExtensionCommands.playSound(
                     parentExt, room, "", "sfx_marceline_blood_hit", this.location);
             this.destroy();

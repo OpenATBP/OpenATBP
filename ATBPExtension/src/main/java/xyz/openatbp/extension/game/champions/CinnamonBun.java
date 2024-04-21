@@ -49,7 +49,7 @@ public class CinnamonBun extends UserActor {
             int duration = 2000 + (this.level * 100);
             for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                 if (a.getTeam() != this.team && this.wPoly.contains(a.getLocation())) {
-                    a.addToDamageQueue(this, getSpellDamage(spellData) / 10d, spellData);
+                    a.addToDamageQueue(this, getSpellDamage(spellData) / 10d, spellData, true);
                     if (isNonStructure(a))
                         a.addState(ActorState.SLOWED, percentage, duration, null, false);
                 }
@@ -66,7 +66,7 @@ public class CinnamonBun extends UserActor {
                             this.ultPoint,
                             radius)) {
                 if (a.getTeam() != this.team) {
-                    a.addToDamageQueue(this, getSpellDamage(spellData) / 10d, spellData);
+                    a.addToDamageQueue(this, getSpellDamage(spellData) / 10d, spellData, true);
                 } else if (a.getId().equalsIgnoreCase(this.id)) {
                     if (this.canApplyUltEffects) {
                         lastUltEffect = System.currentTimeMillis();
@@ -162,7 +162,7 @@ public class CinnamonBun extends UserActor {
                             this.ultPoint,
                             radius)) {
                 if (a.getTeam() != this.team) {
-                    a.addToDamageQueue(this, getSpellDamage(spellData), spellData);
+                    a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                 }
             }
             if (this.ultPoint2 != null) {
@@ -172,7 +172,7 @@ public class CinnamonBun extends UserActor {
                                 this.ultPoint2,
                                 radius)) {
                     if (a.getTeam() != this.team) {
-                        a.addToDamageQueue(this, getSpellDamage(spellData), spellData);
+                        a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                     }
                 }
                 ExtensionCommands.createWorldFX(
@@ -232,7 +232,7 @@ public class CinnamonBun extends UserActor {
                         Champion.createRectangle(location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
                 for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                     if (a.getTeam() != this.team && qRect.contains(a.getLocation())) {
-                        a.addToDamageQueue(this, getSpellDamage(spellData), spellData);
+                        a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                     }
                 }
                 this.attackCooldown = 0;
@@ -472,7 +472,7 @@ public class CinnamonBun extends UserActor {
                                     this.ultPoint,
                                     radius)) {
                         if (a.getTeam() != this.team) {
-                            a.addToDamageQueue(this, getSpellDamage(spellData), spellData);
+                            a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                         }
                     }
                     if (this.ultPoint2 != null) {
@@ -498,7 +498,8 @@ public class CinnamonBun extends UserActor {
                                         this.ultPoint2,
                                         radius)) {
                             if (a.getTeam() != this.team) {
-                                a.addToDamageQueue(this, getSpellDamage(spellData), spellData);
+                                a.addToDamageQueue(
+                                        this, getSpellDamage(spellData), spellData, false);
                             }
                         }
                     }

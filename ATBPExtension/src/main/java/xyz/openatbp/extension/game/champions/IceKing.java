@@ -74,7 +74,8 @@ public class IceKing extends UserActor {
         if (this.qVictim != null) {
             if (System.currentTimeMillis() < qHitTime) {
                 JsonNode spellData = parentExt.getAttackData("iceking", "spell1");
-                this.qVictim.addToDamageQueue(this, getSpellDamage(spellData) / 10d, spellData);
+                this.qVictim.addToDamageQueue(
+                        this, getSpellDamage(spellData) / 10d, spellData, true);
             } else {
                 this.qVictim = null;
                 this.qHitTime = -1;
@@ -91,7 +92,8 @@ public class IceKing extends UserActor {
                     if (this.lastWHit != null && this.lastWHit.containsKey(a.getId())) {
                         if (System.currentTimeMillis() >= this.lastWHit.get(a.getId()) + 500) {
                             JsonNode spellData = this.parentExt.getAttackData("iceking", "spell2");
-                            a.addToDamageQueue(this, getSpellDamage(spellData) / 2f, spellData);
+                            a.addToDamageQueue(
+                                    this, getSpellDamage(spellData) / 2f, spellData, true);
                             ExtensionCommands.createActorFX(
                                     this.parentExt,
                                     this.room,
@@ -108,7 +110,7 @@ public class IceKing extends UserActor {
                         }
                     } else if (this.lastWHit != null && !this.lastWHit.containsKey(a.getId())) {
                         JsonNode spellData = this.parentExt.getAttackData("iceking", "spell2");
-                        a.addToDamageQueue(this, getSpellDamage(spellData) / 2f, spellData);
+                        a.addToDamageQueue(this, getSpellDamage(spellData) / 2f, spellData, true);
                         ExtensionCommands.createActorFX(
                                 this.parentExt,
                                 this.room,
@@ -138,7 +140,7 @@ public class IceKing extends UserActor {
                         this.addEffect("speed", this.getStat("speed"), 500, null, "", false);
                     } else {
                         JsonNode spellData = this.parentExt.getAttackData("iceking", "spell3");
-                        a.addToDamageQueue(this, getSpellDamage(spellData) / 10d, spellData);
+                        a.addToDamageQueue(this, getSpellDamage(spellData) / 10d, spellData, true);
                     }
                 }
             }
@@ -421,7 +423,7 @@ public class IceKing extends UserActor {
             JsonNode spellData = parentExt.getAttackData("iceking", "spell1");
             qVictim = victim;
             qHitTime = System.currentTimeMillis() + 1750;
-            victim.addToDamageQueue(IceKing.this, getSpellDamage(spellData), spellData);
+            victim.addToDamageQueue(IceKing.this, getSpellDamage(spellData), spellData, false);
             victim.addState(ActorState.ROOTED, 0d, 1750, "iceKing_snare", true);
             ExtensionCommands.playSound(
                     this.parentExt,

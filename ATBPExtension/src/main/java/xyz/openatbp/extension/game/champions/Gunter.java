@@ -40,7 +40,7 @@ public class Gunter extends UserActor {
             for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                 if (a.getTeam() != this.team && this.eTrapezoid.contains(a.getLocation())) {
                     double damage = (double) getSpellDamage(spellData) / 10;
-                    a.addToDamageQueue(this, Math.round(damage), spellData);
+                    a.addToDamageQueue(this, Math.round(damage), spellData, true);
                 }
             }
         }
@@ -206,7 +206,7 @@ public class Gunter extends UserActor {
                         this.parentExt.getRoomHandler(this.room.getName()), a.getLocation(), 2f)) {
             if (actor.getTeam() != this.team && !a.getId().equalsIgnoreCase(actor.getId())) {
                 JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(), "spell4");
-                actor.addToDamageQueue(this, getSpellDamage(spellData), spellData);
+                actor.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
             }
         }
     }
@@ -296,7 +296,8 @@ public class Gunter extends UserActor {
                                 parentExt.getRoomHandler(room.getName()), location, 2f);
                 for (Actor a : affectedActors) {
                     if (a.getTeam() != team && isNonStructure(a)) {
-                        a.addToDamageQueue(Gunter.this, getSpellDamage(spellData), spellData);
+                        a.addToDamageQueue(
+                                Gunter.this, getSpellDamage(spellData), spellData, false);
                     }
                 }
             }
@@ -331,7 +332,7 @@ public class Gunter extends UserActor {
         @Override
         protected void hit(Actor victim) {
             JsonNode spellData = parentExt.getAttackData(getAvatar(), "spell2");
-            victim.addToDamageQueue(Gunter.this, getSpellDamage(spellData), spellData);
+            victim.addToDamageQueue(Gunter.this, getSpellDamage(spellData), spellData, false);
             ExtensionCommands.playSound(
                     parentExt, room, "", "sfx_gunter_bottle_shatter", this.location);
             ExtensionCommands.createWorldFX(

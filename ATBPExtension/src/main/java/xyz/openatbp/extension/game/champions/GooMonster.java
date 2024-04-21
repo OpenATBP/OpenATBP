@@ -66,7 +66,7 @@ public class GooMonster extends Monster {
                     for (Actor a : damagedActors) {
                         if (!a.getId().equalsIgnoreCase(this.id)) {
                             a.addState(ActorState.SLOWED, 0.25d, 1000, null, false);
-                            a.addToDamageQueue(this, 4, newAttackData);
+                            a.addToDamageQueue(this, 4, newAttackData, true);
                         }
                     }
                 } catch (Exception e) {

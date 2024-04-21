@@ -106,7 +106,7 @@ public class Neptr extends UserActor {
                 && System.currentTimeMillis() - this.ultDamageStartTime < 3000) {
             JsonNode attackData = this.parentExt.getAttackData(this.avatar, "spell3");
             for (Actor a : impactedActors) {
-                a.addToDamageQueue(this, this.getSpellDamage(attackData) / 10d, attackData);
+                a.addToDamageQueue(this, this.getSpellDamage(attackData) / 10d, attackData, true);
             }
         }
 
@@ -443,7 +443,7 @@ public class Neptr extends UserActor {
             this.hitBuffer.put(victim, System.currentTimeMillis());
             JsonNode attackData = this.parentExt.getAttackData(Neptr.this.getAvatar(), "spell1");
             double damage = Neptr.this.getSpellDamage(attackData) * (1d - this.damageReduction);
-            victim.addToDamageQueue(this.owner, damage, attackData);
+            victim.addToDamageQueue(this.owner, damage, attackData, false);
             ExtensionCommands.playSound(
                     this.parentExt,
                     this.owner.getRoom(),
@@ -586,6 +586,7 @@ public class Neptr extends UserActor {
                                         this.parentExt.getRoomHandler(this.room.getName()),
                                         this.location,
                                         2f);
+
                         if (!targets.isEmpty()) {
                             for (Actor target : targets) {
                                 if (isNonStructure(target)) {
@@ -593,7 +594,10 @@ public class Neptr extends UserActor {
                                             this.parentExt.getAttackData(
                                                     Neptr.this.avatar, "spell2");
                                     target.addToDamageQueue(
-                                            Neptr.this, getSpellDamage(spellData), spellData);
+                                            Neptr.this,
+                                            getSpellDamage(spellData),
+                                            spellData,
+                                            false);
                                     target.addState(ActorState.SLOWED, 0.4d, 3000, null, false);
                                 }
                             }

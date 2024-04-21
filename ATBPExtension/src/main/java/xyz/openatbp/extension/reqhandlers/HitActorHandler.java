@@ -84,8 +84,6 @@ public class HitActorHandler extends BaseClientRequestHandler {
             } else if (actor.withinRange(target)) {
                 actor.stopMoving();
             }
-        } else {
-            trace("No player found!");
         }
     }
 
