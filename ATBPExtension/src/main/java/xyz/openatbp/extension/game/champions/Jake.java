@@ -164,9 +164,7 @@ public class Jake extends UserActor {
                             this.location);
             }
         }
-        if (this.qUsed
-                && System.currentTimeMillis() - this.qStartTime <= 300
-                && this.hasInterrupingCC()) {
+        if (qUsed && !doGrab && hasInterrupingCC()) {
             this.qAnimationTime = 0;
             this.dashActive = false;
             this.qPolygon = null;
@@ -656,7 +654,8 @@ public class Jake extends UserActor {
         public void destroy() {
             super.destroy();
             if (Jake.this.doGrab) return;
-            if (this.victim == null) Jake.this.doQEndAnimation = true;
+            if (this.victim == null && !Jake.this.hasInterrupingCC())
+                Jake.this.doQEndAnimation = true;
             Jake.this.qAnimationTime = 0;
             Jake.this.dashActive = false;
             Jake.this.qPolygon = null;
