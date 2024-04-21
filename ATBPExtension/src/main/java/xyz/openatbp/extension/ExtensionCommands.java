@@ -592,19 +592,6 @@ public class ExtensionCommands {
             Room room,
             Actor owner,
             String id,
-            Point2D loc,
-            Point2D dest,
-            float speed) {
-        ExtensionCommands.createActor(
-                parentExt, room, owner.getId() + id, id, loc, 0f, owner.getTeam());
-        ExtensionCommands.moveActor(parentExt, room, owner.getId() + id, loc, dest, speed, true);
-    }
-
-    public static void createProjectile(
-            ATBPExtension parentExt,
-            Room room,
-            Actor owner,
-            String id,
             String projectile,
             Point2D loc,
             Point2D dest,

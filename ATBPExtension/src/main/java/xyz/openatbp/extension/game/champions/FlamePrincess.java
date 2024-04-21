@@ -172,8 +172,7 @@ public class FlamePrincess extends UserActor {
                                 abilityLine,
                                 8f,
                                 0.5f,
-                                this.id + "projectile_flame_cone"),
-                        "projectile_flame_cone",
+                                "projectile_flame_cone"),
                         location,
                         dest,
                         8f);

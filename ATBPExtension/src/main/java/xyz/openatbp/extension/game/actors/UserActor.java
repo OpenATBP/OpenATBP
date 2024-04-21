@@ -1489,7 +1489,7 @@ public class UserActor extends Actor {
     }
 
     public void fireProjectile(
-            Projectile projectile, String id, Point2D location, Point2D dest, float abilityRange) {
+            Projectile projectile, Point2D location, Point2D dest, float abilityRange) {
         double x = location.getX();
         double y = location.getY();
         double dx = dest.getX() - location.getX();
@@ -1500,36 +1500,40 @@ public class UserActor extends Actor {
         double extendedX = x + abilityRange * unitX;
         double extendedY = y + abilityRange * unitY;
         Point2D lineEndPoint = new Point2D.Double(extendedX, extendedY);
-        double speed = parentExt.getActorStats(id).get("speed").asDouble();
-        ExtensionCommands.createProjectile(
-                parentExt, this.room, this, id, location, lineEndPoint, (float) speed);
-        this.parentExt.getRoomHandler(this.room.getName()).addProjectile(projectile);
-    }
-
-    public void fireMMProjectile(
-            Projectile projectile,
-            String id,
-            String projectileId,
-            Point2D location,
-            Point2D dest,
-            float abilityRange) {
-        double x = location.getX();
-        double y = location.getY();
-        double dx = dest.getX() - location.getX();
-        double dy = dest.getY() - location.getY();
-        double length = Math.sqrt(dx * dx + dy * dy);
-        double unitX = dx / length;
-        double unitY = dy / length;
-        double extendedX = x + abilityRange * unitX;
-        double extendedY = y + abilityRange * unitY;
-        Point2D lineEndPoint = new Point2D.Double(extendedX, extendedY);
-        double speed = parentExt.getActorStats(projectileId).get("speed").asDouble();
+        double speed =
+                parentExt.getActorStats(projectile.getProjectileAsset()).get("speed").asDouble();
         ExtensionCommands.createProjectile(
                 parentExt,
                 this.room,
                 this,
-                id,
-                projectileId,
+                projectile.getId(),
+                projectile.getProjectileAsset(),
+                location,
+                lineEndPoint,
+                (float) speed);
+        this.parentExt.getRoomHandler(this.room.getName()).addProjectile(projectile);
+    }
+
+    public void fireMMProjectile(
+            Projectile projectile, Point2D location, Point2D dest, float abilityRange) {
+        double x = location.getX();
+        double y = location.getY();
+        double dx = dest.getX() - location.getX();
+        double dy = dest.getY() - location.getY();
+        double length = Math.sqrt(dx * dx + dy * dy);
+        double unitX = dx / length;
+        double unitY = dy / length;
+        double extendedX = x + abilityRange * unitX;
+        double extendedY = y + abilityRange * unitY;
+        Point2D lineEndPoint = new Point2D.Double(extendedX, extendedY);
+        double speed =
+                parentExt.getActorStats(projectile.getProjectileAsset()).get("speed").asDouble();
+        ExtensionCommands.createProjectile(
+                parentExt,
+                this.room,
+                this,
+                projectile.getId(),
+                projectile.getProjectileAsset(),
                 location,
                 lineEndPoint,
                 (float) speed);

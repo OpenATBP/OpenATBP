@@ -200,9 +200,8 @@ public class Marceline extends UserActor {
                                 abilityLine,
                                 8f,
                                 0.5f,
-                                this.id + projectileId,
+                                projectileId,
                                 this.getState(ActorState.TRANSFORMED)),
-                        projectileId,
                         this.location,
                         dest,
                         7f);

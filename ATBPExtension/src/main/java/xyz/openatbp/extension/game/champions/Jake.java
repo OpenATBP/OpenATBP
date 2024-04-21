@@ -281,8 +281,7 @@ public class Jake extends UserActor {
                                                 qLine,
                                                 8.5f,
                                                 1f,
-                                                this.id + "stretchy_grab"),
-                                        "stretchy_grab",
+                                                "stretchy_grab"),
                                         this.location,
                                         dest,
                                         Q_SPELL_RANGE);
@@ -562,7 +561,7 @@ public class Jake extends UserActor {
     }
 
     private void fireQProjectile(
-            Projectile projectile, String id, Point2D location, Point2D dest, float abilityRange) {
+            Projectile projectile, Point2D location, Point2D dest, float abilityRange) {
         double x = location.getX();
         double y = location.getY();
         double dx = dest.getX() - location.getX();
@@ -575,7 +574,14 @@ public class Jake extends UserActor {
         Point2D lineEndPoint = new Point2D.Double(extendedX, extendedY);
         double speed = 8.5;
         ExtensionCommands.createProjectile(
-                parentExt, this.room, this, id, location, lineEndPoint, (float) speed);
+                parentExt,
+                this.room,
+                this,
+                projectile.getId(),
+                projectile.getProjectileAsset(),
+                location,
+                lineEndPoint,
+                (float) speed);
         this.parentExt.getRoomHandler(this.room.getName()).addProjectile(projectile);
     }
 

@@ -93,13 +93,7 @@ public class Lich extends UserActor {
                 Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
                 this.fireProjectile(
                         new LichCharm(
-                                parentExt,
-                                this,
-                                abilityLine,
-                                9f,
-                                0.5f,
-                                this.id + "projectile_lich_charm"),
-                        "projectile_lich_charm",
+                                parentExt, this, abilityLine, 9f, 0.5f, "projectile_lich_charm"),
                         this.location,
                         dest,
                         8f);

@@ -409,8 +409,7 @@ public class BMO extends UserActor {
                                 : "projectile_bmo_bee";
                 fireProjectile(
                         new BMOUltProjectile(
-                                parentExt, BMO.this, abilityLine, 5f, 1.5f, id + ultProjectile),
-                        ultProjectile,
+                                parentExt, BMO.this, abilityLine, 5f, 1.5f, ultProjectile),
                         location,
                         dest,
                         16f);

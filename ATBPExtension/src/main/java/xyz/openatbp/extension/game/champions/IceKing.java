@@ -460,8 +460,7 @@ public class IceKing extends UserActor {
                                 abilityLine,
                                 9f,
                                 0.5f,
-                                id + "projectile_iceking_deepfreeze"),
-                        "projectile_iceking_deepfreeze",
+                                "projectile_iceking_deepfreeze"),
                         location,
                         dest,
                         7.5f);

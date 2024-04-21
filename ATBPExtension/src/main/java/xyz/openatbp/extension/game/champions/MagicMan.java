@@ -136,9 +136,7 @@ public class MagicMan extends UserActor {
                                 new Line2D.Float(this.location, endPoint),
                                 7f,
                                 0.25f,
-                                this.id + "projectile_magicman_snake1"),
-                        this.id + "projectile_magicman_snake1",
-                        "projectile_magicman_snake",
+                                "projectile_magicman_snake1"),
                         this.location,
                         endPoint,
                         9.5f);
@@ -149,9 +147,7 @@ public class MagicMan extends UserActor {
                                 new Line2D.Float(this.location, endPoint2),
                                 7f,
                                 0.25f,
-                                this.id + "projectile_magicman_snake2"),
-                        this.id + "projectile_magicman_snake2",
-                        "projectile_magicman_snake",
+                                "projectile_magicman_snake2"),
                         this.location,
                         endPoint2,
                         9.5f);
@@ -162,9 +158,7 @@ public class MagicMan extends UserActor {
                                 new Line2D.Float(this.location, endPoint3),
                                 7f,
                                 0.25f,
-                                this.id + "projectile_magicman_snake3"),
-                        this.id + "projectile_magicman_snake3",
-                        "projectile_magicman_snake",
+                                "projectile_magicman_snake3"),
                         this.location,
                         endPoint3,
                         9.5f);

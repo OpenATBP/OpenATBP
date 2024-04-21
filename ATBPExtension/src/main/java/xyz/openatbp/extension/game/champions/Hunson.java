@@ -184,8 +184,7 @@ public class Hunson extends UserActor {
                                 spellLine,
                                 8f,
                                 0.5f,
-                                id + "projectile_hunson_pull"),
-                        "projectile_hunson_pull",
+                                "projectile_hunson_pull"),
                         this.location,
                         dest,
                         8f);
