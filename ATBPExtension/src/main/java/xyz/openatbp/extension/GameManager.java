@@ -118,6 +118,7 @@ public class GameManager {
 
     public static void initializeGame(Room room, ATBPExtension parentExt)
             throws SFSVariableException {
+        room.setProperty("state", 2);
         int blueNum = 0;
         int purpleNum = 0;
         initializeMap(room, parentExt);

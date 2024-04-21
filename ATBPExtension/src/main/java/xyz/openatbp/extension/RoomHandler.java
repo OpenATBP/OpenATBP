@@ -124,10 +124,6 @@ public class RoomHandler implements Runnable {
                         .scheduleAtFixedRate(this, 100, 100, TimeUnit.MILLISECONDS);
     }
 
-    public void setScriptHandler(ScheduledFuture<?> handler) {
-        this.scriptHandler = handler;
-    }
-
     public ATBPExtension getParentExt() {
         return this.parentExt;
     }
@@ -142,7 +138,7 @@ public class RoomHandler implements Runnable {
         if (this.gameOver) return;
         if (mSecondsRan == 0)
             if (this.parentExt.getRoomHandler(this.room.getName()) == null)
-                this.scriptHandler.cancel(true);
+                this.scriptHandler.cancel(false);
         mSecondsRan += 100;
         List<String> keysToRemove = new ArrayList<>(this.destroyedIds.size());
         Set<String> keys = this.destroyedIds.keySet();
@@ -1218,7 +1214,7 @@ public class RoomHandler implements Runnable {
         if (this.gameOver) return;
         try {
             this.gameOver = true;
-            this.room.setProperty("state", 2);
+            this.room.setProperty("state", 3);
             ExtensionCommands.gameOver(parentExt, this.room, winningTeam);
             MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
             for (UserActor ua : this.players) {

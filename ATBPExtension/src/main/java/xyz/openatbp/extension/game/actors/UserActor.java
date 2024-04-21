@@ -1391,6 +1391,7 @@ public class UserActor extends Actor {
             if (dotDamage) spellVamp /= this.hits;
             else spellVamp /= (this.hits * 2);
         }
+        if(this.getPlayerStat("spellVamp")*0.3 > spellVamp) spellVamp = this.getPlayerStat("spellVamp")*0.3d;
         double percentage = spellVamp / 100;
         int healing = (int) Math.round(damage * percentage);
         // Console.debugLog(this.displayName + " is healing for " + healing + " HP!");

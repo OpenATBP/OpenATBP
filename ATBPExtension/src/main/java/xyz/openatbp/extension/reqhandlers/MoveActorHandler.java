@@ -24,7 +24,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
         ATBPExtension parentExt = (ATBPExtension) getParentExtension();
 
         RoomHandler roomHandler = parentExt.getRoomHandler(sender.getLastJoinedRoom().getName());
-        if (roomHandler == null && (int) sender.getLastJoinedRoom().getProperty("state") != 2)
+        if (roomHandler == null && (int) sender.getLastJoinedRoom().getProperty("state") != 3)
             ExtensionCommands.abortGame(parentExt, sender.getLastJoinedRoom());
         if (roomHandler == null) {
             Console.logWarning(
