@@ -136,7 +136,7 @@ public class MagicMan extends UserActor {
                                 new Line2D.Float(this.location, endPoint),
                                 7f,
                                 0.25f,
-                                "projectile_magicman_snake1"),
+                                "projectile_magicman_snake"),
                         this.location,
                         endPoint,
                         9.5f);
@@ -147,7 +147,7 @@ public class MagicMan extends UserActor {
                                 new Line2D.Float(this.location, endPoint2),
                                 7f,
                                 0.25f,
-                                "projectile_magicman_snake2"),
+                                "projectile_magicman_snake"),
                         this.location,
                         endPoint2,
                         9.5f);
@@ -158,7 +158,7 @@ public class MagicMan extends UserActor {
                                 new Line2D.Float(this.location, endPoint3),
                                 7f,
                                 0.25f,
-                                "projectile_magicman_snake3"),
+                                "projectile_magicman_snake"),
                         this.location,
                         endPoint3,
                         9.5f);
