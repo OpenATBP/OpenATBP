@@ -12,6 +12,7 @@ import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ChampionData;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
@@ -321,7 +322,6 @@ public class BubbleGum extends UserActor {
         Turret t = null;
         if (this.turrets != null && this.turrets.size() == 2) {
             this.turrets.get(0).die(this);
-            this.turrets.remove(0);
             t = new Turret(dest, this.turretNum);
         } else if (this.turrets != null) {
             t = new Turret(dest, this.turretNum);
@@ -530,8 +530,8 @@ public class BubbleGum extends UserActor {
             ExtensionCommands.removeStatusIcon(parentExt, player, iconName);
             ExtensionCommands.removeFx(parentExt, room, this.id + "_ring");
             ExtensionCommands.destroyActor(parentExt, room, this.id);
-            BubbleGum.this.handleTurretDeath(this);
             this.parentExt.getRoomHandler(this.room.getName()).removeCompanion(this);
+            BubbleGum.this.handleTurretDeath(this);
         }
 
         @Override

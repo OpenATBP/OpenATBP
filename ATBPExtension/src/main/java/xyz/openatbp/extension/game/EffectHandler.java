@@ -18,7 +18,7 @@ public class EffectHandler {
         this.stat = stat;
         this.statLog = new HashMap<>();
         this.currentDelta = 0;
-        Console.debugLog("Effect Handler created for " + stat);
+        //Console.debugLog("Effect Handler created for " + stat);
     }
 
     public EffectHandler(Actor parent, ActorState state) {
@@ -27,7 +27,7 @@ public class EffectHandler {
         this.statLog = new HashMap<>();
         this.currentDelta = 0;
         parent.setState(state, true);
-        Console.debugLog("Effect Handler created for " + state.toString());
+        //Console.debugLog("Effect Handler created for " + state.toString());
     }
 
     public void addEffect(double delta, int duration) {
@@ -139,7 +139,7 @@ public class EffectHandler {
     }
 
     private void handleStateEnd(long key) {
-        Console.debugLog(this.state.toString() + " ending at " + key);
+        //Console.debugLog(this.state.toString() + " ending at " + key);
         switch (this.state) {
             case SLOWED:
                 // this.updateStat("speed", parent.getStat("speed") * this.statLog.get(key));
@@ -191,7 +191,7 @@ public class EffectHandler {
     }
 
     private void handleEffectEnd(long key) {
-        Console.debugLog(this.stat + " ending at " + key);
+        //Console.debugLog(this.stat + " ending at " + key);
         this.changeToNextBuff(key, this.stat);
         this.statLog.remove(key);
     }

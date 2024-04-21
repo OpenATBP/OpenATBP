@@ -597,7 +597,7 @@ function handleRequest(jsonString, socket) {
 
   let response = null;
   let unhandled = false;
-  if (socket.player != undefined) console.log('!', socket.player.name);
+  //if (socket.player != undefined) console.log('!', socket.player.name);
   //console.log('<-', jsonObject['req'], jsonObject['payload']);
 
   switch (jsonObject['req']) {

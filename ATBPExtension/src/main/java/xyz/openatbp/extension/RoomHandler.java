@@ -67,7 +67,7 @@ public class RoomHandler implements Runnable {
         this.baseTowers = new ArrayList<>();
         this.players = new ArrayList<>();
         this.campMonsters = new ArrayList<>();
-        this.practiceMap = room.getGroupId().equalsIgnoreCase("practice");
+        this.practiceMap = room.getGroupId().equalsIgnoreCase("practice") || (room.getName().contains("custom") && room.getMaxUsers() == 2);
         Properties props = parentExt.getConfigProperties();
         monsterDebug = Boolean.parseBoolean(props.getProperty("monsterDebug", "false"));
         xpDebug = Boolean.parseBoolean(props.getProperty("xpDebug", "false"));
