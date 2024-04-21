@@ -255,7 +255,7 @@ public class LSP extends UserActor {
                 List<Actor> affectedActors = new ArrayList<>();
                 for (Actor a : parentExt.getRoomHandler(room.getName()).getActors()) {
                     if (isNonStructure(a) && qRect.contains(a.getLocation())) {
-                        if (!a.getId().contains("turret")) a.handleFear(LSP.this.location, 3000);
+                        if (!a.getId().contains("turret")) a.handleFear(LSP.this.location, 2000);
                         a.addToDamageQueue(LSP.this, getSpellDamage(spellData), spellData);
                         affectedActors.add(a);
                     }

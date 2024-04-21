@@ -403,7 +403,8 @@ public class IceKing extends UserActor {
             List<Actor> teammates = this.getTeammates(roomHandler);
             for (Actor a : roomHandler.getActors()) {
                 if (a.getActorType() != ActorType.TOWER
-                        && !teammates.contains(a)) { // TODO: Change to not hit teammates
+                        && !teammates.contains(a)
+                        && a.getTeam() != IceKing.this.team) {
                     double collisionRadius =
                             parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
                     if (a.getLocation().distance(location) <= hitbox + collisionRadius

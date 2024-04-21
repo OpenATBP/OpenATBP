@@ -100,6 +100,12 @@ public class Hunson extends UserActor {
                 && a.getHealth() - this.getPlayerStat("attackDamage") > -5
                 && !this.passiveActivated) {
             this.passiveActivated = true;
+            ExtensionCommands.playSound(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    "vo/vo_hunson_offer_your_soul_short",
+                    this.location);
             ExtensionCommands.createActorFX(
                     this.parentExt,
                     this.room,
