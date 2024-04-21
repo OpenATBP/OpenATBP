@@ -245,7 +245,7 @@ function updateMatchmaking() {
                 validQueuePlayers.length + team.players.length <= queueSize
               ) {
                 for (var tp of team.players) {
-                  if (
+                  if (tp.player.queue != undefined && 
                     Math.abs(u.player.elo - tp.player.elo) <
                       50 +
                         ((Date.now() - tp.player.queue.started) / 1000) * 12 &&
