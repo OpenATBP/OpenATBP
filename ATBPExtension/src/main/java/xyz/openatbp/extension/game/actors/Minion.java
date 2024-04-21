@@ -294,6 +294,7 @@ public class Minion extends Actor {
                 this.state = State.MOVING;
                 break;
             case MOVING:
+                if (this.getState(ActorState.CHARMED) || this.getState(ActorState.FEARED)) return;
                 if (this.location.distance(this.getPathPoint()) <= 0.1d) {
                     this.moveAlongPath();
                     return;
@@ -345,6 +346,12 @@ public class Minion extends Actor {
                 }
                 break;
         }
+    }
+
+    @Override
+    public void handleFear(Point2D source, int duration) {
+        super.handleFear(source, duration);
+        this.state = State.MOVING;
     }
 
     @Override

@@ -43,6 +43,15 @@ public class BubbleGum extends UserActor {
     }
 
     @Override
+    public void destroy() {
+        super.destroy();
+        int turretSize = this.turrets.size();
+        for (int i = 0; i < turretSize; i++) {
+            this.turrets.get(i).die(BubbleGum.this);
+        }
+    }
+
+    @Override
     public void attack(Actor a) {
         this.applyStopMovingDuringAttack();
         parentExt
@@ -521,6 +530,7 @@ public class BubbleGum extends UserActor {
             ExtensionCommands.removeStatusIcon(parentExt, player, iconName);
             ExtensionCommands.removeFx(parentExt, room, this.id + "_ring");
             ExtensionCommands.destroyActor(parentExt, room, this.id);
+            BubbleGum.this.handleTurretDeath(this);
             this.parentExt.getRoomHandler(this.room.getName()).removeCompanion(this);
         }
 
@@ -531,7 +541,6 @@ public class BubbleGum extends UserActor {
             if (this.dead) return;
             if (System.currentTimeMillis() - this.timeOfBirth >= 60000) {
                 this.die(this);
-                BubbleGum.this.handleTurretDeath(this);
                 return;
             }
             if (this.attackCooldown > 0) this.reduceAttackCooldown();

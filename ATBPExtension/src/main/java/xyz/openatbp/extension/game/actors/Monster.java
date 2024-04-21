@@ -108,7 +108,6 @@ public class Monster extends Actor {
                     this.target = a;
                 }
                 if (this.target != null && !this.withinRange(this.target)) {
-                    this.timeTraveled = 0f;
                     this.moveTowardsActor();
                 }
 

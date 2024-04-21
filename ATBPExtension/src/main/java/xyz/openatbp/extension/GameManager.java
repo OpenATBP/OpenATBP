@@ -72,7 +72,7 @@ public class GameManager {
         String groupID = room.getGroupId();
         for (User u : room.getUserList()) {
             ISFSObject data = new SFSObject();
-            if (groupID.equals("Practice")) {
+            if (groupID.equals("Practice") || room.getMaxUsers() == 2) {
                 data.putUtfString("set", "AT_1L_Arena");
             } else {
                 data.putUtfString("set", "AT_2L_Arena");

@@ -135,7 +135,9 @@ public abstract class Actor {
     }
 
     public void move(Point2D destination) {
-        if (!this.canMove()) return;
+        if (!this.canMove()) {
+            return;
+        }
         this.movementLine = new Line2D.Float(this.location, destination);
         this.timeTraveled = 0f;
         ExtensionCommands.moveActor(
@@ -257,39 +259,25 @@ public abstract class Actor {
     }
 
     public void handleCharm(UserActor charmer, int duration) {
-        if (!this.states.get(ActorState.CHARMED)) {
-            this.setState(ActorState.CHARMED, true);
+        if (!this.states.get(ActorState.CHARMED) && !this.states.get(ActorState.IMMUNITY)) {
+            // this.setState(ActorState.CHARMED, true);
             this.setTarget(charmer);
             this.movementLine = new Line2D.Float(this.location, charmer.getLocation());
             this.movementLine =
                     MovementManager.getColliderLine(this.parentExt, this.room, this.movementLine);
             this.timeTraveled = 0f;
+            if (this.canMove()) this.moveWithCollision(this.movementLine.getP2());
             this.addState(ActorState.CHARMED, 0d, duration);
-            if (this.canMove)
-                ExtensionCommands.moveActor(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        this.location,
-                        this.movementLine.getP2(),
-                        (float) this.getSpeed(),
-                        true);
         }
     }
 
     public void handleFear(Point2D source, int duration) {
-        if (!this.states.get(ActorState.FEARED)) {
-            double distance = source.distance(this.location);
-            double dx = (this.location.getX() - source.getX());
-            double dy = (this.location.getY() - source.getY());
-            double unitX = dx / distance;
-            double unitY = dy / distance;
-            double extX = this.location.getX() + 3 * unitX;
-            double extY = this.location.getY() + 3 * -unitY;
-            Point2D extendedPoint = new Point2D.Double(extX, extY);
-            Line2D perpendicularLine = new Line2D.Double(this.location, extendedPoint);
-            Point2D fearEndPoint = MovementManager.getDashPoint(this, perpendicularLine);
-            this.moveWithCollision(fearEndPoint);
+        if (!this.states.get(ActorState.FEARED) && !this.states.get(ActorState.IMMUNITY)) {
+            this.target = null;
+            this.canMove = true;
+            Line2D sourceToPlayer = new Line2D.Float(source, this.location);
+            Line2D extendedLine = Champion.extendLine(sourceToPlayer, 15f);
+            this.moveWithCollision(extendedLine.getP2());
             this.addState(ActorState.FEARED, 0d, duration);
         }
     }

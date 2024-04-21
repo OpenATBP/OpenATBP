@@ -320,7 +320,7 @@ public class MovementManager {
                 }
             }
         }
-        return null;
+        return movementLine.getP2();
     }
 
     public static Point2D getPathIntersectionPoint(

@@ -11,7 +11,6 @@ public class EffectHandler {
     private String stat;
     private ActorState state;
     private Map<Long, Double> statLog;
-    private FxHandler attachedFx;
     private double currentDelta;
 
     public EffectHandler(Actor parent, String stat) {
@@ -151,6 +150,9 @@ public class EffectHandler {
                     UserActor ua = (UserActor) this.parent;
                     ua.handlePolymorph(false, 0);
                 }
+                break;
+            case FEARED:
+                this.parent.stopMoving();
                 break;
         }
         this.statLog.remove(key);

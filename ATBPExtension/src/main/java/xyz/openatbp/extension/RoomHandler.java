@@ -644,7 +644,7 @@ public class RoomHandler implements Runnable {
             int team = u.getTeam();
             Point2D currentPoint = u.getLocation();
             for (int i = 0; i < 3; i++) { // 0 is top, 1 is mid, 2 is bot
-                if (u.getHealth() > 0 && insideAltar(currentPoint, i)) {
+                if (u.getHealth() > 0 && !u.isDead() && insideAltar(currentPoint, i)) {
                     hasPlayerInside[i] = true;
                     if (team == 1) {
                         bluePlayersInside.add(u);

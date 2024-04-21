@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
@@ -116,6 +117,10 @@ public class Finn extends UserActor {
             this.wallsActivated = new boolean[] {false, false, false, false};
             this.ultActivated = false;
         }
+        if (this.qActive && this.qStartTime + 3000 <= System.currentTimeMillis()) {
+            Console.debugLog("Disabling Finn Q!");
+            this.qActive = false;
+        }
         if (this.ultActivated) {
             for (int i = 0; i < this.wallLines.length; i++) {
                 if (this.wallsActivated[i]) {
@@ -190,6 +195,7 @@ public class Finn extends UserActor {
                 this.canCast[0] = false;
                 this.attackCooldown = 0;
                 this.qStartTime = System.currentTimeMillis();
+                this.qActive = true;
                 this.updateStatMenu("speed");
                 String shieldPrefix =
                         (this.avatar.contains("guardian")) ? "finn_guardian_" : "finn_";
@@ -453,7 +459,8 @@ public class Finn extends UserActor {
                             true,
                             false,
                             target.getTeam());
-                    if (qActive) {
+                    if (this.qActive) {
+                        Console.debugLog("Finn Q Popped!");
                         for (Actor actor :
                                 Champion.getActorsInRadius(
                                         this.parentExt.getRoomHandler(this.room.getName()),
@@ -465,7 +472,7 @@ public class Finn extends UserActor {
                                         Finn.this, getSpellDamage(spellData), spellData, false);
                             }
                         }
-                        qActive = false;
+                        this.qActive = false;
                         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_shield");
                         String shatterPrefix =
                                 (this.avatar.contains("guardian")) ? "finn_guardian_" : "finn_";

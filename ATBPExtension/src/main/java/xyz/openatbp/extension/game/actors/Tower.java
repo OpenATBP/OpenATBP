@@ -423,10 +423,9 @@ public class Tower extends Actor {
 
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
-        if (this.target.getActorType() == ActorType.COMPANION && isFocusingCompanion)
+        if (a.getActorType() == ActorType.COMPANION && isFocusingCompanion)
             isFocusingCompanion = false;
-        if (this.target.getActorType() == ActorType.PLAYER && isFocusingPlayer)
-            isFocusingPlayer = false;
+        if (a.getActorType() == ActorType.PLAYER && isFocusingPlayer) isFocusingPlayer = false;
         this.resetTarget(a);
     }
 
