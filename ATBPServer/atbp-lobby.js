@@ -245,7 +245,7 @@ function updateMatchmaking() {
                 validQueuePlayers.length + team.players.length <= queueSize
               ) {
                 for (var tp of team.players) {
-                  if (tp.player.queue != undefined && 
+                  if (tp.player.queue != undefined &&
                     Math.abs(u.player.elo - tp.player.elo) <
                       50 +
                         ((Date.now() - tp.player.queue.started) / 1000) * 12 &&
@@ -1168,10 +1168,11 @@ module.exports = class ATBPLobbyServer {
 
         socket.on('error', (error) => {
           console.error('Socket error:', error);
-          if (socket.player != undefined)
+          if (socket.player != undefined){
             console.log(socket.player.name + ' had an error.');
-          if (socket.player.onTeam) leaveTeam(socket);
-          else leaveQueue(socket);
+            if (socket.player.onTeam) leaveTeam(socket);
+            else leaveQueue(socket);
+          }
           socket.destroy();
         });
 
