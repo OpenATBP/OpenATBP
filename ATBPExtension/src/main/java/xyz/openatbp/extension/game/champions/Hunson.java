@@ -2,7 +2,9 @@ package xyz.openatbp.extension.game.champions;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -29,6 +31,9 @@ public class Hunson extends UserActor {
     private boolean passiveActivated = false;
     private long qStartTime = 0;
     private long ultStart = 0;
+    private long wStartTime = 0;
+    private boolean wActive = false;
+    private List<Actor> fearedActors;
 
     public Hunson(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -37,6 +42,24 @@ public class Hunson extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
+        if (this.wActive
+                && System.currentTimeMillis() - this.wStartTime >= 400
+                && this.getHealth() > 0) {
+            for (Actor a :
+                    Champion.getActorsInRadius(
+                            parentExt.getRoomHandler(room.getName()), this.getLocation(), 2.5f)) {
+                if (isNonStructure(a)) {
+                    JsonNode spellData = parentExt.getAttackData(this.getAvatar(), "spell2");
+                    a.addToDamageQueue(
+                            Hunson.this, getSpellDamage(spellData) / 10d, spellData, true);
+                    if ((!a.getId().contains("turret") || !a.getId().contains("decoy"))
+                            && !this.fearedActors.contains(a)) {
+                        a.handleFear(Hunson.this.location, 1500);
+                        fearedActors.add(a);
+                    }
+                }
+            }
+        }
         if (this.ultActivated) {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
             for (Actor a :
@@ -204,6 +227,8 @@ public class Hunson extends UserActor {
             case 2:
                 this.canCast[1] = false;
                 this.stopMoving(castDelay);
+                this.wActive = true;
+                this.fearedActors = new ArrayList<>();
                 ExtensionCommands.playSound(
                         this.parentExt, this.room, this.id, "hunson_power2a", this.location);
                 ExtensionCommands.createActorFX(
@@ -344,18 +369,7 @@ public class Hunson extends UserActor {
                             enableWCasting,
                             getReducedCooldown(cooldown) - W_CAST_DELAY,
                             TimeUnit.MILLISECONDS);
-            if (getHealth() > 0) {
-                for (Actor a :
-                        Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getName()), dest, 2.5f)) {
-                    if (isNonStructure(a)) {
-                        a.addToDamageQueue(
-                                Hunson.this, getSpellDamage(spellData), spellData, false);
-                        if (!a.getId().contains("turret") || !a.getId().contains("decoy"))
-                            a.handleFear(Hunson.this.location, 1500);
-                    }
-                }
-            }
+            wActive = false;
         }
 
         @Override
