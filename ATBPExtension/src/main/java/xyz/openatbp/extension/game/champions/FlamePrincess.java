@@ -41,11 +41,19 @@ public class FlamePrincess extends UserActor {
         super.update(msRan);
         if (this.ultStarted && System.currentTimeMillis() - this.ultStartTime >= 5000
                 || this.ultFinished) {
+            canCast[2] = false;
+            ExtensionCommands.actorAbilityResponse(
+                    parentExt, player, "e", true, getReducedCooldown(getBaseUltCooldown()), 0);
+            Runnable enableECasting = () -> canCast[2] = true;
+            parentExt
+                    .getTaskScheduler()
+                    .schedule(
+                            enableECasting,
+                            getReducedCooldown(getBaseUltCooldown()),
+                            TimeUnit.MILLISECONDS);
             setState(ActorState.TRANSFORMED, false);
             ExtensionCommands.removeFx(parentExt, room, id + "flameE");
             ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
-            ExtensionCommands.actorAbilityResponse(
-                    parentExt, player, "e", true, getReducedCooldown(getBaseUltCooldown()), 0);
             if (this.fpScale == 1.5f) {
                 ExtensionCommands.scaleActor(parentExt, room, id, 0.6667f);
                 this.fpScale = 1;
@@ -399,14 +407,6 @@ public class FlamePrincess extends UserActor {
             if (ultUses > 0) canCast[2] = true;
             if (ultUses == 0) {
                 ultFinished = true;
-                int E_DASH_TIME = dashTime + 100;
-                Runnable enableECasting = () -> canCast[2] = true;
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                enableECasting,
-                                getReducedCooldown(cooldown) - E_DASH_TIME,
-                                TimeUnit.MILLISECONDS);
             }
         }
 

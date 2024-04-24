@@ -136,9 +136,10 @@ public class RoomHandler implements Runnable {
     @Override
     public void run() {
         if (this.gameOver) return;
-        if (mSecondsRan == 0)
-            if (this.parentExt.getRoomHandler(this.room.getName()) == null)
-                this.scriptHandler.cancel(false);
+        if (!this.parentExt.roomHandlerExists(this.room.getName())
+                && !this.scriptHandler.isCancelled()) {
+            this.scriptHandler.cancel(false);
+        }
         mSecondsRan += 100;
         List<String> keysToRemove = new ArrayList<>(this.destroyedIds.size());
         Set<String> keys = this.destroyedIds.keySet();

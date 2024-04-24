@@ -44,9 +44,7 @@ function safeSendAll(sockets, command, response) {
   return new Promise(function (resolve, reject) {
     if (sockets.length == 0) resolve(true);
     else {
-      console.log(
-        `Sending ${command} to ${sockets[0].player.name}`
-      );
+      console.log(`Sending ${command} to ${sockets[0].player.name}`);
       sendCommand(sockets[0], command, response)
         .then(() => {
           sockets.shift();
@@ -245,7 +243,8 @@ function updateMatchmaking() {
                 validQueuePlayers.length + team.players.length <= queueSize
               ) {
                 for (var tp of team.players) {
-                  if (tp.player.queue != undefined &&
+                  if (
+                    tp.player.queue != undefined &&
                     Math.abs(u.player.elo - tp.player.elo) <
                       50 +
                         ((Date.now() - tp.player.queue.started) / 1000) * 12 &&
@@ -299,7 +298,7 @@ function startGame(players, type) {
               is_ready: false,
             };
             var pla = players.find((pl) => pl == pt);
-            if(pla != undefined){
+            if (pla != undefined) {
               if (teamToJoin == 0) purple.push(playerObj);
               else if (teamToJoin == 1) blue.push(playerObj);
               players.find((pl) => pl == pt).team = teamToJoin;
@@ -1171,7 +1170,7 @@ module.exports = class ATBPLobbyServer {
 
         socket.on('error', (error) => {
           console.error('Socket error:', error);
-          if (socket.player != undefined){
+          if (socket.player != undefined) {
             console.log(socket.player.name + ' had an error.');
             if (socket.player.onTeam) leaveTeam(socket);
             else leaveQueue(socket);
@@ -1190,7 +1189,7 @@ module.exports = class ATBPLobbyServer {
               else leaveQueue(user);
             }
           }
-          if(!userExists) console.log("Socket left with no player: ", socket);
+          if (!userExists) console.log('Socket left with no player: ', socket);
           users = users.filter(
             (user) => !user._readableState.ended && user != socket
           );

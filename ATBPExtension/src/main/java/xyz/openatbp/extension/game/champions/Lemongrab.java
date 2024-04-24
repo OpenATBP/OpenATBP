@@ -25,6 +25,7 @@ public class Lemongrab extends UserActor {
     private long lastHit = -1;
     private String lastIcon = "lemon0";
     private boolean isCastingUlt = false;
+    private boolean juice = false;
     private static final float Q_OFFSET_DISTANCE_BOTTOM = 1.5f;
     private static final float Q_OFFSET_DISTANCE_TOP = 4f;
     private static final float Q_SPELL_RANGE = 6f;
@@ -102,6 +103,10 @@ public class Lemongrab extends UserActor {
     @Override
     public void die(Actor a) {
         this.unacceptableLevels = 0;
+        ExtensionCommands.removeStatusIcon(parentExt, player, lastIcon);
+        ExtensionCommands.addStatusIcon(
+                parentExt, player, "lemon0", "UNACCEPTABLE!!!!!", "icon_lemongrab_passive", 0f);
+        lastIcon = "lemon" + unacceptableLevels;
         super.die(a);
     }
 
@@ -198,18 +203,21 @@ public class Lemongrab extends UserActor {
                 ExtensionCommands.playSound(parentExt, room, "", "sfx_lemongrab_my_juice", dest);
                 Runnable delayedJuice =
                         () -> {
-                            ExtensionCommands.createWorldFX(
-                                    parentExt,
-                                    room,
-                                    id,
-                                    "lemongrab_ground_juice_aoe",
-                                    id + "_wJuice",
-                                    2000,
-                                    (float) dest.getX(),
-                                    (float) dest.getY(),
-                                    false,
-                                    team,
-                                    0f);
+                            if (getHealth() > 0) {
+                                juice = true;
+                                ExtensionCommands.createWorldFX(
+                                        parentExt,
+                                        room,
+                                        id,
+                                        "lemongrab_ground_juice_aoe",
+                                        id + "_wJuice",
+                                        2000,
+                                        (float) dest.getX(),
+                                        (float) dest.getY(),
+                                        false,
+                                        team,
+                                        0f);
+                            }
                         };
                 parentExt.getTaskScheduler().schedule(delayedJuice, 500, TimeUnit.MILLISECONDS);
                 ExtensionCommands.playSound(
@@ -292,7 +300,7 @@ public class Lemongrab extends UserActor {
                             enableWCasting,
                             getReducedCooldown(cooldown) - W_CAST_DELAY,
                             TimeUnit.MILLISECONDS);
-            if (getHealth() > 0) {
+            if (juice) {
                 ExtensionCommands.createWorldFX(
                         parentExt,
                         room,
@@ -326,6 +334,7 @@ public class Lemongrab extends UserActor {
                         a.addToDamageQueue(Lemongrab.this, damage, spellData, false);
                     }
                 }
+                juice = false;
             }
         }
 

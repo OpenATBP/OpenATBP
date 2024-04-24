@@ -370,7 +370,9 @@ public class Marceline extends UserActor {
                 if (crit) damage *= 4;
                 else damage *= 2;
                 double lifesteal = 1d;
-                if (this.target != null && isNonStructure(this.target))
+                if (this.target != null
+                        && isNonStructure(this.target)
+                        && !getState(ActorState.BLINDED))
                     changeHealth((int) Math.round(damage * lifesteal));
             }
             if (!getState(ActorState.TRANSFORMED)
@@ -397,7 +399,6 @@ public class Marceline extends UserActor {
             new Champion.DelayedAttack(
                             parentExt, Marceline.this, target, (int) damage, "basicAttack")
                     .run();
-            canMove = true;
         }
     }
 

@@ -201,18 +201,20 @@ public class Fionna extends UserActor {
                         this.parentExt, this.room, this.id, "sfx_fionna_invuln", this.location);
                 ExtensionCommands.playSound(
                         this.parentExt, this.room, this.id, "fionna_ult", this.location);
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "fionna_invuln_fx",
-                        6000,
-                        this.id + "_ult",
-                        true,
-                        "",
-                        true,
-                        false,
-                        this.team);
+                if (getHealth() > 0) {
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "fionna_invuln_fx",
+                            6000,
+                            this.id + "_ult",
+                            true,
+                            "",
+                            true,
+                            false,
+                            this.team);
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,

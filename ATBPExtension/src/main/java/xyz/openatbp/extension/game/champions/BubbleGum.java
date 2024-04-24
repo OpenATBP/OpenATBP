@@ -1,5 +1,6 @@
 package xyz.openatbp.extension.game.champions;
 
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
@@ -558,6 +559,17 @@ public class BubbleGum extends UserActor {
             }
         }
 
+        private boolean turretInBrush() {
+            for (Path2D brush :
+                    this.parentExt.getBrushPaths(
+                            this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap())) {
+                if (brush.contains(this.location)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public void findTarget() {
             List<Actor> potentialTargets =
                     this.parentExt.getRoomHandler(this.room.getName()).getActors();
@@ -567,14 +579,16 @@ public class BubbleGum extends UserActor {
                             .collect(Collectors.toList());
             for (Actor ua : users) {
                 if (ua.getTeam() != this.team && this.withinRange(ua) && ua.getHealth() > 0) {
-                    this.target = ua;
+                    if (ua.getState(ActorState.BRUSH) && turretInBrush()) this.target = ua;
+                    if (!ua.getState(ActorState.BRUSH)) this.target = ua;
                     break;
                 }
             }
             if (this.target == null) {
                 for (Actor a : potentialTargets) {
                     if (a.getTeam() != this.team && this.withinRange(a) && a.getHealth() > 0) {
-                        this.target = a;
+                        if (a.getState(ActorState.BRUSH) && turretInBrush()) this.target = a;
+                        if (!a.getState(ActorState.BRUSH)) this.target = a;
                         break;
                     }
                 }

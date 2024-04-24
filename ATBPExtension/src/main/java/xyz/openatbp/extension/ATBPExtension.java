@@ -365,6 +365,10 @@ public class ATBPExtension extends SFSExtension {
         roomHandlers.remove(roomId);
     }
 
+    public boolean roomHandlerExists(String roomId) {
+        return this.roomHandlers.containsKey(roomId);
+    }
+
     public RoomHandler getRoomHandler(String roomId) {
         return roomHandlers.get(roomId);
     }
