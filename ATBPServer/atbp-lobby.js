@@ -298,10 +298,13 @@ function startGame(players, type) {
               avatar: 'unassigned',
               is_ready: false,
             };
-            if (teamToJoin == 0) purple.push(playerObj);
-            else if (teamToJoin == 1) blue.push(playerObj);
-            players.find((pl) => pl == pt).team = teamToJoin;
-            console.log(pt.name + ' set to ' + teamToJoin);
+            var pla = players.find((pl) => pl == pt);
+            if(pla != undefined){
+              if (teamToJoin == 0) purple.push(playerObj);
+              else if (teamToJoin == 1) blue.push(playerObj);
+              players.find((pl) => pl == pt).team = teamToJoin;
+              console.log(pt.name + ' set to ' + teamToJoin);
+            }
           }
         } else console.log("Team players can't join team!");
       }
