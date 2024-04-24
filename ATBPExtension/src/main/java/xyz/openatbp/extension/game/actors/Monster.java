@@ -108,7 +108,6 @@ public class Monster extends Actor {
                     this.target = a;
                 }
                 if (this.target != null && !this.withinRange(this.target)) {
-                    this.timeTraveled = 0f;
                     this.moveTowardsActor();
                 }
 
@@ -137,7 +136,7 @@ public class Monster extends Actor {
 
     @Override
     public void handleCharm(UserActor charmer, int duration) {
-        this.addState(ActorState.CHARMED, 0d, duration, null, false);
+        this.addState(ActorState.CHARMED, 0d, duration);
         if (charmer != null) this.target = charmer;
     }
 
@@ -167,17 +166,6 @@ public class Monster extends Actor {
             this.state = state;
             if (state == AggroState.ATTACKED) this.target = a;
         }
-    }
-
-    @Override
-    public boolean setTempStat(String stat, double delta) {
-        boolean returnVal = super.setTempStat(stat, delta);
-        if (stat.equalsIgnoreCase("speed")) {
-            if (movementLine != null) {
-                this.move(movementLine.getP2());
-            }
-        }
-        return returnVal;
     }
 
     @Override

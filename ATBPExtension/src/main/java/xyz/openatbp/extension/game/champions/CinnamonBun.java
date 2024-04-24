@@ -50,8 +50,7 @@ public class CinnamonBun extends UserActor {
             for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                 if (a.getTeam() != this.team && this.wPoly.contains(a.getLocation())) {
                     a.addToDamageQueue(this, getSpellDamage(spellData) / 10d, spellData, true);
-                    if (isNonStructure(a))
-                        a.addState(ActorState.SLOWED, percentage, duration, null, false);
+                    if (isNonStructure(a)) a.addState(ActorState.SLOWED, percentage, duration);
                 }
             }
         }
@@ -72,20 +71,8 @@ public class CinnamonBun extends UserActor {
                         lastUltEffect = System.currentTimeMillis();
                         this.canApplyUltEffects = false;
                         this.ultEffectsApplied = true;
-                        a.addEffect(
-                                "attackSpeed",
-                                this.getStat("attackSpeed") * -0.2d,
-                                4500,
-                                null,
-                                "",
-                                false);
-                        a.addEffect(
-                                "attackDamage",
-                                this.getStat("attackDamage") * 0.2d,
-                                4500,
-                                null,
-                                "",
-                                false);
+                        a.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.2d, 4500);
+                        a.addEffect("attackDamage", this.getStat("attackDamage") * 0.2d, 4500);
                         ExtensionCommands.addStatusIcon(
                                 this.parentExt,
                                 this.player,

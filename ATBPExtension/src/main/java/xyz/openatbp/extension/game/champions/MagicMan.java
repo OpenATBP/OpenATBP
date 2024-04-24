@@ -136,9 +136,7 @@ public class MagicMan extends UserActor {
                                 new Line2D.Float(this.location, endPoint),
                                 7f,
                                 0.25f,
-                                this.id + "projectile_magicman_snake1"),
-                        this.id + "projectile_magicman_snake1",
-                        "projectile_magicman_snake",
+                                "projectile_magicman_snake"),
                         this.location,
                         endPoint,
                         9.5f);
@@ -149,9 +147,7 @@ public class MagicMan extends UserActor {
                                 new Line2D.Float(this.location, endPoint2),
                                 7f,
                                 0.25f,
-                                this.id + "projectile_magicman_snake2"),
-                        this.id + "projectile_magicman_snake2",
-                        "projectile_magicman_snake",
+                                "projectile_magicman_snake"),
                         this.location,
                         endPoint2,
                         9.5f);
@@ -162,9 +158,7 @@ public class MagicMan extends UserActor {
                                 new Line2D.Float(this.location, endPoint3),
                                 7f,
                                 0.25f,
-                                this.id + "projectile_magicman_snake3"),
-                        this.id + "projectile_magicman_snake3",
-                        "projectile_magicman_snake",
+                                "projectile_magicman_snake"),
                         this.location,
                         endPoint3,
                         9.5f);
@@ -194,7 +188,7 @@ public class MagicMan extends UserActor {
                             MovementManager.getDashPoint(
                                     this, new Line2D.Float(this.location, dest));
                     if (Double.isNaN(dashPoint.getY())) dashPoint = this.location;
-                    this.addState(ActorState.INVISIBLE, 0d, 3000, null, false);
+                    this.addState(ActorState.INVISIBLE, 0d, 3000);
                     this.wLocation = new Point2D.Double(this.location.getX(), this.location.getY());
                     Point2D endLocation =
                             Champion.getAbilityLine(this.wLocation, dest, 100f).getP2();
@@ -338,8 +332,8 @@ public class MagicMan extends UserActor {
                     if (isNonStructure(a)) {
                         double damage = (double) (a.getHealth()) * (0.35d + damageModifier);
                         a.addToDamageQueue(MagicMan.this, damage, spellData, false);
-                        a.addEffect("armor", a.getStat("armor") * -0.3d, 3000, null, "", false);
-                        a.addState(ActorState.SLOWED, 0.3d, 3000, null, false);
+                        a.addEffect("armor", a.getStat("armor") * -0.3d, 3000);
+                        a.addState(ActorState.SLOWED, 0.3d, 3000);
                     }
                 }
             } else if (interruptE) {
@@ -366,7 +360,7 @@ public class MagicMan extends UserActor {
 
         @Override
         protected void hit(Actor victim) {
-            victim.addState(ActorState.SILENCED, 0d, 1000, null, false);
+            victim.addState(ActorState.SILENCED, 0d, 1000);
             ExtensionCommands.createWorldFX(
                     this.parentExt,
                     this.owner.getRoom(),
@@ -505,7 +499,7 @@ public class MagicMan extends UserActor {
                             parentExt, MagicMan.this, target, (int) damage, "basicAttack")
                     .run();
             if (this.target.getActorType() == ActorType.PLAYER) {
-                addEffect("speed", getStat("speed") * 0.2d, 3000, null, "", false);
+                addEffect("speed", getStat("speed") * 0.2d, 3000);
                 if (!passiveActivated)
                     ExtensionCommands.addStatusIcon(
                             parentExt,

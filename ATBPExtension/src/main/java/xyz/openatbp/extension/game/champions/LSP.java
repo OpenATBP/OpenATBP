@@ -314,8 +314,7 @@ public class LSP extends UserActor {
                                 : "projectile_lsp_ult";
                 fireProjectile(
                         new LSPUltProjectile(
-                                parentExt, LSP.this, projectileLine, 8f, 2f, id + ultProjectile),
-                        ultProjectile,
+                                parentExt, LSP.this, projectileLine, 8f, 2f, ultProjectile),
                         location,
                         dest,
                         100f);

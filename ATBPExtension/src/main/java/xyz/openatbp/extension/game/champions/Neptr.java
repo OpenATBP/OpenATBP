@@ -58,9 +58,8 @@ public class Neptr extends UserActor {
                     this.parentExt, this.player, this.id, "sfx_neptr_passive", this.location);
             ExtensionCommands.playSound(
                     this.parentExt, this.room, this.id, "vo/vo_neptr_passive", this.location);
-            this.addEffect("speed", this.getStat("speed") * 0.35d, 3500, null, "", false);
-            this.addEffect(
-                    "attackSpeed", this.getStat("attackSpeed") * -0.25d, 3500, null, "", false);
+            this.addEffect("speed", this.getStat("speed") * 0.35d, 3500);
+            this.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.25d, 3500);
             if (this.passiveActive) {
                 ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "passive");
             }
@@ -118,17 +117,17 @@ public class Neptr extends UserActor {
 
     @Override
     public void fireProjectile(
-            Projectile projectile, String id, Point2D location, Point2D dest, float abilityRange) {
-        super.fireProjectile(projectile, id, location, dest, abilityRange);
+            Projectile projectile, Point2D location, Point2D dest, float abilityRange) {
+        super.fireProjectile(projectile, location, dest, abilityRange);
         ExtensionCommands.playSound(
                 this.parentExt, this.room, this.id, "sfx_neptr_boommeringue", this.location);
         ExtensionCommands.createActorFX(
                 this.parentExt,
                 this.room,
-                this.id + id,
+                projectile.getId(),
                 "neptr_pie_trail",
                 (int) projectile.getEstimatedDuration() + 1000,
-                this.id + id + "_fx",
+                projectile.getId() + "_fx",
                 true,
                 "Bip001",
                 true,
@@ -156,8 +155,7 @@ public class Neptr extends UserActor {
                                 abilityLine,
                                 8f,
                                 0.5f,
-                                this.id + "projectile_neptr_boom_meringue"),
-                        "projectile_neptr_boom_meringue",
+                                "projectile_neptr_boom_meringue"),
                         this.location,
                         dest,
                         8f);
@@ -308,7 +306,7 @@ public class Neptr extends UserActor {
                             parentExt.getRoomHandler(room.getName()), ultLocation, 3f)) {
                 if (isNonStructure(a)) {
                     a.knockback(Neptr.this.location);
-                    a.addState(ActorState.SILENCED, 0d, 1000, null, false);
+                    a.addState(ActorState.SILENCED, 0d, 1000);
                     ExtensionCommands.createActorFX(
                             parentExt,
                             room,
@@ -598,7 +596,7 @@ public class Neptr extends UserActor {
                                             getSpellDamage(spellData),
                                             spellData,
                                             false);
-                                    target.addState(ActorState.SLOWED, 0.4d, 3000, null, false);
+                                    target.addState(ActorState.SLOWED, 0.4d, 3000);
                                 }
                             }
                         }

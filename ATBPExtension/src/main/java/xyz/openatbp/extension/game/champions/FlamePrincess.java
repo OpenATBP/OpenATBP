@@ -180,8 +180,7 @@ public class FlamePrincess extends UserActor {
                                 abilityLine,
                                 8f,
                                 0.5f,
-                                this.id + "projectile_flame_cone"),
-                        "projectile_flame_cone",
+                                "projectile_flame_cone"),
                         location,
                         dest,
                         8f);
@@ -382,7 +381,7 @@ public class FlamePrincess extends UserActor {
             for (Actor a : affectedUsers) {
                 if (a.getActorType() == ActorType.PLAYER) {
                     UserActor userActor = (UserActor) a;
-                    userActor.addState(ActorState.POLYMORPH, 0d, 3000, null, false);
+                    userActor.addState(ActorState.POLYMORPH, 0d, 3000);
                     lastPolymorphTime = System.currentTimeMillis();
                 }
                 double newDamage = getSpellDamage(spellData);

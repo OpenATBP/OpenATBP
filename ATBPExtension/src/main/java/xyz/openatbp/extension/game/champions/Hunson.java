@@ -159,9 +159,8 @@ public class Hunson extends UserActor {
                     "icon_hunson_passive",
                     "hunson_spell_4_short_description",
                     5000);
-            this.addEffect(
-                    "attackSpeed", this.getStat("attackSpeed") * -0.4d, 5000, null, "", false);
-            this.addEffect("speed", 0.8d, 5000, null, "", false);
+            this.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.4d, 5000);
+            this.addEffect("speed", 0.8d, 5000);
             parentExt
                     .getTaskScheduler()
                     .schedule(
@@ -214,8 +213,7 @@ public class Hunson extends UserActor {
                                 spellLine,
                                 8f,
                                 0.5f,
-                                id + "projectile_hunson_pull"),
-                        "projectile_hunson_pull",
+                                "projectile_hunson_pull"),
                         this.location,
                         dest,
                         8f);
@@ -394,8 +392,8 @@ public class Hunson extends UserActor {
                     true,
                     false,
                     team);
-            addEffect("armor", getStat("armor") * 0.5d, 3500, null, "", false);
-            addEffect("spellVamp", 45, 3500, null, "", false);
+            addEffect("armor", getStat("armor") * 0.5d, 3500);
+            addEffect("spellVamp", 45, 3500);
             ultActivated = true;
             ultStart = System.currentTimeMillis();
         }
@@ -432,7 +430,7 @@ public class Hunson extends UserActor {
             }
             victim.handlePull(Hunson.this.location, 1.2);
             victim.addToDamageQueue(Hunson.this, damage, spellData, false);
-            victim.addState(ActorState.SLOWED, 0.1d, 2000, null, false);
+            victim.addState(ActorState.SLOWED, 0.1d, 2000);
             ExtensionCommands.playSound(
                     parentExt, room, "", "akubat_projectileHit1", victim.getLocation());
             this.destroy();

@@ -145,8 +145,7 @@ public class Billy extends UserActor {
                     if (a.getTeam() != this.team && quadrangle.contains(a.getLocation())) {
                         if (isNonStructure(a)) a.knockback(this.location);
                         a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
-                        if (this.passiveUses == 3)
-                            a.addState(ActorState.STUNNED, 0d, 2000, null, false);
+                        if (this.passiveUses == 3) a.addState(ActorState.STUNNED, 0d, 2000);
                     }
                 }
                 if (this.passiveUses == 3) this.usePassiveAbility();
@@ -194,14 +193,8 @@ public class Billy extends UserActor {
                 ExtensionCommands.actorAnimate(
                         this.parentExt, this.room, this.id, "spell2", wTime, false);
                 if (this.passiveUses == 3) {
-                    this.addEffect(
-                            "attackSpeed",
-                            this.getStat("attackSpeed") * -0.7d,
-                            4000,
-                            null,
-                            "",
-                            false);
-                    this.addEffect("speed", 0.8d, 6000, null, "", true);
+                    this.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.7d, 4000);
+                    this.addEffect("speed", 0.8d, 6000);
                     this.usePassiveAbility();
                     ExtensionCommands.addStatusIcon(
                             this.parentExt,

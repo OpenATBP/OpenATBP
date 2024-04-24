@@ -65,7 +65,7 @@ public class GooMonster extends Monster {
                     JsonNode newAttackData = mapper.readTree(data.toJson());
                     for (Actor a : damagedActors) {
                         if (!a.getId().equalsIgnoreCase(this.id)) {
-                            a.addState(ActorState.SLOWED, 0.25d, 1000, null, false);
+                            a.addState(ActorState.SLOWED, 0.25d, 1000);
                             a.addToDamageQueue(this, 4, newAttackData, true);
                         }
                     }
@@ -84,12 +84,7 @@ public class GooMonster extends Monster {
             for (UserActor u : parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                 if (u.getTeam() == a.getTeam()) {
                     u.addEffect(
-                            "speed",
-                            u.getPlayerStat("speed") * 0.1d,
-                            60000,
-                            "jungle_buff_goo",
-                            "",
-                            false);
+                            "speed", u.getPlayerStat("speed") * 0.1d, 60000, "jungle_buff_goo", "");
                     Champion.handleStatusIcon(
                             this.parentExt,
                             u,

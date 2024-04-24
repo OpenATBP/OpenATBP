@@ -44,10 +44,7 @@ function safeSendAll(sockets, command, response) {
   return new Promise(function (resolve, reject) {
     if (sockets.length == 0) resolve(true);
     else {
-      console.log(
-        `Sending ${command} to ${sockets[0].player.name}: `,
-        response
-      );
+      console.log(`Sending ${command} to ${sockets[0].player.name}`);
       sendCommand(sockets[0], command, response)
         .then(() => {
           sockets.shift();
@@ -113,7 +110,7 @@ function leaveQueue(socket) {
         safeSendAll(
           users.filter((u) => queue.players.includes(u.player) && u != socket),
           'team_disband',
-          { reason: `${socket.player.name} dodged!` }
+          { reason: `error_lobby_playerLeftMatch` }
         )
           .then(() => {
             for (var p of queue.players) {
@@ -247,6 +244,7 @@ function updateMatchmaking() {
               ) {
                 for (var tp of team.players) {
                   if (
+                    tp.player.queue != undefined &&
                     Math.abs(u.player.elo - tp.player.elo) <
                       50 +
                         ((Date.now() - tp.player.queue.started) / 1000) * 12 &&
@@ -274,9 +272,6 @@ function updateMatchmaking() {
 }
 
 function startGame(players, type) {
-  for (var p of players) {
-    console.log('Starting game for: ', p);
-  }
   var queueSize = 1;
   if (type.includes('p') && type != 'practice')
     queueSize = Number(type.replace('p', ''));
@@ -302,10 +297,13 @@ function startGame(players, type) {
               avatar: 'unassigned',
               is_ready: false,
             };
-            if (teamToJoin == 0) purple.push(playerObj);
-            else if (teamToJoin == 1) blue.push(playerObj);
-            players.find((pl) => pl == pt).team = teamToJoin;
-            console.log(pt.name + ' set to ' + teamToJoin);
+            var pla = players.find((pl) => pl == pt);
+            if (pla != undefined) {
+              if (teamToJoin == 0) purple.push(playerObj);
+              else if (teamToJoin == 1) blue.push(playerObj);
+              players.find((pl) => pl == pt).team = teamToJoin;
+              console.log(pt.name + ' set to ' + teamToJoin);
+            }
           }
         } else console.log("Team players can't join team!");
       }
@@ -497,7 +495,7 @@ function joinQueue(sockets, type) {
           }
           if (players.length == queueSize) {
             for (var p of players) {
-              console.log(`QUEUE POPPED. ${p.name} JOINED!`, p);
+              console.log(`QUEUE POPPED. ${p.name} JOINED!`);
             }
             startGame(players, type);
           } else console.log('Invalid queue size!');
@@ -601,8 +599,8 @@ function handleRequest(jsonString, socket) {
 
   let response = null;
   let unhandled = false;
-  if (socket.player != undefined) console.log('!', socket.player.name);
-  console.log('<-', jsonObject['req'], jsonObject['payload']);
+  //if (socket.player != undefined) console.log('!', socket.player.name);
+  //console.log('<-', jsonObject['req'], jsonObject['payload']);
 
   switch (jsonObject['req']) {
     case 'handshake':
@@ -1152,7 +1150,7 @@ module.exports = class ATBPLobbyServer {
           if (jsonLength == null || 0) {
             if (socket.player != undefined) {
               console.log(
-                `${socket.player.name} has had their socket destroyed.`
+                `${socket.player.name} has had their socket destroyed due to jsonLength 0.`
               );
             }
             socket.destroy();
@@ -1172,22 +1170,26 @@ module.exports = class ATBPLobbyServer {
 
         socket.on('error', (error) => {
           console.error('Socket error:', error);
-          if (socket.player != undefined)
+          if (socket.player != undefined) {
             console.log(socket.player.name + ' had an error.');
-          if (socket.player.onTeam) leaveTeam(socket);
-          else leaveQueue(socket);
+            if (socket.player.onTeam) leaveTeam(socket);
+            else leaveQueue(socket);
+          }
           socket.destroy();
         });
 
         socket.on('close', (err) => {
           console.log(err);
+          var userExists = false;
           for (var user of users) {
             if (user._readableState.ended || user == socket) {
+              userExists = true;
               console.log(user.player.name + ' logged out');
               if (user.player.onTeam) leaveTeam(user);
               else leaveQueue(user);
             }
           }
+          if (!userExists) console.log('Socket left with no player: ', socket);
           users = users.filter(
             (user) => !user._readableState.ended && user != socket
           );

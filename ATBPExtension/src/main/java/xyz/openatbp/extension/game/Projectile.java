@@ -21,6 +21,7 @@ public abstract class Projectile {
     protected float speed;
     protected UserActor owner;
     protected String id;
+    protected String projectileAsset;
     protected float hitbox;
     protected ATBPExtension parentExt;
     protected boolean destroyed = false;
@@ -34,7 +35,7 @@ public abstract class Projectile {
             Line2D path,
             float speed,
             float hitboxRadius,
-            String id) {
+            String projectileAsset) {
         this.parentExt = parentExt;
         this.owner = owner;
         this.startingLocation = path.getP1();
@@ -42,7 +43,8 @@ public abstract class Projectile {
         this.speed = speed;
         this.hitbox = hitboxRadius;
         this.location = path.getP1();
-        this.id = id;
+        this.projectileAsset = projectileAsset;
+        this.id = owner.getId() + "_" + projectileAsset + (Math.floor(Math.random() * 100));
         this.path = path;
         this.startTime = System.currentTimeMillis();
         this.estimatedDuration = (path.getP1().distance(path.getP2()) / speed) * 1000f;
@@ -116,6 +118,14 @@ public abstract class Projectile {
 
     public Point2D getDestination() {
         return this.destination;
+    }
+
+    public String getId() {
+        return this.id;
+    }
+
+    public String getProjectileAsset() {
+        return this.projectileAsset;
     }
 
     public double getEstimatedDuration() {

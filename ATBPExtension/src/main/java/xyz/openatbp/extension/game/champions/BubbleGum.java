@@ -44,6 +44,15 @@ public class BubbleGum extends UserActor {
     }
 
     @Override
+    public void destroy() {
+        super.destroy();
+        int turretSize = this.turrets.size();
+        for (int i = 0; i < turretSize; i++) {
+            this.turrets.get(i).die(BubbleGum.this);
+        }
+    }
+
+    @Override
     public void attack(Actor a) {
         this.applyStopMovingDuringAttack();
         parentExt
@@ -94,11 +103,9 @@ public class BubbleGum extends UserActor {
                                 this.parentExt.getAttackData("princessbubblegum", "spell1");
                         double damage = this.getSpellDamage(spellData) / 10f;
                         a.addToDamageQueue(this, damage, spellData, true);
-                        if (isNonStructure(a))
-                            a.addState(ActorState.SLOWED, 0.3d, 2000, null, false);
+                        if (isNonStructure(a)) a.addState(ActorState.SLOWED, 0.3d, 2000);
                     } else if (a.getId().equalsIgnoreCase(this.id)) {
-                        this.addEffect(
-                                "speed", this.getStat("speed") * 0.4d, 2000, null, "", false);
+                        this.addEffect("speed", this.getStat("speed") * 0.4d, 2000);
                         ExtensionCommands.createActorFX(
                                 this.parentExt,
                                 this.room,
@@ -305,7 +312,8 @@ public class BubbleGum extends UserActor {
     @Override
     public void die(Actor a) {
         super.die(a);
-        for (Turret t : turrets) {
+        List<Turret> aliveTurrets = new ArrayList<>(this.turrets);
+        for (Turret t : aliveTurrets) {
             t.die(a);
         }
         this.turrets = new ArrayList<>();
@@ -315,7 +323,6 @@ public class BubbleGum extends UserActor {
         Turret t = null;
         if (this.turrets != null && this.turrets.size() == 2) {
             this.turrets.get(0).die(this);
-            this.turrets.remove(0);
             t = new Turret(dest, this.turretNum);
         } else if (this.turrets != null) {
             t = new Turret(dest, this.turretNum);
@@ -414,7 +421,7 @@ public class BubbleGum extends UserActor {
                 double getReducedSpeed = this.target.getTempStat("attackSpeed");
                 double newDamage = (targetAttackSpeed * change);
                 if (getReducedSpeed / targetAttackSpeed >= 0.25) newDamage = 0;
-                this.target.addEffect("attackSpeed", newDamage, 3000, null, "", true);
+                this.target.addEffect("attackSpeed", newDamage, 3000);
             }
         }
     }
@@ -466,7 +473,7 @@ public class BubbleGum extends UserActor {
                                 this.team);
                     };
             parentExt.getTaskScheduler().schedule(creationDelay, 150, TimeUnit.MILLISECONDS);
-            this.addState(ActorState.IMMUNITY, 0d, 1000 * 60 * 15, null, false);
+            this.addState(ActorState.IMMUNITY, 0d, 1000 * 60 * 15);
         }
 
         @Override
@@ -505,6 +512,19 @@ public class BubbleGum extends UserActor {
         }
 
         @Override
+        public void addState(ActorState state, double delta, int duration) {
+            if (state == ActorState.CHARMED || state == ActorState.FEARED) return;
+            super.addState(state, delta, duration);
+        }
+
+        @Override
+        public void addState(
+                ActorState state, double delta, int duration, String fxId, String emit) {
+            if (state == ActorState.CHARMED || state == ActorState.FEARED) return;
+            super.addState(state, delta, duration, fxId, emit);
+        }
+
+        @Override
         public void die(Actor a) {
             this.dead = true;
             this.currentHealth = 0;
@@ -512,15 +532,16 @@ public class BubbleGum extends UserActor {
             ExtensionCommands.removeFx(parentExt, room, this.id + "_ring");
             ExtensionCommands.destroyActor(parentExt, room, this.id);
             this.parentExt.getRoomHandler(this.room.getName()).removeCompanion(this);
+            BubbleGum.this.handleTurretDeath(this);
         }
 
         @Override
         public void update(int msRan) {
             this.handleDamageQueue();
+            this.handleActiveEffects();
             if (this.dead) return;
             if (System.currentTimeMillis() - this.timeOfBirth >= 60000) {
                 this.die(this);
-                BubbleGum.this.handleTurretDeath(this);
                 return;
             }
             if (this.attackCooldown > 0) this.reduceAttackCooldown();

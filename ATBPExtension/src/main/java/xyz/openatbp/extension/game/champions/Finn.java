@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
@@ -43,12 +44,6 @@ public class Finn extends UserActor {
                 .getTaskScheduler()
                 .schedule(new PassiveAttack(a, this.handleAttack(a)), 250, TimeUnit.MILLISECONDS);
         passiveStart = System.currentTimeMillis();
-    }
-
-    @Override
-    public double getPlayerStat(String stat) {
-        if (stat.equalsIgnoreCase("speed") && this.qActive) return super.getPlayerStat(stat) * 1.5d;
-        return super.getPlayerStat(stat);
     }
 
     @Override
@@ -117,14 +112,14 @@ public class Finn extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if (this.qActive && System.currentTimeMillis() - this.qStartTime >= 3000) {
-            this.qActive = false;
-            updateStatMenu("speed");
-        }
         if (this.ultActivated && System.currentTimeMillis() - this.eStartTime >= 5000) {
             this.wallLines = null;
             this.wallsActivated = new boolean[] {false, false, false, false};
             this.ultActivated = false;
+        }
+        if (this.qActive && this.qStartTime + 3000 <= System.currentTimeMillis()) {
+            Console.debugLog("Disabling Finn Q!");
+            this.qActive = false;
         }
         if (this.ultActivated) {
             for (int i = 0; i < this.wallLines.length; i++) {
@@ -134,7 +129,7 @@ public class Finn extends UserActor {
                                 && this.wallLines[i].ptSegDist(a.getLocation()) <= 0.5f) {
                             this.wallsActivated[i] = false;
                             JsonNode spellData = this.parentExt.getAttackData("finn", "spell3");
-                            a.addState(ActorState.ROOTED, 0d, 2000, null, false);
+                            a.addState(ActorState.ROOTED, 0d, 2000);
                             a.addToDamageQueue(
                                     this,
                                     handlePassive(a, getSpellDamage(spellData)),
@@ -199,8 +194,8 @@ public class Finn extends UserActor {
             case 1:
                 this.canCast[0] = false;
                 this.attackCooldown = 0;
-                this.qActive = true;
                 this.qStartTime = System.currentTimeMillis();
+                this.qActive = true;
                 this.updateStatMenu("speed");
                 String shieldPrefix =
                         (this.avatar.contains("guardian")) ? "finn_guardian_" : "finn_";
@@ -222,9 +217,9 @@ public class Finn extends UserActor {
                         true,
                         false,
                         this.team);
-                this.addEffect("armor", this.getStat("armor") * 0.25d, 3000, null, "", false);
-                this.addEffect(
-                        "attackSpeed", this.getStat("attackSpeed") * -0.20d, 3000, null, "", false);
+                this.addEffect("speed", this.getStat("speed") * 0.5d, 3000);
+                this.addEffect("armor", this.getStat("armor") * 0.25d, 3000);
+                this.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.20d, 3000);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -464,7 +459,8 @@ public class Finn extends UserActor {
                             true,
                             false,
                             target.getTeam());
-                    if (qActive) {
+                    if (this.qActive) {
+                        Console.debugLog("Finn Q Popped!");
                         for (Actor actor :
                                 Champion.getActorsInRadius(
                                         this.parentExt.getRoomHandler(this.room.getName()),
@@ -476,7 +472,7 @@ public class Finn extends UserActor {
                                         Finn.this, getSpellDamage(spellData), spellData, false);
                             }
                         }
-                        qActive = false;
+                        this.qActive = false;
                         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_shield");
                         String shatterPrefix =
                                 (this.avatar.contains("guardian")) ? "finn_guardian_" : "finn_";

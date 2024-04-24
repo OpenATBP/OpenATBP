@@ -294,6 +294,7 @@ public class Minion extends Actor {
                 this.state = State.MOVING;
                 break;
             case MOVING:
+                if (this.getState(ActorState.CHARMED) || this.getState(ActorState.FEARED)) return;
                 if (this.location.distance(this.getPathPoint()) <= 0.1d) {
                     this.moveAlongPath();
                     return;
@@ -345,6 +346,12 @@ public class Minion extends Actor {
                 }
                 break;
         }
+    }
+
+    @Override
+    public void handleFear(Point2D source, int duration) {
+        super.handleFear(source, duration);
+        this.state = State.MOVING;
     }
 
     @Override
@@ -519,17 +526,6 @@ public class Minion extends Actor {
         if (Double.isNaN(deltaX)) return false;
         if (deltaX > 0 && p.getX() > line.getX1()) return true;
         else return deltaX < 0 && p.getX() < line.getX1();
-    }
-
-    @Override
-    public boolean setTempStat(String stat, double delta) {
-        boolean returnVal = super.setTempStat(stat, delta);
-        if (stat.equalsIgnoreCase("speed")) {
-            if (movementLine != null) {
-                this.move(movementLine.getP2());
-            }
-        }
-        return returnVal;
     }
 
     public boolean isInvisOrInBrush(Actor a) {

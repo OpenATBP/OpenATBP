@@ -268,7 +268,7 @@ public class RattleBalls extends UserActor {
                             false,
                             false,
                             this.team);
-                    this.addEffect("speed", this.getStat("speed") * 0.14d, 3500, null, "", true);
+                    this.addEffect("speed", this.getStat("speed") * 0.14d, 3500);
                 } else {
                     this.endUlt();
                 }

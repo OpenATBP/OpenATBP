@@ -1,9 +1,6 @@
 package xyz.openatbp.extension;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -227,6 +224,7 @@ public class ChampionData {
         if (user.getVariable("champion").getSFSObjectValue().getBool("autoLevel")) {
             int[] buildPath = getBuildPath(ua.getAvatar(), ua.getBackpack());
             int category = buildPath[level - 1];
+            Console.debugLog(ua.getDisplayName() + " leveling category: " + category);
             int categoryPoints = (int) ua.getStat("sp_category" + category);
             int spentPoints = getTotalSpentPoints(ua); // How many points have been used
             boolean works = false;
@@ -353,7 +351,7 @@ public class ChampionData {
 
     public static int[] getBuildPath(String actor, String backpack) {
         int[] buildPath = {1, 1, 2, 2, 1, 2, 1, 2, 5, 5};
-        String avatar = "";
+        String avatar = actor;
         if (actor.contains("skin")) {
             avatar = actor.split("_")[0];
         }
@@ -539,6 +537,9 @@ public class ChampionData {
                 } else if (backpack.equalsIgnoreCase("belt_hewers_haversack")) {
                     buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
                 }
+                break;
+            default:
+                Console.logWarning(avatar + " cannot auto level!");
                 break;
         }
         return buildPath;

@@ -120,8 +120,7 @@ public class Gunter extends UserActor {
                                 abilityLine,
                                 11f,
                                 0.5f,
-                                this.id + "projectile_gunter_bottle"),
-                        "projectile_gunter_bottle",
+                                "projectile_gunter_bottle"),
                         this.location,
                         dest,
                         8f);

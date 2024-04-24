@@ -174,7 +174,7 @@ public class PeppermintButler extends UserActor {
                         false,
                         false,
                         team);
-                this.addState(ActorState.IMMUNITY, 0d, 2000, null, false);
+                this.addState(ActorState.IMMUNITY, 0d, 2000);
             }
         }
         if (this.qActive && this.currentHealth <= 0) {
@@ -192,7 +192,7 @@ public class PeppermintButler extends UserActor {
                     JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell1");
                     double damage = this.getSpellDamage(spellData) / 10d;
                     a.addToDamageQueue(this, damage, spellData, true);
-                    a.addState(ActorState.BLINDED, 0d, 500, null, true);
+                    a.addState(ActorState.BLINDED, 0d, 500);
                 }
             }
         }
@@ -429,7 +429,7 @@ public class PeppermintButler extends UserActor {
                                     false,
                                     false,
                                     this.team);
-                            this.addState(ActorState.SILENCED, 0d, 7000, null, true);
+                            this.addState(ActorState.SILENCED, 0d, 7000);
                             if (this.qActive) {
                                 this.qActive = false;
                                 ExtensionCommands.removeFx(
@@ -535,7 +535,7 @@ public class PeppermintButler extends UserActor {
                     if (isNonStructure(a)) {
                         a.addToDamageQueue(
                                 PeppermintButler.this, getSpellDamage(spellData), spellData, false);
-                        a.addState(ActorState.STUNNED, 0d, 1500, null, false);
+                        a.addState(ActorState.STUNNED, 0d, 1500);
                     }
                 }
             } else if (interruptW) {

@@ -46,9 +46,10 @@ public class UserActor extends Actor {
     protected static final double DASH_SPEED = 20d;
     protected boolean changeTowerAggro = false;
     protected boolean isDashing = false;
+    private long lastHit = 0;
     protected boolean isAutoAttacking = false;
     // Set debugging options via config.properties next to the extension jar
-    private static boolean movementDebug;
+    protected static boolean movementDebug;
     private static boolean invincibleDebug;
     private static boolean abilityDebug;
     private static boolean speedDebug;
@@ -168,20 +169,6 @@ public class UserActor extends Actor {
         return canCast;
     }
 
-    @Override
-    public boolean setTempStat(String stat, double delta) {
-        boolean returnVal = super.setTempStat(stat, delta);
-        if (stat.contains("speed") && this.canMove) {
-            this.move(movementLine.getP2());
-        } else if (stat.contains("healthRegen")) {
-            if (this.hasTempStat("healthRegen") && this.getTempStat("healthRegen") <= 0)
-                this.tempStats.remove("healthRegen");
-        }
-        ExtensionCommands.updateActorData(
-                this.parentExt, this.room, this.id, stat, this.getPlayerStat(stat));
-        return returnVal;
-    }
-
     public void setPath(Point2D start, Point2D end) {
         this.movementLine = new Line2D.Float(start, end);
         this.timeTraveled = 0f;
@@ -236,6 +223,7 @@ public class UserActor extends Actor {
             if (a.getActorType() == ActorType.COMPANION) {
                 checkTowerAggroCompanion(a);
             }
+            this.lastHit = System.currentTimeMillis();
             if (a.getActorType() == ActorType.TOWER) {
                 ExtensionCommands.playSound(
                         this.parentExt,
@@ -309,10 +297,7 @@ public class UserActor extends Actor {
             ExtensionCommands.damageActor(parentExt, this.room, this.id, newDamage);
             this.processHitData(a, attackData, newDamage);
             if (this.hasTempStat("healthRegen")) {
-                this.tempStats.remove("healthRegen");
-                this.updateStatMenu("healthRegen");
-                ExtensionCommands.removeFx(
-                        this.parentExt, this.room, this.id + "_" + "fx_health_regen");
+                this.effectHandlers.get("healthRegen").endAllEffects();
             }
 
             this.changeHealth(newDamage * -1);
@@ -514,6 +499,34 @@ public class UserActor extends Actor {
         this.setLocation(dashPoint);
         this.target = null;
         return dashPoint;
+    }
+
+    public void dash(Point2D dest, double dashSpeed) {
+        this.isDashing = true;
+        if (movementDebug)
+            ExtensionCommands.createWorldFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    "gnome_a",
+                    this.id + "_test" + Math.random(),
+                    5000,
+                    (float) dest.getX(),
+                    (float) dest.getY(),
+                    false,
+                    0,
+                    0f);
+        // if(noClip) dashPoint =
+        // Champion.getTeleportPoint(this.parentExt,this.player,this.location,dest);
+        double time = dest.distance(this.location) / dashSpeed;
+        int timeMs = (int) (time * 1000d);
+        this.stopMoving(timeMs);
+        Runnable setIsDashing = () -> this.isDashing = false;
+        parentExt.getTaskScheduler().schedule(setIsDashing, timeMs, TimeUnit.MILLISECONDS);
+        ExtensionCommands.moveActor(
+                this.parentExt, this.room, this.id, this.location, dest, (float) dashSpeed, true);
+        this.setLocation(dest);
+        this.target = null;
     }
 
     protected boolean handleAttack(
@@ -769,7 +782,8 @@ public class UserActor extends Actor {
     protected boolean
             canRegenHealth() { // TODO: Does not account for health pots. Not sure if this should be
         // added for balance reasons.
-        return (this.currentHealth < this.maxHealth && this.aggressors.isEmpty())
+        return (this.currentHealth < this.maxHealth
+                        && System.currentTimeMillis() > this.lastHit + 1000)
                 || this.getPlayerStat("healthRegen") < 0;
     }
 
@@ -896,7 +910,7 @@ public class UserActor extends Actor {
             List<Actor> actorsToRemove = new ArrayList<Actor>(this.aggressors.keySet().size());
             for (Actor a : this.aggressors.keySet()) {
                 ISFSObject damageData = this.aggressors.get(a);
-                if (System.currentTimeMillis() > damageData.getLong("lastAttacked") + 3000)
+                if (System.currentTimeMillis() > damageData.getLong("lastAttacked") + 5000)
                     actorsToRemove.add(a);
             }
             for (Actor a : actorsToRemove) {
@@ -914,10 +928,7 @@ public class UserActor extends Actor {
             }
             if (this.hasTempStat("healthRegen")) {
                 if (this.currentHealth == this.maxHealth) {
-                    this.tempStats.remove("healthRegen");
-                    this.updateStatMenu("healthRegen");
-                    ExtensionCommands.removeFx(
-                            this.parentExt, this.room, this.id + "_" + "fx_health_regen");
+                    this.effectHandlers.get("healthRegen").endAllEffects();
                 }
             }
         }
@@ -1112,6 +1123,77 @@ public class UserActor extends Actor {
         return (float) Math.toDegrees(angleRad) * -1 + 90f;
     }
 
+    public void handlePolymorph(boolean enable, int duration) {
+        if (enable) {
+            this.addState(ActorState.SLOWED, 0.3d, duration);
+            ExtensionCommands.swapActorAsset(parentExt, this.room, this.id, "flambit");
+            ExtensionCommands.createActorFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    "statusEffect_polymorph",
+                    1000,
+                    this.id + "_statusEffect_polymorph",
+                    true,
+                    "",
+                    true,
+                    false,
+                    this.team);
+            ExtensionCommands.createActorFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    "flambit_aoe",
+                    3000,
+                    this.id + "_flambit_aoe",
+                    true,
+                    "",
+                    true,
+                    false,
+                    this.team);
+            ExtensionCommands.createActorFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    "fx_target_ring_2",
+                    3000,
+                    this.id + "_flambit_ring_",
+                    true,
+                    "",
+                    true,
+                    true,
+                    getOppositeTeam());
+        } else {
+            this.bundle = this.getSkinAssetBundle();
+            boolean scale = false;
+            if (this.getState(ActorState.TRANSFORMED)) {
+                switch (this.getAvatar()) {
+                    case "flame":
+                        this.bundle = "flame_ult";
+                        scale = true;
+                        break;
+                    case "iceking":
+                        this.bundle =
+                                this.avatar.contains("queen")
+                                        ? "iceking2_icequeen2"
+                                        : this.avatar.contains("young")
+                                                ? "iceking2_young2"
+                                                : "iceking2";
+                        break;
+                    case "marceline":
+                        this.bundle = "marceline_bat";
+                        break;
+                    case "peppermintbutler":
+                        this.bundle = "pepbut_feral";
+                }
+            }
+            ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, this.bundle);
+            if (scale) {
+                ExtensionCommands.scaleActor(this.parentExt, this.room, this.id, 1f);
+            }
+        }
+    }
+
     public void respawn() {
         this.canMove = true;
         this.setHealth((int) this.maxHealth, (int) this.maxHealth);
@@ -1138,7 +1220,7 @@ public class UserActor extends Actor {
         ExtensionCommands.playSound(
                 this.parentExt, this.room, this.id, "sfx/sfx_champion_respawn", this.location);
         ExtensionCommands.respawnActor(this.parentExt, this.room, this.id);
-        this.addEffect("speed", 2d, 5000, "statusEffect_speed", "targetNode", false);
+        this.addEffect("speed", 2d, 5000, "statusEffect_speed", "targetNode");
         ExtensionCommands.createActorFX(
                 this.parentExt,
                 this.room,
@@ -1318,6 +1400,8 @@ public class UserActor extends Actor {
             if (dotDamage) spellVamp /= this.hits;
             else spellVamp /= (this.hits * 2);
         }
+        if (this.getPlayerStat("spellVamp") * 0.3 > spellVamp)
+            spellVamp = this.getPlayerStat("spellVamp") * 0.3d;
         double percentage = spellVamp / 100;
         int healing = (int) Math.round(damage * percentage);
         // Console.debugLog(this.displayName + " is healing for " + healing + " HP!");
@@ -1416,7 +1500,7 @@ public class UserActor extends Actor {
     }
 
     public void fireProjectile(
-            Projectile projectile, String id, Point2D location, Point2D dest, float abilityRange) {
+            Projectile projectile, Point2D location, Point2D dest, float abilityRange) {
         double x = location.getX();
         double y = location.getY();
         double dx = dest.getX() - location.getX();
@@ -1427,36 +1511,40 @@ public class UserActor extends Actor {
         double extendedX = x + abilityRange * unitX;
         double extendedY = y + abilityRange * unitY;
         Point2D lineEndPoint = new Point2D.Double(extendedX, extendedY);
-        double speed = parentExt.getActorStats(id).get("speed").asDouble();
-        ExtensionCommands.createProjectile(
-                parentExt, this.room, this, id, location, lineEndPoint, (float) speed);
-        this.parentExt.getRoomHandler(this.room.getName()).addProjectile(projectile);
-    }
-
-    public void fireMMProjectile(
-            Projectile projectile,
-            String id,
-            String projectileId,
-            Point2D location,
-            Point2D dest,
-            float abilityRange) {
-        double x = location.getX();
-        double y = location.getY();
-        double dx = dest.getX() - location.getX();
-        double dy = dest.getY() - location.getY();
-        double length = Math.sqrt(dx * dx + dy * dy);
-        double unitX = dx / length;
-        double unitY = dy / length;
-        double extendedX = x + abilityRange * unitX;
-        double extendedY = y + abilityRange * unitY;
-        Point2D lineEndPoint = new Point2D.Double(extendedX, extendedY);
-        double speed = parentExt.getActorStats(projectileId).get("speed").asDouble();
+        double speed =
+                parentExt.getActorStats(projectile.getProjectileAsset()).get("speed").asDouble();
         ExtensionCommands.createProjectile(
                 parentExt,
                 this.room,
                 this,
-                id,
-                projectileId,
+                projectile.getId(),
+                projectile.getProjectileAsset(),
+                location,
+                lineEndPoint,
+                (float) speed);
+        this.parentExt.getRoomHandler(this.room.getName()).addProjectile(projectile);
+    }
+
+    public void fireMMProjectile(
+            Projectile projectile, Point2D location, Point2D dest, float abilityRange) {
+        double x = location.getX();
+        double y = location.getY();
+        double dx = dest.getX() - location.getX();
+        double dy = dest.getY() - location.getY();
+        double length = Math.sqrt(dx * dx + dy * dy);
+        double unitX = dx / length;
+        double unitY = dy / length;
+        double extendedX = x + abilityRange * unitX;
+        double extendedY = y + abilityRange * unitY;
+        Point2D lineEndPoint = new Point2D.Double(extendedX, extendedY);
+        double speed =
+                parentExt.getActorStats(projectile.getProjectileAsset()).get("speed").asDouble();
+        ExtensionCommands.createProjectile(
+                parentExt,
+                this.room,
+                this,
+                projectile.getId(),
+                projectile.getProjectileAsset(),
                 location,
                 lineEndPoint,
                 (float) speed);
@@ -1539,7 +1627,8 @@ public class UserActor extends Actor {
         return playerStats;
     }
 
-    protected void updateStatMenu(String stat) {
+    public void updateStatMenu(String stat) {
+        // Console.debugLog("Updating stat menu: " + stat + " with " + this.getPlayerStat(stat));
         ExtensionCommands.updateActorData(
                 this.parentExt, this.room, this.id, stat, this.getPlayerStat(stat));
     }
@@ -1562,16 +1651,19 @@ public class UserActor extends Actor {
             ActorState.ROOTED,
             ActorState.CLEANSED
         };
-        this.setState(cleansedStats, false);
-        if (this.activeBuffs.containsKey("SLOWED")) {
-            this.setTempStat("speed", this.getTempStat("speed") * -1);
-            this.activeBuffs.remove("SLOWED");
+        for (ActorState s : cleansedStats) {
+            if (this.effectHandlers.containsKey(s.toString()))
+                this.effectHandlers.get(s.toString()).endAllEffects();
         }
     }
 
     public void destroy() {
         this.dead = true;
         ExtensionCommands.destroyActor(this.parentExt, this.room, this.id);
+    }
+
+    public boolean isDead() {
+        return this.dead;
     }
 
     public void clearIconHandlers() {

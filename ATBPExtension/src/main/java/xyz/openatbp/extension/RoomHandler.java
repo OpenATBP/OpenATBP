@@ -67,7 +67,9 @@ public class RoomHandler implements Runnable {
         this.baseTowers = new ArrayList<>();
         this.players = new ArrayList<>();
         this.campMonsters = new ArrayList<>();
-        this.practiceMap = room.getGroupId().equalsIgnoreCase("practice");
+        this.practiceMap =
+                room.getGroupId().equalsIgnoreCase("practice")
+                        || (room.getName().contains("custom") && room.getMaxUsers() == 2);
         Properties props = parentExt.getConfigProperties();
         monsterDebug = Boolean.parseBoolean(props.getProperty("monsterDebug", "false"));
         xpDebug = Boolean.parseBoolean(props.getProperty("xpDebug", "false"));
@@ -122,10 +124,6 @@ public class RoomHandler implements Runnable {
                         .scheduleAtFixedRate(this, 100, 100, TimeUnit.MILLISECONDS);
     }
 
-    public void setScriptHandler(ScheduledFuture<?> handler) {
-        this.scriptHandler = handler;
-    }
-
     public ATBPExtension getParentExt() {
         return this.parentExt;
     }
@@ -138,9 +136,10 @@ public class RoomHandler implements Runnable {
     @Override
     public void run() {
         if (this.gameOver) return;
-        if (mSecondsRan == 0)
-            if (this.parentExt.getRoomHandler(this.room.getName()) == null)
-                this.scriptHandler.cancel(true);
+        if (!this.parentExt.roomHandlerExists(this.room.getName())
+                && !this.scriptHandler.isCancelled()) {
+            this.scriptHandler.cancel(false);
+        }
         mSecondsRan += 100;
         List<String> keysToRemove = new ArrayList<>(this.destroyedIds.size());
         Set<String> keys = this.destroyedIds.keySet();
@@ -459,7 +458,7 @@ public class RoomHandler implements Runnable {
                             ExtensionCommands.playSound(
                                     parentExt, u.getRoom(), "", "sfx_health_picked_up", healthLoc);
                             if (!u.hasTempStat("healthRegen")) u.changeHealth(90);
-                            u.addEffect("healthRegen", 20d, 15000, "fx_health_regen", "", false);
+                            u.addEffect("healthRegen", 20d, 15000, "fx_health_regen", "");
                             // Champion.giveBuff(parentExt,u.getUser(), Buff.HEALTH_PACK);
                             spawns.putInt(s, 0);
                             break;
@@ -644,7 +643,7 @@ public class RoomHandler implements Runnable {
             int team = u.getTeam();
             Point2D currentPoint = u.getLocation();
             for (int i = 0; i < 3; i++) { // 0 is top, 1 is mid, 2 is bot
-                if (u.getHealth() > 0 && insideAltar(currentPoint, i)) {
+                if (u.getHealth() > 0 && !u.isDead() && insideAltar(currentPoint, i)) {
                     hasPlayerInside[i] = true;
                     if (team == 1) {
                         bluePlayersInside.add(u);
@@ -786,15 +785,8 @@ public class RoomHandler implements Runnable {
                                 u.getStat("attackDamage") * 0.25d,
                                 1000 * 60,
                                 "altar_buff_offense",
-                                "",
-                                false);
-                        u.addEffect(
-                                "spellDamage",
-                                u.getStat("spellDamage") * 0.25d,
-                                1000 * 60,
-                                null,
-                                "",
-                                false);
+                                "");
+                        u.addEffect("spellDamage", u.getStat("spellDamage") * 0.25d, 1000 * 60);
                         Champion.handleStatusIcon(
                                 parentExt, u, "icon_altar_attack", "altar2_description", 1000 * 60);
                     } else {
@@ -802,8 +794,8 @@ public class RoomHandler implements Runnable {
                         double addMR = u.getStat("spellResist") * 0.5d;
                         if (addArmor == 0) addArmor = 5d;
                         if (addMR == 0) addMR = 5d;
-                        u.addEffect("armor", addArmor, 1000 * 60, "altar_buff_defense", "", true);
-                        u.addEffect("spellResist", addMR, 1000 * 60, null, "", true);
+                        u.addEffect("armor", addArmor, 1000 * 60, "altar_buff_defense", "");
+                        u.addEffect("spellResist", addMR, 1000 * 60);
                         Champion.handleStatusIcon(
                                 parentExt, u, "icon_altar_armor", "altar1_description", 1000 * 60);
                     }
@@ -1223,7 +1215,7 @@ public class RoomHandler implements Runnable {
         if (this.gameOver) return;
         try {
             this.gameOver = true;
-            this.room.setProperty("state", 2);
+            this.room.setProperty("state", 3);
             ExtensionCommands.gameOver(parentExt, this.room, winningTeam);
             MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
             for (UserActor ua : this.players) {
@@ -1342,7 +1334,7 @@ public class RoomHandler implements Runnable {
                     playerData
                             .find(eq("user.TEGid", (String) user.getSession().getProperty("tegid")))
                             .first();
-            if (data != null) {
+            if (data != null && room.getGroupId().equalsIgnoreCase("PVP")) {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode dataObj = mapper.readTree(data.toJson());
                 double disconnects = dataObj.get("player").get("disconnects").asInt();
