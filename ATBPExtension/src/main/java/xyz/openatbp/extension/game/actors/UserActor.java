@@ -46,6 +46,7 @@ public class UserActor extends Actor {
     protected static final double DASH_SPEED = 20d;
     protected boolean changeTowerAggro = false;
     protected boolean isDashing = false;
+    protected boolean isAutoAttacking = false;
     // Set debugging options via config.properties next to the extension jar
     private static boolean movementDebug;
     private static boolean invincibleDebug;
@@ -201,6 +202,10 @@ public class UserActor extends Actor {
 
     public boolean getIsDashing() {
         return this.isDashing;
+    }
+
+    public boolean getIsAutoAttacking() {
+        return this.isAutoAttacking;
     }
 
     public void move(ISFSObject params, Point2D destination) {
@@ -399,7 +404,11 @@ public class UserActor extends Actor {
 
     public void applyStopMovingDuringAttack() {
         if (this.parentExt.getActorData(this.getAvatar()).has("attackType")) {
-            this.stopMoving(300);
+            this.stopMoving();
+            this.isAutoAttacking = true;
+            int delay = 300;
+            Runnable resetIsAttacking = () -> this.isAutoAttacking = false;
+            parentExt.getTaskScheduler().schedule(resetIsAttacking, delay, TimeUnit.MILLISECONDS);
         } else Console.logWarning(this.getDisplayName() + " used an undefined attack!");
     }
 
