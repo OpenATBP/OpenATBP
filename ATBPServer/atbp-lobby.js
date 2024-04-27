@@ -625,6 +625,10 @@ function handleRequest(jsonString, socket) {
     case 'auto_join':
       var act = jsonObject['payload'].act.split('_');
       var type = act[act.length - 1];
+      for(var q of queues.filter(qu => qu.players.includes(socket.player.teg_id))){
+        q.players = q.players.filter(qp => qp != socket.player.teg_id);
+      }
+      queues = queues.filter(q => q.players.length > 0);
       joinQueue([socket], type);
       break;
 
