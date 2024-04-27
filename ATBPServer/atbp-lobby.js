@@ -60,13 +60,11 @@ function safeSendAll(sockets, command, response) {
 function sendCommand(socket, command, response) {
   return new Promise(function (resolve, reject) {
     if (socket != undefined) {
-      console.log(`Sending ${command} to ${socket.player.name}`);
       if (command == undefined && response == undefined) reject();
       var package = {
         cmd: command,
         payload: response,
       };
-      console.log('Sent ', package);
       package = JSON.stringify(package);
       let lengthBytes = Buffer.alloc(2);
       lengthBytes.writeInt16BE(Buffer.byteLength(package, 'utf8'));
@@ -101,7 +99,6 @@ function leaveQueue(socket,disconnected){
       if(!config.lobbyserver.matchmakingEnabled || users.length < 24){
         var usersInQueue = users.filter(u => u.player.teg_id != socket.player.teg_id && u.player.stage == 1 && u.player.queue.type == socket.player.queue.type);
         var size = usersInQueue.length > 3 ? 3 : usersInQueue.length;
-        console.log("Size: " + size);
         for(var u of usersInQueue){
           if(u.player.queue.visual != size){
             u.player.queue.visual = size;
@@ -391,7 +388,6 @@ function startGame(players, type) { //Note, custom games do not use this.
     queueObj.queueNum = queueNum;
     queueNum++;
     queues.push(queueObj);
-    console.log("Starting!", players);
     var gameDataPurple = {
       countdown: 60,
       ip: config.lobbyserver.gameIp,
@@ -438,7 +434,6 @@ function startGame(players, type) { //Note, custom games do not use this.
 }
 
 function leaveTeam(socket, disconnected) {
-  console.log('Leaving team: ', socket.player);
   socket.player.onTeam = false;
   var team = teams.find(t => t.players.includes(socket.player.teg_id));
   if(team != undefined){
@@ -551,18 +546,18 @@ function displayPlayers() {
 }
 
 function cleanUpPlayers() {
-  /*
+
   for (var t of teams) {
     var invalidTeamPlayers = [];
     for (var tp of t.players) {
-      if (!tp.onTeam || users.find((u) => u.player == tp) == undefined) {
+      if (users.find((u) => u.player.teg_id == tp) == undefined) {
         invalidTeamPlayers.push(tp);
-        console.log(`${tp.name} is an invalid team member!`);
+        console.log(`${tp} is an invalid team member!`);
       }
     }
     t.players = t.players.filter((tp) => !invalidTeamPlayers.includes(tp));
   }
-
+  /*
   for (var q of queues) {
     var invalidQueuePlayers = [];
     for (var qp of q.players) {
@@ -830,7 +825,7 @@ function handleRequest(jsonString, socket) {
           })
           .catch(console.error);
       } else {
-        console.log(team);
+        //console.log(team);
         pendingInvites = pendingInvites.filter(i => i.recipient != socket.player.teg_id || i.sender != team.team);
         response = {
           cmd: 'invite_verified',
@@ -973,9 +968,7 @@ function handleRequest(jsonString, socket) {
             blue.push(playerObj);
           }
         }
-        console.log(team.players);
         team.players = team.players.filter(tp => !team.custom.teamN.includes(tp));
-        console.log(team.players);
         var queueObj = {
           type: `custom_${team.players.length}p`,
           players: team.players,
@@ -989,10 +982,8 @@ function handleRequest(jsonString, socket) {
         queueNum++;
         queues.push(queueObj);
         for(var p of team.players){
-          console.log(p);
           var teamPlayer = users.find(u => u.player.teg_id == p);
           if(teamPlayer != undefined) teamPlayer.player.stage = 2;
-          console.log(teamPlayer);
         }
         var gameDataPurple = {
           countdown: 60,
@@ -1012,11 +1003,9 @@ function handleRequest(jsonString, socket) {
           password: '',
           team: "BLUE",
         };
-        console.log('HERE!');
         var purpleUsers = users.filter(u => team.players.includes(u.player.teg_id) && team.custom.teamA.includes(u.player.teg_id));
         var blueUsers = users.filter(u => team.players.includes(u.player.teg_id) && team.custom.teamB.includes(u.player.teg_id));
         safeSendAll(purpleUsers, 'game_ready', gameDataPurple).then(() => {
-          console.log("Here!");
           safeSendAll(users.filter(u => team.players.includes(u.player.teg_id) && team.custom.teamA.includes(u.player.teg_id)),'team_update',{'team':'PURPLE','players':purple}).catch(console.error);
         }).catch(console.error);
         safeSendAll(blueUsers, 'game_ready', gameDataBlue).then(() => {
