@@ -1123,6 +1123,12 @@ module.exports = class ATBPLobbyServer {
             (user) => !user._readableState.ended && user != socket
           );
         });
+
+        socket.on('end', (err) => {
+          console.log(err);
+          if(socket.player != undefined) console.log(`${socket.player.name}'s socket has ended!'`);
+        });
+        
       });
 
       this.server.listen(this.port, () => {
