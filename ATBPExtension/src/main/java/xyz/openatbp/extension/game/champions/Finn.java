@@ -31,6 +31,8 @@ public class Finn extends UserActor {
     private float ultY;
     private long qStartTime = 0;
     private long eStartTime = 0;
+    private Path2D finnUltRing;
+    private boolean ringBoostApplied = false;
     private static final float W_OFFSET_DISTANCE = 1.25f;
 
     public Finn(User u, ATBPExtension parentExt) {
@@ -66,6 +68,18 @@ public class Finn extends UserActor {
             ExtensionCommands.playSound(
                     this.parentExt, this.room, this.id, "vo/vo_finn_assist_1", this.location);
         }
+    }
+
+    @Override
+    public double getPlayerStat(String stat) {
+        if (stat.equalsIgnoreCase("attackSpeed")
+                && finnUltRing != null
+                && finnUltRing.contains(this.getLocation())) {
+            double currentAttackSpeed = super.getPlayerStat("attackSpeed");
+            double modifier = (this.getStat("attackSpeed") * 0.2d);
+            return currentAttackSpeed - modifier < 500 ? 500 : currentAttackSpeed - modifier;
+        }
+        return super.getPlayerStat(stat);
     }
 
     @Override
@@ -112,10 +126,23 @@ public class Finn extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
+        if (ultActivated) {
+            if (finnUltRing != null
+                    && finnUltRing.contains(this.getLocation())
+                    && !ringBoostApplied) {
+                ringBoostApplied = true;
+                updateStatMenu("attackSpeed");
+            } else if (finnUltRing != null && !finnUltRing.contains(this.getLocation())) {
+                ringBoostApplied = false;
+                updateStatMenu("attackSpeed");
+            }
+        }
         if (this.ultActivated && System.currentTimeMillis() - this.eStartTime >= 5000) {
             this.wallLines = null;
             this.wallsActivated = new boolean[] {false, false, false, false};
             this.ultActivated = false;
+            this.finnUltRing = null;
+            this.updateStatMenu("attackSpeed");
         }
         if (this.qActive && this.qStartTime + 3000 <= System.currentTimeMillis()) {
             Console.debugLog("Disabling Finn Q!");
@@ -217,7 +244,7 @@ public class Finn extends UserActor {
                         true,
                         false,
                         this.team);
-                this.addEffect("speed", this.getStat("speed") * 0.5d, 3000);
+                this.addEffect("speed", 0.5d, 3000);
                 this.addEffect("armor", this.getStat("armor") * 0.25d, 3000);
                 this.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.20d, 3000);
                 ExtensionCommands.actorAbilityResponse(
@@ -316,6 +343,11 @@ public class Finn extends UserActor {
                                             this.location.getY() - widthHalf); // TOP LEFT
                             this.ultX = (float) this.location.getX();
                             this.ultY = (float) this.location.getY();
+                            finnUltRing = new Path2D.Float();
+                            finnUltRing.moveTo(p2.getX(), p2.getY());
+                            finnUltRing.lineTo(p4.getX(), p4.getY());
+                            finnUltRing.lineTo(p3.getX(), p3.getY());
+                            finnUltRing.lineTo(p1.getX(), p1.getY());
                             String wallPrefix =
                                     (this.avatar.contains("guardian")) ? "finn_guardian_" : "finn_";
                             ExtensionCommands.playSound(

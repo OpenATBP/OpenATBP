@@ -3,6 +3,8 @@ package xyz.openatbp.extension.game.champions;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -26,8 +28,9 @@ public class CinnamonBun extends UserActor {
     private long lastUltEffect = 0;
     private boolean canApplyUltEffects = false;
     private boolean ultEffectsApplied = false;
-    private Path2D wPoly = null;
+    private Path2D wPolygon = null;
     private long wStartTime = 0;
+    private long lastUltTick = 0;
     private static final float Q_OFFSET_DISTANCE = 1f;
     private static final float Q_SPELL_RANGE = 3f;
     private static final float W_OFFSET_DISTANCE = 0.75f;
@@ -40,15 +43,15 @@ public class CinnamonBun extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if (this.wPoly != null && System.currentTimeMillis() - this.wStartTime >= 5000) {
-            this.wPoly = null;
+        if (this.wPolygon != null && System.currentTimeMillis() - this.wStartTime >= 5000) {
+            this.wPolygon = null;
         }
-        if (this.wPoly != null) {
+        if (this.wPolygon != null) {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
             double percentage = 0.2d + ((double) (this.level) * 0.01d);
             int duration = 2000 + (this.level * 100);
             for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
-                if (a.getTeam() != this.team && this.wPoly.contains(a.getLocation())) {
+                if (a.getTeam() != this.team && this.wPolygon.contains(a.getLocation())) {
                     a.addToDamageQueue(this, getSpellDamage(spellData) / 10d, spellData, true);
                     if (isNonStructure(a)) a.addState(ActorState.SLOWED, percentage, duration);
                 }
@@ -56,56 +59,27 @@ public class CinnamonBun extends UserActor {
         }
 
         if (this.ultPoint != null && System.currentTimeMillis() - this.ultStart < 4500) {
-            float radius = 2f;
-            if (this.ultUses > 1 && this.ultPoint2 == null) radius = 4f;
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
-            for (Actor a :
-                    Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()),
-                            this.ultPoint,
-                            radius)) {
-                if (a.getTeam() != this.team) {
-                    a.addToDamageQueue(this, getSpellDamage(spellData) / 10d, spellData, true);
-                } else if (a.getId().equalsIgnoreCase(this.id)) {
-                    if (this.canApplyUltEffects) {
-                        lastUltEffect = System.currentTimeMillis();
-                        this.canApplyUltEffects = false;
-                        this.ultEffectsApplied = true;
-                        a.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.2d, 4500);
-                        a.addEffect("attackDamage", this.getStat("attackDamage") * 0.2d, 4500);
-                        ExtensionCommands.addStatusIcon(
-                                this.parentExt,
-                                this.player,
-                                "ultEffect",
-                                "cinnamonbun_spell_3_short_description",
-                                "icon_cinnamonbun_s3",
-                                4500);
-                        ExtensionCommands.createActorFX(
-                                this.parentExt,
-                                this.room,
-                                this.id,
-                                "billy_crit_hands",
-                                4500,
-                                this.id + "_cbCritHandsR",
-                                true,
-                                "Bip001 R Hand",
-                                true,
-                                false,
-                                this.team);
-                        ExtensionCommands.createActorFX(
-                                this.parentExt,
-                                this.room,
-                                this.id,
-                                "billy_crit_hands",
-                                4500,
-                                this.id + "_cbCritHandsL",
-                                true,
-                                "Bip001 L Hand",
-                                true,
-                                false,
-                                this.team);
+            double tickDamage = getSpellDamage(spellData);
+            int radius = 2;
+            if (this.ultUses > 1 && this.ultPoint2 == null) {
+                radius = 4;
+                tickDamage *= 1.5;
+            }
+            if (System.currentTimeMillis() - lastUltTick >= 500) {
+                lastUltTick = System.currentTimeMillis();
+                for (Actor a : getEnemiesInRadius(ultPoint, radius)) {
+                    a.addToDamageQueue(this, tickDamage / 2, spellData, true);
+                }
+                if (ultPoint2 != null && ultUses > 1) {
+                    for (Actor a : getEnemiesInRadius(ultPoint2, radius)) {
+                        a.addToDamageQueue(this, tickDamage / 2, spellData, true);
                     }
                 }
+            }
+            if (this.getLocation().distance(ultPoint) <= radius
+                    || ultPoint2 != null && this.getLocation().distance(ultPoint2) <= radius) {
+                handleUltBuff();
             }
         } else if (this.ultPoint != null && System.currentTimeMillis() - this.ultStart >= 4500) {
             int baseCooldown = ChampionData.getBaseAbilityCooldown(this, 3);
@@ -188,6 +162,58 @@ public class CinnamonBun extends UserActor {
         }
     }
 
+    private List<Actor> getEnemiesInRadius(Point2D center, int radius) {
+        List<Actor> actors = parentExt.getRoomHandler(this.room.getName()).getActors();
+        List<Actor> affectedActors = new ArrayList<>(actors.size());
+        for (Actor a : actors) {
+            Point2D location = a.getLocation();
+            if (location.distance(center) <= radius && a.getTeam() != this.getTeam())
+                affectedActors.add(a);
+        }
+        return affectedActors;
+    }
+
+    private void handleUltBuff() {
+        if (this.canApplyUltEffects) {
+            lastUltEffect = System.currentTimeMillis();
+            this.canApplyUltEffects = false;
+            this.ultEffectsApplied = true;
+            this.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.2d, 4500);
+            this.addEffect("attackDamage", this.getStat("attackDamage") * 0.2d, 4500);
+            ExtensionCommands.addStatusIcon(
+                    this.parentExt,
+                    this.player,
+                    "ultEffect",
+                    "cinnamonbun_spell_3_short_description",
+                    "icon_cinnamonbun_s3",
+                    4500);
+            ExtensionCommands.createActorFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    "billy_crit_hands",
+                    4500,
+                    this.id + "_cbCritHandsR",
+                    true,
+                    "Bip001 R Hand",
+                    true,
+                    false,
+                    this.team);
+            ExtensionCommands.createActorFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    "billy_crit_hands",
+                    4500,
+                    this.id + "_cbCritHandsL",
+                    true,
+                    "Bip001 L Hand",
+                    true,
+                    false,
+                    this.team);
+        }
+    }
+
     @Override
     public void useAbility(
             int ability,
@@ -259,7 +285,7 @@ public class CinnamonBun extends UserActor {
                 Point2D wPolyEndPoint =
                         new Point2D.Float(
                                 (float) wPolyLengthLine.getX2(), (float) wPolyLengthLine.getY2());
-                this.wPoly =
+                this.wPolygon =
                         Champion.createRectangle(
                                 wPolyStartPoint, wPolyEndPoint, W_SPELL_RANGE, W_OFFSET_DISTANCE);
                 Runnable dashEnd = () -> this.canMove = true;
