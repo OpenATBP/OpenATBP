@@ -7,6 +7,7 @@ var users = [];
 var teams = [];
 var queueNum = 0;
 var playerCollection = null;
+var lastBenny = null;
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const mongoClient = new MongoClient(config.httpserver.mongouri, {
@@ -121,7 +122,7 @@ function leaveQueue(socket,disconnected){
     case 3: // IN GAME
       var queue = queues.find(q => q.players.includes(socket.player.teg_id));
       if(queue != undefined){
-        
+
       }
       break;
     default:
@@ -546,6 +547,12 @@ function displayTeams() {
 function displayPlayers() {
   console.log(':::PLAYERS:::');
   for (var u of users) {
+    if(u.player.name.includes("BENNY")){
+      if(lastBenny == null || lastBenny != u){
+        lastBenny = u;
+        console.log(u);
+      }
+    }
     console.log(
       `${u.player.name} in game: ${u.player.queue.queueNum != -1} | searching: ${u.player.queue.type != null} | onTeam: ${u.player.onTeam}`,
       u.player.queue
