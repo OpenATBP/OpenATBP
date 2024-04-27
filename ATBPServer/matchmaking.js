@@ -65,7 +65,7 @@ module.exports = {
           };
           validPlayers.push(queueSearchObj);
         }else console.log("UNHANDLED ELSE");
-      }else console.log("Already in queue!");
+      }
       if(validPlayers.length == queueSize) return validPlayers; //If there is a full team, return.
     }
     if(validPlayers.length < queueSize && failedTeam != undefined){ //If there is not enough players, but there's a failed team, try adding the two and seeing if it works out.

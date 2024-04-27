@@ -77,6 +77,17 @@ function sendCommand(socket, command, response) {
   });
 }
 
+function removeDuplicateQueues(ids, queueNum){
+  for(var id of ids){
+    var qs = queues.filter(q => q.players.includes(id));
+    for(var q of qs){
+      if(q.queueNum != queueNum) q.players = q.players.filter(qp => q != id);
+    }
+  }
+
+  queues = queues.filter(q => q.players.length > 0);
+}
+
 function removeTeam(team){
   console.log(`Removing team ${team.team}`);
   for(var tp of team.players){
@@ -386,6 +397,7 @@ function startGame(players, type) { //Note, custom games do not use this.
       }
     }
     queueObj.queueNum = queueNum;
+    removeDuplicateQueues(playerIds,queueNum);
     queueNum++;
     queues.push(queueObj);
     var gameDataPurple = {
@@ -512,14 +524,8 @@ function joinQueue(sockets, type) {
 function displayQueues() {
   console.log(':::QUEUES:::');
   for (var q of queues) {
-    var blue = 0;
-    var purple = 0;
-    for (var p of q.players) {
-      if (p.team == 0) purple++;
-      else if (p.team == 1) blue++;
-    }
     console.log(
-      `QUEUE ${q.queueNum}: ${q.players.length} players, Type ${q.type}, In-Game ${q.inGame}, Blue: ${blue}, Purple: ${purple}`
+      `QUEUE ${q.queueNum}: ${q.players.length} players, Type ${q.type}, In-Game ${q.inGame}`
     );
   }
   if (queues.length == 0) console.log('NO QUEUES');
@@ -557,21 +563,21 @@ function cleanUpPlayers() {
     }
     t.players = t.players.filter((tp) => !invalidTeamPlayers.includes(tp));
   }
-  /*
+
   for (var q of queues) {
     var invalidQueuePlayers = [];
     for (var qp of q.players) {
       if (
-        qp.queue.queueNum != q.queueNum ||
-        users.find((u) => u.player == qp) == undefined
+        users.find((u) => u.player.teg_id == qp) == undefined
       ) {
         invalidQueuePlayers.push(qp);
-        console.log(`${qp.name} is an invalid queue member!`);
+        console.log(`${qp} is an invalid queue member!`);
       }
     }
     q.players = q.players.filter((qp) => !invalidQueuePlayers.includes(qp));
   }
-  */
+  teams = teams.filter(t => t.players.length > 0);
+  queues = queues.filter(q => q.players.length > 0);
 }
 
 setInterval(() => {
@@ -980,6 +986,7 @@ function handleRequest(jsonString, socket) {
           inGame: false,
         };
         queueNum++;
+        removeDuplicateQueues(team.players,queueNum);
         queues.push(queueObj);
         for(var p of team.players){
           var teamPlayer = users.find(u => u.player.teg_id == p);
