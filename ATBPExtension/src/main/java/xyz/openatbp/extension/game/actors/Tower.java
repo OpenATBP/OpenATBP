@@ -20,8 +20,8 @@ public class Tower extends Actor {
     private final int[] BLUE_TOWER_NUM = {5, 4};
     private long lastHit;
     private boolean destroyed = false;
-    private long lastMissSoundTime = 0;
-    private long lastSpellDeniedTime = 0;
+    protected long lastMissSoundTime = 0;
+    protected long lastSpellDeniedTime = 0;
     private List<Actor> nearbyActors;
     private boolean isFocusingPlayer = false;
     private boolean isFocusingCompanion = false;
@@ -239,8 +239,8 @@ public class Tower extends Actor {
                                 this.team,
                                 this.location,
                                 (float) this.getPlayerStat("attackRange"));
-                if (nearbyActors.isEmpty() && this.numberOfAttacks > 0) {
-                    this.numberOfAttacks = 0;
+                if (nearbyActors.isEmpty() && this.attackCooldown != 1000) {
+                    if (numberOfAttacks != 0) this.numberOfAttacks = 0;
                     this.attackCooldown = 1000;
                 }
                 if (this.target == null) {
@@ -368,7 +368,7 @@ public class Tower extends Actor {
                     }
                     if (this.attackCooldown > 0) this.reduceAttackCooldown();
                     if (nearbyActors.isEmpty()) {
-                        if (this.target.getActorType() == ActorType.PLAYER) {
+                        if (this.target != null && this.target.getActorType() == ActorType.PLAYER) {
                             UserActor ua = (UserActor) this.target;
                             ExtensionCommands.removeFx(
                                     this.parentExt, ua.getUser(), this.id + "_aggro");
@@ -377,15 +377,16 @@ public class Tower extends Actor {
                         }
                         this.target = null;
                     } else {
-                        if (this.target.getLocation().distance(this.location)
-                                <= this.getPlayerStat("attackRange")) {
+                        if (this.target != null
+                                && this.target.getLocation().distance(this.location)
+                                        <= this.getPlayerStat("attackRange")) {
                             if (this.canAttack()) {
                                 this.attack(this.target);
                                 this.numberOfAttacks++;
                                 if (this.numberOfAttacks > 0) this.attackCooldown = 2000;
                             }
                         } else {
-                            this.resetTarget(this.target);
+                            if (this.target != null) this.resetTarget(this.target);
                             this.isFocusingPlayer = false;
                             this.isFocusingCompanion = false;
                         }

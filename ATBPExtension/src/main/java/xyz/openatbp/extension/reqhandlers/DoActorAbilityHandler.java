@@ -41,7 +41,7 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
         }
         if (player.hasInterrupingCC() || playSound) {
             ExtensionCommands.playSound(
-                    parentExt, sender, "global", "not_allowed_error", new Point2D.Float(0, 0));
+                    parentExt, sender, String.valueOf(sender.getId()), "not_allowed_error");
         }
     }
 
