@@ -264,6 +264,7 @@ public class GameManager {
 
     private static void initializeMap(Room room, ATBPExtension parentExt) {
         String roomStr = room.getGroupId();
+        if (roomStr.equalsIgnoreCase("pve")) roomStr = "practice";
         ExtensionCommands.createActor(parentExt, room, MapData.getBaseActorData(0, roomStr));
         ExtensionCommands.createActor(parentExt, room, MapData.getBaseActorData(1, roomStr));
 
@@ -277,7 +278,7 @@ public class GameManager {
 
     private static void spawnTowers(Room room, ATBPExtension parentExt) {
         String roomStr = room.getGroupId();
-        if (!roomStr.equalsIgnoreCase("practice")) {
+        if (!roomStr.equalsIgnoreCase("practice") && !roomStr.equalsIgnoreCase("pve")) {
             ExtensionCommands.createActor(
                     parentExt, room, MapData.getTowerActorData(0, 1, roomStr));
             ExtensionCommands.createActor(
