@@ -54,8 +54,10 @@ public class Neptr extends UserActor {
                     true,
                     false,
                     this.team);
+            String passiveSound =
+                    this.avatar.contains("racing") ? "neptr_racing_passive" : "sfx_neptr_passive";
             ExtensionCommands.playSound(
-                    this.parentExt, this.player, this.id, "sfx_neptr_passive", this.location);
+                    this.parentExt, this.player, this.id, passiveSound, this.location);
             ExtensionCommands.playSound(
                     this.parentExt, this.room, this.id, "vo/vo_neptr_passive", this.location);
             this.addEffect("speed", this.getStat("speed") * 0.35d, 3500);
@@ -91,13 +93,23 @@ public class Neptr extends UserActor {
             ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "passive");
         }
         if (this.isStopped() && !this.soundPlayed) {
+            String moveEndSound =
+                    this.avatar.contains("racing")
+                            ? "neptr_racing_move_stop"
+                            : "sfx_neptr_move_end";
             ExtensionCommands.playSound(
-                    this.parentExt, this.player, this.id, "sfx_neptr_move_end", this.location);
+                    this.parentExt, this.player, this.id, moveEndSound, this.location);
             this.soundPlayed = true;
         } else if (!this.isStopped()
                 && System.currentTimeMillis() - this.lastMoveSoundPlayed > 500) {
+            String moveSound;
+            if (passiveActive && this.avatar.contains("racing")) {
+                moveSound = "neptr_racing_move_fast";
+            } else {
+                moveSound = this.avatar.contains("racing") ? "neptr_racing_move" : "sfx_neptr_move";
+            }
             ExtensionCommands.playSound(
-                    this.parentExt, this.player, this.id, "sfx_neptr_move", this.location);
+                    this.parentExt, this.player, this.id, moveSound, this.location);
             this.lastMoveSoundPlayed = System.currentTimeMillis();
         }
         List<Actor> impactedActors = new ArrayList<>(this.ultImpactedActors);

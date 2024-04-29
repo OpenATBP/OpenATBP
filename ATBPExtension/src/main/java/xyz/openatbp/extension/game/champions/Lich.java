@@ -324,6 +324,7 @@ public class Lich extends UserActor {
 
         private long timeOfBirth;
         private boolean dead = false;
+        private boolean isAutoAttacking = false;
 
         Skully(Point2D spawnLocation) {
             this.room = Lich.this.room;
@@ -364,6 +365,9 @@ public class Lich extends UserActor {
 
         @Override
         public void attack(Actor a) {
+            isAutoAttacking = true;
+            Runnable resetIsAutoAttacking = () -> isAutoAttacking = false;
+            parentExt.getTaskScheduler().schedule(resetIsAutoAttacking, 500, TimeUnit.MILLISECONDS);
             ExtensionCommands.attackActor(
                     parentExt,
                     room,
@@ -422,7 +426,8 @@ public class Lich extends UserActor {
                 if (this.target.getHealth() <= 0) this.resetTarget();
                 else {
                     if (!this.withinRange(this.target)
-                            && !this.isPointNearDestination(this.target.getLocation())) {
+                            && !this.isPointNearDestination(this.target.getLocation())
+                            && !this.isAutoAttacking) {
                         this.moveWithCollision(this.target.getLocation());
                     } else if (this.withinRange(this.target)) {
                         if (!this.isStopped()) this.stopMoving();
