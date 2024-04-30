@@ -77,8 +77,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                                                     .isPracticeMap()),
                                     parentExt.getRoomHandler(room.getName()).isPracticeMap());
                 }
-
-                if (path.size() <= 2
+                if (path != null && path.size() <= 2
                         || MovementManager.insideAnyObstacle(
                                 parentExt,
                                 parentExt.getRoomHandler(room.getName()).isPracticeMap(),
@@ -105,7 +104,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
                     if (movementLine.getP1().distance(dest) >= 0.1f) user.move(params, dest);
                     else user.stopMoving();
                 } else {
-                    user.setPath(path);
+                    if (path != null) user.setPath(path);
                 }
             } catch (Exception pe) {
                 Line2D movementLine =

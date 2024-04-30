@@ -391,7 +391,7 @@ public class UserActor extends Actor {
         if (this.parentExt.getActorData(this.getAvatar()).has("attackType")) {
             this.stopMoving();
             this.isAutoAttacking = true;
-            int delay = 300;
+            int delay = 500; // this is bloobalooby
             Runnable resetIsAttacking = () -> this.isAutoAttacking = false;
             parentExt.getTaskScheduler().schedule(resetIsAttacking, delay, TimeUnit.MILLISECONDS);
         } else Console.logWarning(this.getDisplayName() + " used an undefined attack!");
@@ -845,7 +845,7 @@ public class UserActor extends Actor {
         if (this.target != null && this.target.getHealth() > 0) {
             if (this.withinRange(target) && this.canAttack()) {
                 this.autoAttack(target);
-            } else if (!this.withinRange(target) && this.canMove()) {
+            } else if (!this.withinRange(target) && this.canMove() && !this.isAutoAttacking) {
                 double attackRange = this.getPlayerStat("attackRange");
                 Line2D movementLine = new Line2D.Float(this.location, target.getLocation());
                 // float targetDistance =

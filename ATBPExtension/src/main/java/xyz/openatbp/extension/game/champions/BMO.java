@@ -114,7 +114,7 @@ public class BMO extends UserActor {
                     if (a.getTeam() != this.team && trapezoid.contains(a.getLocation())) {
                         if (isNonStructure(a)) {
                             a.addState(ActorState.BLINDED, 0.5d, 2500);
-                            if (passiveStacks == 3) a.addState(ActorState.SLOWED, 0d, 2500);
+                            if (passiveStacks == 3) a.addState(ActorState.SLOWED, 0.5d, 2500);
                         }
                         a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                     }
