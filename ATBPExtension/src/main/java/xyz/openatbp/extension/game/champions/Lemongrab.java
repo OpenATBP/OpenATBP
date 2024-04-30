@@ -26,6 +26,7 @@ public class Lemongrab extends UserActor {
     private String lastIcon = "lemon0";
     private boolean isCastingUlt = false;
     private boolean juice = false;
+    private int ultDelay;
     private static final float Q_OFFSET_DISTANCE_BOTTOM = 1.5f;
     private static final float Q_OFFSET_DISTANCE_TOP = 4f;
     private static final float Q_SPELL_RANGE = 6f;
@@ -251,27 +252,35 @@ public class Lemongrab extends UserActor {
                         true,
                         this.team,
                         0f);
+                String voiceLine = "";
+                switch (this.unacceptableLevels) {
+                    case 0:
+                        voiceLine = "lemongrab_dungeon_3hours";
+                        ultDelay = 1250;
+                        break;
+                    case 1:
+                        voiceLine = "lemongrab_dungeon_30days";
+                        ultDelay = 1000;
+                        break;
+                    case 2:
+                        voiceLine = "lemongrab_dungeon_12years";
+                        ultDelay = 800;
+                        break;
+                    case 3:
+                        voiceLine = "lemongrab_dungeon_1myears";
+                        ultDelay = 500;
+                        break;
+                }
+                ExtensionCommands.playSound(
+                        this.parentExt, this.room, this.id, voiceLine, this.location);
+
                 parentExt
                         .getTaskScheduler()
                         .schedule(
                                 new LemonAbilityHandler(
                                         ability, spellData, cooldown, gCooldown, dest),
-                                1000,
+                                ultDelay,
                                 TimeUnit.MILLISECONDS);
-                String voiceLine = "lemongrab_dungeon_3hours";
-                switch (this.unacceptableLevels) {
-                    case 1:
-                        voiceLine = "lemongrab_dungeon_30days";
-                        break;
-                    case 2:
-                        voiceLine = "lemongrab_dungeon_12years";
-                        break;
-                    case 3:
-                        voiceLine = "lemongrab_dungeon_1myears";
-                        break;
-                }
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, voiceLine, this.location);
                 break;
             case 4:
                 break;
@@ -340,13 +349,12 @@ public class Lemongrab extends UserActor {
 
         @Override
         protected void spellE() {
-            int E_CAST_DELAY = 1000;
             Runnable enableECasting = () -> canCast[2] = true;
             parentExt
                     .getTaskScheduler()
                     .schedule(
                             enableECasting,
-                            getReducedCooldown(cooldown) - E_CAST_DELAY,
+                            getReducedCooldown(cooldown) - ultDelay,
                             TimeUnit.MILLISECONDS);
             isCastingUlt = false;
             if (getHealth() > 0) {

@@ -36,6 +36,12 @@ public class Lich extends UserActor {
     }
 
     @Override
+    public void destroy() {
+        super.destroy();
+        if (this.skully != null) this.skully.die(this.skully);
+    }
+
+    @Override
     public void useAbility(
             int ability,
             JsonNode spellData,
@@ -292,7 +298,6 @@ public class Lich extends UserActor {
     }
 
     private void handleSkullyDeath() {
-        this.parentExt.getRoomHandler(this.room.getName()).removeCompanion(this.skully);
         this.skully = null;
         ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "icon_lich_passive");
     }
@@ -319,6 +324,7 @@ public class Lich extends UserActor {
 
         private long timeOfBirth;
         private boolean dead = false;
+        private boolean isAutoAttacking = false;
 
         Skully(Point2D spawnLocation) {
             this.room = Lich.this.room;
@@ -359,6 +365,9 @@ public class Lich extends UserActor {
 
         @Override
         public void attack(Actor a) {
+            isAutoAttacking = true;
+            Runnable resetIsAutoAttacking = () -> isAutoAttacking = false;
+            parentExt.getTaskScheduler().schedule(resetIsAutoAttacking, 500, TimeUnit.MILLISECONDS);
             ExtensionCommands.attackActor(
                     parentExt,
                     room,
@@ -379,19 +388,20 @@ public class Lich extends UserActor {
             this.dead = true;
             this.currentHealth = 0;
             if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
-            ExtensionCommands.knockOutActor(parentExt, room, this.id, a.getId(), 40000);
-            Lich.this.handleSkullyDeath();
             ExtensionCommands.destroyActor(parentExt, room, this.id);
+            this.parentExt.getRoomHandler(this.room.getName()).removeCompanion(this);
+            Lich.this.handleSkullyDeath();
         }
 
         @Override
         public void update(int msRan) {
+            this.handleDamageQueue();
+            this.handleActiveEffects();
             if (this.dead) return;
             if (System.currentTimeMillis() - timeOfBirth >= 20 * 1000) {
                 this.die(this);
+                return;
             }
-            this.handleDamageQueue();
-            this.handleActiveEffects();
             if (this.attackCooldown > 0) this.attackCooldown -= 100;
             if (!this.isStopped() && this.canMove()) this.timeTraveled += 0.1f;
             this.location =
@@ -416,7 +426,8 @@ public class Lich extends UserActor {
                 if (this.target.getHealth() <= 0) this.resetTarget();
                 else {
                     if (!this.withinRange(this.target)
-                            && !this.isPointNearDestination(this.target.getLocation())) {
+                            && !this.isPointNearDestination(this.target.getLocation())
+                            && !this.isAutoAttacking) {
                         this.moveWithCollision(this.target.getLocation());
                     } else if (this.withinRange(this.target)) {
                         if (!this.isStopped()) this.stopMoving();

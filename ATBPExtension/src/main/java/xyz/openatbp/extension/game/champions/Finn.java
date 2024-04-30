@@ -132,7 +132,9 @@ public class Finn extends UserActor {
                     && !ringBoostApplied) {
                 ringBoostApplied = true;
                 updateStatMenu("attackSpeed");
-            } else if (finnUltRing != null && !finnUltRing.contains(this.getLocation())) {
+            } else if (finnUltRing != null
+                    && !finnUltRing.contains(this.getLocation())
+                    && ringBoostApplied) {
                 ringBoostApplied = false;
                 updateStatMenu("attackSpeed");
             }
@@ -442,6 +444,7 @@ public class Finn extends UserActor {
                                     true,
                                     getReducedCooldown(cooldown),
                                     gCooldown);
+                            updateStatMenu("attackSpeed");
                         };
                 parentExt.getTaskScheduler().schedule(cast, castDelay, TimeUnit.MILLISECONDS);
                 parentExt
