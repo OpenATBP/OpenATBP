@@ -75,7 +75,8 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
                 int roomSize =
                         Integer.parseInt(roomIDSplit[roomIDSplit.length - 1].replace("p", ""));
                 settings.setMaxUsers(roomSize);
-                settings.setGroupId("PVE");
+                if (roomSize != 2) settings.setGroupId("PVE");
+                else settings.setGroupId("Practice");
             } else if (params.getUtfString("room_id").contains("3p")) { // Bot game mode
                 settings.setMaxUsers(2); // TODO: Testing value
                 settings.setGroupId("PVE");

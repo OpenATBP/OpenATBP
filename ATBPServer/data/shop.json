@@ -180,6 +180,12 @@
     "cost": 1250
   },
   {
+    "type": "CUSTOM_SKIN",
+    "id": "finn_skin_jakehat",
+    "default": false,
+    "cost": 1250
+  },
+  {
     "type": "DEFAULT_SKIN",
     "id": "fionna",
     "default": true,
