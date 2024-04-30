@@ -13,7 +13,6 @@ import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
-import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public class Monster extends Actor {
 
@@ -417,33 +416,6 @@ public class Monster extends Actor {
                             > 0.1f) {
                 this.moveWithCollision(this.target.getLocation());
             }
-        }
-    }
-
-    @Override
-    public void moveWithCollision(Point2D dest) {
-        List<Point2D> path = new ArrayList<>();
-        try {
-            path =
-                    MovementManager.getPath(
-                            this.parentExt.getRoomHandler(this.room.getName()),
-                            this.location,
-                            dest);
-        } catch (Exception e) {
-            Console.logWarning(this.id + " could not form a path.");
-        }
-        if (path.size() > 2) {
-            this.setPath(path);
-        } else {
-            Line2D testLine = new Line2D.Float(this.location, dest);
-            Point2D newPoint =
-                    MovementManager.getPathIntersectionPoint(
-                            this.parentExt,
-                            this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap(),
-                            testLine);
-            if (newPoint != null) {
-                this.move(newPoint);
-            } else this.move(dest);
         }
     }
 }

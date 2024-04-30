@@ -157,15 +157,34 @@ public abstract class Actor {
     }
 
     public void moveWithCollision(Point2D dest) {
-        Line2D testLine = new Line2D.Float(this.location, dest);
-        Point2D newPoint =
-                MovementManager.getPathIntersectionPoint(
-                        this.parentExt,
-                        this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap(),
-                        testLine);
-        if (newPoint != null) {
-            this.move(newPoint);
-        } else this.move(dest);
+        List<Point2D> path = new ArrayList<>();
+        try {
+            path =
+                    MovementManager.getPath(
+                            this.parentExt.getRoomHandler(this.room.getName()),
+                            this.location,
+                            dest);
+        } catch (Exception e) {
+            Console.logWarning(this.id + " could not form a path.");
+        }
+        if (path != null && path.size() > 2) {
+            this.setPath(path);
+        } else {
+            Line2D testLine = new Line2D.Float(this.location, dest);
+            Point2D newPoint =
+                    MovementManager.getPathIntersectionPoint(
+                            this.parentExt,
+                            this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap(),
+                            testLine);
+            if (newPoint != null) {
+                this.move(newPoint);
+            } else this.move(dest);
+        }
+    }
+
+    public boolean isPointAtEndOfPath(Point2D point) {
+        if (this.path != null) return point.distance(this.path.get(this.path.size() - 1)) <= 0.5d;
+        else return point.distance(this.movementLine.getP2()) <= 0.5d;
     }
 
     public void setPath(List<Point2D> path) {

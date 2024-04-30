@@ -260,27 +260,49 @@ public class RoomHandler implements Runnable {
                 e.printStackTrace();
             }
         }
+        this.handleFountain();
         try {
-            this.handleFountain();
             for (UserActor u : players) { // Tracks player location
                 u.update(mSecondsRan);
             }
+        } catch (Exception e) {
+            Console.logWarning("USER ACTOR UPDATE EXCEPTION");
+            e.printStackTrace();
+        }
+
+        try {
             List<Projectile> projectileList = new ArrayList<>(this.activeProjectiles);
             for (Projectile p : projectileList) { // Handles skill shots
                 p.update(this);
             }
             activeProjectiles.removeIf(Projectile::isDestroyed);
-            handleHealth();
-            // minionPathHelper.obstacles.clear();
+        } catch (Exception e) {
+            Console.logWarning("PROJECTILE UPDATE EXCEPTION");
+            e.printStackTrace();
+        }
+
+        try {
             for (Minion m : minions) { // Handles minion behavior
                 // minionPathHelper.addRect((float)m.getLocation().getX()+49.75f,(float)m.getLocation().getY()+30.25f,0.5f,0.5f);
                 m.update(mSecondsRan);
             }
             minions.removeIf(m -> (m.getHealth() <= 0));
+        } catch (Exception e) {
+            Console.logWarning("MINION UPDATE EXCEPTION");
+            e.printStackTrace();
+        }
+        handleHealth();
+        try {
             for (Monster m : campMonsters) {
                 m.update(mSecondsRan);
             }
             campMonsters.removeIf(m -> (m.getHealth() <= 0));
+        } catch (Exception e) {
+            Console.logWarning("MONSTER UPDATE EXCEPTION");
+            e.printStackTrace();
+        }
+
+        try {
             for (Tower t : towers) {
                 t.update(mSecondsRan);
                 if (t.getHealth() <= 0) {
@@ -297,7 +319,12 @@ public class RoomHandler implements Runnable {
                     }
                 }
             }
+        } catch (Exception e) {
+            Console.logWarning("TOWER UPDATE EXCEPTION");
+            e.printStackTrace();
+        }
 
+        try {
             for (BaseTower b : baseTowers) {
                 b.update(mSecondsRan);
                 if (b.getHealth() <= 0) {
@@ -305,18 +332,30 @@ public class RoomHandler implements Runnable {
                     bases[b.getTeam()].unlock();
                 }
             }
-            towers.removeIf(t -> (t.getHealth() <= 0));
-            baseTowers.removeIf(b -> (b.getHealth() <= 0));
+        } catch (Exception e) {
+            Console.logWarning("BASE TOWER UPDATE EXCEPTION");
+            e.printStackTrace();
+        }
+        towers.removeIf(t -> (t.getHealth() <= 0));
+        baseTowers.removeIf(b -> (b.getHealth() <= 0));
+
+        try {
             for (GumballGuardian g : this.guardians) {
                 g.update(mSecondsRan);
             }
-            bases[0].update(mSecondsRan);
-            bases[1].update(mSecondsRan);
-            if (this.room.getUserList().size() == 0)
-                parentExt.stopScript(this.room.getName(), true);
         } catch (Exception e) {
+            Console.logWarning("GUARDIAN UPDATE EXCEPTION");
             e.printStackTrace();
         }
+
+        try {
+            bases[0].update(mSecondsRan);
+            bases[1].update(mSecondsRan);
+        } catch (Exception e) {
+            Console.logWarning("BASE UPDATE EXCEPTION");
+            e.printStackTrace();
+        }
+        if (this.room.getUserList().size() == 0) parentExt.stopScript(this.room.getName(), true);
     }
 
     private void handlePassiveXP() {
