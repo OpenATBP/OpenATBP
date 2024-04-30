@@ -100,7 +100,16 @@ public class Jake extends UserActor {
             ExtensionCommands.swapActorAsset(
                     this.parentExt, this.room, this.id, this.getSkinAssetBundle());
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_jake_ring_2");
+            updateStatMenu("speed");
         }
+    }
+
+    @Override
+    public double getPlayerStat(String stat) {
+        if (stat.equalsIgnoreCase("speed") && ultActivated) {
+            return super.getPlayerStat("speed") * 0.8;
+        }
+        return super.getPlayerStat(stat);
     }
 
     @Override
@@ -114,6 +123,7 @@ public class Jake extends UserActor {
             ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
             ExtensionCommands.removeFx(parentExt, room, id + "_stomp");
             this.ultActivated = false;
+            updateStatMenu("speed");
         }
         if (this.ultActivated && !this.isStopped()) {
             if (System.currentTimeMillis() - this.lastStomped >= 500) {
@@ -419,6 +429,7 @@ public class Jake extends UserActor {
                 break;
             case 3:
                 this.canCast[2] = false;
+                this.stopMoving();
                 String bigFx =
                         (this.avatar.contains("cake"))
                                 ? "jake_cake_big"
@@ -435,6 +446,7 @@ public class Jake extends UserActor {
                 this.cleanseEffects();
                 this.ultActivated = true;
                 this.ultStartTime = System.currentTimeMillis();
+                updateStatMenu("speed");
                 ExtensionCommands.createActorFX(
                         parentExt,
                         room,
