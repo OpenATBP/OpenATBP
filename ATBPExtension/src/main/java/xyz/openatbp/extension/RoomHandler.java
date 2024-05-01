@@ -139,7 +139,9 @@ public class RoomHandler implements Runnable {
         if (!this.parentExt.roomHandlerExists(this.room.getName())
                 && !this.scriptHandler.isCancelled()) {
             this.scriptHandler.cancel(false);
+            return;
         }
+        if (this.scriptHandler.isCancelled()) return;
         mSecondsRan += 100;
         List<String> keysToRemove = new ArrayList<>(this.destroyedIds.size());
         Set<String> keys = this.destroyedIds.keySet();
@@ -496,7 +498,8 @@ public class RoomHandler implements Runnable {
                                     team);
                             ExtensionCommands.playSound(
                                     parentExt, u.getRoom(), "", "sfx_health_picked_up", healthLoc);
-                            if (!u.hasTempStat("healthRegen")) u.changeHealth(90);
+                            if (!u.hasTempStat("healthRegen"))
+                                u.changeHealth((int) (u.getMaxHealth() * 0.15d));
                             u.addEffect("healthRegen", 20d, 15000, "fx_health_regen", "");
                             // Champion.giveBuff(parentExt,u.getUser(), Buff.HEALTH_PACK);
                             spawns.putInt(s, 0);

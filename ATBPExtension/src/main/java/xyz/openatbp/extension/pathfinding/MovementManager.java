@@ -352,7 +352,7 @@ public class MovementManager {
                     Node nearbyNode =
                             destNode.getNearbyAvailableNode(
                                     roomHandler.getParentExt(), roomHandler.isPracticeMap());
-                    if (!nearbyNode.isSolid()) destNode = nearbyNode;
+                    if (nearbyNode != null && !nearbyNode.isSolid()) destNode = nearbyNode;
                 }
                 return Node.getPath(
                         roomHandler.getParentExt(),

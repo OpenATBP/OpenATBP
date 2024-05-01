@@ -1,7 +1,6 @@
 package xyz.openatbp.extension.game.actors;
 
 import java.awt.geom.Point2D;
-import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -18,7 +17,6 @@ import xyz.openatbp.extension.game.ActorType;
 public class BaseTower extends Tower {
     private long lastHit;
     private boolean destroyed = false;
-    private List<Actor> nearbyActors;
     private boolean isUnlocked = false;
 
     public BaseTower(ATBPExtension parentExt, Room room, String id, int team) {
@@ -74,7 +72,7 @@ public class BaseTower extends Tower {
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         if (!this.isUnlocked) return false;
         if (this.destroyed) return true;
-        if (this.target == null && nearbyActors.isEmpty()) {
+        if (this.target == null && this.nearbyActors.isEmpty()) {
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
                 if (System.currentTimeMillis() - this.lastMissSoundTime >= 1500

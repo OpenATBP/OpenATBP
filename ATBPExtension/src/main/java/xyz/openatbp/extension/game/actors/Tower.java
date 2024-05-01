@@ -22,7 +22,7 @@ public class Tower extends Actor {
     private boolean destroyed = false;
     protected long lastMissSoundTime = 0;
     protected long lastSpellDeniedTime = 0;
-    private List<Actor> nearbyActors;
+    protected List<Actor> nearbyActors;
     private boolean isFocusingPlayer = false;
     private boolean isFocusingCompanion = false;
     private int numberOfAttacks = 0;
