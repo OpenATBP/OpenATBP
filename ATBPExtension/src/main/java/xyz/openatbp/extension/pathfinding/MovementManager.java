@@ -291,7 +291,7 @@ public class MovementManager {
             if (b.distance(point) <= 1.2) return true;
         }
         for (Point2D t : towers) {
-            if (t.distance(point) <= 1.5) {
+            if (t.distance(point) <= 0.8) {
                 return true;
             }
         }
@@ -344,14 +344,23 @@ public class MovementManager {
             Line2D movementLine = new Line2D.Float(location, dest);
             if (getPathIntersectionPoint(
                             roomHandler.getParentExt(), roomHandler.isPracticeMap(), movementLine)
-                    != null)
+                    != null) {
+                Node destNode =
+                        Node.getNodeAtLocation(
+                                roomHandler.getParentExt(), dest, roomHandler.isPracticeMap());
+                if (destNode != null && destNode.isSolid()) {
+                    Node nearbyNode =
+                            destNode.getNearbyAvailableNode(
+                                    roomHandler.getParentExt(), roomHandler.isPracticeMap());
+                    if (!nearbyNode.isSolid()) destNode = nearbyNode;
+                }
                 return Node.getPath(
                         roomHandler.getParentExt(),
                         currentNode,
                         currentNode,
-                        Node.getNodeAtLocation(
-                                roomHandler.getParentExt(), dest, roomHandler.isPracticeMap()),
+                        destNode,
                         roomHandler.isPracticeMap());
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

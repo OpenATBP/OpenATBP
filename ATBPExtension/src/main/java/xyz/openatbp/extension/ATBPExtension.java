@@ -53,9 +53,12 @@ public class ATBPExtension extends SFSExtension {
     MongoClient mongoClient;
     MongoDatabase database;
     MongoCollection<Document> playerDatabase;
-    public static final int MAX_COL = 120;
-    public static final int MAX_MAIN_ROW = 60;
-    public static final int MAX_PRAC_ROW = 34;
+    public static final int MAP_SIZE_X = 61;
+    public static final int MAIN_MAP_SIZE_Y = 31;
+    public static final int PRAC_MAP_SIZE_Y = 20;
+    public static final int MAX_COL = MAP_SIZE_X * 4;
+    public static final int MAX_MAIN_ROW = MAIN_MAP_SIZE_Y * 4;
+    public static final int MAX_PRAC_ROW = PRAC_MAP_SIZE_Y * 4;
 
     Node[][] mainMapNodes = new Node[MAX_COL][MAX_MAIN_ROW];
     Node[][] practiceMapNodes = new Node[MAX_COL][MAX_PRAC_ROW];
@@ -255,14 +258,14 @@ public class ATBPExtension extends SFSExtension {
         for (Node[] nodes : mainMapNodes) {
             for (Node n : nodes) {
                 if (MovementManager.insideAnyObstacle(
-                                this, false, new Point2D.Float(n.getX(), n.getY()))
+                                this, false, new Point2D.Double(n.getX(), n.getY()))
                         || MovementManager.nearStructures(false, n.getLocation())) n.setSolid(true);
             }
         }
         for (Node[] nodes : practiceMapNodes) {
             for (Node n : nodes) {
                 if (MovementManager.insideAnyObstacle(
-                                this, true, new Point2D.Float(n.getX(), n.getY()))
+                                this, true, new Point2D.Double(n.getX(), n.getY()))
                         || MovementManager.nearStructures(true, n.getLocation())) n.setSolid(true);
             }
         }
