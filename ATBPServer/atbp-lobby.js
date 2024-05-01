@@ -620,7 +620,7 @@ function cleanUpPlayers() {
     var invalidQueuePlayers = [];
     for (var qp of q.players) {
       var user = users.find(u => u.player.teg_id == qp);
-      if (user == undefined || !user.player.inGame) {
+      if (user == undefined || (!user.player.inGame && user.player.stage < 2)) {
         invalidQueuePlayers.push(qp);
         console.log(`${qp} is an invalid queue member!`);
       }
