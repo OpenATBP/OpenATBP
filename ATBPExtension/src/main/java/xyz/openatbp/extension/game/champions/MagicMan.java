@@ -76,9 +76,11 @@ public class MagicMan extends UserActor {
             this.setState(ActorState.REVEALED, true);
             int wCooldown = ChampionData.getBaseAbilityCooldown(this, 2);
             ExtensionCommands.actorAbilityResponse(
-                    this.parentExt, this.player, "w", true, wCooldown, 250);
+                    this.parentExt, this.player, "w", true, getReducedCooldown(wCooldown), 250);
             Runnable resetWUses = () -> this.wUses = 0;
-            parentExt.getTaskScheduler().schedule(resetWUses, wCooldown, TimeUnit.MILLISECONDS);
+            parentExt
+                    .getTaskScheduler()
+                    .schedule(resetWUses, getReducedCooldown(wCooldown), TimeUnit.MILLISECONDS);
         }
         if (this.ultStarted && this.hasUltInterruptingCC()) {
             this.interruptE = true;
