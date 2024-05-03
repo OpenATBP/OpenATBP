@@ -357,6 +357,12 @@ function startGame(players, type) {
   var playerIds = [];
   for (var p of players) {
     playerIds.push(p.teg_id);
+    var user = users.find((u) => u.player.teg_id == p.teg_id);
+    if (user != undefined) {
+      user.player.stage = 2;
+      var t = teams.find((tm) => tm.players.includes(user.player.teg_id));
+      if (t != undefined) removeTeam(t);
+    }else console.log(`${p.teg_id} has no valid user!`);
   }
 
   var queueObj = {
@@ -470,15 +476,6 @@ function startGame(players, type) {
         ).catch(console.error);
       })
       .catch(console.error);
-
-    for (var p of players) {
-      var user = users.find((u) => u.player.teg_id == p.teg_id);
-      if (user != undefined) {
-        user.player.stage = 2;
-        var t = teams.find((tm) => tm.players.includes(user.player.teg_id));
-        if (t != undefined) removeTeam(t);
-      }
-    }
   }
 }
 
