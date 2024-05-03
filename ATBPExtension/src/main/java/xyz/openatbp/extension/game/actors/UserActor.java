@@ -1096,7 +1096,7 @@ public class UserActor extends Actor {
                 if (ability == 1) return true;
                 break;
             case "magicman":
-                if (ability == 3) return true;
+                if (ability == 3 || ability == 2) return true;
                 break;
         }
         return false;

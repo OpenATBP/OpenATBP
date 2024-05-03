@@ -22,8 +22,7 @@ import xyz.openatbp.extension.game.actors.UserActor;
 public class RattleBalls extends UserActor {
     private boolean passiveActive = false;
     private int passiveHits = 0;
-    private long passiveStart = 0;
-    private long passiveCooldown = 0;
+    private long startPassiveStack = 0;
     private int qUse = 0;
     private boolean parryActive = false;
     private long parryCooldown = 0;
@@ -286,17 +285,14 @@ public class RattleBalls extends UserActor {
 
     private void endPassive() {
         this.passiveActive = false;
-        this.passiveCooldown = System.currentTimeMillis();
-        if (this.passiveHits == 0) this.passiveHits++;
-        ExtensionCommands.actorAbilityResponse(
-                this.parentExt, this.player, "passive", true, 5000, 0);
         ExtensionCommands.removeStatusIcon(
                 this.parentExt, this.player, "passive" + this.passiveHits);
+        this.passiveHits = 0;
     }
 
     private void abilityEnded() {
-        if (!this.passiveActive && System.currentTimeMillis() - this.passiveCooldown >= 5000) {
-            this.passiveStart = System.currentTimeMillis();
+        if (this.passiveHits == 0) {
+            this.startPassiveStack = System.currentTimeMillis();
             this.passiveActive = true;
             this.passiveHits = 2;
             ExtensionCommands.addStatusIcon(
@@ -305,7 +301,7 @@ public class RattleBalls extends UserActor {
                     "passive2",
                     "rattleballs_spell_4_short_description",
                     "icon_rattleballs_p2",
-                    3000);
+                    5000);
         }
     }
 
@@ -361,7 +357,7 @@ public class RattleBalls extends UserActor {
                     "sfx_rattleballs_counter_fail",
                     this.location);
         }
-        if (this.passiveActive && System.currentTimeMillis() - this.passiveStart >= 3000) {
+        if (this.passiveActive && System.currentTimeMillis() - this.startPassiveStack >= 5000) {
             this.endPassive();
         }
         if (this.parryActive
@@ -553,8 +549,24 @@ public class RattleBalls extends UserActor {
     @Override
     public void handleLifeSteal() {
         if (this.passiveActive && passiveHits > 0) {
-            this.changeHealth((int) (this.getPlayerStat("attackDamage") * 0.65d));
+            double damage = this.getPlayerStat("attackDamage");
+            double lifesteal = (this.getPlayerStat("lifeSteal") / 100) + 0.65d;
+            if (lifesteal > 100) lifesteal = 100;
+            this.changeHealth((int) (damage * lifesteal));
+            ExtensionCommands.removeStatusIcon(
+                    this.parentExt, this.player, "passive" + this.passiveHits);
             this.passiveHits--;
+            if (this.passiveHits == 1) {
+                ExtensionCommands.addStatusIcon(
+                        this.parentExt,
+                        this.player,
+                        "passive1",
+                        "rattleballs_spell_4_short_description",
+                        "icon_rattleballs_p1",
+                        5000);
+            }
+            this.startPassiveStack = System.currentTimeMillis();
+            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_passiveRegen");
             ExtensionCommands.createActorFX(
                     this.parentExt,
                     this.room,
@@ -571,16 +583,6 @@ public class RattleBalls extends UserActor {
                     this.parentExt, this.room, this.id, "sfx_rattleballs_regen", this.location);
             if (this.passiveHits <= 0) {
                 this.endPassive();
-            } else {
-                ExtensionCommands.removeStatusIcon(
-                        this.parentExt, this.player, "passive" + (this.passiveHits + 1));
-                ExtensionCommands.addStatusIcon(
-                        this.parentExt,
-                        this.player,
-                        "passive" + this.passiveHits,
-                        "rattleballs_spell_4_short_description",
-                        "icon_rattleballs_p" + this.passiveHits,
-                        3000f - (System.currentTimeMillis() - this.passiveStart));
             }
         } else super.handleLifeSteal();
     }
