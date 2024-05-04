@@ -557,10 +557,22 @@ public class ChampionData {
                 teamElo += enemyElo;
             }
         }
+        int tier = getTier(myElo);
+        double kFactor = 25 - (5 * tier);
         double averageEnemyElo = Math.round(teamElo / teamCount);
-        double myProb = 1f / (1 + Math.pow(10, (averageEnemyElo - myElo) / 400));
-        double eloGain = 20 * (result - myProb);
-        return (int) Math.round(eloGain);
+        double myProb = 1d / (1 + Math.pow(10, (averageEnemyElo - myElo) / 400));
+        double eloGain = Math.round(kFactor * (result - myProb));
+        return (int) eloGain;
+    }
+
+    public static int getTier(double elo) {
+        double[] eloTiers = {1, 100, 200, 500};
+        for (int i = 0; i < eloTiers.length; i++) {
+            double val1 = i == 0 ? 0 : eloTiers[i];
+            double val2 = i + 1 == eloTiers.length ? 2000 : eloTiers[i + 1];
+            if (elo >= val1 && elo < val2) return i;
+        }
+        return 4;
     }
 
     private static String getDefeatedSound(boolean enemy, boolean ally) {
