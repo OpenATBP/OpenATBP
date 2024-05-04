@@ -595,7 +595,7 @@ function displayPlayers() {
   console.log(':::PLAYERS:::');
   for (var u of users) {
     console.log(
-      `${u.player.name} in game: ${u.player.stage == 3} | searching: ${u.player.queue.type != null} | onTeam: ${u.player.onTeam}`,
+      `${u.player.name} stage: ${u.player.stage} | in game: ${u.player.stage == 3} | searching: ${u.player.queue.type != null} | onTeam: ${u.player.onTeam}`,
       u.player.queue
     );
   }

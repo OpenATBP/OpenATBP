@@ -374,6 +374,37 @@ public abstract class Actor {
         }
     }
 
+    public void addToDamageQueue(
+            Actor attacker,
+            double damage,
+            JsonNode attackData,
+            boolean dotDamage,
+            String debugString) {
+        if (this.currentHealth <= 0) return;
+        if (attacker.getActorType() == ActorType.PLAYER)
+            Console.debugLog(
+                    attacker.getDisplayName()
+                            + " is adding damage to "
+                            + this.id
+                            + " at "
+                            + System.currentTimeMillis()
+                            + " with "
+                            + debugString);
+        ISFSObject data = new SFSObject();
+        data.putClass("attacker", attacker);
+        data.putDouble("damage", damage);
+        data.putClass("attackData", attackData);
+        this.damageQueue.add(data);
+        if (attacker.getActorType() == ActorType.PLAYER
+                && this.getAttackType(attackData) == AttackType.SPELL
+                && this.getActorType() != ActorType.TOWER
+                && this.getActorType() != ActorType.BASE) {
+            UserActor ua = (UserActor) attacker;
+            ua.addHit(dotDamage);
+            ua.handleSpellVamp(this.getMitigatedDamage(damage, AttackType.SPELL, ua), dotDamage);
+        }
+    }
+
     public void handleDamageQueue() {
         List<ISFSObject> queue = new ArrayList<>(this.damageQueue);
         this.damageQueue = new ArrayList<>();
@@ -455,7 +486,6 @@ public abstract class Actor {
             if (attackType == AttackType.PHYSICAL) {
                 modifier = 100 / (100 + armor);
             } else modifier = 100 / (100 + spellResist);
-
             return (int) Math.round(rawDamage * modifier);
         } catch (Exception e) {
             e.printStackTrace();
@@ -561,8 +591,13 @@ public abstract class Actor {
         this.stopMoving();
         Line2D originalLine = new Line2D.Double(source, this.location);
         Line2D knockBackLine = Champion.extendLine(originalLine, 5f);
-        Line2D finalLine =
-                new Line2D.Double(this.location, MovementManager.getDashPoint(this, knockBackLine));
+        Point2D finalPoint =
+                MovementManager.getPathIntersectionPoint(
+                        this.parentExt,
+                        this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap(),
+                        knockBackLine);
+        if (finalPoint == null) finalPoint = knockBackLine.getP2();
+        Line2D finalLine = new Line2D.Double(this.location, finalPoint);
         this.addState(ActorState.AIRBORNE, 0d, 250);
         double speed = this.location.distance(finalLine.getP2()) / 0.275f;
         ExtensionCommands.knockBackActor(

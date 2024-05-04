@@ -3,7 +3,6 @@ package xyz.openatbp.extension.game.champions;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -66,13 +65,13 @@ public class CinnamonBun extends UserActor {
                 radius = 4;
                 tickDamage *= 1.5;
             }
-            if (System.currentTimeMillis() - lastUltTick >= 500) {
-                lastUltTick = System.currentTimeMillis();
-                for (Actor a : getEnemiesInRadius(ultPoint, radius)) {
+            if (System.currentTimeMillis() - this.lastUltTick >= 500) {
+                this.lastUltTick = System.currentTimeMillis();
+                for (Actor a : this.getEnemiesInRadius(this.ultPoint, radius)) {
                     a.addToDamageQueue(this, tickDamage / 2, spellData, true);
                 }
                 if (ultPoint2 != null && ultUses > 1) {
-                    for (Actor a : getEnemiesInRadius(ultPoint2, radius)) {
+                    for (Actor a : this.getEnemiesInRadius(ultPoint2, radius)) {
                         a.addToDamageQueue(this, tickDamage / 2, spellData, true);
                     }
                 }
@@ -162,15 +161,12 @@ public class CinnamonBun extends UserActor {
         }
     }
 
-    private List<Actor> getEnemiesInRadius(Point2D center, int radius) {
-        List<Actor> actors = parentExt.getRoomHandler(this.room.getName()).getActors();
-        List<Actor> affectedActors = new ArrayList<>(actors.size());
-        for (Actor a : actors) {
-            Point2D location = a.getLocation();
-            if (location.distance(center) <= radius && a.getTeam() != this.getTeam())
-                affectedActors.add(a);
-        }
-        return affectedActors;
+    private List<Actor> getEnemiesInRadius(Point2D center, float radius) {
+        List<Actor> returnVal =
+                Champion.getActorsInRadius(
+                        this.parentExt.getRoomHandler(this.room.getName()), center, radius);
+        returnVal.removeIf(a -> a.getTeam() == this.team);
+        return returnVal;
     }
 
     private void handleUltBuff() {
