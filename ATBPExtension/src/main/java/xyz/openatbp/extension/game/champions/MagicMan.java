@@ -362,7 +362,7 @@ public class MagicMan extends UserActor {
 
         @Override
         protected void hit(Actor victim) {
-            victim.addState(ActorState.SILENCED, 0d, 1000);
+            victim.addState(ActorState.SILENCED, 0d, 2000);
             ExtensionCommands.createWorldFX(
                     this.parentExt,
                     this.owner.getRoom(),
