@@ -387,11 +387,11 @@ public class Champion {
 
         @Override
         public void run() {
-            if (this.target.getHealth() <= 0) {
+            if (this.target.isDead()) {
                 if (this.attacker.getActorType() == ActorType.MINION) attacker.setCanMove(true);
                 return;
             }
-            if (this.attacker.getState(ActorState.BLINDED)) {
+            if (this.attacker.getState(ActorState.BLINDED) || this.attacker.isDead()) {
                 if (this.attacker.getActorType() == ActorType.PLAYER)
                     ExtensionCommands.playSound(
                             parentExt,

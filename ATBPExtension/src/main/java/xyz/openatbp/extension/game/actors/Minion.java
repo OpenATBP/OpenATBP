@@ -313,8 +313,7 @@ public class Minion extends Actor {
                     this.state = State.IDLE;
                     return;
                 }
-                if (this.withinAggroRange(this.target.getLocation())
-                        && this.target.getHealth() > 0) {
+                if (this.withinAggroRange(this.target.getLocation()) && !this.target.isDead()) {
                     if (this.withinRange(this.target) && conflictingMinion == null) {
                         this.state = State.ATTACKING;
                     } else if (conflictingMinion == null) {
@@ -329,10 +328,17 @@ public class Minion extends Actor {
                 if (this.target == null) {
                     this.state = State.IDLE;
                     return;
+                } else if (this.target.isDead()) {
+                    Actor target = this.searchForTarget();
+                    if (target != null) {
+                        this.state = State.TARGETING;
+                        this.setTarget(target);
+                    } else this.resetTarget();
+                    return;
                 }
                 if (this.withinRange(this.target) && this.canAttack()) {
                     this.attack(this.target);
-                } else if (!this.withinRange(this.target) || this.target.getHealth() <= 0) {
+                } else if (!this.withinRange(this.target) || this.target.isDead()) {
                     Actor target = this.searchForTarget();
                     if (target != null) {
                         this.state = State.TARGETING;

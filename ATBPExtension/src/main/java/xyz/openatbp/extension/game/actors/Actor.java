@@ -622,6 +622,10 @@ public abstract class Actor {
         }
     }
 
+    public boolean isDead() {
+        return this.dead;
+    }
+
     protected boolean isPointNearDestination(Point2D p) {
         if (this.path != null) return this.path.get(this.path.size() - 1).distance(p) <= 0.2d;
         else return this.movementLine.getP2().distance(p) <= 0.2d;

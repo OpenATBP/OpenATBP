@@ -1666,10 +1666,6 @@ public class UserActor extends Actor {
         ExtensionCommands.destroyActor(this.parentExt, this.room, this.id);
     }
 
-    public boolean isDead() {
-        return this.dead;
-    }
-
     public void clearIconHandlers() {
         Set<String> iconNames = new HashSet<>(this.iconHandlers.keySet());
         for (String i : iconNames) {
