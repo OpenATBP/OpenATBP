@@ -54,6 +54,23 @@ async function addBetaTesters(collection) {
   }
 }
 
+async function resetElo(collection){
+  try {
+    var cursor = collection.find();
+    for await (var doc of cursor) {
+      //console.log(doc.friends);
+      var q = { 'user.TEGid': doc.user.TEGid };
+      var o = { upsert: true };
+      var up = { $set: { "player.elo": 1150.0, "player.tier":1.0 } };
+
+      var res = await collection.updateOne(q, up, o);
+      console.log(res);
+    }
+  } finally {
+    console.log('Done!');
+  }
+}
+
 let config;
 try {
   config = require('./config.js');
@@ -106,6 +123,7 @@ mongoClient.connect((err) => {
   const playerCollection = mongoClient.db('openatbp').collection('players');
   //removeDuplicateFriends(playerCollection).catch(console.dir);
   //addBetaTesters(playerCollection).catch(console.dir);
+  //resetElo(playerCollection).catch(console.dir);
 
   if (
     !fs.existsSync('static/crossdomain.xml') ||
@@ -336,7 +354,7 @@ mongoClient.connect((err) => {
         p.lastChecked = Date.now();
         p.username = req.body.username;
         p.level = options.level;
-        p.elo = options.level;
+        p.elo = options.elo;
         p.location = options.location;
         p.name = options.name;
         p.tier = options.tier;
@@ -348,7 +366,7 @@ mongoClient.connect((err) => {
       var playerObj = {
         username: req.body.username,
         level: options.level,
-        elo: options.level,
+        elo: options.elo,
         location: options.location,
         name: options.name,
         tier: options.tier,

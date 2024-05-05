@@ -23,8 +23,8 @@ var newUserFunction = function (username, displayName, authpass, collection) {
           },
           player: {
             playsPVP: 1.0,
-            tier: 0.0,
-            elo: 0.0,
+            tier: 1.0,
+            elo: 1150.0,
             disconnects: 0.0,
             playsBots: 0.0,
             rank: 1.0,

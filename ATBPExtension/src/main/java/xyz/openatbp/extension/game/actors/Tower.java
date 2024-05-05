@@ -150,6 +150,7 @@ public class Tower extends Actor {
         this.currentHealth = 0;
         if (!this.destroyed) {
             this.destroyed = true;
+            this.dead = true;
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
                 ua.addGameStat("towers", 1);

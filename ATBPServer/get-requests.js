@@ -46,8 +46,8 @@ module.exports = {
   handleChampConfig: function () {
     // /service/data/config/champions/ Not sure if this is what it should be returning or not.
     return JSON.stringify({
-      upperELO: 2000.0,
-      eloTier: ['1', '100', '200', '500'], //This changes the tiers that change your icon based on elo. 500 marks bronze and 2000 is burple
+      upperELO: 2643.0,
+      eloTier: ['0', '1149', '1350', '1602'], //This changes the tiers that change your icon based on elo. 500 marks bronze and 2000 is burple
     });
   },
   handlePlayerInventory: function (token, collection) {
@@ -72,10 +72,10 @@ module.exports = {
         .then((dat) => {
           if (dat != null) {
             switch (dat.player.elo + 1) {
-              case 1:
-              case 100:
-              case 200:
-              case 500:
+              case 0: //Should never happen
+              case 1149:
+              case 1350:
+              case 1602:
                 dat.player.elo++;
                 break;
             }
@@ -97,7 +97,7 @@ module.exports = {
             friends.push({
               user_id: name,
               name: p.name,
-              avatar: 'lich.png',
+              avatar: 'assets/portraits/lich.png',
               options: {
                 location: p.location,
                 game: 'ATBP',

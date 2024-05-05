@@ -247,10 +247,10 @@ function updateElo(socket) {
       .then((res) => {
         if (res != null) {
           switch (res.player.elo + 1) {
-            case 1:
-            case 100:
-            case 200:
-            case 500:
+            case 0:
+            case 1149:
+            case 1350:
+            case 1602:
               res.player.elo++;
               break;
           }
