@@ -38,7 +38,6 @@ public class CinnamonBun extends UserActor {
 
     public CinnamonBun(User u, ATBPExtension parentExt) {
         super(u, parentExt);
-        setStat("spellDamage", 1000);
     }
 
     @Override
