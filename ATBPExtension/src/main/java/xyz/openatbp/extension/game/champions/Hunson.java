@@ -123,6 +123,7 @@ public class Hunson extends UserActor {
                 && a.getHealth() - this.getPlayerStat("attackDamage") > -5
                 && !this.passiveActivated) {
             this.passiveActivated = true;
+            this.attackCooldown = 0;
             ExtensionCommands.playSound(
                     this.parentExt,
                     this.room,
@@ -159,8 +160,8 @@ public class Hunson extends UserActor {
                     "icon_hunson_passive",
                     "hunson_spell_4_short_description",
                     5000);
-            this.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.4d, 5000);
-            this.addEffect("speed", 0.8d, 5000);
+            this.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.5d, 5000);
+            this.addEffect("speed", 1d, 5000);
             parentExt
                     .getTaskScheduler()
                     .schedule(

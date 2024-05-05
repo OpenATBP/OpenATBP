@@ -320,7 +320,8 @@ public class Finn extends UserActor {
                                 TimeUnit.MILLISECONDS);
                 break;
             case 3:
-                this.stopMoving(castDelay);
+                int immobilizationTime = 1200;
+                this.stopMoving(immobilizationTime);
                 this.canCast[2] = false;
                 Runnable cast =
                         () -> {
