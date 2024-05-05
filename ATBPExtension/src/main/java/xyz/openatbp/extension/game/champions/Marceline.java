@@ -93,7 +93,11 @@ public class Marceline extends UserActor {
                     this.qVictim.getId(),
                     "sfx_marceline_blood_hit",
                     this.qVictim.getLocation());
-            this.qVictim.addToDamageQueue(this, damage, spellData, true);
+            if (this.qVictim != null)
+                this.qVictim.addToDamageQueue(
+                        this, damage, spellData,
+                        true); // TODO This is redundant for some reason qVictim is having a null
+            // exception here
             this.qHit = System.currentTimeMillis();
         }
         if (wActive && System.currentTimeMillis() - wStartTime >= 4500) {

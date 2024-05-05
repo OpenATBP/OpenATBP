@@ -1321,7 +1321,7 @@ public class UserActor extends Actor {
             else if (tries == 1) attackNumber = "attack2";
             else if (tries == 2) attackNumber = "attack3";
             else {
-                Console.logWarning("Fourth attack detected!");
+                Console.logWarning(this.displayName + ": fourth attack detected!");
             }
             ISFSObject attack1 = new SFSObject();
             attack1.putUtfString("atkName", attackData.get(precursor + "Name").asText());

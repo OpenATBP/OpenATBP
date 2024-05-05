@@ -354,12 +354,13 @@ public class MovementManager {
                                     roomHandler.getParentExt(), roomHandler.isPracticeMap());
                     if (nearbyNode != null && !nearbyNode.isSolid()) destNode = nearbyNode;
                 }
-                return Node.getPath(
-                        roomHandler.getParentExt(),
-                        currentNode,
-                        currentNode,
-                        destNode,
-                        roomHandler.isPracticeMap());
+                if (destNode != null)
+                    return Node.getPath(
+                            roomHandler.getParentExt(),
+                            currentNode,
+                            currentNode,
+                            destNode,
+                            roomHandler.isPracticeMap());
             }
         } catch (Exception e) {
             e.printStackTrace();

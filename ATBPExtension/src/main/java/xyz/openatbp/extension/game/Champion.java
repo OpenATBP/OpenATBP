@@ -226,9 +226,10 @@ public class Champion {
     public static List<Actor> getActorsInRadius(RoomHandler room, Point2D center, float radius) {
         List<Actor> actors = room.getActors();
         List<Actor> affectedActors = new ArrayList<>(actors.size());
+        if (center == null) return affectedActors;
         for (Actor a : actors) {
             Point2D location = a.getLocation();
-            if (location.distance(center) <= radius) affectedActors.add(a);
+            if (location != null && location.distance(center) <= radius) affectedActors.add(a);
         }
         return affectedActors;
     }
