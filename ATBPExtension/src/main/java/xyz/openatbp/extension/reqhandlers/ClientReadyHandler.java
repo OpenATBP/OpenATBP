@@ -19,10 +19,11 @@ public class ClientReadyHandler extends BaseClientRequestHandler {
         ISFSObject data = new SFSObject();
         data.putUtfString("id", String.valueOf(sender.getId()));
         data.putInt("progress", progress);
-        data.putBool("isReady", true);
+        data.putBool("isReady", progress == 100);
         Room room = sender.getLastJoinedRoom();
         parentExt.send("cmd_client_ready", data, sender); // Handles progress bar
         GameManager.sendAllUsers(parentExt, data, "cmd_client_ready", room);
+        if (sender.getSession().getProperty("ready") != null) return;
         if (progress == 100) {
             sender.getSession().setProperty("ready", true);
 

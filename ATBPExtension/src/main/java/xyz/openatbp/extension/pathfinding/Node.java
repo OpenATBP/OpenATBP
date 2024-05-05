@@ -8,25 +8,22 @@ import com.smartfoxserver.v2.entities.Room;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.game.actors.Actor;
 
 public class Node {
-    public static final int SIZE = 1;
+    public static final double SIZE = 0.5;
     private int col;
     private int row;
     private boolean solid;
-    private int x;
-    private int y;
+    private double x;
+    private double y;
 
     public Node(int col, int row, boolean practice) {
         this.col = col;
         this.row = row;
-        this.x = (col * SIZE * -1) + (ATBPExtension.MAX_COL / 2);
+        this.x = (col * SIZE * -1) + ATBPExtension.MAP_SIZE_X;
         this.y =
-                (row * SIZE)
-                        - (practice
-                                ? (ATBPExtension.MAX_PRAC_ROW / 2)
-                                : (ATBPExtension.MAX_MAIN_ROW / 2));
+                (practice ? ATBPExtension.PRAC_MAP_SIZE_Y * -1 : ATBPExtension.MAIN_MAP_SIZE_Y * -1)
+                        + (row * SIZE);
     }
 
     public void run() {}
@@ -37,42 +34,17 @@ public class Node {
                 room,
                 "node" + "col-" + this.col + "row-" + this.row,
                 "gnome_a",
-                new Point2D.Float(this.x, this.y),
+                new Point2D.Double(this.x, this.y),
                 0f,
                 2);
     }
 
-    public int getX() {
+    public double getX() {
         return this.x;
     }
 
-    public int getY() {
+    public double getY() {
         return this.y;
-    }
-
-    public static Node getCurrentNode(ATBPExtension parentExt, Actor actor) {
-        Node[][] nodes = parentExt.getMainMapNodes();
-        int maxRow = ATBPExtension.MAX_MAIN_ROW;
-        if (parentExt.getRoomHandler(actor.getRoom().getName()).isPracticeMap()) {
-            nodes = parentExt.getPracticeMapNodes();
-            maxRow = ATBPExtension.MAX_PRAC_ROW;
-        }
-        int likelyCol =
-                (int)
-                        Math.round(
-                                Math.abs(
-                                        actor.getLocation().getX()
-                                                - ((double) ATBPExtension.MAX_COL / 2d)));
-        int likelyRow = (int) Math.round(actor.getLocation().getY() + ((double) maxRow / 2d));
-        if (likelyCol < 0) likelyCol = 0;
-        if (likelyRow < 0) likelyRow = 0;
-        // Console.debugLog("Col: " + likelyCol + " Row: " + likelyRow);
-        try {
-            return nodes[likelyCol][likelyRow];
-        } catch (ArrayIndexOutOfBoundsException e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 
     public static Node getNodeAtLocation(ATBPExtension parentExt, Point2D dest, boolean practice) {
@@ -83,8 +55,15 @@ public class Node {
             maxRow = ATBPExtension.MAX_PRAC_ROW;
         }
         int likelyCol =
-                (int) Math.round(Math.abs(dest.getX() - ((double) ATBPExtension.MAX_COL / 2d)));
-        int likelyRow = (int) Math.round(dest.getY() + ((double) maxRow / 2d));
+                (int) Math.round(Math.abs((dest.getX() - ATBPExtension.MAP_SIZE_X) / (SIZE * -1)));
+        int likelyRow =
+                (int)
+                        Math.round(
+                                (dest.getY()
+                                                + (practice
+                                                        ? ATBPExtension.PRAC_MAP_SIZE_Y
+                                                        : ATBPExtension.MAIN_MAP_SIZE_Y))
+                                        / SIZE);
         if (likelyCol < 0) likelyCol = 0;
         if (likelyRow < 0) likelyRow = 0;
         // Console.debugLog("Col: " + likelyCol + " Row: " + likelyRow);
@@ -94,6 +73,38 @@ public class Node {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public Node getNearbyAvailableNode(ATBPExtension parentExt, boolean practice) {
+        Node nodeRight = null;
+        Node nodeLeft = null;
+        Node nodeUp = null;
+        Node nodeDown = null;
+        if (this.col + 1 < ATBPExtension.MAX_COL)
+            nodeRight =
+                    practice
+                            ? parentExt.getPracticeMapNodes()[this.col + 1][this.row]
+                            : parentExt.getMainMapNodes()[this.col + 1][this.row];
+        if (this.col - 1 >= 0)
+            nodeLeft =
+                    practice
+                            ? parentExt.getPracticeMapNodes()[this.col - 1][this.row]
+                            : parentExt.getMainMapNodes()[this.col - 1][this.row];
+        if (this.row - 1 >= 0)
+            nodeUp =
+                    practice
+                            ? parentExt.getPracticeMapNodes()[this.col][this.row - 1]
+                            : parentExt.getMainMapNodes()[this.col][this.row - 1];
+        if (this.row + 1 < (practice ? ATBPExtension.MAX_PRAC_ROW : ATBPExtension.MAX_MAIN_ROW))
+            nodeDown =
+                    practice
+                            ? parentExt.getPracticeMapNodes()[this.col][this.row + 1]
+                            : parentExt.getMainMapNodes()[this.col][this.row + 1];
+        if (nodeRight != null && !nodeRight.isSolid()) return nodeRight;
+        if (nodeLeft != null && !nodeLeft.isSolid()) return nodeLeft;
+        if (nodeUp != null && !nodeUp.isSolid()) return nodeUp;
+        if (nodeDown != null && !nodeDown.isSolid()) return nodeDown;
+        return null;
     }
 
     public int getCol() {
@@ -270,7 +281,7 @@ public class Node {
     }
 
     public Point2D getLocation() {
-        return new Point2D.Float(this.x, this.y);
+        return new Point2D.Double(this.x, this.y);
     }
 
     public boolean canBeOpened(List<Node> checkedNodes, List<Node> openNodes) {

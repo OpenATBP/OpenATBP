@@ -139,7 +139,9 @@ public class RoomHandler implements Runnable {
         if (!this.parentExt.roomHandlerExists(this.room.getName())
                 && !this.scriptHandler.isCancelled()) {
             this.scriptHandler.cancel(false);
+            return;
         }
+        if (this.scriptHandler.isCancelled()) return;
         mSecondsRan += 100;
         List<String> keysToRemove = new ArrayList<>(this.destroyedIds.size());
         Set<String> keys = this.destroyedIds.keySet();
@@ -260,27 +262,49 @@ public class RoomHandler implements Runnable {
                 e.printStackTrace();
             }
         }
+        this.handleFountain();
         try {
-            this.handleFountain();
             for (UserActor u : players) { // Tracks player location
                 u.update(mSecondsRan);
             }
+        } catch (Exception e) {
+            Console.logWarning("USER ACTOR UPDATE EXCEPTION");
+            e.printStackTrace();
+        }
+
+        try {
             List<Projectile> projectileList = new ArrayList<>(this.activeProjectiles);
             for (Projectile p : projectileList) { // Handles skill shots
                 p.update(this);
             }
             activeProjectiles.removeIf(Projectile::isDestroyed);
-            handleHealth();
-            // minionPathHelper.obstacles.clear();
+        } catch (Exception e) {
+            Console.logWarning("PROJECTILE UPDATE EXCEPTION");
+            e.printStackTrace();
+        }
+
+        try {
             for (Minion m : minions) { // Handles minion behavior
                 // minionPathHelper.addRect((float)m.getLocation().getX()+49.75f,(float)m.getLocation().getY()+30.25f,0.5f,0.5f);
                 m.update(mSecondsRan);
             }
             minions.removeIf(m -> (m.getHealth() <= 0));
+        } catch (Exception e) {
+            Console.logWarning("MINION UPDATE EXCEPTION");
+            e.printStackTrace();
+        }
+        handleHealth();
+        try {
             for (Monster m : campMonsters) {
                 m.update(mSecondsRan);
             }
             campMonsters.removeIf(m -> (m.getHealth() <= 0));
+        } catch (Exception e) {
+            Console.logWarning("MONSTER UPDATE EXCEPTION");
+            e.printStackTrace();
+        }
+
+        try {
             for (Tower t : towers) {
                 t.update(mSecondsRan);
                 if (t.getHealth() <= 0) {
@@ -297,7 +321,12 @@ public class RoomHandler implements Runnable {
                     }
                 }
             }
+        } catch (Exception e) {
+            Console.logWarning("TOWER UPDATE EXCEPTION");
+            e.printStackTrace();
+        }
 
+        try {
             for (BaseTower b : baseTowers) {
                 b.update(mSecondsRan);
                 if (b.getHealth() <= 0) {
@@ -305,18 +334,30 @@ public class RoomHandler implements Runnable {
                     bases[b.getTeam()].unlock();
                 }
             }
-            towers.removeIf(t -> (t.getHealth() <= 0));
-            baseTowers.removeIf(b -> (b.getHealth() <= 0));
+        } catch (Exception e) {
+            Console.logWarning("BASE TOWER UPDATE EXCEPTION");
+            e.printStackTrace();
+        }
+        towers.removeIf(t -> (t.getHealth() <= 0));
+        baseTowers.removeIf(b -> (b.getHealth() <= 0));
+
+        try {
             for (GumballGuardian g : this.guardians) {
                 g.update(mSecondsRan);
             }
-            bases[0].update(mSecondsRan);
-            bases[1].update(mSecondsRan);
-            if (this.room.getUserList().size() == 0)
-                parentExt.stopScript(this.room.getName(), true);
         } catch (Exception e) {
+            Console.logWarning("GUARDIAN UPDATE EXCEPTION");
             e.printStackTrace();
         }
+
+        try {
+            bases[0].update(mSecondsRan);
+            bases[1].update(mSecondsRan);
+        } catch (Exception e) {
+            Console.logWarning("BASE UPDATE EXCEPTION");
+            e.printStackTrace();
+        }
+        if (this.room.getUserList().size() == 0) parentExt.stopScript(this.room.getName(), true);
     }
 
     private void handlePassiveXP() {
@@ -457,7 +498,8 @@ public class RoomHandler implements Runnable {
                                     team);
                             ExtensionCommands.playSound(
                                     parentExt, u.getRoom(), "", "sfx_health_picked_up", healthLoc);
-                            if (!u.hasTempStat("healthRegen")) u.changeHealth(90);
+                            if (!u.hasTempStat("healthRegen"))
+                                u.changeHealth((int) (u.getMaxHealth() * 0.15d));
                             u.addEffect("healthRegen", 20d, 15000, "fx_health_regen", "");
                             // Champion.giveBuff(parentExt,u.getUser(), Buff.HEALTH_PACK);
                             spawns.putInt(s, 0);
@@ -1254,12 +1296,11 @@ public class RoomHandler implements Runnable {
                     else win = 0d;
                     int eloGain = ChampionData.getEloGain(ua, this.players, win);
                     int currentElo = dataObj.get("player").get("elo").asInt();
-                    switch (currentElo + eloGain + 1) {
-                        case 1:
-                        case 100:
-                        case 200:
-                        case 500:
+                    for (double tierElo : ChampionData.ELO_TIERS) {
+                        if (currentElo + eloGain + 1 == (int) tierElo) {
                             eloGain++;
+                            break;
+                        }
                     }
                     if (currentElo + eloGain < 0) eloGain = currentElo * -1;
                     if (ua.getTeam() == winningTeam) wins++;
@@ -1298,6 +1339,9 @@ public class RoomHandler implements Runnable {
                                             this.room.getGroupId().equalsIgnoreCase("PVP") ? 1 : 0),
                                     Updates.inc("player.elo", eloGain),
                                     Updates.set("player.rankProgress", currentRankProgress),
+                                    Updates.set(
+                                            "player.tier",
+                                            ChampionData.getTier(currentElo + eloGain)),
                                     Updates.inc("player.winsPVP", wins),
                                     Updates.inc(
                                             "player.points",

@@ -44,7 +44,7 @@ public class Finn extends UserActor {
         this.applyStopMovingDuringAttack();
         parentExt
                 .getTaskScheduler()
-                .schedule(new PassiveAttack(a, this.handleAttack(a)), 250, TimeUnit.MILLISECONDS);
+                .schedule(new PassiveAttack(a, this.handleAttack(a)), 500, TimeUnit.MILLISECONDS);
         passiveStart = System.currentTimeMillis();
     }
 

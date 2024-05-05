@@ -145,6 +145,11 @@ public class EffectHandler {
                 // this.updateStat("speed", parent.getStat("speed") * this.statLog.get(key));
                 this.changeToNextBuff(key, "speed");
                 break;
+        }
+    }
+
+    private boolean finalStateEnd() {
+        switch (this.state) {
             case POLYMORPH:
                 if (this.parent.getActorType() == ActorType.PLAYER) {
                     UserActor ua = (UserActor) this.parent;
@@ -155,14 +160,19 @@ public class EffectHandler {
                 this.parent.stopMoving();
                 break;
         }
-        this.statLog.remove(key);
+        this.parent.setState(this.state, false);
+        return true;
     }
 
     public void endAllEffects() {
         List<Long> keys = new ArrayList<>(this.statLog.keySet());
-        for (long k : keys) {
-            if (this.stat == null) this.handleStateEnd(k);
-            else this.handleEffectEnd(k);
+        if (this.stat == null) {
+            this.statLog = new HashMap<>();
+            this.statLog.put(System.currentTimeMillis() - 1, 0d);
+        } else {
+            for (long k : keys) {
+                this.handleEffectEnd(k);
+            }
         }
     }
 
@@ -180,8 +190,8 @@ public class EffectHandler {
             this.statLog.remove(k);
         }
         if (badKeys.size() > 0 && this.statLog.size() == 0) {
-            if (this.state != null) this.parent.setState(state, false);
-            return true;
+            if (this.state != null) return this.finalStateEnd();
+            else return true;
         }
         return false;
     }

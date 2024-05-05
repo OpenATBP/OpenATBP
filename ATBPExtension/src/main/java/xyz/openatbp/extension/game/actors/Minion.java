@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.Room;
 
 import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
@@ -314,8 +313,7 @@ public class Minion extends Actor {
                     this.state = State.IDLE;
                     return;
                 }
-                if (this.withinAggroRange(this.target.getLocation())
-                        && this.target.getHealth() > 0) {
+                if (this.withinAggroRange(this.target.getLocation()) && !this.target.isDead()) {
                     if (this.withinRange(this.target) && conflictingMinion == null) {
                         this.state = State.ATTACKING;
                     } else if (conflictingMinion == null) {
@@ -330,10 +328,17 @@ public class Minion extends Actor {
                 if (this.target == null) {
                     this.state = State.IDLE;
                     return;
+                } else if (this.target.isDead()) {
+                    Actor target = this.searchForTarget();
+                    if (target != null) {
+                        this.state = State.TARGETING;
+                        this.setTarget(target);
+                    } else this.resetTarget();
+                    return;
                 }
                 if (this.withinRange(this.target) && this.canAttack()) {
                     this.attack(this.target);
-                } else if (!this.withinRange(this.target) || this.target.getHealth() <= 0) {
+                } else if (!this.withinRange(this.target) || this.target.isDead()) {
                     Actor target = this.searchForTarget();
                     if (target != null) {
                         this.state = State.TARGETING;
@@ -352,33 +357,6 @@ public class Minion extends Actor {
     public void handleFear(Point2D source, int duration) {
         super.handleFear(source, duration);
         this.state = State.MOVING;
-    }
-
-    @Override
-    public void moveWithCollision(Point2D dest) {
-        List<Point2D> path = new ArrayList<>();
-        try {
-            path =
-                    MovementManager.getPath(
-                            this.parentExt.getRoomHandler(this.room.getName()),
-                            this.location,
-                            dest);
-        } catch (Exception e) {
-            Console.logWarning(this.id + " could not form a path.");
-        }
-        if (path != null && path.size() > 2) {
-            this.setPath(path);
-        } else {
-            Line2D testLine = new Line2D.Float(this.location, dest);
-            Point2D newPoint =
-                    MovementManager.getPathIntersectionPoint(
-                            this.parentExt,
-                            this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap(),
-                            testLine);
-            if (newPoint != null) {
-                this.move(newPoint);
-            } else this.move(dest);
-        }
     }
 
     @Override

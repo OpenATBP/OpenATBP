@@ -17,6 +17,8 @@ import xyz.openatbp.extension.game.actors.UserActor;
 public class ChampionData {
 
     private static final int[] XP_LEVELS = {100, 210, 330, 460, 600, 670, 850, 1040, 1240, 1450};
+    public static final double[] ELO_TIERS = {0, 1149, 1350, 1602};
+    public static final double MAX_ELO = 2643;
 
     public static int getXPLevel(int xp) {
         for (int i = 0; i < XP_LEVELS.length; i++) {
@@ -557,10 +559,26 @@ public class ChampionData {
                 teamElo += enemyElo;
             }
         }
+        int tier = getTier(myElo);
+        double kFactor = 20 - (5 * tier);
+        if (tier == 0) kFactor += 5;
         double averageEnemyElo = Math.round(teamElo / teamCount);
-        double myProb = 1f / (1 + Math.pow(10, (averageEnemyElo - myElo) / 400));
-        double eloGain = 20 * (result - myProb);
-        return (int) Math.round(eloGain);
+        double myProb = 1d / (1 + Math.pow(10, (averageEnemyElo - myElo) / 400));
+        double eloGain = Math.round(kFactor * (result - myProb));
+        return (int) eloGain;
+    }
+
+    public static int getTier(double elo) {
+        for (int i = 0; i < ELO_TIERS.length; i++) {
+            double val1 = i == 0 ? 0 : ELO_TIERS[i];
+            double val2 = i + 1 == ELO_TIERS.length ? MAX_ELO : ELO_TIERS[i + 1];
+            if (elo >= val1 && elo < val2) return i;
+        }
+        return 4;
+    }
+
+    public static boolean tierChanged(double originalElo, double eloGain) {
+        return getTier(originalElo) != getTier(originalElo + eloGain);
     }
 
     private static String getDefeatedSound(boolean enemy, boolean ally) {

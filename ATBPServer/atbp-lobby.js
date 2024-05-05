@@ -247,10 +247,10 @@ function updateElo(socket) {
       .then((res) => {
         if (res != null) {
           switch (res.player.elo + 1) {
-            case 1:
-            case 100:
-            case 200:
-            case 500:
+            case 0:
+            case 1149:
+            case 1350:
+            case 1602:
               res.player.elo++;
               break;
           }
@@ -357,6 +357,12 @@ function startGame(players, type) {
   var playerIds = [];
   for (var p of players) {
     playerIds.push(p.teg_id);
+    var user = users.find((u) => u.player.teg_id == p.teg_id);
+    if (user != undefined) {
+      user.player.stage = 2;
+      var t = teams.find((tm) => tm.players.includes(user.player.teg_id));
+      if (t != undefined) removeTeam(t);
+    } else console.log(`${p.teg_id} has no valid user!`);
   }
 
   var queueObj = {
@@ -470,15 +476,6 @@ function startGame(players, type) {
         ).catch(console.error);
       })
       .catch(console.error);
-
-    for (var p of players) {
-      var user = users.find((u) => u.player.teg_id == p.teg_id);
-      if (user != undefined) {
-        user.player.stage = 2;
-        var t = teams.find((tm) => tm.players.includes(user.player.teg_id));
-        if (t != undefined) removeTeam(t);
-      }
-    }
   }
 }
 
@@ -598,7 +595,7 @@ function displayPlayers() {
   console.log(':::PLAYERS:::');
   for (var u of users) {
     console.log(
-      `${u.player.name} in game: ${u.player.stage == 3} | searching: ${u.player.queue.type != null} | onTeam: ${u.player.onTeam}`,
+      `${u.player.name} stage: ${u.player.stage} | in game: ${u.player.stage == 3} | searching: ${u.player.queue.type != null} | onTeam: ${u.player.onTeam}`,
       u.player.queue
     );
   }
@@ -619,7 +616,8 @@ function cleanUpPlayers() {
   for (var q of queues) {
     var invalidQueuePlayers = [];
     for (var qp of q.players) {
-      if (users.find((u) => u.player.teg_id == qp) == undefined) {
+      var user = users.find((u) => u.player.teg_id == qp);
+      if (user == undefined || (!user.player.inGame && user.player.stage < 2)) {
         invalidQueuePlayers.push(qp);
         console.log(`${qp} is an invalid queue member!`);
       }

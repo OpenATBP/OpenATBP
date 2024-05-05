@@ -1,8 +1,6 @@
 package xyz.openatbp.extension.reqhandlers;
 
-import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.List;
 
 import com.smartfoxserver.v2.annotations.MultiHandler;
 import com.smartfoxserver.v2.entities.User;
@@ -18,7 +16,6 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.Base;
 import xyz.openatbp.extension.game.actors.BaseTower;
 import xyz.openatbp.extension.game.actors.UserActor;
-import xyz.openatbp.extension.pathfinding.MovementManager;
 
 @MultiHandler
 public class HitActorHandler extends BaseClientRequestHandler {
@@ -68,36 +65,10 @@ public class HitActorHandler extends BaseClientRequestHandler {
             } else if (!actor.withinRange(target)
                     && actor.canMove()
                     && actor.canAttack()) { // Move actor
-                int attackRange =
-                        parentExt.getActorStats(actor.getAvatar()).get("attackRange").asInt();
-                Line2D movementLine = new Line2D.Float(location, target.getLocation());
-                float targetDistance =
-                        (float) target.getLocation().distance(location) - attackRange;
-                List<Point2D> newPath =
-                        MovementManager.getPath(
-                                parentExt.getRoomHandler(actor.getRoom().getName()),
-                                location,
-                                target.getLocation());
-                if (newPath != null && newPath.size() > 1) {
-                    actor.setPath(newPath);
-                } else actor.moveWithCollision(target.getLocation());
+                actor.moveWithCollision(target.getLocation());
             } else if (actor.withinRange(target)) {
                 actor.stopMoving();
             }
-        }
-    }
-
-    public static class MovementStopper implements Runnable {
-
-        UserActor actor;
-
-        public MovementStopper(UserActor actor) {
-            this.actor = actor;
-        }
-
-        @Override
-        public void run() {
-            actor.setCanMove(true);
         }
     }
 }

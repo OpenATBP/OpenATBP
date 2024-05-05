@@ -157,15 +157,34 @@ public abstract class Actor {
     }
 
     public void moveWithCollision(Point2D dest) {
-        Line2D testLine = new Line2D.Float(this.location, dest);
-        Point2D newPoint =
-                MovementManager.getPathIntersectionPoint(
-                        this.parentExt,
-                        this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap(),
-                        testLine);
-        if (newPoint != null) {
-            this.move(newPoint);
-        } else this.move(dest);
+        List<Point2D> path = new ArrayList<>();
+        try {
+            path =
+                    MovementManager.getPath(
+                            this.parentExt.getRoomHandler(this.room.getName()),
+                            this.location,
+                            dest);
+        } catch (Exception e) {
+            Console.logWarning(this.id + " could not form a path.");
+        }
+        if (path != null && path.size() > 2) {
+            this.setPath(path);
+        } else {
+            Line2D testLine = new Line2D.Float(this.location, dest);
+            Point2D newPoint =
+                    MovementManager.getPathIntersectionPoint(
+                            this.parentExt,
+                            this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap(),
+                            testLine);
+            if (newPoint != null) {
+                this.move(newPoint);
+            } else this.move(dest);
+        }
+    }
+
+    public boolean isPointAtEndOfPath(Point2D point) {
+        if (this.path != null) return point.distance(this.path.get(this.path.size() - 1)) <= 0.5d;
+        else return point.distance(this.movementLine.getP2()) <= 0.5d;
     }
 
     public void setPath(List<Point2D> path) {
@@ -355,6 +374,37 @@ public abstract class Actor {
         }
     }
 
+    public void addToDamageQueue(
+            Actor attacker,
+            double damage,
+            JsonNode attackData,
+            boolean dotDamage,
+            String debugString) {
+        if (this.currentHealth <= 0) return;
+        if (attacker.getActorType() == ActorType.PLAYER)
+            Console.debugLog(
+                    attacker.getDisplayName()
+                            + " is adding damage to "
+                            + this.id
+                            + " at "
+                            + System.currentTimeMillis()
+                            + " with "
+                            + debugString);
+        ISFSObject data = new SFSObject();
+        data.putClass("attacker", attacker);
+        data.putDouble("damage", damage);
+        data.putClass("attackData", attackData);
+        this.damageQueue.add(data);
+        if (attacker.getActorType() == ActorType.PLAYER
+                && this.getAttackType(attackData) == AttackType.SPELL
+                && this.getActorType() != ActorType.TOWER
+                && this.getActorType() != ActorType.BASE) {
+            UserActor ua = (UserActor) attacker;
+            ua.addHit(dotDamage);
+            ua.handleSpellVamp(this.getMitigatedDamage(damage, AttackType.SPELL, ua), dotDamage);
+        }
+    }
+
     public void handleDamageQueue() {
         List<ISFSObject> queue = new ArrayList<>(this.damageQueue);
         this.damageQueue = new ArrayList<>();
@@ -436,7 +486,6 @@ public abstract class Actor {
             if (attackType == AttackType.PHYSICAL) {
                 modifier = 100 / (100 + armor);
             } else modifier = 100 / (100 + spellResist);
-
             return (int) Math.round(rawDamage * modifier);
         } catch (Exception e) {
             e.printStackTrace();
@@ -542,8 +591,13 @@ public abstract class Actor {
         this.stopMoving();
         Line2D originalLine = new Line2D.Double(source, this.location);
         Line2D knockBackLine = Champion.extendLine(originalLine, 5f);
-        Line2D finalLine =
-                new Line2D.Double(this.location, MovementManager.getDashPoint(this, knockBackLine));
+        Point2D finalPoint =
+                MovementManager.getPathIntersectionPoint(
+                        this.parentExt,
+                        this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap(),
+                        knockBackLine);
+        if (finalPoint == null) finalPoint = knockBackLine.getP2();
+        Line2D finalLine = new Line2D.Double(this.location, finalPoint);
         this.addState(ActorState.AIRBORNE, 0d, 250);
         double speed = this.location.distance(finalLine.getP2()) / 0.275f;
         ExtensionCommands.knockBackActor(
@@ -566,6 +620,10 @@ public abstract class Actor {
                 this.path = null;
             }
         }
+    }
+
+    public boolean isDead() {
+        return this.dead;
     }
 
     protected boolean isPointNearDestination(Point2D p) {

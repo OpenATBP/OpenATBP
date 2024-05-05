@@ -117,7 +117,7 @@ public class Marceline extends UserActor {
                     .getTaskScheduler()
                     .schedule(
                             new MarcelineAttack(a, this.handleAttack(a)),
-                            350,
+                            500,
                             TimeUnit.MILLISECONDS);
         }
     }

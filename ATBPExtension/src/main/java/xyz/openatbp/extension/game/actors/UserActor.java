@@ -55,6 +55,7 @@ public class UserActor extends Actor {
     private static boolean speedDebug;
     private static boolean damageDebug;
     protected double hits = 0;
+    private Point2D queuedDest = null;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -787,6 +788,16 @@ public class UserActor extends Actor {
                 || this.getPlayerStat("healthRegen") < 0;
     }
 
+    public void queueMovement(Point2D newDest) {
+        this.queuedDest = newDest;
+    }
+
+    @Override
+    public void clearPath() {
+        super.clearPath();
+        this.queuedDest = null;
+    }
+
     @Override
     public void update(int msRan) {
         this.handleDamageQueue();
@@ -796,6 +807,14 @@ public class UserActor extends Actor {
                     && System.currentTimeMillis() > this.timeKilled + (deathTime * 1500L))
                 this.respawn();
             else return;
+        }
+        if (this.canMove()
+                && !this.isAutoAttacking
+                && !this.isDashing
+                && this.queuedDest != null
+                && this.target == null) { // TODO: This could probably just be merged into canMove
+            this.moveWithCollision(this.queuedDest);
+            this.queuedDest = null;
         }
         if (!this.isStopped()) {
             this.updateMovementTime();
@@ -846,26 +865,11 @@ public class UserActor extends Actor {
             if (this.withinRange(target) && this.canAttack()) {
                 this.autoAttack(target);
             } else if (!this.withinRange(target) && this.canMove() && !this.isAutoAttacking) {
-                double attackRange = this.getPlayerStat("attackRange");
-                Line2D movementLine = new Line2D.Float(this.location, target.getLocation());
-                // float targetDistance =
-                // (float)(target.getLocation().distance(currentPoint)-attackRange);
-                // Line2D newPath = Champion.getDistanceLine(movementLine,targetDistance);
-                if (this.path != null) {
-                    if (this.path.get(this.path.size() - 1).distance(this.target.getLocation())
-                            > 0.1f) {
-                        this.setPath(
-                                MovementManager.getPath(
-                                        this.parentExt.getRoomHandler(this.room.getName()),
-                                        this.location,
-                                        this.target.getLocation()));
-                    }
-                } else {
-                    Line2D finalPath =
-                            MovementManager.getColliderLine(parentExt, room, movementLine);
-                    if (finalPath.getP2().distance(this.movementLine.getP2()) > 0.1f) {
-                        this.move(finalPath.getP2());
-                    }
+                if (!this.isPointAtEndOfPath(
+                        this.target
+                                .getLocation())) { // I put this here so it does not spam movement
+                    // commands if their target hasn't moved
+                    this.moveWithCollision(this.target.getLocation());
                 }
             }
         } else {
@@ -1660,10 +1664,6 @@ public class UserActor extends Actor {
     public void destroy() {
         this.dead = true;
         ExtensionCommands.destroyActor(this.parentExt, this.room, this.id);
-    }
-
-    public boolean isDead() {
-        return this.dead;
     }
 
     public void clearIconHandlers() {
