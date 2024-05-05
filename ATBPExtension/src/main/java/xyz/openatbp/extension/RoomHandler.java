@@ -1296,8 +1296,8 @@ public class RoomHandler implements Runnable {
                     else win = 0d;
                     int eloGain = ChampionData.getEloGain(ua, this.players, win);
                     int currentElo = dataObj.get("player").get("elo").asInt();
-                    for(double tierElo : ChampionData.ELO_TIERS){
-                        if(currentElo+eloGain+1 == (int)tierElo){
+                    for (double tierElo : ChampionData.ELO_TIERS) {
+                        if (currentElo + eloGain + 1 == (int) tierElo) {
                             eloGain++;
                             break;
                         }
@@ -1339,7 +1339,9 @@ public class RoomHandler implements Runnable {
                                             this.room.getGroupId().equalsIgnoreCase("PVP") ? 1 : 0),
                                     Updates.inc("player.elo", eloGain),
                                     Updates.set("player.rankProgress", currentRankProgress),
-                                    Updates.set("player.tier",ChampionData.getTier(currentElo+eloGain)),
+                                    Updates.set(
+                                            "player.tier",
+                                            ChampionData.getTier(currentElo + eloGain)),
                                     Updates.inc("player.winsPVP", wins),
                                     Updates.inc(
                                             "player.points",

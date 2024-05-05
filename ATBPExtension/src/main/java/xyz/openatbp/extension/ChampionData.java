@@ -561,7 +561,7 @@ public class ChampionData {
         }
         int tier = getTier(myElo);
         double kFactor = 20 - (5 * tier);
-        if(tier == 0) kFactor+=5;
+        if (tier == 0) kFactor += 5;
         double averageEnemyElo = Math.round(teamElo / teamCount);
         double myProb = 1d / (1 + Math.pow(10, (averageEnemyElo - myElo) / 400));
         double eloGain = Math.round(kFactor * (result - myProb));
@@ -577,8 +577,8 @@ public class ChampionData {
         return 4;
     }
 
-    public static boolean tierChanged(double originalElo, double eloGain){
-        return getTier(originalElo) != getTier(originalElo+eloGain);
+    public static boolean tierChanged(double originalElo, double eloGain) {
+        return getTier(originalElo) != getTier(originalElo + eloGain);
     }
 
     private static String getDefeatedSound(boolean enemy, boolean ally) {
