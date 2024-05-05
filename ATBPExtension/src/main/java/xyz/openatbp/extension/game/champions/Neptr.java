@@ -58,8 +58,10 @@ public class Neptr extends UserActor {
                     this.avatar.contains("racing") ? "neptr_racing_passive" : "sfx_neptr_passive";
             ExtensionCommands.playSound(
                     this.parentExt, this.player, this.id, passiveSound, this.location);
-            ExtensionCommands.playSound(
-                    this.parentExt, this.room, this.id, "vo/vo_neptr_passive", this.location);
+            if (!this.passiveActive) {
+                ExtensionCommands.playSound(
+                        this.parentExt, this.room, this.id, "vo/vo_neptr_passive", this.location);
+            }
             this.addEffect("speed", this.getStat("speed") * 0.35d, 3500);
             this.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.25d, 3500);
             if (this.passiveActive) {

@@ -264,7 +264,7 @@ public class Lemongrab extends UserActor {
                         break;
                     case 2:
                         voiceLine = "lemongrab_dungeon_12years";
-                        ultDelay = 800;
+                        ultDelay = 750;
                         break;
                     case 3:
                         voiceLine = "lemongrab_dungeon_1myears";

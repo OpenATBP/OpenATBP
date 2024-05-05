@@ -28,6 +28,7 @@ public class FlamePrincess extends UserActor {
     private int dashTime = 0;
     private boolean wUsed = false;
     private boolean polymorphActive = false;
+    private boolean ultimateUsed = false;
     private long ultStartTime = 0;
     private long lastPolymorphTime = 0;
     private float fpScale = 1;
@@ -247,12 +248,19 @@ public class FlamePrincess extends UserActor {
             case 3: // E
                 this.canCast[2] = false;
                 if (!ultStarted && ultUses == 3) {
+                    ultimateUsed = true;
+                    Runnable resetUltimateUsed = () -> ultimateUsed = false;
+                    parentExt
+                            .getTaskScheduler()
+                            .schedule(resetUltimateUsed, castDelay, TimeUnit.MILLISECONDS);
+                    ExtensionCommands.actorAbilityResponse(
+                            this.parentExt, this.player, "e", true, castDelay, 0);
                     parentExt
                             .getTaskScheduler()
                             .schedule(
                                     new FlameAbilityRunnable(
                                             ability, spellData, cooldown, gCooldown, dest),
-                                    200,
+                                    castDelay,
                                     TimeUnit.MILLISECONDS);
                     this.ultStartTime = System.currentTimeMillis();
                     this.ultStarted = true;
@@ -304,12 +312,14 @@ public class FlamePrincess extends UserActor {
                                 new Point2D.Float(0, 0));
                     }
                     if (this.ultUses > 0) {
+                        ExtensionCommands.actorAbilityResponse(
+                                this.parentExt, this.player, "e", true, castDelay, 0);
                         parentExt
                                 .getTaskScheduler()
                                 .schedule(
                                         new FlameAbilityRunnable(
                                                 ability, spellData, cooldown, gCooldown, dest),
-                                        this.dashTime,
+                                        castDelay,
                                         TimeUnit.MILLISECONDS);
                     } else {
                         parentExt
@@ -342,8 +352,14 @@ public class FlamePrincess extends UserActor {
     }
 
     @Override
+    public boolean canAttack() {
+        if (ultimateUsed) return false;
+        return super.canAttack();
+    }
+
+    @Override
     public boolean canMove() {
-        if (this.wUsed) return false;
+        if (this.wUsed || this.ultimateUsed) return false;
         else return super.canMove();
     }
 

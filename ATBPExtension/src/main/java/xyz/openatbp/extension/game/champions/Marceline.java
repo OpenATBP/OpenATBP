@@ -443,10 +443,14 @@ public class Marceline extends UserActor {
                         ExtensionCommands.removeFx(parentExt, room, id + "_batRegen");
                         healthRegenEffectActive = false;
                     }
-                    double currentAttackSpeed = getPlayerStat("attackSpeed");
                     attackCooldown = 0d;
-                    Marceline.this.addEffect("attackSpeed", 500 - currentAttackSpeed, 3000);
-
+                    double delta = (getPlayerStat("attackSpeed") / 2) * -1;
+                    if (getPlayerStat("attackSpeed") - delta > 500) {
+                        Marceline.this.addEffect("attackSpeed", delta, 3000);
+                    } else {
+                        Marceline.this.addEffect(
+                                "attackSpeed", 500 - getPlayerStat("attackSpeed"), 3000);
+                    }
                 } else {
                     String morphBeastVo =
                             (avatar.contains("marshall"))

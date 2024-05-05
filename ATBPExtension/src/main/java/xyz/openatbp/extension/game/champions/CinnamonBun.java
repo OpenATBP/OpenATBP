@@ -337,6 +337,7 @@ public class CinnamonBun extends UserActor {
                     this.changeHealth((int) ((double) (this.getMaxHealth()) * 0.05d));
                     this.ultPoint = dest;
                     this.ultStart = System.currentTimeMillis();
+                    this.lastUltTick = System.currentTimeMillis();
                     ExtensionCommands.playSound(
                             this.parentExt, this.room, "", "sfx_cb_power3a", dest);
                     ExtensionCommands.createWorldFX(
