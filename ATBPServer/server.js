@@ -54,14 +54,14 @@ async function addBetaTesters(collection) {
   }
 }
 
-async function resetElo(collection){
+async function resetElo(collection) {
   try {
     var cursor = collection.find();
     for await (var doc of cursor) {
       //console.log(doc.friends);
       var q = { 'user.TEGid': doc.user.TEGid };
       var o = { upsert: true };
-      var up = { $set: { "player.elo": 1150.0, "player.tier":1.0 } };
+      var up = { $set: { 'player.elo': 1150.0, 'player.tier': 1.0 } };
 
       var res = await collection.updateOne(q, up, o);
       console.log(res);

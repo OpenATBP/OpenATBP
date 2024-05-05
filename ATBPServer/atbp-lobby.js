@@ -362,7 +362,7 @@ function startGame(players, type) {
       user.player.stage = 2;
       var t = teams.find((tm) => tm.players.includes(user.player.teg_id));
       if (t != undefined) removeTeam(t);
-    }else console.log(`${p.teg_id} has no valid user!`);
+    } else console.log(`${p.teg_id} has no valid user!`);
   }
 
   var queueObj = {
@@ -616,7 +616,7 @@ function cleanUpPlayers() {
   for (var q of queues) {
     var invalidQueuePlayers = [];
     for (var qp of q.players) {
-      var user = users.find(u => u.player.teg_id == qp);
+      var user = users.find((u) => u.player.teg_id == qp);
       if (user == undefined || (!user.player.inGame && user.player.stage < 2)) {
         invalidQueuePlayers.push(qp);
         console.log(`${qp} is an invalid queue member!`);
