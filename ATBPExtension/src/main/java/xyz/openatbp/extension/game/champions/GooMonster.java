@@ -1,6 +1,7 @@
 package xyz.openatbp.extension.game.champions;
 
 import java.awt.geom.Point2D;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -69,7 +70,7 @@ public class GooMonster extends Monster {
                             a.addToDamageQueue(this, 4, newAttackData, true);
                         }
                     }
-                } catch (Exception e) {
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }

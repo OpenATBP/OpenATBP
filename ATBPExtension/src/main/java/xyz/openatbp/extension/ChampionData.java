@@ -560,8 +560,18 @@ public class ChampionData {
             }
         }
         int tier = getTier(myElo);
-        double kFactor = 20 - (5 * tier);
-        if (tier == 0) kFactor += 5;
+        double kFactor = 100;
+        switch (tier) {
+            case 1:
+                kFactor = 50;
+                break;
+            case 2:
+                kFactor = 35;
+                break;
+            case 3:
+                kFactor = 25;
+                break;
+        }
         double averageEnemyElo = Math.round(teamElo / teamCount);
         double myProb = 1d / (1 + Math.pow(10, (averageEnemyElo - myElo) / 400));
         double eloGain = Math.round(kFactor * (result - myProb));

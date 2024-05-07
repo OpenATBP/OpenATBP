@@ -2,7 +2,6 @@ package xyz.openatbp.extension.reqhandlers;
 
 import java.awt.geom.Point2D;
 
-import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
@@ -35,7 +34,6 @@ public class MoveActorHandler extends BaseClientRequestHandler {
         if (user != null && user.canMove() && !user.getIsDashing() && !user.getIsAutoAttacking()) {
             user.resetIdleTime();
             user.clearPath();
-            Room room = sender.getLastJoinedRoom();
             long timeSinceBasicAttack =
                     sender.getVariable("stats").getSFSObjectValue().getLong("timeSinceBasicAttack");
             if ((System.currentTimeMillis() - timeSinceBasicAttack) < 500)

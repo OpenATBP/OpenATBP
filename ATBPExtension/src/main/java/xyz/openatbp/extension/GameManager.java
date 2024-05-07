@@ -222,7 +222,7 @@ public class GameManager {
                 true);
         try { // Sets all the room variables once the game is about to begin
             setRoomVariables(room);
-        } catch (SFSVariableException e) {
+        } catch (SFSVariableException e) { // TODO: Disconnect all players if this fails
             e.printStackTrace();
         }
 
