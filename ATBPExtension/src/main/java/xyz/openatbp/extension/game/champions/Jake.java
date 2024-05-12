@@ -291,8 +291,7 @@ public class Jake extends UserActor {
                                                 1f,
                                                 "stretchy_grab"),
                                         this.location,
-                                        dest,
-                                        Q_SPELL_RANGE);
+                                        dest);
                             }
                         };
                 parentExt.getTaskScheduler().schedule(projectileDelay, 300, TimeUnit.MILLISECONDS);
@@ -570,8 +569,7 @@ public class Jake extends UserActor {
         return octagon;
     }
 
-    private void fireQProjectile(
-            Projectile projectile, Point2D location, Point2D dest, float abilityRange) {
+    private void fireQProjectile(Projectile projectile, Point2D location, Point2D dest) {
         double x = location.getX();
         double y = location.getY();
         double dx = dest.getX() - location.getX();
@@ -579,8 +577,8 @@ public class Jake extends UserActor {
         double length = Math.sqrt(dx * dx + dy * dy);
         double unitX = dx / length;
         double unitY = dy / length;
-        double extendedX = x + abilityRange * unitX;
-        double extendedY = y + abilityRange * unitY;
+        double extendedX = x + Jake.Q_SPELL_RANGE * unitX;
+        double extendedY = y + Jake.Q_SPELL_RANGE * unitY;
         Point2D lineEndPoint = new Point2D.Double(extendedX, extendedY);
         double speed = 8.5;
         ExtensionCommands.createProjectile(

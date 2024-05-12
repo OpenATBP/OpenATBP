@@ -3,9 +3,7 @@ package xyz.openatbp.extension.game.champions;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -14,6 +12,7 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
@@ -133,20 +132,21 @@ public class Neptr extends UserActor {
     public void fireProjectile(
             Projectile projectile, Point2D location, Point2D dest, float abilityRange) {
         super.fireProjectile(projectile, location, dest, abilityRange);
-        ExtensionCommands.playSound(
-                this.parentExt, this.room, this.id, "sfx_neptr_boommeringue", this.location);
-        ExtensionCommands.createActorFX(
-                this.parentExt,
-                this.room,
-                projectile.getId(),
-                "neptr_pie_trail",
-                (int) projectile.getEstimatedDuration() + 1000,
-                projectile.getId() + "_fx",
-                true,
-                "Bip001",
-                true,
-                true,
-                this.team);
+        Runnable creationDelay =
+                () ->
+                        ExtensionCommands.createActorFX(
+                                this.parentExt,
+                                this.room,
+                                projectile.getId(),
+                                "neptr_pie_trail",
+                                10000,
+                                projectile.getId() + "_fx",
+                                true,
+                                "Bip001",
+                                true,
+                                true,
+                                this.team);
+        parentExt.getTaskScheduler().schedule(creationDelay, 200, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -343,13 +343,12 @@ public class Neptr extends UserActor {
     }
 
     private class NeptrProjectile extends Projectile {
-
-        private boolean reversed = false;
-        private boolean intermission = false;
-        private Point2D lastNeptrLocation = null;
-        private long lastMoved = 0;
-        private Map<Actor, Long> hitBuffer;
-        private double damageReduction = 0d;
+        private boolean isReversed = false;
+        private boolean doPieReversing = false;
+        private float damageReduction = 0;
+        private List<Actor> damagedActors;
+        private boolean clear = false;
+        private boolean projectileWasStopped = false;
 
         public NeptrProjectile(
                 ATBPExtension parentExt,
@@ -357,113 +356,96 @@ public class Neptr extends UserActor {
                 Line2D path,
                 float speed,
                 float hitboxRadius,
-                String id) {
-            super(parentExt, owner, path, speed, hitboxRadius, id);
-            this.hitBuffer = new HashMap<>(3);
+                String projectileAsset) {
+            super(parentExt, owner, path, speed, hitboxRadius, projectileAsset);
+            this.damagedActors = new ArrayList<>();
         }
 
         @Override
         public void update(RoomHandler roomHandler) {
             if (destroyed) return;
+            this.updateTimeTraveled();
             Actor hitActor = this.checkPlayerCollision(roomHandler);
             if (hitActor != null) {
                 this.hit(hitActor);
             }
-            if (this.intermission) return;
-            if (this.lastNeptrLocation != null
-                    && Neptr.this.getLocation().distance(this.lastNeptrLocation) > 0.01) {
-                if (System.currentTimeMillis() - this.lastMoved >= 300) this.moveTowardsNeptr();
+            if (this.doPieReversing) {
+                this.estimatedDuration =
+                        (this.startingLocation.distance(Neptr.this.getLocation()) / 8) * 1000;
+                this.destination = Neptr.this.getLocation();
+                ExtensionCommands.moveActor(
+                        this.parentExt,
+                        this.owner.getRoom(),
+                        this.id,
+                        this.getLocation(),
+                        this.destination,
+                        8,
+                        true);
             }
-            this.updateTimeTraveled();
-            if (this.destination.distance(this.getLocation()) <= 0.01
+            if (this.destination.distance(this.getLocation()) <= getDistance()
                     || System.currentTimeMillis() - this.startTime > this.estimatedDuration) {
-                if (!this.reversed) {
-                    this.intermission = true;
-                    Runnable handleIntermission =
+                if (this.isReversed) {
+                    Console.debugLog("Projectile being destroyed in update!");
+                    this.destroy();
+                } else if (!this.projectileWasStopped) {
+                    this.projectileWasStopped = true;
+                    this.startingLocation = this.path.getP2();
+                    int reversingDelay = 500;
+                    Runnable enableReversing =
                             () -> {
-                                // ExtensionCommands.playSound(this.parentExt,this.owner.getRoom(),this.id,"sfx_neptr_boommeringue",this.location);
-                                this.intermission = false;
-                                this.damageReduction = 0d;
-                                this.moveTowardsNeptr();
+                                this.startTime = System.currentTimeMillis();
+                                this.timeTraveled = 0;
+                                this.doPieReversing = true;
+                                this.isReversed = true;
+                                this.damageReduction = 0;
+
+                                if (!this.clear) {
+                                    this.damagedActors.clear();
+                                    this.clear = true;
+                                }
                             };
-                    parentExt.getTaskScheduler().schedule(handleIntermission, 1, TimeUnit.SECONDS);
-                } else this.destroy();
+                    parentExt
+                            .getTaskScheduler()
+                            .schedule(enableReversing, reversingDelay, TimeUnit.MILLISECONDS);
+                }
             }
+        }
+
+        private float getDistance() {
+            return this.isReversed ? 1 : 0.01f;
         }
 
         @Override
         public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            List<Actor> teammates = this.getTeammates(roomHandler);
             for (Actor a : roomHandler.getActors()) {
-                if (!this.hitBuffer.containsKey(a)
-                        || (this.hitBuffer.containsKey(a)
-                                && System.currentTimeMillis() - this.hitBuffer.get(a) >= 500)) {
-                    if ((a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE)
-                            && !teammates.contains(a)) { // TODO: Change to not hit teammates
-                        double collisionRadius =
-                                parentExt
-                                        .getActorData(a.getAvatar())
-                                        .get("collisionRadius")
-                                        .asDouble();
-                        if (a.getLocation().distance(location) <= hitbox + collisionRadius) {
-                            return a;
-                        }
+                if (!this.damagedActors.contains(a)
+                        && a.getActorType() != ActorType.TOWER
+                        && a.getActorType() != ActorType.BASE
+                        && a.getTeam() != owner.getTeam()) {
+                    double collisionRadius =
+                            parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
+                    if (a.getLocation().distance(location) <= hitbox + collisionRadius
+                            && !a.getAvatar().equalsIgnoreCase("neptr_mine")) {
+                        return a;
                     }
                 }
             }
             return null;
         }
 
-        private void moveTowardsNeptr() {
-            this.lastMoved = System.currentTimeMillis();
-            this.startingLocation = this.location;
-            this.destination = Neptr.this.getLocation();
-            this.lastNeptrLocation = this.destination;
-            this.path = new Line2D.Float(this.startingLocation, this.destination);
-            this.startTime = System.currentTimeMillis();
-            this.estimatedDuration = (path.getP1().distance(path.getP2()) / speed) * 1000f;
-            if (!this.reversed) {
-                ExtensionCommands.removeFx(
-                        this.parentExt, this.owner.getRoom(), Neptr.this.id + this.id + "_fx");
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.owner.getRoom(),
-                        this.id,
-                        "neptr_pie_trail",
-                        (int) this.estimatedDuration + 1000,
-                        Neptr.this.id + this.id + "_fx",
-                        true,
-                        "",
-                        true,
-                        true,
-                        this.owner.getTeam());
-            }
-            this.timeTraveled = 0f;
-            ExtensionCommands.moveActor(
-                    this.parentExt,
-                    this.owner.getRoom(),
-                    this.id,
-                    this.location,
-                    this.destination,
-                    this.speed,
-                    true);
-            this.reversed = true;
-        }
-
         @Override
         protected void hit(Actor victim) {
-            this.hitBuffer.put(victim, System.currentTimeMillis());
-            JsonNode attackData = this.parentExt.getAttackData(Neptr.this.getAvatar(), "spell1");
-            double damage = Neptr.this.getSpellDamage(attackData) * (1d - this.damageReduction);
-            victim.addToDamageQueue(this.owner, damage, attackData, false);
+            this.damagedActors.add(victim);
+            JsonNode spellData = parentExt.getAttackData(Neptr.this.getAvatar(), "spell1");
+            victim.addToDamageQueue(
+                    Neptr.this,
+                    getSpellDamage(spellData) * (1 - damageReduction),
+                    spellData,
+                    false);
             ExtensionCommands.playSound(
-                    this.parentExt,
-                    this.owner.getRoom(),
-                    victim.getId(),
-                    "akubat_projectileHit1",
-                    victim.getLocation());
-            this.damageReduction += 0.15d;
-            if (this.damageReduction > 1d) this.damageReduction = 1d;
+                    parentExt, room, "", "akubat_projectileHit1", victim.getLocation());
+            this.damageReduction += 0.15f;
+            if (this.damageReduction > 0.75) this.damageReduction = 0.75f;
         }
     }
 
