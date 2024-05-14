@@ -250,8 +250,9 @@ public class Minion extends Actor {
         this.handleDamageQueue();
         this.handleActiveEffects();
         if (this.dead) return;
-        if (this.target != null && isInvisible(target)) this.target = null;
-
+        if (this.target != null && isInvisible(target)
+                || this.target != null && this.target.getHealth() <= 0)
+            this.target = null; // isDead doesn't work?
         if (msRan % 1000 == 0) {
             /*
             for(UserActor k : aggressors.keySet()){

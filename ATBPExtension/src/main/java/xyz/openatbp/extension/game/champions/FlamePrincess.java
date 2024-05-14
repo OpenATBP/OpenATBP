@@ -312,14 +312,13 @@ public class FlamePrincess extends UserActor {
                                 new Point2D.Float(0, 0));
                     }
                     if (this.ultUses > 0) {
-                        ExtensionCommands.actorAbilityResponse(
-                                this.parentExt, this.player, "e", true, castDelay, 0);
+                        int dashCooldown = 350;
                         parentExt
                                 .getTaskScheduler()
                                 .schedule(
                                         new FlameAbilityRunnable(
                                                 ability, spellData, cooldown, gCooldown, dest),
-                                        castDelay,
+                                        dashCooldown,
                                         TimeUnit.MILLISECONDS);
                     } else {
                         parentExt
