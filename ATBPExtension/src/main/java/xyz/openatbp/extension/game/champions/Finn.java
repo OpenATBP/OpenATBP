@@ -31,6 +31,7 @@ public class Finn extends UserActor {
     private float ultY;
     private long qStartTime = 0;
     private long eStartTime = 0;
+    private boolean isCastingUlt = false;
     private Path2D finnUltRing;
     private boolean ringBoostApplied = false;
     private static final float W_OFFSET_DISTANCE = 1.25f;
@@ -126,6 +127,7 @@ public class Finn extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
+        if (this.isCastingUlt) this.canCast[1] = false;
         if (ultActivated) {
             if (finnUltRing != null
                     && finnUltRing.contains(this.getLocation())
@@ -320,8 +322,17 @@ public class Finn extends UserActor {
                                 TimeUnit.MILLISECONDS);
                 break;
             case 3:
+                this.isCastingUlt = true;
                 int immobilizationTime = 1200;
                 this.stopMoving(immobilizationTime);
+                Runnable enableDashCasting =
+                        () -> {
+                            this.isCastingUlt = false;
+                            this.canCast[1] = true;
+                        };
+                parentExt
+                        .getTaskScheduler()
+                        .schedule(enableDashCasting, immobilizationTime, TimeUnit.MILLISECONDS);
                 this.canCast[2] = false;
                 Runnable cast =
                         () -> {
