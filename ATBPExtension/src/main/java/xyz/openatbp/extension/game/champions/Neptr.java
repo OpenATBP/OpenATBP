@@ -318,7 +318,7 @@ public class Neptr extends UserActor {
             for (Actor a :
                     Champion.getActorsInRadius(
                             parentExt.getRoomHandler(room.getName()), ultLocation, 3f)) {
-                if (isNonStructure(a)) {
+                if (a.getTeam() != Neptr.this.team) {
                     a.knockback(Neptr.this.location);
                     a.addState(ActorState.SILENCED, 0d, 1000);
                     ExtensionCommands.createActorFX(

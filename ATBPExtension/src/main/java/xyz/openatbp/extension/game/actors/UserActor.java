@@ -1447,12 +1447,12 @@ public class UserActor extends Actor {
         if (a.getActorType() == ActorType.PLAYER) this.updateXPWorth("kill");
         for (Actor actor :
                 Champion.getActorsInRadius(
-                        this.parentExt.getRoomHandler(this.room.getName()), this.location, 10f)) {
+                        this.parentExt.getRoomHandler(this.room.getName()), this.location, 8f)) {
             if (actor.getActorType() == ActorType.PLAYER
                     && !actor.getId().equalsIgnoreCase(this.id)
                     && actor.getTeam() == this.team) {
                 UserActor ua = (UserActor) actor;
-                ua.addXP((int) Math.floor((double) a.getXPWorth() / 2d));
+                ua.addXP((int) Math.floor(a.getXPWorth()));
             }
         }
     }
