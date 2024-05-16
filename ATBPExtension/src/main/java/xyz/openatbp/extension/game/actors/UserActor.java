@@ -581,7 +581,10 @@ public class UserActor extends Actor {
                 && a.getActorType() != ActorType.BASE;
     }
 
-    public void updateXPWorth(String event) {
+    @Deprecated
+    public void updateXPWorth(
+            String event) { // Deprecating for now instead of removal in case we want to revisit
+        // this mechanic
         switch (event) {
             case "kill":
                 this.xpWorth += 5;
@@ -604,7 +607,7 @@ public class UserActor extends Actor {
         try {
             if (this.dead) return;
             this.dead = true;
-            this.updateXPWorth("death");
+            // this.updateXPWorth("death");
             this.timeKilled = System.currentTimeMillis();
             this.canMove = false;
             if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
@@ -689,7 +692,7 @@ public class UserActor extends Actor {
                     if (actor.getActorType() == ActorType.PLAYER
                             && !actor.getId().equalsIgnoreCase(realKiller.getId())) {
                         UserActor ua = (UserActor) actor;
-                        ua.updateXPWorth("assist");
+                        // ua.updateXPWorth("assist");
                         ua.addXP(this.getXPWorth());
                         ua.increaseStat("assists", 1);
                     }
@@ -1443,7 +1446,7 @@ public class UserActor extends Actor {
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
         this.addXP(a.getXPWorth());
-        if (a.getActorType() == ActorType.PLAYER) this.updateXPWorth("kill");
+        // if (a.getActorType() == ActorType.PLAYER) this.updateXPWorth("kill");
         if (a.getActorType() == ActorType.TOWER) {
             for (UserActor ua : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                 if (ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) {

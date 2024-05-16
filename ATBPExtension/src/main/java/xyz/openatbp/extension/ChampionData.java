@@ -16,7 +16,7 @@ import xyz.openatbp.extension.game.actors.UserActor;
 
 public class ChampionData {
 
-    private static final int[] XP_LEVELS = {100, 210, 330, 460, 600, 670, 850, 1040, 1240, 1450};
+    private static final int[] XP_LEVELS = {100, 210, 350, 520, 720, 950, 1210, 1500, 1820, 2170};
     public static final double[] ELO_TIERS = {0, 1149, 1350, 1602};
     public static final double MAX_ELO = 2643;
 

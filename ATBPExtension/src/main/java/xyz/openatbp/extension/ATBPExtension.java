@@ -20,6 +20,8 @@ import org.bson.Document;
 
 import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.entities.Room;
+import com.smartfoxserver.v2.entities.User;
+import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.extensions.SFSExtension;
 import com.smartfoxserver.v2.util.TaskScheduler;
 
@@ -50,6 +52,7 @@ public class ATBPExtension extends SFSExtension {
     HashMap<String, List<String>> tips = new HashMap<>();
 
     HashMap<String, RoomHandler> roomHandlers = new HashMap<>();
+    Map<String, StressLogger> commandStressLog = new HashMap<>();
     MongoClient mongoClient;
     MongoDatabase database;
     MongoCollection<Document> playerDatabase;
@@ -457,6 +460,14 @@ public class ATBPExtension extends SFSExtension {
             if (p.contains(loc)) return i;
         }
         return -1;
+    }
+
+    @Override
+    public void send(String cmdName, ISFSObject params, User recipient) {
+        super.send(cmdName, params, recipient);
+        if (this.commandStressLog.containsKey(cmdName)) {
+            this.commandStressLog.get(cmdName).update();
+        } else this.commandStressLog.put(cmdName, new StressLogger(cmdName));
     }
 
     public boolean isBrushOccupied(RoomHandler room, UserActor a) {
