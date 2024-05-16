@@ -37,7 +37,7 @@ public class StressLogger {
                 this.userUsage.put(target, System.currentTimeMillis());
             }
             for (String user : this.userCount.keySet()) {
-                if (this.userCount.get(user) >= 50)
+                if (this.userCount.get(user) >= (this.command.contains("actor_data") ? 100 : 50))
                     Console.logWarning(
                             user
                                     + " has used "
@@ -45,7 +45,7 @@ public class StressLogger {
                                     + " "
                                     + this.userCount.get(user)
                                     + " times! Last used "
-                                    + this.userUsage.get(user)
+                                    + (System.currentTimeMillis() - this.userUsage.get(user))
                                     + " ms ago.");
             }
         } else {
