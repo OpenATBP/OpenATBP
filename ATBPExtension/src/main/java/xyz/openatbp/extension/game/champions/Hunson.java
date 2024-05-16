@@ -60,7 +60,7 @@ public class Hunson extends UserActor {
                 }
             }
         }
-        if (this.ultActivated) {
+        if (this.ultActivated && !this.dead) {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
             for (Actor a :
                     Champion.getActorsInRadius(
@@ -86,7 +86,7 @@ public class Hunson extends UserActor {
                 ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultSuck");
                 this.ultActivated = false;
             }
-        }
+        } else if (this.ultActivated) this.endUlt();
         if (this.qActivated
                 && System.currentTimeMillis() - this.qStartTime >= 6000
                 && this.qUses > 0) {

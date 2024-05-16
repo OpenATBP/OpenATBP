@@ -292,8 +292,22 @@ public abstract class Actor {
         }
     }
 
+    public boolean hasMovementCC() {
+        ActorState[] cc = {
+            ActorState.AIRBORNE,
+            ActorState.STUNNED,
+            ActorState.ROOTED,
+            ActorState.FEARED,
+            ActorState.CHARMED
+        };
+        for (ActorState effect : cc) {
+            if (this.states.get(effect)) return true;
+        }
+        return false;
+    }
+
     public void handleFear(Point2D source, int duration) {
-        if (!this.states.get(ActorState.FEARED) && !this.states.get(ActorState.IMMUNITY)) {
+        if (!this.hasMovementCC() && !this.states.get(ActorState.IMMUNITY)) {
             this.target = null;
             this.canMove = true;
             Line2D sourceToPlayer = new Line2D.Float(source, this.location);
