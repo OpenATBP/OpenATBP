@@ -685,14 +685,13 @@ public class UserActor extends Actor {
                         }
                     }
                 }
-                Set<UserActor> assistIds = new HashSet<>(2);
                 for (Actor actor : this.aggressors.keySet()) {
                     if (actor.getActorType() == ActorType.PLAYER
                             && !actor.getId().equalsIgnoreCase(realKiller.getId())) {
                         UserActor ua = (UserActor) actor;
                         ua.updateXPWorth("assist");
+                        ua.addXP(this.getXPWorth());
                         ua.increaseStat("assists", 1);
-                        assistIds.add(ua);
                     }
                 }
                 if (a.getActorType() == ActorType.PLAYER) {
@@ -1247,12 +1246,11 @@ public class UserActor extends Actor {
                 xp *= multiplier;
             }
             this.xp += xp;
-            if (xp >= 10) Console.debugLog(this.displayName + " has gained " + xp + " xp!");
             HashMap<String, Double> updateData = new HashMap<>(3);
-            updateData.put("xp", (double) this.xp);
             int level = ChampionData.getXPLevel(this.xp);
             if (level != this.level) {
                 this.level = level;
+                this.xp = ChampionData.getLevelXP(level);
                 updateData.put("level", (double) this.level);
                 ExtensionCommands.playSound(parentExt, this.player, this.id, "sfx_level_up_beam");
                 ExtensionCommands.createActorFX(
@@ -1269,6 +1267,7 @@ public class UserActor extends Actor {
                         this.team);
                 ChampionData.levelUpCharacter(this.parentExt, this);
             }
+            updateData.put("xp", (double) this.xp);
             updateData.put("pLevel", this.getPLevel());
             ExtensionCommands.updateActorData(this.parentExt, this.room, this.id, updateData);
         }
@@ -1445,12 +1444,21 @@ public class UserActor extends Actor {
     public void handleKill(Actor a, JsonNode attackData) {
         this.addXP(a.getXPWorth());
         if (a.getActorType() == ActorType.PLAYER) this.updateXPWorth("kill");
+        if (a.getActorType() == ActorType.TOWER) {
+            for (UserActor ua : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
+                if (ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) {
+                    ua.addXP(a.getXPWorth());
+                }
+            }
+            return;
+        }
         for (Actor actor :
                 Champion.getActorsInRadius(
                         this.parentExt.getRoomHandler(this.room.getName()), this.location, 8f)) {
             if (actor.getActorType() == ActorType.PLAYER
                     && !actor.getId().equalsIgnoreCase(this.id)
-                    && actor.getTeam() == this.team) {
+                    && actor.getTeam() == this.team
+                    && a.getActorType() != ActorType.PLAYER) {
                 UserActor ua = (UserActor) actor;
                 ua.addXP((int) Math.floor(a.getXPWorth()));
             }

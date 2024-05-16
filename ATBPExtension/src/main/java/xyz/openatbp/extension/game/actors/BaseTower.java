@@ -52,6 +52,7 @@ public class BaseTower extends Tower {
         if (team == 1) this.avatar = "tower2";
         this.displayName = parentExt.getDisplayName(this.avatar);
         this.stats = this.initializeStats();
+        this.xpWorth = 15;
         ExtensionCommands.createWorldFX(
                 parentExt,
                 room,

@@ -576,6 +576,7 @@ public class ChampionData {
         double myProb = 1d / (1 + Math.pow(10, (averageEnemyElo - myElo) / 400));
         double eloGain = Math.round(kFactor * (result - myProb));
         Console.debugLog(ua.getDisplayName() + " ELO: " + myElo);
+        Console.debugLog(ua.getDisplayName() + " TIER: " + tier);
         Console.debugLog(ua.getDisplayName() + " ENEMY ELO: " + averageEnemyElo);
         Console.debugLog(ua.getDisplayName() + " ELO PREDICTION: " + myProb);
         Console.debugLog(ua.getDisplayName() + " ELO GAIN: " + eloGain);
