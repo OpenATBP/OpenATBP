@@ -26,7 +26,7 @@ public class StressLogger {
             String target = this.getTarget(params);
             if (target != null) {
                 if (this.userCount.containsKey(target)) {
-                    timeDiff = this.userUsage.get(target);
+                    timeDiff = System.currentTimeMillis() - this.userUsage.get(target);
                     if (timeDiff >= 50) this.userCount.put(target, 1);
                     else {
                         this.userCount.put(target, this.userCount.get(target) + 1);
