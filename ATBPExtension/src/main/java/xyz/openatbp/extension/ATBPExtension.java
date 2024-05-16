@@ -466,7 +466,7 @@ public class ATBPExtension extends SFSExtension {
     public void send(String cmdName, ISFSObject params, User recipient) {
         super.send(cmdName, params, recipient);
         if (this.commandStressLog.containsKey(cmdName)) {
-            this.commandStressLog.get(cmdName).update();
+            this.commandStressLog.get(cmdName).update(params);
         } else this.commandStressLog.put(cmdName, new StressLogger(cmdName));
     }
 
