@@ -15,7 +15,7 @@ public class StressLogger {
         long timeDiff = System.currentTimeMillis() - this.lastUsed;
         if (timeDiff >= 50) this.count = 1;
         else this.count++;
-        if (this.count >= (this.command.contains("actor_data") ? 20 : 10))
+        if (this.count >= (this.command.contains("actor_data") ? 200 : 100))
             Console.debugLog(
                     this.command
                             + " has been used "
