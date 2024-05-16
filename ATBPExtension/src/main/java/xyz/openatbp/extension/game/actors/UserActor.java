@@ -1250,7 +1250,7 @@ public class UserActor extends Actor {
             int level = ChampionData.getXPLevel(this.xp);
             if (level != this.level) {
                 this.level = level;
-                this.xp = ChampionData.getLevelXP(level);
+                this.xp = ChampionData.getLevelXP(level - 1);
                 updateData.put("level", (double) this.level);
                 ExtensionCommands.playSound(parentExt, this.player, this.id, "sfx_level_up_beam");
                 ExtensionCommands.createActorFX(
