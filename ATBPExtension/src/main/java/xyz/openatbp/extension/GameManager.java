@@ -122,47 +122,29 @@ public class GameManager {
         int blueNum = 0;
         int purpleNum = 0;
         initializeMap(room, parentExt);
-        // ExtensionCommands.addUser(parentExt,room,101,"Fake user 1","finn",0,"finn",backpack,0);
-        if (room.getUserList().size() < 6) {
-            ExtensionCommands.createActor(
-                    parentExt,
-                    room,
-                    "101",
-                    "finn",
-                    new Point2D.Float(
-                            (float) (MapData.PURPLE_SPAWNS[1].getX() * -1),
-                            (float) MapData.PURPLE_SPAWNS[1].getY()),
-                    0f,
-                    1);
-            ExtensionCommands.createActor(
-                    parentExt,
-                    room,
-                    "102",
-                    "jake",
-                    new Point2D.Float(
-                            (float) (MapData.PURPLE_SPAWNS[2].getX() * -1),
-                            (float) MapData.PURPLE_SPAWNS[2].getY()),
-                    0f,
-                    1);
-            ExtensionCommands.createActor(
-                    parentExt, room, "103", "magicman", MapData.PURPLE_SPAWNS[1], 0f, 0);
-            ExtensionCommands.createActor(
-                    parentExt, room, "104", "iceking", MapData.PURPLE_SPAWNS[2], 0f, 0);
-        }
-
         for (User u : room.getUserList()) {
             ISFSObject playerInfo = u.getVariable("player").getSFSObjectValue();
             int team = playerInfo.getInt("team");
             float px = 0f;
             float pz = 0f;
             if (team == 0) {
-                px = (float) MapData.PURPLE_SPAWNS[purpleNum].getX();
-                pz = (float) MapData.PURPLE_SPAWNS[purpleNum].getY();
+                if (room.getGroupId().equals("Practice")) {
+                    px = (float) MapData.L1_PURPLE_SPAWNS[purpleNum].getX();
+                    pz = (float) MapData.L1_PURPLE_SPAWNS[purpleNum].getY();
+                } else {
+                    px = (float) MapData.L2_PURPLE_SPAWNS[purpleNum].getX();
+                    pz = (float) MapData.L2_PURPLE_SPAWNS[purpleNum].getY();
+                }
                 purpleNum++;
             }
             if (team == 1) {
-                px = (float) MapData.PURPLE_SPAWNS[blueNum].getX() * -1;
-                pz = (float) MapData.PURPLE_SPAWNS[blueNum].getY();
+                if (room.getGroupId().equals("Practice")) {
+                    px = (float) MapData.L1_PURPLE_SPAWNS[blueNum].getX() * -1;
+                    pz = (float) MapData.L1_PURPLE_SPAWNS[blueNum].getY();
+                } else {
+                    px = (float) MapData.L2_PURPLE_SPAWNS[blueNum].getX() * -1;
+                    pz = (float) MapData.L2_PURPLE_SPAWNS[blueNum].getY();
+                }
                 blueNum++;
             }
             String id = String.valueOf(u.getId());
@@ -305,13 +287,19 @@ public class GameManager {
     }
 
     private static void spawnAltars(Room room, ATBPExtension parentExt) {
-        ExtensionCommands.createActor(
-                parentExt, room, MapData.getAltarActorData(1, room.getGroupId()));
-        ExtensionCommands.createActor(
-                parentExt, room, MapData.getAltarActorData(2, room.getGroupId()));
-        if (!room.getGroupId().equalsIgnoreCase("practice")) {
+        if (room.getGroupId().equalsIgnoreCase("practice")) {
             ExtensionCommands.createActor(
                     parentExt, room, MapData.getAltarActorData(0, room.getGroupId()));
+            ExtensionCommands.createActor(
+                    parentExt, room, MapData.getAltarActorData(1, room.getGroupId()));
+
+        } else {
+            ExtensionCommands.createActor(
+                    parentExt, room, MapData.getAltarActorData(0, room.getGroupId()));
+            ExtensionCommands.createActor(
+                    parentExt, room, MapData.getAltarActorData(1, room.getGroupId()));
+            ExtensionCommands.createActor(
+                    parentExt, room, MapData.getAltarActorData(2, room.getGroupId()));
         }
     }
 

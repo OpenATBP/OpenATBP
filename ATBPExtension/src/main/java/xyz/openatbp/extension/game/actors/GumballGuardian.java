@@ -1,5 +1,6 @@
 package xyz.openatbp.extension.game.actors;
 
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.concurrent.TimeUnit;
 
@@ -50,6 +51,18 @@ public class GumballGuardian extends Tower {
                 true,
                 this.team,
                 0f);
+        Runnable stopMoving = getRunnable();
+        this.parentExt.getTaskScheduler().schedule(stopMoving, 500, TimeUnit.MILLISECONDS);
+    }
+
+    private Runnable getRunnable() {
+        return () -> {
+            this.movementLine = new Line2D.Float(location, location);
+            this.timeTraveled = 0f;
+            this.clearPath();
+            ExtensionCommands.moveActor(
+                    this.parentExt, this.room, this.id, location, location, 5f, false);
+        };
     }
 
     @Override

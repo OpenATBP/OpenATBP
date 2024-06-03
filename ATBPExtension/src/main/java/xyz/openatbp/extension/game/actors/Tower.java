@@ -151,10 +151,13 @@ public class Tower extends Actor {
         if (!this.destroyed) {
             this.destroyed = true;
             this.dead = true;
+            UserActor earner = null;
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
+                earner = (UserActor) a;
                 ua.addGameStat("towers", 1);
             }
+            this.parentExt.getRoomHandler(this.room.getName()).addScore(earner, a.getTeam(), 50);
             ExtensionCommands.towerDown(parentExt, this.room, this.getTowerNum());
             ExtensionCommands.knockOutActor(parentExt, this.room, this.id, a.getId(), 100);
             ExtensionCommands.destroyActor(parentExt, this.room, this.id);
@@ -190,7 +193,6 @@ public class Tower extends Actor {
                 if (this.target != null && this.target.getActorType() == ActorType.PLAYER)
                     ExtensionCommands.removeFx(parentExt, u, this.id + "_aggro");
             }
-            this.parentExt.getRoomHandler(this.room.getName()).addScore(null, a.getTeam(), 50);
             if (this.getTowerNum() == 0 || this.getTowerNum() == 3) {
                 for (UserActor ua :
                         this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {

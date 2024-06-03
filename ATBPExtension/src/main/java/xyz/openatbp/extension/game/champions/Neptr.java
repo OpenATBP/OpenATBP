@@ -318,22 +318,26 @@ public class Neptr extends UserActor {
             for (Actor a :
                     Champion.getActorsInRadius(
                             parentExt.getRoomHandler(room.getName()), ultLocation, 3f)) {
-                if (isNonStructure(a)) {
-                    a.knockback(Neptr.this.location);
-                    a.addState(ActorState.SILENCED, 0d, 1000);
-                    ExtensionCommands.createActorFX(
-                            parentExt,
-                            room,
-                            a.getId(),
-                            "neptr_dot_poison",
-                            3000,
-                            a.getId() + "_neptrPoison",
-                            true,
-                            "Bip001",
-                            false,
-                            false,
-                            team);
-                    ultImpactedActors.add(a);
+                if (a.getActorType() != ActorType.BASE) {
+                    if (isNonStructure(a)) {
+                        a.knockback(Neptr.this.location);
+                        a.addState(ActorState.SILENCED, 0d, 1000);
+                    }
+                    if (a.getActorType() != ActorType.BASE && a.getTeam() != getTeam()) {
+                        ExtensionCommands.createActorFX(
+                                parentExt,
+                                room,
+                                a.getId(),
+                                "neptr_dot_poison",
+                                3000,
+                                a.getId() + "_neptrPoison",
+                                true,
+                                "Bip001",
+                                false,
+                                false,
+                                team);
+                        ultImpactedActors.add(a);
+                    }
                 }
             }
         }

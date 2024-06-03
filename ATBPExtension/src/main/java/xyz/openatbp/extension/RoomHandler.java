@@ -41,6 +41,8 @@ public class RoomHandler implements Runnable {
     private int mSecondsRan = 0;
     private int secondsRan = 0;
     private int[] altarStatus = {0, 0, 0};
+    private int[] purpleFastCaptureCounter = {0, 0, 0};
+    private int[] blueFastCaptureCounter = {0, 0, 0};
     private HashMap<String, Integer> cooldowns = new HashMap<>();
     private int currentMinionWave = 0;
     private GumballGuardian[] guardians;
@@ -50,10 +52,6 @@ public class RoomHandler implements Runnable {
     private static boolean monsterDebug = false;
     private static boolean xpDebug = false;
     private boolean practiceMap;
-    private boolean fastBlueCapture = false;
-    private boolean fastPurpleCapture = false;
-    private int blueCounter = 0;
-    private int purpleCounter = 0;
     private boolean playMainMusic = false;
     private boolean playTowerMusic = false;
     private long lastPointLeadTime = 0;
@@ -585,64 +583,57 @@ public class RoomHandler implements Runnable {
         float z = 0;
         String actor = monster;
         if (monster.equalsIgnoreCase("gnomes") || monster.equalsIgnoreCase("ironowls")) {
-            if (!this.practiceMap) {
-                char[] abc = {'a', 'b', 'c'};
-                for (int i = 0;
-                        i < 3;
-                        i++) { // Gnomes and owls have three different mobs so need to be spawned in
-                    // triplets
-                    if (monster.equalsIgnoreCase("gnomes")) {
-                        actor = "gnome_" + abc[i];
-                        x = (float) MapData.GNOMES[i].getX();
-                        z = (float) MapData.GNOMES[i].getY();
-                        campMonsters.add(new Monster(parentExt, room, MapData.GNOMES[i], actor));
+            char[] abc = {'a', 'b', 'c'};
+            for (int i = 0;
+                    i < 3;
+                    i++) { // Gnomes and owls have three different mobs so need to be spawned in
+                // triplets
+                if (monster.equalsIgnoreCase("gnomes")) {
+                    actor = "gnome_" + abc[i];
+                    if (!this.practiceMap) {
+                        x = (float) MapData.L2_GNOMES[i].getX();
+                        z = (float) MapData.L2_GNOMES[i].getY();
                     } else {
-                        actor = "ironowl_" + abc[i];
-                        x = (float) MapData.OWLS[i].getX();
-                        z = (float) MapData.OWLS[i].getY();
-                        campMonsters.add(new Monster(parentExt, room, MapData.OWLS[i], actor));
+                        x = (float) MapData.L1_GNOMES[i].getX();
+                        z = (float) MapData.L1_GNOMES[i].getY();
                     }
-                    Point2D spawnLoc = new Point2D.Float(x, z);
-                    ExtensionCommands.createActor(
-                            this.parentExt, this.room, actor, actor, spawnLoc, 0f, 2);
-                    ExtensionCommands.moveActor(
-                            this.parentExt, this.room, actor, spawnLoc, spawnLoc, 5f, false);
+                } else {
+                    actor = "ironowl_" + abc[i];
+                    if (!this.practiceMap) {
+                        x = (float) MapData.L2_OWLS[i].getX();
+                        z = (float) MapData.L2_OWLS[i].getY();
+                    } else {
+                        x = (float) MapData.L1_OWLS[i].getX();
+                        z = (float) MapData.L1_OWLS[i].getY();
+                    }
                 }
+                Point2D spawnLoc = new Point2D.Float(x, z);
+                campMonsters.add(new Monster(parentExt, room, spawnLoc, actor));
+                ExtensionCommands.createActor(
+                        this.parentExt, this.room, actor, actor, spawnLoc, 0f, 2);
+                ExtensionCommands.moveActor(
+                        this.parentExt, this.room, actor, spawnLoc, spawnLoc, 5f, false);
             }
-        } else if (monster.length() > 3) {
+        } else if (monster.length() > 3 && !this.practiceMap) {
             switch (monster) {
                 case "hugwolf":
-                    if (!this.practiceMap) {
-                        x = MapData.HUGWOLF[0];
-                        z = MapData.HUGWOLF[1];
-                        campMonsters.add(new Monster(parentExt, room, MapData.HUGWOLF, actor));
-                        break;
-                    }
+                    x = MapData.HUGWOLF[0];
+                    z = MapData.HUGWOLF[1];
+                    campMonsters.add(new Monster(parentExt, room, MapData.HUGWOLF, actor));
+                    break;
                 case "grassbear":
-                    if (!this.practiceMap) {
-                        x = MapData.GRASS[0];
-                        z = MapData.GRASS[1];
-                        campMonsters.add(new Monster(parentExt, room, MapData.GRASS, actor));
-                        break;
-                    }
+                    x = MapData.GRASS[0];
+                    z = MapData.GRASS[1];
+                    campMonsters.add(new Monster(parentExt, room, MapData.GRASS, actor));
+                    break;
                 case "keeoth":
-                    if (!this.practiceMap) {
-                        x = MapData.L2_KEEOTH[0];
-                        z = MapData.L2_KEEOTH[1];
-                    } else {
-                        x = MapData.L1_KEEOTH_X;
-                        z = MapData.L1_KEEOTH_Z;
-                    }
+                    x = MapData.L2_KEEOTH[0];
+                    z = MapData.L2_KEEOTH[1];
                     campMonsters.add(new Keeoth(parentExt, room, MapData.L2_KEEOTH, actor));
                     break;
                 case "goomonster":
-                    if (!this.practiceMap) {
-                        x = MapData.L2_GOOMONSTER[0];
-                        z = MapData.L2_GOOMONSTER[1];
-                    } else {
-                        x = MapData.L1_GOOMONSTER_X;
-                        z = MapData.L1_GOOMONSTER_Z;
-                    }
+                    x = MapData.L2_GOOMONSTER[0];
+                    z = MapData.L2_GOOMONSTER[1];
                     actor = "goomonster";
                     campMonsters.add(new GooMonster(parentExt, room, MapData.L2_GOOMONSTER, actor));
                     break;
@@ -675,129 +666,261 @@ public class RoomHandler implements Runnable {
     }
 
     private void handleAltars() {
-        int[] altarChange = {0, 0, 0};
-        boolean[] hasPlayerInside = {false, false, false};
-        ArrayList<UserActor> purplePlayersInside = new ArrayList<>(3);
-        ArrayList<UserActor> bluePlayersInside = new ArrayList<>(3);
-        int playerDifference;
-        for (UserActor u : players) {
-
-            int team = u.getTeam();
-            Point2D currentPoint = u.getLocation();
-            for (int i = 0; i < 3; i++) { // 0 is top, 1 is mid, 2 is bot
-                if (u.getHealth() > 0 && !u.isDead() && insideAltar(currentPoint, i)) {
-                    hasPlayerInside[i] = true;
-                    if (team == 1) {
-                        bluePlayersInside.add(u);
-                        altarChange[i]--;
-
-                    } else {
-                        purplePlayersInside.add(u);
-                        altarChange[i]++;
-                    }
-                    if (bluePlayersInside.size()
-                            > purplePlayersInside
-                                    .size()) { // check if fast capture for blue team should be
-                        // enabled
-                        playerDifference = (bluePlayersInside.size() - purplePlayersInside.size());
-                        if (playerDifference > 1 && Math.abs(altarStatus[i]) < 5) {
-                            fastBlueCapture = true;
-                        }
-                    }
-                    if (purplePlayersInside.size()
-                            > bluePlayersInside
-                                    .size()) { // check if fast capture for purple team should be
-                        // enabled
-                        playerDifference = (purplePlayersInside.size() - bluePlayersInside.size());
-                        if (playerDifference > 1 && Math.abs(altarStatus[i]) < 5) {
-                            fastPurpleCapture = true;
-                        }
-                    }
-                    if (altarStatus[i] == 0) {
-                        ExtensionCommands.playSound(
-                                parentExt, room, "", "sfx_altar_1", getAltarLocation(i));
-                    }
-                }
-            }
+        // main mode: 0 - top, 1 - mid, 2 - bot
+        // practice mode: 0 - top, 1 - bot
+        if (!this.practiceMap) {
+            handleAltarsForMode(3);
+        } else {
+            handleAltarsForMode(2);
         }
-        for (int i = 0; i < 3; i++) {
-            if (fastBlueCapture && Math.abs(altarStatus[i]) < 5 && altarChange[i] < 0)
-                blueCounter++;
-            else if (fastPurpleCapture && Math.abs(altarStatus[i]) < 5 && altarChange[i] > 0)
-                purpleCounter++;
-            if (blueCounter == 0 && purpleCounter == 0 || blueCounter == 2 || purpleCounter == 2) {
-                if (purpleCounter == 2) {
-                    fastPurpleCapture = false;
-                    altarChange[i] = 5 - Math.abs(altarStatus[i]);
-                } else if (blueCounter == 2) {
-                    fastBlueCapture = false;
-                    altarChange[i] = (5 - Math.abs(altarStatus[i])) * -1;
-                } else if (altarChange[i] > 0) altarChange[i] = 1;
-                else if (altarChange[i] < 0) altarChange[i] = -1;
-                else if (altarChange[i] == 0 && !hasPlayerInside[i]) {
-                    if (altarStatus[i] > 0) {
-                        altarChange[i] = -1;
-                        purpleCounter = 0;
-                    } else if (altarStatus[i] < 0) {
-                        altarChange[i] = 1;
-                        blueCounter = 0;
+    }
+
+    private void handleAltarsForMode(int numAltars) {
+        for (int i = 0; i < numAltars; i++) {
+            int currentStatus = this.altarStatus[i];
+
+            if (currentStatus != 10) {
+                int currentStage = Math.abs(this.altarStatus[i]);
+                int deficit;
+                int MAX_STAGE = 5;
+                Point2D altarLocation = getAltarLocation(i);
+                int FX_DURATION = 1000 * 60 * 15;
+
+                String action = determineAltarAction(i);
+
+                if (!action.isEmpty()) {
+                    switch (action) {
+                        case "purpleFastDecrease":
+                        case "blueFastDecrease":
+                            resetAltar(i);
+                            break;
+
+                        case "purpleDecrease":
+                            ExtensionCommands.removeFx(
+                                    this.parentExt, this.room, "altar_" + i + currentStage);
+                            ExtensionCommands.playSound(
+                                    this.parentExt,
+                                    this.room,
+                                    "",
+                                    "sfx_altar_" + currentStage,
+                                    altarLocation);
+                            this.altarStatus[i]--;
+                            if (this.purpleFastCaptureCounter[i] > 0)
+                                this.purpleFastCaptureCounter[i] = 0;
+                            break;
+
+                        case "blueDecrease":
+                            ExtensionCommands.removeFx(
+                                    this.parentExt, this.room, "altar_" + i + currentStage);
+                            ExtensionCommands.playSound(
+                                    this.parentExt,
+                                    this.room,
+                                    "",
+                                    "sfx_altar_" + currentStage,
+                                    altarLocation);
+                            this.altarStatus[i]++;
+                            if (this.blueFastCaptureCounter[i] > 0)
+                                this.blueFastCaptureCounter[i] = 0;
+                            break;
+
+                        case "purpleCounterIncrease":
+                            this.purpleFastCaptureCounter[i]++;
+                            break;
+
+                        case "blueCounterIncrease":
+                            this.blueFastCaptureCounter[i]++;
+                            break;
+
+                        case "purpleFastCapture":
+                            deficit = MAX_STAGE - currentStage;
+                            this.altarStatus[i] += deficit;
+                            ExtensionCommands.playSound(
+                                    this.parentExt, this.room, "", "sfx_altar_5", altarLocation);
+                            ExtensionCommands.createActorFX(
+                                    this.parentExt,
+                                    this.room,
+                                    "altar_" + i,
+                                    "fx_altar_5",
+                                    FX_DURATION,
+                                    "altar_" + i + 5,
+                                    false,
+                                    "Bip001",
+                                    false,
+                                    true,
+                                    0);
+                            break;
+
+                        case "blueFastCapture":
+                            deficit = (MAX_STAGE - currentStage) * -1;
+                            this.altarStatus[i] += deficit;
+                            ExtensionCommands.playSound(
+                                    this.parentExt, this.room, "", "sfx_altar_5", altarLocation);
+                            ExtensionCommands.createActorFX(
+                                    this.parentExt,
+                                    this.room,
+                                    "altar_" + i,
+                                    "fx_altar_5",
+                                    FX_DURATION,
+                                    "altar_" + i + 5,
+                                    false,
+                                    "Bip001",
+                                    false,
+                                    true,
+                                    1);
+                            break;
+
+                        case "purpleIncrease":
+                            this.altarStatus[i]++;
+                            ExtensionCommands.createActorFX(
+                                    this.parentExt,
+                                    this.room,
+                                    "altar_" + i,
+                                    "fx_altar_" + (currentStage + 1),
+                                    FX_DURATION,
+                                    "altar_" + i + (currentStage + 1),
+                                    false,
+                                    "Bip001",
+                                    false,
+                                    true,
+                                    0);
+                            ExtensionCommands.playSound(
+                                    this.parentExt,
+                                    this.room,
+                                    "",
+                                    "sfx_altar_" + (currentStage + 1),
+                                    altarLocation);
+                            break;
+
+                        case "blueIncrease":
+                            this.altarStatus[i]--;
+                            ExtensionCommands.createActorFX(
+                                    this.parentExt,
+                                    this.room,
+                                    "altar_" + i,
+                                    "fx_altar_" + (currentStage + 1),
+                                    FX_DURATION,
+                                    "altar_" + i + (currentStage + 1),
+                                    false,
+                                    "Bip001",
+                                    false,
+                                    true,
+                                    1);
+                            ExtensionCommands.playSound(
+                                    this.parentExt,
+                                    this.room,
+                                    "",
+                                    "sfx_altar_" + (currentStage + 1),
+                                    altarLocation);
+                            break;
                     }
-                }
-                int altarStat = Math.abs(altarStatus[i]);
-                if (altarStat <= 5) altarStatus[i] += altarChange[i];
-                if (altarStat > 0 && altarStat < 6) {
-                    String sound = "sfx_altar_" + altarStat;
-                    ExtensionCommands.playSound(parentExt, room, "", sound, getAltarLocation(i));
-                }
-                int team = 2;
-                if (altarStatus[i] > 0) team = 0;
-                else team = 1;
-                String altarId = "altar_" + i;
-                if (Math.abs(altarStatus[i]) >= 5 && altarStatus[i] != 10) {
-                    ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            altarId,
-                            "fx_altar_5",
-                            500,
-                            "fx_altar_" + 5 + i,
-                            false,
-                            "Bip01",
-                            false,
-                            true,
-                            team);
-                    if (blueCounter == 2 || purpleCounter == 2) {
-                        if (blueCounter == 2) blueCounter = 0;
-                        if (purpleCounter == 2) purpleCounter = 0;
+                    if (Math.abs(this.altarStatus[i]) >= 5) {
+                        int capturingTeam = this.altarStatus[i] > 0 ? 0 : 1;
+                        this.altarStatus[i] = 10; // Locks altar
+                        final int capturedAltarIndex = i;
+                        Runnable captureAltar =
+                                () ->
+                                        captureAltar(
+                                                capturedAltarIndex,
+                                                capturingTeam,
+                                                "altar_" + capturedAltarIndex);
+                        this.parentExt
+                                .getTaskScheduler()
+                                .schedule(captureAltar, 400, TimeUnit.MILLISECONDS);
+                        if (this.purpleFastCaptureCounter[i] > 0)
+                            this.purpleFastCaptureCounter[i] = 0;
+                        if (this.blueFastCaptureCounter[i] > 0) this.blueFastCaptureCounter[i] = 0;
+
+                        MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
+                        for (UserActor ua :
+                                Champion.getUserActorsInRadius(this, altarLocation, 2)) {
+                            if (ua.getTeam() == capturingTeam && ua.getHealth() > 0) {
+                                String tegID =
+                                        (String) ua.getUser().getSession().getProperty("tegid");
+                                Bson filter = eq("user.TEGid", tegID);
+                                Bson updateOperation = Updates.inc("player.altars", 1);
+                                UpdateOptions options = new UpdateOptions().upsert(true);
+                                Console.debugLog(
+                                        playerData.updateOne(filter, updateOperation, options));
+                            }
+                        }
                     }
-                    int finalI1 = i;
-                    int finalTeam1 = team;
-                    Runnable captureDelay = () -> captureAltar(finalI1, finalTeam1, altarId);
-                    this.parentExt
-                            .getTaskScheduler()
-                            .schedule(captureDelay, 400, TimeUnit.MILLISECONDS);
-                } else if (Math.abs(altarStatus[i]) <= 4 && altarStatus[i] != 0) {
-                    int stage = Math.abs(altarStatus[i]);
-                    ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            altarId,
-                            "fx_altar_" + stage,
-                            1000,
-                            "fx_altar_" + stage + i,
-                            false,
-                            "Bip01",
-                            false,
-                            true,
-                            team);
                 }
             }
         }
     }
 
+    private String determineAltarAction(int altarIndex) {
+        // hierarchy: fast status decrease, status decrease, fast capture/counter increase, status
+        // increase
+        Point2D altarLocation = getAltarLocation(altarIndex);
+        List<UserActor> uasInArea = Champion.getUserActorsInRadius(this, altarLocation, 2);
+        List<UserActor> purplePlayers = new ArrayList<>();
+        List<UserActor> bluePlayers = new ArrayList<>();
+
+        for (UserActor ua : uasInArea) {
+            if (ua.getTeam() == 0 && ua.getHealth() > 0) {
+                purplePlayers.add(ua);
+            } else if (ua.getTeam() == 1 && ua.getHealth() > 0) {
+                bluePlayers.add(ua);
+            }
+        }
+
+        int purpleCount = purplePlayers.size();
+        int blueCount = bluePlayers.size();
+        int status = this.altarStatus[altarIndex];
+        int purpleCounter = this.purpleFastCaptureCounter[altarIndex];
+        int blueCounter = this.blueFastCaptureCounter[altarIndex];
+
+        if (purpleCount - blueCount > 1 && status < 0) {
+            return "purpleFastDecrease";
+        } else if (blueCount - purpleCount > 1 && status > 0) {
+            return "blueFastDecrease";
+        }
+
+        if (purpleCount - blueCount == 1 && status < 0) {
+            return "blueDecrease";
+        } else if (blueCount - purpleCount == 1 && status > 0) {
+            return "purpleDecrease";
+        }
+
+        if (purpleCount == 0 && status > 0) {
+            return "purpleDecrease";
+        } else if (blueCount == 0 && status < 0) {
+            return "blueDecrease";
+        }
+
+        if (purpleCount - blueCount > 1 && status >= 0) {
+            return purpleCounter < 1 ? "purpleCounterIncrease" : "purpleFastCapture";
+        } else if (blueCount - purpleCount > 1 && status <= 0) {
+            return blueCounter < 1 ? "blueCounterIncrease" : "blueFastCapture";
+        }
+
+        if (purpleCount - blueCount == 1) {
+            return "purpleIncrease";
+        } else if (blueCount - purpleCount == 1) {
+            return "blueIncrease";
+        }
+
+        return "";
+    }
+
+    private void resetAltar(int altarIndex) {
+        int currentStage = Math.abs(this.altarStatus[altarIndex]);
+        for (int i = 1; i <= currentStage; i++) {
+            ExtensionCommands.removeFx(this.parentExt, this.room, ("altar_" + altarIndex) + i);
+        }
+        this.altarStatus[altarIndex] = 0;
+        if (this.purpleFastCaptureCounter[altarIndex] > 0)
+            this.purpleFastCaptureCounter[altarIndex] = 0;
+        if (this.blueFastCaptureCounter[altarIndex] > 0)
+            this.blueFastCaptureCounter[altarIndex] = 0;
+    }
+
     private void captureAltar(int i, int team, String altarId) {
         ExtensionCommands.playSound(parentExt, room, "", "sfx_altar_locked", getAltarLocation(i));
-        altarStatus[i] = 10; // Locks altar
+        for (int n = 1; n < 6; n++) {
+            ExtensionCommands.removeFx(this.parentExt, this.room, altarId + n);
+        }
         if (i == 1) addScore(null, team, 15);
         else addScore(null, team, 10);
         cooldowns.put(altarId + "__" + "altar", 180);
@@ -1192,7 +1315,8 @@ public class RoomHandler implements Runnable {
     public void handleFountain() {
         Point2D blueCenter = new Point2D.Float(-50.16f, 0f);
         if (this.practiceMap)
-            blueCenter = new Point2D.Float(MapData.L1_GUARDIAN_X * -1, MapData.L1_GUARDIAN_Z);
+            blueCenter =
+                    new Point2D.Float(MapData.L1_GUARDIAN_X * -1, MapData.L1_BLUE_GUARDIAN_AREA_Z);
         List<Actor> blueTeam = Champion.getEnemyActorsInRadius(this, 1, blueCenter, 4f);
         for (Actor a : blueTeam) {
             if (a.getActorType() == ActorType.PLAYER) {
@@ -1218,7 +1342,8 @@ public class RoomHandler implements Runnable {
         }
         Point2D purpleCenter = new Point2D.Float(50.16f, 0f);
         if (this.practiceMap)
-            purpleCenter = new Point2D.Float(MapData.L1_GUARDIAN_X, MapData.L1_GUARDIAN_Z);
+            purpleCenter =
+                    new Point2D.Float(MapData.L1_GUARDIAN_X, MapData.L1_PURPLE_GUARDIAN_AREA_Z);
         List<Actor> purpleTeam = Champion.getEnemyActorsInRadius(this, 0, purpleCenter, 4f);
         for (Actor a : purpleTeam) { // I can optimize but that's future me's problem
             if (a.getActorType() == ActorType.PLAYER) {
@@ -1274,7 +1399,7 @@ public class RoomHandler implements Runnable {
                 }
                 String tegID = (String) ua.getUser().getSession().getProperty("tegid");
                 Document data = playerData.find(eq("user.TEGid", tegID)).first();
-                if (data != null) { // TODO: Complete all of these values
+                if (data != null) {
                     ObjectMapper mapper = new ObjectMapper();
                     JsonNode dataObj = mapper.readTree(data.toJson());
                     int wins = 0;
@@ -1312,7 +1437,17 @@ public class RoomHandler implements Runnable {
                         rankIncrease++;
                     } else currentRankProgress += 10;
 
-                    if (ua.hasGameStat("score")) score += ua.getGameStat("score");
+                    boolean updateSpree = false;
+                    boolean updateMulti = false;
+                    boolean updateHighestScore = false;
+
+                    if (ua.hasGameStat("score")) {
+                        score += ua.getGameStat("score");
+                        int currentHighestScore = dataObj.get("player").get("scoreHighest").asInt();
+                        if (score > currentHighestScore) {
+                            updateHighestScore = true;
+                        }
+                    }
                     if (ua.hasGameStat("towers")) towers += ua.getGameStat("towers");
                     if (ua.hasGameStat("minions")) minions += ua.getGameStat("minions");
                     if (ua.hasGameStat("jungleMobs")) jungleMobs += ua.getGameStat("jungleMobs");
@@ -1320,44 +1455,57 @@ public class RoomHandler implements Runnable {
                     if (ua.hasGameStat("spree")) {
                         int currentSpree = dataObj.get("player").get("largestSpree").asInt();
                         double gameSpree = ua.getGameStat("spree");
-                        if (gameSpree > currentSpree) largestSpree = (int) gameSpree;
+                        if (gameSpree > currentSpree) {
+                            updateSpree = true;
+                            largestSpree = (int) gameSpree;
+                        }
                     }
 
                     if (ua.hasGameStat("largestMulti")) {
                         int currentMulti = dataObj.get("player").get("largestMulti").asInt();
                         double gameMulti = ua.getGameStat("largestMulti");
-                        if (gameMulti > currentMulti) largestMulti = (int) gameMulti;
+                        if (gameMulti > currentMulti) {
+                            updateMulti = true;
+                            largestMulti = (int) gameMulti;
+                        }
                     }
+                    List<Bson> updateList = new ArrayList<>();
 
-                    if (this.room.getMaxUsers() != 6
-                            || this.room.getGroupId().equalsIgnoreCase("PVE")) eloGain = 0;
+                    if (this.room.getMaxUsers() == 6
+                            && this.room.getGroupId().equalsIgnoreCase("PVP")) {
+                        updateList.add(Updates.inc("player.playsPVP", 1));
+                        updateList.add(
+                                Updates.set(
+                                        "player.tier", ChampionData.getTier(currentElo + eloGain)));
+                        updateList.add(Updates.inc("player.elo", eloGain));
+                        updateList.add(Updates.inc("player.rank", rankIncrease));
+                        updateList.add(Updates.set("player.rankProgress", currentRankProgress));
+                        updateList.add(Updates.inc("player.winsPVP", wins));
+                        updateList.add(
+                                Updates.inc(
+                                        "player.points",
+                                        points)); // Always zero I have no idea what this is for?;
+                        updateList.add(Updates.inc("player.coins", 100));
+                        updateList.add(Updates.inc("player.kills", kills));
+                        updateList.add(Updates.inc("player.deaths", deaths));
+                        updateList.add(Updates.inc("player.assists", assists));
+                        updateList.add(Updates.inc("player.towers", towers));
+                        updateList.add(Updates.inc("player.minions", minions));
+                        updateList.add(Updates.inc("player.jungleMobs", jungleMobs));
+                        updateList.add(Updates.inc("player.altars", altars));
+                        updateList.add(Updates.inc("player.scoreTotal", score));
 
-                    Bson updates =
-                            Updates.combine(
-                                    Updates.inc(
-                                            "player.playsPVP",
-                                            this.room.getGroupId().equalsIgnoreCase("PVP") ? 1 : 0),
-                                    Updates.inc("player.elo", eloGain),
-                                    Updates.set("player.rankProgress", currentRankProgress),
-                                    Updates.set(
-                                            "player.tier",
-                                            ChampionData.getTier(currentElo + eloGain)),
-                                    Updates.inc("player.winsPVP", wins),
-                                    Updates.inc(
-                                            "player.points",
-                                            points), // Always zero I have no idea what this is for?
-                                    Updates.inc("player.coins", 100),
-                                    Updates.inc("player.kills", kills),
-                                    Updates.inc("player.deaths", deaths),
-                                    Updates.inc("player.assists", assists),
-                                    Updates.inc("player.towers", towers),
-                                    Updates.inc("player.minions", minions),
-                                    Updates.inc("player.jungleMobs", jungleMobs),
-                                    Updates.inc("player.altars", altars),
-                                    Updates.inc("player.scoreTotal", score),
-                                    Updates.inc("player.rank", rankIncrease),
-                                    Updates.set("player.largestSpree", largestSpree),
-                                    Updates.set("player.largestMulti", largestMulti));
+                        if (updateSpree) {
+                            updateList.add(Updates.set("player.largestSpree", largestSpree));
+                        }
+                        if (updateMulti) {
+                            updateList.add(Updates.set("player.largestMulti", largestMulti));
+                        }
+                        if (updateHighestScore) {
+                            updateList.add(Updates.set("player.scoreHighest", score));
+                        }
+                    }
+                    Bson updates = Updates.combine(updateList);
                     UpdateOptions options = new UpdateOptions().upsert(true);
                     Console.debugLog(playerData.updateOne(data, updates, options));
                 }

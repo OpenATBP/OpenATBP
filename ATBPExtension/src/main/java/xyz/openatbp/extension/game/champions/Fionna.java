@@ -368,7 +368,7 @@ public class Fionna extends UserActor {
             String explosionFx = "fionna_dash_explode_small";
             if (dashInt == 1) {
                 int Q_TIME = qTime;
-                range = 2f;
+                range = 2.5f;
                 explosionFx = "fionna_dash_explode";
                 Runnable enableQCasting = () -> canCast[0] = true;
                 parentExt
@@ -391,6 +391,20 @@ public class Fionna extends UserActor {
                         false,
                         team,
                         0f);
+                if (dashInt == 1) {
+                    ExtensionCommands.createWorldFX(
+                            parentExt,
+                            room,
+                            id,
+                            "fx_target_ring_2.5",
+                            id + "qCircle",
+                            1000,
+                            (float) dest.getX(),
+                            (float) dest.getY(),
+                            true,
+                            team,
+                            0f);
+                }
                 for (Actor a :
                         Champion.getActorsInRadius(
                                 parentExt.getRoomHandler(room.getName()), dest, range)) {

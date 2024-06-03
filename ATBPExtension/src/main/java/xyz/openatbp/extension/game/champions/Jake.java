@@ -117,6 +117,9 @@ public class Jake extends UserActor {
         super.update(msRan);
         if (this.doQEndAnimation) {
             ExtensionCommands.actorAnimate(parentExt, room, id, "spell1c", 500, false);
+            Runnable changeAnimation =
+                    () -> ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 1, false);
+            parentExt.getTaskScheduler().schedule(changeAnimation, 700, TimeUnit.MILLISECONDS);
             this.doQEndAnimation = false;
         }
         if (this.ultActivated && System.currentTimeMillis() - this.ultStartTime >= 5000) {
@@ -269,11 +272,11 @@ public class Jake extends UserActor {
             Point2D dest) {
         switch (ability) {
             case 1:
-                this.stopMoving();
+                int stopMovingTime = 1600;
+                this.stopMoving(stopMovingTime);
                 this.canCast[0] = false;
                 this.canCast[1] = false;
                 this.canCast[2] = false;
-                canMove = false;
                 this.qUsed = true;
                 this.qStartTime = System.currentTimeMillis();
                 this.qAnimationTime = 1300;
@@ -610,7 +613,6 @@ public class Jake extends UserActor {
                             enableQCasting,
                             getReducedCooldown(cooldown) - Q_CAST_DELAY,
                             TimeUnit.MILLISECONDS);
-            canMove = true;
             Runnable enableCastingAbilities =
                     () -> {
                         if (!dashActive) {

@@ -207,7 +207,7 @@ public class ChampionData {
             if (k.contains("PerLevel")) {
                 String stat = k.replace("PerLevel", "");
                 double levelStat = playerStats.get(k);
-                if (k.contains("health")) {
+                if (k.equalsIgnoreCase("healthPerLevel")) {
                     ua.setHealth(
                             (int) ((ua.getMaxHealth() + levelStat) * ua.getPHealth()),
                             (int) (ua.getMaxHealth() + levelStat));

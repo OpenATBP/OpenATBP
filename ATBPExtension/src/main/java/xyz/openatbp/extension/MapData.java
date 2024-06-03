@@ -10,12 +10,13 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 
 public class MapData {
     public static final float L1_TOWER_Z = (float) 0.55;
-    public static final float L1_AALTAR_Z = (float) -10.0;
-    public static final float L1_DALTAR_Z = (float) 10.0;
+    public static final float L1_AALTAR_Z = (float) -9;
+    public static final float L1_DALTAR_Z = (float) 9;
     public static final float L1_BLUE_HEALTH_X = (float) 23.3;
     public static final float L1_BLUE_HEALTH_Z = (float) 5.4;
     public static final float L1_GUARDIAN_X = (float) 57.8;
-    public static final float L1_GUARDIAN_Z = (float) -0.5;
+    public static final float L1_PURPLE_GUARDIAN_AREA_Z = (float) -0.5;
+    public static final float L1_BLUE_GUARDIAN_AREA_Z = (float) 0;
     public static final float L1_KEEOTH_X = (float) -21.3;
     public static final float L1_KEEOTH_Z = (float) 11.6;
     public static final float L1_GOOMONSTER_X = (float) 22.6;
@@ -29,21 +30,36 @@ public class MapData {
     public static final float[] L2_BOT_ALTAR = {(float) 14.47, (float) 27.08};
     public static final float[] L2_KEEOTH = {(float) 0.26, (float) 25.82};
     public static final float[] HUGWOLF = {(float) 8.15, (float) 8.19};
-    public static final Point2D[] OWLS = {
+    public static final Point2D[] L2_OWLS = {
         new Point2D.Double(9.57, -8.95),
         new Point2D.Double(8.41, -8.68),
         new Point2D.Double(8.42, -9.79)
     };
     public static final float[] GRASS = {(float) -8.64, (float) -8.45};
-    public static final Point2D[] GNOMES = {
+    public static final Point2D[] L2_GNOMES = {
         new Point2D.Double(-9.29, 8.03),
         new Point2D.Double(-8.10, 8.26),
         new Point2D.Double(-9.47, 8.84)
     };
-    public static final Point2D[] PURPLE_SPAWNS = {
-        new Point2D.Float(-47.39f, -1.60f),
-        new Point2D.Float(-47.26f, -0.31f),
-        new Point2D.Float(-47.45f, 1.17f)
+    public static final Point2D[] L2_PURPLE_SPAWNS = { // top, mid, bot
+        new Point2D.Double(-49.068882, -2.6318564),
+        new Point2D.Double(-48.066704, -0.07888055),
+        new Point2D.Double(-49.068882, 2.6318564)
+    };
+    public static final Point2D[] L1_PURPLE_SPAWNS = { // mid, top, bot
+        new Point2D.Double(-53.975643, -0.124769),
+        new Point2D.Double(-54.975643, -2.67774485),
+        new Point2D.Double(-54.975643, 2.67774485),
+    };
+    public static final Point2D[] L1_OWLS = {
+        new Point2D.Double(22.911673, -9.451605),
+        new Point2D.Double(21.751673, -9.181605),
+        new Point2D.Double(21.761673, -10.291605)
+    };
+    public static final Point2D[] L1_GNOMES = {
+        new Point2D.Double(-22.411673, 10.451605),
+        new Point2D.Double(-21.251673, 10.181605),
+        new Point2D.Double(-21.261673, 11.291605)
     };
     public static final float[] L1_PURPLE_TOWER_0 = {(float) -31.8, (float) 0.55};
     public static final float[] L1_PURPLE_TOWER_1 = {(float) -16.05, (float) 0.55};
@@ -275,7 +291,7 @@ public class MapData {
         float z = (float) 0.0;
         String actorID = "altar_" + type;
         if (room.equalsIgnoreCase("practice")) {
-            if (type == 2) {
+            if (type == 0) {
                 z = L1_DALTAR_Z;
                 actorID = "altar_1";
             } else {
@@ -354,7 +370,7 @@ public class MapData {
         float z = 0;
         if (room.equalsIgnoreCase("practice")) {
             x = L1_GUARDIAN_X;
-            z = L1_GUARDIAN_Z;
+            z = team == 1 ? L1_BLUE_GUARDIAN_AREA_Z : L1_PURPLE_GUARDIAN_AREA_Z;
         } else {
             x = L2_GUARDIAN1_X;
             z = L2_GUARDIAN1_Z;
@@ -379,7 +395,7 @@ public class MapData {
         float z = 0;
         if (room.equalsIgnoreCase("practice")) {
             x = L1_GUARDIAN_X;
-            z = L1_GUARDIAN_Z;
+            z = team == 1 ? L1_BLUE_GUARDIAN_AREA_Z : L1_PURPLE_GUARDIAN_AREA_Z;
         } else {
             x = L2_GUARDIAN1_X;
             z = L2_GUARDIAN1_Z;

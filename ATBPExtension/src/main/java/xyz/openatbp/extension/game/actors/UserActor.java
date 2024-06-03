@@ -659,11 +659,6 @@ public class UserActor extends Actor {
                         a.getId(),
                         (HashMap<Actor, ISFSObject>) this.aggressors);
                 this.increaseStat("deaths", 1);
-                if (this.hasGameStat("spree")) {
-                    if (this.killingSpree > this.getGameStat("spree"))
-                        this.endGameStats.put("spree", (double) this.killingSpree);
-                    this.killingSpree = 0;
-                }
                 if (realKiller.getActorType() == ActorType.PLAYER) {
                     UserActor ua = (UserActor) realKiller;
                     ua.increaseStat("kills", 1);
@@ -755,9 +750,17 @@ public class UserActor extends Actor {
     public void increaseStat(String key, double num) {
         // Console.debugLog("Increasing " + key + " by " + num);
         if (key.equalsIgnoreCase("kills")) {
-            this.killingSpree += num;
+            this.killingSpree++;
             this.multiKill++;
             this.lastKilled = System.currentTimeMillis();
+            if (this.hasGameStat("spree")) {
+                double endGameSpree = this.getGameStat("spree");
+                if (this.killingSpree > endGameSpree) {
+                    this.endGameStats.put("spree", (double) this.killingSpree);
+                }
+            } else {
+                this.endGameStats.put("spree", (double) this.killingSpree);
+            }
             for (UserActor ua : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                 if (ua.getTeam() == this.team) {
                     boolean ally = !ua.getId().equalsIgnoreCase(this.id);
@@ -1203,7 +1206,12 @@ public class UserActor extends Actor {
         this.setHealth((int) this.maxHealth, (int) this.maxHealth);
         int teamNumber =
                 parentExt.getRoomHandler(this.room.getName()).getTeamNumber(this.id, this.team);
-        Point2D respawnPoint = MapData.PURPLE_SPAWNS[teamNumber];
+        Point2D respawnPoint;
+        boolean isPractice = this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap();
+        respawnPoint =
+                isPractice
+                        ? MapData.L1_PURPLE_SPAWNS[teamNumber]
+                        : MapData.L2_PURPLE_SPAWNS[teamNumber];
         if (this.team == 1 && respawnPoint.getX() < 0)
             respawnPoint = new Point2D.Double(respawnPoint.getX() * -1, respawnPoint.getY());
         Console.debugLog(

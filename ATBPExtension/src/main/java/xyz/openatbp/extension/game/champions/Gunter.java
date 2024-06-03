@@ -203,7 +203,9 @@ public class Gunter extends UserActor {
         for (Actor actor :
                 Champion.getActorsInRadius(
                         this.parentExt.getRoomHandler(this.room.getName()), a.getLocation(), 2f)) {
-            if (actor.getTeam() != this.team && !a.getId().equalsIgnoreCase(actor.getId())) {
+            if (actor.getTeam() != this.team
+                    && !a.getId().equalsIgnoreCase(actor.getId())
+                    && isNonStructure(actor)) {
                 JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(), "spell4");
                 actor.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
             }
