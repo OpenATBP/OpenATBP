@@ -60,6 +60,10 @@ public class UserActor extends Actor {
     protected boolean pickedUpHealthPack = false;
     protected long healthPackPickUpTime = 0;
     protected UserActor charmer = null;
+    protected boolean hasKeeothBuff = false;
+    protected boolean hasGooBuff = false;
+    protected long keeothBuffStartTime = 0;
+    protected long gooBuffStartTime = 0;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -110,6 +114,22 @@ public class UserActor extends Actor {
 
     public void setAutoAttackEnabled(boolean enabled) {
         this.autoAttackEnabled = enabled;
+    }
+
+    public void setHasKeeothBuff(boolean hasBuff) {
+        this.hasKeeothBuff = hasBuff;
+    }
+
+    public void setHasGooBuff(boolean hasBuff) {
+        this.hasGooBuff = hasBuff;
+    }
+
+    public void setKeeothBuffStartTime(long keeothBuffStartTime) {
+        this.keeothBuffStartTime = keeothBuffStartTime;
+    }
+
+    public void setGooBuffStartTime(long gooBuffStartTime) {
+        this.gooBuffStartTime = gooBuffStartTime;
     }
 
     protected Point2D getRelativePoint(
@@ -364,6 +384,7 @@ public class UserActor extends Actor {
             if (crit) damage *= 2;
             Champion.DelayedAttack delayedAttack =
                     new Champion.DelayedAttack(parentExt, this, a, (int) damage, "basicAttack");
+            int ATTACK_DELAY = 500;
             try {
                 String projectileFx =
                         this.parentExt
@@ -372,25 +393,29 @@ public class UserActor extends Actor {
                                 .get("projectileAsset")
                                 .asText();
                 if (projectileFx != null
-                        && projectileFx.length() > 0
+                        && !projectileFx.isEmpty()
                         && !parentExt
                                 .getActorData(this.avatar)
                                 .get("attackType")
                                 .asText()
-                                .equalsIgnoreCase("MELEE"))
+                                .equalsIgnoreCase("MELEE")) {
                     parentExt
                             .getTaskScheduler()
                             .schedule(
                                     new RangedAttack(a, delayedAttack, projectileFx),
-                                    300,
+                                    ATTACK_DELAY,
                                     TimeUnit.MILLISECONDS);
-                else
+                } else {
                     parentExt
                             .getTaskScheduler()
-                            .schedule(delayedAttack, 300, TimeUnit.MILLISECONDS);
+                            .schedule(delayedAttack, ATTACK_DELAY, TimeUnit.MILLISECONDS);
+                }
+
             } catch (NullPointerException e) {
                 // e.printStackTrace();
-                parentExt.getTaskScheduler().schedule(delayedAttack, 300, TimeUnit.MILLISECONDS);
+                parentExt
+                        .getTaskScheduler()
+                        .schedule(delayedAttack, ATTACK_DELAY, TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -615,6 +640,9 @@ public class UserActor extends Actor {
             this.timeKilled = System.currentTimeMillis();
             this.canMove = false;
             if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
+            if (this.hasKeeothBuff) disableKeeothBuff();
+            if (this.hasGooBuff) disableGooBuff();
+
             if (this.getState(ActorState.POLYMORPH)) {
                 boolean swapAsset = true;
                 if (this.getDefaultCharacterName(this.getAvatar()).equalsIgnoreCase("marceline")
@@ -654,9 +682,6 @@ public class UserActor extends Actor {
                     String.valueOf(player.getId()),
                     realKiller.getId(),
                     this.deathTime);
-            if (this.hasTempStat("criticalChance"))
-                ExtensionCommands.removeFx(
-                        this.parentExt, this.room, this.id + "_" + "jungle_buff_keeoth");
             if (this.nailDamage > 0) this.nailDamage /= 2;
             try {
                 ExtensionCommands.handleDeathRecap(
@@ -753,6 +778,24 @@ public class UserActor extends Actor {
        attackRange
        healthRegen
     */
+
+    private void disableKeeothBuff() {
+        this.hasKeeothBuff = false;
+        ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "keeoth_buff");
+        ExtensionCommands.removeFx(
+                this.parentExt, this.room, this.getId() + "_" + "jungle_buff_keeoth");
+        String[] stats = {"lifeSteal", "spellVamp", "criticalChance"};
+        this.updateStatMenu(stats);
+    }
+
+    private void disableGooBuff() {
+        this.hasGooBuff = false;
+        ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "goomonster_buff");
+        ExtensionCommands.removeFx(
+                this.parentExt, this.room, this.getId() + "_" + "jungle_buff_goo");
+        this.updateStatMenu("speed");
+    }
+
     public void updateStat(String key, double value) {
         this.stats.put(key, value);
         ExtensionCommands.updateActorData(
@@ -965,6 +1008,12 @@ public class UserActor extends Actor {
                                 this.location, charmer.getLocation(), dist - minVictimDist);
                 this.moveWithCollision(movementLine.getP2());
             }
+        }
+        if (this.hasKeeothBuff && System.currentTimeMillis() - this.keeothBuffStartTime >= 90000) {
+            disableKeeothBuff();
+        }
+        if (this.hasGooBuff && System.currentTimeMillis() - this.gooBuffStartTime >= 90000) {
+            disableGooBuff();
         }
     }
 
@@ -1220,33 +1269,34 @@ public class UserActor extends Actor {
                     true,
                     getOppositeTeam());
         } else {
-            this.bundle = this.getSkinAssetBundle();
-            boolean scale = false;
-            if (this.getState(ActorState.TRANSFORMED)) {
-                switch (this.getAvatar()) {
-                    case "flame":
-                        this.bundle = "flame_ult";
-                        scale = true;
-                        break;
-                    case "iceking":
-                        this.bundle =
-                                this.avatar.contains("queen")
-                                        ? "iceking2_icequeen2"
-                                        : this.avatar.contains("young")
-                                                ? "iceking2_young2"
-                                                : "iceking2";
-                        break;
-                    case "marceline":
-                        this.bundle = "marceline_bat";
-                        break;
-                    case "peppermintbutler":
-                        this.bundle = "pepbut_feral";
-                }
+            handlePolyAssetSwap();
+        }
+    }
+
+    public void handlePolyAssetSwap() {
+        this.bundle = this.getSkinAssetBundle();
+        boolean scale = false;
+        if (this.getState(ActorState.TRANSFORMED)) {
+            switch (this.getAvatar()) {
+                case "flame":
+                    this.bundle = "flame_ult";
+                    scale = true;
+                    break;
+                case "iceking":
+                    this.bundle =
+                            this.avatar.contains("queen")
+                                    ? "iceking2_icequeen2"
+                                    : this.avatar.contains("young")
+                                            ? "iceking2_young2"
+                                            : "iceking2";
+                    break;
+                case "peppermintbutler":
+                    this.bundle = "pepbut_feral";
             }
-            ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, this.bundle);
-            if (scale) {
-                ExtensionCommands.scaleActor(this.parentExt, this.room, this.id, 1f);
-            }
+        }
+        ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, this.bundle);
+        if (scale) {
+            ExtensionCommands.scaleActor(this.parentExt, this.room, this.id, 1f);
         }
     }
 

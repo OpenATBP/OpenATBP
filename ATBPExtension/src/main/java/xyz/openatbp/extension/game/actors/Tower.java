@@ -182,7 +182,7 @@ public class Tower extends Actor {
                         String.valueOf(u.getId()),
                         "tower_destroyed_explosion",
                         this.id + "_destroyed_explosion",
-                        1000,
+                        2000,
                         (float) this.location.getX(),
                         (float) this.location.getY(),
                         false,

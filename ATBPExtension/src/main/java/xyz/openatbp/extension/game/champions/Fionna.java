@@ -398,7 +398,7 @@ public class Fionna extends UserActor {
                             id,
                             "fx_target_ring_2.5",
                             id + "qCircle",
-                            1000,
+                            800,
                             (float) dest.getX(),
                             (float) dest.getY(),
                             true,

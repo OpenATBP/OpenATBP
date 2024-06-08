@@ -27,6 +27,7 @@ public class GooMonster extends Monster {
     private Point2D puddleLocation;
     private boolean puddleActivated;
     private long puddleStarted;
+    private static final int GOO_BUFF_DURATION = 90000;
 
     public GooMonster(
             ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName) {
@@ -84,13 +85,20 @@ public class GooMonster extends Monster {
             for (UserActor u : parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                 if (u.getTeam() == a.getTeam()) {
                     u.addEffect(
-                            "speed", u.getPlayerStat("speed") * 0.1d, 60000, "jungle_buff_goo", "");
-                    Champion.handleStatusIcon(
+                            "speed",
+                            u.getPlayerStat("speed") * 0.1d,
+                            GOO_BUFF_DURATION,
+                            "jungle_buff_goo",
+                            "");
+                    u.setHasGooBuff(true);
+                    u.setGooBuffStartTime(System.currentTimeMillis());
+                    ExtensionCommands.addStatusIcon(
                             this.parentExt,
-                            u,
-                            "icon_buff_goomonster",
+                            u.getUser(),
+                            "goomonster_buff",
                             "goomonster_buff_desc",
-                            60000f);
+                            "icon_buff_goomonster",
+                            GOO_BUFF_DURATION);
                     ExtensionCommands.playSound(
                             parentExt, u.getUser(), "global", "announcer/you_goomonster");
                 } else {

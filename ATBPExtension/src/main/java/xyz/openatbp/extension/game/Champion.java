@@ -470,20 +470,6 @@ public class Champion {
                         && this.target.getActorType() != ActorType.TOWER
                         && this.target.getActorType() != ActorType.BASE) ua.handleLifeSteal();
             }
-            /*
-            if(this.target.getActorType() == ActorType.PLAYER){
-                UserActor user = (UserActor) this.target;
-                if(user.damaged(attacker,damage,attackData) && this.attacker.getActorType() == ActorType.TOWER){
-                    Tower t = (Tower) attacker;
-                    t.resetTarget(target);
-                }
-            }
-            else if(target.damaged(attacker,damage,attackData) && this.attacker.getActorType() == ActorType.TOWER){
-                Tower t = (Tower) attacker;
-                t.resetTarget(target);
-            }
-
-             */
             if (attacker.getActorType() == ActorType.MONSTER && !attacker.getId().contains("gnome"))
                 attacker.setCanMove(true);
             this.target.addToDamageQueue(this.attacker, this.damage, attackData, false);
