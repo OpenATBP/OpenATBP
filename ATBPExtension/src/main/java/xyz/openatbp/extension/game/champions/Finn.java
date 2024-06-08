@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
@@ -149,7 +148,6 @@ public class Finn extends UserActor {
             this.updateStatMenu("attackSpeed");
         }
         if (this.qActive && this.qStartTime + 3000 <= System.currentTimeMillis()) {
-            Console.debugLog("Disabling Finn Q!");
             this.qActive = false;
         }
         if (this.ultActivated) {
@@ -278,6 +276,18 @@ public class Finn extends UserActor {
                 Point2D finalDashPoint = this.dash(dest, false, DASH_SPEED);
                 double time = ogLocation.distance(finalDashPoint) / DASH_SPEED;
                 int wTime = (int) (time * 1000);
+                ExtensionCommands.createActorFX(
+                        this.parentExt,
+                        this.room,
+                        this.id,
+                        "finn_dash_fx",
+                        wTime,
+                        this.id + "finnWTrail",
+                        true,
+                        "",
+                        true,
+                        false,
+                        this.team);
                 for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
                     if (a.getTeam() != this.team && quadrangle.contains(a.getLocation())) {
                         if (!isNonStructure(a))
@@ -507,7 +517,6 @@ public class Finn extends UserActor {
                             false,
                             target.getTeam());
                     if (this.qActive) {
-                        Console.debugLog("Finn Q Popped!");
                         for (Actor actor :
                                 Champion.getActorsInRadius(
                                         this.parentExt.getRoomHandler(this.room.getName()),

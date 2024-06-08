@@ -25,8 +25,8 @@ public class MapData {
     public static final float L2_GUARDIAN1_Z = (float) 0;
     public static final float[] L2_TOP_ALTAR = {(float) -13.38, (float) -26.08};
     public static final float[] L2_GOOMONSTER = {(float) 0.54, (float) -27.42};
-    public static final float[] L2_LEFT_HEALTH = {(float) 14.10, (float) 0.0};
-    public static final float[] L2_BOT_BLUE_HEALTH = {(float) 27.68, (float) 3.03};
+    public static final float[] L2_LEFT_HEALTH = {(float) 12.50, (float) 0.05};
+    public static final float[] L2_BOT_BLUE_HEALTH = {(float) 27.10, (float) 2.45};
     public static final float[] L2_BOT_ALTAR = {(float) 14.47, (float) 27.08};
     public static final float[] L2_KEEOTH = {(float) 0.26, (float) 25.82};
     public static final float[] HUGWOLF = {(float) 8.15, (float) 8.19};
@@ -291,7 +291,7 @@ public class MapData {
         float z = (float) 0.0;
         String actorID = "altar_" + type;
         if (room.equalsIgnoreCase("practice")) {
-            if (type == 0) {
+            if (type == 1) {
                 z = L1_DALTAR_Z;
                 actorID = "altar_1";
             } else {

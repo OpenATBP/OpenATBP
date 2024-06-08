@@ -399,6 +399,10 @@ public class Champion {
                             attacker.getId(),
                             "sfx/sfx_attack_miss",
                             attacker.getLocation());
+                if (this.attacker.getActorType() == ActorType.MONSTER
+                        && !this.attacker.getId().contains("gnome")) {
+                    attacker.setCanMove(true);
+                }
                 return;
             }
             ExtensionCommands.playSound(
@@ -426,9 +430,7 @@ public class Champion {
                                 this.attacker.getAvatar().replace("0", ""), this.attack);
                 this.attacker.setCanMove(true);
             } else {
-                switch (this
-                        .attack) { // these attacks need to be physical so that Rattle can actually
-                        // counter-attack them
+                switch (this.attack) { // to make Rattleballs counter-attack possible
                     case "turretAttack":
                         attackData = this.parentExt.getAttackData("princessbubblegum", "spell2");
                         ((ObjectNode) attackData).remove("spellType");

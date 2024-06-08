@@ -82,7 +82,7 @@ public class MagicMan extends UserActor {
                     .getTaskScheduler()
                     .schedule(resetWUses, getReducedCooldown(wCooldown), TimeUnit.MILLISECONDS);
         }
-        if (this.ultStarted && this.hasUltInterruptingCC()) {
+        if (this.ultStarted && this.cancelDashEndAttack()) {
             this.interruptE = true;
         }
         if (System.currentTimeMillis() - this.qStartTime > this.estimatedQDuration)
@@ -257,14 +257,6 @@ public class MagicMan extends UserActor {
                                 TimeUnit.MILLISECONDS);
                 break;
         }
-    }
-
-    private boolean hasUltInterruptingCC() {
-        ActorState[] states = {ActorState.CHARMED, ActorState.FEARED};
-        for (ActorState state : states) {
-            if (this.getState(state)) return true;
-        }
-        return false;
     }
 
     private void handleCloneDeath() {

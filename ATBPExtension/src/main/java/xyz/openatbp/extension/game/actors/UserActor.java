@@ -44,6 +44,7 @@ public class UserActor extends Actor {
     protected Map<String, ScheduledFuture<?>> iconHandlers = new HashMap<>();
     protected int idleTime = 0;
     protected static final double DASH_SPEED = 20d;
+    protected static final int HEALTH_PACK_REGEN = 15;
     protected boolean changeTowerAggro = false;
     protected boolean isDashing = false;
     private long lastHit = 0;
@@ -56,6 +57,9 @@ public class UserActor extends Actor {
     private static boolean damageDebug;
     protected double hits = 0;
     private Point2D queuedDest = null;
+    protected boolean pickedUpHealthPack = false;
+    protected long healthPackPickUpTime = 0;
+    protected UserActor charmer = null;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -223,6 +227,9 @@ public class UserActor extends Actor {
             if (a.getActorType() == ActorType.PLAYER) checkTowerAggro((UserActor) a);
             if (a.getActorType() == ActorType.COMPANION) {
                 checkTowerAggroCompanion(a);
+            }
+            if (this.pickedUpHealthPack) {
+                removeHealthPackEffect();
             }
             this.lastHit = System.currentTimeMillis();
             if (a.getActorType() == ActorType.TOWER) {
@@ -633,7 +640,7 @@ public class UserActor extends Actor {
                     Actor attacker = (Actor) aggressors.keySet().toArray()[i];
                     if (attacker.getActorType() == ActorType.PLAYER) {
                         long attacked = aggressors.get(attacker).getLong("lastAttacked");
-                        if (lastAttacked == -1 || lastAttacked > attacked) {
+                        if (lastAttacked == -1 || lastAttacked < attacked) {
                             lastAttacked = attacked;
                             lastAttacker = (UserActor) attacker;
                         }
@@ -656,7 +663,7 @@ public class UserActor extends Actor {
                         parentExt,
                         player,
                         this.id,
-                        a.getId(),
+                        realKiller.getId(),
                         (HashMap<Actor, ISFSObject>) this.aggressors);
                 this.increaseStat("deaths", 1);
                 if (realKiller.getActorType() == ActorType.PLAYER) {
@@ -705,11 +712,16 @@ public class UserActor extends Actor {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            this.addGameStat("timeDead", this.deathTime);
+            double timeDead = this.deathTime * 1000; // needs to be converted to ms for the client
+            this.addGameStat("timeDead", timeDead);
             parentExt
                     .getTaskScheduler()
                     .schedule(
                             new Champion.RespawnCharacter(this), this.deathTime, TimeUnit.SECONDS);
+            Point2D respawnPoint = getRespawnPoint(); // to prevent tower targeting after respawn
+            this.location = respawnPoint;
+            this.movementLine = new Line2D.Float(respawnPoint, respawnPoint);
+            this.timeTraveled = 0f;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -905,12 +917,16 @@ public class UserActor extends Actor {
             this.futureCrystalTimer++;
             this.moonTimer++;
 
-            // TODO: Move health regen to separate function
             if (this.canRegenHealth()) {
-                double healthRegen = this.getPlayerStat("healthRegen");
-                if (this.currentHealth + healthRegen <= 0)
-                    healthRegen = (this.currentHealth - 1) * -1;
-                this.changeHealth((int) healthRegen);
+                regenHealth();
+            }
+            if (this.pickedUpHealthPack
+                    && System.currentTimeMillis() - this.healthPackPickUpTime >= 60000) {
+                this.pickedUpHealthPack = false;
+                this.updateStatMenu("healthRegen");
+            }
+            if (this.pickedUpHealthPack && this.getHealth() == this.maxHealth) {
+                removeHealthPackEffect();
             }
             int newDeath = 10 + ((msRan / 1000) / 60);
             if (newDeath != this.deathTime) this.deathTime = newDeath;
@@ -940,6 +956,28 @@ public class UserActor extends Actor {
             }
         }
         if (this.changeTowerAggro && !isInTowerRadius(this, false)) this.changeTowerAggro = false;
+        if (this.getState(ActorState.CHARMED) && this.charmer != null) {
+            int minVictimDist = 1;
+            float dist = (float) this.location.distance(charmer.getLocation());
+            if (canMove() && charmer.getHealth() > 0 && dist > minVictimDist) {
+                Line2D movementLine =
+                        Champion.getAbilityLine(
+                                this.location, charmer.getLocation(), dist - minVictimDist);
+                this.moveWithCollision(movementLine.getP2());
+            }
+        }
+    }
+
+    private void regenHealth() {
+        double healthRegen = this.getPlayerStat("healthRegen");
+        if (this.currentHealth + healthRegen <= 0) healthRegen = (this.currentHealth - 1) * -1;
+        this.changeHealth((int) healthRegen);
+    }
+
+    private void removeHealthPackEffect() {
+        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "healthPackFX");
+        this.pickedUpHealthPack = false;
+        this.updateStatMenu("healthRegen");
     }
 
     public void resetIdleTime() {
@@ -1004,6 +1042,21 @@ public class UserActor extends Actor {
         return !this.getState(ActorState.ROOTED);
     }
 
+    @Override
+    public boolean canMove() {
+        for (ActorState s :
+                this.states.keySet()) { // removed CHARMED state from here to make charmer following
+            // possible (I hope it doesn't break anything :))
+            if (s == ActorState.ROOTED
+                    || s == ActorState.STUNNED
+                    || s == ActorState.FEARED
+                    || s == ActorState.AIRBORNE) {
+                if (this.states.get(s)) return false;
+            }
+        }
+        return this.canMove;
+    }
+
     public boolean hasInterrupingCC() {
         ActorState[] states = {
             ActorState.CHARMED,
@@ -1019,13 +1072,9 @@ public class UserActor extends Actor {
         return false;
     }
 
-    public boolean hasDashInterrupingCC() {
+    public boolean cancelDashEndAttack() {
         ActorState[] states = {
-            ActorState.CHARMED,
-            ActorState.FEARED,
-            ActorState.POLYMORPH,
-            ActorState.STUNNED,
-            ActorState.SILENCED
+            ActorState.STUNNED, ActorState.CHARMED, ActorState.POLYMORPH, ActorState.FEARED,
         };
         for (ActorState state : states) {
             if (this.getState(state)) return true;
@@ -1201,19 +1250,39 @@ public class UserActor extends Actor {
         }
     }
 
+    @Override
+    public void handleCharm(UserActor charmer, int duration) {
+        if (!this.states.get(ActorState.CHARMED) && !this.states.get(ActorState.IMMUNITY)) {
+            this.charmer = charmer;
+            this.addState(ActorState.CHARMED, 0d, duration);
+        }
+    }
+
+    public void handleCyclopsHealing() {
+        if (this.getHealth() != this.maxHealth && !this.pickedUpHealthPack) {
+            this.changeHealth((int) (this.getMaxHealth() * 0.15d));
+        }
+        ExtensionCommands.createActorFX(
+                this.parentExt,
+                this.room,
+                this.getId(),
+                "fx_health_regen",
+                60000,
+                this.id + "healthPackFX",
+                true,
+                "",
+                false,
+                false,
+                this.getTeam());
+        this.pickedUpHealthPack = true;
+        this.healthPackPickUpTime = System.currentTimeMillis();
+        this.updateStatMenu("healthRegen");
+    }
+
     public void respawn() {
         this.canMove = true;
         this.setHealth((int) this.maxHealth, (int) this.maxHealth);
-        int teamNumber =
-                parentExt.getRoomHandler(this.room.getName()).getTeamNumber(this.id, this.team);
-        Point2D respawnPoint;
-        boolean isPractice = this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap();
-        respawnPoint =
-                isPractice
-                        ? MapData.L1_PURPLE_SPAWNS[teamNumber]
-                        : MapData.L2_PURPLE_SPAWNS[teamNumber];
-        if (this.team == 1 && respawnPoint.getX() < 0)
-            respawnPoint = new Point2D.Double(respawnPoint.getX() * -1, respawnPoint.getY());
+        Point2D respawnPoint = getRespawnPoint();
         Console.debugLog(
                 this.displayName
                         + " Respawning at: "
@@ -1245,6 +1314,20 @@ public class UserActor extends Actor {
                 false,
                 false,
                 this.team);
+    }
+
+    private Point2D getRespawnPoint() {
+        int teamNumber =
+                parentExt.getRoomHandler(this.room.getName()).getTeamNumber(this.id, this.team);
+        Point2D respawnPoint;
+        boolean isPractice = this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap();
+        respawnPoint =
+                isPractice
+                        ? MapData.L1_PURPLE_SPAWNS[teamNumber]
+                        : MapData.L2_PURPLE_SPAWNS[teamNumber];
+        if (this.team == 1 && respawnPoint.getX() < 0)
+            respawnPoint = new Point2D.Double(respawnPoint.getX() * -1, respawnPoint.getY());
+        return respawnPoint;
     }
 
     public void addXP(int xp) {
@@ -1434,6 +1517,9 @@ public class UserActor extends Actor {
 
     @Override
     public double getPlayerStat(String stat) {
+        if (stat.equalsIgnoreCase("healthRegen")) {
+            if (this.pickedUpHealthPack) return super.getPlayerStat(stat) + HEALTH_PACK_REGEN;
+        }
         if (stat.equalsIgnoreCase("attackDamage")) {
             if (this.dcBuff == 2) return (super.getPlayerStat(stat) + this.nailDamage) * 1.2f;
             return super.getPlayerStat(stat) + this.nailDamage;

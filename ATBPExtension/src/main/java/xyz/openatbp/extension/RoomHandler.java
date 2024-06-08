@@ -28,6 +28,7 @@ import xyz.openatbp.extension.game.champions.GooMonster;
 import xyz.openatbp.extension.game.champions.Keeoth;
 
 public class RoomHandler implements Runnable {
+    private HashMap<User, UserActor> dcPlayers;
     private ATBPExtension parentExt;
     private Room room;
     private ArrayList<Minion> minions;
@@ -55,6 +56,7 @@ public class RoomHandler implements Runnable {
     private boolean playMainMusic = false;
     private boolean playTowerMusic = false;
     private long lastPointLeadTime = 0;
+    private static final int FOUNTAIN_HEAL = 250; // every 0.5s
     private ScheduledFuture<?> scriptHandler;
 
     public RoomHandler(ATBPExtension parentExt, Room room) {
@@ -68,6 +70,7 @@ public class RoomHandler implements Runnable {
         this.practiceMap =
                 room.getGroupId().equalsIgnoreCase("practice")
                         || (room.getName().contains("custom") && room.getMaxUsers() == 2);
+        this.dcPlayers = new HashMap<>();
         Properties props = parentExt.getConfigProperties();
         monsterDebug = Boolean.parseBoolean(props.getProperty("monsterDebug", "false"));
         xpDebug = Boolean.parseBoolean(props.getProperty("xpDebug", "false"));
@@ -260,7 +263,9 @@ public class RoomHandler implements Runnable {
                 e.printStackTrace();
             }
         }
-        this.handleFountain();
+        if (mSecondsRan % 500 == 0) {
+            handleFountain();
+        }
         try {
             for (UserActor u : players) { // Tracks player location
                 u.update(mSecondsRan);
@@ -463,12 +468,21 @@ public class RoomHandler implements Runnable {
         else return bases[0];
     }
 
-    public int getAltarStatus(Point2D location) { // 0 is top, 1 is mid, 2 is bot
-        Point2D botAltar = new Point2D.Float(MapData.L2_BOT_ALTAR[0], MapData.L2_BOT_ALTAR[1]);
-        Point2D midAltar = new Point2D.Float(0f, 0f);
-        if (location.equals(botAltar)) return this.altarStatus[2];
-        else if (location.equals(midAltar)) return this.altarStatus[1];
-        else return this.altarStatus[0];
+    public int getAltarStatus(Point2D location) {
+        // main mode: 0 - top, 1 - mid, 2 - bot
+        // practice mode: 0 - top, 1 - bot
+
+        if (!this.practiceMap) {
+            Point2D botAltar = new Point2D.Float(MapData.L2_BOT_ALTAR[0], MapData.L2_BOT_ALTAR[1]);
+            Point2D midAltar = new Point2D.Float(0f, 0f);
+            if (location.equals(botAltar)) return this.altarStatus[2];
+            else if (location.equals(midAltar)) return this.altarStatus[1];
+            else return this.altarStatus[0];
+        } else {
+            Point2D topAltar = new Point2D.Float(0f, MapData.L1_AALTAR_Z);
+            if (location.equals(topAltar)) return this.altarStatus[0];
+            else return this.altarStatus[1];
+        }
     }
 
     private void handleHealth() {
@@ -496,10 +510,7 @@ public class RoomHandler implements Runnable {
                                     team);
                             ExtensionCommands.playSound(
                                     parentExt, u.getRoom(), "", "sfx_health_picked_up", healthLoc);
-                            if (!u.hasTempStat("healthRegen"))
-                                u.changeHealth((int) (u.getMaxHealth() * 0.15d));
-                            u.addEffect("healthRegen", 20d, 15000, "fx_health_regen", "");
-                            // Champion.giveBuff(parentExt,u.getUser(), Buff.HEALTH_PACK);
+                            u.handleCyclopsHealing();
                             spawns.putInt(s, 0);
                             break;
                         }
@@ -834,6 +845,7 @@ public class RoomHandler implements Runnable {
                         for (UserActor ua :
                                 Champion.getUserActorsInRadius(this, altarLocation, 2)) {
                             if (ua.getTeam() == capturingTeam && ua.getHealth() > 0) {
+                                addAltarGameScore(ua, capturedAltarIndex);
                                 String tegID =
                                         (String) ua.getUser().getSession().getProperty("tegid");
                                 Bson filter = eq("user.TEGid", tegID);
@@ -937,9 +949,11 @@ public class RoomHandler implements Runnable {
                 true,
                 team);
         int altarNum;
-        if (i == 0) altarNum = 1;
-        else if (i == 1) altarNum = 0;
-        else altarNum = i;
+        if (!this.practiceMap) {
+            altarNum = i == 0 ? 1 : i == 1 ? 0 : i;
+        } else {
+            altarNum = i == 1 ? 2 : i;
+        }
         ExtensionCommands.updateAltar(this.parentExt, this.room, altarNum, team, true);
         for (UserActor u : this.players) {
             if (u.getTeam() == team) {
@@ -970,6 +984,18 @@ public class RoomHandler implements Runnable {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+            }
+        }
+    }
+
+    private void addAltarGameScore(UserActor player, int altarIndex) {
+        if (this.practiceMap) {
+            player.addGameStat("score", 10);
+        } else {
+            if (altarIndex == 1) {
+                player.addGameStat("score", 15);
+            } else {
+                player.addGameStat("score", 10);
             }
         }
     }
@@ -1010,11 +1036,7 @@ public class RoomHandler implements Runnable {
                 altar_y = MapData.L2_BOT_ALTAR[1];
             }
         } else {
-            if (altar == 0) {
-                altar_y = MapData.L1_DALTAR_Z;
-            } else if (altar == 1) {
-                altar_y = MapData.L1_AALTAR_Z;
-            }
+            altar_y = altar == 0 ? MapData.L1_AALTAR_Z : MapData.L1_DALTAR_Z;
         }
         return new Point2D.Double(altar_x, altar_y);
     }
@@ -1313,18 +1335,14 @@ public class RoomHandler implements Runnable {
     }
 
     public void handleFountain() {
-        Point2D blueCenter = new Point2D.Float(-50.16f, 0f);
-        if (this.practiceMap)
-            blueCenter =
-                    new Point2D.Float(MapData.L1_GUARDIAN_X * -1, MapData.L1_BLUE_GUARDIAN_AREA_Z);
-        List<Actor> blueTeam = Champion.getEnemyActorsInRadius(this, 1, blueCenter, 4f);
-        for (Actor a : blueTeam) {
-            if (a.getActorType() == ActorType.PLAYER) {
-                UserActor ua = (UserActor) a;
-                if (ua.getHealth() < ua.getMaxHealth()) {
-                    ua.setHealth(
-                            ua.getMaxHealth(),
-                            ua.getMaxHealth()); // TODO: Set to not automatically fully heal
+        HashMap<Integer, Point2D> centers = getIntegerPoint2DHashMap();
+
+        for (Map.Entry<Integer, Point2D> entry : centers.entrySet()) {
+            for (UserActor ua : Champion.getUserActorsInRadius(this, entry.getValue(), 4f)) {
+                if (ua.getTeam() == entry.getKey()
+                        && ua.getHealth() != ua.getMaxHealth()
+                        && ua.getHealth() > 0) {
+                    ua.changeHealth(FOUNTAIN_HEAL);
                     ExtensionCommands.createActorFX(
                             this.parentExt,
                             this.room,
@@ -1340,31 +1358,28 @@ public class RoomHandler implements Runnable {
                 }
             }
         }
-        Point2D purpleCenter = new Point2D.Float(50.16f, 0f);
-        if (this.practiceMap)
-            purpleCenter =
-                    new Point2D.Float(MapData.L1_GUARDIAN_X, MapData.L1_PURPLE_GUARDIAN_AREA_Z);
-        List<Actor> purpleTeam = Champion.getEnemyActorsInRadius(this, 0, purpleCenter, 4f);
-        for (Actor a : purpleTeam) { // I can optimize but that's future me's problem
-            if (a.getActorType() == ActorType.PLAYER) {
-                UserActor ua = (UserActor) a;
-                if (ua.getHealth() < ua.getMaxHealth()) {
-                    ua.setHealth(ua.getMaxHealth(), ua.getMaxHealth());
-                    ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            ua.getId(),
-                            "fx_health_regen",
-                            3000,
-                            ua.getId() + "_fountainRegen",
-                            true,
-                            "Bip01",
-                            false,
-                            false,
-                            ua.getTeam());
-                }
-            }
-        }
+    }
+
+    private HashMap<Integer, Point2D> getIntegerPoint2DHashMap() {
+        Point2D blueCenter;
+        Point2D purpleCenter;
+        float practiceBlueX = MapData.L1_GUARDIAN_X;
+        float practiceBlueZ = MapData.L1_BLUE_GUARDIAN_AREA_Z;
+        float practicePurpleX = MapData.L1_GUARDIAN_X * -1;
+        float practicePurpleZ = MapData.L1_PURPLE_GUARDIAN_AREA_Z;
+
+        Point2D mainPurpleCenter = new Point2D.Float(-50.16f, 0f);
+        Point2D mainBlueCenter = new Point2D.Float(50.16f, 0f);
+        Point2D practicePurpleCenter = new Point2D.Float(practicePurpleX, practicePurpleZ);
+        Point2D practiceBlueCenter = new Point2D.Float(practiceBlueX, practiceBlueZ);
+
+        purpleCenter = this.practiceMap ? practicePurpleCenter : mainPurpleCenter;
+        blueCenter = this.practiceMap ? practiceBlueCenter : mainBlueCenter;
+
+        HashMap<Integer, Point2D> centers = new HashMap<>();
+        centers.put(0, purpleCenter);
+        centers.put(1, blueCenter);
+        return centers;
     }
 
     public UserActor getEnemyChampion(int team, String championName) {
@@ -1383,8 +1398,10 @@ public class RoomHandler implements Runnable {
         try {
             this.gameOver = true;
             this.room.setProperty("state", 3);
-            ExtensionCommands.gameOver(parentExt, this.room, winningTeam);
-            MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
+            boolean isRankedMatch =
+                    this.room.getMaxUsers() == 6 && !this.room.getName().contains("custom");
+            ExtensionCommands.gameOver(
+                    parentExt, this.room, this.dcPlayers, winningTeam, isRankedMatch);
             for (UserActor ua : this.players) {
                 if (ua.getTeam() == winningTeam) {
                     ExtensionCommands.playSound(
@@ -1397,117 +1414,125 @@ public class RoomHandler implements Runnable {
                     ExtensionCommands.playSound(
                             parentExt, ua.getUser(), "music", "music/music_defeat");
                 }
-                String tegID = (String) ua.getUser().getSession().getProperty("tegid");
-                Document data = playerData.find(eq("user.TEGid", tegID)).first();
-                if (data != null) {
-                    ObjectMapper mapper = new ObjectMapper();
-                    JsonNode dataObj = mapper.readTree(data.toJson());
-                    int wins = 0;
-                    int points = 0;
-                    int kills = (int) ua.getStat("kills");
-                    int deaths = (int) ua.getStat("deaths");
-                    int assists = (int) ua.getStat("assists");
-                    int towers = 0;
-                    int minions = 0;
-                    int jungleMobs = 0;
-                    int altars = 0;
-                    int largestSpree = 0;
-                    int largestMulti = 0;
-                    int score = 0;
 
-                    double win;
-                    if (winningTeam == -1) win = 0.5d;
-                    else if (ua.getTeam() == winningTeam) win = 1d;
-                    else win = 0d;
-                    int eloGain = ChampionData.getEloGain(ua, this.players, win);
-                    int currentElo = dataObj.get("player").get("elo").asInt();
-                    for (double tierElo : ChampionData.ELO_TIERS) {
-                        if (currentElo + eloGain + 1 == (int) tierElo) {
-                            eloGain++;
-                            break;
+                if (isRankedMatch) {
+                    MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
+                    String tegID = (String) ua.getUser().getSession().getProperty("tegid");
+                    Document data = playerData.find(eq("user.TEGid", tegID)).first();
+                    if (data != null) {
+                        ObjectMapper mapper = new ObjectMapper();
+                        JsonNode dataObj = mapper.readTree(data.toJson());
+                        int wins = 0;
+                        int points = 0;
+                        int kills = (int) ua.getStat("kills");
+                        int deaths = (int) ua.getStat("deaths");
+                        int assists = (int) ua.getStat("assists");
+                        int towers = 0;
+                        int minions = 0;
+                        int jungleMobs = 0;
+                        int altars = 0;
+                        int largestSpree = 0;
+                        int largestMulti = 0;
+                        int score = 0;
+
+                        double win;
+                        if (winningTeam == -1) win = 0.5d;
+                        else if (ua.getTeam() == winningTeam) win = 1d;
+                        else win = 0d;
+                        int eloGain = ChampionData.getEloGain(ua, this.players, win);
+                        int currentElo = dataObj.get("player").get("elo").asInt();
+                        for (double tierElo : ChampionData.ELO_TIERS) {
+                            if (currentElo + eloGain + 1 == (int) tierElo) {
+                                eloGain++;
+                                break;
+                            }
                         }
+                        if (currentElo + eloGain < 0) eloGain = currentElo * -1;
+                        if (ua.getTeam() == winningTeam) wins++;
+
+                        int currentRankProgress = dataObj.get("player").get("rankProgress").asInt();
+                        int rankIncrease = 0;
+                        if (currentRankProgress >= 90) {
+                            currentRankProgress = 0;
+                            rankIncrease++;
+                        } else currentRankProgress += 10;
+
+                        boolean updateSpree = false;
+                        boolean updateMulti = false;
+                        boolean updateHighestScore = false;
+
+                        if (ua.hasGameStat("score")) {
+                            score += ua.getGameStat("score");
+                            int currentHighestScore =
+                                    dataObj.get("player").get("scoreHighest").asInt();
+                            if (score > currentHighestScore) {
+                                updateHighestScore = true;
+                            }
+                        }
+                        if (ua.hasGameStat("towers")) towers += ua.getGameStat("towers");
+                        if (ua.hasGameStat("minions")) minions += ua.getGameStat("minions");
+                        if (ua.hasGameStat("jungleMobs"))
+                            jungleMobs += ua.getGameStat("jungleMobs");
+
+                        if (ua.hasGameStat("spree")) {
+                            int currentSpree = dataObj.get("player").get("largestSpree").asInt();
+                            double gameSpree = ua.getGameStat("spree");
+                            if (gameSpree > currentSpree) {
+                                updateSpree = true;
+                                largestSpree = (int) gameSpree;
+                            }
+                        }
+
+                        if (ua.hasGameStat("largestMulti")) {
+                            int currentMulti = dataObj.get("player").get("largestMulti").asInt();
+                            double gameMulti = ua.getGameStat("largestMulti");
+                            if (gameMulti > currentMulti) {
+                                updateMulti = true;
+                                largestMulti = (int) gameMulti;
+                            }
+                        }
+                        List<Bson> updateList = new ArrayList<>();
+
+                        if (this.room.getMaxUsers() == 6
+                                && this.room.getGroupId().equalsIgnoreCase("PVP")) {
+                            updateList.add(Updates.inc("player.playsPVP", 1));
+                            updateList.add(
+                                    Updates.set(
+                                            "player.tier",
+                                            ChampionData.getTier(currentElo + eloGain)));
+                            updateList.add(Updates.inc("player.elo", eloGain));
+                            updateList.add(Updates.inc("player.rank", rankIncrease));
+                            updateList.add(Updates.set("player.rankProgress", currentRankProgress));
+                            updateList.add(Updates.inc("player.winsPVP", wins));
+                            updateList.add(
+                                    Updates.inc(
+                                            "player.points",
+                                            points)); // Always zero I have no idea what this is
+                            // for?;
+                            updateList.add(Updates.inc("player.coins", 100));
+                            updateList.add(Updates.inc("player.kills", kills));
+                            updateList.add(Updates.inc("player.deaths", deaths));
+                            updateList.add(Updates.inc("player.assists", assists));
+                            updateList.add(Updates.inc("player.towers", towers));
+                            updateList.add(Updates.inc("player.minions", minions));
+                            updateList.add(Updates.inc("player.jungleMobs", jungleMobs));
+                            updateList.add(Updates.inc("player.altars", altars));
+                            updateList.add(Updates.inc("player.scoreTotal", score));
+
+                            if (updateSpree) {
+                                updateList.add(Updates.set("player.largestSpree", largestSpree));
+                            }
+                            if (updateMulti) {
+                                updateList.add(Updates.set("player.largestMulti", largestMulti));
+                            }
+                            if (updateHighestScore) {
+                                updateList.add(Updates.set("player.scoreHighest", score));
+                            }
+                        }
+                        Bson updates = Updates.combine(updateList);
+                        UpdateOptions options = new UpdateOptions().upsert(true);
+                        Console.debugLog(playerData.updateOne(data, updates, options));
                     }
-                    if (currentElo + eloGain < 0) eloGain = currentElo * -1;
-                    if (ua.getTeam() == winningTeam) wins++;
-
-                    int currentRankProgress = dataObj.get("player").get("rankProgress").asInt();
-                    int rankIncrease = 0;
-                    if (currentRankProgress >= 90) {
-                        currentRankProgress = 0;
-                        rankIncrease++;
-                    } else currentRankProgress += 10;
-
-                    boolean updateSpree = false;
-                    boolean updateMulti = false;
-                    boolean updateHighestScore = false;
-
-                    if (ua.hasGameStat("score")) {
-                        score += ua.getGameStat("score");
-                        int currentHighestScore = dataObj.get("player").get("scoreHighest").asInt();
-                        if (score > currentHighestScore) {
-                            updateHighestScore = true;
-                        }
-                    }
-                    if (ua.hasGameStat("towers")) towers += ua.getGameStat("towers");
-                    if (ua.hasGameStat("minions")) minions += ua.getGameStat("minions");
-                    if (ua.hasGameStat("jungleMobs")) jungleMobs += ua.getGameStat("jungleMobs");
-
-                    if (ua.hasGameStat("spree")) {
-                        int currentSpree = dataObj.get("player").get("largestSpree").asInt();
-                        double gameSpree = ua.getGameStat("spree");
-                        if (gameSpree > currentSpree) {
-                            updateSpree = true;
-                            largestSpree = (int) gameSpree;
-                        }
-                    }
-
-                    if (ua.hasGameStat("largestMulti")) {
-                        int currentMulti = dataObj.get("player").get("largestMulti").asInt();
-                        double gameMulti = ua.getGameStat("largestMulti");
-                        if (gameMulti > currentMulti) {
-                            updateMulti = true;
-                            largestMulti = (int) gameMulti;
-                        }
-                    }
-                    List<Bson> updateList = new ArrayList<>();
-
-                    if (this.room.getMaxUsers() == 6
-                            && this.room.getGroupId().equalsIgnoreCase("PVP")) {
-                        updateList.add(Updates.inc("player.playsPVP", 1));
-                        updateList.add(
-                                Updates.set(
-                                        "player.tier", ChampionData.getTier(currentElo + eloGain)));
-                        updateList.add(Updates.inc("player.elo", eloGain));
-                        updateList.add(Updates.inc("player.rank", rankIncrease));
-                        updateList.add(Updates.set("player.rankProgress", currentRankProgress));
-                        updateList.add(Updates.inc("player.winsPVP", wins));
-                        updateList.add(
-                                Updates.inc(
-                                        "player.points",
-                                        points)); // Always zero I have no idea what this is for?;
-                        updateList.add(Updates.inc("player.coins", 100));
-                        updateList.add(Updates.inc("player.kills", kills));
-                        updateList.add(Updates.inc("player.deaths", deaths));
-                        updateList.add(Updates.inc("player.assists", assists));
-                        updateList.add(Updates.inc("player.towers", towers));
-                        updateList.add(Updates.inc("player.minions", minions));
-                        updateList.add(Updates.inc("player.jungleMobs", jungleMobs));
-                        updateList.add(Updates.inc("player.altars", altars));
-                        updateList.add(Updates.inc("player.scoreTotal", score));
-
-                        if (updateSpree) {
-                            updateList.add(Updates.set("player.largestSpree", largestSpree));
-                        }
-                        if (updateMulti) {
-                            updateList.add(Updates.set("player.largestMulti", largestMulti));
-                        }
-                        if (updateHighestScore) {
-                            updateList.add(Updates.set("player.scoreHighest", score));
-                        }
-                    }
-                    Bson updates = Updates.combine(updateList);
-                    UpdateOptions options = new UpdateOptions().upsert(true);
-                    Console.debugLog(playerData.updateOne(data, updates, options));
                 }
             }
             parentExt.stopScript(room.getName(), false);
@@ -1520,6 +1545,7 @@ public class RoomHandler implements Runnable {
         if (this.players.size() == 1) return;
         try {
             UserActor player = this.getPlayer(String.valueOf(user.getId()));
+            this.dcPlayers.put(user, player);
             player.destroy();
             MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
             Document data =

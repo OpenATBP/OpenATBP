@@ -11,10 +11,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import com.smartfoxserver.v2.entities.User;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ChampionData;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -67,6 +64,8 @@ public class BMO extends UserActor {
             this.canCast[0] = true;
             this.canCast[2] = true;
             this.wActive = false;
+            String[] statsToUpdate = {"armor", "spellResist"};
+            this.updateStatMenu(statsToUpdate);
         }
         if (wActive) {
             for (Actor a :
@@ -89,6 +88,15 @@ public class BMO extends UserActor {
             interrputW();
             this.wActive = false;
         }
+    }
+
+    @Override
+    public double getPlayerStat(String stat) {
+        if (this.wActive) {
+            if (stat.equalsIgnoreCase("armor")) return super.getPlayerStat(stat) * 1.2;
+            else if (stat.equalsIgnoreCase("spellResist")) return super.getPlayerStat(stat) * 1.5;
+        }
+        return super.getPlayerStat(stat);
     }
 
     @Override
@@ -161,6 +169,8 @@ public class BMO extends UserActor {
                     this.canCast[2] = false;
                     this.wActive = true;
                     wStartTime = System.currentTimeMillis();
+                    String[] statsToUpdate = {"armor", "spellResist"};
+                    this.updateStatMenu(statsToUpdate);
                     String pixelsAoeFx =
                             (this.avatar.contains("noir"))
                                     ? "bmo_pixels_aoe_noire"
@@ -227,6 +237,8 @@ public class BMO extends UserActor {
                     this.canCast[2] = true;
                     this.wActive = false;
                     this.wEnd(cooldown, gCooldown);
+                    String[] statsToUpdate = {"armor", "spellResist"};
+                    this.updateStatMenu(statsToUpdate);
                     parentExt
                             .getTaskScheduler()
                             .schedule(

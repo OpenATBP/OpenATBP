@@ -234,7 +234,7 @@ public class PeppermintButler extends UserActor {
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandR");
             this.removeFx = false;
         }
-        if (this.wActive && this.hasDashInterrupingCC()) {
+        if (this.wActive && this.cancelDashEndAttack()) {
             this.interruptW = true;
         }
     }
@@ -452,6 +452,20 @@ public class PeppermintButler extends UserActor {
         }
     }
 
+    public boolean hasDashInterrupingCC() {
+        ActorState[] states = {
+            ActorState.CHARMED,
+            ActorState.FEARED,
+            ActorState.POLYMORPH,
+            ActorState.STUNNED,
+            ActorState.SILENCED
+        };
+        for (ActorState state : states) {
+            if (this.getState(state)) return true;
+        }
+        return false;
+    }
+
     private void endUlt() {
         setState(ActorState.TRANSFORMED, false);
         String[] statsToUpdate = {"speed", "attackSpeed", "attackDamage"};
@@ -463,25 +477,29 @@ public class PeppermintButler extends UserActor {
     }
 
     private boolean isCapturingAltar() {
+        Point2D currentAltar = null;
+        Point2D[] altarLocations;
+
         if (!this.room.getGroupId().equalsIgnoreCase("practice")) {
-            Point2D botAltar = new Point2D.Float(MapData.L2_BOT_ALTAR[0], MapData.L2_BOT_ALTAR[1]);
-            Point2D topAltar = new Point2D.Float(MapData.L2_TOP_ALTAR[0], MapData.L2_TOP_ALTAR[1]);
-            Point2D midAltar = new Point2D.Float(0f, 0f);
-            Point2D[] altarLocations = {botAltar, topAltar, midAltar};
-            Point2D currentAltar = null;
-            for (Point2D altarLocation : altarLocations) {
-                if (this.location.distance(altarLocation) <= 2f) {
-                    currentAltar = altarLocation;
-                    break;
-                }
+            altarLocations = new Point2D[3];
+            altarLocations[0] = new Point2D.Float(MapData.L2_TOP_ALTAR[0], MapData.L2_TOP_ALTAR[1]);
+            altarLocations[1] = new Point2D.Float(0f, 0f);
+            altarLocations[2] = new Point2D.Float(MapData.L2_BOT_ALTAR[0], MapData.L2_BOT_ALTAR[1]);
+        } else {
+            altarLocations = new Point2D[2];
+            altarLocations[0] = new Point2D.Float(0f, MapData.L1_AALTAR_Z);
+            altarLocations[1] = new Point2D.Float(0f, MapData.L1_DALTAR_Z);
+        }
+        for (Point2D altarLocation : altarLocations) {
+            if (this.location.distance(altarLocation) <= 2f) {
+                currentAltar = altarLocation;
+                break;
             }
-            if (currentAltar != null) {
-                int altarStatus =
-                        this.parentExt
-                                .getRoomHandler(this.room.getName())
-                                .getAltarStatus(currentAltar);
-                return altarStatus < 10;
-            }
+        }
+        if (currentAltar != null) {
+            int altarStatus =
+                    this.parentExt.getRoomHandler(this.room.getName()).getAltarStatus(currentAltar);
+            return altarStatus < 10;
         }
         return false;
     }

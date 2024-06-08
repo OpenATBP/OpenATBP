@@ -242,6 +242,21 @@ public class Tower extends Actor {
                                 this.team,
                                 this.location,
                                 (float) this.getPlayerStat("attackRange"));
+                if (!nearbyActors.isEmpty()) {
+                    List<Actor> minionsInRadius = new ArrayList<>();
+                    for (Actor a : nearbyActors) {
+                        if (a.getActorType() == ActorType.MINION) {
+                            minionsInRadius.add(a);
+                        }
+                    }
+                    if (minionsInRadius.isEmpty()) {
+                        this.setStat("armor", 600);
+                        this.setStat("spellResist", 800);
+                    } else {
+                        this.setStat("armor", 75);
+                        this.setStat("spellResist", 100);
+                    }
+                }
                 if (nearbyActors.isEmpty() && this.attackCooldown != 1000) {
                     if (numberOfAttacks != 0) this.numberOfAttacks = 0;
                     this.attackCooldown = 1000;
@@ -394,20 +409,6 @@ public class Tower extends Actor {
                             this.isFocusingCompanion = false;
                         }
                     }
-                }
-                List<Actor> minionsNearby = new ArrayList<>();
-                if (!nearbyActors.isEmpty()) {
-                    for (Actor a : nearbyActors) {
-                        if (a.getActorType() == ActorType.MINION && a.getTeam() != this.team)
-                            minionsNearby.add(a);
-                    }
-                    if (!minionsNearby.isEmpty()) {
-                        this.setStat("armor", 75);
-                        this.setStat("spellResist", 100);
-                    }
-                } else {
-                    this.setStat("armor", 600);
-                    this.setStat("spellResist", 800);
                 }
             }
         } catch (Exception e) {

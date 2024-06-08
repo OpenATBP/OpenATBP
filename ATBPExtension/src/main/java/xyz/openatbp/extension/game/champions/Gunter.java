@@ -276,7 +276,7 @@ public class Gunter extends UserActor {
                             enableQCasting,
                             getReducedCooldown(cooldown) - Q_DASH_TIME,
                             TimeUnit.MILLISECONDS);
-            if (getHealth() > 0) {
+            if (getHealth() > 0 && !cancelDashEndAttack()) {
                 ExtensionCommands.createActorFX(
                         parentExt,
                         room,
