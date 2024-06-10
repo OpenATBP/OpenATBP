@@ -850,6 +850,10 @@ public class UserActor extends Actor {
         this.queuedDest = newDest;
     }
 
+    public void scheduleTask(Runnable task, int delay) {
+        parentExt.getTaskScheduler().schedule(task, delay, TimeUnit.MILLISECONDS);
+    }
+
     @Override
     public void clearPath() {
         super.clearPath();
@@ -1230,74 +1234,56 @@ public class UserActor extends Actor {
 
     public void handlePolymorph(boolean enable, int duration) {
         if (enable) {
-            this.addState(ActorState.SLOWED, 0.3d, duration);
-            ExtensionCommands.swapActorAsset(parentExt, this.room, this.id, "flambit");
-            ExtensionCommands.createActorFX(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    "statusEffect_polymorph",
-                    1000,
-                    this.id + "_statusEffect_polymorph",
-                    true,
-                    "",
-                    true,
-                    false,
-                    this.team);
-            ExtensionCommands.createActorFX(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    "flambit_aoe",
-                    3000,
-                    this.id + "_flambit_aoe",
-                    true,
-                    "",
-                    true,
-                    false,
-                    this.team);
-            ExtensionCommands.createActorFX(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    "fx_target_ring_2",
-                    3000,
-                    this.id + "_flambit_ring_",
-                    true,
-                    "",
-                    true,
-                    true,
-                    getOppositeTeam());
+            handleSwapToPoly(duration);
         } else {
-            handlePolyAssetSwap();
+            handleSwapFromPoly();
         }
     }
 
-    public void handlePolyAssetSwap() {
-        this.bundle = this.getSkinAssetBundle();
-        boolean scale = false;
-        if (this.getState(ActorState.TRANSFORMED)) {
-            switch (this.getAvatar()) {
-                case "flame":
-                    this.bundle = "flame_ult";
-                    scale = true;
-                    break;
-                case "iceking":
-                    this.bundle =
-                            this.avatar.contains("queen")
-                                    ? "iceking2_icequeen2"
-                                    : this.avatar.contains("young")
-                                            ? "iceking2_young2"
-                                            : "iceking2";
-                    break;
-                case "peppermintbutler":
-                    this.bundle = "pepbut_feral";
-            }
-        }
-        ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, this.bundle);
-        if (scale) {
-            ExtensionCommands.scaleActor(this.parentExt, this.room, this.id, 1f);
-        }
+    public void handleSwapToPoly(int duration) {
+        this.addState(ActorState.SLOWED, 0.3d, duration);
+        ExtensionCommands.swapActorAsset(parentExt, this.room, this.id, "flambit");
+        ExtensionCommands.createActorFX(
+                this.parentExt,
+                this.room,
+                this.id,
+                "statusEffect_polymorph",
+                1000,
+                this.id + "_statusEffect_polymorph",
+                true,
+                "",
+                true,
+                false,
+                this.team);
+        ExtensionCommands.createActorFX(
+                this.parentExt,
+                this.room,
+                this.id,
+                "flambit_aoe",
+                3000,
+                this.id + "_flambit_aoe",
+                true,
+                "",
+                true,
+                false,
+                this.team);
+        ExtensionCommands.createActorFX(
+                this.parentExt,
+                this.room,
+                this.id,
+                "fx_target_ring_2",
+                3000,
+                this.id + "_flambit_ring_",
+                true,
+                "",
+                true,
+                true,
+                getOppositeTeam());
+    }
+
+    public void handleSwapFromPoly() {
+        String bundle = this.getSkinAssetBundle();
+        ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bundle);
     }
 
     @Override

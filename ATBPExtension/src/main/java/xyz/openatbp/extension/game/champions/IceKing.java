@@ -27,11 +27,16 @@ public class IceKing extends UserActor {
     private Point2D wLocation = null;
     private boolean ultActive = false;
     private Point2D ultLocation = null;
-    private boolean assetSwapped = false;
-    private boolean hasDefaultAsset = true;
     private long wStartTime = 0;
     private long ultStartTime = 0;
-    private long lastWhirlwindTime = 0;
+    private long lasWhirlwindTime = 0;
+
+    private enum AssetBundle {
+        NORMAL,
+        FLIGHT
+    }
+
+    private AssetBundle bundle = AssetBundle.NORMAL;
 
     public IceKing(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -41,18 +46,67 @@ public class IceKing extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
+        if (this.ultActive && this.ultLocation != null) {
+            List<Actor> actorsInUlt =
+                    Champion.getActorsInRadius(
+                            this.parentExt.getRoomHandler(this.room.getName()),
+                            this.ultLocation,
+                            5.5f);
+            boolean containsIceKing = actorsInUlt.contains(this);
+            if (containsIceKing && this.bundle == AssetBundle.NORMAL) {
+                this.bundle = AssetBundle.FLIGHT;
+                if (!this.getState(ActorState.POLYMORPH)) {
+                    ExtensionCommands.swapActorAsset(
+                            this.parentExt, this.room, this.id, getFlightAssetbundle());
+                }
+                if (System.currentTimeMillis() - this.lasWhirlwindTime >= 2000) {
+                    this.lasWhirlwindTime = System.currentTimeMillis();
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "ice_king_whirlwind",
+                            2500,
+                            this.id + "_whirlWind" + Math.random(),
+                            true,
+                            "",
+                            true,
+                            false,
+                            this.team);
+                }
+            } else if (!containsIceKing && this.bundle == AssetBundle.FLIGHT) {
+                this.bundle = AssetBundle.NORMAL;
+                if (!this.getState(ActorState.POLYMORPH)) {
+                    ExtensionCommands.swapActorAsset(
+                            this.parentExt, this.room, this.id, getSkinAssetBundle());
+                }
+            }
+
+            if (!actorsInUlt.isEmpty()) {
+                for (Actor a : actorsInUlt) {
+                    if (a.equals(this)) {
+                        this.addEffect("speed", this.getStat("speed"), 150);
+                        this.updateStatMenu("speed");
+                    } else if (a.getTeam() != this.team && a.getActorType() != ActorType.BASE) {
+                        JsonNode spellData = this.parentExt.getAttackData("iceking", "spell3");
+                        a.addToDamageQueue(this, getSpellDamage(spellData) / 10d, spellData, true);
+                    }
+                }
+            }
+        }
+
         if (this.wLocation != null && System.currentTimeMillis() - this.wStartTime >= 3000) {
             this.lastWHit = null;
             this.wLocation = null;
         }
         if (this.ultActive && System.currentTimeMillis() - this.ultStartTime >= 6000) {
-            this.assetSwapped = false;
-            this.hasDefaultAsset = true;
             this.ultLocation = null;
             this.ultActive = false;
+            this.bundle = AssetBundle.NORMAL;
             ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
-            setState(ActorState.TRANSFORMED, false);
+            this.updateStatMenu("speed");
         }
+
         if (System.currentTimeMillis() - lastAbilityUsed > 10000) {
             if (!this.iceShield) {
                 this.iceShield = true;
@@ -128,58 +182,15 @@ public class IceKing extends UserActor {
                 }
             }
         }
+    }
 
-        if (this.ultLocation != null) {
-            for (Actor a :
-                    Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()),
-                            this.ultLocation,
-                            5.5f)) {
-                if (a.getTeam() != this.team || a.getId().equalsIgnoreCase(this.id)) {
-                    if (a.getId().equalsIgnoreCase(this.id)) {
-                        this.addEffect("speed", this.getStat("speed"), 500);
-                    } else {
-                        JsonNode spellData = this.parentExt.getAttackData("iceking", "spell3");
-                        a.addToDamageQueue(this, getSpellDamage(spellData) / 10d, spellData, true);
-                    }
-                }
-            }
-            String flyFx =
-                    this.avatar.contains("queen")
-                            ? "iceking2_icequeen2"
-                            : this.avatar.contains("young") ? "iceking2_young2" : "iceking2";
-            List<Actor> affectedActors =
-                    Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()), ultLocation, 5.5f);
-            if (affectedActors.contains(this)) {
-                if (!this.assetSwapped) {
-                    ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, flyFx);
-                    if (System.currentTimeMillis() - lastWhirlwindTime > 2500)
-                        ExtensionCommands.createActorFX(
-                                this.parentExt,
-                                this.room,
-                                this.id,
-                                "ice_king_whirlwind",
-                                2500,
-                                this.id + "_whirlWind" + Math.random(),
-                                true,
-                                "",
-                                true,
-                                false,
-                                this.team);
-                    this.assetSwapped = true;
-                    this.hasDefaultAsset = false;
-                    this.lastWhirlwindTime = System.currentTimeMillis();
-                    this.setState(ActorState.TRANSFORMED, true);
-                }
-            } else if (!hasDefaultAsset) {
-                ExtensionCommands.swapActorAsset(
-                        this.parentExt, this.room, this.id, getSkinAssetBundle());
-                this.hasDefaultAsset = true;
-                this.assetSwapped = false;
-                this.setState(ActorState.TRANSFORMED, false);
-            }
-        }
+    @Override
+    public void handleSwapFromPoly() {
+        String bundle =
+                this.bundle == AssetBundle.FLIGHT && this.ultActive
+                        ? getFlightAssetbundle()
+                        : getSkinAssetBundle();
+        ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bundle);
     }
 
     @Override
@@ -192,9 +203,7 @@ public class IceKing extends UserActor {
             this.iceShield = false;
             this.lastAbilityUsed = System.currentTimeMillis() + 5000;
             Runnable handlePassiveCooldown =
-                    () -> {
-                        this.lastAbilityUsed = System.currentTimeMillis();
-                    };
+                    () -> this.lastAbilityUsed = System.currentTimeMillis();
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_iceShield");
             ExtensionCommands.actorAbilityResponse(
                     this.parentExt, this.player, "passive", true, 5000, 0);
@@ -335,6 +344,8 @@ public class IceKing extends UserActor {
                         this.parentExt, this.room, this.id, "sfx_ice_king_ultimate", this.location);
                 ExtensionCommands.playSound(
                         this.parentExt, this.room, this.id, ultimateSfx, this.location);
+                ExtensionCommands.actorAnimate(
+                        this.parentExt, this.room, this.id, "idle", 100, true);
                 ExtensionCommands.createWorldFX(
                         this.parentExt,
                         this.room,
@@ -347,18 +358,6 @@ public class IceKing extends UserActor {
                         true,
                         this.team,
                         0f);
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "ice_king_whirlwind",
-                        2500,
-                        this.id + "_whirlWind" + Math.random(),
-                        true,
-                        "",
-                        true,
-                        false,
-                        this.team);
                 ExtensionCommands.createWorldFX(
                         this.parentExt,
                         this.room,
@@ -387,6 +386,12 @@ public class IceKing extends UserActor {
                                 TimeUnit.MILLISECONDS);
                 break;
         }
+    }
+
+    private String getFlightAssetbundle() {
+        return this.avatar.contains("queen")
+                ? "iceking2_icequeen2"
+                : this.avatar.contains("young") ? "iceking2_young2" : "iceking2";
     }
 
     private class IceKingProjectile extends Projectile {

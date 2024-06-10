@@ -33,15 +33,14 @@ public class Marceline extends UserActor {
         VAMPIRE
     }
 
-    private Form form;
+    private Form form = Form.VAMPIRE;
 
     public Marceline(User u, ATBPExtension parentExt) {
         super(u, parentExt);
-        this.form = Form.VAMPIRE;
     }
 
     @Override
-    public void handlePolyAssetSwap() {
+    public void handleSwapFromPoly() {
         String bundle = this.form == Form.BEAST ? "marceline_bat" : getSkinAssetBundle();
         ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bundle);
     }

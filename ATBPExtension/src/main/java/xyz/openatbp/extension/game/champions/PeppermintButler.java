@@ -22,14 +22,20 @@ public class PeppermintButler extends UserActor {
     private boolean qActive = false;
     private boolean stopPassive = false;
     private boolean ultActive = false;
-    private boolean ultFxRemoved = false;
-    private boolean removeFx = false;
     private boolean wActive = false;
     private boolean interruptW = false;
     private long qStartTime = 0;
     private long ultStartTime = 0;
     private AtomicInteger wRunTime;
     private Point2D passiveLocation = null;
+    private static final int ULT_DURATION = 7000;
+
+    private enum Form {
+        NORMAL,
+        FERAL
+    }
+
+    private Form form = Form.NORMAL;
 
     public PeppermintButler(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -39,15 +45,57 @@ public class PeppermintButler extends UserActor {
     public double getPlayerStat(String stat) {
         if (stat.equalsIgnoreCase("healthRegen") && getState(ActorState.STEALTH))
             return super.getPlayerStat("healthRegen") + (this.maxHealth * 0.02d);
-        else if (stat.equalsIgnoreCase("speed") && getState(ActorState.TRANSFORMED))
-            return super.getPlayerStat("speed") + (this.getStat("speed") * 0.4d);
-        else if (stat.equalsIgnoreCase("attackSpeed") && getState(ActorState.TRANSFORMED)) {
+        else if (stat.equalsIgnoreCase("attackSpeed") && this.form == Form.FERAL) {
             double currentAttackSpeed = super.getPlayerStat("attackSpeed");
             double modifier = (this.getStat("attackSpeed") * 0.3d);
             return currentAttackSpeed - modifier < 500 ? 500 : currentAttackSpeed - modifier;
-        } else if (stat.equalsIgnoreCase("attackDamage") && getState(ActorState.TRANSFORMED))
+        } else if (stat.equalsIgnoreCase("attackDamage") && this.form == Form.FERAL)
             return super.getPlayerStat("attackDamage") + (this.getStat("attackDamage") * 0.3d);
         return super.getPlayerStat(stat);
+    }
+
+    @Override
+    public void handleSwapToPoly(int duration) {
+        super.handleSwapToPoly(duration);
+        if (this.form == Form.FERAL) {
+            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandL");
+            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandR");
+        }
+    }
+
+    @Override
+    public void handleSwapFromPoly() {
+        if (this.form == Form.FERAL) {
+            swapAsset(true);
+            int timeElapsed = (int) (System.currentTimeMillis() - this.ultStartTime);
+            int remainingTime = ULT_DURATION - timeElapsed;
+            ExtensionCommands.createActorFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    "marceline_beast_crit_hand",
+                    remainingTime,
+                    this.id + "ultHandL",
+                    true,
+                    "Bip001 L Hand",
+                    true,
+                    false,
+                    this.team);
+            ExtensionCommands.createActorFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    "marceline_beast_crit_hand",
+                    remainingTime,
+                    this.id + "ultHandR",
+                    true,
+                    "Bip001 R Hand",
+                    true,
+                    false,
+                    this.team);
+        } else {
+            swapAsset(false);
+        }
     }
 
     @Override
@@ -79,7 +127,7 @@ public class PeppermintButler extends UserActor {
         if (this.isStopped()
                 && !qActive
                 && !stopPassive
-                && !this.getState(ActorState.TRANSFORMED)
+                && this.form != Form.FERAL
                 && !isCapturingAltar()
                 && !dead) return true;
         return super.canRegenHealth();
@@ -88,22 +136,23 @@ public class PeppermintButler extends UserActor {
     @Override
     public void die(Actor a) {
         super.die(a);
-        if (this.ultActive) this.endUlt();
+        if (this.ultActive) {
+            endUlt();
+            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandL");
+            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandR");
+        }
     }
 
     @Override
     public void update(int msRan) {
         super.update(msRan);
+        if (this.ultActive) this.addEffect("speed", this.getStat("speed") * 0.4, 150);
         if (this.passiveLocation != null && this.location.distance(this.passiveLocation) > 0.001d) {
             this.stopPassive = true;
             this.timeStopped = 0;
         }
-        if (this.ultActive && System.currentTimeMillis() - this.ultStartTime >= 7000) {
-            setState(ActorState.TRANSFORMED, false);
-            String[] statsToUpdate = {"speed", "attackSpeed", "attackDamage"};
-            updateStatMenu(statsToUpdate);
-            ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
-            this.ultActive = false;
+        if (this.ultActive && System.currentTimeMillis() - this.ultStartTime >= ULT_DURATION) {
+            endUlt();
         }
         if (this.qActive && System.currentTimeMillis() - this.qStartTime >= 5000) {
             this.qActive = false;
@@ -111,7 +160,7 @@ public class PeppermintButler extends UserActor {
         if (this.isStopped()
                 && !qActive
                 && !stopPassive
-                && !this.getState(ActorState.TRANSFORMED)
+                && this.form != Form.FERAL
                 && !isCapturingAltar()
                 && !dead) {
             this.passiveLocation = this.location;
@@ -195,44 +244,6 @@ public class PeppermintButler extends UserActor {
                     a.addState(ActorState.BLINDED, 0d, 500);
                 }
             }
-        }
-        if (this.ultActive && this.getState(ActorState.POLYMORPH) && !this.ultFxRemoved) {
-            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandL");
-            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandR");
-            this.ultFxRemoved = true;
-        }
-        if (ultActive && this.ultFxRemoved && !this.getState(ActorState.POLYMORPH)) {
-            ExtensionCommands.createActorFX(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    "marceline_beast_crit_hand",
-                    7000,
-                    this.id + "ultHandL",
-                    true,
-                    "Bip001 L Hand",
-                    true,
-                    false,
-                    this.team);
-            ExtensionCommands.createActorFX(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    "marceline_beast_crit_hand",
-                    7000,
-                    this.id + "ultHandR",
-                    true,
-                    "Bip001 R Hand",
-                    true,
-                    false,
-                    this.team);
-            this.ultFxRemoved = false;
-            this.removeFx = true;
-        }
-        if (!this.ultActive && this.removeFx) {
-            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandL");
-            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandR");
-            this.removeFx = false;
         }
         if (this.wActive && this.cancelDashEndAttack()) {
             this.interruptW = true;
@@ -376,10 +387,9 @@ public class PeppermintButler extends UserActor {
                 Runnable delay =
                         () -> {
                             this.ultActive = true;
-                            this.ultFxRemoved = false;
                             this.ultStartTime = System.currentTimeMillis();
                             this.attackCooldown = 0;
-                            this.setState(ActorState.TRANSFORMED, true);
+                            this.form = Form.FERAL;
                             String[] statsToUpdate = {"speed", "attackSpeed", "attackDamage"};
                             this.updateStatMenu(statsToUpdate);
                             String hissVoPrefix =
@@ -390,15 +400,13 @@ public class PeppermintButler extends UserActor {
                                     this.id,
                                     "vo/vo_" + hissVoPrefix + "feral_hiss",
                                     this.location);
-                            ExtensionCommands.swapActorAsset(
-                                    this.parentExt, this.room, this.id, "pepbut_feral");
-                            // ExtensionCommands.createActorFX(this.parentExt,this.room,this.id,"pepbut_feral_eyes",7000,this.id+"_ultEyes",true,"cryAnimationExportNode",false,false,this.team);
+                            swapAsset(true);
                             ExtensionCommands.createActorFX(
                                     this.parentExt,
                                     this.room,
                                     this.id,
                                     "marceline_beast_crit_hand",
-                                    7000,
+                                    ULT_DURATION,
                                     this.id + "ultHandL",
                                     true,
                                     "Bip001 L Hand",
@@ -410,7 +418,7 @@ public class PeppermintButler extends UserActor {
                                     this.room,
                                     this.id,
                                     "marceline_beast_crit_hand",
-                                    7000,
+                                    ULT_DURATION,
                                     this.id + "ultHandR",
                                     true,
                                     "Bip001 R Hand",
@@ -429,7 +437,7 @@ public class PeppermintButler extends UserActor {
                                     false,
                                     false,
                                     this.team);
-                            this.addState(ActorState.SILENCED, 0d, 7000);
+                            this.addState(ActorState.SILENCED, 0d, ULT_DURATION);
                             if (this.qActive) {
                                 this.qActive = false;
                                 ExtensionCommands.removeFx(
@@ -452,7 +460,12 @@ public class PeppermintButler extends UserActor {
         }
     }
 
-    public boolean hasDashInterrupingCC() {
+    private void swapAsset(boolean toFeral) {
+        String bundle = toFeral ? "pepbut_feral" : getSkinAssetBundle();
+        ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bundle);
+    }
+
+    private boolean hasDashInterrupingCC() {
         ActorState[] states = {
             ActorState.CHARMED,
             ActorState.FEARED,
@@ -467,13 +480,13 @@ public class PeppermintButler extends UserActor {
     }
 
     private void endUlt() {
-        setState(ActorState.TRANSFORMED, false);
+        this.form = Form.NORMAL;
+        this.ultActive = false;
+        if (!this.getState(ActorState.POLYMORPH)) { // poly asset swap handled elsewhere
+            swapAsset(false);
+        }
         String[] statsToUpdate = {"speed", "attackSpeed", "attackDamage"};
         updateStatMenu(statsToUpdate);
-        ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
-        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandL");
-        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandR");
-        this.ultActive = false;
     }
 
     private boolean isCapturingAltar() {

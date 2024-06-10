@@ -84,6 +84,8 @@ public class MagicMan extends UserActor {
         }
         if (this.ultStarted && this.cancelDashEndAttack()) {
             this.interruptE = true;
+            this.ultStarted = false;
+            ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 100, false);
         }
         if (System.currentTimeMillis() - this.qStartTime > this.estimatedQDuration)
             this.playersHitBySnake.clear();
@@ -334,6 +336,7 @@ public class MagicMan extends UserActor {
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_skill_interrupted", location);
             }
             interruptE = false;
+            ultStarted = false;
         }
 
         @Override
