@@ -11,6 +11,7 @@ import com.smartfoxserver.v2.entities.Room;
 
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
@@ -520,9 +521,10 @@ public class Minion extends Actor {
         Actor closestNonUser = null;
         double distance = 1000f;
         double distanceNonUser = 1000f;
-        for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
-            if (a.getTeam() != this.team
-                    && isNotAMonster(a)
+        RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
+        List<Actor> filteredActors = handler.getEligibleActors(this.team, true, true, false, false);
+        for (Actor a : filteredActors) {
+            if (isNotAMonster(a)
                     && !a.getAvatar().equalsIgnoreCase("neptr_mine")
                     && !a.getId().contains("decoy")
                     && !isInvisOrInBrush(a)

@@ -11,6 +11,7 @@ import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MapData;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Champion;
@@ -232,11 +233,8 @@ public class PeppermintButler extends UserActor {
             this.qActive = false;
         }
         if (this.qActive) {
-            for (Actor a :
-                    Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()),
-                            this.location,
-                            3f)) {
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
                 if (this.isNonStructure(a)) {
                     JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell1");
                     double damage = this.getSpellDamage(spellData) / 10d;
@@ -560,9 +558,8 @@ public class PeppermintButler extends UserActor {
                         false,
                         team,
                         0f);
-                for (Actor a :
-                        Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getName()), location, 2.5f)) {
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                for (Actor a : Champion.getActorsInRadius(handler, location, 2.5f)) {
                     if (isNonStructure(a)) {
                         a.addToDamageQueue(
                                 PeppermintButler.this, getSpellDamage(spellData), spellData, false);

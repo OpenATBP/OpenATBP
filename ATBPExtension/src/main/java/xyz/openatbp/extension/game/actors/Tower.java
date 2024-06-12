@@ -12,6 +12,7 @@ import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 
@@ -326,11 +327,9 @@ public class Tower extends Actor {
                         return;
                     }
                     if (!isFocusingCompanion && !isFocusingPlayer) {
-                        for (Actor a :
-                                Champion.getActorsInRadius(
-                                        this.parentExt.getRoomHandler(this.room.getName()),
-                                        this.location,
-                                        (float) this.getPlayerStat("attackRange"))) {
+                        RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
+                        float range = (float) this.getPlayerStat("attackRange");
+                        for (Actor a : Champion.getActorsInRadius(handler, this.location, range)) {
                             if (a.getActorType() == ActorType.COMPANION
                                     && a.getTeam() != this.team
                                     && a.towerAggroCompanion

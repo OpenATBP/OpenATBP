@@ -47,11 +47,8 @@ public class IceKing extends UserActor {
     public void update(int msRan) {
         super.update(msRan);
         if (this.ultActive && this.ultLocation != null) {
-            List<Actor> actorsInUlt =
-                    Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()),
-                            this.ultLocation,
-                            5.5f);
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            List<Actor> actorsInUlt = Champion.getActorsInRadius(handler, this.ultLocation, 5.5f);
             boolean containsIceKing = actorsInUlt.contains(this);
             if (containsIceKing && this.bundle == AssetBundle.NORMAL) {
                 this.bundle = AssetBundle.FLIGHT;
@@ -137,11 +134,8 @@ public class IceKing extends UserActor {
         }
 
         if (this.wLocation != null) {
-            for (Actor a :
-                    Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()),
-                            this.wLocation,
-                            3f)) {
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            for (Actor a : Champion.getActorsInRadius(handler, this.wLocation, 3f)) {
                 if (this.isNonStructure(a)) {
                     if (this.lastWHit != null && this.lastWHit.containsKey(a.getId())) {
                         if (System.currentTimeMillis() >= this.lastWHit.get(a.getId()) + 500) {
@@ -407,17 +401,14 @@ public class IceKing extends UserActor {
         }
 
         public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            List<Actor> teammates = this.getTeammates(roomHandler);
-            for (Actor a : roomHandler.getActors()) {
-                if (a.getActorType() != ActorType.TOWER
-                        && !teammates.contains(a)
-                        && a.getTeam() != IceKing.this.team) {
-                    double collisionRadius =
-                            parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
-                    if (a.getLocation().distance(location) <= hitbox + collisionRadius
-                            && !a.getAvatar().equalsIgnoreCase("neptr_mine")) {
-                        return a;
-                    }
+            List<Actor> eligibleActors =
+                    roomHandler.getEligibleActors(team, true, true, false, true);
+            for (Actor a : eligibleActors) {
+                double collisionRadius =
+                        parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
+                if (a.getLocation().distance(location) <= hitbox + collisionRadius
+                        && !a.getAvatar().equalsIgnoreCase("neptr_mine")) {
+                    return a;
                 }
             }
             return null;

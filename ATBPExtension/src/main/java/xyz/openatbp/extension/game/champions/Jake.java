@@ -131,11 +131,8 @@ public class Jake extends UserActor {
         if (this.ultActivated && !this.isStopped()) {
             if (System.currentTimeMillis() - this.lastStomped >= 500) {
                 this.lastStomped = System.currentTimeMillis();
-                for (Actor a :
-                        Champion.getActorsInRadius(
-                                this.parentExt.getRoomHandler(this.room.getName()),
-                                this.location,
-                                2f)) {
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                for (Actor a : Champion.getActorsInRadius(handler, this.location, 2f)) {
                     if (this.isNonStructure(a)) {
                         JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
                         double damage = (double) (getSpellDamage(spellData)) / 2d;
@@ -386,11 +383,8 @@ public class Jake extends UserActor {
                         true,
                         true,
                         this.team);
-                for (Actor a :
-                        Champion.getActorsInRadius(
-                                this.parentExt.getRoomHandler(this.room.getName()),
-                                this.location,
-                                3f)) {
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
                     if (this.isNonStructure(a)) {
                         a.knockback(this.location);
                         a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
@@ -654,15 +648,14 @@ public class Jake extends UserActor {
 
         @Override
         public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            List<Actor> teammates = this.getTeammates(roomHandler);
-            for (Actor a : roomHandler.getActors()) {
-                if (!teammates.contains(a) && a.getTeam() != owner.getTeam()) {
-                    double collisionRadius =
-                            parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
-                    if (a.getLocation().distance(location) <= hitbox + collisionRadius
-                            && !a.getAvatar().equalsIgnoreCase("neptr_mine")) {
-                        return a;
-                    }
+            List<Actor> eligibleActors =
+                    roomHandler.getEligibleActors(team, true, true, false, false);
+            for (Actor a : eligibleActors) {
+                double collisionRadius =
+                        parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
+                if (a.getLocation().distance(location) <= hitbox + collisionRadius
+                        && !a.getAvatar().equalsIgnoreCase("neptr_mine")) {
+                    return a;
                 }
             }
             return null;

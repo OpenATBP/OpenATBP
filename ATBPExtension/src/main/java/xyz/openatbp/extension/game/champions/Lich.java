@@ -13,6 +13,7 @@ import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -221,20 +222,26 @@ public class Lich extends UserActor {
         if (this.qActivated) {
             this.slimePath.add(this.location);
             for (Point2D slime : this.slimePath) {
-                for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
-                    if (a.getTeam() != this.team && a.getLocation().distance(slime) < 0.5) {
+                RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
+                List<Actor> nonStructureEnemies = handler.getNonStructureEnemies(this.team);
+                for (Actor a : nonStructureEnemies) {
+                    if (a.getLocation().distance(slime) <= 0.5) {
                         JsonNode attackData = this.parentExt.getAttackData(getAvatar(), "spell1");
                         if (slimedEnemies.containsKey(a.getId())) {
                             if (System.currentTimeMillis() - slimedEnemies.get(a.getId()) >= 1000) {
                                 a.addToDamageQueue(
                                         this, getSpellDamage(attackData), attackData, true);
-                                if (isNonStructure(a)) a.addState(ActorState.SLOWED, 0.3d, 1500);
+                                if (isNonStructure(a)) {
+                                    a.addState(ActorState.SLOWED, 0.3d, 1500);
+                                }
                                 slimedEnemies.put(a.getId(), System.currentTimeMillis());
                                 break;
                             }
                         } else {
                             a.addToDamageQueue(this, getSpellDamage(attackData), attackData, true);
-                            a.addState(ActorState.SLOWED, 0.3d, 1500);
+                            if (isNonStructure(a)) {
+                                a.addState(ActorState.SLOWED, 0.3d, 1500);
+                            }
                             slimedEnemies.put(a.getId(), System.currentTimeMillis());
                             break;
                         }
@@ -247,9 +254,8 @@ public class Lich extends UserActor {
         if (this.ultStarted && System.currentTimeMillis() - this.ultTime >= 500) {
             this.ultTime = System.currentTimeMillis();
             boolean damageDealt = false;
-            for (Actor a :
-                    Champion.getActorsInRadius(
-                            parentExt.getRoomHandler(this.room.getName()), ultLocation, 3f)) {
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            for (Actor a : Champion.getActorsInRadius(handler, ultLocation, 3f)) {
                 if (a.getTeam() != this.team
                         && a.getActorType() != ActorType.BASE
                         && a.getActorType() != ActorType.TOWER) {

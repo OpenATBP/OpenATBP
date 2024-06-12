@@ -10,6 +10,7 @@ import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -85,11 +86,8 @@ public class Marceline extends UserActor {
         }
 
         if (this.vampireWActive) {
-            for (Actor a :
-                    Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()),
-                            this.location,
-                            2f)) {
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            for (Actor a : Champion.getActorsInRadius(handler, this.location, 2f)) {
                 if (a.getTeam() != this.team
                         && a.getActorType() != ActorType.TOWER
                         && a.getActorType() != ActorType.BASE) {
@@ -507,9 +505,8 @@ public class Marceline extends UserActor {
                         ExtensionCommands.playSound(parentExt, room, id, morphHumanVo, location);
                     }
 
-                    for (Actor a :
-                            Champion.getActorsInRadius(
-                                    parentExt.getRoomHandler(room.getName()), dest, 3)) {
+                    RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                    for (Actor a : Champion.getActorsInRadius(handler, dest, 3)) {
                         if (a.getTeam() != team && isNonStructure(a)) {
                             double damage = getSpellDamage(spellData);
                             a.addToDamageQueue(Marceline.this, damage, spellData, false);

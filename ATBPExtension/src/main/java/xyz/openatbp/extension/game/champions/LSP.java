@@ -15,7 +15,6 @@ import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.AbilityRunnable;
-import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.actors.Actor;
@@ -49,11 +48,8 @@ public class LSP extends UserActor {
         }
         if (this.wActive) {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
-            for (Actor a :
-                    Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()),
-                            this.location,
-                            3f)) {
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
                 if (this.isNonStructure(a)) {
                     a.addToDamageQueue(
                             this, (double) getSpellDamage(spellData) / 10d, spellData, true);
@@ -253,9 +249,12 @@ public class LSP extends UserActor {
                         team);
                 Path2D qRect =
                         Champion.createRectangle(location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
+
                 List<Actor> affectedActors = new ArrayList<>();
-                for (Actor a : parentExt.getRoomHandler(room.getName()).getActors()) {
-                    if (isNonStructure(a) && qRect.contains(a.getLocation())) {
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(team, qRect);
+                if (!actorsInPolygon.isEmpty()) {
+                    for (Actor a : actorsInPolygon) {
                         if (!a.getId().contains("turret")) a.handleFear(LSP.this.location, 2000);
                         a.addToDamageQueue(LSP.this, getSpellDamage(spellData), spellData, false);
                         affectedActors.add(a);
@@ -370,11 +369,9 @@ public class LSP extends UserActor {
 
         @Override
         public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            for (Actor a : roomHandler.getActors()) {
-                if (!this.victims.contains(a)
-                        && a.getActorType() != ActorType.BASE
-                        && a.getActorType() != ActorType.TOWER
-                        && !a.getId().equalsIgnoreCase(LSP.this.id)) {
+            List<Actor> nonStructureEnemies = roomHandler.getNonStructureEnemies(team);
+            for (Actor a : nonStructureEnemies) {
+                if (!this.victims.contains(a)) {
                     double collisionRadius =
                             parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
                     if (a.getLocation().distance(location) <= hitbox + collisionRadius

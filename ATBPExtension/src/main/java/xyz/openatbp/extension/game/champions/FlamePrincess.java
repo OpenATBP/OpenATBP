@@ -16,7 +16,12 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class FlamePrincess extends UserActor {
-
+    private static final int Q_GLOBAL_COOLDOWN = 250;
+    private static final int PASSIVE_COOLDOWN = 10000;
+    private static final int W_POLY_DURATION = 3000;
+    private final int W_CAST_DELAY = 1000;
+    private static final int E_DASH_COOLDOWN = 350;
+    private static final int E_DURATION = 5000;
     private boolean passiveEnabled = false;
     private long lastPassiveUsage = 0;
     private int ultUses = 3;
@@ -32,7 +37,6 @@ public class FlamePrincess extends UserActor {
     }
 
     private Form form = Form.NORMAL;
-    private static final int DASH_COOLDOWN = 350;
 
     public FlamePrincess(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -41,32 +45,27 @@ public class FlamePrincess extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if (this.form == Form.ULT && System.currentTimeMillis() - this.ultStartTime >= 5000) {
+        if (this.form == Form.ULT && System.currentTimeMillis() - this.ultStartTime >= E_DURATION) {
             canCast[2] = false;
             endUlt();
         }
         if (this.form == Form.ULT) {
-            for (Actor a :
-                    Champion.getActorsInRadius(
-                            parentExt.getRoomHandler(this.room.getName()), this.location, 2)) {
-                if (a.getTeam() != this.team) {
+            RoomHandler handler = parentExt.getRoomHandler(this.room.getName());
+            for (Actor a : Champion.getActorsInRadius(handler, this.location, 2)) {
+                if (a.getTeam() != this.team && isNonStructure(a)) {
                     JsonNode attackData = this.parentExt.getAttackData(getAvatar(), "spell3");
                     double damage = (double) this.getSpellDamage(attackData) / 10;
-                    if (a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE) {
-                        a.addToDamageQueue(this, damage, attackData, true);
-                    }
+                    a.addToDamageQueue(this, damage, attackData, true);
                 }
             }
         }
-        if (System.currentTimeMillis() - lastPolymorphTime <= 3000) {
+        if (System.currentTimeMillis() - lastPolymorphTime <= W_POLY_DURATION) {
             for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                 boolean polymorphActive = a.getState(ActorState.POLYMORPH);
                 if (polymorphActive) {
+                    RoomHandler handler = parentExt.getRoomHandler(room.getName());
                     List<Actor> actorsInRadius =
-                            Champion.getActorsInRadius(
-                                    this.parentExt.getRoomHandler(this.room.getName()),
-                                    a.getLocation(),
-                                    2f);
+                            Champion.getActorsInRadius(handler, a.getLocation(), 2f);
                     actorsInRadius.remove(a);
 
                     for (Actor affectedActor : actorsInRadius) {
@@ -133,8 +132,24 @@ public class FlamePrincess extends UserActor {
         }
     }
 
-    private int getBaseUltCooldown() {
-        return ChampionData.getBaseAbilityCooldown(this, 3);
+    @Override
+    public void attack(Actor a) {
+        this.applyStopMovingDuringAttack();
+        PassiveAttack passiveAttack = new PassiveAttack(a, this.handleAttack(a));
+        scheduleTask(new RangedAttack(a, passiveAttack, "flame_princess_projectile"), 500);
+    }
+
+    @Override
+    public boolean canAttack() {
+        boolean notAllowed = System.currentTimeMillis() - this.ultStartTime < 500;
+        if (notAllowed) return false;
+        return super.canAttack();
+    }
+
+    @Override
+    public boolean canMove() {
+        if (this.wUsed) return false;
+        else return super.canMove();
     }
 
     @Override
@@ -148,7 +163,7 @@ public class FlamePrincess extends UserActor {
         super.useAbility(ability, spellData, cooldown, gCooldown, castDelay, dest);
         if (ultUses == 3
                 && !passiveEnabled
-                && System.currentTimeMillis() - lastPassiveUsage >= 10000) {
+                && System.currentTimeMillis() - lastPassiveUsage >= PASSIVE_COOLDOWN) {
             ExtensionCommands.createActorFX(
                     this.parentExt,
                     this.room,
@@ -291,7 +306,7 @@ public class FlamePrincess extends UserActor {
                                 this.parentExt, this.room, this.id, "run", this.dashTime, false);
                         this.ultUses--;
 
-                        int ultDelay = this.ultUses > 0 ? DASH_COOLDOWN : this.dashTime + 100;
+                        int ultDelay = this.ultUses > 0 ? E_DASH_COOLDOWN : this.dashTime + 100;
                         scheduleTask(
                                 abilityRunnable(ability, spellData, cooldown, gCooldown, dest),
                                 ultDelay);
@@ -310,31 +325,8 @@ public class FlamePrincess extends UserActor {
         }
     }
 
-    private FlameAbilityRunnable abilityRunnable(
-            int ability, JsonNode spelldata, int cooldown, int gCooldown, Point2D dest) {
-        return new FlameAbilityRunnable(ability, spelldata, cooldown, gCooldown, dest);
-    }
-
-    @Override
-    public void attack(Actor a) {
-        this.applyStopMovingDuringAttack();
-        scheduleTask(
-                new RangedAttack(
-                        a, new PassiveAttack(a, this.handleAttack(a)), "flame_princess_projectile"),
-                500);
-    }
-
-    @Override
-    public boolean canAttack() {
-        boolean notAllowed = System.currentTimeMillis() - this.ultStartTime < 500;
-        if (notAllowed) return false;
-        return super.canAttack();
-    }
-
-    @Override
-    public boolean canMove() {
-        if (this.wUsed) return false;
-        else return super.canMove();
+    private int getBaseUltCooldown() {
+        return ChampionData.getBaseAbilityCooldown(this, 3);
     }
 
     private void endUlt() {
@@ -354,6 +346,11 @@ public class FlamePrincess extends UserActor {
         scheduleTask(enableECasting, delay);
     }
 
+    private FlameAbilityRunnable abilityRunnable(
+            int ability, JsonNode spelldata, int cooldown, int gCooldown, Point2D dest) {
+        return new FlameAbilityRunnable(ability, spelldata, cooldown, gCooldown, dest);
+    }
+
     private class FlameAbilityRunnable extends AbilityRunnable {
 
         public FlameAbilityRunnable(
@@ -364,14 +361,9 @@ public class FlamePrincess extends UserActor {
         @Override
         protected void spellQ() {
             attackCooldown = 0;
-            int Q_GLOBAL_COOLDOWN = 250;
+            int delay = getReducedCooldown(cooldown) - Q_GLOBAL_COOLDOWN;
             Runnable enableQCasting = () -> canCast[0] = true;
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(
-                            enableQCasting,
-                            getReducedCooldown(cooldown) - Q_GLOBAL_COOLDOWN,
-                            TimeUnit.MILLISECONDS);
+            scheduleTask(enableQCasting, delay);
         }
 
         @Override
@@ -399,14 +391,9 @@ public class FlamePrincess extends UserActor {
                             parentExt.getAttackData(getAvatar(), "spell2"),
                             false);
             }
-            int W_CAST_DELAY = 1000;
+            int delay = getReducedCooldown(cooldown) - W_CAST_DELAY;
             Runnable enableWCasting = () -> canCast[1] = true;
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(
-                            enableWCasting,
-                            getReducedCooldown(cooldown) - W_CAST_DELAY,
-                            TimeUnit.MILLISECONDS);
+            scheduleTask(enableWCasting, delay);
         }
 
         @Override

@@ -5,7 +5,6 @@ import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -17,30 +16,26 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class BMO extends UserActor {
+    private static final int PASSIVE_SLOW_DURATION = 2500;
+    private static final double PASSIVE_SLOW_VALUE = 0.5f;
+    private static final int Q_BLIND_DURATION = 2500;
+    private static final float Q_OFFSET_DISTANCE_BOTTOM = 1.5f;
+    private static final float Q_OFFSET_DISTANCE_TOP = 4f;
+    private static final float Q_SPELL_RANGE = 6f;
+    private static final int W_DURATION = 3000;
+    private static final int W_RECAST_DELAY = 500;
+    private static final float W_ARMOR_VALUE = 1.2f;
+    private static final float W_SHIELDS_VALUE = 1.5f;
+    private static final int E_CAST_DELAY = 250;
+    private static final int E_RANGE = 16;
     private int passiveStacks = 0;
     private boolean wActive = false;
     private long wStartTime = 0;
     private long lastWSound = 0;
     private boolean ultSlowActive = false;
-    private static final float Q_OFFSET_DISTANCE_BOTTOM = 1.5f;
-    private static final float Q_OFFSET_DISTANCE_TOP = 4f;
-    private static final float Q_SPELL_RANGE = 6f;
 
     public BMO(User u, ATBPExtension parentExt) {
         super(u, parentExt);
-    }
-
-    @Override
-    public void attack(Actor a) {
-        this.applyStopMovingDuringAttack();
-        String projectileFx =
-                (this.avatar.contains("noir")) ? "bmo_projectile_noire" : "bmo_projectile";
-        parentExt
-                .getTaskScheduler()
-                .schedule(
-                        new RangedAttack(a, new BMOPassive(a, this.handleAttack(a)), projectileFx),
-                        500,
-                        TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -58,7 +53,7 @@ public class BMO extends UserActor {
             this.canCast[2] = true;
             this.wActive = false;
         }
-        if (this.wActive && System.currentTimeMillis() - this.wStartTime >= 3000) {
+        if (this.wActive && System.currentTimeMillis() - this.wStartTime >= W_DURATION) {
             int baseWCooldown = ChampionData.getBaseAbilityCooldown(this, 2);
             this.wEnd(getReducedCooldown(baseWCooldown), 250);
             this.canCast[0] = true;
@@ -68,15 +63,13 @@ public class BMO extends UserActor {
             this.updateStatMenu(statsToUpdate);
         }
         if (wActive) {
-            for (Actor a :
-                    Champion.getActorsInRadius(
-                            parentExt.getRoomHandler(this.room.getName()), this.location, 4f)) {
-                if (a.getTeam() != this.team && isNonStructure(a)) {
-                    JsonNode spellData = parentExt.getAttackData("bmo", "spell2");
-                    a.addToDamageQueue(
-                            this, (double) getSpellDamage(spellData) / 10d, spellData, true);
-                    if (passiveStacks == 3) a.addState(ActorState.SLOWED, 0.5d, 2500);
-                }
+            RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
+            List<Actor> nonStructureEnemies = handler.getNonStructureEnemies(this.team);
+
+            for (Actor a : nonStructureEnemies) {
+                JsonNode spellData = parentExt.getAttackData("bmo", "spell2");
+                a.addToDamageQueue(this, (double) getSpellDamage(spellData) / 10d, spellData, true);
+                if (this.passiveStacks == 3) applySlow(a);
             }
             if (System.currentTimeMillis() - lastWSound >= 500) {
                 lastWSound = System.currentTimeMillis();
@@ -91,12 +84,29 @@ public class BMO extends UserActor {
     }
 
     @Override
+    public void attack(Actor a) {
+        this.applyStopMovingDuringAttack();
+        String projectileFx =
+                this.avatar.contains("noir") ? "bmo_projectile_noire" : "bmo_projectile";
+        RangedAttack rangedAttack =
+                new RangedAttack(a, new BMOPassive(a, this.handleAttack(a)), projectileFx);
+        scheduleTask(rangedAttack, 500);
+    }
+
+    @Override
     public double getPlayerStat(String stat) {
         if (this.wActive) {
-            if (stat.equalsIgnoreCase("armor")) return super.getPlayerStat(stat) * 1.2;
-            else if (stat.equalsIgnoreCase("spellResist")) return super.getPlayerStat(stat) * 1.5;
+            if (stat.equalsIgnoreCase("armor")) return super.getPlayerStat(stat) * W_ARMOR_VALUE;
+            else if (stat.equalsIgnoreCase("spellResist"))
+                return super.getPlayerStat(stat) * W_SHIELDS_VALUE;
         }
         return super.getPlayerStat(stat);
+    }
+
+    @Override
+    public boolean canAttack() {
+        if (wActive) return false;
+        return super.canAttack();
     }
 
     @Override
@@ -118,16 +128,18 @@ public class BMO extends UserActor {
                                 Q_SPELL_RANGE,
                                 Q_OFFSET_DISTANCE_BOTTOM,
                                 Q_OFFSET_DISTANCE_TOP);
-                for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
-                    if (a.getTeam() != this.team && trapezoid.contains(a.getLocation())) {
+                RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
+                List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, trapezoid);
+                if (!actorsInPolygon.isEmpty()) {
+                    for (Actor a : actorsInPolygon) {
                         if (isNonStructure(a)) {
-                            a.addState(ActorState.BLINDED, 0.5d, 2500);
-                            if (passiveStacks == 3) a.addState(ActorState.SLOWED, 0.5d, 2500);
+                            a.addState(ActorState.BLINDED, 0d, Q_BLIND_DURATION);
+                            if (this.passiveStacks == 3) applySlow(a);
                         }
                         a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                     }
                 }
-                if (passiveStacks == 3) usePassiveStacks();
+                if (this.passiveStacks == 3) usePassiveStacks();
                 else addPasiveStacks();
                 String cameraFx =
                         (this.avatar.contains("noir")) ? "bmo_camera_noire" : "bmo_camera";
@@ -152,13 +164,8 @@ public class BMO extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new BMOAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
+                int delay = getReducedCooldown(cooldown);
+                scheduleTask(abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay);
                 break;
             case 2:
                 this.canCast[1] = false;
@@ -224,14 +231,11 @@ public class BMO extends UserActor {
                     ExtensionCommands.actorAnimate(
                             this.parentExt, this.room, this.id, "spell2", 3000, true);
                     ExtensionCommands.actorAbilityResponse(
-                            this.parentExt, this.player, "w", true, 500, 0);
-                    parentExt
-                            .getTaskScheduler()
-                            .schedule(
-                                    new BMOAbilityHandler(
-                                            ability, spellData, cooldown, gCooldown, dest),
-                                    500,
-                                    TimeUnit.MILLISECONDS);
+                            this.parentExt, this.player, "w", true, W_RECAST_DELAY, 0);
+
+                    scheduleTask(
+                            abilityRunnable(ability, spellData, cooldown, gCooldown, dest),
+                            W_RECAST_DELAY);
                 } else {
                     this.canCast[0] = true;
                     this.canCast[2] = true;
@@ -239,13 +243,9 @@ public class BMO extends UserActor {
                     this.wEnd(cooldown, gCooldown);
                     String[] statsToUpdate = {"armor", "spellResist"};
                     this.updateStatMenu(statsToUpdate);
-                    parentExt
-                            .getTaskScheduler()
-                            .schedule(
-                                    new BMOAbilityHandler(
-                                            ability, spellData, cooldown, gCooldown, dest),
-                                    getReducedCooldown(cooldown),
-                                    TimeUnit.MILLISECONDS);
+                    int delay1 = getReducedCooldown(cooldown);
+                    scheduleTask(
+                            abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay1);
                 }
                 break;
             case 3:
@@ -268,15 +268,14 @@ public class BMO extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new BMOAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                castDelay,
-                                TimeUnit.MILLISECONDS);
+                scheduleTask(
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), castDelay);
                 break;
         }
+    }
+
+    private void applySlow(Actor a) {
+        a.addState(ActorState.SLOWED, PASSIVE_SLOW_VALUE, PASSIVE_SLOW_DURATION);
     }
 
     private void addPasiveStacks() {
@@ -334,16 +333,10 @@ public class BMO extends UserActor {
         ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "run", 500, false);
     }
 
-    public boolean canAttack() {
-        if (wActive) return false;
-        return super.canAttack();
-    }
-
     private void wEnd(int cooldown, int gCooldown) {
         canMove = true;
-        for (Actor a :
-                Champion.getActorsInRadius(
-                        parentExt.getRoomHandler(this.room.getName()), this.location, 4f)) {
+        RoomHandler handler = parentExt.getRoomHandler(room.getName());
+        for (Actor a : Champion.getActorsInRadius(handler, this.location, 4f)) {
             if (a.getTeam() != this.team && isNonStructure(a)) {
                 JsonNode spellData = parentExt.getAttackData("bmo", "spell2");
                 long wDuration = System.currentTimeMillis() - wStartTime;
@@ -356,7 +349,7 @@ public class BMO extends UserActor {
                 a.addState(ActorState.STUNNED, 0d, 1000);
             }
         }
-        if (passiveStacks == 3) usePassiveStacks();
+        if (this.passiveStacks == 3) usePassiveStacks();
         else addPasiveStacks();
         String aoeExplodeFX =
                 (this.avatar.contains("noir"))
@@ -386,9 +379,14 @@ public class BMO extends UserActor {
         ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "idle", 100, false);
     }
 
-    private class BMOAbilityHandler extends AbilityRunnable {
+    private BMOAbilityRunnable abilityRunnable(
+            int ability, JsonNode spelldata, int cooldown, int gCooldown, Point2D dest) {
+        return new BMOAbilityRunnable(ability, spelldata, cooldown, gCooldown, dest);
+    }
 
-        public BMOAbilityHandler(
+    private class BMOAbilityRunnable extends AbilityRunnable {
+
+        public BMOAbilityRunnable(
                 int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {
             super(ability, spellData, cooldown, gCooldown, dest);
         }
@@ -405,16 +403,11 @@ public class BMO extends UserActor {
 
         @Override
         protected void spellE() {
-            int E_CAST_DELAY = 250;
             Runnable enableECasting = () -> canCast[2] = true;
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(
-                            enableECasting,
-                            getReducedCooldown(cooldown) - E_CAST_DELAY,
-                            TimeUnit.MILLISECONDS);
+            int delay = getReducedCooldown(cooldown) - E_CAST_DELAY;
+            scheduleTask(enableECasting, delay);
             if (getHealth() > 0) {
-                Line2D abilityLine = Champion.getAbilityLine(location, dest, 16f);
+                Line2D abilityLine = Champion.getAbilityLine(location, dest, E_RANGE);
                 String ultProjectile =
                         (avatar.contains("noir"))
                                 ? "projectile_bmo_bee_noire"
@@ -424,7 +417,7 @@ public class BMO extends UserActor {
                                 parentExt, BMO.this, abilityLine, 5f, 1.5f, ultProjectile),
                         location,
                         dest,
-                        16f);
+                        E_RANGE);
             }
         }
 
@@ -455,19 +448,16 @@ public class BMO extends UserActor {
                     BMO.this, getSpellDamage(spellData) * (1 - damageReduction), spellData, false);
             ExtensionCommands.playSound(
                     parentExt, room, "", "akubat_projectileHit1", victim.getLocation());
-            if (ultSlowActive) victim.addState(ActorState.SLOWED, 0.5d, 2500);
+            if (ultSlowActive) applySlow(victim);
             this.damageReduction += 0.3d;
             if (this.damageReduction > 0.7d) this.damageReduction = 0.7d;
         }
 
         @Override
         public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            for (Actor a : roomHandler.getActors()) {
-                if (!this.victims.contains(a)
-                        && a.getTeam() != BMO.this.getTeam()
-                        && a.getActorType() != ActorType.BASE
-                        && a.getActorType() != ActorType.TOWER
-                        && !a.getId().equalsIgnoreCase(BMO.this.id)) {
+            List<Actor> nonStructureEnemies = roomHandler.getNonStructureEnemies(team);
+            for (Actor a : nonStructureEnemies) {
+                if (!this.victims.contains(a)) {
                     double collisionRadius =
                             parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
                     if (a.getLocation().distance(location) <= hitbox + collisionRadius

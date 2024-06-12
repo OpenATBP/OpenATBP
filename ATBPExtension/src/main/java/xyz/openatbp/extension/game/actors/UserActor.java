@@ -487,9 +487,8 @@ public class UserActor extends Actor {
             towerLocations.add(towers.get(key));
         }
         for (Point2D location : towerLocations) {
-            if (Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()), location, 6f)
-                    .contains(a)) {
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            if (Champion.getActorsInRadius(handler, location, 6f).contains(a)) {
                 return true;
             }
         }
@@ -942,14 +941,9 @@ public class UserActor extends Actor {
             } else if (this.autoAttackEnabled && idleTime > 2000) {
                 Actor closestTarget = null;
                 double closestDistance = 1000;
-                for (Actor a :
-                        Champion.getActorsInRadius(
-                                this.parentExt.getRoomHandler(room.getName()),
-                                this.location,
-                                this.parentExt
-                                        .getActorStats(this.avatar)
-                                        .get("aggroRange")
-                                        .asInt())) {
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                int aggroRange = parentExt.getActorStats(avatar).get("aggroRange").asInt();
+                for (Actor a : Champion.getActorsInRadius(handler, this.location, aggroRange)) {
                     if (a.getTeam() != this.team
                             && a.getLocation().distance(this.location) < closestDistance) {
                         closestDistance = a.getLocation().distance(this.location);
@@ -1575,9 +1569,8 @@ public class UserActor extends Actor {
     public void handleKill(Actor a, JsonNode attackData) {
         this.addXP(a.getXPWorth());
         if (a.getActorType() == ActorType.PLAYER) this.updateXPWorth("kill");
-        for (Actor actor :
-                Champion.getActorsInRadius(
-                        this.parentExt.getRoomHandler(this.room.getName()), this.location, 10f)) {
+        RoomHandler handler = parentExt.getRoomHandler(room.getName());
+        for (Actor actor : Champion.getActorsInRadius(handler, this.location, 10f)) {
             if (actor.getActorType() == ActorType.PLAYER
                     && !actor.getId().equalsIgnoreCase(this.id)
                     && actor.getTeam() == this.team) {

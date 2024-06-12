@@ -12,6 +12,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
@@ -143,11 +144,11 @@ public class Keeoth extends Monster {
                                         data.putUtfString("attackType", "spell");
                                         JsonNode newAttackData = mapper.readTree(data.toJson());
 
+                                        RoomHandler handler =
+                                                parentExt.getRoomHandler(room.getName());
                                         for (Actor actor :
                                                 Champion.getActorsInRadius(
-                                                        parentExt.getRoomHandler(room.getName()),
-                                                        playerLoc,
-                                                        2.5f)) {
+                                                        handler, playerLoc, 2.5f)) {
                                             if (actor.getActorType() == ActorType.PLAYER
                                                     || actor.getActorType()
                                                             == ActorType.COMPANION) {

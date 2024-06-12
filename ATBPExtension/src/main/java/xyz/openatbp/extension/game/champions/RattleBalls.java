@@ -14,6 +14,7 @@ import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
@@ -110,10 +111,11 @@ public class RattleBalls extends UserActor {
                 } else {
                     this.qUse = 0;
                     this.parryActive = false;
-                    for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
-                        if (a.getTeam() != this.team
-                                && isNonStructure(a)
-                                && this.qThrustRectangle.contains(a.getLocation())) {
+                    RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
+                    List<Actor> enemiesInPolygon =
+                            handler.getEnemiesInPolygon(this.team, qThrustRectangle);
+                    if (!enemiesInPolygon.isEmpty()) {
+                        for (Actor a : enemiesInPolygon) {
                             a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                         }
                     }
@@ -420,9 +422,8 @@ public class RattleBalls extends UserActor {
                     true,
                     getReducedCooldown(getBaseQCooldown()),
                     250);
-            List<Actor> affectedActors =
-                    Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()), this.location, 2f);
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            List<Actor> affectedActors = Champion.getActorsInRadius(handler, this.location, 2f);
             affectedActors =
                     affectedActors.stream()
                             .filter(this::isNonStructure)
@@ -458,11 +459,8 @@ public class RattleBalls extends UserActor {
                             this.location);
                 }
             }
-            for (Actor a :
-                    Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()),
-                            this.location,
-                            2f)) {
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            for (Actor a : Champion.getActorsInRadius(handler, this.location, 2f)) {
                 if (this.isNonStructure(a)) {
                     JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
                     a.addToDamageQueue(
@@ -670,9 +668,8 @@ public class RattleBalls extends UserActor {
                         team,
                         0f);
 
-                for (Actor a :
-                        Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getName()), location, 5f)) {
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                for (Actor a : Champion.getActorsInRadius(handler, location, 5f)) {
                     if (isNonStructure(a)) {
                         a.handlePull(location, 1.2);
                         a.addToDamageQueue(

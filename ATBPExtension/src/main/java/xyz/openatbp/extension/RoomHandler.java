@@ -2,10 +2,12 @@ package xyz.openatbp.extension;
 
 import static com.mongodb.client.model.Filters.eq;
 
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -1213,6 +1215,76 @@ public class RoomHandler implements Runnable {
         actors.addAll(companions);
         actors.removeIf(a -> a.getHealth() <= 0);
         return actors;
+    }
+
+    public List<Actor> getActorsInRadius(Point2D center, float radius) {
+        List<Actor> actorsInRadius = new ArrayList<>();
+        actorsInRadius.addAll(towers);
+        actorsInRadius.addAll(baseTowers);
+        actorsInRadius.addAll(minions);
+        Collections.addAll(actorsInRadius, bases);
+        actorsInRadius.addAll(players);
+        actorsInRadius.addAll(campMonsters);
+        actorsInRadius.addAll(companions);
+        actorsInRadius.removeIf(a -> a.getHealth() <= 0);
+        return actorsInRadius.stream()
+                .filter(a -> a.getLocation().distance(center) <= radius)
+                .collect(Collectors.toList());
+    }
+
+    public List<Actor> getEnemiesInPolygon(int team, Path2D polygon) {
+        List<Actor> enemiesInPolygon = new ArrayList<>();
+        enemiesInPolygon.addAll(towers);
+        enemiesInPolygon.addAll(baseTowers);
+        enemiesInPolygon.addAll(minions);
+        Collections.addAll(enemiesInPolygon, bases);
+        enemiesInPolygon.addAll(players);
+        enemiesInPolygon.addAll(campMonsters);
+        enemiesInPolygon.addAll(companions);
+        enemiesInPolygon.removeIf(a -> a.getHealth() <= 0);
+        return enemiesInPolygon.stream()
+                .filter(a -> a.getTeam() != team)
+                .filter(a -> polygon.contains(a.getLocation()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Actor> getNonStructureEnemies(int team) {
+        List<Actor> nonStructureEnemies = new ArrayList<>();
+        nonStructureEnemies.addAll(towers);
+        nonStructureEnemies.addAll(baseTowers);
+        nonStructureEnemies.addAll(minions);
+        Collections.addAll(nonStructureEnemies, bases);
+        nonStructureEnemies.addAll(players);
+        nonStructureEnemies.addAll(campMonsters);
+        nonStructureEnemies.addAll(companions);
+        nonStructureEnemies.removeIf(a -> a.getHealth() <= 0);
+        return nonStructureEnemies.stream()
+                .filter(a -> a.getTeam() != team)
+                .filter(a -> a.getActorType() != ActorType.TOWER)
+                .filter(a -> a.getActorType() != ActorType.BASE)
+                .collect(Collectors.toList());
+    }
+
+    public List<Actor> getEligibleActors(
+            int team,
+            boolean teamFilter,
+            boolean hpFilter,
+            boolean towerFilter,
+            boolean baseFilter) {
+        List<Actor> eligibleActors = new ArrayList<>();
+        eligibleActors.addAll(towers);
+        eligibleActors.addAll(baseTowers);
+        eligibleActors.addAll(minions);
+        Collections.addAll(eligibleActors, bases);
+        eligibleActors.addAll(players);
+        eligibleActors.addAll(campMonsters);
+        eligibleActors.addAll(companions);
+        return eligibleActors.stream()
+                .filter(a -> !hpFilter || a.getHealth() > 0)
+                .filter(a -> !teamFilter || a.getTeam() != team)
+                .filter(a -> !towerFilter || a.getActorType() != ActorType.TOWER)
+                .filter(a -> !baseFilter || a.getActorType() != ActorType.BASE)
+                .collect(Collectors.toList());
     }
 
     public Actor getActor(String id) {

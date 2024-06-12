@@ -140,9 +140,8 @@ public class Monster extends Actor {
     }
 
     public boolean isProperActor(Actor a) {
-        List<Actor> actors =
-                Champion.getActorsInRadius(
-                        this.parentExt.getRoomHandler(this.room.getName()), this.location, 10f);
+        RoomHandler handler = parentExt.getRoomHandler(room.getName());
+        List<Actor> actors = Champion.getActorsInRadius(handler, this.location, 10f);
         return actors.contains(a)
                 && a.getActorType() != ActorType.MINION
                 && a.getActorType() != ActorType.MONSTER;

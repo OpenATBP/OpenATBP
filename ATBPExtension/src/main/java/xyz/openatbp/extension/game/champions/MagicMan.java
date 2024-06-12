@@ -12,6 +12,7 @@ import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -322,9 +323,8 @@ public class MagicMan extends UserActor {
                         team,
                         0f);
                 double damageModifier = getPlayerStat("spellDamage") * 0.001d;
-                for (Actor a :
-                        Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getName()), location, 4f)) {
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                for (Actor a : Champion.getActorsInRadius(handler, location, 4f)) {
                     if (isNonStructure(a)) {
                         double damage = (double) (a.getHealth()) * (0.35d + damageModifier);
                         a.addToDamageQueue(MagicMan.this, damage, spellData, false);
@@ -446,11 +446,8 @@ public class MagicMan extends UserActor {
             ExtensionCommands.playSound(
                     this.parentExt, this.room, this.id, "vo/vo_magicman_decoy2", this.location);
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
-            for (Actor actor :
-                    Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()),
-                            this.location,
-                            2.5f)) {
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            for (Actor actor : Champion.getActorsInRadius(handler, this.location, 2.5f)) {
                 if (isNonStructure(actor)) {
                     actor.addToDamageQueue(
                             MagicMan.this, getSpellDamage(spellData), spellData, false);

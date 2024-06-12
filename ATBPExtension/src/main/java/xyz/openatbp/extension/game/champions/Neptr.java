@@ -315,9 +315,8 @@ public class Neptr extends UserActor {
                             TimeUnit.MILLISECONDS);
             ultDamageStartTime = System.currentTimeMillis();
             ultImpactedActors = new ArrayList<>();
-            for (Actor a :
-                    Champion.getActorsInRadius(
-                            parentExt.getRoomHandler(room.getName()), ultLocation, 3f)) {
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            for (Actor a : Champion.getActorsInRadius(handler, ultLocation, 3f)) {
                 if (a.getActorType() != ActorType.BASE) {
                     if (isNonStructure(a)) {
                         a.knockback(Neptr.this.location);
@@ -421,11 +420,9 @@ public class Neptr extends UserActor {
 
         @Override
         public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            for (Actor a : roomHandler.getActors()) {
-                if (!this.damagedActors.contains(a)
-                        && a.getActorType() != ActorType.TOWER
-                        && a.getActorType() != ActorType.BASE
-                        && a.getTeam() != owner.getTeam()) {
+            List<Actor> nonStructureEnemies = roomHandler.getNonStructureEnemies(team);
+            for (Actor a : nonStructureEnemies) {
+                if (!this.damagedActors.contains(a)) {
                     double collisionRadius =
                             parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
                     if (a.getLocation().distance(location) <= hitbox + collisionRadius
@@ -551,9 +548,8 @@ public class Neptr extends UserActor {
                 this.die(this);
                 Neptr.this.handleMineDeath(this);
             }
-            List<Actor> actors =
-                    Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()), this.location, 2f);
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            List<Actor> actors = Champion.getActorsInRadius(handler, this.location, 2f);
             if (!actors.isEmpty()) {
                 for (Actor a : actors) {
                     if (isNonStructure(a) && !this.mineActivated) {
@@ -579,11 +575,9 @@ public class Neptr extends UserActor {
             parentExt.getTaskScheduler().schedule(activate, 500, TimeUnit.MILLISECONDS);
             Runnable mineExplosion =
                     () -> {
+                        RoomHandler handler = parentExt.getRoomHandler(room.getName());
                         List<Actor> targets =
-                                Champion.getActorsInRadius(
-                                        this.parentExt.getRoomHandler(this.room.getName()),
-                                        this.location,
-                                        2f);
+                                Champion.getActorsInRadius(handler, this.location, 2f);
 
                         if (!targets.isEmpty()) {
                             for (Actor target : targets) {

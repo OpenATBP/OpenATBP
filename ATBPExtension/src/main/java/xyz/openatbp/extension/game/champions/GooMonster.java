@@ -13,6 +13,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
@@ -50,9 +51,9 @@ public class GooMonster extends Monster {
                 puddleLocation = null;
             } else {
                 try {
+                    RoomHandler handler = parentExt.getRoomHandler(room.getName());
                     List<Actor> damagedActors =
-                            Champion.getActorsInRadius(
-                                    parentExt.getRoomHandler(room.getName()), puddleLocation, 2f);
+                            Champion.getActorsInRadius(handler, puddleLocation, 2f);
                     JsonNode attackData = parentExt.getAttackData(this.avatar, "basicAttack");
                     ObjectMapper mapper = new ObjectMapper();
                     ISFSObject data = new SFSObject();

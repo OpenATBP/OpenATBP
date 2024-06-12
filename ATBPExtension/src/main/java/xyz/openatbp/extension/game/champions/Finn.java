@@ -3,7 +3,7 @@ package xyz.openatbp.extension.game.champions;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
-import java.util.concurrent.TimeUnit;
+import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -11,6 +11,7 @@ import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
@@ -19,6 +20,17 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class Finn extends UserActor {
+    private static final int PASSIVE_DURATION = 5000;
+    private static final float Q_ATTACKSPEED_VALUE = 0.2f;
+    private static final float Q_ARMOR_VALUE = 0.25f;
+    private static final float Q_SPEED_VALUE = 0.5f;
+    private static final int Q_ATTACKSPEED_DURATION = 3000;
+    private static final int Q_ARMOR_DURATION = 3000;
+    private static final int Q_SPEED_DURATION = 3000;
+    private static final float W_OFFSET_DISTANCE = 1.25f;
+    private static final int E_DURATION = 5000;
+    private static final int E_ROOT_DURATION = 2000;
+    private static final int E_SELF_CRIPPLE_DURATION = 1200;
     private int furyStacks = 0;
     private Actor furyTarget = null;
     private boolean qActive = false;
@@ -33,94 +45,9 @@ public class Finn extends UserActor {
     private boolean isCastingUlt = false;
     private Path2D finnUltRing;
     private boolean ringBoostApplied = false;
-    private static final float W_OFFSET_DISTANCE = 1.25f;
 
     public Finn(User u, ATBPExtension parentExt) {
         super(u, parentExt);
-    }
-
-    @Override
-    public void attack(Actor a) {
-        this.applyStopMovingDuringAttack();
-        parentExt
-                .getTaskScheduler()
-                .schedule(new PassiveAttack(a, this.handleAttack(a)), 500, TimeUnit.MILLISECONDS);
-        passiveStart = System.currentTimeMillis();
-    }
-
-    @Override
-    public void handleKill(Actor a, JsonNode attackData) {
-        super.handleKill(a, attackData);
-        if (a.getActorType() == ActorType.PLAYER) {
-            this.canCast[1] = true;
-            ExtensionCommands.actorAbilityResponse(this.parentExt, this.player, "w", true, 0, 0);
-            ExtensionCommands.playSound(
-                    this.parentExt, this.room, this.id, "vo/vo_finn_assist_1", this.location);
-        }
-    }
-
-    @Override
-    public void increaseStat(String key, double num) {
-        super.increaseStat(key, num);
-        if (key.equalsIgnoreCase("assists")) {
-            this.canCast[1] = true;
-            ExtensionCommands.actorAbilityResponse(this.parentExt, this.player, "w", true, 0, 0);
-            ExtensionCommands.playSound(
-                    this.parentExt, this.room, this.id, "vo/vo_finn_assist_1", this.location);
-        }
-    }
-
-    @Override
-    public double getPlayerStat(String stat) {
-        if (stat.equalsIgnoreCase("attackSpeed")
-                && finnUltRing != null
-                && finnUltRing.contains(this.getLocation())) {
-            double currentAttackSpeed = super.getPlayerStat("attackSpeed");
-            double modifier = (this.getStat("attackSpeed") * 0.2d);
-            return currentAttackSpeed - modifier < 500 ? 500 : currentAttackSpeed - modifier;
-        }
-        return super.getPlayerStat(stat);
-    }
-
-    @Override
-    public void die(Actor a) {
-        super.die(a);
-        if (this.furyTarget != null)
-            ExtensionCommands.removeFx(parentExt, room, furyTarget.getId() + "_mark" + furyStacks);
-        furyStacks = 0;
-        if (qActive) {
-            for (Actor actor :
-                    Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()),
-                            this.location,
-                            2f)) {
-                if (isNonStructure(actor)) {
-                    JsonNode spellData = parentExt.getAttackData("finn", "spell1");
-                    actor.addToDamageQueue(Finn.this, getSpellDamage(spellData), spellData, false);
-                }
-            }
-            qActive = false;
-            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_shield");
-            String shatterPrefix = (this.avatar.contains("guardian")) ? "finn_guardian_" : "finn_";
-            ExtensionCommands.playSound(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    "sfx_" + shatterPrefix + "shield_shatter",
-                    this.location);
-            ExtensionCommands.createActorFX(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    shatterPrefix + "shieldShatter",
-                    1000,
-                    this.id + "_qShatter",
-                    true,
-                    "",
-                    true,
-                    false,
-                    this.team);
-        }
     }
 
     @Override
@@ -140,7 +67,7 @@ public class Finn extends UserActor {
                 updateStatMenu("attackSpeed");
             }
         }
-        if (this.ultActivated && System.currentTimeMillis() - this.eStartTime >= 5000) {
+        if (this.ultActivated && System.currentTimeMillis() - this.eStartTime >= E_DURATION) {
             this.wallLines = null;
             this.wallsActivated = new boolean[] {false, false, false, false};
             this.ultActivated = false;
@@ -153,12 +80,13 @@ public class Finn extends UserActor {
         if (this.ultActivated) {
             for (int i = 0; i < this.wallLines.length; i++) {
                 if (this.wallsActivated[i]) {
-                    for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
-                        if (this.isNonStructure(a)
-                                && this.wallLines[i].ptSegDist(a.getLocation()) <= 0.5f) {
+                    RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
+                    List<Actor> nonStructureEnemies = handler.getNonStructureEnemies(this.team);
+                    for (Actor a : nonStructureEnemies) {
+                        if (this.wallLines[i].ptSegDist(a.getLocation()) <= 0.5f) {
                             this.wallsActivated[i] = false;
                             JsonNode spellData = this.parentExt.getAttackData("finn", "spell3");
-                            a.addState(ActorState.ROOTED, 0d, 2000);
+                            a.addState(ActorState.ROOTED, 0d, E_ROOT_DURATION);
                             a.addToDamageQueue(
                                     this,
                                     handlePassive(a, getSpellDamage(spellData)),
@@ -198,7 +126,7 @@ public class Finn extends UserActor {
             }
         }
         if (furyStacks > 0) {
-            if (System.currentTimeMillis() - passiveStart >= 5000) {
+            if (System.currentTimeMillis() - passiveStart >= PASSIVE_DURATION) {
                 ExtensionCommands.removeFx(
                         parentExt, room, furyTarget.getId() + "_mark" + furyStacks);
                 furyStacks = 0;
@@ -208,6 +136,86 @@ public class Finn extends UserActor {
                         parentExt, room, furyTarget.getId() + "_mark" + furyStacks);
                 furyStacks = 0;
             }
+        }
+    }
+
+    @Override
+    public void attack(Actor a) {
+        this.applyStopMovingDuringAttack();
+        PassiveAttack passiveAttack = new PassiveAttack(a, this.handleAttack(a));
+        scheduleTask(passiveAttack, 500);
+        passiveStart = System.currentTimeMillis();
+    }
+
+    @Override
+    public void handleKill(Actor a, JsonNode attackData) {
+        super.handleKill(a, attackData);
+        if (a.getActorType() == ActorType.PLAYER) {
+            this.canCast[1] = true;
+            ExtensionCommands.actorAbilityResponse(this.parentExt, this.player, "w", true, 0, 0);
+            ExtensionCommands.playSound(
+                    this.parentExt, this.room, this.id, "vo/vo_finn_assist_1", this.location);
+        }
+    }
+
+    @Override
+    public void increaseStat(String key, double num) {
+        super.increaseStat(key, num);
+        if (key.equalsIgnoreCase("assists")) {
+            this.canCast[1] = true;
+            ExtensionCommands.actorAbilityResponse(this.parentExt, this.player, "w", true, 0, 0);
+            ExtensionCommands.playSound(
+                    this.parentExt, this.room, this.id, "vo/vo_finn_assist_1", this.location);
+        }
+    }
+
+    @Override
+    public double getPlayerStat(String stat) {
+        if (stat.equalsIgnoreCase("attackSpeed")
+                && finnUltRing != null
+                && finnUltRing.contains(this.getLocation())) {
+            double currentAttackSpeed = super.getPlayerStat("attackSpeed");
+            double modifier = (this.getStat("attackSpeed") * Q_ATTACKSPEED_VALUE);
+            return currentAttackSpeed - modifier < 500 ? 500 : currentAttackSpeed - modifier;
+        }
+        return super.getPlayerStat(stat);
+    }
+
+    @Override
+    public void die(Actor a) {
+        super.die(a);
+        if (this.furyTarget != null)
+            ExtensionCommands.removeFx(parentExt, room, furyTarget.getId() + "_mark" + furyStacks);
+        furyStacks = 0;
+        if (qActive) {
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            for (Actor actor : Champion.getActorsInRadius(handler, this.location, 2f)) {
+                if (isNonStructure(actor)) {
+                    JsonNode spellData = parentExt.getAttackData("finn", "spell1");
+                    actor.addToDamageQueue(Finn.this, getSpellDamage(spellData), spellData, false);
+                }
+            }
+            qActive = false;
+            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_shield");
+            String shatterPrefix = (this.avatar.contains("guardian")) ? "finn_guardian_" : "finn_";
+            ExtensionCommands.playSound(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    "sfx_" + shatterPrefix + "shield_shatter",
+                    this.location);
+            ExtensionCommands.createActorFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    shatterPrefix + "shieldShatter",
+                    1000,
+                    this.id + "_qShatter",
+                    true,
+                    "",
+                    true,
+                    false,
+                    this.team);
         }
     }
 
@@ -246,9 +254,10 @@ public class Finn extends UserActor {
                         true,
                         false,
                         this.team);
-                this.addEffect("speed", 0.5d, 3000);
-                this.addEffect("armor", this.getStat("armor") * 0.25d, 3000);
-                this.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.20d, 3000);
+                double asDelta = this.getStat("attackSpeed") * -Q_ATTACKSPEED_VALUE;
+                this.addEffect("speed", Q_SPEED_VALUE, Q_SPEED_DURATION);
+                this.addEffect("armor", this.getStat("armor") * Q_ARMOR_VALUE, Q_ARMOR_DURATION);
+                this.addEffect("attackSpeed", asDelta, Q_ATTACKSPEED_DURATION);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -256,13 +265,8 @@ public class Finn extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new FinnAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
+                int delay = getReducedCooldown(cooldown);
+                scheduleTask(abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay);
                 break;
             case 2:
                 this.canCast[1] = false;
@@ -288,11 +292,15 @@ public class Finn extends UserActor {
                         true,
                         false,
                         this.team);
-                for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
-                    if (a.getTeam() != this.team && quadrangle.contains(a.getLocation())) {
-                        if (!isNonStructure(a))
+
+                RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
+                List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, quadrangle);
+                if (!actorsInPolygon.isEmpty()) {
+                    for (Actor a : actorsInPolygon) {
+                        if (a.getActorType() == ActorType.TOWER
+                                || a.getActorType() == ActorType.BASE) {
                             a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
-                        else {
+                        } else {
                             a.addToDamageQueue(
                                     this,
                                     handlePassive(a, getSpellDamage(spellData)),
@@ -312,7 +320,6 @@ public class Finn extends UserActor {
                         () ->
                                 ExtensionCommands.actorAnimate(
                                         this.parentExt, this.room, this.id, "run", 100, false);
-
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -320,29 +327,22 @@ public class Finn extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(changeAnimation, wTime, TimeUnit.MILLISECONDS);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new FinnAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, finalDashPoint),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
+
+                int delay1 = getReducedCooldown(cooldown);
+                scheduleTask(changeAnimation, wTime);
+                scheduleTask(
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, finalDashPoint),
+                        delay1);
                 break;
             case 3:
                 this.isCastingUlt = true;
-                int immobilizationTime = 1200;
-                this.stopMoving(immobilizationTime);
+                this.stopMoving(E_SELF_CRIPPLE_DURATION);
                 Runnable enableDashCasting =
                         () -> {
                             this.isCastingUlt = false;
                             this.canCast[1] = true;
                         };
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(enableDashCasting, immobilizationTime, TimeUnit.MILLISECONDS);
+                scheduleTask(enableDashCasting, E_SELF_CRIPPLE_DURATION);
                 this.canCast[2] = false;
                 Runnable cast =
                         () -> {
@@ -385,7 +385,7 @@ public class Finn extends UserActor {
                                     this.room,
                                     this.id,
                                     "fx_target_square_4.5",
-                                    5000,
+                                    E_DURATION,
                                     this.id + "_eSquare",
                                     false,
                                     "",
@@ -398,7 +398,7 @@ public class Finn extends UserActor {
                                     this.id,
                                     wallPrefix + "wall_south",
                                     this.id + "_northWall",
-                                    5000,
+                                    E_DURATION,
                                     ultX,
                                     ultY,
                                     false,
@@ -410,7 +410,7 @@ public class Finn extends UserActor {
                                     this.id,
                                     wallPrefix + "wall_north",
                                     this.id + "_southWall",
-                                    5000,
+                                    E_DURATION,
                                     ultX,
                                     ultY,
                                     false,
@@ -422,7 +422,7 @@ public class Finn extends UserActor {
                                     this.id,
                                     wallPrefix + "wall_west",
                                     this.id + "_eastWall",
-                                    5000,
+                                    E_DURATION,
                                     ultX,
                                     ultY,
                                     false,
@@ -434,7 +434,7 @@ public class Finn extends UserActor {
                                     this.id,
                                     wallPrefix + "wall_east",
                                     this.id + "_westWall",
-                                    5000,
+                                    E_DURATION,
                                     ultX,
                                     ultY,
                                     false,
@@ -446,7 +446,7 @@ public class Finn extends UserActor {
                                     this.id,
                                     wallPrefix + "wall_corner_swords",
                                     this.id + "_p1Sword",
-                                    5000,
+                                    E_DURATION,
                                     ultX,
                                     ultY,
                                     false,
@@ -468,14 +468,10 @@ public class Finn extends UserActor {
                                     gCooldown);
                             updateStatMenu("attackSpeed");
                         };
-                parentExt.getTaskScheduler().schedule(cast, castDelay, TimeUnit.MILLISECONDS);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new FinnAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
+                int delay2 = getReducedCooldown(cooldown);
+                scheduleTask(cast, castDelay);
+                scheduleTask(
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay2);
                 break;
         }
     }
@@ -517,11 +513,8 @@ public class Finn extends UserActor {
                             false,
                             target.getTeam());
                     if (this.qActive) {
-                        for (Actor actor :
-                                Champion.getActorsInRadius(
-                                        this.parentExt.getRoomHandler(this.room.getName()),
-                                        this.location,
-                                        2f)) {
+                        RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                        for (Actor actor : Champion.getActorsInRadius(handler, this.location, 2f)) {
                             if (isNonStructure(actor)) {
                                 JsonNode spellData = parentExt.getAttackData("finn", "spell1");
                                 actor.addToDamageQueue(
@@ -589,24 +582,16 @@ public class Finn extends UserActor {
         return damage;
     }
 
-    private class FinnAbilityHandler extends AbilityRunnable {
+    private FinnAbilityRunnable abilityRunnable(
+            int ability, JsonNode spelldata, int cooldown, int gCooldown, Point2D dest) {
+        return new FinnAbilityRunnable(ability, spelldata, cooldown, gCooldown, dest);
+    }
 
-        Point2D originalLocation = null;
+    private class FinnAbilityRunnable extends AbilityRunnable {
 
-        public FinnAbilityHandler(
+        public FinnAbilityRunnable(
                 int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {
             super(ability, spellData, cooldown, gCooldown, dest);
-        }
-
-        public FinnAbilityHandler(
-                int ability,
-                JsonNode spellData,
-                int cooldown,
-                int gCooldown,
-                Point2D dest,
-                Point2D ogLocation) {
-            super(ability, spellData, cooldown, gCooldown, dest);
-            this.originalLocation = ogLocation;
         }
 
         @Override

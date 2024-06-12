@@ -3,8 +3,6 @@ package xyz.openatbp.extension.game.champions;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -12,6 +10,7 @@ import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Champion;
@@ -19,6 +18,16 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class Billy extends UserActor {
+    private static final int FINAL_PASSIVE_DURATION = 6000;
+    private static final int W_ATTACKSPEED_DURATION = 4000;
+    private static final float W_ATTACKSPEED_VALUE = 0.7f;
+    private static final int W_SPEED_DURATION = 6000;
+    private static final float W_SPEED_VALUE = 0.8f;
+    private static final float Q_OFFSET_DISTANCE = 1.5f;
+    private static final float Q_SPELL_RANGE = 4.5f;
+    private static final int W_CRATER_OFFSET = 1;
+    private static final int E_CAST_DELAY = 750;
+    private static final int E_EMP_DURATION = 4500;
     private int passiveUses = 0;
     private Point2D ultLocation = null;
     private long ultStartTime = 0;
@@ -28,8 +37,6 @@ public class Billy extends UserActor {
     private Point2D ultLoc = null;
     private long lastPulseTime = 0;
     private int pulseCounter = 0;
-    private static final float Q_OFFSET_DISTANCE = 1.5f;
-    private static final float Q_SPELL_RANGE = 4.5f;
 
     public Billy(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -39,17 +46,12 @@ public class Billy extends UserActor {
     public void update(int msRan) {
         super.update(msRan);
         if (this.ultLocation != null
-                && System.currentTimeMillis() - this.ultStartTime < 4500
+                && System.currentTimeMillis() - this.ultStartTime < E_EMP_DURATION
                 && System.currentTimeMillis() - this.lastUltTick >= 200) {
             this.lastUltTick = System.currentTimeMillis();
+            RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
             List<Actor> impactedActors =
-                    Champion.getActorsInRadius(
-                                    this.parentExt.getRoomHandler(this.room.getName()),
-                                    this.ultLocation,
-                                    2.25f)
-                            .stream()
-                            .filter(this::isNonStructure)
-                            .collect(Collectors.toList());
+                    Champion.getEnemyActorsInRadius(handler, this.team, this.ultLocation, 2.25f);
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
             for (Actor a : impactedActors) {
                 double damageReduction = 1 - (0.15 * impactedActors.size());
@@ -61,21 +63,21 @@ public class Billy extends UserActor {
                         true);
             }
         } else if (this.ultLocation != null
-                && System.currentTimeMillis() - this.ultStartTime >= 4500) {
+                && System.currentTimeMillis() - this.ultStartTime >= E_EMP_DURATION) {
             this.ultLocation = null;
         }
-        if (System.currentTimeMillis() - finalPassiveStart >= 6000) {
+        if (System.currentTimeMillis() - finalPassiveStart >= FINAL_PASSIVE_DURATION) {
             ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "finalpassive");
         }
         if (this.ultLocation != null
-                && System.currentTimeMillis() - this.ultStartTime < 4500
+                && System.currentTimeMillis() - this.ultStartTime < E_EMP_DURATION
                 && System.currentTimeMillis() - lastSoundPlayed >= 300) {
             ExtensionCommands.playSound(
                     this.parentExt, this.room, "", "sfx_billy_nothung_pulse", this.ultLocation);
             lastSoundPlayed = System.currentTimeMillis();
         }
         if (ultLocation != null
-                && System.currentTimeMillis() - ultStartTime < 4500
+                && System.currentTimeMillis() - ultStartTime < E_EMP_DURATION
                 && System.currentTimeMillis() - lastPulseTime >= 175) {
             lastPulseTime = System.currentTimeMillis();
             pulseCounter++;
@@ -94,9 +96,10 @@ public class Billy extends UserActor {
         }
     }
 
-    private void usePassiveAbility() {
-        this.passiveUses = 0;
-        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_passive");
+    @Override
+    public void die(Actor a) {
+        super.die(a);
+        if (!canCast[0]) canCast[0] = true;
     }
 
     @Override
@@ -141,11 +144,15 @@ public class Billy extends UserActor {
                 this.stopMoving();
                 Path2D quadrangle =
                         Champion.createRectangle(location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
-                for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
-                    if (a.getTeam() != this.team && quadrangle.contains(a.getLocation())) {
-                        if (isNonStructure(a)) a.knockback(this.location);
+                RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
+                List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, quadrangle);
+                if (!actorsInPolygon.isEmpty()) {
+                    for (Actor a : actorsInPolygon) {
+                        if (isNonStructure(a)) {
+                            a.knockback(this.location);
+                            if (this.passiveUses == 3) a.addState(ActorState.STUNNED, 0d, 2000);
+                        }
                         a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
-                        if (this.passiveUses == 3) a.addState(ActorState.STUNNED, 0d, 2000);
                     }
                 }
                 if (this.passiveUses == 3) this.usePassiveAbility();
@@ -162,13 +169,8 @@ public class Billy extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new BillyAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
+                int delay = getReducedCooldown(cooldown);
+                scheduleTask(abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay);
                 break;
             case 2:
                 this.canCast[1] = false;
@@ -193,8 +195,9 @@ public class Billy extends UserActor {
                 ExtensionCommands.actorAnimate(
                         this.parentExt, this.room, this.id, "spell2", wTime, false);
                 if (this.passiveUses == 3) {
-                    this.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.7d, 4000);
-                    this.addEffect("speed", 0.8d, 6000);
+                    double delta = this.getStat("attackSpeed") * -W_ATTACKSPEED_VALUE;
+                    this.addEffect("attackSpeed", delta, W_ATTACKSPEED_DURATION);
+                    this.addEffect("speed", W_SPEED_VALUE, W_SPEED_DURATION);
                     this.usePassiveAbility();
                     ExtensionCommands.addStatusIcon(
                             this.parentExt,
@@ -208,7 +211,7 @@ public class Billy extends UserActor {
                             this.room,
                             this.id,
                             "billy_crit_hands",
-                            4000,
+                            W_ATTACKSPEED_DURATION,
                             this.id + "_critHandsR",
                             true,
                             "Bip001 R Hand",
@@ -220,7 +223,7 @@ public class Billy extends UserActor {
                             this.room,
                             this.id,
                             "billy_crit_hands",
-                            4000,
+                            W_ATTACKSPEED_DURATION,
                             this.id + "_critHandsL",
                             true,
                             "Bip001 L Hand",
@@ -236,13 +239,10 @@ public class Billy extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new BillyAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, finalDashPoint),
-                                (int) (time * 1000d),
-                                TimeUnit.MILLISECONDS);
+                int delay1 = (int) (time * 1000d);
+                scheduleTask(
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, finalDashPoint),
+                        delay1);
                 break;
             case 3:
                 this.canCast[2] = false;
@@ -269,26 +269,25 @@ public class Billy extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new BillyAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                castDelay,
-                                TimeUnit.MILLISECONDS);
+                scheduleTask(
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), castDelay);
                 break;
         }
     }
 
-    @Override
-    public void die(Actor a) {
-        super.die(a);
-        if (!canCast[0]) canCast[0] = true;
+    private void usePassiveAbility() {
+        this.passiveUses = 0;
+        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_passive");
     }
 
-    private class BillyAbilityHandler extends AbilityRunnable {
+    private BillyAbilityRunnable abilityRunnable(
+            int ability, JsonNode spelldata, int cooldown, int gCooldown, Point2D dest) {
+        return new BillyAbilityRunnable(ability, spelldata, cooldown, gCooldown, dest);
+    }
 
-        public BillyAbilityHandler(
+    private class BillyAbilityRunnable extends AbilityRunnable {
+
+        public BillyAbilityRunnable(
                 int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {
             super(ability, spellData, cooldown, gCooldown, dest);
         }
@@ -301,14 +300,9 @@ public class Billy extends UserActor {
         @Override
         protected void spellW() {
             Runnable enableWCasting = () -> canCast[1] = true;
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(
-                            enableWCasting,
-                            getReducedCooldown(cooldown),
-                            TimeUnit.MILLISECONDS); // cast delay is 0
+            int cd = getReducedCooldown(cooldown);
+            scheduleTask(enableWCasting, cd);
             if (getHealth() > 0) {
-                int CRATER_OFFSET = 1;
                 ExtensionCommands.playSound(
                         parentExt, room, id, "sfx_billy_ground_pound_temp", dest);
                 ExtensionCommands.actorAnimate(parentExt, room, id, "spell2a", 500, false);
@@ -320,13 +314,12 @@ public class Billy extends UserActor {
                         id + "_qLand",
                         1500,
                         (float) location.getX(),
-                        (float) location.getY() - CRATER_OFFSET,
+                        (float) location.getY() - W_CRATER_OFFSET,
                         false,
                         team,
                         0f);
-                for (Actor a :
-                        Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getName()), dest, 2f)) {
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                for (Actor a : Champion.getActorsInRadius(handler, dest, 2f)) {
                     if (isNonStructure(a)) {
                         a.addToDamageQueue(Billy.this, getSpellDamage(spellData), spellData, false);
                     }
@@ -336,14 +329,9 @@ public class Billy extends UserActor {
 
         @Override
         protected void spellE() {
-            int E_CAST_DELAY = 750;
             Runnable enableECasting = () -> canCast[2] = true;
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(
-                            enableECasting,
-                            getReducedCooldown(cooldown) - E_CAST_DELAY,
-                            TimeUnit.MILLISECONDS);
+            int delay = getReducedCooldown(cooldown) - E_CAST_DELAY;
+            scheduleTask(enableECasting, delay);
 
             if (getHealth() > 0) {
                 ExtensionCommands.playSound(
@@ -354,7 +342,7 @@ public class Billy extends UserActor {
                     ultStartTime = System.currentTimeMillis();
                     lastUltTick = System.currentTimeMillis();
                     lastSoundPlayed = System.currentTimeMillis();
-                    duration = 4500;
+                    duration = E_EMP_DURATION;
                     usePassiveAbility();
                 }
                 ExtensionCommands.createWorldFX(
@@ -381,9 +369,8 @@ public class Billy extends UserActor {
                         false,
                         team,
                         0f);
-                for (Actor a :
-                        Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getName()), ultLoc, 2.25f)) {
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                for (Actor a : Champion.getActorsInRadius(handler, ultLoc, 2.25f)) {
                     if (isNonStructure(a)) {
                         a.addToDamageQueue(Billy.this, getSpellDamage(spellData), spellData, false);
                     }

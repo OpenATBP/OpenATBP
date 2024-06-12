@@ -12,6 +12,7 @@ import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
@@ -135,8 +136,11 @@ public class Lemongrab extends UserActor {
                                 Q_SPELL_RANGE,
                                 Q_OFFSET_DISTANCE_BOTTOM,
                                 Q_OFFSET_DISTANCE_TOP);
-                for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getActors()) {
-                    if (a.getTeam() != this.team && trapezoid.contains(a.getLocation())) {
+
+                RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
+                List<Actor> actorsInTrapezoid = handler.getEnemiesInPolygon(this.team, trapezoid);
+                if (!actorsInTrapezoid.isEmpty()) {
+                    for (Actor a : actorsInTrapezoid) {
                         if (isNonStructure(a)) a.addState(ActorState.SLOWED, 0.4d, 2500);
                         a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                     }
@@ -323,9 +327,8 @@ public class Lemongrab extends UserActor {
                         team,
                         0f);
                 List<Actor> affectedActors = new ArrayList<>();
-                for (Actor a :
-                        Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getName()), dest, 1f)) {
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                for (Actor a : Champion.getActorsInRadius(handler, dest, 1f)) {
                     if (isNonStructure(a)) {
                         affectedActors.add(a);
                         a.addToDamageQueue(
@@ -334,9 +337,8 @@ public class Lemongrab extends UserActor {
                         a.addState(ActorState.SILENCED, 0d, 2000);
                     }
                 }
-                for (Actor a :
-                        Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getName()), dest, 2f)) {
+                RoomHandler handler1 = parentExt.getRoomHandler(room.getName());
+                for (Actor a : Champion.getActorsInRadius(handler1, dest, 2f)) {
                     if (isNonStructure(a) && !affectedActors.contains(a)) {
                         double damage = 60d + (getPlayerStat("spellDamage") * 0.4d);
                         a.addState(ActorState.BLINDED, 0d, 4000);
@@ -374,9 +376,8 @@ public class Lemongrab extends UserActor {
                 double duration = 2000d;
                 damage *= (1d + (0.1d * unacceptableLevels));
                 duration *= (1d + (0.1d * unacceptableLevels));
-                for (Actor a :
-                        Champion.getActorsInRadius(
-                                parentExt.getRoomHandler(room.getName()), dest, 2.5f)) {
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                for (Actor a : Champion.getActorsInRadius(handler, dest, 2.5f)) {
                     if (isNonStructure(a)) {
                         a.addToDamageQueue(Lemongrab.this, damage, spellData, false);
                         if (a.getActorType() == ActorType.PLAYER) {
