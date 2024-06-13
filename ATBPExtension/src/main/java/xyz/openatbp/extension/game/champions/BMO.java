@@ -64,12 +64,14 @@ public class BMO extends UserActor {
         }
         if (wActive) {
             RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
-            List<Actor> nonStructureEnemies = handler.getNonStructureEnemies(this.team);
-
-            for (Actor a : nonStructureEnemies) {
-                JsonNode spellData = parentExt.getAttackData("bmo", "spell2");
-                a.addToDamageQueue(this, (double) getSpellDamage(spellData) / 10d, spellData, true);
-                if (this.passiveStacks == 3) applySlow(a);
+            List<Actor> targets = Champion.getEnemyActorsInRadius(handler, team, location, 4f);
+            JsonNode spellData = parentExt.getAttackData("bmo", "spell2");
+            double damage = (double) getSpellDamage(spellData) / 10d;
+            for (Actor a : targets) {
+                if (a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE) {
+                    a.addToDamageQueue(this, damage, spellData, true);
+                    if (this.passiveStacks == 3) applySlow(a);
+                }
             }
             if (System.currentTimeMillis() - lastWSound >= 500) {
                 lastWSound = System.currentTimeMillis();
@@ -85,12 +87,14 @@ public class BMO extends UserActor {
 
     @Override
     public void attack(Actor a) {
-        this.applyStopMovingDuringAttack();
-        String projectileFx =
-                this.avatar.contains("noir") ? "bmo_projectile_noire" : "bmo_projectile";
-        RangedAttack rangedAttack =
-                new RangedAttack(a, new BMOPassive(a, this.handleAttack(a)), projectileFx);
-        scheduleTask(rangedAttack, 500);
+        if (this.attackCooldown == 0) {
+            this.applyStopMovingDuringAttack();
+            String projectileFx =
+                    this.avatar.contains("noir") ? "bmo_projectile_noire" : "bmo_projectile";
+            BMOPassive passiveAttack = new BMOPassive(a, handleAttack(a));
+            RangedAttack rangedAttack = new RangedAttack(a, passiveAttack, projectileFx);
+            scheduleTask(rangedAttack, BASIC_ATTACK_DELAY);
+        }
     }
 
     @Override

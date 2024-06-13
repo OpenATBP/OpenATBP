@@ -64,6 +64,7 @@ public class UserActor extends Actor {
     protected boolean hasGooBuff = false;
     protected long keeothBuffStartTime = 0;
     protected long gooBuffStartTime = 0;
+    protected static final int BASIC_ATTACK_DELAY = 500; // this is bloobalooby
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -379,12 +380,11 @@ public class UserActor extends Actor {
                     crit,
                     true);
             this.attackCooldown = this.getPlayerStat("attackSpeed");
-            if (this.attackCooldown < 500) this.attackCooldown = 500;
+            if (this.attackCooldown < BASIC_ATTACK_DELAY) this.attackCooldown = BASIC_ATTACK_DELAY;
             double damage = this.getPlayerStat("attackDamage");
             if (crit) damage *= 2;
             Champion.DelayedAttack delayedAttack =
                     new Champion.DelayedAttack(parentExt, this, a, (int) damage, "basicAttack");
-            int ATTACK_DELAY = 500;
             try {
                 String projectileFx =
                         this.parentExt
@@ -403,19 +403,19 @@ public class UserActor extends Actor {
                             .getTaskScheduler()
                             .schedule(
                                     new RangedAttack(a, delayedAttack, projectileFx),
-                                    ATTACK_DELAY,
+                                    BASIC_ATTACK_DELAY,
                                     TimeUnit.MILLISECONDS);
                 } else {
                     parentExt
                             .getTaskScheduler()
-                            .schedule(delayedAttack, ATTACK_DELAY, TimeUnit.MILLISECONDS);
+                            .schedule(delayedAttack, BASIC_ATTACK_DELAY, TimeUnit.MILLISECONDS);
                 }
 
             } catch (NullPointerException e) {
                 // e.printStackTrace();
                 parentExt
                         .getTaskScheduler()
-                        .schedule(delayedAttack, ATTACK_DELAY, TimeUnit.MILLISECONDS);
+                        .schedule(delayedAttack, BASIC_ATTACK_DELAY, TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -424,9 +424,8 @@ public class UserActor extends Actor {
         if (this.parentExt.getActorData(this.getAvatar()).has("attackType")) {
             this.stopMoving();
             this.isAutoAttacking = true;
-            int delay = 500; // this is bloobalooby
             Runnable resetIsAttacking = () -> this.isAutoAttacking = false;
-            parentExt.getTaskScheduler().schedule(resetIsAttacking, delay, TimeUnit.MILLISECONDS);
+            scheduleTask(resetIsAttacking, BASIC_ATTACK_DELAY);
         } else Console.logWarning(this.getDisplayName() + " used an undefined attack!");
     }
 
@@ -591,7 +590,7 @@ public class UserActor extends Actor {
                         true);
             }
             this.attackCooldown = this.getPlayerStat("attackSpeed");
-            if (this.attackCooldown < 500) this.attackCooldown = 500;
+            if (this.attackCooldown < BASIC_ATTACK_DELAY) this.attackCooldown = BASIC_ATTACK_DELAY;
             return crit;
         }
         return false;

@@ -5,7 +5,6 @@ import java.awt.geom.Point2D;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -19,6 +18,17 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class IceKing extends UserActor {
+    public static final int PASSIVE_TIME = 10000;
+    public static final int PASSIVE_SLOW_DURAITON = 2000;
+    public static final double PASSIVE_SLOW_VALUE = 0.25d;
+    public static final int PASSIVE_AS_DEBUFF_TIME = 2000;
+    public static final double PASSIVE_AS_DEBUFF_VALUE = 0.33d;
+    public static final int PASSIVE_COOLDOWN = 5000;
+    public static final int Q_CAST_DELAY = 250;
+    public static final int Q_ROOT_DURATION = 1750;
+    public static final int W_WHIRLWIND_CD = 2000;
+    public static final int W_DURATION = 3000;
+    public static final int E_DURATION = 6000;
     private boolean iceShield = false;
     private long lastAbilityUsed;
     private Actor qVictim = null;
@@ -56,7 +66,7 @@ public class IceKing extends UserActor {
                     ExtensionCommands.swapActorAsset(
                             this.parentExt, this.room, this.id, getFlightAssetbundle());
                 }
-                if (System.currentTimeMillis() - this.lasWhirlwindTime >= 2000) {
+                if (System.currentTimeMillis() - this.lasWhirlwindTime >= W_WHIRLWIND_CD) {
                     this.lasWhirlwindTime = System.currentTimeMillis();
                     ExtensionCommands.createActorFX(
                             this.parentExt,
@@ -92,11 +102,11 @@ public class IceKing extends UserActor {
             }
         }
 
-        if (this.wLocation != null && System.currentTimeMillis() - this.wStartTime >= 3000) {
+        if (this.wLocation != null && System.currentTimeMillis() - this.wStartTime >= W_DURATION) {
             this.lastWHit = null;
             this.wLocation = null;
         }
-        if (this.ultActive && System.currentTimeMillis() - this.ultStartTime >= 6000) {
+        if (this.ultActive && System.currentTimeMillis() - this.ultStartTime >= E_DURATION) {
             this.ultLocation = null;
             this.ultActive = false;
             this.bundle = AssetBundle.NORMAL;
@@ -104,7 +114,7 @@ public class IceKing extends UserActor {
             this.updateStatMenu("speed");
         }
 
-        if (System.currentTimeMillis() - lastAbilityUsed > 10000) {
+        if (System.currentTimeMillis() - lastAbilityUsed > PASSIVE_TIME) {
             if (!this.iceShield) {
                 this.iceShield = true;
                 ExtensionCommands.createActorFX(
@@ -192,18 +202,19 @@ public class IceKing extends UserActor {
         if (attackData.has("attackName")
                 && attackData.get("attackName").asText().contains("basic_attack")
                 && this.iceShield) {
-            a.addState(ActorState.SLOWED, 0.25d, 2000);
-            a.addEffect("attackSpeed", a.getStat("attackSpeed") * 0.33d, 2000);
+            a.addState(ActorState.SLOWED, PASSIVE_SLOW_VALUE, PASSIVE_SLOW_DURAITON);
+            a.addEffect(
+                    "attackSpeed",
+                    a.getStat("attackSpeed") * PASSIVE_AS_DEBUFF_VALUE,
+                    PASSIVE_AS_DEBUFF_TIME);
             this.iceShield = false;
             this.lastAbilityUsed = System.currentTimeMillis() + 5000;
             Runnable handlePassiveCooldown =
                     () -> this.lastAbilityUsed = System.currentTimeMillis();
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_iceShield");
             ExtensionCommands.actorAbilityResponse(
-                    this.parentExt, this.player, "passive", true, 5000, 0);
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(handlePassiveCooldown, 5000, TimeUnit.MILLISECONDS);
+                    this.parentExt, this.player, "passive", true, PASSIVE_COOLDOWN, 0);
+            scheduleTask(handlePassiveCooldown, PASSIVE_COOLDOWN);
         }
         return super.damaged(a, damage, attackData);
     }
@@ -237,13 +248,8 @@ public class IceKing extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new IceKingAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                castDelay,
-                                TimeUnit.MILLISECONDS);
+                scheduleTask(
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), castDelay);
                 break;
             case 2:
                 this.canCast[1] = false;
@@ -290,7 +296,7 @@ public class IceKing extends UserActor {
                         this.id,
                         "AoE_iceking_snowballs",
                         this.id + "_snowBalls",
-                        3000,
+                        W_DURATION,
                         (float) dest.getX(),
                         (float) dest.getY(),
                         false,
@@ -302,7 +308,7 @@ public class IceKing extends UserActor {
                         this.id,
                         "fx_target_ring_3",
                         this.id + "_wRing",
-                        3000,
+                        W_DURATION,
                         (float) dest.getX(),
                         (float) dest.getY(),
                         true,
@@ -315,13 +321,8 @@ public class IceKing extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new IceKingAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
+                int delay = getReducedCooldown(cooldown);
+                scheduleTask(abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay);
                 break;
             case 3:
                 this.canCast[2] = false;
@@ -346,7 +347,7 @@ public class IceKing extends UserActor {
                         this.id,
                         "fx_target_ring_5.5",
                         this.id + "eRing",
-                        6000,
+                        E_DURATION,
                         (float) this.location.getX(),
                         (float) this.location.getY(),
                         true,
@@ -358,7 +359,7 @@ public class IceKing extends UserActor {
                         this.id,
                         "iceKing_freezeGround",
                         this.id + "_ultFreeze",
-                        6000,
+                        E_DURATION,
                         (float) this.location.getX(),
                         (float) this.location.getY(),
                         false,
@@ -371,13 +372,9 @@ public class IceKing extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new IceKingAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
+                int delay1 = getReducedCooldown(cooldown);
+                scheduleTask(
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay1);
                 break;
         }
     }
@@ -420,7 +417,7 @@ public class IceKing extends UserActor {
             qVictim = victim;
             qHitTime = System.currentTimeMillis() + 1750;
             victim.addToDamageQueue(IceKing.this, getSpellDamage(spellData), spellData, false);
-            victim.addState(ActorState.ROOTED, 0d, 1750, "iceKing_snare", "");
+            victim.addState(ActorState.ROOTED, 0d, Q_ROOT_DURATION, "iceKing_snare", "");
             ExtensionCommands.playSound(
                     this.parentExt,
                     victim.getRoom(),
@@ -431,23 +428,23 @@ public class IceKing extends UserActor {
         }
     }
 
-    private class IceKingAbilityHandler extends AbilityRunnable {
+    private IceKingAbilityRunnable abilityRunnable(
+            int ability, JsonNode spelldata, int cooldown, int gCooldown, Point2D dest) {
+        return new IceKingAbilityRunnable(ability, spelldata, cooldown, gCooldown, dest);
+    }
 
-        public IceKingAbilityHandler(
+    private class IceKingAbilityRunnable extends AbilityRunnable {
+
+        public IceKingAbilityRunnable(
                 int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {
             super(ability, spellData, cooldown, gCooldown, dest);
         }
 
         @Override
         protected void spellQ() {
-            int Q_CAST_DELAY = 250;
             Runnable enableQCasting = () -> canCast[0] = true;
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(
-                            enableQCasting,
-                            getReducedCooldown(cooldown) - Q_CAST_DELAY,
-                            TimeUnit.MILLISECONDS);
+            int delay = getReducedCooldown(cooldown) - Q_CAST_DELAY;
+            scheduleTask(enableQCasting, delay);
             if (getHealth() > 0) {
                 Line2D abilityLine = Champion.getAbilityLine(location, dest, 7.5f);
                 fireProjectile(

@@ -5,214 +5,44 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import com.smartfoxserver.v2.entities.User;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public class Lich extends UserActor {
-
+    private static final int PASSIVE_DURATION = 20000;
+    private static final int PASSIVE_COOLDOWN = 40000;
+    private static final double SKULLY_DAMAGE_PERCENTAGE = 0.8;
+    private static final int Q_SPEED_DURATION = 6000;
+    private static final double Q_SPEED_VALUE = 0.25d;
+    private static final int Q_DURATION = 6000;
+    private static final int Q_SLOW_DURATION = 1500;
+    private static final double Q_SLOW_VALUE = 0.3d;
+    private static final int W_CHARM_DURATION = 2000;
+    private static final int E_DURATION = 5000;
+    private static final int E_TICK_COOLDOWN = 500;
+    public static final int E_G_COOLDOWN = 250;
     private Skully skully;
     private long lastSkullySpawn;
     private boolean qActivated = false;
     private List<Point2D> slimePath = null;
     private HashMap<String, Long> slimedEnemies = null;
-    private boolean ultStarted = false;
-    private long ultTime = -1;
-    private int ultTeleportsRemaining = 0;
     private Point2D ultLocation;
+    private int eUses = 0;
+    private boolean eActive = false;
+    private long eStartTime = 0;
+    private long lastETickTime = 0;
 
     public Lich(User u, ATBPExtension parentExt) {
         super(u, parentExt);
         lastSkullySpawn = 0;
-    }
-
-    @Override
-    public void destroy() {
-        super.destroy();
-        if (this.skully != null) this.skully.die(this.skully);
-    }
-
-    @Override
-    public void useAbility(
-            int ability,
-            JsonNode spellData,
-            int cooldown,
-            int gCooldown,
-            int castDelay,
-            Point2D dest) {
-        if (skully == null
-                && System.currentTimeMillis() - lastSkullySpawn > getReducedCooldown(40000)) {
-            this.spawnSkully(this.location);
-        }
-        switch (ability) {
-            case 1: // Q
-                this.canCast[0] = false;
-                double statIncrease = this.getStat("speed") * 0.25d;
-                this.addEffect("speed", statIncrease, 6000);
-                qActivated = true;
-                slimePath = new ArrayList<>();
-                slimedEnemies = new HashMap<>();
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "lichking_deathmist",
-                        6000,
-                        this.id + "_lichTrail",
-                        true,
-                        "",
-                        true,
-                        false,
-                        this.team);
-                ExtensionCommands.playSound(parentExt, room, id, "sfx_lich_trail", this.location);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "vo/vo_lich_trail", this.location);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(new TrailHandler(), 6000, TimeUnit.MILLISECONDS);
-                ExtensionCommands.actorAbilityResponse(
-                        parentExt, player, "q", true, getReducedCooldown(cooldown), gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new LichAbilityRunnable(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
-                break;
-            case 2: // W
-                this.canCast[1] = false;
-                this.stopMoving();
-                ExtensionCommands.playSound(
-                        parentExt, room, this.id, "sfx_lich_charm_shot", this.location);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "vo/vo_lich_charm_shot", this.location);
-                Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
-                this.fireProjectile(
-                        new LichCharm(
-                                parentExt, this, abilityLine, 9f, 0.5f, "projectile_lich_charm"),
-                        this.location,
-                        dest,
-                        8f);
-                ExtensionCommands.actorAbilityResponse(
-                        parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new LichAbilityRunnable(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
-
-                break;
-            case 3: // E
-                this.canCast[2] = false;
-                if (!this.ultStarted) {
-                    this.canMove = false;
-                    this.stopMoving();
-                    ExtensionCommands.playSound(
-                            parentExt, room, this.id, "sfx_lich_death_pool", this.location);
-                    ExtensionCommands.playSound(parentExt, room, this.id, "sfx_lich_well", dest);
-                    ExtensionCommands.playSound(parentExt, room, this.id, "vo/vo_lich_well", dest);
-                    ExtensionCommands.createWorldFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "fx_target_ring_2.5",
-                            this.id + "_lichUltRing",
-                            6000,
-                            (float) dest.getX(),
-                            (float) dest.getY(),
-                            true,
-                            this.team,
-                            0f);
-                    ExtensionCommands.actorAbilityResponse(
-                            this.parentExt, this.player, "e", true, 1000, 0);
-                    parentExt
-                            .getTaskScheduler()
-                            .schedule(
-                                    new LichAbilityRunnable(
-                                            ability, spellData, cooldown, gCooldown, dest),
-                                    1000,
-                                    TimeUnit.MILLISECONDS);
-                } else {
-                    ExtensionCommands.actorAnimate(
-                            this.parentExt, this.room, this.id, "idle", 500, false);
-                    if (this.ultTeleportsRemaining > 0) {
-                        Point2D testLocation =
-                                MovementManager.getDashPoint(
-                                        this, new Line2D.Float(this.location, ultLocation));
-                        ExtensionCommands.snapActor(
-                                parentExt, room, this.id, testLocation, testLocation, false);
-                        this.setLocation(testLocation);
-                        if (this.skully != null) {
-                            this.skully.setLocation(testLocation);
-                            ExtensionCommands.snapActor(
-                                    parentExt,
-                                    room,
-                                    this.skully.getId(),
-                                    testLocation,
-                                    testLocation,
-                                    false);
-                        }
-                        ExtensionCommands.createActorFX(
-                                parentExt,
-                                room,
-                                this.id,
-                                "lich_teleport",
-                                1000,
-                                this.id + "_lichTeleport",
-                                true,
-                                "Bip01",
-                                true,
-                                false,
-                                team);
-                        this.ultTeleportsRemaining--;
-                    }
-                }
-                break;
-            case 4: // Passive
-                break;
-        }
-    }
-
-    @Override
-    public void attack(Actor a) {
-        this.applyStopMovingDuringAttack();
-        parentExt
-                .getTaskScheduler()
-                .schedule(
-                        new RangedAttack(
-                                a,
-                                new PassiveAttack(this, a, this.handleAttack(a)),
-                                "lich_projectile"),
-                        500,
-                        TimeUnit.MILLISECONDS);
-    }
-
-    @Override
-    public void die(Actor a) {
-        super.die(a);
-        // if(this.skully != null) this.setSkullyTarget(a);
-        if (this.skully != null) this.skully.die(this.skully);
-    }
-
-    @Override
-    public boolean damaged(Actor a, int damage, JsonNode attackData) {
-        boolean returnVal = super.damaged(a, damage, attackData);
-        if (!returnVal && this.skully != null && this.skully.getTarget() == null)
-            this.setSkullyTarget(a);
-        return returnVal;
     }
 
     @Override
@@ -232,7 +62,7 @@ public class Lich extends UserActor {
                                 a.addToDamageQueue(
                                         this, getSpellDamage(attackData), attackData, true);
                                 if (isNonStructure(a)) {
-                                    a.addState(ActorState.SLOWED, 0.3d, 1500);
+                                    applySlow(a);
                                 }
                                 slimedEnemies.put(a.getId(), System.currentTimeMillis());
                                 break;
@@ -240,7 +70,7 @@ public class Lich extends UserActor {
                         } else {
                             a.addToDamageQueue(this, getSpellDamage(attackData), attackData, true);
                             if (isNonStructure(a)) {
-                                a.addState(ActorState.SLOWED, 0.3d, 1500);
+                                applySlow(a);
                             }
                             slimedEnemies.put(a.getId(), System.currentTimeMillis());
                             break;
@@ -250,25 +80,203 @@ public class Lich extends UserActor {
             }
             if (this.slimePath.size() > 150) this.slimePath.remove(this.slimePath.size() - 1);
         }
-
-        if (this.ultStarted && System.currentTimeMillis() - this.ultTime >= 500) {
-            this.ultTime = System.currentTimeMillis();
-            boolean damageDealt = false;
+        if (this.eActive) {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            for (Actor a : Champion.getActorsInRadius(handler, ultLocation, 3f)) {
-                if (a.getTeam() != this.team
-                        && a.getActorType() != ActorType.BASE
-                        && a.getActorType() != ActorType.TOWER) {
-                    if (!damageDealt) damageDealt = true;
-                    JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(), "spell3");
-                    a.addToDamageQueue(
-                            this, (double) getSpellDamage(spellData) / 2, spellData, true);
+            List<Actor> targets = Champion.getEnemyActorsInRadius(handler, team, ultLocation, 3f);
+            if (!targets.isEmpty()
+                    && System.currentTimeMillis() - lastETickTime >= E_TICK_COOLDOWN) {
+                lastETickTime = System.currentTimeMillis();
+                JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(), "spell3");
+                double damage = getSpellDamage(spellData);
+                String eTickSound = "sfx_lich_charm_shot_hit";
+                ExtensionCommands.playSound(parentExt, room, "", eTickSound, ultLocation);
+                for (Actor a : targets) {
+                    a.addToDamageQueue(this, damage / 2, spellData, true);
                 }
             }
-            if (damageDealt) {
+        }
+        if (this.eActive && System.currentTimeMillis() - this.eStartTime >= E_DURATION) {
+            this.eActive = false;
+            this.eUses = 0;
+
+            Runnable enableECasting = () -> this.canCast[2] = true;
+            int baseECooldown = ChampionData.getBaseAbilityCooldown(this, 3);
+            int delay = getReducedCooldown(baseECooldown);
+            scheduleTask(enableECasting, delay);
+            ExtensionCommands.actorAbilityResponse(
+                    this.parentExt, this.player, "e", true, delay, E_G_COOLDOWN);
+        }
+    }
+
+    @Override
+    public void attack(Actor a) {
+        if (this.attackCooldown == 0) {
+            this.applyStopMovingDuringAttack();
+            String projectile = "lich_projectile";
+            PassiveAttack passiveAttack = new PassiveAttack(this, a, this.handleAttack(a));
+            RangedAttack rangedAttack = new RangedAttack(a, passiveAttack, projectile);
+            scheduleTask(rangedAttack, BASIC_ATTACK_DELAY);
+        }
+    }
+
+    @Override
+    public void die(Actor a) {
+        super.die(a);
+        // if(this.skully != null) this.setSkullyTarget(a);
+        if (this.skully != null) this.skully.die(this.skully);
+    }
+
+    @Override
+    public boolean damaged(Actor a, int damage, JsonNode attackData) {
+        boolean returnVal = super.damaged(a, damage, attackData);
+        if (!returnVal && this.skully != null && this.skully.getTarget() == null)
+            this.setSkullyTarget(a);
+        return returnVal;
+    }
+
+    @Override
+    public void destroy() {
+        super.destroy();
+        if (this.skully != null) this.skully.die(this.skully);
+    }
+
+    @Override
+    public void handleKill(Actor a, JsonNode attackData) {
+        super.handleKill(a, attackData);
+        if (attackData.has("spellType")
+                && (attackData.get("spellType").asText().equalsIgnoreCase("spell1")
+                        || attackData.get("spellType").asText().equalsIgnoreCase("passive")))
+            this.increaseStat("spellDamage", 1);
+    }
+
+    @Override
+    public void useAbility(
+            int ability,
+            JsonNode spellData,
+            int cooldown,
+            int gCooldown,
+            int castDelay,
+            Point2D dest) {
+        if (skully == null
+                && System.currentTimeMillis() - lastSkullySpawn > getReducedCooldown(40000)) {
+            this.spawnSkully(this.location);
+        }
+        switch (ability) {
+            case 1:
+                this.canCast[0] = false;
+                double statIncrease = this.getStat("speed") * Q_SPEED_VALUE;
+                this.addEffect("speed", statIncrease, Q_SPEED_DURATION);
+                qActivated = true;
+                slimePath = new ArrayList<>();
+                slimedEnemies = new HashMap<>();
+                ExtensionCommands.createActorFX(
+                        this.parentExt,
+                        this.room,
+                        this.id,
+                        "lichking_deathmist",
+                        Q_DURATION,
+                        this.id + "_lichTrail",
+                        true,
+                        "",
+                        true,
+                        false,
+                        this.team);
+                ExtensionCommands.playSound(parentExt, room, id, "sfx_lich_trail", this.location);
                 ExtensionCommands.playSound(
-                        this.parentExt, this.room, "", "sfx_lich_charm_shot_hit", this.ultLocation);
-            }
+                        this.parentExt, this.room, this.id, "vo/vo_lich_trail", this.location);
+
+                int delay = getReducedCooldown(cooldown);
+                TrailHandler trailHandler = new TrailHandler();
+                scheduleTask(trailHandler, Q_DURATION);
+                ExtensionCommands.actorAbilityResponse(
+                        parentExt, player, "q", true, getReducedCooldown(cooldown), gCooldown);
+                scheduleTask(abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay);
+                break;
+            case 2:
+                this.canCast[1] = false;
+                this.stopMoving();
+                ExtensionCommands.playSound(
+                        parentExt, room, this.id, "sfx_lich_charm_shot", this.location);
+                ExtensionCommands.playSound(
+                        this.parentExt, this.room, this.id, "vo/vo_lich_charm_shot", this.location);
+
+                Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
+                this.fireProjectile(
+                        new LichCharm(
+                                parentExt, this, abilityLine, 9f, 0.5f, "projectile_lich_charm"),
+                        this.location,
+                        dest,
+                        8f);
+                ExtensionCommands.actorAbilityResponse(
+                        parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
+                int delay1 = getReducedCooldown(cooldown);
+                scheduleTask(
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay1);
+
+                break;
+            case 3:
+                this.canCast[2] = false;
+                this.eUses++;
+                if (this.eUses == 1) {
+                    stopMoving(castDelay);
+                    this.ultLocation = dest;
+                    ExtensionCommands.playSound(
+                            parentExt, room, this.id, "sfx_lich_death_pool", ultLocation);
+                    ExtensionCommands.playSound(parentExt, room, this.id, "sfx_lich_well", dest);
+                    ExtensionCommands.playSound(parentExt, room, this.id, "vo/vo_lich_well", dest);
+                    ExtensionCommands.createWorldFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "fx_target_ring_2.5",
+                            this.id + "_lichUltRing",
+                            E_DURATION + castDelay,
+                            (float) dest.getX(),
+                            (float) dest.getY(),
+                            true,
+                            this.team,
+                            0f);
+                    ExtensionCommands.actorAbilityResponse(
+                            this.parentExt, this.player, "e", true, castDelay, 0);
+                    scheduleTask(
+                            abilityRunnable(ability, spellData, cooldown, gCooldown, dest),
+                            castDelay);
+                } else {
+                    ExtensionCommands.actorAnimate(
+                            this.parentExt, this.room, this.id, "idle", 100, false);
+                    Point2D teleportLocation =
+                            MovementManager.getDashPoint(
+                                    this, new Line2D.Float(location, ultLocation));
+                    ExtensionCommands.snapActor(
+                            parentExt, room, this.id, location, teleportLocation, false);
+                    this.setLocation(teleportLocation);
+                    if (this.skully != null) {
+                        this.skully.setLocation(teleportLocation);
+                        ExtensionCommands.snapActor(
+                                parentExt,
+                                room,
+                                this.skully.getId(),
+                                this.skully.getLocation(),
+                                teleportLocation,
+                                false);
+                    }
+                    ExtensionCommands.createActorFX(
+                            parentExt,
+                            room,
+                            this.id,
+                            "lich_teleport",
+                            1000,
+                            this.id + "_lichTeleport",
+                            true,
+                            "Bip01",
+                            true,
+                            false,
+                            team);
+                }
+
+                break;
+            case 4: // Passive
+                break;
         }
     }
 
@@ -282,9 +290,9 @@ public class Lich extends UserActor {
                 "icon_lich_passive",
                 "lich_spell_4_short_description",
                 "icon_lich_passive",
-                20000);
+                PASSIVE_DURATION);
         ExtensionCommands.actorAbilityResponse(
-                parentExt, player, "passive", true, getReducedCooldown(40000), 2);
+                parentExt, player, "passive", true, getReducedCooldown(PASSIVE_COOLDOWN), 2);
         ExtensionCommands.createActorFX(
                 this.parentExt,
                 this.room,
@@ -308,15 +316,6 @@ public class Lich extends UserActor {
         ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "icon_lich_passive");
     }
 
-    @Override
-    public void handleKill(Actor a, JsonNode attackData) {
-        super.handleKill(a, attackData);
-        if (attackData.has("spellType")
-                && (attackData.get("spellType").asText().equalsIgnoreCase("spell1")
-                        || attackData.get("spellType").asText().equalsIgnoreCase("passive")))
-            this.increaseStat("spellDamage", 1);
-    }
-
     private class TrailHandler implements Runnable {
         @Override
         public void run() {
@@ -326,9 +325,60 @@ public class Lich extends UserActor {
         }
     }
 
-    private class Skully extends Actor {
+    private void applySlow(Actor a) {
+        a.addState(ActorState.SLOWED, Q_SLOW_VALUE, Q_SLOW_DURATION);
+    }
 
-        private long timeOfBirth;
+    private LichAbilityRunnable abilityRunnable(
+            int ability, JsonNode spelldata, int cooldown, int gCooldown, Point2D dest) {
+        return new LichAbilityRunnable(ability, spelldata, cooldown, gCooldown, dest);
+    }
+
+    private class LichAbilityRunnable extends AbilityRunnable {
+
+        public LichAbilityRunnable(
+                int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {
+            super(ability, spellData, cooldown, gCooldown, dest);
+        }
+
+        @Override
+        protected void spellQ() {
+            canCast[0] = true;
+        }
+
+        @Override
+        protected void spellW() {
+            canCast[1] = true;
+        }
+
+        @Override
+        protected void spellE() {
+            if (eUses == 1) {
+                canCast[2] = true;
+                eActive = true;
+                eStartTime = System.currentTimeMillis();
+                ExtensionCommands.createWorldFX(
+                        parentExt,
+                        room,
+                        id,
+                        "lich_death_puddle",
+                        id + "_lichPool",
+                        E_DURATION,
+                        (float) ultLocation.getX(),
+                        (float) ultLocation.getY(),
+                        false,
+                        team,
+                        0f);
+            }
+        }
+
+        @Override
+        protected void spellPassive() {}
+    }
+
+    private class Skully extends Actor {
+        private static final int SKULLY_LIFE_SPAN = 20000;
+        private long spawnTimeStamp;
         private boolean dead = false;
         private boolean isAutoAttacking = false;
 
@@ -342,7 +392,7 @@ public class Lich extends UserActor {
             this.id = "skully_" + Lich.this.id;
             this.team = Lich.this.team;
             this.movementLine = new Line2D.Float(this.location, this.location);
-            this.timeOfBirth = System.currentTimeMillis();
+            this.spawnTimeStamp = System.currentTimeMillis();
             this.actorType = ActorType.COMPANION;
             this.stats = this.initializeStats();
             ExtensionCommands.createActor(
@@ -373,7 +423,7 @@ public class Lich extends UserActor {
         public void attack(Actor a) {
             isAutoAttacking = true;
             Runnable resetIsAutoAttacking = () -> isAutoAttacking = false;
-            parentExt.getTaskScheduler().schedule(resetIsAutoAttacking, 500, TimeUnit.MILLISECONDS);
+            scheduleTask(resetIsAutoAttacking, BASIC_ATTACK_DELAY);
             ExtensionCommands.attackActor(
                     parentExt,
                     room,
@@ -383,9 +433,8 @@ public class Lich extends UserActor {
                     (float) a.getLocation().getY(),
                     false,
                     true);
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(new PassiveAttack(this, a, false), 300, TimeUnit.MILLISECONDS);
+            PassiveAttack passiveAttack = new PassiveAttack(this, a, false);
+            scheduleTask(passiveAttack, BASIC_ATTACK_DELAY);
             this.attackCooldown = 1000;
         }
 
@@ -404,7 +453,7 @@ public class Lich extends UserActor {
             this.handleDamageQueue();
             this.handleActiveEffects();
             if (this.dead) return;
-            if (System.currentTimeMillis() - timeOfBirth >= 20 * 1000) {
+            if (System.currentTimeMillis() - spawnTimeStamp >= SKULLY_LIFE_SPAN) {
                 this.die(this);
                 return;
             }
@@ -521,7 +570,8 @@ public class Lich extends UserActor {
                         .run();
                 Lich.this.setSkullyTarget(this.target);
             } else if (attacker.getClass() == Skully.class) {
-                double damage = 25d + (Lich.this.getPlayerStat("attackDamage") * 0.8);
+                double damage =
+                        25d + (Lich.this.getPlayerStat("attackDamage") * SKULLY_DAMAGE_PERCENTAGE);
                 new Champion.DelayedAttack(
                                 parentExt, attacker, target, (int) damage, "skullyAttack")
                         .run();
@@ -561,73 +611,8 @@ public class Lich extends UserActor {
                     0f);
             victim.addToDamageQueue(Lich.this, getSpellDamage(spellData), spellData, false);
             if (!victim.getId().contains("turret") || !victim.getId().contains("decoy"))
-                victim.handleCharm(Lich.this, 2000);
+                victim.handleCharm(Lich.this, W_CHARM_DURATION);
             destroy();
         }
-    }
-
-    private class LichAbilityRunnable extends AbilityRunnable {
-
-        private boolean ultCasted = false;
-
-        public LichAbilityRunnable(
-                int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {
-            super(ability, spellData, cooldown, gCooldown, dest);
-        }
-
-        public LichAbilityRunnable(JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {
-            super(3, spellData, cooldown, gCooldown, dest);
-            this.ultCasted = true;
-        }
-
-        @Override
-        protected void spellQ() {
-            canCast[0] = true;
-        }
-
-        @Override
-        protected void spellW() {
-            canCast[1] = true;
-        }
-
-        @Override
-        protected void spellE() {
-            canCast[2] = true;
-            if (this.ultCasted) { // Handle end of ult
-                ExtensionCommands.actorAbilityResponse(
-                        parentExt, player, "e", true, getReducedCooldown(cooldown), gCooldown);
-                Lich.this.ultTeleportsRemaining = 0;
-                Lich.this.ultStarted = false;
-                ultLocation = null;
-                Lich.this.ultTime = -1;
-            } else {
-                Lich.this.ultTime = System.currentTimeMillis();
-                Lich.this.ultStarted = true;
-                Lich.this.ultTeleportsRemaining = 1;
-                Lich.this.ultLocation = dest;
-                canMove = true;
-                ExtensionCommands.createWorldFX(
-                        parentExt,
-                        room,
-                        id,
-                        "lich_death_puddle",
-                        id + "_lichPool",
-                        5000,
-                        (float) dest.getX(),
-                        (float) dest.getY(),
-                        false,
-                        team,
-                        0f);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new LichAbilityRunnable(spellData, cooldown, gCooldown, dest),
-                                5000,
-                                TimeUnit.MILLISECONDS);
-            }
-        }
-
-        @Override
-        protected void spellPassive() {}
     }
 }

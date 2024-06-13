@@ -2,7 +2,6 @@ package xyz.openatbp.extension.game.champions;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -16,7 +15,19 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class Marceline extends UserActor {
-
+    private static final double PASSIVE_HP_REG_VALUE = 1.5d;
+    private static final int PASSIVE_HP_REG_SOUND_DELAY = 3000;
+    private static final int Q_ROOT_DURATION = 3000;
+    private static final int Q_SLOW_DURATION = 1500;
+    private static final double Q_SLOW_VALUE = 0.15d;
+    private static final int W_DURATION = 4500;
+    private static final double W_BEAST_SPEED_VALUE = 0.4d;
+    private static final double W_VAMPIRE_SPEED_VALUE = 0.3d;
+    private static final int E_CAST_DELAY = 750;
+    private static final int E_ATTACKSPEED_DURATION = 3000;
+    private static final int E_IMMUNITY_DURATION = 2000;
+    private static final int E_CHARM_DURATION = 2000;
+    private static final int E_FEAR_DURATION = 2000;
     private int passiveHits = 0;
     private boolean hpRegenActive = false;
     private Actor qVictim;
@@ -41,25 +52,13 @@ public class Marceline extends UserActor {
     }
 
     @Override
-    public void handleSwapFromPoly() {
-        String bundle = this.form == Form.BEAST ? "marceline_bat" : getSkinAssetBundle();
-        ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bundle);
-    }
-
-    @Override
-    public double getPlayerStat(String stat) {
-        if (stat.equalsIgnoreCase("healthRegen") && this.form == Form.BEAST) {
-            return super.getPlayerStat(stat) * 1.5d;
-        }
-        return super.getPlayerStat(stat);
-    }
-
     public void update(int msRan) {
         super.update(msRan);
-        if (this.vampireWActive && System.currentTimeMillis() - this.vampireWStartTime >= 4500) {
+        if (this.vampireWActive
+                && System.currentTimeMillis() - this.vampireWStartTime >= W_DURATION) {
             this.vampireWActive = false;
         }
-        if (this.beastWActive && System.currentTimeMillis() - this.bestWStartTime >= 4500) {
+        if (this.beastWActive && System.currentTimeMillis() - this.bestWStartTime >= W_DURATION) {
             this.beastWActive = false;
         }
         if (this.currentHealth < this.maxHealth
@@ -112,7 +111,7 @@ public class Marceline extends UserActor {
         }
         if (this.form == Form.BEAST
                 && this.currentHealth < this.maxHealth
-                && System.currentTimeMillis() - regenSound >= 3000) {
+                && System.currentTimeMillis() - regenSound >= PASSIVE_HP_REG_SOUND_DELAY) {
             regenSound = System.currentTimeMillis();
             ExtensionCommands.playSound(
                     this.parentExt, this.player, this.id, "marceline_regen_loop", this.location);
@@ -121,15 +120,25 @@ public class Marceline extends UserActor {
     }
 
     @Override
+    public void handleSwapFromPoly() {
+        String bundle = this.form == Form.BEAST ? "marceline_bat" : getSkinAssetBundle();
+        ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bundle);
+    }
+
+    @Override
+    public double getPlayerStat(String stat) {
+        if (stat.equalsIgnoreCase("healthRegen") && this.form == Form.BEAST) {
+            return super.getPlayerStat(stat) * PASSIVE_HP_REG_VALUE;
+        }
+        return super.getPlayerStat(stat);
+    }
+
+    @Override
     public void attack(Actor a) {
-        this.applyStopMovingDuringAttack();
         if (this.attackCooldown == 0) {
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(
-                            new MarcelineAttack(a, this.handleAttack(a)),
-                            500,
-                            TimeUnit.MILLISECONDS);
+            this.applyStopMovingDuringAttack();
+            MarcelineAttack marcelineAttack = new MarcelineAttack(a, handleAttack(a));
+            scheduleTask(marcelineAttack, BASIC_ATTACK_DELAY);
         }
     }
 
@@ -173,7 +182,7 @@ public class Marceline extends UserActor {
             int castDelay,
             Point2D dest) {
         switch (ability) {
-            case 1: // Q
+            case 1:
                 this.stopMoving(castDelay);
                 this.canCast[0] = false;
                 Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 7f);
@@ -223,15 +232,10 @@ public class Marceline extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new MarcelineAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
+                int delay = getReducedCooldown(cooldown);
+                scheduleTask(abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay);
                 break;
-            case 2: // W
+            case 2:
                 this.canCast[1] = false;
                 String bloodMistVo =
                         (this.avatar.contains("marshall"))
@@ -254,14 +258,15 @@ public class Marceline extends UserActor {
                             this.room,
                             this.id,
                             "marceline_beast_crit_hand",
-                            4500,
+                            W_DURATION,
                             this.id + "_beastHands",
                             true,
                             "Bip001 R Hand",
                             true,
                             false,
                             this.team);
-                    this.addEffect("speed", this.getStat("speed") * 0.4d, 4500);
+                    this.addEffect(
+                            "speed", this.getStat("speed") * W_BEAST_SPEED_VALUE, W_DURATION);
                 } else {
                     this.vampireWActive = true;
                     this.vampireWStartTime = System.currentTimeMillis();
@@ -278,7 +283,7 @@ public class Marceline extends UserActor {
                             this.room,
                             this.id,
                             "marceline_vamp_mark",
-                            4500,
+                            W_DURATION,
                             this.id + "_wBats",
                             true,
                             "",
@@ -290,14 +295,15 @@ public class Marceline extends UserActor {
                             this.room,
                             this.id,
                             "marceline_blood_mist",
-                            4500,
+                            W_DURATION,
                             this.id + "_mist",
                             true,
                             "",
                             true,
                             false,
                             this.team);
-                    this.addEffect("speed", this.getStat("speed") * 0.3d, 4500);
+                    this.addEffect(
+                            "speed", this.getStat("speed") * W_VAMPIRE_SPEED_VALUE, W_DURATION);
                 }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
@@ -306,15 +312,11 @@ public class Marceline extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new MarcelineAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
+                int delay1 = getReducedCooldown(cooldown);
+                scheduleTask(
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay1);
                 break;
-            case 3: // E
+            case 3:
                 this.canCast[2] = false;
                 this.eUsed = true;
                 this.stopMoving(castDelay);
@@ -350,15 +352,10 @@ public class Marceline extends UserActor {
                         false,
                         true,
                         this.team);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new MarcelineAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                castDelay,
-                                TimeUnit.MILLISECONDS);
+                scheduleTask(
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), castDelay);
                 break;
-            case 4: // Passive
+            case 4:
                 break;
         }
     }
@@ -415,8 +412,13 @@ public class Marceline extends UserActor {
         }
     }
 
-    private class MarcelineAbilityHandler extends AbilityRunnable {
-        public MarcelineAbilityHandler(
+    private MarcelineAbilityRunnable abilityRunnable(
+            int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {
+        return new MarcelineAbilityRunnable(ability, spellData, cooldown, gCooldown, dest);
+    }
+
+    private class MarcelineAbilityRunnable extends AbilityRunnable {
+        public MarcelineAbilityRunnable(
                 int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {
             super(ability, spellData, cooldown, gCooldown, dest);
         }
@@ -433,14 +435,9 @@ public class Marceline extends UserActor {
 
         @Override
         protected void spellE() {
-            int E_CAST_DELAY = 750;
             Runnable enableECasting = () -> canCast[2] = true;
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(
-                            enableECasting,
-                            getReducedCooldown(cooldown) - E_CAST_DELAY,
-                            TimeUnit.MILLISECONDS);
+            int delay = getReducedCooldown(cooldown) - E_CAST_DELAY;
+            scheduleTask(enableECasting, delay);
             if (beastWActive) {
                 beastWActive = false;
                 ExtensionCommands.removeFx(parentExt, room, id + "_beastHands");
@@ -461,10 +458,12 @@ public class Marceline extends UserActor {
                     }
                     double delta = (getPlayerStat("attackSpeed") / 2) * -1;
                     if (getPlayerStat("attackSpeed") - delta > 500) {
-                        Marceline.this.addEffect("attackSpeed", delta, 3000);
+                        Marceline.this.addEffect("attackSpeed", delta, E_ATTACKSPEED_DURATION);
                     } else {
                         Marceline.this.addEffect(
-                                "attackSpeed", 500 - getPlayerStat("attackSpeed"), 3000);
+                                "attackSpeed",
+                                500 - getPlayerStat("attackSpeed"),
+                                E_ATTACKSPEED_DURATION);
                     }
                 } else {
                     form = Form.BEAST;
@@ -477,7 +476,7 @@ public class Marceline extends UserActor {
 
                 if (canDoUltAttack) {
                     if (form == Form.BEAST) { // she gets immunity only if ult is not interrupted
-                        Marceline.this.addState(ActorState.IMMUNITY, 0d, 2000);
+                        Marceline.this.addState(ActorState.IMMUNITY, 0d, E_IMMUNITY_DURATION);
                         setState(ActorState.CLEANSED, true);
                         Marceline.this.cleanseEffects();
                         String morphBeastVo =
@@ -490,7 +489,7 @@ public class Marceline extends UserActor {
                                 room,
                                 id,
                                 "statusEffect_immunity",
-                                2000,
+                                E_IMMUNITY_DURATION,
                                 id + "_ultImmunity",
                                 true,
                                 "displayBar",
@@ -512,9 +511,9 @@ public class Marceline extends UserActor {
                             a.addToDamageQueue(Marceline.this, damage, spellData, false);
                             if (!a.getId().contains("turret") || !a.getId().contains("decoy")) {
                                 if (form == Form.VAMPIRE) {
-                                    a.handleCharm(Marceline.this, 2000);
+                                    a.handleCharm(Marceline.this, E_CHARM_DURATION);
                                 } else {
-                                    a.handleFear(Marceline.this.location, 2000);
+                                    a.handleFear(Marceline.this.location, E_FEAR_DURATION);
                                 }
                             }
                         }
@@ -551,7 +550,7 @@ public class Marceline extends UserActor {
         @Override
         protected void hit(Actor victim) {
             if (transformed) {
-                victim.addState(ActorState.ROOTED, 0d, 3000);
+                victim.addState(ActorState.ROOTED, 0d, Q_ROOT_DURATION);
             } else {
                 qVictim = victim;
                 qHit = System.currentTimeMillis();
@@ -560,8 +559,8 @@ public class Marceline extends UserActor {
                             qVictim = null;
                             qHit = -1;
                         };
-                parentExt.getTaskScheduler().schedule(endVictim, 1500, TimeUnit.MILLISECONDS);
-                victim.addState(ActorState.SLOWED, 0.15d, 1500);
+                scheduleTask(endVictim, 1500);
+                victim.addState(ActorState.SLOWED, Q_SLOW_VALUE, Q_SLOW_DURATION);
             }
             JsonNode spellData = parentExt.getAttackData(avatar, "spell1");
             victim.addToDamageQueue(this.owner, getSpellDamage(spellData), spellData, false);

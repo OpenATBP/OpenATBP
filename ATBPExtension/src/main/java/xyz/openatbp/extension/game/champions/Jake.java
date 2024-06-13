@@ -6,7 +6,6 @@ import java.awt.geom.Point2D;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -24,12 +23,23 @@ import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public class Jake extends UserActor {
+    private static final int PASSIVE_PER_TARGET_CD = 8000;
+    private static final double PASSIVE_ATTACKDAMAGE_VALUE = 0.4d;
+    private static final double PASSIVE_SLOW_VALUE = 0.5d;
+    private static final int PASSIVE_SLOW_DURATION = 1500;
+    private static final int Q_PROJECTILE_DELAY = 300;
+    private static final int Q_CAST_DELAY = 1300;
+    private static final int Q_SELFCRIPPLE_TIME = 1600;
+    private static final int Q_STUN_DURATION = 2000;
+    private static final double E_SPEED_VALUE = 0.8;
+    private static final int E_DURATION = 5000;
+    private static final int E_STOMP_CD = 500;
+    public static final int Q_CHANGE_ANIMATION_DELAY = 700;
     private boolean ultActivated = false;
     private long lastStomped = 0;
     private boolean stompSoundChange = false;
     private boolean dashActive = false;
     private Map<String, Long> lastPassiveTime = new HashMap<>();
-    private long qStartTime = 0;
     private boolean qUsed = false;
     private int qAnimationTime;
     private Actor qVictim;
@@ -46,90 +56,23 @@ public class Jake extends UserActor {
     }
 
     @Override
-    public void attack(Actor a) {
-        super.attack(a);
-        if (isNonStructure(target)) {
-            if (!lastPassiveTime.isEmpty()) {
-                if (lastPassiveTime.containsKey(target.getId())) {
-                    if (System.currentTimeMillis() - lastPassiveTime.get(target.getId()) >= 8000) {
-                        doPassive();
-                    }
-                } else {
-                    doPassive();
-                }
-            } else {
-                doPassive();
-            }
-        }
-    }
-
-    private void doPassive() {
-        lastPassiveTime.put(target.getId(), System.currentTimeMillis());
-        JsonNode attackData = this.parentExt.getAttackData("jake", "spell4");
-        target.addToDamageQueue(this, getPlayerStat("attackDamage") * 0.4d, attackData, false);
-        target.addState(ActorState.SLOWED, 0.5d, 1500);
-        if (!this.avatar.contains("cake"))
-            ExtensionCommands.playSound(
-                    this.parentExt, this.room, this.id, "vo/vo_jake_passive_1", this.location);
-    }
-
-    @Override
-    public void handleKill(Actor a, JsonNode attackData) {
-        super.handleKill(a, attackData);
-        if (this.ultActivated)
-            ExtensionCommands.playSound(
-                    this.parentExt, this.room, this.id, "sfx_jake_grow_fart", this.location);
-    }
-
-    @Override
-    public boolean canAttack() {
-        if (this.ultActivated || this.qUsed) return false;
-        return super.canAttack();
-    }
-
-    public boolean canMove() {
-        if (dashActive) return false;
-        else return super.canMove();
-    }
-
-    @Override
-    public void die(Actor a) {
-        super.die(a);
-        if (this.ultActivated) {
-            this.ultActivated = false;
-            ExtensionCommands.swapActorAsset(
-                    this.parentExt, this.room, this.id, this.getSkinAssetBundle());
-            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_jake_ring_2");
-            updateStatMenu("speed");
-        }
-    }
-
-    @Override
-    public double getPlayerStat(String stat) {
-        if (stat.equalsIgnoreCase("speed") && ultActivated) {
-            return super.getPlayerStat("speed") * 0.8;
-        }
-        return super.getPlayerStat(stat);
-    }
-
-    @Override
     public void update(int msRan) {
         super.update(msRan);
         if (this.doQEndAnimation) {
             ExtensionCommands.actorAnimate(parentExt, room, id, "spell1c", 500, false);
             Runnable changeAnimation =
                     () -> ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 1, false);
-            parentExt.getTaskScheduler().schedule(changeAnimation, 700, TimeUnit.MILLISECONDS);
+            scheduleTask(changeAnimation, Q_CHANGE_ANIMATION_DELAY);
             this.doQEndAnimation = false;
         }
-        if (this.ultActivated && System.currentTimeMillis() - this.ultStartTime >= 5000) {
+        if (this.ultActivated && System.currentTimeMillis() - this.ultStartTime >= E_DURATION) {
             ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
             ExtensionCommands.removeFx(parentExt, room, id + "_stomp");
             this.ultActivated = false;
             updateStatMenu("speed");
         }
         if (this.ultActivated && !this.isStopped()) {
-            if (System.currentTimeMillis() - this.lastStomped >= 500) {
+            if (System.currentTimeMillis() - this.lastStomped >= E_STOMP_CD) {
                 this.lastStomped = System.currentTimeMillis();
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 for (Actor a : Champion.getActorsInRadius(handler, this.location, 2f)) {
@@ -202,12 +145,8 @@ public class Jake extends UserActor {
                         this.canCast[1] = true;
                         this.canCast[2] = true;
                     };
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(animationDelay, (int) newTime, TimeUnit.MILLISECONDS);
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(canCast, (int) newTime + 500, TimeUnit.MILLISECONDS);
+            scheduleTask(animationDelay, (int) newTime);
+            scheduleTask(canCast, (int) newTime + 500);
             if (this.getHealth() > 0) {
                 ExtensionCommands.actorAnimate(
                         this.parentExt, this.room, this.id, "spell1b", (int) newTime, true);
@@ -232,7 +171,7 @@ public class Jake extends UserActor {
                 System.out.println("percentage " + percentage);
                 double spellModifer = this.getPlayerStat("spellDamage") * percentage;
                 if (isNonStructure(this.qVictim))
-                    this.qVictim.addState(ActorState.STUNNED, 0d, 2000);
+                    this.qVictim.addState(ActorState.STUNNED, 0d, Q_STUN_DURATION);
                 this.qVictim.addToDamageQueue(this, 35 + spellModifer, spellData, false);
                 if (distance >= 5.5d) {
                     ExtensionCommands.playSound(
@@ -260,6 +199,64 @@ public class Jake extends UserActor {
     }
 
     @Override
+    public void handleKill(Actor a, JsonNode attackData) {
+        super.handleKill(a, attackData);
+        if (this.ultActivated)
+            ExtensionCommands.playSound(
+                    this.parentExt, this.room, this.id, "sfx_jake_grow_fart", this.location);
+    }
+
+    @Override
+    public boolean canAttack() {
+        if (this.ultActivated || this.qUsed) return false;
+        return super.canAttack();
+    }
+
+    public boolean canMove() {
+        if (dashActive) return false;
+        else return super.canMove();
+    }
+
+    @Override
+    public void die(Actor a) {
+        super.die(a);
+        if (this.ultActivated) {
+            this.ultActivated = false;
+            ExtensionCommands.swapActorAsset(
+                    this.parentExt, this.room, this.id, this.getSkinAssetBundle());
+            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_jake_ring_2");
+            updateStatMenu("speed");
+        }
+    }
+
+    @Override
+    public double getPlayerStat(String stat) {
+        if (stat.equalsIgnoreCase("speed") && ultActivated) {
+            return super.getPlayerStat("speed") * E_SPEED_VALUE;
+        }
+        return super.getPlayerStat(stat);
+    }
+
+    @Override
+    public void attack(Actor a) {
+        super.attack(a);
+        if (isNonStructure(target)) {
+            if (!lastPassiveTime.isEmpty()) {
+                if (lastPassiveTime.containsKey(target.getId())) {
+                    if (System.currentTimeMillis() - lastPassiveTime.get(target.getId())
+                            >= PASSIVE_PER_TARGET_CD) {
+                        doPassive();
+                    }
+                } else {
+                    doPassive();
+                }
+            } else {
+                doPassive();
+            }
+        }
+    }
+
+    @Override
     public void useAbility(
             int ability,
             JsonNode spellData,
@@ -269,13 +266,11 @@ public class Jake extends UserActor {
             Point2D dest) {
         switch (ability) {
             case 1:
-                int stopMovingTime = 1600;
-                this.stopMoving(stopMovingTime);
+                this.stopMoving(Q_SELFCRIPPLE_TIME);
                 this.canCast[0] = false;
                 this.canCast[1] = false;
                 this.canCast[2] = false;
                 this.qUsed = true;
-                this.qStartTime = System.currentTimeMillis();
                 this.qAnimationTime = 1300;
                 Line2D qLine = Champion.getAbilityLine(this.location, dest, Q_SPELL_RANGE);
                 this.qPolygon = createOctagon(this.location, dest);
@@ -294,7 +289,7 @@ public class Jake extends UserActor {
                                         dest);
                             }
                         };
-                parentExt.getTaskScheduler().schedule(projectileDelay, 300, TimeUnit.MILLISECONDS);
+                scheduleTask(projectileDelay, Q_PROJECTILE_DELAY);
                 String stretchFxPrefix =
                         (this.avatar.contains("cake"))
                                 ? "cake_"
@@ -320,13 +315,9 @@ public class Jake extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new JakeAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                qAnimationTime,
-                                TimeUnit.MILLISECONDS);
+                scheduleTask(
+                        abilityHandler(ability, spellData, cooldown, gCooldown, dest),
+                        qAnimationTime);
                 break;
             case 2:
                 this.canCast[1] = false;
@@ -415,13 +406,8 @@ public class Jake extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new JakeAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
+                int delay = getReducedCooldown(cooldown);
+                scheduleTask(abilityHandler(ability, spellData, cooldown, gCooldown, dest), delay);
                 break;
             case 3:
                 this.canCast[2] = false;
@@ -448,7 +434,7 @@ public class Jake extends UserActor {
                         room,
                         id,
                         "statusEffect_immunity",
-                        5000,
+                        E_DURATION,
                         id + "_ultImmunity",
                         true,
                         "displayBar",
@@ -460,15 +446,15 @@ public class Jake extends UserActor {
                         this.room,
                         this.id,
                         "fx_target_ring_2",
-                        5000,
+                        E_DURATION,
                         this.id + "_jake_ring_2",
                         true,
                         "",
                         true,
-                        false,
+                        true,
                         this.team);
-                this.addState(ActorState.CLEANSED, 0d, 5000);
-                this.addState(ActorState.IMMUNITY, 0d, 5000);
+                this.addState(ActorState.CLEANSED, 0d, E_DURATION);
+                this.addState(ActorState.IMMUNITY, 0d, E_DURATION);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -494,13 +480,8 @@ public class Jake extends UserActor {
                         this.id,
                         "vo/vo_" + growVoPrefix + "grow",
                         this.location);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new JakeAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
+                int delay1 = getReducedCooldown(cooldown);
+                scheduleTask(abilityHandler(ability, spellData, cooldown, gCooldown, dest), delay1);
                 break;
         }
     }
@@ -590,6 +571,25 @@ public class Jake extends UserActor {
         this.parentExt.getRoomHandler(this.room.getName()).addProjectile(projectile);
     }
 
+    private void doPassive() {
+        lastPassiveTime.put(target.getId(), System.currentTimeMillis());
+        JsonNode attackData = this.parentExt.getAttackData("jake", "spell4");
+        target.addToDamageQueue(
+                this,
+                getPlayerStat("attackDamage") * PASSIVE_ATTACKDAMAGE_VALUE,
+                attackData,
+                false);
+        target.addState(ActorState.SLOWED, PASSIVE_SLOW_VALUE, PASSIVE_SLOW_DURATION);
+        if (!this.avatar.contains("cake"))
+            ExtensionCommands.playSound(
+                    this.parentExt, this.room, this.id, "vo/vo_jake_passive_1", this.location);
+    }
+
+    private JakeAbilityHandler abilityHandler(
+            int ability, JsonNode spelldata, int cooldown, int gCooldown, Point2D dest) {
+        return new JakeAbilityHandler(ability, spelldata, cooldown, gCooldown, dest);
+    }
+
     private class JakeAbilityHandler extends AbilityRunnable {
 
         public JakeAbilityHandler(
@@ -599,14 +599,9 @@ public class Jake extends UserActor {
 
         @Override
         protected void spellQ() {
-            int Q_CAST_DELAY = 1300;
             Runnable enableQCasting = () -> canCast[0] = true;
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(
-                            enableQCasting,
-                            getReducedCooldown(cooldown) - Q_CAST_DELAY,
-                            TimeUnit.MILLISECONDS);
+            int delay = getReducedCooldown(cooldown) - Q_CAST_DELAY;
+            scheduleTask(enableQCasting, delay);
             Runnable enableCastingAbilities =
                     () -> {
                         if (!dashActive) {
@@ -614,9 +609,7 @@ public class Jake extends UserActor {
                             canCast[2] = true;
                         }
                     };
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(enableCastingAbilities, 500, TimeUnit.MILLISECONDS);
+            scheduleTask(enableCastingAbilities, 500);
         }
 
         @Override

@@ -4,7 +4,6 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -20,6 +19,17 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class Neptr extends UserActor {
+    private static final int PASSIVE_SPEED_DURATION = 3500;
+    private static final double PASSIVE_SPEED_VALUE = 0.35d;
+    private static final int PASSIVE_ATTACKSPEED_DURATION = 3500;
+    private static final double PASSIVE_ATTACKSPEED_VALUE = 0.25d;
+    private static final int PASSIVE_DURATION = 3500;
+    private static final int W_SLOW_DURATION = 3000;
+    private static final double W_SLOW_VALUE = 0.4d;
+    private static final int MINE_LIFE_SPAN = 30000;
+    private static final int E_DAMAGE_DURATION = 3000;
+    private static final int E_CAST_DELAY = 500;
+    private static final int E_SILENCE_DURATION = 1000;
     private boolean passiveActive = false;
     private long passiveStart = 0;
     private int mineNum = 0;
@@ -34,6 +44,49 @@ public class Neptr extends UserActor {
         super(u, parentExt);
         this.mines = new ArrayList<>(3);
         this.ultImpactedActors = new ArrayList<>();
+    }
+
+    @Override
+    public void update(int msRan) {
+        super.update(msRan);
+        if (this.passiveActive
+                && System.currentTimeMillis() - this.passiveStart >= PASSIVE_DURATION) {
+            this.passiveActive = false;
+            ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "passive");
+        }
+        if (this.isStopped() && !this.soundPlayed) {
+            String moveEndSound =
+                    this.avatar.contains("racing")
+                            ? "neptr_racing_move_stop"
+                            : "sfx_neptr_move_end";
+            ExtensionCommands.playSound(
+                    this.parentExt, this.player, this.id, moveEndSound, this.location);
+            this.soundPlayed = true;
+        } else if (!this.isStopped()
+                && System.currentTimeMillis() - this.lastMoveSoundPlayed > 500) {
+            String moveSound;
+            if (passiveActive && this.avatar.contains("racing")) {
+                moveSound = "neptr_racing_move_fast";
+            } else {
+                moveSound = this.avatar.contains("racing") ? "neptr_racing_move" : "sfx_neptr_move";
+            }
+            ExtensionCommands.playSound(
+                    this.parentExt, this.player, this.id, moveSound, this.location);
+            this.lastMoveSoundPlayed = System.currentTimeMillis();
+        }
+        List<Actor> impactedActors = new ArrayList<>(this.ultImpactedActors);
+        if (!impactedActors.isEmpty()
+                && System.currentTimeMillis() - this.ultDamageStartTime < E_DAMAGE_DURATION) {
+            JsonNode attackData = this.parentExt.getAttackData(this.avatar, "spell3");
+            for (Actor a : impactedActors) {
+                a.addToDamageQueue(this, this.getSpellDamage(attackData) / 10d, attackData, true);
+            }
+        }
+
+        ArrayList<Mine> mines = new ArrayList<>(this.mines); // To remove concurrent exceptions
+        for (Mine m : mines) {
+            m.update(msRan);
+        }
     }
 
     @Override
@@ -61,8 +114,12 @@ public class Neptr extends UserActor {
                 ExtensionCommands.playSound(
                         this.parentExt, this.room, this.id, "vo/vo_neptr_passive", this.location);
             }
-            this.addEffect("speed", this.getStat("speed") * 0.35d, 3500);
-            this.addEffect("attackSpeed", this.getStat("attackSpeed") * -0.25d, 3500);
+            this.addEffect(
+                    "speed", this.getStat("speed") * PASSIVE_SPEED_VALUE, PASSIVE_SPEED_DURATION);
+            this.addEffect(
+                    "attackSpeed",
+                    this.getStat("attackSpeed") * -PASSIVE_ATTACKSPEED_VALUE,
+                    PASSIVE_ATTACKSPEED_DURATION);
             if (this.passiveActive) {
                 ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "passive");
             }
@@ -72,7 +129,7 @@ public class Neptr extends UserActor {
                     "passive",
                     "neptr_spell_4_short_description",
                     "icon_neptr_passive",
-                    3500f);
+                    PASSIVE_DURATION);
             this.passiveActive = true;
         }
     }
@@ -84,48 +141,6 @@ public class Neptr extends UserActor {
                     this.parentExt, this.player, this.id, "sfx_neptr_move_start", this.location);
         this.soundPlayed = false;
         super.move(params, destination);
-    }
-
-    @Override
-    public void update(int msRan) {
-        super.update(msRan);
-        if (this.passiveActive && System.currentTimeMillis() - this.passiveStart >= 3500) {
-            this.passiveActive = false;
-            ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "passive");
-        }
-        if (this.isStopped() && !this.soundPlayed) {
-            String moveEndSound =
-                    this.avatar.contains("racing")
-                            ? "neptr_racing_move_stop"
-                            : "sfx_neptr_move_end";
-            ExtensionCommands.playSound(
-                    this.parentExt, this.player, this.id, moveEndSound, this.location);
-            this.soundPlayed = true;
-        } else if (!this.isStopped()
-                && System.currentTimeMillis() - this.lastMoveSoundPlayed > 500) {
-            String moveSound;
-            if (passiveActive && this.avatar.contains("racing")) {
-                moveSound = "neptr_racing_move_fast";
-            } else {
-                moveSound = this.avatar.contains("racing") ? "neptr_racing_move" : "sfx_neptr_move";
-            }
-            ExtensionCommands.playSound(
-                    this.parentExt, this.player, this.id, moveSound, this.location);
-            this.lastMoveSoundPlayed = System.currentTimeMillis();
-        }
-        List<Actor> impactedActors = new ArrayList<>(this.ultImpactedActors);
-        if (!impactedActors.isEmpty()
-                && System.currentTimeMillis() - this.ultDamageStartTime < 3000) {
-            JsonNode attackData = this.parentExt.getAttackData(this.avatar, "spell3");
-            for (Actor a : impactedActors) {
-                a.addToDamageQueue(this, this.getSpellDamage(attackData) / 10d, attackData, true);
-            }
-        }
-
-        ArrayList<Mine> mines = new ArrayList<>(this.mines); // To remove concurrent exceptions
-        for (Mine m : mines) {
-            m.update(msRan);
-        }
     }
 
     @Override
@@ -146,7 +161,17 @@ public class Neptr extends UserActor {
                                 true,
                                 true,
                                 this.team);
-        parentExt.getTaskScheduler().schedule(creationDelay, 200, TimeUnit.MILLISECONDS);
+        int delay = 200;
+        scheduleTask(creationDelay, delay);
+    }
+
+    @Override
+    public void die(Actor a) {
+        super.die(a);
+        for (Mine m : mines) {
+            m.die(a);
+        }
+        this.mines = new ArrayList<>();
     }
 
     @Override
@@ -180,13 +205,8 @@ public class Neptr extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new NeptrAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
+                int delay = getReducedCooldown(cooldown);
+                scheduleTask(abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay);
                 break;
             case 2:
                 this.canCast[1] = false;
@@ -198,13 +218,9 @@ public class Neptr extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new NeptrAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
+                int delay1 = getReducedCooldown(cooldown);
+                scheduleTask(
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay1);
                 break;
             case 3:
                 this.canCast[2] = false;
@@ -245,13 +261,8 @@ public class Neptr extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new NeptrAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                castDelay,
-                                TimeUnit.MILLISECONDS);
+                scheduleTask(
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), castDelay);
                 break;
         }
     }
@@ -273,22 +284,18 @@ public class Neptr extends UserActor {
         }
     }
 
-    @Override
-    public void die(Actor a) {
-        super.die(a);
-        for (Mine m : mines) {
-            m.die(a);
-        }
-        this.mines = new ArrayList<>();
-    }
-
     public void handleMineDeath(Mine m) {
         this.mines.remove(m);
     }
 
-    private class NeptrAbilityHandler extends AbilityRunnable {
+    private NeptrAbilityRunnable abilityRunnable(
+            int ability, JsonNode spelldata, int cooldown, int gCooldown, Point2D dest) {
+        return new NeptrAbilityRunnable(ability, spelldata, cooldown, gCooldown, dest);
+    }
 
-        public NeptrAbilityHandler(
+    private class NeptrAbilityRunnable extends AbilityRunnable {
+
+        public NeptrAbilityRunnable(
                 int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {
             super(ability, spellData, cooldown, gCooldown, dest);
         }
@@ -305,14 +312,9 @@ public class Neptr extends UserActor {
 
         @Override
         protected void spellE() {
-            int E_CAST_DELAY = 500;
             Runnable enableECasting = () -> canCast[2] = true;
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(
-                            enableECasting,
-                            getReducedCooldown(cooldown) - E_CAST_DELAY,
-                            TimeUnit.MILLISECONDS);
+            int delay = getReducedCooldown(cooldown) - E_CAST_DELAY;
+            scheduleTask(enableECasting, delay);
             ultDamageStartTime = System.currentTimeMillis();
             ultImpactedActors = new ArrayList<>();
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
@@ -320,7 +322,7 @@ public class Neptr extends UserActor {
                 if (a.getActorType() != ActorType.BASE) {
                     if (isNonStructure(a)) {
                         a.knockback(Neptr.this.location);
-                        a.addState(ActorState.SILENCED, 0d, 1000);
+                        a.addState(ActorState.SILENCED, 0d, E_SILENCE_DURATION);
                     }
                     if (a.getActorType() != ActorType.BASE && a.getTeam() != getTeam()) {
                         ExtensionCommands.createActorFX(
@@ -328,10 +330,10 @@ public class Neptr extends UserActor {
                                 room,
                                 a.getId(),
                                 "neptr_dot_poison",
-                                3000,
+                                E_DAMAGE_DURATION,
                                 a.getId() + "_neptrPoison",
                                 true,
-                                "Bip001",
+                                "",
                                 false,
                                 false,
                                 team);
@@ -346,6 +348,7 @@ public class Neptr extends UserActor {
     }
 
     private class NeptrProjectile extends Projectile {
+        public static final int REVERSING_DELAY = 500;
         private boolean isReversed = false;
         private boolean doPieReversing = false;
         private float damageReduction = 0;
@@ -393,7 +396,6 @@ public class Neptr extends UserActor {
                 } else if (!this.projectileWasStopped) {
                     this.projectileWasStopped = true;
                     this.startingLocation = this.path.getP2();
-                    int reversingDelay = 500;
                     Runnable enableReversing =
                             () -> {
                                 this.startTime = System.currentTimeMillis();
@@ -407,9 +409,7 @@ public class Neptr extends UserActor {
                                     this.clear = true;
                                 }
                             };
-                    parentExt
-                            .getTaskScheduler()
-                            .schedule(enableReversing, reversingDelay, TimeUnit.MILLISECONDS);
+                    scheduleTask(enableReversing, REVERSING_DELAY);
                 }
             }
         }
@@ -470,7 +470,7 @@ public class Neptr extends UserActor {
             this.stats = this.initializeStats();
             this.iconName = "Mine #" + mineNum;
             ExtensionCommands.addStatusIcon(
-                    parentExt, player, iconName, "Mine placed!", "icon_neptr_s2", 30000f);
+                    parentExt, player, iconName, "Mine placed!", "icon_neptr_s2", MINE_LIFE_SPAN);
             ExtensionCommands.createActor(
                     parentExt, room, this.id, this.avatar, this.location, 0f, this.team);
             Runnable creationDelay =
@@ -496,7 +496,8 @@ public class Neptr extends UserActor {
                                 this.team,
                                 0f);
                     };
-            parentExt.getTaskScheduler().schedule(creationDelay, 150, TimeUnit.MILLISECONDS);
+            int delay = 150;
+            scheduleTask(creationDelay, delay);
         }
 
         @Override
@@ -544,7 +545,7 @@ public class Neptr extends UserActor {
         public void update(int msRan) {
             this.handleDamageQueue();
             if (this.dead) return;
-            if (System.currentTimeMillis() - this.timeOfBirth >= 30000) {
+            if (System.currentTimeMillis() - this.timeOfBirth >= MINE_LIFE_SPAN) {
                 this.die(this);
                 Neptr.this.handleMineDeath(this);
             }
@@ -572,7 +573,8 @@ public class Neptr extends UserActor {
                                     this.id,
                                     "sfx_neptr_mine_activate",
                                     this.location);
-            parentExt.getTaskScheduler().schedule(activate, 500, TimeUnit.MILLISECONDS);
+            int explodeDelay = 500;
+            scheduleTask(activate, explodeDelay);
             Runnable mineExplosion =
                     () -> {
                         RoomHandler handler = parentExt.getRoomHandler(room.getName());
@@ -590,7 +592,8 @@ public class Neptr extends UserActor {
                                             getSpellDamage(spellData),
                                             spellData,
                                             false);
-                                    target.addState(ActorState.SLOWED, 0.4d, 3000);
+                                    target.addState(
+                                            ActorState.SLOWED, W_SLOW_VALUE, W_SLOW_DURATION);
                                 }
                             }
                         }
@@ -613,7 +616,8 @@ public class Neptr extends UserActor {
                         ExtensionCommands.destroyActor(parentExt, room, this.id);
                         this.parentExt.getRoomHandler(this.room.getName()).removeCompanion(this);
                     };
-            parentExt.getTaskScheduler().schedule(mineExplosion, 1200, TimeUnit.MILLISECONDS);
+            int explosionDelay = 1200;
+            scheduleTask(mineExplosion, explosionDelay);
         }
 
         @Override

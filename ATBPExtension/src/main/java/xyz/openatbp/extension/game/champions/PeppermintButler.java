@@ -1,7 +1,6 @@
 package xyz.openatbp.extension.game.champions;
 
 import java.awt.geom.Point2D;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -19,6 +18,14 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class PeppermintButler extends UserActor {
+    public static final double PASSIVE_HP_REG_VALUE = 0.02d;
+    public static final int PASSIVE_TIME = 1750;
+    public static final int PASSIVE_IMMUNITY_DURATION = 2000;
+    public static final int Q_DURATION = 5000;
+    public static final int Q_STUN_DURATION = 1500;
+    public static final double E_ATTACKSPEED_VALUE = 0.3d;
+    public static final double E_ATTACK_DAMAGE_VALUE = 0.3d;
+    public static final double E_SPEED_VALUE = 0.4;
     private int timeStopped = 0;
     private boolean qActive = false;
     private boolean stopPassive = false;
@@ -29,7 +36,7 @@ public class PeppermintButler extends UserActor {
     private long ultStartTime = 0;
     private AtomicInteger wRunTime;
     private Point2D passiveLocation = null;
-    private static final int ULT_DURATION = 7000;
+    private static final int E_DURATION = 7000;
 
     private enum Form {
         NORMAL,
@@ -43,15 +50,123 @@ public class PeppermintButler extends UserActor {
     }
 
     @Override
+    public void update(int msRan) {
+        super.update(msRan);
+        if (this.ultActive) this.addEffect("speed", this.getStat("speed") * E_SPEED_VALUE, 150);
+        if (this.passiveLocation != null && this.location.distance(this.passiveLocation) > 0.001d) {
+            this.stopPassive = true;
+            this.timeStopped = 0;
+        }
+        if (this.ultActive && System.currentTimeMillis() - this.ultStartTime >= E_DURATION) {
+            endUlt();
+        }
+        if (this.qActive && System.currentTimeMillis() - this.qStartTime >= Q_DURATION) {
+            this.qActive = false;
+        }
+        if (this.isStopped()
+                && !qActive
+                && !stopPassive
+                && this.form != Form.FERAL
+                && !isCapturingAltar()
+                && !dead) {
+            this.passiveLocation = this.location;
+            timeStopped += 100;
+            if (this.timeStopped >= PASSIVE_TIME && !this.getState(ActorState.STEALTH)) {
+                this.setState(ActorState.STEALTH, true);
+                ExtensionCommands.actorAnimate(
+                        this.parentExt, this.room, this.id, "passive", 500, false);
+                Runnable delayAnimation =
+                        () -> {
+                            if (this.timeStopped >= PASSIVE_TIME) {
+                                ExtensionCommands.actorAnimate(
+                                        this.parentExt,
+                                        this.room,
+                                        this.id,
+                                        "passive_idle",
+                                        1000 * 60 * 15,
+                                        true);
+                                ExtensionCommands.playSound(
+                                        this.parentExt,
+                                        this.player,
+                                        this.id,
+                                        "sfx_pepbut_invis_hide",
+                                        this.location);
+                                this.setState(ActorState.REVEALED, false);
+                                this.setState(ActorState.INVISIBLE, true);
+                            }
+                        };
+                int delay = 500;
+                scheduleTask(delayAnimation, delay);
+                this.updateStatMenu("healthRegen");
+            }
+        } else {
+            this.timeStopped = 0;
+            if (this.stopPassive) this.stopPassive = false;
+            this.passiveLocation = null;
+            if (this.getState(ActorState.STEALTH)) {
+                String animation = "idle";
+                if (this.location.distance(this.movementLine.getP2()) > 0.1d) animation = "run";
+                ExtensionCommands.actorAnimate(
+                        this.parentExt, this.room, this.id, animation, 1, false);
+                this.setState(ActorState.STEALTH, false);
+                this.setState(ActorState.INVISIBLE, false);
+                if (!this.getState(ActorState.BRUSH)) this.setState(ActorState.REVEALED, true);
+                this.updateStatMenu("healthRegen");
+                ExtensionCommands.playSound(
+                        this.parentExt,
+                        this.room,
+                        this.id,
+                        "sfx_pepbut_invis_reveal",
+                        this.location);
+                ExtensionCommands.createActorFX(
+                        parentExt,
+                        room,
+                        id,
+                        "statusEffect_immunity",
+                        PASSIVE_IMMUNITY_DURATION,
+                        id + "_Immunity",
+                        true,
+                        "displayBar",
+                        false,
+                        false,
+                        team);
+                this.addState(ActorState.IMMUNITY, 0d, PASSIVE_IMMUNITY_DURATION);
+            }
+        }
+        if (this.qActive && this.currentHealth <= 0) {
+            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_qRing");
+            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_aoe");
+            this.qActive = false;
+        }
+        if (this.qActive) {
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
+                if (this.isNonStructure(a)) {
+                    JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell1");
+                    double damage = this.getSpellDamage(spellData) / 10d;
+                    a.addToDamageQueue(this, damage, spellData, true);
+                    a.addState(ActorState.BLINDED, 0d, 500);
+                }
+            }
+        }
+        if (this.wActive && this.cancelDashEndAttack()) {
+            this.interruptW = true;
+        }
+    }
+
+    @Override
     public double getPlayerStat(String stat) {
         if (stat.equalsIgnoreCase("healthRegen") && getState(ActorState.STEALTH))
-            return super.getPlayerStat("healthRegen") + (this.maxHealth * 0.02d);
+            return super.getPlayerStat("healthRegen") + (this.maxHealth * PASSIVE_HP_REG_VALUE);
         else if (stat.equalsIgnoreCase("attackSpeed") && this.form == Form.FERAL) {
             double currentAttackSpeed = super.getPlayerStat("attackSpeed");
-            double modifier = (this.getStat("attackSpeed") * 0.3d);
-            return currentAttackSpeed - modifier < 500 ? 500 : currentAttackSpeed - modifier;
+            double modifier = (this.getStat("attackSpeed") * E_ATTACKSPEED_VALUE);
+            return currentAttackSpeed - modifier < BASIC_ATTACK_DELAY
+                    ? BASIC_ATTACK_DELAY
+                    : currentAttackSpeed - modifier;
         } else if (stat.equalsIgnoreCase("attackDamage") && this.form == Form.FERAL)
-            return super.getPlayerStat("attackDamage") + (this.getStat("attackDamage") * 0.3d);
+            return super.getPlayerStat("attackDamage")
+                    + (this.getStat("attackDamage") * E_ATTACK_DAMAGE_VALUE);
         return super.getPlayerStat(stat);
     }
 
@@ -69,7 +184,7 @@ public class PeppermintButler extends UserActor {
         if (this.form == Form.FERAL) {
             swapAsset(true);
             int timeElapsed = (int) (System.currentTimeMillis() - this.ultStartTime);
-            int remainingTime = ULT_DURATION - timeElapsed;
+            int remainingTime = E_DURATION - timeElapsed;
             ExtensionCommands.createActorFX(
                     this.parentExt,
                     this.room,
@@ -145,110 +260,6 @@ public class PeppermintButler extends UserActor {
     }
 
     @Override
-    public void update(int msRan) {
-        super.update(msRan);
-        if (this.ultActive) this.addEffect("speed", this.getStat("speed") * 0.4, 150);
-        if (this.passiveLocation != null && this.location.distance(this.passiveLocation) > 0.001d) {
-            this.stopPassive = true;
-            this.timeStopped = 0;
-        }
-        if (this.ultActive && System.currentTimeMillis() - this.ultStartTime >= ULT_DURATION) {
-            endUlt();
-        }
-        if (this.qActive && System.currentTimeMillis() - this.qStartTime >= 5000) {
-            this.qActive = false;
-        }
-        if (this.isStopped()
-                && !qActive
-                && !stopPassive
-                && this.form != Form.FERAL
-                && !isCapturingAltar()
-                && !dead) {
-            this.passiveLocation = this.location;
-            timeStopped += 100;
-            if (this.timeStopped >= 1750 && !this.getState(ActorState.STEALTH)) {
-                this.setState(ActorState.STEALTH, true);
-                ExtensionCommands.actorAnimate(
-                        this.parentExt, this.room, this.id, "passive", 500, false);
-                Runnable delayAnimation =
-                        () -> {
-                            if (this.timeStopped >= 1750) {
-                                ExtensionCommands.actorAnimate(
-                                        this.parentExt,
-                                        this.room,
-                                        this.id,
-                                        "passive_idle",
-                                        1000 * 60 * 15,
-                                        true);
-                                ExtensionCommands.playSound(
-                                        this.parentExt,
-                                        this.player,
-                                        this.id,
-                                        "sfx_pepbut_invis_hide",
-                                        this.location);
-                                this.setState(ActorState.REVEALED, false);
-                                this.setState(ActorState.INVISIBLE, true);
-                            }
-                        };
-                parentExt.getTaskScheduler().schedule(delayAnimation, 500, TimeUnit.MILLISECONDS);
-                this.updateStatMenu("healthRegen");
-            }
-        } else {
-            this.timeStopped = 0;
-            if (this.stopPassive) this.stopPassive = false;
-            this.passiveLocation = null;
-            if (this.getState(ActorState.STEALTH)) {
-                String animation = "idle";
-                if (this.location.distance(this.movementLine.getP2()) > 0.1d) animation = "run";
-                ExtensionCommands.actorAnimate(
-                        this.parentExt, this.room, this.id, animation, 1, false);
-                this.setState(ActorState.STEALTH, false);
-                this.setState(ActorState.INVISIBLE, false);
-                if (!this.getState(ActorState.BRUSH)) this.setState(ActorState.REVEALED, true);
-                this.updateStatMenu("healthRegen");
-                ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "sfx_pepbut_invis_reveal",
-                        this.location);
-                ExtensionCommands.createActorFX(
-                        parentExt,
-                        room,
-                        id,
-                        "statusEffect_immunity",
-                        2000,
-                        id + "_Immunity",
-                        true,
-                        "displayBar",
-                        false,
-                        false,
-                        team);
-                this.addState(ActorState.IMMUNITY, 0d, 2000);
-            }
-        }
-        if (this.qActive && this.currentHealth <= 0) {
-            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_qRing");
-            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_aoe");
-            this.qActive = false;
-        }
-        if (this.qActive) {
-            RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
-                if (this.isNonStructure(a)) {
-                    JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell1");
-                    double damage = this.getSpellDamage(spellData) / 10d;
-                    a.addToDamageQueue(this, damage, spellData, true);
-                    a.addState(ActorState.BLINDED, 0d, 500);
-                }
-            }
-        }
-        if (this.wActive && this.cancelDashEndAttack()) {
-            this.interruptW = true;
-        }
-    }
-
-    @Override
     public void useAbility(
             int ability,
             JsonNode spellData,
@@ -266,7 +277,7 @@ public class PeppermintButler extends UserActor {
                         this.room,
                         this.id,
                         "fx_target_ring_3",
-                        5000,
+                        Q_DURATION,
                         this.id + "_qRing",
                         true,
                         "",
@@ -278,7 +289,7 @@ public class PeppermintButler extends UserActor {
                         this.room,
                         this.id,
                         "pepbut_aoe",
-                        5000,
+                        Q_DURATION,
                         this.id + "_aoe",
                         true,
                         "",
@@ -295,13 +306,8 @@ public class PeppermintButler extends UserActor {
                         getReducedCooldown(cooldown),
                         gCooldown);
                 qActive = true;
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new PeppermintAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
+                int delay = getReducedCooldown(cooldown);
+                scheduleTask(abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay);
                 break;
             case 2:
                 canCast[1] = false;
@@ -360,16 +366,12 @@ public class PeppermintButler extends UserActor {
                                         this.team);
                                 this.dash(dest, true, 15d);
                             } else wRunTime.set(0);
-                            parentExt
-                                    .getTaskScheduler()
-                                    .schedule(
-                                            new PeppermintAbilityHandler(
-                                                    ability, spellData, cooldown, gCooldown, dest),
-                                            wRunTime.get(),
-                                            TimeUnit.MILLISECONDS);
+                            scheduleTask(
+                                    abilityRunnable(ability, spellData, cooldown, gCooldown, dest),
+                                    wRunTime.get());
                         };
-
-                parentExt.getTaskScheduler().schedule(animationDelay, 500, TimeUnit.MILLISECONDS);
+                int holdUp = 500;
+                scheduleTask(animationDelay, holdUp);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -382,7 +384,7 @@ public class PeppermintButler extends UserActor {
                 canCast[2] = false;
                 ExtensionCommands.playSound(
                         this.parentExt, this.room, this.id, "sfx_pepbut_feral", this.location);
-                Runnable delay =
+                Runnable activation =
                         () -> {
                             this.ultActive = true;
                             this.ultStartTime = System.currentTimeMillis();
@@ -404,7 +406,7 @@ public class PeppermintButler extends UserActor {
                                     this.room,
                                     this.id,
                                     "marceline_beast_crit_hand",
-                                    ULT_DURATION,
+                                    E_DURATION,
                                     this.id + "ultHandL",
                                     true,
                                     "Bip001 L Hand",
@@ -416,7 +418,7 @@ public class PeppermintButler extends UserActor {
                                     this.room,
                                     this.id,
                                     "marceline_beast_crit_hand",
-                                    ULT_DURATION,
+                                    E_DURATION,
                                     this.id + "ultHandR",
                                     true,
                                     "Bip001 R Hand",
@@ -435,7 +437,7 @@ public class PeppermintButler extends UserActor {
                                     false,
                                     false,
                                     this.team);
-                            this.addState(ActorState.SILENCED, 0d, ULT_DURATION);
+                            this.addState(ActorState.SILENCED, 0d, E_DURATION);
                             if (this.qActive) {
                                 this.qActive = false;
                                 ExtensionCommands.removeFx(
@@ -446,14 +448,10 @@ public class PeppermintButler extends UserActor {
                         };
                 ExtensionCommands.actorAbilityResponse(
                         parentExt, player, "e", true, getReducedCooldown(cooldown), gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new PeppermintAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
-                parentExt.getTaskScheduler().schedule(delay, castDelay, TimeUnit.MILLISECONDS);
+                int delay1 = getReducedCooldown(cooldown);
+                scheduleTask(
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay1);
+                scheduleTask(activation, castDelay);
                 break;
         }
     }
@@ -515,9 +513,14 @@ public class PeppermintButler extends UserActor {
         return false;
     }
 
-    private class PeppermintAbilityHandler extends AbilityRunnable {
+    private PeppermintAbilityRunnable abilityRunnable(
+            int ability, JsonNode spelldata, int cooldown, int gCooldown, Point2D dest) {
+        return new PeppermintAbilityRunnable(ability, spelldata, cooldown, gCooldown, dest);
+    }
 
-        public PeppermintAbilityHandler(
+    private class PeppermintAbilityRunnable extends AbilityRunnable {
+
+        public PeppermintAbilityRunnable(
                 int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {
             super(ability, spellData, cooldown, gCooldown, dest);
         }
@@ -529,14 +532,9 @@ public class PeppermintButler extends UserActor {
 
         @Override
         protected void spellW() {
-            int W_CAST_DELAY = wRunTime.get() + 500;
+            int delay = wRunTime.get() + 500;
             Runnable enableWCasting = () -> canCast[1] = true;
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(
-                            enableWCasting,
-                            getReducedCooldown(cooldown) - W_CAST_DELAY,
-                            TimeUnit.MILLISECONDS);
+            scheduleTask(enableWCasting, delay);
             wActive = false;
             canMove = true;
             if (!interruptW && getHealth() > 0) {
@@ -563,7 +561,7 @@ public class PeppermintButler extends UserActor {
                     if (isNonStructure(a)) {
                         a.addToDamageQueue(
                                 PeppermintButler.this, getSpellDamage(spellData), spellData, false);
-                        a.addState(ActorState.STUNNED, 0d, 1500);
+                        a.addState(ActorState.STUNNED, 0d, Q_STUN_DURATION);
                     }
                 }
             } else if (interruptW) {

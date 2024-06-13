@@ -141,10 +141,12 @@ public class Finn extends UserActor {
 
     @Override
     public void attack(Actor a) {
-        this.applyStopMovingDuringAttack();
-        PassiveAttack passiveAttack = new PassiveAttack(a, this.handleAttack(a));
-        scheduleTask(passiveAttack, 500);
-        passiveStart = System.currentTimeMillis();
+        if (this.attackCooldown == 0) {
+            this.applyStopMovingDuringAttack();
+            PassiveAttack passiveAttack = new PassiveAttack(a, this.handleAttack(a));
+            scheduleTask(passiveAttack, BASIC_ATTACK_DELAY);
+            passiveStart = System.currentTimeMillis();
+        }
     }
 
     @Override
@@ -176,7 +178,9 @@ public class Finn extends UserActor {
                 && finnUltRing.contains(this.getLocation())) {
             double currentAttackSpeed = super.getPlayerStat("attackSpeed");
             double modifier = (this.getStat("attackSpeed") * Q_ATTACKSPEED_VALUE);
-            return currentAttackSpeed - modifier < 500 ? 500 : currentAttackSpeed - modifier;
+            return currentAttackSpeed - modifier < BASIC_ATTACK_DELAY
+                    ? BASIC_ATTACK_DELAY
+                    : currentAttackSpeed - modifier;
         }
         return super.getPlayerStat(stat);
     }

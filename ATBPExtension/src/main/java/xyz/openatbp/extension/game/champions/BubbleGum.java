@@ -127,19 +127,21 @@ public class BubbleGum extends UserActor {
 
     @Override
     public void attack(Actor a) { // TODO: Implement debuff stacking :<
-        this.applyStopMovingDuringAttack();
-        if (this.passiveAmmunition > 0 && a.getActorType() == ActorType.PLAYER) {
-            this.passiveAmmunition--;
-            this.passiveTimeStamp = System.currentTimeMillis();
-            double delta = a.getStat("attackSpeed") * PASSIVE_ATTACKSPEED_VALUE;
-            a.addEffect("attackSpeed", delta, PASSIVE_EFFECT_DURATION);
-            handlePassiveStatusIcons(passiveAmmunition);
+        if (this.attackCooldown == 0) {
+            this.applyStopMovingDuringAttack();
+            if (this.passiveAmmunition > 0 && a.getActorType() == ActorType.PLAYER) {
+                this.passiveAmmunition--;
+                this.passiveTimeStamp = System.currentTimeMillis();
+                double delta = a.getStat("attackSpeed") * PASSIVE_ATTACKSPEED_VALUE;
+                a.addEffect("attackSpeed", delta, PASSIVE_EFFECT_DURATION);
+                handlePassiveStatusIcons(passiveAmmunition);
+            }
+            String projectile = "bubblegum_projectile";
+            String emit = "weapon_holder";
+            PassiveAttack passiveAttack = new PassiveAttack(this, a, this.handleAttack(a));
+            RangedAttack rangedAttack = new RangedAttack(a, passiveAttack, projectile, emit);
+            scheduleTask(rangedAttack, BASIC_ATTACK_DELAY);
         }
-        String projectile = "bubblegum_projectile";
-        String emit = "weapon_holder";
-        PassiveAttack passiveAttack = new PassiveAttack(this, a, this.handleAttack(a));
-        RangedAttack rangedAttack = new RangedAttack(a, passiveAttack, projectile, emit);
-        scheduleTask(rangedAttack, 500);
     }
 
     @Override

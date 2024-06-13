@@ -117,8 +117,8 @@ public class Fionna extends UserActor {
                 if (this.swordType == SwordType.FIERCE) {
                     double currentAttackSpeed = super.getPlayerStat(stat);
                     double modifier = (this.getStat("attackSpeed") * ATTACKSPEED_FIERCE);
-                    return currentAttackSpeed - modifier < 500
-                            ? 500
+                    return currentAttackSpeed - modifier < BASIC_ATTACK_DELAY
+                            ? BASIC_ATTACK_DELAY
                             : currentAttackSpeed - modifier;
                 }
                 break;

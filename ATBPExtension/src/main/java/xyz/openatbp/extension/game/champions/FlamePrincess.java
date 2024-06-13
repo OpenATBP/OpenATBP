@@ -134,9 +134,13 @@ public class FlamePrincess extends UserActor {
 
     @Override
     public void attack(Actor a) {
-        this.applyStopMovingDuringAttack();
-        PassiveAttack passiveAttack = new PassiveAttack(a, this.handleAttack(a));
-        scheduleTask(new RangedAttack(a, passiveAttack, "flame_princess_projectile"), 500);
+        if (this.attackCooldown == 0) {
+            this.applyStopMovingDuringAttack();
+            PassiveAttack passiveAttack = new PassiveAttack(a, this.handleAttack(a));
+            scheduleTask(
+                    new RangedAttack(a, passiveAttack, "flame_princess_projectile"),
+                    BASIC_ATTACK_DELAY);
+        }
     }
 
     @Override
@@ -339,9 +343,8 @@ public class FlamePrincess extends UserActor {
         if (!this.getState(ActorState.POLYMORPH)) { // poly asset swap handled elsewhere
             ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
         }
-        ExtensionCommands.actorAbilityResponse(
-                parentExt, player, "e", true, getReducedCooldown(getBaseUltCooldown()), 0);
         int delay = getReducedCooldown(getBaseUltCooldown());
+        ExtensionCommands.actorAbilityResponse(parentExt, player, "e", true, delay, 0);
         Runnable enableECasting = () -> canCast[2] = true;
         scheduleTask(enableECasting, delay);
     }
