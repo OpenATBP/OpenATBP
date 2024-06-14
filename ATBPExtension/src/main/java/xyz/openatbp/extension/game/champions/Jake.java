@@ -14,10 +14,7 @@ import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
-import xyz.openatbp.extension.game.AbilityRunnable;
-import xyz.openatbp.extension.game.ActorState;
-import xyz.openatbp.extension.game.Champion;
-import xyz.openatbp.extension.game.Projectile;
+import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.pathfinding.MovementManager;
@@ -82,17 +79,15 @@ public class Jake extends UserActor {
                         a.addToDamageQueue(this, (int) damage, spellData, true);
                     }
                 }
-                String stompSfxPrefix =
-                        (this.avatar.contains("guardian")) ? "jake_guardian_" : "jake_";
-                String stompFxPrefix =
-                        (this.avatar.contains("guardian"))
-                                ? "jake_guardian_"
-                                : (this.avatar.contains("cake")) ? "cake_" : "jake_";
+
+                String stompFX = SkinData.getJakeEStompFX(avatar);
+                String stompSFX = SkinData.getJakeEStompSFX(avatar);
+                String stompSFX1 = SkinData.getJakeEStomp1SFX(avatar);
                 ExtensionCommands.createActorFX(
                         this.parentExt,
                         this.room,
                         this.id,
-                        stompFxPrefix + "stomp_fx",
+                        stompFX,
                         325,
                         this.id + "_stomp",
                         true,
@@ -101,20 +96,13 @@ public class Jake extends UserActor {
                         false,
                         this.team);
                 this.stompSoundChange = !this.stompSoundChange;
-                if (this.stompSoundChange)
+                if (this.stompSoundChange) {
                     ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "sfx_" + stompSfxPrefix + "grow_stomp1",
-                            this.location);
-                else
+                            this.parentExt, this.room, this.id, stompSFX1, this.location);
+                } else {
                     ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "sfx_" + stompSfxPrefix + "grow_stomp",
-                            this.location);
+                            this.parentExt, this.room, this.id, stompSFX, this.location);
+                }
             }
         }
         if (qUsed && !doGrab && hasInterrupingCC()) {
@@ -289,25 +277,14 @@ public class Jake extends UserActor {
                                         dest);
                             }
                         };
+
                 scheduleTask(projectileDelay, Q_PROJECTILE_DELAY);
-                String stretchFxPrefix =
-                        (this.avatar.contains("cake"))
-                                ? "cake_"
-                                : (this.avatar.contains("randy")) ? "jake_butternubs_" : "jake_";
-                String stretchSfxPrefix =
-                        (this.avatar.contains("guardian")) ? "jake_guardian_" : "jake_";
+                String stretchSFX = SkinData.getJakeQSFX(avatar);
+                String stretchVO = SkinData.getJakeQVO(avatar);
                 ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "sfx_" + stretchSfxPrefix + "stretch",
-                        this.location);
+                        this.parentExt, this.room, this.id, stretchSFX, this.location);
                 ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "vo/vo_" + stretchFxPrefix + "stretch",
-                        this.location);
+                        this.parentExt, this.room, this.id, stretchVO, this.location);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -322,27 +299,13 @@ public class Jake extends UserActor {
             case 2:
                 this.canCast[1] = false;
                 this.stopMoving(gCooldown);
-                String ballFx =
-                        (this.avatar.contains("cake"))
-                                ? "fx_cake_ball"
-                                : (this.avatar.contains("guardian"))
-                                        ? "fx_jake_guardian_ball"
-                                        : (this.avatar.contains("randy"))
-                                                ? "fx_jake_butternubs_ball"
-                                                : (this.avatar.contains("wizard"))
-                                                        ? "fx_jake_wizard_ball"
-                                                        : "fx_jake_ball";
-                String dustFx =
-                        (this.avatar.contains("cake"))
-                                ? "cake_dust_up"
-                                : (this.avatar.contains("guardian"))
-                                        ? "jake_guardian_dust_up"
-                                        : "jake_dust_up";
+                String ballFX = SkinData.getJakeWFX(avatar);
+                String dustUpFX = SkinData.getJakeWDustUpFX(avatar);
                 ExtensionCommands.createActorFX(
                         this.parentExt,
                         this.room,
                         this.id,
-                        ballFx,
+                        ballFX,
                         2000,
                         this.id + "_ball",
                         true,
@@ -354,8 +317,8 @@ public class Jake extends UserActor {
                         this.parentExt,
                         this.room,
                         this.id,
-                        dustFx,
-                        1000,
+                        dustUpFX,
+                        1500,
                         this.id + "_dust",
                         false,
                         "Bip001 Footsteps",
@@ -381,24 +344,13 @@ public class Jake extends UserActor {
                         a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                     }
                 }
-                String ballVoPrefix =
-                        (this.avatar.contains("cake"))
-                                ? "cake_"
-                                : (this.avatar.contains("randy")) ? "jake_butternubs_" : "jake_";
-                String ballSfxPrefix =
-                        (this.avatar.contains("guardian")) ? "jake_guardian_" : "jake_";
+
+                String ballVO = SkinData.getJakeWVO(avatar);
+                String ballSFX = SkinData.getJakeWSFX(avatar);
                 ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "sfx_" + ballSfxPrefix + "ball",
-                        this.location);
+                        this.parentExt, this.room, this.id, ballVO, this.location);
                 ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "vo/vo_" + ballVoPrefix + "ball",
-                        this.location);
+                        this.parentExt, this.room, this.id, ballSFX, this.location);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -412,19 +364,8 @@ public class Jake extends UserActor {
             case 3:
                 this.canCast[2] = false;
                 this.stopMoving();
-                String bigFx =
-                        (this.avatar.contains("cake"))
-                                ? "jake_cake_big"
-                                : (this.avatar.contains("guardian"))
-                                        ? "jake_guardian_big"
-                                        : (this.avatar.contains("randy"))
-                                                ? "jake_butternubs_big"
-                                                : (this.avatar.contains("wizard"))
-                                                        ? "jake_wizard_big"
-                                                        : (this.avatar.contains("zombie"))
-                                                                ? "jake_zombie_big"
-                                                                : "jake_big";
-                ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bigFx);
+                String bigFX = SkinData.getJakeEFX(avatar);
+                ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bigFX);
                 this.cleanseEffects();
                 this.ultActivated = true;
                 this.ultStartTime = System.currentTimeMillis();
@@ -462,24 +403,12 @@ public class Jake extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                String growVoPrefix =
-                        (this.avatar.contains("cake"))
-                                ? "cake_"
-                                : (this.avatar.contains("randy")) ? "jake_butternubs_" : "jake_";
-                String growSfxPrefix =
-                        (this.avatar.contains("guardian")) ? "jake_guardian_" : "jake_";
+                String growVO = SkinData.getJakeEVO(avatar);
+                String growSFX = SkinData.getJakeESFX(avatar);
                 ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "sfx_" + growSfxPrefix + "grow",
-                        this.location);
+                        this.parentExt, this.room, this.id, growSFX, this.location);
                 ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "vo/vo_" + growVoPrefix + "grow",
-                        this.location);
+                        this.parentExt, this.room, this.id, growVO, this.location);
                 int delay1 = getReducedCooldown(cooldown);
                 scheduleTask(abilityHandler(ability, spellData, cooldown, gCooldown, dest), delay1);
                 break;

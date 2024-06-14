@@ -186,31 +186,11 @@ public class Marceline extends UserActor {
                 this.stopMoving(castDelay);
                 this.canCast[0] = false;
                 Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 7f);
-                String projectileId = "projectile_marceline_dot";
-                String humanPrefix =
-                        (this.avatar.contains("marshall"))
-                                ? "marshall_lee_"
-                                : (this.avatar.contains("young"))
-                                        ? "marceline_young_"
-                                        : "marceline_";
-                String beastPrefix =
-                        (this.avatar.contains("marshall")) ? "marshall_lee_" : "marceline_";
-                if (this.form == Form.BEAST) {
-                    projectileId = "projectile_marceline_root";
-                    ExtensionCommands.playSound(
-                            parentExt,
-                            room,
-                            this.id,
-                            "vo/vo_" + beastPrefix + "projectile_beast",
-                            this.location);
-                } else {
-                    ExtensionCommands.playSound(
-                            parentExt,
-                            room,
-                            this.id,
-                            "vo/vo_" + humanPrefix + "projectile_human",
-                            this.location);
-                }
+                String qVO = SkinData.getMarcelineQVO(avatar, form.toString());
+                String proj = "projectile_marceline_dot";
+                String proj2 = "projectile_marceline_root";
+                String projectile = form == Form.VAMPIRE ? proj : proj2;
+                ExtensionCommands.playSound(parentExt, room, this.id, qVO, this.location);
                 ExtensionCommands.playSound(
                         this.parentExt, this.room, "", "marceline_throw_projectile", this.location);
                 this.fireProjectile(
@@ -220,7 +200,7 @@ public class Marceline extends UserActor {
                                 abilityLine,
                                 8f,
                                 0.5f,
-                                projectileId,
+                                projectile,
                                 this.form == Form.BEAST),
                         this.location,
                         dest,
@@ -237,12 +217,7 @@ public class Marceline extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
-                String bloodMistVo =
-                        (this.avatar.contains("marshall"))
-                                ? "vo/vo_marshall_lee_blood_mist"
-                                : (this.avatar.contains("young"))
-                                        ? "vo/vo_marceline_young_blood_mist"
-                                        : "vo/vo_marceline_blood_mist";
+                String wVO = SkinData.getMarcelineWVO(avatar);
                 if (this.form == Form.BEAST) {
                     this.beastWActive = true;
                     this.bestWStartTime = System.currentTimeMillis();
@@ -271,7 +246,7 @@ public class Marceline extends UserActor {
                     this.vampireWActive = true;
                     this.vampireWStartTime = System.currentTimeMillis();
                     ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, bloodMistVo, this.location);
+                            this.parentExt, this.room, this.id, wVO, this.location);
                     ExtensionCommands.playSound(
                             this.parentExt,
                             this.room,
@@ -479,11 +454,8 @@ public class Marceline extends UserActor {
                         Marceline.this.addState(ActorState.IMMUNITY, 0d, E_IMMUNITY_DURATION);
                         setState(ActorState.CLEANSED, true);
                         Marceline.this.cleanseEffects();
-                        String morphBeastVo =
-                                (avatar.contains("marshall"))
-                                        ? "vo/marshall_lee_morph_to_beast"
-                                        : "marceline_morph_to_beast";
-                        ExtensionCommands.playSound(parentExt, room, id, morphBeastVo, location);
+                        String eToBeastVO = SkinData.getMarcelineEBeastVO(avatar);
+                        ExtensionCommands.playSound(parentExt, room, id, eToBeastVO, location);
                         ExtensionCommands.createActorFX(
                                 parentExt,
                                 room,
@@ -497,11 +469,8 @@ public class Marceline extends UserActor {
                                 false,
                                 team);
                     } else {
-                        String morphHumanVo =
-                                (avatar.contains("marshall"))
-                                        ? "vo/marshall_lee_morph_to_human"
-                                        : "marceline_morph_to_human";
-                        ExtensionCommands.playSound(parentExt, room, id, morphHumanVo, location);
+                        String eToVampireVO = SkinData.getMarcelineEVampireVO(avatar);
+                        ExtensionCommands.playSound(parentExt, room, id, eToVampireVO, location);
                     }
 
                     RoomHandler handler = parentExt.getRoomHandler(room.getName());

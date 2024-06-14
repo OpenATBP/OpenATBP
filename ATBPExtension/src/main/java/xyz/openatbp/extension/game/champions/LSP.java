@@ -13,10 +13,7 @@ import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
-import xyz.openatbp.extension.game.AbilityRunnable;
-import xyz.openatbp.extension.game.ActorType;
-import xyz.openatbp.extension.game.Champion;
-import xyz.openatbp.extension.game.Projectile;
+import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
@@ -98,16 +95,8 @@ public class LSP extends UserActor {
             case 1:
                 this.stopMoving(castDelay);
                 this.canCast[0] = false;
-                String dramaVoPrefix =
-                        (this.avatar.contains("gummybuns"))
-                                ? "lsp_gummybuns_"
-                                : (this.avatar.contains("lsprince")) ? "lsprince_" : "lsp_";
-                ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "vo/vo_" + dramaVoPrefix + "drama_beam",
-                        this.location);
+                String qVO = SkinData.getLSPQVO(avatar);
+                ExtensionCommands.playSound(this.parentExt, this.room, this.id, qVO, this.location);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -134,16 +123,8 @@ public class LSP extends UserActor {
                 this.canCast[1] = false;
                 this.wActive = true;
                 this.wTime = System.currentTimeMillis();
-                String lumpsVoPrefix =
-                        (this.avatar.contains("gummybuns"))
-                                ? "lsp_gummybuns_"
-                                : (this.avatar.contains("lsprince")) ? "lsprince_" : "lsp_";
-                ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "vo/vo_" + lumpsVoPrefix + "lumps_aoe",
-                        this.location);
+                String wVO = SkinData.getLSPWVO(avatar);
+                ExtensionCommands.playSound(this.parentExt, this.room, this.id, wVO, this.location);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -170,16 +151,8 @@ public class LSP extends UserActor {
                 this.stopMoving(castDelay);
                 this.canCast[2] = false;
                 this.isCastingult = true;
-                String cellphoneVoPrefix =
-                        (this.avatar.contains("gummybuns"))
-                                ? "lsp_gummybuns_"
-                                : (this.avatar.contains("lsprince")) ? "lsprince_" : "lsp_";
-                ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "vo/vo_" + cellphoneVoPrefix + "cellphone_throw",
-                        this.location);
+                String eVO = SkinData.getLSPEVO(avatar);
+                ExtensionCommands.playSound(this.parentExt, this.room, this.id, eVO, this.location);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -289,13 +262,10 @@ public class LSP extends UserActor {
             if (!interruptE && getHealth() > 0) {
                 Line2D projectileLine = Champion.getAbilityLine(location, dest, 100f);
                 ExtensionCommands.actorAnimate(parentExt, room, id, "spell3b", 500, false);
-                String ultProjectile =
-                        (avatar.contains("prince"))
-                                ? "projectile_lsprince_ult"
-                                : "projectile_lsp_ult";
+                String eProjectile = SkinData.getLSPEProjectile(avatar);
                 fireProjectile(
                         new LSPUltProjectile(
-                                parentExt, LSP.this, projectileLine, 8f, 2f, ultProjectile),
+                                parentExt, LSP.this, projectileLine, 8f, 2f, eProjectile),
                         location,
                         dest,
                         100f);

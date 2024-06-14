@@ -89,8 +89,7 @@ public class BMO extends UserActor {
     public void attack(Actor a) {
         if (this.attackCooldown == 0) {
             this.applyStopMovingDuringAttack();
-            String projectileFx =
-                    this.avatar.contains("noir") ? "bmo_projectile_noire" : "bmo_projectile";
+            String projectileFx = SkinData.getBMOBasicAttackProjectile(avatar);
             BMOPassive passiveAttack = new BMOPassive(a, handleAttack(a));
             RangedAttack rangedAttack = new RangedAttack(a, passiveAttack, projectileFx);
             scheduleTask(rangedAttack, BASIC_ATTACK_DELAY);
@@ -145,8 +144,7 @@ public class BMO extends UserActor {
                 }
                 if (this.passiveStacks == 3) usePassiveStacks();
                 else addPasiveStacks();
-                String cameraFx =
-                        (this.avatar.contains("noir")) ? "bmo_camera_noire" : "bmo_camera";
+                String cameraFx = SkinData.getBMOQCameraFX(avatar);
                 ExtensionCommands.createActorFX(
                         this.parentExt,
                         this.room,
@@ -182,14 +180,8 @@ public class BMO extends UserActor {
                     wStartTime = System.currentTimeMillis();
                     String[] statsToUpdate = {"armor", "spellResist"};
                     this.updateStatMenu(statsToUpdate);
-                    String pixelsAoeFx =
-                            (this.avatar.contains("noir"))
-                                    ? "bmo_pixels_aoe_noire"
-                                    : "bmo_pixels_aoe";
-                    String remoteSpinFx =
-                            (this.avatar.contains("noir"))
-                                    ? "bmo_remote_spin_noire"
-                                    : "bmo_remote_spin";
+                    String pixelsAoeFx = SkinData.getBMOWPixelsFX(avatar);
+                    String remoteSpinFx = SkinData.getBMOWRemoteFX(avatar);
                     ExtensionCommands.playSound(
                             this.parentExt,
                             this.room,
@@ -301,7 +293,7 @@ public class BMO extends UserActor {
                     this.parentExt, this.player, this.id, "vo/vo_bmo_passive_on", this.location);
             ExtensionCommands.playSound(
                     this.parentExt, this.player, this.id, "sfx_bmo_passive", this.location);
-            String passiveFx = (this.avatar.contains("noir")) ? "bmo_passive_noire" : "bmo_passive";
+            String passiveFx = SkinData.getBMOPassiveFX(avatar);
             ExtensionCommands.createActorFX(
                     this.parentExt,
                     this.room,
@@ -355,10 +347,7 @@ public class BMO extends UserActor {
         }
         if (this.passiveStacks == 3) usePassiveStacks();
         else addPasiveStacks();
-        String aoeExplodeFX =
-                (this.avatar.contains("noir"))
-                        ? "bmo_pixels_aoe_explode_noire"
-                        : "bmo_pixels_aoe_explode";
+        String aoeExplodeFX = SkinData.getBMOWExplodeFX(avatar);
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_pixels_aoe");
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_bmo_remote");
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_target_ring_4.5");
@@ -412,10 +401,7 @@ public class BMO extends UserActor {
             scheduleTask(enableECasting, delay);
             if (getHealth() > 0) {
                 Line2D abilityLine = Champion.getAbilityLine(location, dest, E_RANGE);
-                String ultProjectile =
-                        (avatar.contains("noir"))
-                                ? "projectile_bmo_bee_noire"
-                                : "projectile_bmo_bee";
+                String ultProjectile = SkinData.getBMOEProjectileFX(avatar);
                 fireProjectile(
                         new BMOUltProjectile(
                                 parentExt, BMO.this, abilityLine, 5f, 1.5f, ultProjectile),

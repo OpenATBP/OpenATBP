@@ -12,10 +12,7 @@ import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
-import xyz.openatbp.extension.game.AbilityRunnable;
-import xyz.openatbp.extension.game.ActorState;
-import xyz.openatbp.extension.game.ActorType;
-import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
@@ -97,15 +94,16 @@ public class Finn extends UserActor {
                             if (i == 1) direction = "east";
                             else if (i == 2) direction = "south";
                             else if (i == 3) direction = "west";
-                            String destroyFxPrefix =
-                                    (this.avatar.contains("guardian")) ? "finn_guardian" : "finn";
+
+                            String wallDestroyedFX = SkinData.getFinnEDestroyFX(avatar, direction);
+                            String wallDestroyedSFX = SkinData.getFinnEDestroySFX(avatar);
                             ExtensionCommands.removeFx(
                                     this.parentExt, this.room, this.id + "_" + direction + "Wall");
                             ExtensionCommands.createWorldFX(
                                     this.parentExt,
                                     this.room,
                                     this.id,
-                                    destroyFxPrefix + "_wall_" + direction + "_destroy",
+                                    wallDestroyedFX,
                                     this.id + "_wallDestroy_" + direction,
                                     1000,
                                     ultX,
@@ -113,12 +111,8 @@ public class Finn extends UserActor {
                                     false,
                                     this.team,
                                     180f);
-                            String wallDestroyedSfx =
-                                    (this.avatar.contains("guardian"))
-                                            ? "sfx_finn_guardian_wall_destroyed"
-                                            : "finn_wall_destroyed";
                             ExtensionCommands.playSound(
-                                    parentExt, room, id, wallDestroyedSfx, this.location);
+                                    parentExt, room, id, wallDestroyedSFX, this.location);
                             break;
                         }
                     }
@@ -201,18 +195,15 @@ public class Finn extends UserActor {
             }
             qActive = false;
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_shield");
-            String shatterPrefix = (this.avatar.contains("guardian")) ? "finn_guardian_" : "finn_";
+            String shatterFX = SkinData.getFinnQShatterFX(avatar);
+            String shatterSFX = SkinData.getFinnQShatterSFX(avatar);
             ExtensionCommands.playSound(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    "sfx_" + shatterPrefix + "shield_shatter",
-                    this.location);
+                    this.parentExt, this.room, this.id, shatterSFX, this.location);
             ExtensionCommands.createActorFX(
                     this.parentExt,
                     this.room,
                     this.id,
-                    shatterPrefix + "shieldShatter",
+                    shatterFX,
                     1000,
                     this.id + "_qShatter",
                     true,
@@ -238,19 +229,15 @@ public class Finn extends UserActor {
                 this.qStartTime = System.currentTimeMillis();
                 this.qActive = true;
                 this.updateStatMenu("speed");
-                String shieldPrefix =
-                        (this.avatar.contains("guardian")) ? "finn_guardian_" : "finn_";
+                String shieldFX = SkinData.getFinnQFX(avatar);
+                String shieldSFX = SkinData.getFinnQSFX(avatar);
                 ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "sfx_" + shieldPrefix + "shield",
-                        this.location);
+                        this.parentExt, this.room, this.id, shieldSFX, this.location);
                 ExtensionCommands.createActorFX(
                         this.parentExt,
                         this.room,
                         this.id,
-                        shieldPrefix + "shieldShimmer",
+                        shieldFX,
                         3000,
                         this.id + "_shield",
                         true,
@@ -284,11 +271,12 @@ public class Finn extends UserActor {
                 Point2D finalDashPoint = this.dash(dest, false, DASH_SPEED);
                 double time = ogLocation.distance(finalDashPoint) / DASH_SPEED;
                 int wTime = (int) (time * 1000);
+                String dashFX = SkinData.getFinnWFX(avatar);
                 ExtensionCommands.createActorFX(
                         this.parentExt,
                         this.room,
                         this.id,
-                        "finn_dash_fx",
+                        dashFX,
                         wTime,
                         this.id + "finnWTrail",
                         true,
@@ -314,12 +302,10 @@ public class Finn extends UserActor {
                         }
                     }
                 }
-                String sfxDash =
-                        (this.avatar.contains("guardian"))
-                                ? "sfx_finn_guardian_dash_attack"
-                                : "sfx_finn_dash_attack";
+
+                String dashSFX = SkinData.getFinnWSFX(avatar);
                 ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, sfxDash, this.location);
+                        this.parentExt, this.room, this.id, dashSFX, this.location);
                 Runnable changeAnimation =
                         () ->
                                 ExtensionCommands.actorAnimate(
@@ -376,14 +362,26 @@ public class Finn extends UserActor {
                             finnUltRing.lineTo(p4.getX(), p4.getY());
                             finnUltRing.lineTo(p3.getX(), p3.getY());
                             finnUltRing.lineTo(p1.getX(), p1.getY());
-                            String wallPrefix =
-                                    (this.avatar.contains("guardian")) ? "finn_guardian_" : "finn_";
-                            ExtensionCommands.playSound(
-                                    this.parentExt,
-                                    this.room,
-                                    this.id,
-                                    "sfx_" + wallPrefix + "walls_drop",
-                                    this.location);
+
+                            String[] directions = {"north", "east", "south", "west"};
+                            String wallDropSFX = SkinData.getFinnEWallDropSFX(avatar);
+                            String cornerSwordsFX = SkinData.getFinnECornerSwordsFX(avatar);
+
+                            for (String direction : directions) {
+                                String bundle = SkinData.getFinnEWallFX(avatar, direction);
+                                ExtensionCommands.createWorldFX(
+                                        this.parentExt,
+                                        this.room,
+                                        this.id,
+                                        bundle,
+                                        this.id + "_" + direction + "Wall",
+                                        E_DURATION,
+                                        ultX,
+                                        ultY,
+                                        false,
+                                        this.team,
+                                        180f);
+                            }
                             ExtensionCommands.createActorFX(
                                     this.parentExt,
                                     this.room,
@@ -396,59 +394,13 @@ public class Finn extends UserActor {
                                     false,
                                     true,
                                     this.team);
+                            ExtensionCommands.playSound(
+                                    this.parentExt, this.room, this.id, wallDropSFX, this.location);
                             ExtensionCommands.createWorldFX(
                                     this.parentExt,
                                     this.room,
                                     this.id,
-                                    wallPrefix + "wall_south",
-                                    this.id + "_northWall",
-                                    E_DURATION,
-                                    ultX,
-                                    ultY,
-                                    false,
-                                    this.team,
-                                    0f);
-                            ExtensionCommands.createWorldFX(
-                                    this.parentExt,
-                                    this.room,
-                                    this.id,
-                                    wallPrefix + "wall_north",
-                                    this.id + "_southWall",
-                                    E_DURATION,
-                                    ultX,
-                                    ultY,
-                                    false,
-                                    this.team,
-                                    0f);
-                            ExtensionCommands.createWorldFX(
-                                    this.parentExt,
-                                    this.room,
-                                    this.id,
-                                    wallPrefix + "wall_west",
-                                    this.id + "_eastWall",
-                                    E_DURATION,
-                                    ultX,
-                                    ultY,
-                                    false,
-                                    this.team,
-                                    0f);
-                            ExtensionCommands.createWorldFX(
-                                    this.parentExt,
-                                    this.room,
-                                    this.id,
-                                    wallPrefix + "wall_east",
-                                    this.id + "_westWall",
-                                    E_DURATION,
-                                    ultX,
-                                    ultY,
-                                    false,
-                                    this.team,
-                                    0f);
-                            ExtensionCommands.createWorldFX(
-                                    this.parentExt,
-                                    this.room,
-                                    this.id,
-                                    wallPrefix + "wall_corner_swords",
+                                    cornerSwordsFX,
                                     this.id + "_p1Sword",
                                     E_DURATION,
                                     ultX,
@@ -527,19 +479,15 @@ public class Finn extends UserActor {
                         }
                         this.qActive = false;
                         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_shield");
-                        String shatterPrefix =
-                                (this.avatar.contains("guardian")) ? "finn_guardian_" : "finn_";
+                        String shatterFX = SkinData.getFinnQShatterFX(avatar);
+                        String shatterSFX = SkinData.getFinnQShatterSFX(avatar);
                         ExtensionCommands.playSound(
-                                this.parentExt,
-                                this.room,
-                                this.id,
-                                "sfx_" + shatterPrefix + "shield_shatter",
-                                this.location);
+                                this.parentExt, this.room, this.id, shatterSFX, this.location);
                         ExtensionCommands.createActorFX(
                                 this.parentExt,
                                 this.room,
                                 this.id,
-                                shatterPrefix + "shieldShatter",
+                                shatterFX,
                                 1000,
                                 this.id + "_qShatter",
                                 true,

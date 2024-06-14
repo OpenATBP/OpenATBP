@@ -7,13 +7,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import com.smartfoxserver.v2.entities.User;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.MapData;
-import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.SkinData;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
@@ -316,14 +314,9 @@ public class PeppermintButler extends UserActor {
                 this.wActive = true;
                 double time = dest.distance(this.location) / 15d;
                 this.wRunTime = new AtomicInteger((int) (time * 1000));
-                String hohoVoPrefix =
-                        (this.avatar.contains("zombie")) ? "pepbut_zombie_" : "pepbut_";
+                String wHohoVO = SkinData.getPeppermintButlerWHohoVO(avatar);
                 ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "vo/vo_" + hohoVoPrefix + "hoho",
-                        this.location);
+                        this.parentExt, this.room, this.id, wHohoVO, this.location);
                 ExtensionCommands.createWorldFX(
                         this.parentExt,
                         this.room,
@@ -392,14 +385,9 @@ public class PeppermintButler extends UserActor {
                             this.form = Form.FERAL;
                             String[] statsToUpdate = {"speed", "attackSpeed", "attackDamage"};
                             this.updateStatMenu(statsToUpdate);
-                            String hissVoPrefix =
-                                    (this.avatar.contains("zombie")) ? "pepbut_zombie_" : "pepbut_";
+                            String eVO = SkinData.getPeppermintButlerEVO(avatar);
                             ExtensionCommands.playSound(
-                                    this.parentExt,
-                                    this.room,
-                                    this.id,
-                                    "vo/vo_" + hissVoPrefix + "feral_hiss",
-                                    this.location);
+                                    this.parentExt, this.room, this.id, eVO, this.location);
                             swapAsset(true);
                             ExtensionCommands.createActorFX(
                                     this.parentExt,
@@ -538,11 +526,10 @@ public class PeppermintButler extends UserActor {
             wActive = false;
             canMove = true;
             if (!interruptW && getHealth() > 0) {
-                String beholdVoPrefix = (avatar.contains("zombie")) ? "pepbut_zombie_" : "pepbut_";
+                String wBeholdVO = SkinData.getPeppermintButlerWBeholdVO(avatar);
+                ExtensionCommands.playSound(parentExt, room, id, wBeholdVO, location);
                 ExtensionCommands.playSound(
                         parentExt, room, id, "sfx_pepbut_dig_emerge", this.dest);
-                ExtensionCommands.playSound(
-                        parentExt, room, id, "vo/vo_" + beholdVoPrefix + "behold", location);
                 ExtensionCommands.actorAnimate(parentExt, room, id, "spell2c", 500, false);
                 ExtensionCommands.createWorldFX(
                         parentExt,

@@ -9,14 +9,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import com.smartfoxserver.v2.entities.User;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ChampionData;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.RoomHandler;
-import xyz.openatbp.extension.game.AbilityRunnable;
-import xyz.openatbp.extension.game.ActorState;
-import xyz.openatbp.extension.game.ActorType;
-import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.*;
+import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
@@ -166,12 +160,7 @@ public class BubbleGum extends UserActor {
             case 1: // Q
                 this.canCast[0] = false;
                 this.stopMoving();
-                String potionVo =
-                        (this.avatar.equals("princessbubblegum_skin_prince"))
-                                ? "vo/vo_gumball_potion"
-                                : (this.avatar.contains("young"))
-                                        ? "vo/vo_bubblegum_young_potion"
-                                        : "vo/vo_bubblegum_potion";
+                String potionVo = SkinData.getBubbleGumQVO(avatar);
                 ExtensionCommands.playSound(parentExt, room, id, potionVo, this.location);
                 ExtensionCommands.createWorldFX(
                         parentExt,
@@ -193,12 +182,7 @@ public class BubbleGum extends UserActor {
             case 2: // W
                 this.canCast[1] = false;
                 this.stopMoving();
-                String turretVo =
-                        (this.avatar.equals("princessbubblegum_skin_prince"))
-                                ? "vo/vo_gumball_turret"
-                                : (this.avatar.contains("young"))
-                                        ? "vo/vo_bubblegum_young_turret"
-                                        : "vo/vo_bubblegum_turret";
+                String turretVo = SkinData.getBubbleGumWVO(avatar);
                 ExtensionCommands.playSound(parentExt, room, id, turretVo, this.location);
                 this.spawnTurret(dest);
                 ExtensionCommands.actorAbilityResponse(
@@ -212,12 +196,7 @@ public class BubbleGum extends UserActor {
                     this.bombPlaced = true;
                     this.stopMoving();
                     this.bombPlaceTime = System.currentTimeMillis();
-                    String bombVo =
-                            (this.avatar.equals("princessbubblegum_skin_prince"))
-                                    ? "vo/vo_gumball_bomb_hup"
-                                    : (this.avatar.contains("young"))
-                                            ? "vo/vo_bubblegum_young_bomb_hup"
-                                            : "vo/vo_bubblegum_bomb_hup";
+                    String bombVo = SkinData.getBubbleGumEVO(avatar);
                     ExtensionCommands.playSound(
                             this.parentExt, this.room, this.id, bombVo, this.location);
                     ExtensionCommands.createWorldFX(
@@ -278,12 +257,7 @@ public class BubbleGum extends UserActor {
             }
         }
 
-        String useBombVo =
-                (this.avatar.equals("princessbubblegum_skin_prince"))
-                        ? "vo/vo_gumball_turret"
-                        : (this.avatar.contains("young"))
-                                ? "vo/vo_bubblegum_young_bomb_grunt"
-                                : "vo/vo_bubblegum_bomb_grunt";
+        String useBombVo = SkinData.getBubbleGumEGruntVO(avatar);
         ExtensionCommands.playSound(parentExt, room, this.id, useBombVo, this.location);
         ExtensionCommands.removeFx(parentExt, room, id + "_bomb");
         ExtensionCommands.removeFx(parentExt, room, id + "_bombArea");

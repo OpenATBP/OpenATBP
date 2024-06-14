@@ -55,23 +55,15 @@ public class Neptr extends UserActor {
             ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "passive");
         }
         if (this.isStopped() && !this.soundPlayed) {
-            String moveEndSound =
-                    this.avatar.contains("racing")
-                            ? "neptr_racing_move_stop"
-                            : "sfx_neptr_move_end";
+            String moveEndSFX = SkinData.getNeptrMoveEndSFX(avatar);
             ExtensionCommands.playSound(
-                    this.parentExt, this.player, this.id, moveEndSound, this.location);
+                    this.parentExt, this.player, this.id, moveEndSFX, this.location);
             this.soundPlayed = true;
         } else if (!this.isStopped()
                 && System.currentTimeMillis() - this.lastMoveSoundPlayed > 500) {
-            String moveSound;
-            if (passiveActive && this.avatar.contains("racing")) {
-                moveSound = "neptr_racing_move_fast";
-            } else {
-                moveSound = this.avatar.contains("racing") ? "neptr_racing_move" : "sfx_neptr_move";
-            }
+            String moveSFX = SkinData.getNeptrMoveSFX(avatar, passiveActive);
             ExtensionCommands.playSound(
-                    this.parentExt, this.player, this.id, moveSound, this.location);
+                    this.parentExt, this.player, this.id, moveSFX, this.location);
             this.lastMoveSoundPlayed = System.currentTimeMillis();
         }
         List<Actor> impactedActors = new ArrayList<>(this.ultImpactedActors);
@@ -106,10 +98,10 @@ public class Neptr extends UserActor {
                     true,
                     false,
                     this.team);
-            String passiveSound =
-                    this.avatar.contains("racing") ? "neptr_racing_passive" : "sfx_neptr_passive";
+
+            String passiveSFX = SkinData.getNeptrPassiveSFX(avatar);
             ExtensionCommands.playSound(
-                    this.parentExt, this.player, this.id, passiveSound, this.location);
+                    this.parentExt, this.player, this.id, passiveSFX, this.location);
             if (!this.passiveActive) {
                 ExtensionCommands.playSound(
                         this.parentExt, this.room, this.id, "vo/vo_neptr_passive", this.location);

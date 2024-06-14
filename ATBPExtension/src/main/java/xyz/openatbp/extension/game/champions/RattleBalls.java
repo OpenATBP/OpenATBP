@@ -10,12 +10,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import com.smartfoxserver.v2.entities.User;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ChampionData;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.SkinData;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
@@ -73,15 +71,9 @@ public class RattleBalls extends UserActor {
             this.parryActive = false;
             this.qUse = 0;
             this.abilityEnded();
-            String spinSfx =
-                    (this.avatar.contains("spidotron"))
-                            ? "sfx_rattleballs_luchador_counter_attack"
-                            : "sfx_rattleballs_spin";
-            String swordSpinFX =
-                    (this.avatar.contains("spidotron"))
-                            ? "rattleballs_luchador_sword_spin"
-                            : "rattleballs_sword_spin";
-            ExtensionCommands.playSound(this.parentExt, this.room, this.id, spinSfx, this.location);
+            String qEndSFX = SkinData.getRattleBallsQEndSFX(avatar);
+            String qSwordSpin = SkinData.getRattleBallsESwordSpinFX(avatar);
+            ExtensionCommands.playSound(this.parentExt, this.room, this.id, qEndSFX, this.location);
             ExtensionCommands.playSound(
                     this.parentExt,
                     this.room,
@@ -94,7 +86,7 @@ public class RattleBalls extends UserActor {
                     this.parentExt,
                     this.room,
                     this.id,
-                    swordSpinFX,
+                    qSwordSpin,
                     250,
                     this.id + "_parrySpin",
                     true,
@@ -189,16 +181,10 @@ public class RattleBalls extends UserActor {
             JsonNode counterAttackData = counterAttackData();
             a.addToDamageQueue(
                     this, this.getPlayerStat("attackDamage") * 2, counterAttackData, false);
-            String counterSFx =
-                    (this.avatar.contains("spidotron"))
-                            ? "sfx_rattleballs_luchador_counter_attack_crit"
-                            : "sfx_rattleballs_counter_stance";
-            String counterCritFx =
-                    (this.avatar.contains("spidotron"))
-                            ? "rattleballs_luchador_dash_hit"
-                            : "rattleballs_dash_hit";
+            String qCounterFX = SkinData.getRattleBallsQCounterFX(avatar);
+            String qCounterSFX = SkinData.getRattleBallsQCounterSFX(avatar);
             ExtensionCommands.playSound(
-                    this.parentExt, this.room, this.id, counterSFx, this.location);
+                    this.parentExt, this.room, this.id, qCounterSFX, this.location);
             ExtensionCommands.playSound(
                     this.parentExt,
                     this.room,
@@ -210,7 +196,7 @@ public class RattleBalls extends UserActor {
                     this.parentExt,
                     this.room,
                     this.id,
-                    counterCritFx,
+                    qCounterFX,
                     1500,
                     this.id,
                     true,
@@ -306,11 +292,9 @@ public class RattleBalls extends UserActor {
                 double time = ogLocation.distance(finalDashPoint) / DASH_SPEED;
                 this.qTime = (int) (time * 1000);
                 int qTimeEffects = qTime * 5;
+                String qTrailFX = SkinData.getRattleBallsQTrailFX(avatar);
+                String qDashDustFX = SkinData.getRattleBallsQDustFX(avatar);
                 if (this.qUse == 0) {
-                    String counterPrefix =
-                            (this.avatar.contains("spidotron"))
-                                    ? "rattleballs_luchador_"
-                                    : "rattleballs_";
                     ExtensionCommands.playSound(
                             this.parentExt,
                             this.room,
@@ -329,7 +313,7 @@ public class RattleBalls extends UserActor {
                             this.parentExt,
                             this.room,
                             this.id,
-                            counterPrefix + "dash_trail",
+                            qTrailFX,
                             qTimeEffects,
                             this.id + "_q1Trail",
                             true,
@@ -341,7 +325,7 @@ public class RattleBalls extends UserActor {
                             this.parentExt,
                             this.room,
                             this.id,
-                            counterPrefix + "dash_dust",
+                            qDashDustFX,
                             qTimeEffects,
                             this.id + "_q1Dust",
                             true,
@@ -364,17 +348,14 @@ public class RattleBalls extends UserActor {
                             }
                         }
                     }
-                    String dashPrefix =
-                            (this.avatar.contains("spidotron"))
-                                    ? "rattleballs_luchador_"
-                                    : "rattleballs_";
-                    if (this.avatar.contains("spidotron"))
+                    if (this.avatar.contains("spidotron")) {
                         ExtensionCommands.playSound(
                                 this.parentExt,
                                 this.room,
                                 this.id,
                                 "sfx_rattleballs_luchador_counter_stance",
                                 this.location);
+                    }
                     ExtensionCommands.playSound(
                             this.parentExt,
                             this.room,
@@ -393,7 +374,7 @@ public class RattleBalls extends UserActor {
                             this.parentExt,
                             this.room,
                             this.id,
-                            dashPrefix + "dash_trail",
+                            qTrailFX,
                             qTimeEffects,
                             this.id + "_q2Trail",
                             true,
@@ -405,7 +386,7 @@ public class RattleBalls extends UserActor {
                             this.parentExt,
                             this.room,
                             this.id,
-                            dashPrefix + "dash_dust",
+                            qDashDustFX,
                             qTimeEffects,
                             this.id + "_q2Dust",
                             true,
@@ -427,11 +408,8 @@ public class RattleBalls extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
-                String pullSfx =
-                        (this.avatar.contains("spidotron"))
-                                ? "sfx_rattleballs_luchador_pull"
-                                : "sfx_rattleballs_pull";
-                ExtensionCommands.playSound(parentExt, room, id, pullSfx, location);
+                String wSFX = SkinData.getRattleBallsWSFX(avatar);
+                ExtensionCommands.playSound(parentExt, room, id, wSFX, location);
                 this.stopMoving(castDelay);
                 ExtensionCommands.createWorldFX(
                         this.parentExt,
@@ -463,16 +441,10 @@ public class RattleBalls extends UserActor {
                     this.canCast[0] = false;
                     this.canCast[1] = false;
                     this.ultActive = true;
-                    String ultPrefix =
-                            (this.avatar.contains("spidotron"))
-                                    ? "rattleballs_luchador_"
-                                    : "rattleballs_";
+                    String spinCycleSFX = SkinData.getRattleBallsESpinCycleSFX(avatar);
+                    String swordSpinFX = SkinData.getRattleBallsESwordSpinFX(avatar);
                     ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "sfx_" + ultPrefix + "spin_cycle",
-                            this.location);
+                            this.parentExt, this.room, this.id, spinCycleSFX, this.location);
                     ExtensionCommands.playSound(
                             this.parentExt,
                             this.room,
@@ -497,7 +469,7 @@ public class RattleBalls extends UserActor {
                             this.parentExt,
                             this.room,
                             this.id,
-                            ultPrefix + "sword_spin",
+                            swordSpinFX,
                             E_DURATION,
                             this.id + "_ultSpin",
                             true,
@@ -640,15 +612,12 @@ public class RattleBalls extends UserActor {
             scheduleTask(enableWCasting, delay);
             abilityEnded();
             if (getHealth() > 0) {
-                String pullFx =
-                        (avatar.contains("spidotron"))
-                                ? "rattleballs_luchador_pull"
-                                : "rattleballs_pull";
+                String wFX = SkinData.getRattleBallsWFX(avatar);
                 ExtensionCommands.createWorldFX(
                         parentExt,
                         room,
                         id,
-                        pullFx,
+                        wFX,
                         id + "_pull",
                         1500,
                         (float) location.getX(),

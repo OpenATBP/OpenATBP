@@ -233,14 +233,9 @@ public class IceKing extends UserActor {
         switch (ability) {
             case 1:
                 this.canCast[0] = false;
-                String freezeSfx =
-                        (this.avatar.contains("queen"))
-                                ? "vo/vo_ice_queen_freeze"
-                                : (this.avatar.contains("young"))
-                                        ? "vo/vo_ice_king_young_freeze"
-                                        : "vo/vo_ice_king_freeze";
+                String freezeVO = SkinData.getIceKingQVO(avatar);
                 ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, freezeSfx, this.location);
+                        this.parentExt, this.room, this.id, freezeVO, this.location);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -256,16 +251,11 @@ public class IceKing extends UserActor {
                 this.wStartTime = System.currentTimeMillis();
                 this.wLocation = dest;
                 this.lastWHit = new HashMap<>();
-                String hailStormSfx =
-                        (this.avatar.contains("queen"))
-                                ? "vo/vo_ice_queen_hailstorm"
-                                : (this.avatar.contains("young"))
-                                        ? "vo/vo_ice_king_young_hailstorm"
-                                        : "vo/vo_ice_king_hailstorm";
+                String hailStormVO = SkinData.getIceKingWVO(avatar);
                 ExtensionCommands.playSound(
                         this.parentExt, this.room, "", "sfx_ice_king_hailstorm", dest);
                 ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, hailStormSfx, this.location);
+                        this.parentExt, this.room, this.id, hailStormVO, this.location);
                 ExtensionCommands.createActorFX(
                         this.parentExt,
                         this.room,
@@ -329,16 +319,11 @@ public class IceKing extends UserActor {
                 this.ultActive = true;
                 this.ultLocation = this.location;
                 this.ultStartTime = System.currentTimeMillis();
-                String ultimateSfx =
-                        (this.avatar.contains("queen"))
-                                ? "vo/vo_ice_queen_ultimate"
-                                : (this.avatar.contains("young"))
-                                        ? "vo/vo_ice_king_young_ultimate"
-                                        : "vo/vo_ice_king_ultimate";
+                String ultimateVO = SkinData.getIceKingEVO(avatar);
                 ExtensionCommands.playSound(
                         this.parentExt, this.room, this.id, "sfx_ice_king_ultimate", this.location);
                 ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, ultimateSfx, this.location);
+                        this.parentExt, this.room, this.id, ultimateVO, this.location);
                 ExtensionCommands.actorAnimate(
                         this.parentExt, this.room, this.id, "idle", 100, true);
                 ExtensionCommands.createWorldFX(
