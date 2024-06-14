@@ -164,49 +164,70 @@ public class Lich extends UserActor {
         switch (ability) {
             case 1:
                 this.canCast[0] = false;
-                double statIncrease = this.getStat("speed") * Q_SPEED_VALUE;
-                this.addEffect("speed", statIncrease, Q_SPEED_DURATION);
-                qActivated = true;
-                slimePath = new ArrayList<>();
-                slimedEnemies = new HashMap<>();
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "lichking_deathmist",
-                        Q_DURATION,
-                        this.id + "_lichTrail",
-                        true,
-                        "",
-                        true,
-                        false,
-                        this.team);
-                ExtensionCommands.playSound(parentExt, room, id, "sfx_lich_trail", this.location);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "vo/vo_lich_trail", this.location);
+                int delay = 0;
+                try {
+                    double statIncrease = this.getStat("speed") * Q_SPEED_VALUE;
+                    this.addEffect("speed", statIncrease, Q_SPEED_DURATION);
+                    qActivated = true;
+                    slimePath = new ArrayList<>();
+                    slimedEnemies = new HashMap<>();
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "lichking_deathmist",
+                            Q_DURATION,
+                            this.id + "_lichTrail",
+                            true,
+                            "",
+                            true,
+                            false,
+                            this.team);
+                    ExtensionCommands.playSound(
+                            parentExt, room, id, "sfx_lich_trail", this.location);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, "vo/vo_lich_trail", this.location);
 
-                int delay = getReducedCooldown(cooldown);
-                TrailHandler trailHandler = new TrailHandler();
-                scheduleTask(trailHandler, Q_DURATION);
+                    delay = getReducedCooldown(cooldown);
+                    TrailHandler trailHandler = new TrailHandler();
+                    scheduleTask(trailHandler, Q_DURATION);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         parentExt, player, "q", true, getReducedCooldown(cooldown), gCooldown);
                 scheduleTask(abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay);
                 break;
             case 2:
                 this.canCast[1] = false;
-                this.stopMoving();
-                ExtensionCommands.playSound(
-                        parentExt, room, this.id, "sfx_lich_charm_shot", this.location);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "vo/vo_lich_charm_shot", this.location);
+                try {
+                    this.stopMoving();
+                    ExtensionCommands.playSound(
+                            parentExt, room, this.id, "sfx_lich_charm_shot", this.location);
+                    ExtensionCommands.playSound(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "vo/vo_lich_charm_shot",
+                            this.location);
 
-                Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
-                this.fireProjectile(
-                        new LichCharm(
-                                parentExt, this, abilityLine, 9f, 0.5f, "projectile_lich_charm"),
-                        this.location,
-                        dest,
-                        8f);
+                    Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
+                    this.fireProjectile(
+                            new LichCharm(
+                                    parentExt,
+                                    this,
+                                    abilityLine,
+                                    9f,
+                                    0.5f,
+                                    "projectile_lich_charm"),
+                            this.location,
+                            dest,
+                            8f);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
                 int delay1 = getReducedCooldown(cooldown);

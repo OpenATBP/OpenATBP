@@ -269,33 +269,38 @@ public class PeppermintButler extends UserActor {
         switch (ability) {
             case 1:
                 canCast[0] = false;
-                this.qStartTime = System.currentTimeMillis();
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "fx_target_ring_3",
-                        Q_DURATION,
-                        this.id + "_qRing",
-                        true,
-                        "",
-                        true,
-                        true,
-                        this.team);
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "pepbut_aoe",
-                        Q_DURATION,
-                        this.id + "_aoe",
-                        true,
-                        "",
-                        true,
-                        false,
-                        this.team);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "sfx_pepbut_aoe", this.location);
+                try {
+                    this.qStartTime = System.currentTimeMillis();
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "fx_target_ring_3",
+                            Q_DURATION,
+                            this.id + "_qRing",
+                            true,
+                            "",
+                            true,
+                            true,
+                            this.team);
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "pepbut_aoe",
+                            Q_DURATION,
+                            this.id + "_aoe",
+                            true,
+                            "",
+                            true,
+                            false,
+                            this.team);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, "sfx_pepbut_aoe", this.location);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -375,71 +380,76 @@ public class PeppermintButler extends UserActor {
                 break;
             case 3:
                 canCast[2] = false;
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "sfx_pepbut_feral", this.location);
-                Runnable activation =
-                        () -> {
-                            this.ultActive = true;
-                            this.ultStartTime = System.currentTimeMillis();
-                            this.attackCooldown = 0;
-                            this.form = Form.FERAL;
-                            String[] statsToUpdate = {"speed", "attackSpeed", "attackDamage"};
-                            this.updateStatMenu(statsToUpdate);
-                            String eVO = SkinData.getPeppermintButlerEVO(avatar);
-                            ExtensionCommands.playSound(
-                                    this.parentExt, this.room, this.id, eVO, this.location);
-                            swapAsset(true);
-                            ExtensionCommands.createActorFX(
-                                    this.parentExt,
-                                    this.room,
-                                    this.id,
-                                    "marceline_beast_crit_hand",
-                                    E_DURATION,
-                                    this.id + "ultHandL",
-                                    true,
-                                    "Bip001 L Hand",
-                                    true,
-                                    false,
-                                    this.team);
-                            ExtensionCommands.createActorFX(
-                                    this.parentExt,
-                                    this.room,
-                                    this.id,
-                                    "marceline_beast_crit_hand",
-                                    E_DURATION,
-                                    this.id + "ultHandR",
-                                    true,
-                                    "Bip001 R Hand",
-                                    true,
-                                    false,
-                                    this.team);
-                            ExtensionCommands.createActorFX(
-                                    this.parentExt,
-                                    this.room,
-                                    this.id,
-                                    "pepbut_feral_explosion",
-                                    1000,
-                                    this.id + "_ultExplosion",
-                                    false,
-                                    "",
-                                    false,
-                                    false,
-                                    this.team);
-                            this.addState(ActorState.SILENCED, 0d, E_DURATION);
-                            if (this.qActive) {
-                                this.qActive = false;
-                                ExtensionCommands.removeFx(
-                                        this.parentExt, this.room, this.id + "_qRing");
-                                ExtensionCommands.removeFx(
-                                        this.parentExt, this.room, this.id + "_aoe");
-                            }
-                        };
+                try {
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, "sfx_pepbut_feral", this.location);
+                    Runnable activation =
+                            () -> {
+                                this.ultActive = true;
+                                this.ultStartTime = System.currentTimeMillis();
+                                this.attackCooldown = 0;
+                                this.form = Form.FERAL;
+                                String[] statsToUpdate = {"speed", "attackSpeed", "attackDamage"};
+                                this.updateStatMenu(statsToUpdate);
+                                String eVO = SkinData.getPeppermintButlerEVO(avatar);
+                                ExtensionCommands.playSound(
+                                        this.parentExt, this.room, this.id, eVO, this.location);
+                                swapAsset(true);
+                                ExtensionCommands.createActorFX(
+                                        this.parentExt,
+                                        this.room,
+                                        this.id,
+                                        "marceline_beast_crit_hand",
+                                        E_DURATION,
+                                        this.id + "ultHandL",
+                                        true,
+                                        "Bip001 L Hand",
+                                        true,
+                                        false,
+                                        this.team);
+                                ExtensionCommands.createActorFX(
+                                        this.parentExt,
+                                        this.room,
+                                        this.id,
+                                        "marceline_beast_crit_hand",
+                                        E_DURATION,
+                                        this.id + "ultHandR",
+                                        true,
+                                        "Bip001 R Hand",
+                                        true,
+                                        false,
+                                        this.team);
+                                ExtensionCommands.createActorFX(
+                                        this.parentExt,
+                                        this.room,
+                                        this.id,
+                                        "pepbut_feral_explosion",
+                                        1000,
+                                        this.id + "_ultExplosion",
+                                        false,
+                                        "",
+                                        false,
+                                        false,
+                                        this.team);
+                                this.addState(ActorState.SILENCED, 0d, E_DURATION);
+                                if (this.qActive) {
+                                    this.qActive = false;
+                                    ExtensionCommands.removeFx(
+                                            this.parentExt, this.room, this.id + "_qRing");
+                                    ExtensionCommands.removeFx(
+                                            this.parentExt, this.room, this.id + "_aoe");
+                                }
+                            };
+                    scheduleTask(activation, castDelay);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         parentExt, player, "e", true, getReducedCooldown(cooldown), gCooldown);
                 int delay1 = getReducedCooldown(cooldown);
                 scheduleTask(
                         abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay1);
-                scheduleTask(activation, castDelay);
                 break;
         }
     }

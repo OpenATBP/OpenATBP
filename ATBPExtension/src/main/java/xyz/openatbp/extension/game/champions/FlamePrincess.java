@@ -189,26 +189,31 @@ public class FlamePrincess extends UserActor {
             passiveEnabled = true;
         }
         switch (ability) {
-            case 1: // Q
+            case 1:
                 this.canCast[0] = false;
-                Line2D abilityLine = Champion.getAbilityLine(location, dest, 8f);
-                ExtensionCommands.playSound(
-                        parentExt,
-                        room,
-                        this.id,
-                        "sfx_flame_princess_cone_of_flame",
-                        this.location);
-                fireProjectile(
-                        new FlameProjectile(
-                                this.parentExt,
-                                this,
-                                abilityLine,
-                                8f,
-                                0.5f,
-                                "projectile_flame_cone"),
-                        location,
-                        dest,
-                        8f);
+                try {
+                    Line2D abilityLine = Champion.getAbilityLine(location, dest, 8f);
+                    ExtensionCommands.playSound(
+                            parentExt,
+                            room,
+                            this.id,
+                            "sfx_flame_princess_cone_of_flame",
+                            this.location);
+                    fireProjectile(
+                            new FlameProjectile(
+                                    this.parentExt,
+                                    this,
+                                    abilityLine,
+                                    8f,
+                                    0.5f,
+                                    "projectile_flame_cone"),
+                            location,
+                            dest,
+                            8f);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -219,35 +224,42 @@ public class FlamePrincess extends UserActor {
                 scheduleTask(
                         abilityRunnable(ability, spellData, cooldown, gCooldown, dest), gCooldown);
                 break;
-            case 2: // W
+            case 2:
                 this.canCast[1] = false;
-                this.wUsed = true;
-                ExtensionCommands.createWorldFX(
-                        this.parentExt,
-                        this.player.getLastJoinedRoom(),
-                        this.id,
-                        "fx_target_ring_2",
-                        "flame_w",
-                        1500,
-                        (float) dest.getX(),
-                        (float) dest.getY(),
-                        true,
-                        this.team,
-                        0f);
-                Runnable fxDelay =
-                        () ->
-                                ExtensionCommands.createWorldFX(
-                                        this.parentExt,
-                                        this.player.getLastJoinedRoom(),
-                                        this.id,
-                                        "flame_princess_polymorph_fireball",
-                                        this.id + "_flame_w_polymorph",
-                                        2000,
-                                        (float) dest.getX(),
-                                        (float) dest.getY(),
-                                        false,
-                                        this.team,
-                                        0f);
+                try {
+                    this.wUsed = true;
+                    ExtensionCommands.createWorldFX(
+                            this.parentExt,
+                            this.player.getLastJoinedRoom(),
+                            this.id,
+                            "fx_target_ring_2",
+                            "flame_w",
+                            1500,
+                            (float) dest.getX(),
+                            (float) dest.getY(),
+                            true,
+                            this.team,
+                            0f);
+                    Runnable fxDelay =
+                            () ->
+                                    ExtensionCommands.createWorldFX(
+                                            this.parentExt,
+                                            this.player.getLastJoinedRoom(),
+                                            this.id,
+                                            "flame_princess_polymorph_fireball",
+                                            this.id + "_flame_w_polymorph",
+                                            2000,
+                                            (float) dest.getX(),
+                                            (float) dest.getY(),
+                                            false,
+                                            this.team,
+                                            0f);
+                    int delay = 500;
+                    scheduleTask(fxDelay, delay);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -255,13 +267,10 @@ public class FlamePrincess extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-
-                int delay = 500;
-                scheduleTask(fxDelay, delay);
                 scheduleTask(
                         abilityRunnable(ability, spellData, cooldown, gCooldown, dest), castDelay);
                 break;
-            case 3: // E
+            case 3:
                 this.canCast[2] = false;
                 if (this.form == Form.NORMAL) {
                     this.form = Form.ULT;
@@ -323,8 +332,6 @@ public class FlamePrincess extends UserActor {
                                 new Point2D.Float(0, 0));
                     }
                 }
-                break;
-            case 4: // Passive
                 break;
         }
     }

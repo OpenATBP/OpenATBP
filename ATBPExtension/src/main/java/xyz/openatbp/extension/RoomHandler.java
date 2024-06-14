@@ -1458,8 +1458,7 @@ public class RoomHandler implements Runnable {
         for (UserActor ua : this.players) {
             if (ua.getTeam() != team) {
                 String playerAvatar = ua.getAvatar();
-                if (ua.getDefaultCharacterName(playerAvatar).equalsIgnoreCase(championName))
-                    return ua;
+                if (ua.getChampionName(playerAvatar).equalsIgnoreCase(championName)) return ua;
             }
         }
         return null;

@@ -183,28 +183,37 @@ public class Marceline extends UserActor {
             Point2D dest) {
         switch (ability) {
             case 1:
-                this.stopMoving(castDelay);
                 this.canCast[0] = false;
-                Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 7f);
-                String qVO = SkinData.getMarcelineQVO(avatar, form.toString());
-                String proj = "projectile_marceline_dot";
-                String proj2 = "projectile_marceline_root";
-                String projectile = form == Form.VAMPIRE ? proj : proj2;
-                ExtensionCommands.playSound(parentExt, room, this.id, qVO, this.location);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, "", "marceline_throw_projectile", this.location);
-                this.fireProjectile(
-                        new MarcelineProjectile(
-                                this.parentExt,
-                                this,
-                                abilityLine,
-                                8f,
-                                0.5f,
-                                projectile,
-                                this.form == Form.BEAST),
-                        this.location,
-                        dest,
-                        7f);
+                try {
+                    this.stopMoving(castDelay);
+                    Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 7f);
+                    String qVO = SkinData.getMarcelineQVO(avatar, form.toString());
+                    String proj = "projectile_marceline_dot";
+                    String proj2 = "projectile_marceline_root";
+                    String projectile = form == Form.VAMPIRE ? proj : proj2;
+                    ExtensionCommands.playSound(parentExt, room, this.id, qVO, this.location);
+                    ExtensionCommands.playSound(
+                            this.parentExt,
+                            this.room,
+                            "",
+                            "marceline_throw_projectile",
+                            this.location);
+                    this.fireProjectile(
+                            new MarcelineProjectile(
+                                    this.parentExt,
+                                    this,
+                                    abilityLine,
+                                    8f,
+                                    0.5f,
+                                    projectile,
+                                    this.form == Form.BEAST),
+                            this.location,
+                            dest,
+                            7f);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -217,68 +226,73 @@ public class Marceline extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
-                String wVO = SkinData.getMarcelineWVO(avatar);
-                if (this.form == Form.BEAST) {
-                    this.beastWActive = true;
-                    this.bestWStartTime = System.currentTimeMillis();
-                    attackCooldown = 0;
-                    ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "sfx_marceline_beast_crit_activate",
-                            this.location);
-                    ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "marceline_beast_crit_hand",
-                            W_DURATION,
-                            this.id + "_beastHands",
-                            true,
-                            "Bip001 R Hand",
-                            true,
-                            false,
-                            this.team);
-                    this.addEffect(
-                            "speed", this.getStat("speed") * W_BEAST_SPEED_VALUE, W_DURATION);
-                } else {
-                    this.vampireWActive = true;
-                    this.vampireWStartTime = System.currentTimeMillis();
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, wVO, this.location);
-                    ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "sfx_marceline_blood_mist",
-                            this.location);
-                    ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "marceline_vamp_mark",
-                            W_DURATION,
-                            this.id + "_wBats",
-                            true,
-                            "",
-                            true,
-                            false,
-                            this.team);
-                    ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "marceline_blood_mist",
-                            W_DURATION,
-                            this.id + "_mist",
-                            true,
-                            "",
-                            true,
-                            false,
-                            this.team);
-                    this.addEffect(
-                            "speed", this.getStat("speed") * W_VAMPIRE_SPEED_VALUE, W_DURATION);
+                try {
+                    String wVO = SkinData.getMarcelineWVO(avatar);
+                    if (this.form == Form.BEAST) {
+                        this.beastWActive = true;
+                        this.bestWStartTime = System.currentTimeMillis();
+                        attackCooldown = 0;
+                        ExtensionCommands.playSound(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                "sfx_marceline_beast_crit_activate",
+                                this.location);
+                        ExtensionCommands.createActorFX(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                "marceline_beast_crit_hand",
+                                W_DURATION,
+                                this.id + "_beastHands",
+                                true,
+                                "Bip001 R Hand",
+                                true,
+                                false,
+                                this.team);
+                        this.addEffect(
+                                "speed", this.getStat("speed") * W_BEAST_SPEED_VALUE, W_DURATION);
+                    } else {
+                        this.vampireWActive = true;
+                        this.vampireWStartTime = System.currentTimeMillis();
+                        ExtensionCommands.playSound(
+                                this.parentExt, this.room, this.id, wVO, this.location);
+                        ExtensionCommands.playSound(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                "sfx_marceline_blood_mist",
+                                this.location);
+                        ExtensionCommands.createActorFX(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                "marceline_vamp_mark",
+                                W_DURATION,
+                                this.id + "_wBats",
+                                true,
+                                "",
+                                true,
+                                false,
+                                this.team);
+                        ExtensionCommands.createActorFX(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                "marceline_blood_mist",
+                                W_DURATION,
+                                this.id + "_mist",
+                                true,
+                                "",
+                                true,
+                                false,
+                                this.team);
+                        this.addEffect(
+                                "speed", this.getStat("speed") * W_VAMPIRE_SPEED_VALUE, W_DURATION);
+                    }
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
                 }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,

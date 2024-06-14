@@ -254,37 +254,42 @@ public class Jake extends UserActor {
             Point2D dest) {
         switch (ability) {
             case 1:
-                this.stopMoving(Q_SELFCRIPPLE_TIME);
                 this.canCast[0] = false;
                 this.canCast[1] = false;
                 this.canCast[2] = false;
-                this.qUsed = true;
-                this.qAnimationTime = 1300;
-                Line2D qLine = Champion.getAbilityLine(this.location, dest, Q_SPELL_RANGE);
-                this.qPolygon = createOctagon(this.location, dest);
-                Runnable projectileDelay =
-                        () -> {
-                            if (this.getHealth() > 0) {
-                                fireQProjectile(
-                                        new JakeQProjectile(
-                                                this.parentExt,
-                                                this,
-                                                qLine,
-                                                8.5f,
-                                                1f,
-                                                "stretchy_grab"),
-                                        this.location,
-                                        dest);
-                            }
-                        };
+                try {
+                    this.stopMoving(Q_SELFCRIPPLE_TIME);
+                    this.qUsed = true;
+                    this.qAnimationTime = 1300;
+                    Line2D qLine = Champion.getAbilityLine(this.location, dest, Q_SPELL_RANGE);
+                    this.qPolygon = createOctagon(this.location, dest);
+                    Runnable projectileDelay =
+                            () -> {
+                                if (this.getHealth() > 0) {
+                                    fireQProjectile(
+                                            new JakeQProjectile(
+                                                    this.parentExt,
+                                                    this,
+                                                    qLine,
+                                                    8.5f,
+                                                    1f,
+                                                    "stretchy_grab"),
+                                            this.location,
+                                            dest);
+                                }
+                            };
 
-                scheduleTask(projectileDelay, Q_PROJECTILE_DELAY);
-                String stretchSFX = SkinData.getJakeQSFX(avatar);
-                String stretchVO = SkinData.getJakeQVO(avatar);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, stretchSFX, this.location);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, stretchVO, this.location);
+                    scheduleTask(projectileDelay, Q_PROJECTILE_DELAY);
+                    String stretchSFX = SkinData.getJakeQSFX(avatar);
+                    String stretchVO = SkinData.getJakeQVO(avatar);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, stretchSFX, this.location);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, stretchVO, this.location);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -298,59 +303,64 @@ public class Jake extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
-                this.stopMoving(gCooldown);
-                String ballFX = SkinData.getJakeWFX(avatar);
-                String dustUpFX = SkinData.getJakeWDustUpFX(avatar);
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        ballFX,
-                        2000,
-                        this.id + "_ball",
-                        true,
-                        "targetNode",
-                        true,
-                        false,
-                        this.team);
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        dustUpFX,
-                        1500,
-                        this.id + "_dust",
-                        false,
-                        "Bip001 Footsteps",
-                        false,
-                        false,
-                        this.team);
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "fx_target_ring_3",
-                        850,
-                        this.id + "_jake_ring_3",
-                        true,
-                        "",
-                        true,
-                        true,
-                        this.team);
-                RoomHandler handler = parentExt.getRoomHandler(room.getName());
-                for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
-                    if (this.isNonStructure(a)) {
-                        a.knockback(this.location);
-                        a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                try {
+                    this.stopMoving(gCooldown);
+                    String ballFX = SkinData.getJakeWFX(avatar);
+                    String dustUpFX = SkinData.getJakeWDustUpFX(avatar);
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            ballFX,
+                            2000,
+                            this.id + "_ball",
+                            true,
+                            "targetNode",
+                            true,
+                            false,
+                            this.team);
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            dustUpFX,
+                            1500,
+                            this.id + "_dust",
+                            false,
+                            "Bip001 Footsteps",
+                            false,
+                            false,
+                            this.team);
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "fx_target_ring_3",
+                            850,
+                            this.id + "_jake_ring_3",
+                            true,
+                            "",
+                            true,
+                            true,
+                            this.team);
+                    RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                    for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
+                        if (this.isNonStructure(a)) {
+                            a.knockback(this.location);
+                            a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                        }
                     }
-                }
 
-                String ballVO = SkinData.getJakeWVO(avatar);
-                String ballSFX = SkinData.getJakeWSFX(avatar);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, ballVO, this.location);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, ballSFX, this.location);
+                    String ballVO = SkinData.getJakeWVO(avatar);
+                    String ballSFX = SkinData.getJakeWSFX(avatar);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, ballVO, this.location);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, ballSFX, this.location);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -363,39 +373,51 @@ public class Jake extends UserActor {
                 break;
             case 3:
                 this.canCast[2] = false;
-                this.stopMoving();
-                String bigFX = SkinData.getJakeEFX(avatar);
-                ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bigFX);
-                this.cleanseEffects();
-                this.ultActivated = true;
-                this.ultStartTime = System.currentTimeMillis();
-                updateStatMenu("speed");
-                ExtensionCommands.createActorFX(
-                        parentExt,
-                        room,
-                        id,
-                        "statusEffect_immunity",
-                        E_DURATION,
-                        id + "_ultImmunity",
-                        true,
-                        "displayBar",
-                        false,
-                        false,
-                        team);
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "fx_target_ring_2",
-                        E_DURATION,
-                        this.id + "_jake_ring_2",
-                        true,
-                        "",
-                        true,
-                        true,
-                        this.team);
-                this.addState(ActorState.CLEANSED, 0d, E_DURATION);
-                this.addState(ActorState.IMMUNITY, 0d, E_DURATION);
+                try {
+                    this.stopMoving();
+                    String bigFX = SkinData.getJakeEFX(avatar);
+                    ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bigFX);
+                    this.cleanseEffects();
+                    this.ultActivated = true;
+                    this.ultStartTime = System.currentTimeMillis();
+                    updateStatMenu("speed");
+                    ExtensionCommands.createActorFX(
+                            parentExt,
+                            room,
+                            id,
+                            "statusEffect_immunity",
+                            E_DURATION,
+                            id + "_ultImmunity",
+                            true,
+                            "displayBar",
+                            false,
+                            false,
+                            team);
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "fx_target_ring_2",
+                            E_DURATION,
+                            this.id + "_jake_ring_2",
+                            true,
+                            "",
+                            true,
+                            true,
+                            this.team);
+                    this.addState(ActorState.CLEANSED, 0d, E_DURATION);
+                    this.addState(ActorState.IMMUNITY, 0d, E_DURATION);
+
+                    String growVO = SkinData.getJakeEVO(avatar);
+                    String growSFX = SkinData.getJakeESFX(avatar);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, growSFX, this.location);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, growVO, this.location);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -403,12 +425,6 @@ public class Jake extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                String growVO = SkinData.getJakeEVO(avatar);
-                String growSFX = SkinData.getJakeESFX(avatar);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, growSFX, this.location);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, growVO, this.location);
                 int delay1 = getReducedCooldown(cooldown);
                 scheduleTask(abilityHandler(ability, spellData, cooldown, gCooldown, dest), delay1);
                 break;

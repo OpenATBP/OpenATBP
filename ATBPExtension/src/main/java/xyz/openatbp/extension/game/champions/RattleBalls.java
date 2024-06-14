@@ -408,21 +408,26 @@ public class RattleBalls extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
-                String wSFX = SkinData.getRattleBallsWSFX(avatar);
-                ExtensionCommands.playSound(parentExt, room, id, wSFX, location);
-                this.stopMoving(castDelay);
-                ExtensionCommands.createWorldFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "fx_target_ring_5",
-                        this.id + "_wCircle",
-                        castDelay,
-                        (float) this.location.getX(),
-                        (float) this.location.getY(),
-                        true,
-                        this.team,
-                        0f);
+                try {
+                    String wSFX = SkinData.getRattleBallsWSFX(avatar);
+                    ExtensionCommands.playSound(parentExt, room, id, wSFX, location);
+                    this.stopMoving(castDelay);
+                    ExtensionCommands.createWorldFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "fx_target_ring_5",
+                            this.id + "_wCircle",
+                            castDelay,
+                            (float) this.location.getX(),
+                            (float) this.location.getY(),
+                            true,
+                            this.team,
+                            0f);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,

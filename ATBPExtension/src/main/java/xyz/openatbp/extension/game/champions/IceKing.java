@@ -248,62 +248,67 @@ public class IceKing extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
-                this.wStartTime = System.currentTimeMillis();
-                this.wLocation = dest;
-                this.lastWHit = new HashMap<>();
-                String hailStormVO = SkinData.getIceKingWVO(avatar);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, "", "sfx_ice_king_hailstorm", dest);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, hailStormVO, this.location);
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "ice_king_spell_casting_hand",
-                        1000,
-                        this.id + "_lHand",
-                        true,
-                        "Bip001 L Hand",
-                        true,
-                        false,
-                        this.team);
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "ice_king_spell_casting_hand",
-                        1000,
-                        this.id + "_rHand",
-                        true,
-                        "Bip001 R Hand",
-                        true,
-                        false,
-                        this.team);
-                ExtensionCommands.createWorldFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "AoE_iceking_snowballs",
-                        this.id + "_snowBalls",
-                        W_DURATION,
-                        (float) dest.getX(),
-                        (float) dest.getY(),
-                        false,
-                        this.team,
-                        0f);
-                ExtensionCommands.createWorldFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "fx_target_ring_3",
-                        this.id + "_wRing",
-                        W_DURATION,
-                        (float) dest.getX(),
-                        (float) dest.getY(),
-                        true,
-                        this.team,
-                        0f);
+                try {
+                    this.wStartTime = System.currentTimeMillis();
+                    this.wLocation = dest;
+                    this.lastWHit = new HashMap<>();
+                    String hailStormVO = SkinData.getIceKingWVO(avatar);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, "", "sfx_ice_king_hailstorm", dest);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, hailStormVO, this.location);
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "ice_king_spell_casting_hand",
+                            1000,
+                            this.id + "_lHand",
+                            true,
+                            "Bip001 L Hand",
+                            true,
+                            false,
+                            this.team);
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "ice_king_spell_casting_hand",
+                            1000,
+                            this.id + "_rHand",
+                            true,
+                            "Bip001 R Hand",
+                            true,
+                            false,
+                            this.team);
+                    ExtensionCommands.createWorldFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "AoE_iceking_snowballs",
+                            this.id + "_snowBalls",
+                            W_DURATION,
+                            (float) dest.getX(),
+                            (float) dest.getY(),
+                            false,
+                            this.team,
+                            0f);
+                    ExtensionCommands.createWorldFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "fx_target_ring_3",
+                            this.id + "_wRing",
+                            W_DURATION,
+                            (float) dest.getX(),
+                            (float) dest.getY(),
+                            true,
+                            this.team,
+                            0f);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -316,40 +321,49 @@ public class IceKing extends UserActor {
                 break;
             case 3:
                 this.canCast[2] = false;
-                this.ultActive = true;
-                this.ultLocation = this.location;
-                this.ultStartTime = System.currentTimeMillis();
-                String ultimateVO = SkinData.getIceKingEVO(avatar);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "sfx_ice_king_ultimate", this.location);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, ultimateVO, this.location);
-                ExtensionCommands.actorAnimate(
-                        this.parentExt, this.room, this.id, "idle", 100, true);
-                ExtensionCommands.createWorldFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "fx_target_ring_5.5",
-                        this.id + "eRing",
-                        E_DURATION,
-                        (float) this.location.getX(),
-                        (float) this.location.getY(),
-                        true,
-                        this.team,
-                        0f);
-                ExtensionCommands.createWorldFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "iceKing_freezeGround",
-                        this.id + "_ultFreeze",
-                        E_DURATION,
-                        (float) this.location.getX(),
-                        (float) this.location.getY(),
-                        false,
-                        this.team,
-                        0f);
+                try {
+                    this.ultActive = true;
+                    this.ultLocation = this.location;
+                    this.ultStartTime = System.currentTimeMillis();
+                    String ultimateVO = SkinData.getIceKingEVO(avatar);
+                    ExtensionCommands.playSound(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "sfx_ice_king_ultimate",
+                            this.location);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, ultimateVO, this.location);
+                    ExtensionCommands.actorAnimate(
+                            this.parentExt, this.room, this.id, "idle", 100, true);
+                    ExtensionCommands.createWorldFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "fx_target_ring_5.5",
+                            this.id + "eRing",
+                            E_DURATION,
+                            (float) this.location.getX(),
+                            (float) this.location.getY(),
+                            true,
+                            this.team,
+                            0f);
+                    ExtensionCommands.createWorldFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "iceKing_freezeGround",
+                            this.id + "_ultFreeze",
+                            E_DURATION,
+                            (float) this.location.getX(),
+                            (float) this.location.getY(),
+                            false,
+                            this.team,
+                            0f);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,

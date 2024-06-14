@@ -2,7 +2,6 @@ package xyz.openatbp.extension.game.champions;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -207,59 +206,55 @@ public class Fionna extends UserActor {
                     int gruntNum = 3 - this.dashesRemaining;
                     ExtensionCommands.playSound(
                             parentExt, room, this.id, "fionna_grunt" + gruntNum, this.location);
-                    parentExt
-                            .getTaskScheduler()
-                            .schedule(
-                                    new FionnaAbilityRunnable(
-                                            ability, spellData, cooldown, gCooldown, dashPoint),
-                                    qTime,
-                                    TimeUnit.MILLISECONDS);
+                    scheduleTask(
+                            abilityRunnable(ability, spellData, cooldown, gCooldown, dashPoint),
+                            qTime);
                 }
                 break;
             case 2:
+                this.canCast[1] = false;
                 if (this.swordType == SwordType.FEARLESS) this.swordType = SwordType.FIERCE;
                 else this.swordType = SwordType.FEARLESS;
                 this.handleSwordAnimation();
                 ExtensionCommands.actorAbilityResponse(
                         parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
-                this.canCast[1] = false;
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new FionnaAbilityRunnable(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
+                int delay = getReducedCooldown(cooldown);
+                scheduleTask(abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay);
                 break;
             case 3:
-                this.stopMoving(castDelay);
                 this.canCast[2] = false;
-                this.ultActivated = true;
-                this.ultStartTime = System.currentTimeMillis();
-                ExtensionCommands.addStatusIcon(
-                        this.parentExt,
-                        this.player,
-                        "fionna_ult",
-                        "fionna_spell_3_description",
-                        "icon_fionna_s3",
-                        E_DURATION);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "sfx_fionna_invuln", this.location);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "fionna_ult", this.location);
-                if (getHealth() > 0) {
-                    ExtensionCommands.createActorFX(
+                try {
+                    this.stopMoving(castDelay);
+                    this.ultActivated = true;
+                    this.ultStartTime = System.currentTimeMillis();
+                    ExtensionCommands.addStatusIcon(
                             this.parentExt,
-                            this.room,
-                            this.id,
-                            "fionna_invuln_fx",
-                            E_DURATION,
-                            this.id + "_ult",
-                            true,
-                            "",
-                            true,
-                            false,
-                            this.team);
+                            this.player,
+                            "fionna_ult",
+                            "fionna_spell_3_description",
+                            "icon_fionna_s3",
+                            E_DURATION);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, "sfx_fionna_invuln", this.location);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, "fionna_ult", this.location);
+                    if (getHealth() > 0) {
+                        ExtensionCommands.createActorFX(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                "fionna_invuln_fx",
+                                E_DURATION,
+                                this.id + "_ult",
+                                true,
+                                "",
+                                true,
+                                false,
+                                this.team);
+                    }
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
                 }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
@@ -268,13 +263,9 @@ public class Fionna extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new FionnaAbilityRunnable(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                getReducedCooldown(cooldown),
-                                TimeUnit.MILLISECONDS);
+                int delay1 = getReducedCooldown(cooldown);
+                scheduleTask(
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay1);
                 break;
             case 4:
                 break;
@@ -363,6 +354,11 @@ public class Fionna extends UserActor {
         return this.ultActivated;
     }
 
+    private FionnaAbilityRunnable abilityRunnable(
+            int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {
+        return new FionnaAbilityRunnable(ability, spellData, cooldown, gCooldown, dest);
+    }
+
     private class FionnaAbilityRunnable extends AbilityRunnable {
 
         public FionnaAbilityRunnable(
@@ -377,16 +373,11 @@ public class Fionna extends UserActor {
             float range = 1f;
             String explosionFx = "fionna_dash_explode_small";
             if (dashInt == 1) {
-                int Q_TIME = qTime;
                 range = 2.5f;
                 explosionFx = "fionna_dash_explode";
                 Runnable enableQCasting = () -> canCast[0] = true;
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                enableQCasting,
-                                getReducedCooldown(qCooldown) - Q_TIME,
-                                TimeUnit.MILLISECONDS);
+                int delay = getReducedCooldown(qCooldown) - qTime;
+                scheduleTask(enableQCasting, delay);
             }
             if (getHealth() > 0) {
                 ExtensionCommands.createWorldFX(

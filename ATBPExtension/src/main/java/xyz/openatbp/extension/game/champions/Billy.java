@@ -97,12 +97,6 @@ public class Billy extends UserActor {
     }
 
     @Override
-    public void die(Actor a) {
-        super.die(a);
-        if (!canCast[0]) canCast[0] = true;
-    }
-
-    @Override
     public void useAbility(
             int ability,
             JsonNode spellData,
@@ -141,27 +135,35 @@ public class Billy extends UserActor {
         switch (ability) {
             case 1:
                 this.canCast[0] = false;
-                this.stopMoving();
-                Path2D quadrangle =
-                        Champion.createRectangle(location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
-                RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
-                List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, quadrangle);
-                if (!actorsInPolygon.isEmpty()) {
-                    for (Actor a : actorsInPolygon) {
-                        if (isNonStructure(a)) {
-                            a.knockback(this.location);
-                            if (this.passiveUses == 3) a.addState(ActorState.STUNNED, 0d, 2000);
+                try {
+                    this.stopMoving();
+                    Path2D quadrangle =
+                            Champion.createRectangle(
+                                    location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
+                    RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
+                    List<Actor> actorsInPolygon =
+                            handler.getEnemiesInPolygon(this.team, quadrangle);
+                    if (!actorsInPolygon.isEmpty()) {
+                        for (Actor a : actorsInPolygon) {
+                            if (isNonStructure(a)) {
+                                a.knockback(this.location);
+                                if (this.passiveUses == 3) a.addState(ActorState.STUNNED, 0d, 2000);
+                            }
+                            a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                         }
-                        a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                     }
+                    if (this.passiveUses == 3) this.usePassiveAbility();
+                    ExtensionCommands.playSound(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "vo/vo_billy_knock_back",
+                            this.location);
+
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
                 }
-                if (this.passiveUses == 3) this.usePassiveAbility();
-                ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "vo/vo_billy_knock_back",
-                        this.location);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -174,63 +176,70 @@ public class Billy extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
-                Point2D ogLocation = this.location;
-                Point2D finalDashPoint = this.dash(dest, true, 14d);
-                double time = ogLocation.distance(finalDashPoint) / 14d;
-                int wTime = (int) (time * 1000);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "sfx_billy_jump", this.location);
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "billy_dash_trail",
-                        (int) (time * 1000),
-                        this.id + "_dash",
-                        true,
-                        "Bip001",
-                        true,
-                        false,
-                        this.team);
-                ExtensionCommands.actorAnimate(
-                        this.parentExt, this.room, this.id, "spell2", wTime, false);
-                if (this.passiveUses == 3) {
-                    double delta = this.getStat("attackSpeed") * -W_ATTACKSPEED_VALUE;
-                    this.addEffect("attackSpeed", delta, W_ATTACKSPEED_DURATION);
-                    this.addEffect("speed", W_SPEED_VALUE, W_SPEED_DURATION);
-                    this.usePassiveAbility();
-                    ExtensionCommands.addStatusIcon(
-                            this.parentExt,
-                            this.player,
-                            "finalpassive",
-                            "billy_spell_4_short_description",
-                            "icon_billy_passive",
-                            6000);
+                Point2D finalDashPoint = this.location;
+                double time = 0;
+                try {
+                    Point2D ogLocation = this.location;
+                    finalDashPoint = this.dash(dest, true, 14d);
+                    time = ogLocation.distance(finalDashPoint) / 14d;
+                    int wTime = (int) (time * 1000);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, "sfx_billy_jump", this.location);
                     ExtensionCommands.createActorFX(
                             this.parentExt,
                             this.room,
                             this.id,
-                            "billy_crit_hands",
-                            W_ATTACKSPEED_DURATION,
-                            this.id + "_critHandsR",
+                            "billy_dash_trail",
+                            (int) (time * 1000),
+                            this.id + "_dash",
                             true,
-                            "Bip001 R Hand",
-                            true,
-                            false,
-                            this.team);
-                    ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "billy_crit_hands",
-                            W_ATTACKSPEED_DURATION,
-                            this.id + "_critHandsL",
-                            true,
-                            "Bip001 L Hand",
+                            "Bip001",
                             true,
                             false,
                             this.team);
-                    finalPassiveStart = System.currentTimeMillis();
+                    ExtensionCommands.actorAnimate(
+                            this.parentExt, this.room, this.id, "spell2", wTime, false);
+                    if (this.passiveUses == 3) {
+                        double delta = this.getStat("attackSpeed") * -W_ATTACKSPEED_VALUE;
+                        this.addEffect("attackSpeed", delta, W_ATTACKSPEED_DURATION);
+                        this.addEffect("speed", W_SPEED_VALUE, W_SPEED_DURATION);
+                        this.usePassiveAbility();
+                        ExtensionCommands.addStatusIcon(
+                                this.parentExt,
+                                this.player,
+                                "finalpassive",
+                                "billy_spell_4_short_description",
+                                "icon_billy_passive",
+                                6000);
+                        ExtensionCommands.createActorFX(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                "billy_crit_hands",
+                                W_ATTACKSPEED_DURATION,
+                                this.id + "_critHandsR",
+                                true,
+                                "Bip001 R Hand",
+                                true,
+                                false,
+                                this.team);
+                        ExtensionCommands.createActorFX(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                "billy_crit_hands",
+                                W_ATTACKSPEED_DURATION,
+                                this.id + "_critHandsL",
+                                true,
+                                "Bip001 L Hand",
+                                true,
+                                false,
+                                this.team);
+                        finalPassiveStart = System.currentTimeMillis();
+                    }
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
                 }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
@@ -246,22 +255,31 @@ public class Billy extends UserActor {
                 break;
             case 3:
                 this.canCast[2] = false;
-                this.stopMoving(castDelay);
-                this.ultLoc = Champion.getAbilityLine(this.location, dest, 5.5f).getP2();
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "vo/vo_billy_nothung", this.location);
-                ExtensionCommands.createWorldFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "lemongrab_ground_aoe_target",
-                        this.id + "_billyUltTarget",
-                        1750,
-                        (float) ultLoc.getX(),
-                        (float) ultLoc.getY(),
-                        true,
-                        this.team,
-                        0f);
+                try {
+                    this.stopMoving(castDelay);
+                    this.ultLoc = Champion.getAbilityLine(this.location, dest, 5.5f).getP2();
+                    ExtensionCommands.playSound(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "vo/vo_billy_nothung",
+                            this.location);
+                    ExtensionCommands.createWorldFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "lemongrab_ground_aoe_target",
+                            this.id + "_billyUltTarget",
+                            1750,
+                            (float) ultLoc.getX(),
+                            (float) ultLoc.getY(),
+                            true,
+                            this.team,
+                            0f);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,

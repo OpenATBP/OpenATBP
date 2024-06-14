@@ -268,7 +268,7 @@ public class ChampionData {
     }
 
     public static int getBaseAbilityCooldown(UserActor userActor, int abilityNumber) {
-        String championName = userActor.getDefaultCharacterName(userActor.getAvatar());
+        String championName = userActor.getChampionName(userActor.getAvatar());
         int championLevel = ChampionData.getXPLevel(userActor.getXp());
         JsonNode abilityData =
                 userActor.getParentExt().getAttackData(championName, "spell" + abilityNumber);

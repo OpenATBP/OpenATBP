@@ -643,7 +643,7 @@ public class UserActor extends Actor {
 
             if (this.getState(ActorState.POLYMORPH)) {
                 boolean swapAsset = true;
-                if (this.getDefaultCharacterName(this.getAvatar()).equalsIgnoreCase("marceline")
+                if (this.getChampionName(this.getAvatar()).equalsIgnoreCase("marceline")
                         && this.getState(ActorState.TRANSFORMED)) swapAsset = false;
                 if (swapAsset) {
                     ExtensionCommands.swapActorAsset(
@@ -1174,7 +1174,7 @@ public class UserActor extends Actor {
         return this.canCast[ability - 1];
     }
 
-    public String getDefaultCharacterName(String avatar) {
+    public String getChampionName(String avatar) {
         String[] avatarComponents = avatar.split("_");
         if (avatarComponents.length > 1) {
             return avatarComponents[0];
@@ -1184,7 +1184,7 @@ public class UserActor extends Actor {
     }
 
     public boolean isCastingDashAbility(String avatar, int ability) { // all chars except fp
-        String defaultAvatar = getDefaultCharacterName(avatar);
+        String defaultAvatar = getChampionName(avatar);
         switch (defaultAvatar) {
             case "billy":
             case "cinnamonbun":
@@ -1786,6 +1786,15 @@ public class UserActor extends Actor {
     public void destroy() {
         this.dead = true;
         ExtensionCommands.destroyActor(this.parentExt, this.room, this.id);
+    }
+
+    public void logExceptionMessage(String avatar, int spellNum) {
+        String characterName = getChampionName(avatar).toUpperCase();
+        String message =
+                String.format(
+                        "EXCEPTION OCCURED DURING ABILITY EXECUTION. CHARACTER: %s, ABILITY: %d",
+                        characterName, spellNum);
+        Console.logWarning(message);
     }
 
     public void clearIconHandlers() {

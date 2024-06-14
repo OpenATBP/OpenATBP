@@ -190,75 +190,89 @@ public class Hunson extends UserActor {
             Point2D dest) {
         switch (ability) {
             case 1:
-                this.qStartTime = System.currentTimeMillis();
                 this.canCast[0] = false;
-                this.stopMoving();
-                if (!this.qActivated) {
-                    this.qActivated = true;
-                    this.qVictims = new HashMap<>(3);
-                    this.qUses = 3;
+                int abilityCooldown = 0;
+                try {
+                    this.qStartTime = System.currentTimeMillis();
+                    this.stopMoving();
+                    if (!this.qActivated) {
+                        this.qActivated = true;
+                        this.qVictims = new HashMap<>(3);
+                        this.qUses = 3;
+                    }
+                    this.qUses--;
+                    abilityCooldown = this.qUses > 0 ? 850 : getReducedCooldown(cooldown);
+                    ExtensionCommands.playSound(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "sfx_hunson_scream2",
+                            this.location);
+                    Line2D spellLine = Champion.getAbilityLine(this.location, dest, 8f);
+                    this.fireProjectile(
+                            new HudsonProjectile(
+                                    this.parentExt,
+                                    this,
+                                    spellLine,
+                                    8f,
+                                    0.5f,
+                                    "projectile_hunson_pull"),
+                            this.location,
+                            dest,
+                            8f);
+                    if (this.qUses == 0) {
+                        this.qActivated = false;
+                    }
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
                 }
-                this.qUses--;
-                int abilityCooldown = this.qUses > 0 ? 850 : getReducedCooldown(cooldown);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt, this.player, "q", true, abilityCooldown, gCooldown);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "sfx_hunson_scream2", this.location);
-                Line2D spellLine = Champion.getAbilityLine(this.location, dest, 8f);
-                this.fireProjectile(
-                        new HudsonProjectile(
-                                this.parentExt,
-                                this,
-                                spellLine,
-                                8f,
-                                0.5f,
-                                "projectile_hunson_pull"),
-                        this.location,
-                        dest,
-                        8f);
-                if (this.qUses == 0) {
-                    this.qActivated = false;
-                }
-
                 break;
             case 2:
                 this.canCast[1] = false;
-                this.fearedActors = new ArrayList<>();
-                this.wLocation = this.location;
-                this.stopMoving(castDelay);
-                Runnable activateW =
-                        () -> {
-                            this.wActive = true;
-                            this.wStartTime = System.currentTimeMillis();
-                        };
-                scheduleTask(activateW, castDelay);
+                try {
+                    this.fearedActors = new ArrayList<>();
+                    this.wLocation = this.location;
+                    this.stopMoving(castDelay);
+                    Runnable activateW =
+                            () -> {
+                                this.wActive = true;
+                                this.wStartTime = System.currentTimeMillis();
+                            };
+                    scheduleTask(activateW, castDelay);
 
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "hunson_power2a", this.location);
-                ExtensionCommands.createActorFX(
-                        parentExt,
-                        room,
-                        id,
-                        "hunson_fear",
-                        1500,
-                        id + "_fear",
-                        false,
-                        "",
-                        false,
-                        false,
-                        team);
-                ExtensionCommands.createActorFX(
-                        parentExt,
-                        room,
-                        id,
-                        "fx_target_ring_2.5",
-                        1500,
-                        id + "_fearRing",
-                        false,
-                        "",
-                        false,
-                        true,
-                        team);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, "hunson_power2a", this.location);
+                    ExtensionCommands.createActorFX(
+                            parentExt,
+                            room,
+                            id,
+                            "hunson_fear",
+                            1500,
+                            id + "_fear",
+                            false,
+                            "",
+                            false,
+                            false,
+                            team);
+                    ExtensionCommands.createActorFX(
+                            parentExt,
+                            room,
+                            id,
+                            "fx_target_ring_2.5",
+                            1500,
+                            id + "_fearRing",
+                            false,
+                            "",
+                            false,
+                            true,
+                            team);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -271,44 +285,53 @@ public class Hunson extends UserActor {
                 break;
             case 3:
                 this.canCast[2] = false;
-                this.resetTarget();
-                this.stopMoving(E_DURATION + castDelay);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "sfx_hunson_scream1", this.location);
-                Runnable soundDelay =
-                        () -> {
-                            ExtensionCommands.playSound(
-                                    this.parentExt,
-                                    this.room,
-                                    this.id,
-                                    "hunson_power3a",
-                                    this.location);
-                        };
-                scheduleTask(soundDelay, W_SOUND_DELAY);
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "fx_hunson_head1",
-                        E_DURATION + castDelay,
-                        this.id + "_ultHead",
-                        true,
-                        "headNode",
-                        true,
-                        false,
-                        this.team);
-                ExtensionCommands.createWorldFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "fx_target_ring_4",
-                        this.id + "_ultRing",
-                        E_DURATION + castDelay,
-                        (float) this.location.getX(),
-                        (float) this.location.getY(),
-                        true,
-                        this.team,
-                        0f);
+                try {
+                    this.resetTarget();
+                    this.stopMoving(E_DURATION + castDelay);
+                    ExtensionCommands.playSound(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "sfx_hunson_scream1",
+                            this.location);
+                    Runnable soundDelay =
+                            () -> {
+                                ExtensionCommands.playSound(
+                                        this.parentExt,
+                                        this.room,
+                                        this.id,
+                                        "hunson_power3a",
+                                        this.location);
+                            };
+                    scheduleTask(soundDelay, W_SOUND_DELAY);
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "fx_hunson_head1",
+                            E_DURATION + castDelay,
+                            this.id + "_ultHead",
+                            true,
+                            "headNode",
+                            true,
+                            false,
+                            this.team);
+                    ExtensionCommands.createWorldFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "fx_target_ring_4",
+                            this.id + "_ultRing",
+                            E_DURATION + castDelay,
+                            (float) this.location.getX(),
+                            (float) this.location.getY(),
+                            true,
+                            this.team,
+                            0f);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,

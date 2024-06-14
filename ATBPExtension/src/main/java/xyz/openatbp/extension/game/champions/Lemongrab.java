@@ -138,46 +138,52 @@ public class Lemongrab extends UserActor {
         switch (ability) {
             case 1:
                 this.canCast[0] = false;
-                Path2D trapezoid =
-                        Champion.createTrapezoid(
-                                location,
-                                dest,
-                                Q_SPELL_RANGE,
-                                Q_OFFSET_DISTANCE_BOTTOM,
-                                Q_OFFSET_DISTANCE_TOP);
-                RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
-                List<Actor> actorsInTrapezoid = handler.getEnemiesInPolygon(this.team, trapezoid);
-                if (!actorsInTrapezoid.isEmpty()) {
-                    for (Actor a : actorsInTrapezoid) {
-                        if (isNonStructure(a))
-                            a.addState(ActorState.SLOWED, Q_SLOW_VALUE, Q_SLOW_DURATION);
-                        a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                try {
+                    Path2D trapezoid =
+                            Champion.createTrapezoid(
+                                    location,
+                                    dest,
+                                    Q_SPELL_RANGE,
+                                    Q_OFFSET_DISTANCE_BOTTOM,
+                                    Q_OFFSET_DISTANCE_TOP);
+                    RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
+                    List<Actor> actorsInTrapezoid =
+                            handler.getEnemiesInPolygon(this.team, trapezoid);
+                    if (!actorsInTrapezoid.isEmpty()) {
+                        for (Actor a : actorsInTrapezoid) {
+                            if (isNonStructure(a))
+                                a.addState(ActorState.SLOWED, Q_SLOW_VALUE, Q_SLOW_DURATION);
+                            a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                        }
                     }
+                    ExtensionCommands.playSound(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "sfx_lemongrab_sound_sword",
+                            this.location);
+                    ExtensionCommands.playSound(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "vo/vo_lemongrab_sound_sword",
+                            this.location);
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "lemongrab_sonic_sword_effect",
+                            750,
+                            this.id + "_sonicSword",
+                            true,
+                            "Sword",
+                            true,
+                            false,
+                            this.team);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
                 }
-                ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "sfx_lemongrab_sound_sword",
-                        this.location);
-                ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "vo/vo_lemongrab_sound_sword",
-                        this.location);
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "lemongrab_sonic_sword_effect",
-                        750,
-                        this.id + "_sonicSword",
-                        true,
-                        "Sword",
-                        true,
-                        false,
-                        this.team);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -190,6 +196,50 @@ public class Lemongrab extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
+                try {
+                    ExtensionCommands.playSound(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "vo/vo_lemongrab_my_juice",
+                            this.location);
+                    ExtensionCommands.createWorldFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "lemongrab_ground_aoe_target",
+                            this.id + "wTarget",
+                            castDelay,
+                            (float) dest.getX(),
+                            (float) dest.getY(),
+                            true,
+                            this.team,
+                            0f);
+                    ExtensionCommands.playSound(
+                            parentExt, room, "", "sfx_lemongrab_my_juice", dest);
+                    Runnable delayedJuice =
+                            () -> {
+                                if (getHealth() > 0) {
+                                    juice = true;
+                                    ExtensionCommands.createWorldFX(
+                                            parentExt,
+                                            room,
+                                            id,
+                                            "lemongrab_ground_juice_aoe",
+                                            id + "_wJuice",
+                                            2000,
+                                            (float) dest.getX(),
+                                            (float) dest.getY(),
+                                            false,
+                                            team,
+                                            0f);
+                                }
+                            };
+                    scheduleTask(delayedJuice, W_FX_DELAY);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -197,89 +247,54 @@ public class Lemongrab extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                ExtensionCommands.createWorldFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "lemongrab_ground_aoe_target",
-                        this.id + "wTarget",
-                        castDelay,
-                        (float) dest.getX(),
-                        (float) dest.getY(),
-                        true,
-                        this.team,
-                        0f);
-                ExtensionCommands.playSound(parentExt, room, "", "sfx_lemongrab_my_juice", dest);
-                Runnable delayedJuice =
-                        () -> {
-                            if (getHealth() > 0) {
-                                juice = true;
-                                ExtensionCommands.createWorldFX(
-                                        parentExt,
-                                        room,
-                                        id,
-                                        "lemongrab_ground_juice_aoe",
-                                        id + "_wJuice",
-                                        2000,
-                                        (float) dest.getX(),
-                                        (float) dest.getY(),
-                                        false,
-                                        team,
-                                        0f);
-                            }
-                        };
-                scheduleTask(delayedJuice, W_FX_DELAY);
-                ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "vo/vo_lemongrab_my_juice",
-                        this.location);
                 scheduleTask(
                         abilityRunnable(ability, spellData, cooldown, gCooldown, dest), W_DELAY);
                 break;
             case 3:
                 this.canCast[2] = false;
-                this.isCastingUlt = true;
+                try {
+                    this.isCastingUlt = true;
+                    ExtensionCommands.createWorldFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "fx_target_ring_2.5",
+                            this.id + "_jailRing",
+                            castDelay,
+                            (float) dest.getX(),
+                            (float) dest.getY(),
+                            true,
+                            this.team,
+                            0f);
+                    String voiceLine = "";
+                    switch (this.unacceptableLevels) {
+                        case 0:
+                            voiceLine = "lemongrab_dungeon_3hours";
+                            ultDelay = 1250;
+                            break;
+                        case 1:
+                            voiceLine = "lemongrab_dungeon_30days";
+                            ultDelay = 1000;
+                            break;
+                        case 2:
+                            voiceLine = "lemongrab_dungeon_12years";
+                            ultDelay = 750;
+                            break;
+                        case 3:
+                            voiceLine = "lemongrab_dungeon_1myears";
+                            ultDelay = 500;
+                            break;
+                    }
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, voiceLine, this.location);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt, this.player, "e", true, getReducedCooldown(cooldown), 1000);
-                ExtensionCommands.createWorldFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "fx_target_ring_2.5",
-                        this.id + "_jailRing",
-                        castDelay,
-                        (float) dest.getX(),
-                        (float) dest.getY(),
-                        true,
-                        this.team,
-                        0f);
-                String voiceLine = "";
-                switch (this.unacceptableLevels) {
-                    case 0:
-                        voiceLine = "lemongrab_dungeon_3hours";
-                        ultDelay = 1250;
-                        break;
-                    case 1:
-                        voiceLine = "lemongrab_dungeon_30days";
-                        ultDelay = 1000;
-                        break;
-                    case 2:
-                        voiceLine = "lemongrab_dungeon_12years";
-                        ultDelay = 750;
-                        break;
-                    case 3:
-                        voiceLine = "lemongrab_dungeon_1myears";
-                        ultDelay = 500;
-                        break;
-                }
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, voiceLine, this.location);
                 scheduleTask(
                         abilityRunnable(ability, spellData, cooldown, gCooldown, dest), ultDelay);
-                break;
-            case 4:
                 break;
         }
     }

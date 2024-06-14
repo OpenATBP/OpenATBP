@@ -178,18 +178,23 @@ public class Neptr extends UserActor {
         switch (ability) {
             case 1:
                 this.canCast[0] = false;
-                Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
-                this.fireProjectile(
-                        new NeptrProjectile(
-                                this.parentExt,
-                                this,
-                                abilityLine,
-                                8f,
-                                0.5f,
-                                "projectile_neptr_boom_meringue"),
-                        this.location,
-                        dest,
-                        8f);
+                try {
+                    Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
+                    this.fireProjectile(
+                            new NeptrProjectile(
+                                    this.parentExt,
+                                    this,
+                                    abilityLine,
+                                    8f,
+                                    0.5f,
+                                    "projectile_neptr_boom_meringue"),
+                            this.location,
+                            dest,
+                            8f);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -202,7 +207,12 @@ public class Neptr extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
-                this.spawnMine(dest);
+                try {
+                    this.spawnMine(dest);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -216,36 +226,45 @@ public class Neptr extends UserActor {
                 break;
             case 3:
                 this.canCast[2] = false;
-                this.ultLocation = dest;
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, "", "sfx_neptr_ultimate", dest);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "vo/vo_neptr_locked_on", this.location);
-                float rotation = getRotation(dest);
-                ExtensionCommands.createWorldFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "neptr_ultimate",
-                        this.id + "_ult",
-                        2000,
-                        (float) dest.getX(),
-                        (float) dest.getY(),
-                        false,
-                        this.team,
-                        rotation);
-                ExtensionCommands.createWorldFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "fx_target_ring_3",
-                        this.id + "_ultRing",
-                        500,
-                        (float) dest.getX(),
-                        (float) dest.getY(),
-                        true,
-                        this.team,
-                        0f);
+                try {
+                    this.ultLocation = dest;
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, "", "sfx_neptr_ultimate", dest);
+                    ExtensionCommands.playSound(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "vo/vo_neptr_locked_on",
+                            this.location);
+                    float rotation = getRotation(dest);
+                    ExtensionCommands.createWorldFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "neptr_ultimate",
+                            this.id + "_ult",
+                            2000,
+                            (float) dest.getX(),
+                            (float) dest.getY(),
+                            false,
+                            this.team,
+                            rotation);
+                    ExtensionCommands.createWorldFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "fx_target_ring_3",
+                            this.id + "_ultRing",
+                            500,
+                            (float) dest.getX(),
+                            (float) dest.getY(),
+                            true,
+                            this.team,
+                            0f);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,

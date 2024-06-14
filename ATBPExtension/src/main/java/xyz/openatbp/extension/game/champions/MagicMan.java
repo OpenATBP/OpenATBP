@@ -114,64 +114,77 @@ public class MagicMan extends UserActor {
         switch (ability) {
             case 1:
                 this.canCast[0] = false;
-                if (this.getState(ActorState.INVISIBLE)) {
-                    this.setState(ActorState.INVISIBLE, false);
+                try {
+                    if (this.getState(ActorState.INVISIBLE)) {
+                        this.setState(ActorState.INVISIBLE, false);
+                    }
+                    this.stopMoving(castDelay);
+                    this.qStartTime = System.currentTimeMillis();
+                    ExtensionCommands.playSound(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "sfx_magicman_snakes",
+                            this.location);
+                    ExtensionCommands.playSound(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "vo/vo_magicman_snakes",
+                            this.location);
+                    Point2D endPoint = Champion.getAbilityLine(this.location, dest, 9.5f).getP2();
+                    this.estimatedQDuration = ((this.location.distance(endPoint) / 7f)) * 1000f;
+                    double dx = endPoint.getX() - this.location.getX();
+                    double dy = endPoint.getY() - this.location.getY();
+                    double theta = Math.atan2(dy, dx);
+                    double dist = this.location.distance(endPoint);
+                    double theta2 = theta - (Math.PI / 8);
+                    double theta3 = theta + (Math.PI / 8);
+                    double x = this.location.getX();
+                    double y = this.location.getY();
+                    Point2D endPoint2 =
+                            new Point2D.Double(
+                                    x + (dist * Math.cos(theta2)), y + (dist * Math.sin(theta2)));
+                    Point2D endPoint3 =
+                            new Point2D.Double(
+                                    x + (dist * Math.cos(theta3)), y + (dist * Math.sin(theta3)));
+                    this.fireMMProjectile(
+                            new SnakeProjectile(
+                                    this.parentExt,
+                                    this,
+                                    new Line2D.Float(this.location, endPoint),
+                                    7f,
+                                    0.25f,
+                                    "projectile_magicman_snake"),
+                            this.location,
+                            endPoint,
+                            9.5f);
+                    this.fireMMProjectile(
+                            new SnakeProjectile(
+                                    this.parentExt,
+                                    this,
+                                    new Line2D.Float(this.location, endPoint2),
+                                    7f,
+                                    0.25f,
+                                    "projectile_magicman_snake"),
+                            this.location,
+                            endPoint2,
+                            9.5f);
+                    this.fireMMProjectile(
+                            new SnakeProjectile(
+                                    this.parentExt,
+                                    this,
+                                    new Line2D.Float(this.location, endPoint3),
+                                    7f,
+                                    0.25f,
+                                    "projectile_magicman_snake"),
+                            this.location,
+                            endPoint3,
+                            9.5f);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
                 }
-                this.stopMoving(castDelay);
-                this.qStartTime = System.currentTimeMillis();
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "sfx_magicman_snakes", this.location);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "vo/vo_magicman_snakes", this.location);
-                Point2D endPoint = Champion.getAbilityLine(this.location, dest, 9.5f).getP2();
-                this.estimatedQDuration = ((this.location.distance(endPoint) / 7f)) * 1000f;
-                double dx = endPoint.getX() - this.location.getX();
-                double dy = endPoint.getY() - this.location.getY();
-                double theta = Math.atan2(dy, dx);
-                double dist = this.location.distance(endPoint);
-                double theta2 = theta - (Math.PI / 8);
-                double theta3 = theta + (Math.PI / 8);
-                double x = this.location.getX();
-                double y = this.location.getY();
-                Point2D endPoint2 =
-                        new Point2D.Double(
-                                x + (dist * Math.cos(theta2)), y + (dist * Math.sin(theta2)));
-                Point2D endPoint3 =
-                        new Point2D.Double(
-                                x + (dist * Math.cos(theta3)), y + (dist * Math.sin(theta3)));
-                this.fireMMProjectile(
-                        new SnakeProjectile(
-                                this.parentExt,
-                                this,
-                                new Line2D.Float(this.location, endPoint),
-                                7f,
-                                0.25f,
-                                "projectile_magicman_snake"),
-                        this.location,
-                        endPoint,
-                        9.5f);
-                this.fireMMProjectile(
-                        new SnakeProjectile(
-                                this.parentExt,
-                                this,
-                                new Line2D.Float(this.location, endPoint2),
-                                7f,
-                                0.25f,
-                                "projectile_magicman_snake"),
-                        this.location,
-                        endPoint2,
-                        9.5f);
-                this.fireMMProjectile(
-                        new SnakeProjectile(
-                                this.parentExt,
-                                this,
-                                new Line2D.Float(this.location, endPoint3),
-                                7f,
-                                0.25f,
-                                "projectile_magicman_snake"),
-                        this.location,
-                        endPoint3,
-                        9.5f);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -185,38 +198,44 @@ public class MagicMan extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
-                this.wUses++;
-                if (this.getState(ActorState.INVISIBLE)) {
-                    this.setState(ActorState.INVISIBLE, false);
-                }
-                if (this.wUses == 1) {
-                    Point2D dashPoint =
-                            MovementManager.getDashPoint(
-                                    this, new Line2D.Float(this.location, dest));
-                    if (Double.isNaN(dashPoint.getY())) dashPoint = this.location;
-                    this.addState(ActorState.INVISIBLE, 0d, W_STEALTH_DURATION);
-                    this.wLocation = new Point2D.Double(this.location.getX(), this.location.getY());
-                    Point2D endLocation =
-                            Champion.getAbilityLine(this.wLocation, dest, 100f).getP2();
-                    if (this.location.distance(endLocation) <= 1d) endLocation = this.location;
-                    this.wDest = endLocation;
-                    ExtensionCommands.snapActor(
-                            this.parentExt, this.room, this.id, this.location, dashPoint, true);
-                    this.setLocation(dashPoint);
-                    this.magicManClone = new MagicManClone(this.wLocation);
-                    RoomHandler handler = parentExt.getRoomHandler(room.getName());
-                    handler.addCompanion(this.magicManClone);
-                    ExtensionCommands.actorAbilityResponse(
-                            this.parentExt, this.player, "w", true, 1000, 0);
-                } else {
-                    this.setState(ActorState.INVISIBLE, false);
-                    ExtensionCommands.actorAbilityResponse(
-                            this.parentExt,
-                            this.player,
-                            "w",
-                            true,
-                            getReducedCooldown(cooldown),
-                            gCooldown);
+                try {
+                    this.wUses++;
+                    if (this.getState(ActorState.INVISIBLE)) {
+                        this.setState(ActorState.INVISIBLE, false);
+                    }
+                    if (this.wUses == 1) {
+                        Point2D dashPoint =
+                                MovementManager.getDashPoint(
+                                        this, new Line2D.Float(this.location, dest));
+                        if (Double.isNaN(dashPoint.getY())) dashPoint = this.location;
+                        this.addState(ActorState.INVISIBLE, 0d, W_STEALTH_DURATION);
+                        this.wLocation =
+                                new Point2D.Double(this.location.getX(), this.location.getY());
+                        Point2D endLocation =
+                                Champion.getAbilityLine(this.wLocation, dest, 100f).getP2();
+                        if (this.location.distance(endLocation) <= 1d) endLocation = this.location;
+                        this.wDest = endLocation;
+                        ExtensionCommands.snapActor(
+                                this.parentExt, this.room, this.id, this.location, dashPoint, true);
+                        this.setLocation(dashPoint);
+                        this.magicManClone = new MagicManClone(this.wLocation);
+                        RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                        handler.addCompanion(this.magicManClone);
+                        ExtensionCommands.actorAbilityResponse(
+                                this.parentExt, this.player, "w", true, 1000, 0);
+                    } else {
+                        this.setState(ActorState.INVISIBLE, false);
+                        ExtensionCommands.actorAbilityResponse(
+                                this.parentExt,
+                                this.player,
+                                "w",
+                                true,
+                                getReducedCooldown(cooldown),
+                                gCooldown);
+                    }
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
                 }
                 int abilityDelay = this.wUses == 1 ? 1000 : getReducedCooldown(cooldown);
                 scheduleTask(
@@ -225,21 +244,27 @@ public class MagicMan extends UserActor {
                 break;
             case 3:
                 this.canCast[2] = false;
-                this.canMove = false;
-                this.ultStarted = true;
-                Point2D firstLocation =
-                        new Point2D.Double(this.location.getX(), this.location.getY());
-                Point2D dashPoint = this.dash(dest, true, E_DASH_SPEED);
-                double dashTime = dashPoint.distance(firstLocation) / E_DASH_SPEED;
-                this.eDashTime = (int) (dashTime * 1000d);
-                ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "sfx_magicman_explode_roll",
-                        this.location);
-                ExtensionCommands.actorAnimate(
-                        this.parentExt, this.room, this.id, "spell3", eDashTime, true);
+                Point2D dashPoint = this.location;
+                try {
+                    this.canMove = false;
+                    this.ultStarted = true;
+                    Point2D firstLocation =
+                            new Point2D.Double(this.location.getX(), this.location.getY());
+                    dashPoint = this.dash(dest, true, E_DASH_SPEED);
+                    double dashTime = dashPoint.distance(firstLocation) / E_DASH_SPEED;
+                    this.eDashTime = (int) (dashTime * 1000d);
+                    ExtensionCommands.playSound(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "sfx_magicman_explode_roll",
+                            this.location);
+                    ExtensionCommands.actorAnimate(
+                            this.parentExt, this.room, this.id, "spell3", eDashTime, true);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,

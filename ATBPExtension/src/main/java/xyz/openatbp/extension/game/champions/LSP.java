@@ -93,10 +93,28 @@ public class LSP extends UserActor {
             Point2D dest) {
         switch (ability) {
             case 1:
-                this.stopMoving(castDelay);
                 this.canCast[0] = false;
-                String qVO = SkinData.getLSPQVO(avatar);
-                ExtensionCommands.playSound(this.parentExt, this.room, this.id, qVO, this.location);
+                try {
+                    this.stopMoving(castDelay);
+                    String qVO = SkinData.getLSPQVO(avatar);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, qVO, this.location);
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "fx_target_rect_7",
+                            1100,
+                            this.id + "_qRect",
+                            false,
+                            "",
+                            true,
+                            true,
+                            this.team);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -104,18 +122,6 @@ public class LSP extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "fx_target_rect_7",
-                        1100,
-                        this.id + "_qRect",
-                        false,
-                        "",
-                        true,
-                        true,
-                        this.team);
                 scheduleTask(
                         abilityRunnable(ability, spellData, cooldown, gCooldown, dest), castDelay);
                 break;

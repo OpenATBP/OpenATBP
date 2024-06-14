@@ -159,21 +159,26 @@ public class BubbleGum extends UserActor {
         switch (ability) {
             case 1: // Q
                 this.canCast[0] = false;
-                this.stopMoving();
-                String potionVo = SkinData.getBubbleGumQVO(avatar);
-                ExtensionCommands.playSound(parentExt, room, id, potionVo, this.location);
-                ExtensionCommands.createWorldFX(
-                        parentExt,
-                        room,
-                        id,
-                        "fx_target_ring_2",
-                        id + "_potionArea",
-                        Q_DURATION + castDelay,
-                        (float) dest.getX(),
-                        (float) dest.getY(),
-                        true,
-                        this.team,
-                        0f);
+                try {
+                    this.stopMoving();
+                    String potionVo = SkinData.getBubbleGumQVO(avatar);
+                    ExtensionCommands.playSound(parentExt, room, id, potionVo, this.location);
+                    ExtensionCommands.createWorldFX(
+                            parentExt,
+                            room,
+                            id,
+                            "fx_target_ring_2",
+                            id + "_potionArea",
+                            Q_DURATION + castDelay,
+                            (float) dest.getX(),
+                            (float) dest.getY(),
+                            true,
+                            this.team,
+                            0f);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         parentExt, player, "q", true, getReducedCooldown(cooldown), gCooldown);
                 scheduleTask(
@@ -181,12 +186,17 @@ public class BubbleGum extends UserActor {
                 break;
             case 2: // W
                 this.canCast[1] = false;
-                this.stopMoving();
-                String turretVo = SkinData.getBubbleGumWVO(avatar);
-                ExtensionCommands.playSound(parentExt, room, id, turretVo, this.location);
-                this.spawnTurret(dest);
-                ExtensionCommands.actorAbilityResponse(
-                        parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
+                try {
+                    this.stopMoving();
+                    String turretVo = SkinData.getBubbleGumWVO(avatar);
+                    ExtensionCommands.playSound(parentExt, room, id, turretVo, this.location);
+                    this.spawnTurret(dest);
+                    ExtensionCommands.actorAbilityResponse(
+                            parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 int delay = getReducedCooldown(cooldown);
                 scheduleTask(abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay);
                 break;
@@ -240,40 +250,44 @@ public class BubbleGum extends UserActor {
     }
 
     protected void useBomb(int cooldown, int gCooldown) {
-        RoomHandler handler = parentExt.getRoomHandler(room.getName());
-        List<Actor> actors = Champion.getActorsInRadius(handler, this.bombLocation, 3f);
-        for (Actor a : actors) {
-            a.knockback(this.bombLocation);
-            JsonNode spellData = parentExt.getAttackData("peebles", "spell3");
-            if (a.getTeam() != this.team) {
-                a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
-            } else if (a.equals(this)) {
-                ExtensionCommands.actorAnimate(parentExt, room, this.id, "spell3b", 325, false);
-                Runnable animDelay =
-                        () ->
-                                ExtensionCommands.actorAnimate(
-                                        parentExt, room, id, "spell3c", 350, false);
-                scheduleTask(animDelay, 325);
+        try {
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            List<Actor> actors = Champion.getActorsInRadius(handler, this.bombLocation, 3f);
+            for (Actor a : actors) {
+                a.knockback(this.bombLocation);
+                JsonNode spellData = parentExt.getAttackData("peebles", "spell3");
+                if (a.getTeam() != this.team) {
+                    a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                } else if (a.equals(this)) {
+                    ExtensionCommands.actorAnimate(parentExt, room, this.id, "spell3b", 325, false);
+                    Runnable animDelay =
+                            () ->
+                                    ExtensionCommands.actorAnimate(
+                                            parentExt, room, id, "spell3c", 350, false);
+                    scheduleTask(animDelay, 325);
+                }
             }
+            String useBombVo = SkinData.getBubbleGumEGruntVO(avatar);
+            ExtensionCommands.playSound(parentExt, room, this.id, useBombVo, this.location);
+            ExtensionCommands.removeFx(parentExt, room, id + "_bomb");
+            ExtensionCommands.removeFx(parentExt, room, id + "_bombArea");
+            ExtensionCommands.playSound(parentExt, room, "", "sfx_bubblegum_bomb", bombLocation);
+            ExtensionCommands.createWorldFX(
+                    parentExt,
+                    room,
+                    id,
+                    "bubblegum_bomb_explosion",
+                    id + "_bombExplosion",
+                    1500,
+                    (float) bombLocation.getX(),
+                    (float) bombLocation.getY(),
+                    false,
+                    team,
+                    0f);
+        } catch (Exception exception) {
+            exception.printStackTrace();
+            logExceptionMessage(avatar, 3);
         }
-
-        String useBombVo = SkinData.getBubbleGumEGruntVO(avatar);
-        ExtensionCommands.playSound(parentExt, room, this.id, useBombVo, this.location);
-        ExtensionCommands.removeFx(parentExt, room, id + "_bomb");
-        ExtensionCommands.removeFx(parentExt, room, id + "_bombArea");
-        ExtensionCommands.playSound(parentExt, room, "", "sfx_bubblegum_bomb", bombLocation);
-        ExtensionCommands.createWorldFX(
-                parentExt,
-                room,
-                id,
-                "bubblegum_bomb_explosion",
-                id + "_bombExplosion",
-                1500,
-                (float) bombLocation.getX(),
-                (float) bombLocation.getY(),
-                false,
-                team,
-                0f);
         ExtensionCommands.actorAbilityResponse(parentExt, player, "e", true, cooldown, gCooldown);
         this.bombPlaced = false;
         this.bombLocation = null;

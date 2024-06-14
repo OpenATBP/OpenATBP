@@ -123,42 +123,47 @@ public class BMO extends UserActor {
         switch (ability) {
             case 1:
                 this.canCast[0] = false;
-                this.stopMoving();
-                Path2D trapezoid =
-                        Champion.createTrapezoid(
-                                location,
-                                dest,
-                                Q_SPELL_RANGE,
-                                Q_OFFSET_DISTANCE_BOTTOM,
-                                Q_OFFSET_DISTANCE_TOP);
-                RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
-                List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, trapezoid);
-                if (!actorsInPolygon.isEmpty()) {
-                    for (Actor a : actorsInPolygon) {
-                        if (isNonStructure(a)) {
-                            a.addState(ActorState.BLINDED, 0d, Q_BLIND_DURATION);
-                            if (this.passiveStacks == 3) applySlow(a);
+                try {
+                    this.stopMoving();
+                    Path2D trapezoid =
+                            Champion.createTrapezoid(
+                                    location,
+                                    dest,
+                                    Q_SPELL_RANGE,
+                                    Q_OFFSET_DISTANCE_BOTTOM,
+                                    Q_OFFSET_DISTANCE_TOP);
+                    RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
+                    List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, trapezoid);
+                    if (!actorsInPolygon.isEmpty()) {
+                        for (Actor a : actorsInPolygon) {
+                            if (isNonStructure(a)) {
+                                a.addState(ActorState.BLINDED, 0d, Q_BLIND_DURATION);
+                                if (this.passiveStacks == 3) applySlow(a);
+                            }
+                            a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                         }
-                        a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                     }
+                    if (this.passiveStacks == 3) usePassiveStacks();
+                    else addPasiveStacks();
+                    String cameraFx = SkinData.getBMOQCameraFX(avatar);
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            cameraFx,
+                            1000,
+                            this.id + "_camera",
+                            true,
+                            "",
+                            true,
+                            false,
+                            this.team);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, "sfx_bmo_camera", this.location);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
                 }
-                if (this.passiveStacks == 3) usePassiveStacks();
-                else addPasiveStacks();
-                String cameraFx = SkinData.getBMOQCameraFX(avatar);
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        cameraFx,
-                        1000,
-                        this.id + "_camera",
-                        true,
-                        "",
-                        true,
-                        false,
-                        this.team);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "sfx_bmo_camera", this.location);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -228,7 +233,6 @@ public class BMO extends UserActor {
                             this.parentExt, this.room, this.id, "spell2", 3000, true);
                     ExtensionCommands.actorAbilityResponse(
                             this.parentExt, this.player, "w", true, W_RECAST_DELAY, 0);
-
                     scheduleTask(
                             abilityRunnable(ability, spellData, cooldown, gCooldown, dest),
                             W_RECAST_DELAY);
@@ -247,16 +251,25 @@ public class BMO extends UserActor {
             case 3:
                 this.stopMoving(castDelay);
                 this.canCast[2] = false;
-                if (passiveStacks == 3) {
-                    ultSlowActive = true;
-                    passiveStacks = 0;
-                } else addPasiveStacks();
-                ExtensionCommands.actorAnimate(
-                        this.parentExt, this.room, this.id, "spell3", 250, false);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "sfx_bmo_ultimate", this.location);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "vo/vo_bmo_ultimate", this.location);
+                try {
+                    if (passiveStacks == 3) {
+                        ultSlowActive = true;
+                        passiveStacks = 0;
+                    } else addPasiveStacks();
+                    ExtensionCommands.actorAnimate(
+                            this.parentExt, this.room, this.id, "spell3", 250, false);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, "sfx_bmo_ultimate", this.location);
+                    ExtensionCommands.playSound(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "vo/vo_bmo_ultimate",
+                            this.location);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,

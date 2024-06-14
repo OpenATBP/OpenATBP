@@ -178,33 +178,39 @@ public class CinnamonBun extends UserActor {
         switch (ability) {
             case 1:
                 this.canCast[0] = false;
-                this.stopMoving();
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "sfx_cb_power1", this.location);
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "cb_lance_jab_v2",
-                        500,
-                        this.id + "_jab",
-                        true,
-                        "",
-                        true,
-                        false,
-                        this.team);
-                handlePassive();
-                Path2D qRect =
-                        Champion.createRectangle(location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
+                try {
+                    this.stopMoving();
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, "sfx_cb_power1", this.location);
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "cb_lance_jab_v2",
+                            500,
+                            this.id + "_jab",
+                            true,
+                            "",
+                            true,
+                            false,
+                            this.team);
+                    handlePassive();
+                    Path2D qRect =
+                            Champion.createRectangle(
+                                    location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
 
-                RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
-                List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, qRect);
-                if (!actorsInPolygon.isEmpty()) {
-                    for (Actor a : actorsInPolygon) {
-                        a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                    RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
+                    List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, qRect);
+                    if (!actorsInPolygon.isEmpty()) {
+                        for (Actor a : actorsInPolygon) {
+                            a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                        }
                     }
+                    this.attackCooldown = 0;
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
                 }
-                this.attackCooldown = 0;
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -217,55 +223,65 @@ public class CinnamonBun extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
-                this.wStartTime = System.currentTimeMillis();
-                handlePassive();
-                Point2D origLocation = this.location;
-                Line2D wLine = Champion.getAbilityLine(origLocation, dest, 6.5f);
-                double slideX = Champion.getAbilityLine(origLocation, dest, 1.5f).getX2();
-                double slideY = Champion.getAbilityLine(origLocation, dest, 1.5f).getY2();
-                float rotation = getRotation(dest);
-                Point2D finalDashPoint = this.dash(wLine.getP2(), true, 15d);
-                double time = origLocation.distance(finalDashPoint) / 15d;
-                int wTime = (int) (time * 1000);
-                Line2D wPolyStartLine = Champion.getAbilityLine(origLocation, dest, 0.5f);
-                Line2D wPolyLengthLine = Champion.getAbilityLine(origLocation, dest, 7f);
-                Point2D wPolyStartPoint =
-                        new Point2D.Float(
-                                (float) wPolyStartLine.getX2(), (float) wPolyStartLine.getY2());
-                Point2D wPolyEndPoint =
-                        new Point2D.Float(
-                                (float) wPolyLengthLine.getX2(), (float) wPolyLengthLine.getY2());
-                this.wPolygon =
-                        Champion.createRectangle(
-                                wPolyStartPoint, wPolyEndPoint, W_SPELL_RANGE, W_OFFSET_DISTANCE);
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "fx_target_rect_7",
-                        W_DURATION,
-                        this.id + "w",
-                        false,
-                        "",
-                        true,
-                        true,
-                        this.team);
-                ExtensionCommands.createWorldFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "cb_frosting_slide",
-                        this.id + "_slide",
-                        W_DURATION,
-                        (float) slideX,
-                        (float) slideY,
-                        false,
-                        this.team,
-                        rotation);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "sfx_cb_power2", this.location);
-                ExtensionCommands.actorAnimate(
-                        this.parentExt, this.room, this.id, "spell2b", wTime, false);
+                Point2D finalDashPoint = null;
+                try {
+                    this.wStartTime = System.currentTimeMillis();
+                    handlePassive();
+                    Point2D origLocation = this.location;
+                    Line2D wLine = Champion.getAbilityLine(origLocation, dest, 6.5f);
+                    double slideX = Champion.getAbilityLine(origLocation, dest, 1.5f).getX2();
+                    double slideY = Champion.getAbilityLine(origLocation, dest, 1.5f).getY2();
+                    float rotation = getRotation(dest);
+                    finalDashPoint = this.dash(wLine.getP2(), true, 15d);
+                    double time = origLocation.distance(finalDashPoint) / 15d;
+                    int wTime = (int) (time * 1000);
+                    Line2D wPolyStartLine = Champion.getAbilityLine(origLocation, dest, 0.5f);
+                    Line2D wPolyLengthLine = Champion.getAbilityLine(origLocation, dest, 7f);
+                    Point2D wPolyStartPoint =
+                            new Point2D.Float(
+                                    (float) wPolyStartLine.getX2(), (float) wPolyStartLine.getY2());
+                    Point2D wPolyEndPoint =
+                            new Point2D.Float(
+                                    (float) wPolyLengthLine.getX2(),
+                                    (float) wPolyLengthLine.getY2());
+                    this.wPolygon =
+                            Champion.createRectangle(
+                                    wPolyStartPoint,
+                                    wPolyEndPoint,
+                                    W_SPELL_RANGE,
+                                    W_OFFSET_DISTANCE);
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "fx_target_rect_7",
+                            W_DURATION,
+                            this.id + "w",
+                            false,
+                            "",
+                            true,
+                            true,
+                            this.team);
+                    ExtensionCommands.createWorldFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "cb_frosting_slide",
+                            this.id + "_slide",
+                            W_DURATION,
+                            (float) slideX,
+                            (float) slideY,
+                            false,
+                            this.team,
+                            rotation);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, "sfx_cb_power2", this.location);
+                    ExtensionCommands.actorAnimate(
+                            this.parentExt, this.room, this.id, "spell2b", wTime, false);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -280,86 +296,23 @@ public class CinnamonBun extends UserActor {
                 break;
             case 3:
                 this.canCast[2] = false;
-                this.stopMoving();
-                if (this.ultUses == 0) {
-                    this.canApplyUltEffects = true;
-                    handlePassive();
-                    this.ultPoint = dest;
-                    this.ultStart = System.currentTimeMillis();
-                    this.lastUltTick = System.currentTimeMillis();
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, "", "sfx_cb_power3a", dest);
-                    ExtensionCommands.createWorldFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "cb_frosting_ring_sm",
-                            this.id + "_ultSmall",
-                            E_DURATION,
-                            (float) dest.getX(),
-                            (float) dest.getY(),
-                            false,
-                            this.team,
-                            0f);
-                    ExtensionCommands.createWorldFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "fx_target_ring_2",
-                            this.id + "_smUltRing",
-                            E_DURATION,
-                            (float) dest.getX(),
-                            (float) dest.getY(),
-                            true,
-                            this.team,
-                            0f);
-                } else if (this.ultUses == 1) {
-                    if (this.ultPoint.distance(dest) <= 2) {
-                        ExtensionCommands.removeFx(
-                                this.parentExt, this.room, this.id + "_ultSmall");
-                        ExtensionCommands.removeFx(
-                                this.parentExt, this.room, this.id + "_smUltRing");
-                        ExtensionCommands.createWorldFX(
-                                this.parentExt,
-                                this.room,
-                                this.id,
-                                "cb_frosting_ring_big",
-                                this.id + "_ultBig",
-                                E_DURATION - (int) (System.currentTimeMillis() - this.ultStart),
-                                (float) dest.getX(),
-                                (float) dest.getY(),
-                                false,
-                                this.team,
-                                0f);
-                        ExtensionCommands.createWorldFX(
-                                this.parentExt,
-                                this.room,
-                                this.id,
-                                "fx_target_ring_4",
-                                this.id + "_bigUltRing",
-                                E_DURATION - (int) (System.currentTimeMillis() - this.ultStart),
-                                (float) dest.getX(),
-                                (float) dest.getY(),
-                                true,
-                                this.team,
-                                0f);
+                try {
+                    this.stopMoving();
+                    if (this.ultUses == 0) {
+                        this.canApplyUltEffects = true;
+                        handlePassive();
+                        this.ultPoint = dest;
+                        this.ultStart = System.currentTimeMillis();
+                        this.lastUltTick = System.currentTimeMillis();
                         ExtensionCommands.playSound(
-                                this.parentExt, this.room, "", "sfx_cb_power3c", dest);
-                        ExtensionCommands.playSound(
-                                this.parentExt,
-                                this.room,
-                                this.id,
-                                "vo/vo_cb_wanna_pet",
-                                this.location);
-                    } else {
-                        this.ultPoint2 = dest;
+                                this.parentExt, this.room, "", "sfx_cb_power3a", dest);
                         ExtensionCommands.createWorldFX(
                                 this.parentExt,
                                 this.room,
                                 this.id,
                                 "cb_frosting_ring_sm",
-                                this.id + "_ultSmall2",
-                                E_DURATION - (int) (System.currentTimeMillis() - this.ultStart),
+                                this.id + "_ultSmall",
+                                E_DURATION,
                                 (float) dest.getX(),
                                 (float) dest.getY(),
                                 false,
@@ -370,115 +323,187 @@ public class CinnamonBun extends UserActor {
                                 this.room,
                                 this.id,
                                 "fx_target_ring_2",
-                                this.id + "_smUltRing2",
-                                E_DURATION - (int) (System.currentTimeMillis() - this.ultStart),
+                                this.id + "_smUltRing",
+                                E_DURATION,
                                 (float) dest.getX(),
                                 (float) dest.getY(),
                                 true,
                                 this.team,
                                 0f);
-                        ExtensionCommands.playSound(
-                                this.parentExt, this.room, "", "sfx_cb_power3b", dest);
-                        ExtensionCommands.playSound(
-                                this.parentExt,
-                                this.room,
-                                this.id,
-                                "vo/vo_cb_wanna_pet",
-                                this.location);
-                    }
-                } else {
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, "", "sfx_cb_power3_end", dest);
-                    float radius = 2f;
-                    if (this.ultPoint2 == null) {
-                        radius = 4f;
-                        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultBig");
-                        ExtensionCommands.removeFx(
-                                this.parentExt, this.room, this.id + "_bigUltRing");
-                        ExtensionCommands.createWorldFX(
-                                this.parentExt,
-                                this.room,
-                                this.id,
-                                "cb_ring_explode_big",
-                                this.id + "_bigExplosion",
-                                2000,
-                                (float) this.ultPoint.getX(),
-                                (float) this.ultPoint.getY(),
-                                false,
-                                this.team,
-                                0f);
-                    } else {
-                        ExtensionCommands.removeFx(
-                                this.parentExt, this.room, this.id + "_ultSmall");
-                        ExtensionCommands.removeFx(
-                                this.parentExt, this.room, this.id + "_smUltRing");
-                        ExtensionCommands.createWorldFX(
-                                this.parentExt,
-                                this.room,
-                                this.id,
-                                "cb_ring_sm_explode",
-                                this.id + "_smallExplosion",
-                                2000,
-                                (float) this.ultPoint.getX(),
-                                (float) this.ultPoint.getY(),
-                                false,
-                                this.team,
-                                0f);
-                    }
-                    RoomHandler handler1 = parentExt.getRoomHandler(room.getName());
-                    for (Actor a : Champion.getActorsInRadius(handler1, this.ultPoint, radius)) {
-                        if (a.getTeam() != this.team) {
-                            a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                    } else if (this.ultUses == 1) {
+                        if (this.ultPoint.distance(dest) <= 2) {
+                            ExtensionCommands.removeFx(
+                                    this.parentExt, this.room, this.id + "_ultSmall");
+                            ExtensionCommands.removeFx(
+                                    this.parentExt, this.room, this.id + "_smUltRing");
+                            ExtensionCommands.createWorldFX(
+                                    this.parentExt,
+                                    this.room,
+                                    this.id,
+                                    "cb_frosting_ring_big",
+                                    this.id + "_ultBig",
+                                    E_DURATION - (int) (System.currentTimeMillis() - this.ultStart),
+                                    (float) dest.getX(),
+                                    (float) dest.getY(),
+                                    false,
+                                    this.team,
+                                    0f);
+                            ExtensionCommands.createWorldFX(
+                                    this.parentExt,
+                                    this.room,
+                                    this.id,
+                                    "fx_target_ring_4",
+                                    this.id + "_bigUltRing",
+                                    E_DURATION - (int) (System.currentTimeMillis() - this.ultStart),
+                                    (float) dest.getX(),
+                                    (float) dest.getY(),
+                                    true,
+                                    this.team,
+                                    0f);
+                            ExtensionCommands.playSound(
+                                    this.parentExt, this.room, "", "sfx_cb_power3c", dest);
+                            ExtensionCommands.playSound(
+                                    this.parentExt,
+                                    this.room,
+                                    this.id,
+                                    "vo/vo_cb_wanna_pet",
+                                    this.location);
+                        } else {
+                            this.ultPoint2 = dest;
+                            ExtensionCommands.createWorldFX(
+                                    this.parentExt,
+                                    this.room,
+                                    this.id,
+                                    "cb_frosting_ring_sm",
+                                    this.id + "_ultSmall2",
+                                    E_DURATION - (int) (System.currentTimeMillis() - this.ultStart),
+                                    (float) dest.getX(),
+                                    (float) dest.getY(),
+                                    false,
+                                    this.team,
+                                    0f);
+                            ExtensionCommands.createWorldFX(
+                                    this.parentExt,
+                                    this.room,
+                                    this.id,
+                                    "fx_target_ring_2",
+                                    this.id + "_smUltRing2",
+                                    E_DURATION - (int) (System.currentTimeMillis() - this.ultStart),
+                                    (float) dest.getX(),
+                                    (float) dest.getY(),
+                                    true,
+                                    this.team,
+                                    0f);
+                            ExtensionCommands.playSound(
+                                    this.parentExt, this.room, "", "sfx_cb_power3b", dest);
+                            ExtensionCommands.playSound(
+                                    this.parentExt,
+                                    this.room,
+                                    this.id,
+                                    "vo/vo_cb_wanna_pet",
+                                    this.location);
                         }
-                    }
-                    if (this.ultPoint2 != null) {
-                        ExtensionCommands.createWorldFX(
-                                this.parentExt,
-                                this.room,
-                                this.id,
-                                "cb_ring_sm_explode",
-                                this.id + "_smallExplosion2",
-                                2000,
-                                (float) this.ultPoint2.getX(),
-                                (float) this.ultPoint2.getY(),
-                                false,
-                                this.team,
-                                0f);
-                        ExtensionCommands.removeFx(
-                                this.parentExt, this.room, this.id + "_ultSmall2");
-                        ExtensionCommands.removeFx(
-                                this.parentExt, this.room, this.id + "_smUltRing2");
-                        RoomHandler handler2 = parentExt.getRoomHandler(room.getName());
+                    } else {
+                        ExtensionCommands.playSound(
+                                this.parentExt, this.room, "", "sfx_cb_power3_end", dest);
+                        float radius = 2f;
+                        if (this.ultPoint2 == null) {
+                            radius = 4f;
+                            ExtensionCommands.removeFx(
+                                    this.parentExt, this.room, this.id + "_ultBig");
+                            ExtensionCommands.removeFx(
+                                    this.parentExt, this.room, this.id + "_bigUltRing");
+                            ExtensionCommands.createWorldFX(
+                                    this.parentExt,
+                                    this.room,
+                                    this.id,
+                                    "cb_ring_explode_big",
+                                    this.id + "_bigExplosion",
+                                    2000,
+                                    (float) this.ultPoint.getX(),
+                                    (float) this.ultPoint.getY(),
+                                    false,
+                                    this.team,
+                                    0f);
+                        } else {
+                            ExtensionCommands.removeFx(
+                                    this.parentExt, this.room, this.id + "_ultSmall");
+                            ExtensionCommands.removeFx(
+                                    this.parentExt, this.room, this.id + "_smUltRing");
+                            ExtensionCommands.createWorldFX(
+                                    this.parentExt,
+                                    this.room,
+                                    this.id,
+                                    "cb_ring_sm_explode",
+                                    this.id + "_smallExplosion",
+                                    2000,
+                                    (float) this.ultPoint.getX(),
+                                    (float) this.ultPoint.getY(),
+                                    false,
+                                    this.team,
+                                    0f);
+                        }
+                        RoomHandler handler1 = parentExt.getRoomHandler(room.getName());
                         for (Actor a :
-                                Champion.getActorsInRadius(handler2, this.ultPoint2, radius)) {
+                                Champion.getActorsInRadius(handler1, this.ultPoint, radius)) {
                             if (a.getTeam() != this.team) {
                                 a.addToDamageQueue(
                                         this, getSpellDamage(spellData), spellData, false);
                             }
                         }
+                        if (this.ultPoint2 != null) {
+                            ExtensionCommands.createWorldFX(
+                                    this.parentExt,
+                                    this.room,
+                                    this.id,
+                                    "cb_ring_sm_explode",
+                                    this.id + "_smallExplosion2",
+                                    2000,
+                                    (float) this.ultPoint2.getX(),
+                                    (float) this.ultPoint2.getY(),
+                                    false,
+                                    this.team,
+                                    0f);
+                            ExtensionCommands.removeFx(
+                                    this.parentExt, this.room, this.id + "_ultSmall2");
+                            ExtensionCommands.removeFx(
+                                    this.parentExt, this.room, this.id + "_smUltRing2");
+                            RoomHandler handler2 = parentExt.getRoomHandler(room.getName());
+                            for (Actor a :
+                                    Champion.getActorsInRadius(handler2, this.ultPoint2, radius)) {
+                                if (a.getTeam() != this.team) {
+                                    a.addToDamageQueue(
+                                            this, getSpellDamage(spellData), spellData, false);
+                                }
+                            }
+                        }
+                        this.ultPoint = null;
+                        this.ultPoint2 = null;
+                        this.ultStart = 0;
                     }
-                    this.ultPoint = null;
-                    this.ultPoint2 = null;
-                    this.ultStart = 0;
-                }
-                if (this.ultUses < 3) {
-                    this.ultUses++;
-                }
-                int eUseDelay = ultUses < 2 ? 0 : gCooldown;
-                if (this.ultUses == 2) {
-                    ExtensionCommands.actorAbilityResponse(
-                            this.parentExt, this.player, "e", true, eUseDelay, 0);
-                }
-                scheduleTask(
-                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), eUseDelay);
-                if (this.ultUses == 3) {
-                    ExtensionCommands.actorAbilityResponse(
-                            this.parentExt,
-                            this.player,
-                            "e",
-                            true,
-                            getReducedCooldown(cooldown),
-                            gCooldown);
+                    if (this.ultUses < 3) {
+                        this.ultUses++;
+                    }
+                    int eUseDelay = ultUses < 2 ? 0 : gCooldown;
+                    if (this.ultUses == 2) {
+                        ExtensionCommands.actorAbilityResponse(
+                                this.parentExt, this.player, "e", true, eUseDelay, 0);
+                    }
+                    scheduleTask(
+                            abilityRunnable(ability, spellData, cooldown, gCooldown, dest),
+                            eUseDelay);
+                    if (this.ultUses == 3) {
+                        ExtensionCommands.actorAbilityResponse(
+                                this.parentExt,
+                                this.player,
+                                "e",
+                                true,
+                                getReducedCooldown(cooldown),
+                                gCooldown);
+                    }
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
                 }
                 break;
         }

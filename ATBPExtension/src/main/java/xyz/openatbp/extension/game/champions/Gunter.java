@@ -111,37 +111,43 @@ public class Gunter extends UserActor {
         switch (ability) {
             case 1:
                 this.canCast[0] = false;
-                Point2D ogLocation = this.location;
-                Point2D finalDastPoint = this.dash(dest, true, DASH_SPEED);
-                double time = ogLocation.distance(finalDastPoint) / DASH_SPEED;
-                this.qTime = (int) (time * 1000);
-                ExtensionCommands.playSound(
-                        parentExt, this.room, this.id, "sfx_gunter_slide", this.location);
-                ExtensionCommands.createActorFX(
-                        parentExt,
-                        room,
-                        this.id,
-                        "gunter_slide_trail",
-                        qTime,
-                        this.id + "_gunterTrail",
-                        true,
-                        "Bip01",
-                        true,
-                        false,
-                        team);
-                ExtensionCommands.createActorFX(
-                        parentExt,
-                        room,
-                        this.id,
-                        "gunter_slide_snow",
-                        qTime,
-                        this.id + "_gunterTrail",
-                        true,
-                        "Bip01",
-                        true,
-                        false,
-                        team);
-                ExtensionCommands.actorAnimate(parentExt, room, id, "spell1b", qTime, false);
+                Point2D finalDastPoint = this.location;
+                try {
+                    Point2D ogLocation = this.location;
+                    finalDastPoint = this.dash(dest, true, DASH_SPEED);
+                    double time = ogLocation.distance(finalDastPoint) / DASH_SPEED;
+                    this.qTime = (int) (time * 1000);
+                    ExtensionCommands.playSound(
+                            parentExt, this.room, this.id, "sfx_gunter_slide", this.location);
+                    ExtensionCommands.createActorFX(
+                            parentExt,
+                            room,
+                            this.id,
+                            "gunter_slide_trail",
+                            qTime,
+                            this.id + "_gunterTrail",
+                            true,
+                            "Bip01",
+                            true,
+                            false,
+                            team);
+                    ExtensionCommands.createActorFX(
+                            parentExt,
+                            room,
+                            this.id,
+                            "gunter_slide_snow",
+                            qTime,
+                            this.id + "_gunterTrail",
+                            true,
+                            "Bip01",
+                            true,
+                            false,
+                            team);
+                    ExtensionCommands.actorAnimate(parentExt, room, id, "spell1b", qTime, false);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt, player, "q", true, getReducedCooldown(cooldown), gCooldown);
                 scheduleTask(
@@ -150,20 +156,25 @@ public class Gunter extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
-                Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, "", "sfx_gunter_wing_it", this.location);
-                this.fireProjectile(
-                        new BottleProjectile(
-                                this.parentExt,
-                                this,
-                                abilityLine,
-                                11f,
-                                0.5f,
-                                "projectile_gunter_bottle"),
-                        this.location,
-                        dest,
-                        8f);
+                try {
+                    Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, "", "sfx_gunter_wing_it", this.location);
+                    this.fireProjectile(
+                            new BottleProjectile(
+                                    this.parentExt,
+                                    this,
+                                    abilityLine,
+                                    11f,
+                                    0.5f,
+                                    "projectile_gunter_bottle"),
+                            this.location,
+                            dest,
+                            8f);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
                 int delay = getReducedCooldown(cooldown);
@@ -171,44 +182,49 @@ public class Gunter extends UserActor {
                 break;
             case 3:
                 this.canCast[2] = false;
-                this.ultStartTime = System.currentTimeMillis();
-                this.ultActivated = true;
-                this.eTrapezoid =
-                        Champion.createTrapezoid(
-                                location,
-                                dest,
-                                E_SPELL_RANGE,
-                                E_OFFSET_DISTANCE_BOTTOM,
-                                E_OFFSET_DISTANCE_TOP);
+                try {
+                    this.ultStartTime = System.currentTimeMillis();
+                    this.ultActivated = true;
+                    this.eTrapezoid =
+                            Champion.createTrapezoid(
+                                    location,
+                                    dest,
+                                    E_SPELL_RANGE,
+                                    E_OFFSET_DISTANCE_BOTTOM,
+                                    E_OFFSET_DISTANCE_TOP);
+                    ExtensionCommands.playSound(
+                            parentExt, room, this.id, "sfx_gunter_bottles_ultimate", this.location);
+                    ExtensionCommands.actorAnimate(parentExt, room, this.id, "spell3b", 2500, true);
+                    ExtensionCommands.createActorFX(
+                            parentExt,
+                            room,
+                            this.id,
+                            "gunter_powered_up",
+                            E_DURATION,
+                            this.id + "_gunterPower",
+                            true,
+                            "Bip01",
+                            true,
+                            false,
+                            team);
+                    ExtensionCommands.createActorFX(
+                            parentExt,
+                            room,
+                            this.id,
+                            "gunter_bottle_cone",
+                            E_DURATION,
+                            this.id + "gunterUlt",
+                            true,
+                            "Bip01",
+                            true,
+                            false,
+                            team);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt, player, "e", true, getReducedCooldown(cooldown), gCooldown);
-                ExtensionCommands.createActorFX(
-                        parentExt,
-                        room,
-                        this.id,
-                        "gunter_powered_up",
-                        E_DURATION,
-                        this.id + "_gunterPower",
-                        true,
-                        "Bip01",
-                        true,
-                        false,
-                        team);
-                ExtensionCommands.createActorFX(
-                        parentExt,
-                        room,
-                        this.id,
-                        "gunter_bottle_cone",
-                        E_DURATION,
-                        this.id + "gunterUlt",
-                        true,
-                        "Bip01",
-                        true,
-                        false,
-                        team);
-                ExtensionCommands.actorAnimate(parentExt, room, this.id, "spell3b", 2500, true);
-                ExtensionCommands.playSound(
-                        parentExt, room, this.id, "sfx_gunter_bottles_ultimate", this.location);
                 int delay1 = getReducedCooldown(cooldown);
                 scheduleTask(
                         abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay1);
