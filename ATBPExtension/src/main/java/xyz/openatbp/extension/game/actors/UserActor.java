@@ -43,6 +43,7 @@ public class UserActor extends Actor {
     protected boolean[] canCast = {true, true, true};
     protected Map<String, ScheduledFuture<?>> iconHandlers = new HashMap<>();
     protected int idleTime = 0;
+    protected static final int BASIC_ATTACK_DELAY = 500;
     protected static final double DASH_SPEED = 20d;
     protected static final int HEALTH_PACK_REGEN = 15;
     protected boolean changeTowerAggro = false;
@@ -64,7 +65,6 @@ public class UserActor extends Actor {
     protected boolean hasGooBuff = false;
     protected long keeothBuffStartTime = 0;
     protected long gooBuffStartTime = 0;
-    protected static final int BASIC_ATTACK_DELAY = 500; // this is bloobalooby
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -1792,7 +1792,7 @@ public class UserActor extends Actor {
         String characterName = getChampionName(avatar).toUpperCase();
         String message =
                 String.format(
-                        "EXCEPTION OCCURED DURING ABILITY EXECUTION. CHARACTER: %s, ABILITY: %d",
+                        "EXCEPTION OCCURED DURING ABILITY EXECUTION! CHARACTER: %s, ABILITY: %d",
                         characterName, spellNum);
         Console.logWarning(message);
     }

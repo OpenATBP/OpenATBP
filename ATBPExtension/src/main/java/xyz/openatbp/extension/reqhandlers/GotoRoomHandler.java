@@ -15,6 +15,7 @@ import com.smartfoxserver.v2.exceptions.SFSJoinRoomException;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.MapData;
 
 public class GotoRoomHandler extends BaseClientRequestHandler {
@@ -22,6 +23,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
     @Override
     public void handleClientRequest(
             User sender, ISFSObject params) { // Called when player is trying to join a match
+        Console.debugLog("trace!");
         trace(params.getDump());
         int team = 1;
         if (params.getUtfString("team").equalsIgnoreCase("purple")) team = 0;

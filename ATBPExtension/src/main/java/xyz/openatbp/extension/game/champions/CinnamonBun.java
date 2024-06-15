@@ -42,6 +42,8 @@ public class CinnamonBun extends UserActor {
     private Path2D wPolygon = null;
     private long wStartTime = 0;
     private long lastUltTick = 0;
+    private boolean testing = false;
+    private long testingTime = 0;
 
     public CinnamonBun(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -164,6 +166,16 @@ public class CinnamonBun extends UserActor {
                 ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "ultEffect");
                 this.ultEffectsApplied = false;
             }
+        }
+        if (testing
+                && System.currentTimeMillis() - testingTime
+                        >= E_DURATION) { // TODO: REMOVE AFTER FIXING ABILITIES
+            testing = false;
+            int baseCooldown = ChampionData.getBaseAbilityCooldown(this, 3);
+            Runnable resetCanCast = () -> this.canCast[2] = true;
+            ExtensionCommands.actorAbilityResponse(
+                    this.parentExt, this.player, "e", true, getReducedCooldown(baseCooldown), 500);
+            scheduleTask(resetCanCast, getReducedCooldown(baseCooldown));
         }
     }
 
@@ -504,6 +516,8 @@ public class CinnamonBun extends UserActor {
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
+                    this.testing = true;
+                    this.testingTime = System.currentTimeMillis();
                 }
                 break;
         }
