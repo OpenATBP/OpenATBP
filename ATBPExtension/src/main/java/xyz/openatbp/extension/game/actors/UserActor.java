@@ -43,7 +43,9 @@ public class UserActor extends Actor {
     protected boolean[] canCast = {true, true, true};
     protected Map<String, ScheduledFuture<?>> iconHandlers = new HashMap<>();
     protected int idleTime = 0;
+    protected static final int BASIC_ATTACK_DELAY = 500;
     protected static final double DASH_SPEED = 20d;
+    protected static final int HEALTH_PACK_REGEN = 15;
     protected boolean changeTowerAggro = false;
     protected boolean isDashing = false;
     private long lastHit = 0;
@@ -56,6 +58,13 @@ public class UserActor extends Actor {
     private static boolean damageDebug;
     protected double hits = 0;
     private Point2D queuedDest = null;
+    protected boolean pickedUpHealthPack = false;
+    protected long healthPackPickUpTime = 0;
+    protected UserActor charmer = null;
+    protected boolean hasKeeothBuff = false;
+    protected boolean hasGooBuff = false;
+    protected long keeothBuffStartTime = 0;
+    protected long gooBuffStartTime = 0;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -106,6 +115,22 @@ public class UserActor extends Actor {
 
     public void setAutoAttackEnabled(boolean enabled) {
         this.autoAttackEnabled = enabled;
+    }
+
+    public void setHasKeeothBuff(boolean hasBuff) {
+        this.hasKeeothBuff = hasBuff;
+    }
+
+    public void setHasGooBuff(boolean hasBuff) {
+        this.hasGooBuff = hasBuff;
+    }
+
+    public void setKeeothBuffStartTime(long keeothBuffStartTime) {
+        this.keeothBuffStartTime = keeothBuffStartTime;
+    }
+
+    public void setGooBuffStartTime(long gooBuffStartTime) {
+        this.gooBuffStartTime = gooBuffStartTime;
     }
 
     protected Point2D getRelativePoint(
@@ -223,6 +248,9 @@ public class UserActor extends Actor {
             if (a.getActorType() == ActorType.PLAYER) checkTowerAggro((UserActor) a);
             if (a.getActorType() == ActorType.COMPANION) {
                 checkTowerAggroCompanion(a);
+            }
+            if (this.pickedUpHealthPack) {
+                removeHealthPackEffect();
             }
             this.lastHit = System.currentTimeMillis();
             if (a.getActorType() == ActorType.TOWER) {
@@ -352,7 +380,7 @@ public class UserActor extends Actor {
                     crit,
                     true);
             this.attackCooldown = this.getPlayerStat("attackSpeed");
-            if (this.attackCooldown < 500) this.attackCooldown = 500;
+            if (this.attackCooldown < BASIC_ATTACK_DELAY) this.attackCooldown = BASIC_ATTACK_DELAY;
             double damage = this.getPlayerStat("attackDamage");
             if (crit) damage *= 2;
             Champion.DelayedAttack delayedAttack =
@@ -365,25 +393,29 @@ public class UserActor extends Actor {
                                 .get("projectileAsset")
                                 .asText();
                 if (projectileFx != null
-                        && projectileFx.length() > 0
+                        && !projectileFx.isEmpty()
                         && !parentExt
                                 .getActorData(this.avatar)
                                 .get("attackType")
                                 .asText()
-                                .equalsIgnoreCase("MELEE"))
+                                .equalsIgnoreCase("MELEE")) {
                     parentExt
                             .getTaskScheduler()
                             .schedule(
                                     new RangedAttack(a, delayedAttack, projectileFx),
-                                    300,
+                                    BASIC_ATTACK_DELAY,
                                     TimeUnit.MILLISECONDS);
-                else
+                } else {
                     parentExt
                             .getTaskScheduler()
-                            .schedule(delayedAttack, 300, TimeUnit.MILLISECONDS);
+                            .schedule(delayedAttack, BASIC_ATTACK_DELAY, TimeUnit.MILLISECONDS);
+                }
+
             } catch (NullPointerException e) {
                 // e.printStackTrace();
-                parentExt.getTaskScheduler().schedule(delayedAttack, 300, TimeUnit.MILLISECONDS);
+                parentExt
+                        .getTaskScheduler()
+                        .schedule(delayedAttack, BASIC_ATTACK_DELAY, TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -392,9 +424,8 @@ public class UserActor extends Actor {
         if (this.parentExt.getActorData(this.getAvatar()).has("attackType")) {
             this.stopMoving();
             this.isAutoAttacking = true;
-            int delay = 500; // this is bloobalooby
             Runnable resetIsAttacking = () -> this.isAutoAttacking = false;
-            parentExt.getTaskScheduler().schedule(resetIsAttacking, delay, TimeUnit.MILLISECONDS);
+            scheduleTask(resetIsAttacking, BASIC_ATTACK_DELAY);
         } else Console.logWarning(this.getDisplayName() + " used an undefined attack!");
     }
 
@@ -455,9 +486,8 @@ public class UserActor extends Actor {
             towerLocations.add(towers.get(key));
         }
         for (Point2D location : towerLocations) {
-            if (Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()), location, 6f)
-                    .contains(a)) {
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            if (Champion.getActorsInRadius(handler, location, 6f).contains(a)) {
                 return true;
             }
         }
@@ -560,7 +590,7 @@ public class UserActor extends Actor {
                         true);
             }
             this.attackCooldown = this.getPlayerStat("attackSpeed");
-            if (this.attackCooldown < 500) this.attackCooldown = 500;
+            if (this.attackCooldown < BASIC_ATTACK_DELAY) this.attackCooldown = BASIC_ATTACK_DELAY;
             return crit;
         }
         return false;
@@ -611,9 +641,12 @@ public class UserActor extends Actor {
             this.timeKilled = System.currentTimeMillis();
             this.canMove = false;
             if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
+            if (this.hasKeeothBuff) disableKeeothBuff();
+            if (this.hasGooBuff) disableGooBuff();
+
             if (this.getState(ActorState.POLYMORPH)) {
                 boolean swapAsset = true;
-                if (this.getDefaultCharacterName(this.getAvatar()).equalsIgnoreCase("marceline")
+                if (this.getChampionName(this.getAvatar()).equalsIgnoreCase("marceline")
                         && this.getState(ActorState.TRANSFORMED)) swapAsset = false;
                 if (swapAsset) {
                     ExtensionCommands.swapActorAsset(
@@ -636,7 +669,7 @@ public class UserActor extends Actor {
                     Actor attacker = (Actor) aggressors.keySet().toArray()[i];
                     if (attacker.getActorType() == ActorType.PLAYER) {
                         long attacked = aggressors.get(attacker).getLong("lastAttacked");
-                        if (lastAttacked == -1 || lastAttacked > attacked) {
+                        if (lastAttacked == -1 || lastAttacked < attacked) {
                             lastAttacked = attacked;
                             lastAttacker = (UserActor) attacker;
                         }
@@ -650,23 +683,15 @@ public class UserActor extends Actor {
                     String.valueOf(player.getId()),
                     realKiller.getId(),
                     this.deathTime);
-            if (this.hasTempStat("criticalChance"))
-                ExtensionCommands.removeFx(
-                        this.parentExt, this.room, this.id + "_" + "jungle_buff_keeoth");
             if (this.nailDamage > 0) this.nailDamage /= 2;
             try {
                 ExtensionCommands.handleDeathRecap(
                         parentExt,
                         player,
                         this.id,
-                        a.getId(),
+                        realKiller.getId(),
                         (HashMap<Actor, ISFSObject>) this.aggressors);
                 this.increaseStat("deaths", 1);
-                if (this.hasGameStat("spree")) {
-                    if (this.killingSpree > this.getGameStat("spree"))
-                        this.endGameStats.put("spree", (double) this.killingSpree);
-                    this.killingSpree = 0;
-                }
                 if (realKiller.getActorType() == ActorType.PLAYER) {
                     UserActor ua = (UserActor) realKiller;
                     ua.increaseStat("kills", 1);
@@ -712,11 +737,16 @@ public class UserActor extends Actor {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            this.addGameStat("timeDead", this.deathTime);
+            double timeDead = this.deathTime * 1000; // needs to be converted to ms for the client
+            this.addGameStat("timeDead", timeDead);
             parentExt
                     .getTaskScheduler()
                     .schedule(
                             new Champion.RespawnCharacter(this), this.deathTime, TimeUnit.SECONDS);
+            Point2D respawnPoint = getRespawnPoint(); // to prevent tower targeting after respawn
+            this.location = respawnPoint;
+            this.movementLine = new Line2D.Float(respawnPoint, respawnPoint);
+            this.timeTraveled = 0f;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -748,6 +778,24 @@ public class UserActor extends Actor {
        attackRange
        healthRegen
     */
+
+    private void disableKeeothBuff() {
+        this.hasKeeothBuff = false;
+        ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "keeoth_buff");
+        ExtensionCommands.removeFx(
+                this.parentExt, this.room, this.getId() + "_" + "jungle_buff_keeoth");
+        String[] stats = {"lifeSteal", "spellVamp", "criticalChance"};
+        this.updateStatMenu(stats);
+    }
+
+    private void disableGooBuff() {
+        this.hasGooBuff = false;
+        ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "goomonster_buff");
+        ExtensionCommands.removeFx(
+                this.parentExt, this.room, this.getId() + "_" + "jungle_buff_goo");
+        this.updateStatMenu("speed");
+    }
+
     public void updateStat(String key, double value) {
         this.stats.put(key, value);
         ExtensionCommands.updateActorData(
@@ -757,9 +805,17 @@ public class UserActor extends Actor {
     public void increaseStat(String key, double num) {
         // Console.debugLog("Increasing " + key + " by " + num);
         if (key.equalsIgnoreCase("kills")) {
-            this.killingSpree += num;
+            this.killingSpree++;
             this.multiKill++;
             this.lastKilled = System.currentTimeMillis();
+            if (this.hasGameStat("spree")) {
+                double endGameSpree = this.getGameStat("spree");
+                if (this.killingSpree > endGameSpree) {
+                    this.endGameStats.put("spree", (double) this.killingSpree);
+                }
+            } else {
+                this.endGameStats.put("spree", (double) this.killingSpree);
+            }
             for (UserActor ua : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                 if (ua.getTeam() == this.team) {
                     boolean ally = !ua.getId().equalsIgnoreCase(this.id);
@@ -792,6 +848,10 @@ public class UserActor extends Actor {
 
     public void queueMovement(Point2D newDest) {
         this.queuedDest = newDest;
+    }
+
+    public void scheduleTask(Runnable task, int delay) {
+        parentExt.getTaskScheduler().schedule(task, delay, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -882,14 +942,9 @@ public class UserActor extends Actor {
             } else if (this.autoAttackEnabled && idleTime > 2000) {
                 Actor closestTarget = null;
                 double closestDistance = 1000;
-                for (Actor a :
-                        Champion.getActorsInRadius(
-                                this.parentExt.getRoomHandler(room.getName()),
-                                this.location,
-                                this.parentExt
-                                        .getActorStats(this.avatar)
-                                        .get("aggroRange")
-                                        .asInt())) {
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                int aggroRange = parentExt.getActorStats(avatar).get("aggroRange").asInt();
+                for (Actor a : Champion.getActorsInRadius(handler, this.location, aggroRange)) {
                     if (a.getTeam() != this.team
                             && a.getLocation().distance(this.location) < closestDistance) {
                         closestDistance = a.getLocation().distance(this.location);
@@ -904,12 +959,16 @@ public class UserActor extends Actor {
             this.futureCrystalTimer++;
             this.moonTimer++;
 
-            // TODO: Move health regen to separate function
             if (this.canRegenHealth()) {
-                double healthRegen = this.getPlayerStat("healthRegen");
-                if (this.currentHealth + healthRegen <= 0)
-                    healthRegen = (this.currentHealth - 1) * -1;
-                this.changeHealth((int) healthRegen);
+                regenHealth();
+            }
+            if (this.pickedUpHealthPack
+                    && System.currentTimeMillis() - this.healthPackPickUpTime >= 60000) {
+                this.pickedUpHealthPack = false;
+                this.updateStatMenu("healthRegen");
+            }
+            if (this.pickedUpHealthPack && this.getHealth() == this.maxHealth) {
+                removeHealthPackEffect();
             }
             int newDeath = 10 + ((msRan / 1000) / 60);
             if (newDeath != this.deathTime) this.deathTime = newDeath;
@@ -939,6 +998,34 @@ public class UserActor extends Actor {
             }
         }
         if (this.changeTowerAggro && !isInTowerRadius(this, false)) this.changeTowerAggro = false;
+        if (this.getState(ActorState.CHARMED) && this.charmer != null) {
+            int minVictimDist = 1;
+            float dist = (float) this.location.distance(charmer.getLocation());
+            if (canMove() && charmer.getHealth() > 0 && dist > minVictimDist) {
+                Line2D movementLine =
+                        Champion.getAbilityLine(
+                                this.location, charmer.getLocation(), dist - minVictimDist);
+                this.moveWithCollision(movementLine.getP2());
+            }
+        }
+        if (this.hasKeeothBuff && System.currentTimeMillis() - this.keeothBuffStartTime >= 90000) {
+            disableKeeothBuff();
+        }
+        if (this.hasGooBuff && System.currentTimeMillis() - this.gooBuffStartTime >= 90000) {
+            disableGooBuff();
+        }
+    }
+
+    private void regenHealth() {
+        double healthRegen = this.getPlayerStat("healthRegen");
+        if (this.currentHealth + healthRegen <= 0) healthRegen = (this.currentHealth - 1) * -1;
+        this.changeHealth((int) healthRegen);
+    }
+
+    private void removeHealthPackEffect() {
+        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "healthPackFX");
+        this.pickedUpHealthPack = false;
+        this.updateStatMenu("healthRegen");
     }
 
     public void resetIdleTime() {
@@ -1003,6 +1090,21 @@ public class UserActor extends Actor {
         return !this.getState(ActorState.ROOTED);
     }
 
+    @Override
+    public boolean canMove() {
+        for (ActorState s :
+                this.states.keySet()) { // removed CHARMED state from here to make charmer following
+            // possible (I hope it doesn't break anything :))
+            if (s == ActorState.ROOTED
+                    || s == ActorState.STUNNED
+                    || s == ActorState.FEARED
+                    || s == ActorState.AIRBORNE) {
+                if (this.states.get(s)) return false;
+            }
+        }
+        return this.canMove;
+    }
+
     public boolean hasInterrupingCC() {
         ActorState[] states = {
             ActorState.CHARMED,
@@ -1018,13 +1120,9 @@ public class UserActor extends Actor {
         return false;
     }
 
-    public boolean hasDashInterrupingCC() {
+    public boolean cancelDashEndAttack() {
         ActorState[] states = {
-            ActorState.CHARMED,
-            ActorState.FEARED,
-            ActorState.POLYMORPH,
-            ActorState.STUNNED,
-            ActorState.SILENCED
+            ActorState.STUNNED, ActorState.CHARMED, ActorState.POLYMORPH, ActorState.FEARED,
         };
         for (ActorState state : states) {
             if (this.getState(state)) return true;
@@ -1078,7 +1176,7 @@ public class UserActor extends Actor {
         return this.canCast[ability - 1];
     }
 
-    public String getDefaultCharacterName(String avatar) {
+    public String getChampionName(String avatar) {
         String[] avatarComponents = avatar.split("_");
         if (avatarComponents.length > 1) {
             return avatarComponents[0];
@@ -1088,7 +1186,7 @@ public class UserActor extends Actor {
     }
 
     public boolean isCastingDashAbility(String avatar, int ability) { // all chars except fp
-        String defaultAvatar = getDefaultCharacterName(avatar);
+        String defaultAvatar = getChampionName(avatar);
         switch (defaultAvatar) {
             case "billy":
             case "cinnamonbun":
@@ -1131,83 +1229,91 @@ public class UserActor extends Actor {
 
     public void handlePolymorph(boolean enable, int duration) {
         if (enable) {
-            this.addState(ActorState.SLOWED, 0.3d, duration);
-            ExtensionCommands.swapActorAsset(parentExt, this.room, this.id, "flambit");
-            ExtensionCommands.createActorFX(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    "statusEffect_polymorph",
-                    1000,
-                    this.id + "_statusEffect_polymorph",
-                    true,
-                    "",
-                    true,
-                    false,
-                    this.team);
-            ExtensionCommands.createActorFX(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    "flambit_aoe",
-                    3000,
-                    this.id + "_flambit_aoe",
-                    true,
-                    "",
-                    true,
-                    false,
-                    this.team);
-            ExtensionCommands.createActorFX(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    "fx_target_ring_2",
-                    3000,
-                    this.id + "_flambit_ring_",
-                    true,
-                    "",
-                    true,
-                    true,
-                    getOppositeTeam());
+            handleSwapToPoly(duration);
         } else {
-            this.bundle = this.getSkinAssetBundle();
-            boolean scale = false;
-            if (this.getState(ActorState.TRANSFORMED)) {
-                switch (this.getAvatar()) {
-                    case "flame":
-                        this.bundle = "flame_ult";
-                        scale = true;
-                        break;
-                    case "iceking":
-                        this.bundle =
-                                this.avatar.contains("queen")
-                                        ? "iceking2_icequeen2"
-                                        : this.avatar.contains("young")
-                                                ? "iceking2_young2"
-                                                : "iceking2";
-                        break;
-                    case "marceline":
-                        this.bundle = "marceline_bat";
-                        break;
-                    case "peppermintbutler":
-                        this.bundle = "pepbut_feral";
-                }
-            }
-            ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, this.bundle);
-            if (scale) {
-                ExtensionCommands.scaleActor(this.parentExt, this.room, this.id, 1f);
-            }
+            handleSwapFromPoly();
         }
+    }
+
+    public void handleSwapToPoly(int duration) {
+        this.addState(ActorState.SLOWED, 0.3d, duration);
+        ExtensionCommands.swapActorAsset(parentExt, this.room, this.id, "flambit");
+        ExtensionCommands.createActorFX(
+                this.parentExt,
+                this.room,
+                this.id,
+                "statusEffect_polymorph",
+                1000,
+                this.id + "_statusEffect_polymorph",
+                true,
+                "",
+                true,
+                false,
+                this.team);
+        ExtensionCommands.createActorFX(
+                this.parentExt,
+                this.room,
+                this.id,
+                "flambit_aoe",
+                3000,
+                this.id + "_flambit_aoe",
+                true,
+                "",
+                true,
+                false,
+                this.team);
+        ExtensionCommands.createActorFX(
+                this.parentExt,
+                this.room,
+                this.id,
+                "fx_target_ring_2",
+                3000,
+                this.id + "_flambit_ring_",
+                true,
+                "",
+                true,
+                true,
+                getOppositeTeam());
+    }
+
+    public void handleSwapFromPoly() {
+        String bundle = this.getSkinAssetBundle();
+        ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bundle);
+    }
+
+    @Override
+    public void handleCharm(UserActor charmer, int duration) {
+        if (!this.states.get(ActorState.CHARMED) && !this.states.get(ActorState.IMMUNITY)) {
+            this.charmer = charmer;
+            this.addState(ActorState.CHARMED, 0d, duration);
+        }
+    }
+
+    public void handleCyclopsHealing() {
+        if (this.getHealth() != this.maxHealth && !this.pickedUpHealthPack) {
+            this.changeHealth((int) (this.getMaxHealth() * 0.15d));
+        }
+        ExtensionCommands.createActorFX(
+                this.parentExt,
+                this.room,
+                this.getId(),
+                "fx_health_regen",
+                60000,
+                this.id + "healthPackFX",
+                true,
+                "",
+                false,
+                false,
+                this.getTeam());
+        this.pickedUpHealthPack = true;
+        this.healthPackPickUpTime = System.currentTimeMillis();
+        this.updateStatMenu("healthRegen");
     }
 
     public void respawn() {
         this.canMove = true;
         this.setHealth((int) this.maxHealth, (int) this.maxHealth);
-        int teamNumber =
-                parentExt.getRoomHandler(this.room.getName()).getTeamNumber(this.id, this.team);
-        Point2D respawnPoint = MapData.PURPLE_SPAWNS[teamNumber];
-        if (this.team == 1 && respawnPoint.getX() < 0)
-            respawnPoint = new Point2D.Double(respawnPoint.getX() * -1, respawnPoint.getY());
+        Point2D respawnPoint = getRespawnPoint();
         Console.debugLog(
                 this.displayName
                         + " Respawning at: "
@@ -1239,6 +1345,20 @@ public class UserActor extends Actor {
                 false,
                 false,
                 this.team);
+    }
+
+    private Point2D getRespawnPoint() {
+        int teamNumber =
+                parentExt.getRoomHandler(this.room.getName()).getTeamNumber(this.id, this.team);
+        Point2D respawnPoint;
+        boolean isPractice = this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap();
+        respawnPoint =
+                isPractice
+                        ? MapData.L1_PURPLE_SPAWNS[teamNumber]
+                        : MapData.L2_PURPLE_SPAWNS[teamNumber];
+        if (this.team == 1 && respawnPoint.getX() < 0)
+            respawnPoint = new Point2D.Double(respawnPoint.getX() * -1, respawnPoint.getY());
+        return respawnPoint;
     }
 
     public void addXP(int xp) {
@@ -1428,6 +1548,9 @@ public class UserActor extends Actor {
 
     @Override
     public double getPlayerStat(String stat) {
+        if (stat.equalsIgnoreCase("healthRegen")) {
+            if (this.pickedUpHealthPack) return super.getPlayerStat(stat) + HEALTH_PACK_REGEN;
+        }
         if (stat.equalsIgnoreCase("attackDamage")) {
             if (this.dcBuff == 2) return (super.getPlayerStat(stat) + this.nailDamage) * 1.2f;
             return super.getPlayerStat(stat) + this.nailDamage;
@@ -1675,6 +1798,15 @@ public class UserActor extends Actor {
     public void destroy() {
         this.dead = true;
         ExtensionCommands.destroyActor(this.parentExt, this.room, this.id);
+    }
+
+    public void logExceptionMessage(String avatar, int spellNum) {
+        String characterName = getChampionName(avatar).toUpperCase();
+        String message =
+                String.format(
+                        "EXCEPTION OCCURED DURING ABILITY EXECUTION! CHARACTER: %s, ABILITY: %d",
+                        characterName, spellNum);
+        Console.logWarning(message);
     }
 
     public void clearIconHandlers() {

@@ -15,6 +15,7 @@ import com.smartfoxserver.v2.exceptions.SFSJoinRoomException;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.MapData;
 
 public class GotoRoomHandler extends BaseClientRequestHandler {
@@ -22,6 +23,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
     @Override
     public void handleClientRequest(
             User sender, ISFSObject params) { // Called when player is trying to join a match
+        Console.debugLog("trace!");
         trace(params.getDump());
         int team = 1;
         if (params.getUtfString("team").equalsIgnoreCase("purple")) team = 0;
@@ -39,13 +41,19 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
         SFSUserVariable playerVar = new SFSUserVariable("player", playerInfo);
         ISFSObject location =
                 new SFSObject(); // Will need to be changed when we get actual spawn points made
-        float x = (float) MapData.PURPLE_SPAWNS[0].getX();
+        String room_id = params.getUtfString("room_id");
+        float practiceX = (float) MapData.L1_PURPLE_SPAWNS[0].getX();
+        float practiceZ = (float) MapData.L1_PURPLE_SPAWNS[0].getY();
+        float battleLabX = (float) MapData.L2_PURPLE_SPAWNS[0].getX();
+        float battleLabZ = (float) MapData.L2_PURPLE_SPAWNS[0].getY();
+        float x = room_id.contains("practice") ? practiceX : battleLabX;
+        float z = room_id.contains("practice") ? practiceZ : battleLabZ;
         if (team == 1) x *= -1;
         location.putFloat("x", x);
-        location.putFloat("z", (float) MapData.PURPLE_SPAWNS[0].getY());
+        location.putFloat("z", z);
         ISFSObject p1 = new SFSObject();
         p1.putFloat("x", x);
-        p1.putFloat("z", (float) MapData.PURPLE_SPAWNS[0].getY());
+        p1.putFloat("z", z);
         location.putSFSObject("p1", p1);
         location.putFloat("time", 0);
         location.putFloat("speed", 0);

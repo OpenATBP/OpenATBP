@@ -2,7 +2,6 @@ package xyz.openatbp.extension.game;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
 import java.util.List;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -90,28 +89,16 @@ public abstract class Projectile {
     }
 
     public Actor checkPlayerCollision(RoomHandler roomHandler) {
-        List<Actor> teammates = this.getTeammates(roomHandler);
-        for (Actor a : roomHandler.getActors()) {
-            if ((a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE)
-                    && !teammates.contains(a)) { // TODO: Change to not hit teammates
-                double collisionRadius =
-                        parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
-                if (a.getLocation().distance(location) <= hitbox + collisionRadius
-                        && !a.getAvatar().equalsIgnoreCase("neptr_mine")) {
-                    return a;
-                }
+        List<Actor> nonStructureEnemies = roomHandler.getNonStructureEnemies(owner.getTeam());
+        for (Actor a : nonStructureEnemies) {
+            double collisionRadius =
+                    parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
+            if (a.getLocation().distance(location) <= hitbox + collisionRadius
+                    && !a.getAvatar().equalsIgnoreCase("neptr_mine")) {
+                return a;
             }
         }
         return null;
-    }
-
-    protected List<Actor> getTeammates(RoomHandler roomHandler) {
-        List<Actor> teammates = new ArrayList<>(3);
-        for (Actor a : roomHandler.getActors()) {
-            if ((a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE)
-                    && a.getTeam() == this.owner.getTeam()) teammates.add(a);
-        }
-        return teammates;
     }
 
     protected abstract void hit(Actor victim);

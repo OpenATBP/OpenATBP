@@ -1,7 +1,9 @@
 package xyz.openatbp.extension;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 
@@ -36,7 +38,8 @@ public class StressLogger {
                 }
                 this.userUsage.put(target, System.currentTimeMillis());
             }
-            for (String user : this.userCount.keySet()) {
+            Set<String> keySet = new HashSet<>(this.userCount.keySet());
+            for (String user : keySet) {
                 if (this.userCount.get(user) >= (this.command.contains("actor_data") ? 100 : 50))
                     Console.logWarning(
                             user

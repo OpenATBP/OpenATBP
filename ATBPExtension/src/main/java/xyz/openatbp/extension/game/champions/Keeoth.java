@@ -13,6 +13,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
@@ -23,6 +24,7 @@ public class Keeoth extends Monster {
 
     private int abilityCooldown;
     private boolean usingAbility;
+    private static final int KEEOTH_BUFF_DURATION = 90000;
 
     public Keeoth(
             ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName) {
@@ -44,23 +46,27 @@ public class Keeoth extends Monster {
                         || a.getActorType() == ActorType.COMPANION)) {
             for (UserActor u : parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                 if (u.getTeam() == a.getTeam()) {
-                    u.addEffect("lifeSteal", 35d, 60000, "jungle_buff_keeoth", "");
-                    u.addEffect("spellVamp", 35d, 60000);
-                    u.addEffect("criticalChance", 35d, 60000);
+                    u.setHasKeeothBuff(true);
+                    u.setKeeothBuffStartTime(System.currentTimeMillis());
+                    u.addEffect("lifeSteal", 35d, KEEOTH_BUFF_DURATION, "jungle_buff_keeoth", "");
+                    u.addEffect("spellVamp", 40d, KEEOTH_BUFF_DURATION);
+                    u.addEffect("criticalChance", 35d, KEEOTH_BUFF_DURATION);
                     double healthChange = (double) u.getHealth() * 0.3d;
                     u.changeHealth((int) healthChange);
-                    Champion.handleStatusIcon(
-                            this.parentExt, u, "icon_buff_keeoth", "keeoth_buff_desc", 60000f);
+                    ExtensionCommands.addStatusIcon(
+                            this.parentExt,
+                            u.getUser(),
+                            "keeoth_buff",
+                            "keeoth_buff_desc",
+                            "icon_buff_keeoth",
+                            KEEOTH_BUFF_DURATION);
+                    ExtensionCommands.playSound(
+                            parentExt, u.getUser(), "global", "announcer/you_keeoth");
+                } else {
+                    ExtensionCommands.playSound(
+                            parentExt, u.getUser(), "global", "announcer/enemy_keeoth");
                 }
             }
-        }
-        for (UserActor u : parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
-            if (u.getTeam() == a.getTeam())
-                ExtensionCommands.playSound(
-                        parentExt, u.getUser(), "global", "announcer/you_keeoth");
-            else
-                ExtensionCommands.playSound(
-                        parentExt, u.getUser(), "global", "announcer/enemy_keeoth");
         }
         super.die(a);
     }
@@ -139,11 +145,11 @@ public class Keeoth extends Monster {
                                         data.putUtfString("attackType", "spell");
                                         JsonNode newAttackData = mapper.readTree(data.toJson());
 
+                                        RoomHandler handler =
+                                                parentExt.getRoomHandler(room.getName());
                                         for (Actor actor :
                                                 Champion.getActorsInRadius(
-                                                        parentExt.getRoomHandler(room.getName()),
-                                                        playerLoc,
-                                                        2.5f)) {
+                                                        handler, playerLoc, 2.5f)) {
                                             if (actor.getActorType() == ActorType.PLAYER
                                                     || actor.getActorType()
                                                             == ActorType.COMPANION) {

@@ -1,9 +1,7 @@
 package xyz.openatbp.extension;
 
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -122,47 +120,29 @@ public class GameManager {
         int blueNum = 0;
         int purpleNum = 0;
         initializeMap(room, parentExt);
-        // ExtensionCommands.addUser(parentExt,room,101,"Fake user 1","finn",0,"finn",backpack,0);
-        if (room.getUserList().size() < 6) {
-            ExtensionCommands.createActor(
-                    parentExt,
-                    room,
-                    "101",
-                    "finn",
-                    new Point2D.Float(
-                            (float) (MapData.PURPLE_SPAWNS[1].getX() * -1),
-                            (float) MapData.PURPLE_SPAWNS[1].getY()),
-                    0f,
-                    1);
-            ExtensionCommands.createActor(
-                    parentExt,
-                    room,
-                    "102",
-                    "jake",
-                    new Point2D.Float(
-                            (float) (MapData.PURPLE_SPAWNS[2].getX() * -1),
-                            (float) MapData.PURPLE_SPAWNS[2].getY()),
-                    0f,
-                    1);
-            ExtensionCommands.createActor(
-                    parentExt, room, "103", "magicman", MapData.PURPLE_SPAWNS[1], 0f, 0);
-            ExtensionCommands.createActor(
-                    parentExt, room, "104", "iceking", MapData.PURPLE_SPAWNS[2], 0f, 0);
-        }
-
         for (User u : room.getUserList()) {
             ISFSObject playerInfo = u.getVariable("player").getSFSObjectValue();
             int team = playerInfo.getInt("team");
             float px = 0f;
             float pz = 0f;
             if (team == 0) {
-                px = (float) MapData.PURPLE_SPAWNS[purpleNum].getX();
-                pz = (float) MapData.PURPLE_SPAWNS[purpleNum].getY();
+                if (room.getGroupId().equals("Practice")) {
+                    px = (float) MapData.L1_PURPLE_SPAWNS[purpleNum].getX();
+                    pz = (float) MapData.L1_PURPLE_SPAWNS[purpleNum].getY();
+                } else {
+                    px = (float) MapData.L2_PURPLE_SPAWNS[purpleNum].getX();
+                    pz = (float) MapData.L2_PURPLE_SPAWNS[purpleNum].getY();
+                }
                 purpleNum++;
             }
             if (team == 1) {
-                px = (float) MapData.PURPLE_SPAWNS[blueNum].getX() * -1;
-                pz = (float) MapData.PURPLE_SPAWNS[blueNum].getY();
+                if (room.getGroupId().equals("Practice")) {
+                    px = (float) MapData.L1_PURPLE_SPAWNS[blueNum].getX() * -1;
+                    pz = (float) MapData.L1_PURPLE_SPAWNS[blueNum].getY();
+                } else {
+                    px = (float) MapData.L2_PURPLE_SPAWNS[blueNum].getX() * -1;
+                    pz = (float) MapData.L2_PURPLE_SPAWNS[blueNum].getY();
+                }
                 blueNum++;
             }
             String id = String.valueOf(u.getId());
@@ -305,13 +285,19 @@ public class GameManager {
     }
 
     private static void spawnAltars(Room room, ATBPExtension parentExt) {
-        ExtensionCommands.createActor(
-                parentExt, room, MapData.getAltarActorData(1, room.getGroupId()));
-        ExtensionCommands.createActor(
-                parentExt, room, MapData.getAltarActorData(2, room.getGroupId()));
-        if (!room.getGroupId().equalsIgnoreCase("practice")) {
+        if (room.getGroupId().equalsIgnoreCase("practice")) {
             ExtensionCommands.createActor(
                     parentExt, room, MapData.getAltarActorData(0, room.getGroupId()));
+            ExtensionCommands.createActor(
+                    parentExt, room, MapData.getAltarActorData(1, room.getGroupId()));
+
+        } else {
+            ExtensionCommands.createActor(
+                    parentExt, room, MapData.getAltarActorData(0, room.getGroupId()));
+            ExtensionCommands.createActor(
+                    parentExt, room, MapData.getAltarActorData(1, room.getGroupId()));
+            ExtensionCommands.createActor(
+                    parentExt, room, MapData.getAltarActorData(2, room.getGroupId()));
         }
     }
 
@@ -337,7 +323,12 @@ public class GameManager {
         }
     }
 
-    public static JsonNode getTeamData(ATBPExtension parentExt, int team, Room room) {
+    public static JsonNode getTeamData(
+            ATBPExtension parentExt,
+            HashMap<User, UserActor> dcPlayers,
+            int team,
+            Room room,
+            boolean isRankedMatch) {
         final String[] STATS = {
             "damageDealtChamps",
             "damageReceivedPhysical",
@@ -372,6 +363,7 @@ public class GameManager {
             damageDealtPhysical
 
          */
+        int coins = isRankedMatch ? 100 : 0;
         ObjectNode node = objectMapper.createObjectNode();
         for (User u : room.getUserList()) {
             UserActor ua =
@@ -389,32 +381,88 @@ public class GameManager {
                 player.put("assists", ua.getStat("assists"));
                 player.put("playerName", ua.getFrame());
                 player.put("myElo", (double) playerVar.getInt("elo"));
-                player.put("coins", 100); // Just going to have this be a flat amount for now
+                player.put("coins", coins);
                 player.put(
                         "prestigePoints", 10); // Just going to have this be a flat amount for now
                 node.set(String.valueOf(u.getId()), player);
             }
         }
+        if (!dcPlayers.isEmpty()) {
+            for (Map.Entry<User, UserActor> entry : dcPlayers.entrySet()) {
+                UserActor ua = entry.getValue();
+                if (ua.getTeam() == team) {
+                    ObjectNode player = objectMapper.createObjectNode();
+                    User u = entry.getKey();
+                    ISFSObject playerVar = u.getVariable("player").getSFSObjectValue();
+                    for (String s : STATS) {
+                        if (ua.hasGameStat(s)) player.put(s, ua.getGameStat(s));
+                    }
+                    player.put("name", playerVar.getUtfString("name"));
+                    player.put("kills", ua.getStat("kills"));
+                    player.put("deaths", ua.getStat("deaths"));
+                    player.put("assists", ua.getStat("assists"));
+                    player.put("playerName", ua.getFrame());
+                    player.put("myElo", (double) playerVar.getInt("elo"));
+                    player.put("coins", coins);
+                    player.put(
+                            "prestigePoints",
+                            10); // Just going to have this be a flat amount for now
+                    node.set(String.valueOf(u.getId()), player);
+                }
+            }
+        }
         return node;
     }
 
-    public static JsonNode getGlobalTeamData(Room room) {
-        ObjectNode node = objectMapper.createObjectNode();
-        for (User u : room.getUserList()) {
-            ObjectNode player = objectMapper.createObjectNode();
-            ISFSObject stats = u.getVariable("stats").getSFSObjectValue();
-            ISFSObject playerVar = u.getVariable("player").getSFSObjectValue();
-            player.put("id", u.getId());
-            player.put("name", playerVar.getUtfString("name"));
-            int kills = 0;
-            if (stats.getInt("kills") != null) kills = stats.getInt("kills");
-            player.put("kills", kills);
-            player.put("deaths", stats.getInt("deaths"));
-            player.put("assists", stats.getInt("assists"));
-            player.put("playerName", playerVar.getUtfString("avatar"));
-            player.put("myElo", (double) playerVar.getInt("elo"));
-            node.set(String.valueOf(u.getId()), player);
+    public static JsonNode getGlobalTeamData(
+            ATBPExtension parentExt, HashMap<User, UserActor> dcPlayers, Room room) {
+        double killsA = 0;
+        double killsB = 0;
+        double deathsA = 0;
+        double deathsB = 0;
+        double assistsA = 0;
+        double assistsB = 0;
+        double scoreA = 0;
+        double scoreB = 0;
+
+        for (UserActor ua : parentExt.getRoomHandler(room.getName()).getPlayers()) {
+            if (ua.getTeam() == 0) {
+                killsA += ua.getStat("kills");
+                deathsA += ua.getStat("deaths");
+                assistsA += ua.getStat("assists");
+                if (ua.hasGameStat("score")) scoreA += ua.getGameStat("score");
+            } else {
+                killsB += ua.getStat("kills");
+                deathsB += ua.getStat("deaths");
+                assistsB += ua.getStat("assists");
+                if (ua.hasGameStat("score")) scoreB += ua.getGameStat("score");
+            }
         }
+        if (!dcPlayers.isEmpty()) {
+            for (Map.Entry<User, UserActor> entry : dcPlayers.entrySet()) {
+                UserActor ua = entry.getValue();
+                if (ua.getTeam() == 0) {
+                    killsA += ua.getStat("kills");
+                    deathsA += ua.getStat("deaths");
+                    assistsA += ua.getStat("assists");
+                    if (ua.hasGameStat("score")) scoreA += ua.getGameStat("score");
+                } else {
+                    killsB += ua.getStat("kills");
+                    deathsB += ua.getStat("deaths");
+                    assistsB += ua.getStat("assists");
+                    if (ua.hasGameStat("score")) scoreB += ua.getGameStat("score");
+                }
+            }
+        }
+        ObjectNode node = objectMapper.createObjectNode();
+        node.put("killsA", killsA);
+        node.put("killsB", killsB);
+        node.put("deathsA", deathsA);
+        node.put("deathsB", deathsB);
+        node.put("scoreA", scoreA);
+        node.put("scoreB", scoreB);
+        node.put("assistsA", assistsA);
+        node.put("assistsB", assistsB);
         return node;
     }
 }

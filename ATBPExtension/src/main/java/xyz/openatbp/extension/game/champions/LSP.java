@@ -5,7 +5,6 @@ import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -14,14 +13,16 @@ import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
-import xyz.openatbp.extension.game.AbilityRunnable;
-import xyz.openatbp.extension.game.ActorType;
-import xyz.openatbp.extension.game.Champion;
-import xyz.openatbp.extension.game.Projectile;
+import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class LSP extends UserActor {
+    public static final int W_DURATION = 3500;
+    public static final int Q_CAST_DELAY = 750;
+    public static final int Q_FEAR_DURATION = 2000;
+    public static final int W_CAST_DELAY = 500;
+    public static final int E_CAST_DELAY = 1250;
     private int lumps = 0;
     private long wTime = 0;
     private boolean isCastingult = false;
@@ -44,16 +45,13 @@ public class LSP extends UserActor {
             ExtensionCommands.removeFx(parentExt, room, id + "_w");
             this.wActive = false;
         }
-        if (this.wActive && System.currentTimeMillis() - this.wTime >= 3500) {
+        if (this.wActive && System.currentTimeMillis() - this.wTime >= W_DURATION) {
             this.wActive = false;
         }
         if (this.wActive) {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
-            for (Actor a :
-                    Champion.getActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()),
-                            this.location,
-                            3f)) {
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
                 if (this.isNonStructure(a)) {
                     a.addToDamageQueue(
                             this, (double) getSpellDamage(spellData) / 10d, spellData, true);
@@ -67,17 +65,14 @@ public class LSP extends UserActor {
 
     @Override
     public void attack(Actor a) {
-        this.applyStopMovingDuringAttack();
-        parentExt
-                .getTaskScheduler()
-                .schedule(
-                        new RangedAttack(
-                                a,
-                                new LSPPassive(a, this.handleAttack(a)),
-                                "lsp_projectile",
-                                "Bip001 R Hand"),
-                        500,
-                        TimeUnit.MILLISECONDS);
+        if (this.attackCooldown == 0) {
+            this.applyStopMovingDuringAttack();
+            String projectile = "lsp_projectile";
+            String emit = "Bip001 R Hand";
+            LSPPassive passiveAttack = new LSPPassive(a, handleAttack(a));
+            RangedAttack rangedAttack = new RangedAttack(a, passiveAttack, projectile, emit);
+            scheduleTask(rangedAttack, BASIC_ATTACK_DELAY);
+        }
     }
 
     @Override
@@ -98,18 +93,28 @@ public class LSP extends UserActor {
             Point2D dest) {
         switch (ability) {
             case 1:
-                this.stopMoving(castDelay);
                 this.canCast[0] = false;
-                String dramaVoPrefix =
-                        (this.avatar.contains("gummybuns"))
-                                ? "lsp_gummybuns_"
-                                : (this.avatar.contains("lsprince")) ? "lsprince_" : "lsp_";
-                ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "vo/vo_" + dramaVoPrefix + "drama_beam",
-                        this.location);
+                try {
+                    this.stopMoving(castDelay);
+                    String qVO = SkinData.getLSPQVO(avatar);
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, qVO, this.location);
+                    ExtensionCommands.createActorFX(
+                            this.parentExt,
+                            this.room,
+                            this.id,
+                            "fx_target_rect_7",
+                            1100,
+                            this.id + "_qRect",
+                            false,
+                            "",
+                            true,
+                            true,
+                            this.team);
+                } catch (Exception exception) {
+                    logExceptionMessage(avatar, ability);
+                    exception.printStackTrace();
+                }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -117,40 +122,15 @@ public class LSP extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "fx_target_rect_7",
-                        1100,
-                        this.id + "_qRect",
-                        false,
-                        "",
-                        true,
-                        true,
-                        this.team);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new LSPAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                castDelay,
-                                TimeUnit.MILLISECONDS);
+                scheduleTask(
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), castDelay);
                 break;
             case 2:
                 this.canCast[1] = false;
                 this.wActive = true;
                 this.wTime = System.currentTimeMillis();
-                String lumpsVoPrefix =
-                        (this.avatar.contains("gummybuns"))
-                                ? "lsp_gummybuns_"
-                                : (this.avatar.contains("lsprince")) ? "lsprince_" : "lsp_";
-                ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "vo/vo_" + lumpsVoPrefix + "lumps_aoe",
-                        this.location);
+                String wVO = SkinData.getLSPWVO(avatar);
+                ExtensionCommands.playSound(this.parentExt, this.room, this.id, wVO, this.location);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -163,35 +143,22 @@ public class LSP extends UserActor {
                         this.room,
                         this.id,
                         "fx_target_ring_3",
-                        3500,
+                        W_DURATION,
                         this.id + "_wRing",
                         true,
                         "",
                         true,
                         true,
                         this.team);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new LSPAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                castDelay,
-                                TimeUnit.MILLISECONDS);
+                scheduleTask(
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), castDelay);
                 break;
             case 3:
                 this.stopMoving(castDelay);
                 this.canCast[2] = false;
                 this.isCastingult = true;
-                String cellphoneVoPrefix =
-                        (this.avatar.contains("gummybuns"))
-                                ? "lsp_gummybuns_"
-                                : (this.avatar.contains("lsprince")) ? "lsprince_" : "lsp_";
-                ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "vo/vo_" + cellphoneVoPrefix + "cellphone_throw",
-                        this.location);
+                String eVO = SkinData.getLSPEVO(avatar);
+                ExtensionCommands.playSound(this.parentExt, this.room, this.id, eVO, this.location);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -199,34 +166,29 @@ public class LSP extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(
-                                new LSPAbilityHandler(
-                                        ability, spellData, cooldown, gCooldown, dest),
-                                castDelay,
-                                TimeUnit.MILLISECONDS);
+                scheduleTask(
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), castDelay);
                 break;
         }
     }
 
-    private class LSPAbilityHandler extends AbilityRunnable {
+    private LSPAbilityRunnable abilityRunnable(
+            int ability, JsonNode spelldata, int cooldown, int gCooldown, Point2D dest) {
+        return new LSPAbilityRunnable(ability, spelldata, cooldown, gCooldown, dest);
+    }
 
-        public LSPAbilityHandler(
+    private class LSPAbilityRunnable extends AbilityRunnable {
+
+        public LSPAbilityRunnable(
                 int ability, JsonNode spellData, int cooldown, int gCooldown, Point2D dest) {
             super(ability, spellData, cooldown, gCooldown, dest);
         }
 
         @Override
         protected void spellQ() {
-            int Q_CAST_DELAY = 750;
             Runnable enableQCasting = () -> canCast[0] = true;
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(
-                            enableQCasting,
-                            getReducedCooldown(cooldown) - Q_CAST_DELAY,
-                            TimeUnit.MILLISECONDS);
+            int delay = getReducedCooldown(cooldown) - Q_CAST_DELAY;
+            scheduleTask(enableQCasting, delay);
             if (getHealth() > 0) {
                 double healthHealed = (double) getMaxHealth() * (0.03d * lumps);
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_lsp_drama_beam", location);
@@ -253,12 +215,20 @@ public class LSP extends UserActor {
                         team);
                 Path2D qRect =
                         Champion.createRectangle(location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
+
                 List<Actor> affectedActors = new ArrayList<>();
-                for (Actor a : parentExt.getRoomHandler(room.getName()).getActors()) {
-                    if (isNonStructure(a) && qRect.contains(a.getLocation())) {
-                        if (!a.getId().contains("turret")) a.handleFear(LSP.this.location, 2000);
-                        a.addToDamageQueue(LSP.this, getSpellDamage(spellData), spellData, false);
-                        affectedActors.add(a);
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(team, qRect);
+                if (!actorsInPolygon.isEmpty()) {
+                    for (Actor a : actorsInPolygon) {
+                        if (a.getActorType() != ActorType.TOWER
+                                && a.getActorType() != ActorType.BASE) {
+                            if (!a.getId().contains("turret"))
+                                a.handleFear(LSP.this.location, Q_FEAR_DURATION);
+                            a.addToDamageQueue(
+                                    LSP.this, getSpellDamage(spellData), spellData, false);
+                            affectedActors.add(a);
+                        }
                     }
                 }
                 if (!affectedActors.isEmpty()) {
@@ -269,14 +239,9 @@ public class LSP extends UserActor {
 
         @Override
         protected void spellW() {
-            int W_CAST_DELAY = 500;
             Runnable enableWCasting = () -> canCast[1] = true;
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(
-                            enableWCasting,
-                            getReducedCooldown(cooldown) - W_CAST_DELAY,
-                            TimeUnit.MILLISECONDS);
+            int delay = getReducedCooldown(cooldown) - W_CAST_DELAY;
+            scheduleTask(enableWCasting, delay);
             if (getHealth() > 0) {
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_lsp_lumps_aoe", location);
                 ExtensionCommands.createActorFX(
@@ -296,25 +261,17 @@ public class LSP extends UserActor {
 
         @Override
         protected void spellE() {
-            int E_CAST_DELAY = 1250;
             Runnable enableECasting = () -> canCast[2] = true;
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(
-                            enableECasting,
-                            getReducedCooldown(cooldown) - E_CAST_DELAY,
-                            TimeUnit.MILLISECONDS);
+            int delay = getReducedCooldown(cooldown) - E_CAST_DELAY;
+            scheduleTask(enableECasting, delay);
             isCastingult = false;
             if (!interruptE && getHealth() > 0) {
                 Line2D projectileLine = Champion.getAbilityLine(location, dest, 100f);
                 ExtensionCommands.actorAnimate(parentExt, room, id, "spell3b", 500, false);
-                String ultProjectile =
-                        (avatar.contains("prince"))
-                                ? "projectile_lsprince_ult"
-                                : "projectile_lsp_ult";
+                String eProjectile = SkinData.getLSPEProjectile(avatar);
                 fireProjectile(
                         new LSPUltProjectile(
-                                parentExt, LSP.this, projectileLine, 8f, 2f, ultProjectile),
+                                parentExt, LSP.this, projectileLine, 8f, 2f, eProjectile),
                         location,
                         dest,
                         100f);
@@ -322,7 +279,7 @@ public class LSP extends UserActor {
                         parentExt, room, "global", "sfx_lsp_cellphone_throw", location);
             } else if (interruptE) {
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_skill_interrupted", location);
-                ExtensionCommands.actorAnimate(parentExt, room, id, "run", 500, false);
+                ExtensionCommands.actorAnimate(parentExt, room, id, "run", 200, false);
                 ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
             }
             interruptE = false;
@@ -370,11 +327,9 @@ public class LSP extends UserActor {
 
         @Override
         public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            for (Actor a : roomHandler.getActors()) {
-                if (!this.victims.contains(a)
-                        && a.getActorType() != ActorType.BASE
-                        && a.getActorType() != ActorType.TOWER
-                        && !a.getId().equalsIgnoreCase(LSP.this.id)) {
+            List<Actor> nonStructureEnemies = roomHandler.getNonStructureEnemies(team);
+            for (Actor a : nonStructureEnemies) {
+                if (!this.victims.contains(a)) {
                     double collisionRadius =
                             parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
                     if (a.getLocation().distance(location) <= hitbox + collisionRadius
