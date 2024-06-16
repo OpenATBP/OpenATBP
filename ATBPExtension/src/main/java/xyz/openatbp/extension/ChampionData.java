@@ -16,7 +16,7 @@ import xyz.openatbp.extension.game.actors.UserActor;
 
 public class ChampionData {
 
-    private static final int[] XP_LEVELS = {100, 210, 330, 460, 600, 670, 850, 1040, 1240, 1450};
+    private static final int[] XP_LEVELS = {100, 210, 350, 520, 720, 950, 1210, 1500, 1820, 2170};
     public static final double[] ELO_TIERS = {0, 1149, 1350, 1602};
     public static final double MAX_ELO = 2643;
 
@@ -560,11 +560,26 @@ public class ChampionData {
             }
         }
         int tier = getTier(myElo);
-        double kFactor = 20 - (5 * tier);
-        if (tier == 0) kFactor += 5;
+        double kFactor = 100;
+        switch (tier) {
+            case 1:
+                kFactor = 50;
+                break;
+            case 2:
+                kFactor = 35;
+                break;
+            case 3:
+                kFactor = 25;
+                break;
+        }
         double averageEnemyElo = Math.round(teamElo / teamCount);
         double myProb = 1d / (1 + Math.pow(10, (averageEnemyElo - myElo) / 400));
         double eloGain = Math.round(kFactor * (result - myProb));
+        Console.debugLog(ua.getDisplayName() + " ELO: " + myElo);
+        Console.debugLog(ua.getDisplayName() + " TIER: " + tier);
+        Console.debugLog(ua.getDisplayName() + " ENEMY ELO: " + averageEnemyElo);
+        Console.debugLog(ua.getDisplayName() + " ELO PREDICTION: " + myProb);
+        Console.debugLog(ua.getDisplayName() + " ELO GAIN: " + eloGain);
         return (int) eloGain;
     }
 

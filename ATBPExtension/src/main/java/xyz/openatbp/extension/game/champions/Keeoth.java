@@ -1,6 +1,7 @@
 package xyz.openatbp.extension.game.champions;
 
 import java.awt.geom.Point2D;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -162,7 +163,7 @@ public class Keeoth extends Monster {
                                                             Keeoth.this, 450, newAttackData, false);
                                             }
                                         }
-                                    } catch (Exception e) {
+                                    } catch (IOException e) {
                                         e.printStackTrace();
                                     }
                                 };

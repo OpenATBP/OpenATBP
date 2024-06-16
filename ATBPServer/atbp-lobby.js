@@ -483,6 +483,7 @@ function leaveTeam(socket, disconnected) {
   socket.player.onTeam = false;
   var team = teams.find((t) => t.players.includes(socket.player.teg_id));
   if (team != undefined) {
+    declineInvite(team.team, socket.player.teg_id, team.type == 'custom');
     if (team.stage != 0) leaveQueue(socket, false);
     team.players = team.players.filter((tp) => tp != socket.player.teg_id);
     if (team.team == socket.player.teg_id && team.stage == 0) {
@@ -628,6 +629,183 @@ function cleanUpPlayers() {
   queues = queues.filter((q) => q.players.length > 0);
 }
 
+function sendInvite(sender, recipient, custom) {
+  var senderUser = users.find((u) => u.player.teg_id == sender);
+  var pendingInvite = pendingInvites.find(
+    (i) => i.sender == sender && i.recipient == recipient
+  );
+  if (pendingInvite != undefined) declineInvite(sender, recipient, custom);
+  var invitedPlayer = users.find((u) => u.player.teg_id == recipient);
+  var team = teams.find((t) => t.team == sender);
+  if (
+    senderUser != undefined &&
+    invitedPlayer != undefined &&
+    team != undefined
+  ) {
+    console.log(
+      `${senderUser.player.name} has sent ${invitedPlayer.player.name} an invite!`
+    );
+    if (!custom) {
+      sendCommand(invitedPlayer, 'receive_invite', {
+        name: senderUser.player.name,
+        player: senderUser.player.player,
+        act: team.type,
+        vs: true,
+        team: senderUser.player.teg_id,
+      })
+        .then(() => {
+          pendingInvites.push({
+            sender: sender,
+            recipient: recipient,
+            custom: custom,
+          });
+        })
+        .catch(console.error);
+    } else {
+      var inviteObj = {
+        name: senderUser.player.name,
+        player: senderUser.player.player,
+        act: 'm_moba_sports_6p_custom',
+        vs: true,
+        customGame: senderUser.player.teg_id,
+      };
+      sendCommand(invitedPlayer, 'custom_game_receive_invite', inviteObj)
+        .then(() => {
+          pendingInvites.push({
+            sender: sender,
+            recipient: recipient,
+            custom: custom,
+          });
+        })
+        .catch(console.error);
+    }
+  } else {
+    console.log('FAILED TO SEND INVITE');
+    if (senderUser != undefined)
+      sendCommand(
+        senderUser,
+        custom ? 'custom_game_invite_declined' : 'invite_declined',
+        { player: recipient }
+      ).catch(console.error);
+    else console.log('SENDING USER FOR INVITE IS INVALID: ' + sender);
+  }
+}
+
+function declineInvite(sender, recipient, custom) {
+  var senderUser = users.find((u) => u.player.teg_id == sender);
+  var recipientUser = users.find((u) => u.player.teg_id == recipient);
+  pendingInvites = pendingInvites.filter(
+    (i) => i.sender != sender || i.recipient != recipient
+  );
+  var command = custom ? 'custom_game_invite_declined' : 'invite_declined';
+  if (senderUser != undefined) {
+    if (recipientUser != undefined)
+      console.log(
+        `${recipientUser.player.name} has declined an invite from ${senderUser.player.name}!`
+      );
+    sendCommand(senderUser, command, { player: recipient }).catch(
+      console.error
+    );
+  } else console.log('SENDER FOR DECLINED INVITE IS INVALID: ' + sender);
+}
+
+function acceptInvite(sender, recipient, custom) {
+  var pendingInvite = pendingInvites.find(
+    (i) => i.sender == sender && i.recipient == recipient
+  );
+  if (pendingInvite != undefined) {
+    var senderUser = users.find((u) => u.player.teg_id == sender);
+    var recipientUser = users.find((u) => u.player.teg_id == recipient);
+    if (senderUser != undefined && recipientUser != undefined) {
+      console.log(
+        `${recipientUser.player.name} has accepted an invite from ${senderUser.player.name}!`
+      );
+      var team = teams.find((t) => t.team == sender);
+      if (team != undefined) {
+        pendingInvites = pendingInvites.filter(
+          (i) => i.recipient != recipient || i.sender != sender
+        );
+        declineAllInvites(recipient);
+        if (!custom) {
+          if (team.players.length < 3 && team.stage == 0) {
+            recipientUser.player.onTeam = true;
+            team.players.push(recipient);
+            var teamObjs = [];
+            for (var p of team.players) {
+              var teamPlayer = users.find((u) => u.player.teg_id == p);
+              if (teamPlayer != undefined) {
+                var playerObj = {
+                  name: teamPlayer.player.name,
+                  teg_id: teamPlayer.player.teg_id,
+                  player: teamPlayer.player.player,
+                };
+                teamObjs.push(playerObj);
+              }
+            }
+            sendCommand(recipientUser, 'invite_verified', { result: 'success' })
+              .then(() => {
+                safeSendAll(
+                  users.filter((u) => team.players.includes(u.player.teg_id)),
+                  'team_update',
+                  { players: teamObjs, team: team.team }
+                )
+                  .then(() => {
+                    if (team.players.length == 3) {
+                      var act = team.type.split('_');
+                      var type = act[act.length - 1];
+                      joinQueue(
+                        users.filter((u) =>
+                          team.players.includes(u.player.teg_id)
+                        ),
+                        type
+                      );
+                      cancelAllInvites(senderUser.player.teg_id);
+                    }
+                  })
+                  .catch(console.error);
+              })
+              .catch(console.error);
+          } else
+            sendCommand(recipientUser, 'invite_verified', {
+              result: 'failed',
+            }).catch(console.error);
+        } else {
+          if (team.players.length < 6 && team.stage == 0) {
+            recipientUser.player.onTeam = true;
+            team.players.push(recipient);
+            sendCommand(recipientUser, 'custom_game_invite_verified', {
+              result: 'success',
+            })
+              .then(() => {
+                updateCustomGame(team, recipientUser, -1);
+              })
+              .catch(console.error);
+          } else {
+            sendCommand(recipientUser, 'invite_verified', {
+              result: 'failed',
+            }).catch(console.error);
+          }
+        }
+      } else console.log('FAILED TO ACCEPT INVITE BECAUSE TEAM IS INVALID');
+    } else
+      console.log(
+        'FAILED TO ACCEPT INVITE BECAUSE SENDER OR RECIPIENT IS INVALID'
+      );
+  } else declineInvite(sender, recipient, custom);
+}
+
+function declineAllInvites(recipient) {
+  for (var i of pendingInvites.filter((inv) => inv.recipient == recipient)) {
+    declineInvite(i.sender, recipient, i.custom);
+  }
+}
+
+function cancelAllInvites(sender) {
+  for (var i of pendingInvites.filter((inv) => inv.sender == sender)) {
+    declineInvite(sender, i.recipient, i.custom);
+  }
+}
+
 setInterval(() => {
   cleanUpPlayers();
   teams = teams.filter((t) => t.players.length > 0);
@@ -680,6 +858,7 @@ function handleRequest(jsonString, socket) {
       }
       queues = queues.filter((q) => q.players.length > 0);
       joinQueue([socket], type);
+      declineAllInvites(socket.player.teg_id);
       break;
 
     case 'leave_team':
@@ -853,99 +1032,14 @@ function handleRequest(jsonString, socket) {
       break;
 
     case 'send_invite':
-      //TODO: Handle auto declining
-      var invitedPlayer = users.find(
-        (user) => user.player.teg_id == jsonObject['payload'].player
-      );
-      if (invitedPlayer != undefined) {
-        var pendingInvite = pendingInvites.find(
-          (i) =>
-            i.sender == socket.player.teg_id &&
-            i.recipient == invitedPlayer.player.teg_id
-        );
-        if (pendingInvite == undefined) {
-          var team = teams.find((t) => t.team == socket.player.teg_id);
-          if (team != undefined) {
-            sendCommand(invitedPlayer, 'receive_invite', {
-              name: socket.player.name,
-              player: socket.player.player,
-              act: team.type,
-              vs: true,
-              team: socket.player.teg_id,
-            })
-              .then(() => {
-                pendingInvites.push({
-                  sender: socket.player.teg_id,
-                  recipient: invitedPlayer.player.teg_id,
-                });
-              })
-              .catch(console.error);
-          } else console.log('Team Leader invalid!');
-        } else console.log('Person already invited!');
-      } else console.log("Can't find player!");
-
+      sendInvite(socket.player.teg_id, jsonObject['payload'].player, false);
       break;
 
     case 'join_team':
-      var team = teams.find((t) => t.team == jsonObject['payload'].name);
-      if (team != undefined && team.players.length < 3 && team.stage == 0) {
-        socket.player.onTeam = true;
-        team.players.push(socket.player.teg_id);
-        var teamObjs = [];
-        for (var p of team.players) {
-          var teamPlayer = users.find((u) => u.player.teg_id == p);
-          if (teamPlayer != undefined) {
-            var playerObj = {
-              name: teamPlayer.player.name,
-              teg_id: teamPlayer.player.teg_id,
-              player: teamPlayer.player.player,
-            };
-            teamObjs.push(playerObj);
-          }
-        }
-        pendingInvites = pendingInvites.filter(
-          (i) => i.recipient != socket.player.teg_id || i.sender != team.team
-        );
-        response = {
-          cmd: 'invite_verified',
-          payload: {
-            result: 'success',
-          },
-        };
-        safeSendAll(
-          users.filter((u) => team.players.includes(u.player.teg_id)),
-          'team_update',
-          { players: teamObjs, team: team.team }
-        )
-          .then(() => {
-            if (team.players.length == 3) {
-              var act = team.type.split('_');
-              var type = act[act.length - 1];
-              if (team != undefined) {
-                joinQueue(
-                  users.filter((u) => team.players.includes(u.player.teg_id)),
-                  type
-                );
-              } else console.log("Can't unlock undefined team!");
-            }
-          })
-          .catch(console.error);
-      } else {
-        //console.log(team);
-        pendingInvites = pendingInvites.filter(
-          (i) => i.recipient != socket.player.teg_id || i.sender != team.team
-        );
-        response = {
-          cmd: 'invite_verified',
-          payload: {
-            result: 'failed',
-          },
-        };
-      }
+      acceptInvite(jsonObject['payload'].name, socket.player.teg_id, false);
       break;
 
     case 'decline_invite':
-    case 'custom_game_decline_invite':
       var partyLeader = jsonObject['payload'].party_leader;
       if (partyLeader != undefined) {
         var teamLeader = users.find(
@@ -953,21 +1047,22 @@ function handleRequest(jsonString, socket) {
             Math.abs(jsonObject['payload'].party_leader - user.player.player) <=
             500
         );
+        if (teamLeader != undefined) {
+          declineInvite(teamLeader.player.teg_id, socket.player.teg_id, false);
+        }
       }
-      if (teamLeader != undefined) {
-        pendingInvites = pendingInvites.filter(
-          (i) =>
-            i.sender != teamLeader.player.teg_id ||
-            i.recipient != socket.player.teg_id
+      break;
+    case 'custom_game_decline_invite': //Redundant but oh well
+      var partyLeader = jsonObject['payload'].party_leader;
+      if (partyLeader != undefined) {
+        var teamLeader = users.find(
+          (user) =>
+            Math.abs(jsonObject['payload'].party_leader - user.player.player) <=
+            500
         );
-        var command = 'invite_declined';
-        if (jsonObject['req'].includes('custom'))
-          command = 'custom_game_' + command;
-        sendCommand(teamLeader, command, {
-          player: socket.player.teg_id,
-        });
-      } else {
-        console.log('No leader found!');
+        if (teamLeader != undefined) {
+          declineInvite(teamLeader.player.teg_id, socket.player.teg_id, true);
+        }
       }
       break;
 
@@ -980,6 +1075,7 @@ function handleRequest(jsonString, socket) {
           users.filter((u) => team.players.includes(u.player.teg_id)),
           type
         );
+        cancelAllInvites(socket.player.teg_id);
         team.stage = 1;
       } else console.log("Can't unlock undefined team!");
       break;
@@ -1012,42 +1108,11 @@ function handleRequest(jsonString, socket) {
       break;
 
     case 'custom_game_send_invite':
-      var invitedUser = users.find(
-        (u) => u.player.teg_id == jsonObject['payload'].player
-      );
-      if (invitedUser != undefined) {
-        var inviteObj = {
-          name: socket.player.name,
-          player: socket.player.player,
-          act: 'm_moba_sports_6p_custom',
-          vs: true,
-          customGame: socket.player.teg_id,
-        };
-        sendCommand(invitedUser, 'custom_game_receive_invite', inviteObj).catch(
-          console.error
-        );
-      } else console.log(`Could not find user to send custom game invite to.`);
+      sendInvite(socket.player.teg_id, jsonObject['payload'].player, true);
       break;
 
     case 'custom_game_join':
-      var team = teams.find((t) => t.team == jsonObject['payload'].name);
-      if (team != undefined && team.players.length < 6 && team.stage == 0) {
-        socket.player.onTeam = true;
-        team.players.push(socket.player.teg_id);
-        sendCommand(socket, 'custom_game_invite_verified', {
-          result: 'success',
-        })
-          .then(() => {
-            updateCustomGame(team, socket, -1);
-          })
-          .catch(console.error);
-      } else
-        response = {
-          cmd: 'invite_verified',
-          payload: {
-            result: 'failed',
-          },
-        };
+      acceptInvite(jsonObject['payload'].name, socket.player.teg_id, true);
       break;
 
     case 'custom_game_start':
@@ -1055,6 +1120,7 @@ function handleRequest(jsonString, socket) {
       var blue = [];
       var purple = [];
       if (team != undefined) {
+        cancelAllInvites(socket.player.teg_id);
         team.stage = 2;
         for (var pp of team.custom.teamA) {
           var teamUser = users.find((u) => u.player.teg_id == pp);

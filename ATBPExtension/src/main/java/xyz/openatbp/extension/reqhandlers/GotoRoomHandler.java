@@ -98,7 +98,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
             try {
                 requestedRoom = parentExt.getApi().createRoom(sender.getZone(), settings, sender);
                 createdRoom = true;
-            } catch (SFSCreateRoomException e) {
+            } catch (SFSCreateRoomException e) { // TODO: Disconnect all players if this occurs
                 throw new RuntimeException(e);
             }
         }
@@ -114,7 +114,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
                                     requestedRoom); // If you did not create the room, join the
                 // existing one.
             }
-        } catch (SFSJoinRoomException e) {
+        } catch (SFSJoinRoomException e) { // TODO: Disconnect all players if this occurs
             throw new RuntimeException(e);
         }
     }

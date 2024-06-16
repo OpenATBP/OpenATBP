@@ -76,7 +76,7 @@ public class Hunson extends UserActor {
         if (this.wActive && System.currentTimeMillis() - this.wStartTime >= W_DAMAGE_DURATION) {
             this.wActive = false;
         }
-        if (this.ultActivated) {
+        if (this.ultActivated && this.dead) {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, this.location, 4f)) {
@@ -99,7 +99,7 @@ public class Hunson extends UserActor {
                 ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultSuck");
                 this.ultActivated = false;
             }
-        }
+        } else if (this.ultActivated) this.endUlt();
         if (this.qActivated
                 && System.currentTimeMillis() - this.qStartTime >= 6000
                 && this.qUses > 0) {

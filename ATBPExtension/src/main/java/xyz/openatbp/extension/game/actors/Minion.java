@@ -263,7 +263,6 @@ public class Minion extends Actor {
 
              */
             int xp = 5 + ((msRan / 1000) / 60);
-            if (this.type == MinionType.SUPER) xp += 5;
             if (xpWorth != xp) xpWorth = xp;
         }
 

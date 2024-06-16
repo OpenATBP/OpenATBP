@@ -382,7 +382,7 @@ public class RoomHandler implements Runnable {
             if (player.getTeam() == 0) additionalXP *= (blueLevel - player.getLevel());
             else if (player.getTeam() == 1) additionalXP *= (purpleLevel - player.getLevel());
             if (purpleLevel == 0 || blueLevel == 0 || additionalXP < 0) additionalXP = 0;
-            player.addXP(3 + additionalXP + (xpDebug ? 100 : 0));
+            player.addXP(2 + additionalXP + (xpDebug ? 100 : 0));
         }
     }
 
@@ -1348,24 +1348,6 @@ public class RoomHandler implements Runnable {
                     room.getVariable("spawns").getSFSObjectValue().putInt(s, 0);
                     return;
                 }
-            }
-        }
-    }
-
-    @Deprecated
-    public void handleAssistXP(
-            Actor a,
-            Set<UserActor> actors,
-            double xp) { // TODO: I don't think this is working ! ! ! >:(
-        if (a.getActorType() == ActorType.PLAYER) {
-            UserActor user = (UserActor) a;
-            user.addXP((int) xp);
-        }
-        for (UserActor actor : actors) {
-            if (!actor.getId().equalsIgnoreCase(a.getId())
-                    && actor.getActorType() == ActorType.PLAYER) {
-                actor.addXP((int) Math.round(xp / 2d)); // <-- classic dividing an integer hehe haha
-                // hehe --- I FIXED IT DON'T WORRY :D
             }
         }
     }

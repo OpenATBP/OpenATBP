@@ -70,7 +70,6 @@ public class Node {
         try {
             return nodes[likelyCol][likelyRow];
         } catch (ArrayIndexOutOfBoundsException e) {
-            e.printStackTrace();
             return null;
         }
     }

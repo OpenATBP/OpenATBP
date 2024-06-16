@@ -32,7 +32,7 @@ public class ClientReadyHandler extends BaseClientRequestHandler {
                             == 1) { // If all players are ready, load everyone into the actual map
                 try {
                     GameManager.initializeGame(room, parentExt); // Initializes the map for everyone
-                } catch (Exception e) {
+                } catch (Exception e) { // TODO: Kick everyone out of game if this fails
                     e.printStackTrace();
                 }
             }
