@@ -76,7 +76,7 @@ public class Hunson extends UserActor {
         if (this.wActive && System.currentTimeMillis() - this.wStartTime >= W_DAMAGE_DURATION) {
             this.wActive = false;
         }
-        if (this.ultActivated) {
+        if (this.ultActivated && this.dead) {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, this.location, 4f)) {
