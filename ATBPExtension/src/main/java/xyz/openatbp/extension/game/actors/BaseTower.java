@@ -23,24 +23,7 @@ public class BaseTower extends Tower {
         super(parentExt, room, team);
         this.currentHealth = 800;
         this.maxHealth = 800;
-        if (room.getGroupId().equalsIgnoreCase("practice")) {
-            if (team == 0)
-                this.location =
-                        new Point2D.Float(
-                                MapData.L1_PURPLE_TOWER_0[0], MapData.L1_PURPLE_TOWER_0[1]);
-            else
-                this.location =
-                        new Point2D.Float(MapData.L1_BLUE_TOWER_3[0], MapData.L1_BLUE_TOWER_3[1]);
-        } else {
-            if (team == 0)
-                this.location =
-                        new Point2D.Float(
-                                MapData.L2_PURPLE_BASE_TOWER[0], MapData.L2_PURPLE_BASE_TOWER[1]);
-            else
-                this.location =
-                        new Point2D.Float(
-                                MapData.L2_BLUE_BASE_TOWER[0], MapData.L2_BLUE_BASE_TOWER[1]);
-        }
+        this.location = getBaseTowerLocation(room, team);
         this.room = room;
         this.id = id;
         this.team = team;
@@ -66,6 +49,21 @@ public class BaseTower extends Tower {
                 0f);
         ExtensionCommands.updateActorState(parentExt, room, id, ActorState.INVINCIBLE, true);
         ExtensionCommands.updateActorState(parentExt, room, this.id, ActorState.IMMUNITY, true);
+    }
+
+    private Point2D getBaseTowerLocation(Room room, int team) {
+        float towerX;
+        float towerZ;
+        Point2D towerLocation;
+        if (room.getGroupId().equals("Practice")) {
+            towerX = team == 0 ? MapData.L1_PURPLE_TOWER_0[0] : MapData.L1_BLUE_TOWER_3[0];
+            towerZ = team == 0 ? MapData.L1_PURPLE_TOWER_0[1] : MapData.L1_BLUE_TOWER_3[1];
+        } else {
+            towerX = team == 0 ? MapData.L2_PURPLE_BASE_TOWER[0] : MapData.L2_BLUE_BASE_TOWER[0];
+            towerZ = team == 0 ? MapData.L2_PURPLE_BASE_TOWER[1] : MapData.L2_BLUE_BASE_TOWER[1];
+        }
+        towerLocation = new Point2D.Float(towerX, towerZ);
+        return towerLocation;
     }
 
     @Override
@@ -114,10 +112,13 @@ public class BaseTower extends Tower {
         if (!this.destroyed) {
             this.destroyed = true;
             this.dead = true;
+            UserActor earner = null;
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
+                earner = (UserActor) a;
                 ua.addGameStat("towers", 1);
             }
+            this.parentExt.getRoomHandler(this.room.getName()).addScore(earner, a.getTeam(), 50);
             ExtensionCommands.towerDown(parentExt, this.room, this.getTowerNum());
             ExtensionCommands.knockOutActor(parentExt, this.room, this.id, a.getId(), 100);
             ExtensionCommands.destroyActor(parentExt, this.room, this.id);
@@ -142,7 +143,7 @@ public class BaseTower extends Tower {
                         String.valueOf(u.getId()),
                         "tower_destroyed_explosion",
                         this.id + "_destroyed_explosion",
-                        1000,
+                        2000,
                         (float) this.location.getX(),
                         (float) this.location.getY(),
                         false,
@@ -153,7 +154,6 @@ public class BaseTower extends Tower {
                 if (this.target != null && this.target.getActorType() == ActorType.PLAYER)
                     ExtensionCommands.removeFx(parentExt, u, this.id + "_aggro");
             }
-            this.parentExt.getRoomHandler(this.room.getName()).addScore(null, a.getTeam(), 50);
             for (UserActor ua : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                 if (ua.getTeam() == this.team) {
                     ExtensionCommands.playSound(

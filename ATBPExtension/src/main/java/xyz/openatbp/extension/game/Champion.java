@@ -1,6 +1,5 @@
 package xyz.openatbp.extension.game;
 
-import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
@@ -77,11 +76,6 @@ public class Champion {
                 return new CinnamonBun(u, parentExt);
         }
         return new UserActor(u, parentExt);
-    }
-
-    public static JsonNode getSpellData(ATBPExtension parentExt, String avatar, int spell) {
-        JsonNode actorDef = parentExt.getDefinition(avatar);
-        return actorDef.get("MonoBehaviours").get("ActorData").get("spell" + spell);
     }
 
     @Deprecated
@@ -224,26 +218,16 @@ public class Champion {
     }
 
     public static List<Actor> getActorsInRadius(RoomHandler room, Point2D center, float radius) {
-        List<Actor> actors = room.getActors();
-        List<Actor> affectedActors = new ArrayList<>(actors.size());
-        for (Actor a : actors) {
-            Point2D location = a.getLocation();
-            if (location.distance(center) <= radius) affectedActors.add(a);
-        }
-        return affectedActors;
+        return room.getActorsInRadius(center, radius);
     }
 
     public static List<Actor> getEnemyActorsInRadius(
             RoomHandler room, int team, Point2D center, float radius) {
-        List<Actor> actors = room.getActors();
+        List<Actor> actors = room.getEligibleActors(team, true, true, false, false);
         List<Actor> affectedActors = new ArrayList<>(actors.size());
-        Ellipse2D circle =
-                new Ellipse2D.Double(
-                        center.getX() - radius, center.getY() - radius, radius * 2, radius * 2);
         for (Actor a : actors) {
-            if (a.getTeam() != team && a.getHealth() > 0) {
-                Point2D location = a.getLocation();
-                if (circle.contains(location)) affectedActors.add(a);
+            if (a.getLocation().distance(center) <= radius) {
+                affectedActors.add(a);
             }
         }
         return affectedActors;
@@ -399,6 +383,10 @@ public class Champion {
                             attacker.getId(),
                             "sfx/sfx_attack_miss",
                             attacker.getLocation());
+                if (this.attacker.getActorType() == ActorType.MONSTER
+                        && !this.attacker.getId().contains("gnome")) {
+                    attacker.setCanMove(true);
+                }
                 return;
             }
             ExtensionCommands.playSound(
@@ -426,9 +414,7 @@ public class Champion {
                                 this.attacker.getAvatar().replace("0", ""), this.attack);
                 this.attacker.setCanMove(true);
             } else {
-                switch (this
-                        .attack) { // these attacks need to be physical so that Rattle can actually
-                        // counter-attack them
+                switch (this.attack) { // to make Rattleballs counter-attack possible
                     case "turretAttack":
                         attackData = this.parentExt.getAttackData("princessbubblegum", "spell2");
                         ((ObjectNode) attackData).remove("spellType");
@@ -468,20 +454,6 @@ public class Champion {
                         && this.target.getActorType() != ActorType.TOWER
                         && this.target.getActorType() != ActorType.BASE) ua.handleLifeSteal();
             }
-            /*
-            if(this.target.getActorType() == ActorType.PLAYER){
-                UserActor user = (UserActor) this.target;
-                if(user.damaged(attacker,damage,attackData) && this.attacker.getActorType() == ActorType.TOWER){
-                    Tower t = (Tower) attacker;
-                    t.resetTarget(target);
-                }
-            }
-            else if(target.damaged(attacker,damage,attackData) && this.attacker.getActorType() == ActorType.TOWER){
-                Tower t = (Tower) attacker;
-                t.resetTarget(target);
-            }
-
-             */
             if (attacker.getActorType() == ActorType.MONSTER && !attacker.getId().contains("gnome"))
                 attacker.setCanMove(true);
             this.target.addToDamageQueue(this.attacker, this.damage, attackData, false);

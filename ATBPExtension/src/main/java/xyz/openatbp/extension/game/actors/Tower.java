@@ -12,6 +12,7 @@ import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 
@@ -151,10 +152,13 @@ public class Tower extends Actor {
         if (!this.destroyed) {
             this.destroyed = true;
             this.dead = true;
+            UserActor earner = null;
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
+                earner = (UserActor) a;
                 ua.addGameStat("towers", 1);
             }
+            this.parentExt.getRoomHandler(this.room.getName()).addScore(earner, a.getTeam(), 50);
             ExtensionCommands.towerDown(parentExt, this.room, this.getTowerNum());
             ExtensionCommands.knockOutActor(parentExt, this.room, this.id, a.getId(), 100);
             ExtensionCommands.destroyActor(parentExt, this.room, this.id);
@@ -179,7 +183,7 @@ public class Tower extends Actor {
                         String.valueOf(u.getId()),
                         "tower_destroyed_explosion",
                         this.id + "_destroyed_explosion",
-                        1000,
+                        2000,
                         (float) this.location.getX(),
                         (float) this.location.getY(),
                         false,
@@ -190,7 +194,6 @@ public class Tower extends Actor {
                 if (this.target != null && this.target.getActorType() == ActorType.PLAYER)
                     ExtensionCommands.removeFx(parentExt, u, this.id + "_aggro");
             }
-            this.parentExt.getRoomHandler(this.room.getName()).addScore(null, a.getTeam(), 50);
             if (this.getTowerNum() == 0 || this.getTowerNum() == 3) {
                 for (UserActor ua :
                         this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
@@ -240,6 +243,21 @@ public class Tower extends Actor {
                                 this.team,
                                 this.location,
                                 (float) this.getPlayerStat("attackRange"));
+                if (!nearbyActors.isEmpty()) {
+                    List<Actor> minionsInRadius = new ArrayList<>();
+                    for (Actor a : nearbyActors) {
+                        if (a.getActorType() == ActorType.MINION) {
+                            minionsInRadius.add(a);
+                        }
+                    }
+                    if (minionsInRadius.isEmpty()) {
+                        this.setStat("armor", 600);
+                        this.setStat("spellResist", 800);
+                    } else {
+                        this.setStat("armor", 75);
+                        this.setStat("spellResist", 100);
+                    }
+                }
                 if (nearbyActors.isEmpty() && this.attackCooldown != 1000) {
                     if (numberOfAttacks != 0) this.numberOfAttacks = 0;
                     this.attackCooldown = 1000;
@@ -309,11 +327,9 @@ public class Tower extends Actor {
                         return;
                     }
                     if (!isFocusingCompanion && !isFocusingPlayer) {
-                        for (Actor a :
-                                Champion.getActorsInRadius(
-                                        this.parentExt.getRoomHandler(this.room.getName()),
-                                        this.location,
-                                        (float) this.getPlayerStat("attackRange"))) {
+                        RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
+                        float range = (float) this.getPlayerStat("attackRange");
+                        for (Actor a : Champion.getActorsInRadius(handler, this.location, range)) {
                             if (a.getActorType() == ActorType.COMPANION
                                     && a.getTeam() != this.team
                                     && a.towerAggroCompanion
@@ -392,20 +408,6 @@ public class Tower extends Actor {
                             this.isFocusingCompanion = false;
                         }
                     }
-                }
-                List<Actor> minionsNearby = new ArrayList<>();
-                if (!nearbyActors.isEmpty()) {
-                    for (Actor a : nearbyActors) {
-                        if (a.getActorType() == ActorType.MINION && a.getTeam() != this.team)
-                            minionsNearby.add(a);
-                    }
-                    if (!minionsNearby.isEmpty()) {
-                        this.setStat("armor", 75);
-                        this.setStat("spellResist", 100);
-                    }
-                } else {
-                    this.setStat("armor", 600);
-                    this.setStat("spellResist", 800);
                 }
             }
         } catch (Exception e) {

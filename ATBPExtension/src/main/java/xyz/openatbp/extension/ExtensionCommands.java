@@ -1,7 +1,7 @@
 package xyz.openatbp.extension;
 
 import java.awt.geom.Point2D;
-import java.util.HashMap;
+import java.util.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +14,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.actors.Actor;
+import xyz.openatbp.extension.game.actors.UserActor;
 
 public class ExtensionCommands {
     /**
@@ -456,16 +457,27 @@ public class ExtensionCommands {
      * @param winningTeam - double value for what the winning team is
      * @throws JsonProcessingException
      */
-    public static void gameOver(ATBPExtension parentExt, Room room, double winningTeam)
+    public static void gameOver(
+            ATBPExtension parentExt,
+            Room room,
+            HashMap<User, UserActor> dcPlayers,
+            double winningTeam,
+            boolean isRankedMatch)
             throws JsonProcessingException {
         for (User u : room.getUserList()) {
+            Room lastRoom = u.getLastJoinedRoom();
             System.out.println("Calling game over!");
             ObjectMapper objectMapper = new ObjectMapper();
             ObjectNode node = objectMapper.createObjectNode();
-            node.set("teamA", GameManager.getTeamData(parentExt, 0, u.getLastJoinedRoom()));
-
-            node.set("teamB", GameManager.getTeamData(parentExt, 1, u.getLastJoinedRoom()));
-            node.set("gloalTeamData", GameManager.getGlobalTeamData(u.getLastJoinedRoom()));
+            node.set(
+                    "teamA",
+                    GameManager.getTeamData(parentExt, dcPlayers, 0, lastRoom, isRankedMatch));
+            node.set(
+                    "teamB",
+                    GameManager.getTeamData(parentExt, dcPlayers, 1, lastRoom, isRankedMatch));
+            node.set(
+                    "globalTeamData",
+                    GameManager.getGlobalTeamData(parentExt, dcPlayers, lastRoom));
             node.put("winner", winningTeam);
             ISFSObject data = new SFSObject();
             String objectAsText;
@@ -630,23 +642,65 @@ public class ExtensionCommands {
         ObjectNode data = mapper.createObjectNode();
         data.put("killerId", killerId);
         ObjectNode playerList = mapper.createObjectNode();
-        for (Actor a : aggressors.keySet()) { // Loops through each player in the set
-            ObjectNode playerObj = mapper.createObjectNode();
-            playerObj.put("name", a.getDisplayName());
-            playerObj.put("playerPortrait", a.getFrame());
-            for (String k : aggressors.get(a).getKeys()) { // Loops through each different attack
-                if (k.contains("attack")) {
-                    ISFSObject attackData = aggressors.get(a).getSFSObject(k);
-                    ObjectNode attackObj = mapper.createObjectNode();
-                    for (String key :
-                            attackData.getKeys()) { // Loops through the properties of one attack
-                        if (key.contains("Damage")) attackObj.put(key, attackData.getInt(key));
-                        else attackObj.put(key, attackData.getUtfString(key));
-                    }
-                    playerObj.set(k, attackObj);
+        List<Actor> deathRecapActors = new ArrayList<>();
+        HashMap<Actor, Double> totalActorDamage = new HashMap<>();
+
+        for (Map.Entry<Actor, ISFSObject> entry : aggressors.entrySet()) {
+            Actor a = entry.getKey();
+            double totalPlayerDamage = 0;
+
+            ISFSObject obj = entry.getValue();
+            if (obj == null) {
+                continue;
+            }
+            for (String key : obj.getKeys()) {
+                if (key.contains("attack")) {
+                    int damage = obj.getSFSObject(key).getInt("atkDamage");
+                    totalPlayerDamage += damage;
                 }
             }
-            playerList.set(a.getId(), playerObj);
+            totalActorDamage.put(a, totalPlayerDamage);
+        }
+
+        for (int i = 0; i < 2; i++) { // adds max 2 actors
+            if (totalActorDamage.isEmpty()) {
+                break;
+            }
+
+            Actor actorToRemove = getActor(killerId, totalActorDamage);
+
+            if (actorToRemove != null) {
+                totalActorDamage.remove(actorToRemove);
+                deathRecapActors.add(actorToRemove);
+            }
+        }
+        for (Actor a : aggressors.keySet()) { // adds the killer
+            if (Objects.equals(a.getId(), killerId)) {
+                deathRecapActors.add(a);
+            }
+        }
+
+        for (Actor a : aggressors.keySet()) { // Loops through each player in the set
+            if (deathRecapActors.contains(a)) { // chooses only the highest damage dealers + killer
+                ObjectNode playerObj = mapper.createObjectNode();
+                playerObj.put("name", a.getDisplayName());
+                playerObj.put("playerPortrait", a.getFrame());
+                for (String k :
+                        aggressors.get(a).getKeys()) { // Loops through each different attack
+                    if (k.contains("attack")) {
+                        ISFSObject attackData = aggressors.get(a).getSFSObject(k);
+                        ObjectNode attackObj = mapper.createObjectNode();
+                        for (String key :
+                                attackData
+                                        .getKeys()) { // Loops through the properties of one attack
+                            if (key.contains("Damage")) attackObj.put(key, attackData.getInt(key));
+                            else attackObj.put(key, attackData.getUtfString(key));
+                        }
+                        playerObj.set(k, attackObj);
+                    }
+                }
+                playerList.set(a.getId(), playerObj);
+            }
         }
         data.set("playerList", playerList);
         ObjectNode misc = mapper.createObjectNode();
@@ -679,6 +733,22 @@ public class ExtensionCommands {
         sendData.putUtfString("id", id);
         sendData.putUtfString("deathRecap", mapper.writeValueAsString(data));
         parentExt.send("cmd_death_recap", sendData, u);
+    }
+
+    private static Actor getActor(String killerId, HashMap<Actor, Double> totalActorDamage) {
+        double currentHighest = 0;
+        Actor actorToRemove = null;
+        for (Map.Entry<Actor, Double> entry : totalActorDamage.entrySet()) {
+            double damage = entry.getValue();
+            Actor actor = entry.getKey();
+            if (!Objects.equals(actor.getId(), killerId)) {
+                if (damage > currentHighest) {
+                    currentHighest = damage;
+                    actorToRemove = actor;
+                }
+            }
+        }
+        return actorToRemove;
     }
 
     public static void updateTime(ATBPExtension parentExt, Room room, int msRan) {
