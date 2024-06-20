@@ -56,6 +56,12 @@ public class Tower extends Actor {
                 true,
                 this.team,
                 0f);
+
+        if (room.getGroupId().equals("Tutorial")) {
+            setStat("attackDamage", 50);
+            this.currentHealth = 200;
+            this.maxHealth = 200;
+        }
     }
 
     public Tower(ATBPExtension parentExt, Room room, int team) {
