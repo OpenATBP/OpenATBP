@@ -19,16 +19,19 @@ public class TutorialRoomHandler extends RoomHandler {
     private static final Point2D MOVE_DESTINATION = new Point2D.Float(-49, 3);
     private static final Point2D SUPER_MINION_SPAWN = new Point2D.Float(-47, 4);
     private static final Point2D SUPER_MINION_SPAWN2 = new Point2D.Float(-44, 4.5f);
+    private static final Point2D MOVE_DESTINATION2 = new Point2D.Float(-2.8f, 0.1f);
     private TutorialSuperMinion superMinion;
-
     private UserActor tutorialPlayer;
-    private boolean heroMovedOutOfBase = false;
+    private boolean playerMovedOutOfBase = false;
     private boolean basicAttackPerformed = false;
     private boolean wAbilityUsed = false;
     private boolean battleJunkLeveledUp = false;
-    private boolean heroMovedToMapCenter = false;
+    private boolean playerMovedToMapCenter = false;
+    private boolean startCountingMinions = false;
+    private int minionNum = 0;
+    private List<Minion> minionsToDestroy = new ArrayList<>();
     private boolean enemyMinionsDestroyed = false;
-    private boolean towerDestroyed = false;
+    private JakeBot jakeBot;
 
     public TutorialRoomHandler(ATBPExtension parentExt, Room room) {
         super(parentExt, room);
@@ -64,10 +67,43 @@ public class TutorialRoomHandler extends RoomHandler {
     }
 
     @Override
-    public void handleSpawns() {}
+    public void handleSpawns() {
+        ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
+        for (String s :
+                GameManager.L2_SPAWNS) { // Check all mob/health spawns for how long it's been
+            // since dead
+            if (s.length() > 3) {
+                int spawnRate = 45; // Mob spawn rate
+                if (monsterDebug) spawnRate = 10;
+                if (spawns.getInt(s)
+                        == spawnRate) { // Mob timers will be set to 0 when killed or health
+                    // when taken
+                    spawnMonster(s);
+                    spawns.putInt(s, spawns.getInt(s) + 1);
+                } else {
+                    spawns.putInt(s, spawns.getInt(s) + 1);
+                }
+            } else {
+                int time = spawns.getInt(s);
+                if ((this.secondsRan <= 91 && time == 90) || (this.secondsRan > 91 && time == 60)) {
+                    spawnHealth(s);
+                } else if ((this.secondsRan <= 91 && time < 90)
+                        || (this.secondsRan > 91 && time < 60)) {
+                    time++;
+                    spawns.putInt(s, time);
+                }
+            }
+        }
+    }
 
     @Override
-    public void handleMinionSpawns() {}
+    public void handleMinionSpawns() {
+        if (minionNum < 4) {
+            this.addMinion(0, minionNum, 1, 0);
+            this.addMinion(1, minionNum, 1, 0);
+            minionNum++;
+        }
+    }
 
     @Override
     public void run() {
@@ -128,21 +164,7 @@ public class TutorialRoomHandler extends RoomHandler {
                     tutorialPlayer.setCanMove(true);
                 }
 
-                if (secondsRan == (60 * 7) + 30) {
-                    ExtensionCommands.playSound(
-                            parentExt,
-                            room,
-                            "global",
-                            "announcer/time_half",
-                            new Point2D.Float(0f, 0f));
-                } else if (secondsRan == (60 * 13)) {
-                    ExtensionCommands.playSound(
-                            parentExt,
-                            room,
-                            "global",
-                            "announcer/time_low",
-                            new Point2D.Float(0f, 0f));
-                } else if (secondsRan == 15 * 60) {
+                if (secondsRan == 15 * 60) {
                     ISFSObject scoreObject = room.getVariable("score").getSFSObjectValue();
                     int blueScore = scoreObject.getInt("blue");
                     int purpleScore = scoreObject.getInt("purple");
@@ -172,22 +194,23 @@ public class TutorialRoomHandler extends RoomHandler {
                         }
                     }
                 }
+                if (currentMinionWave == 1) {
+                    handleMinionSpawns();
+                }
+                handleSpawns();
                 handleCooldowns();
 
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-        if (tutorialPlayer.getLocation().distance(MOVE_DESTINATION) <= 1.5 && !heroMovedOutOfBase) {
-            heroMovedOutOfBase = true;
+        if (tutorialPlayer.getLocation().distance(MOVE_DESTINATION) <= 1.5
+                && !playerMovedOutOfBase) {
+            playerMovedOutOfBase = true;
             tutorialPlayer.setCanMove(false);
+            removeWayPoint();
             createCompleteStepFX();
             superMinion = new TutorialSuperMinion(parentExt, room, SUPER_MINION_SPAWN, 1);
-
-            ExtensionCommands.removeFx(parentExt, room, tutorialPlayer.getId() + "moveDest");
-
-            ExtensionCommands.removeFx(parentExt, room, tutorialPlayer.getId() + "moveArrow");
-
             ExtensionCommands.playSound(
                     parentExt,
                     room,
@@ -213,7 +236,13 @@ public class TutorialRoomHandler extends RoomHandler {
                     "announcer/tut_attack_spell",
                     new Point2D.Float(0, 0));
 
-            tutorialPlayer.setCanCast(false, true, false);
+            tutorialPlayer.setCanMove(false);
+            Runnable enableMoving =
+                    () -> {
+                        tutorialPlayer.setCanMove(true);
+                        tutorialPlayer.setCanCast(false, true, false);
+                    };
+            parentExt.getTaskScheduler().schedule(enableMoving, 7000, TimeUnit.MILLISECONDS);
         }
 
         if (superMinion != null
@@ -221,6 +250,7 @@ public class TutorialRoomHandler extends RoomHandler {
                 && superMinion.getHealth() <= 0
                 && !wAbilityUsed) {
             wAbilityUsed = true;
+            tutorialPlayer.setCanCast(true, true, true);
             createCompleteStepFX();
             ExtensionCommands.playSound(
                     parentExt, room, "global", "announcer/tut_levelup1", new Point2D.Float(0, 0));
@@ -228,6 +258,7 @@ public class TutorialRoomHandler extends RoomHandler {
 
         if (ChampionData.getTotalSpentPoints(tutorialPlayer) > 1 && !battleJunkLeveledUp) {
             battleJunkLeveledUp = true;
+            this.currentMinionWave = 1;
             createCompleteStepFX();
             ExtensionCommands.playSound(
                     parentExt,
@@ -235,6 +266,64 @@ public class TutorialRoomHandler extends RoomHandler {
                     "global",
                     "announcer/tut_follow_minions1",
                     new Point2D.Float(0, 0));
+
+            ExtensionCommands.createWorldFX(
+                    parentExt,
+                    room,
+                    tutorialPlayer.getId(),
+                    "fx_aggrorange_6",
+                    tutorialPlayer.getId() + "moveDest",
+                    1000 * 60 * 15,
+                    (float) MOVE_DESTINATION2.getX(),
+                    (float) MOVE_DESTINATION2.getY(),
+                    false,
+                    tutorialPlayer.getTeam(),
+                    0f);
+
+            ExtensionCommands.createWorldFX(
+                    parentExt,
+                    room,
+                    tutorialPlayer.getId(),
+                    "tut_arrow1",
+                    tutorialPlayer.getId() + "moveArrow",
+                    1000 * 60 * 15,
+                    (float) MOVE_DESTINATION2.getX(),
+                    (float) MOVE_DESTINATION2.getY(),
+                    false,
+                    tutorialPlayer.getTeam(),
+                    0f);
+        }
+
+        if (tutorialPlayer.getLocation().distance(MOVE_DESTINATION2) <= 1.5
+                && !playerMovedToMapCenter) {
+            playerMovedToMapCenter = true;
+            removeWayPoint();
+            createCompleteStepFX();
+            ExtensionCommands.playSound(
+                    parentExt,
+                    room,
+                    "global",
+                    "announcer/tut_defeat_minions1",
+                    new Point2D.Float(0, 0));
+        }
+
+        if (minions.size() >= 8 && !startCountingMinions) {
+            startCountingMinions = true;
+            minionsToDestroy =
+                    minions.stream()
+                            .filter(m -> m.getTeam() != tutorialPlayer.getTeam())
+                            .collect(Collectors.toList());
+        }
+
+        if (startCountingMinions && !enemyMinionsDestroyed) {
+            minionsToDestroy.removeIf(m -> m.getHealth() <= 0);
+        }
+
+        if (startCountingMinions && minionsToDestroy.isEmpty() && !enemyMinionsDestroyed) {
+            enemyMinionsDestroyed = true;
+            createCompleteStepFX();
+            ExtensionCommands.playSound(
+                    parentExt, room, "global", "announcer/tut_tower1", new Point2D.Float(0, 0));
         }
 
         if (mSecondsRan % 500 == 0) {
@@ -244,6 +333,14 @@ public class TutorialRoomHandler extends RoomHandler {
         if (superMinion != null) {
             try {
                 superMinion.update(mSecondsRan);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (jakeBot != null) {
+            try {
+                jakeBot.update(mSecondsRan);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -281,6 +378,38 @@ public class TutorialRoomHandler extends RoomHandler {
         try {
             for (Tower t : towers) {
                 t.update(mSecondsRan);
+                if (t.getTeam() != tutorialPlayer.getTeam() && t.getHealth() <= 0) {
+                    bases[1].unlock();
+                    createCompleteStepFX();
+                    ExtensionCommands.playSound(
+                            parentExt,
+                            room,
+                            "global",
+                            "announcer/tut_enemy_base",
+                            new Point2D.Float(0, 0));
+
+                    ExtensionCommands.playSound(
+                            parentExt,
+                            room,
+                            "global",
+                            "announcer/tut_enemy_champ",
+                            new Point2D.Float(0, 0));
+
+                    Runnable spawnBot =
+                            () -> {
+                                jakeBot = new JakeBot(parentExt, room, new Point2D.Float(48, 0), 1);
+                                jakeBot.setLocation(new Point2D.Float(48, 0));
+                                ExtensionCommands.snapActor(
+                                        parentExt,
+                                        room,
+                                        jakeBot.getId(),
+                                        jakeBot.getLocation(),
+                                        new Point2D.Float(48, 0),
+                                        true);
+                            };
+
+                    parentExt.getTaskScheduler().schedule(spawnBot, 5000, TimeUnit.MILLISECONDS);
+                }
             }
         } catch (Exception e) {
             Console.logWarning("TOWER UPDATE EXCEPTION");
@@ -307,6 +436,11 @@ public class TutorialRoomHandler extends RoomHandler {
         if (this.room.getUserList().isEmpty()) parentExt.stopScript(this.room.getName(), true);
     }
 
+    private void removeWayPoint() {
+        ExtensionCommands.removeFx(parentExt, room, tutorialPlayer.getId() + "moveDest");
+        ExtensionCommands.removeFx(parentExt, room, tutorialPlayer.getId() + "moveArrow");
+    }
+
     private void createCompleteStepFX() {
         ExtensionCommands.createActorFX(
                 parentExt,
@@ -328,6 +462,10 @@ public class TutorialRoomHandler extends RoomHandler {
                 "tut_sfx_success",
                 new Point2D.Float(0, 0));
     }
+
+    @Override
+    protected void handleLeadSound(
+            int newPurpleScore, int newBlueScore, int purpleScore, int blueScore) {}
 
     @Override
     public void handleAltars() {
@@ -395,7 +533,8 @@ public class TutorialRoomHandler extends RoomHandler {
             HashMap<User, UserActor> dcPlayers = new HashMap<>();
             for (UserActor ua : this.getPlayers()) {
                 if (ua.getTeam() == winningTeam) {
-                    ExtensionCommands.playSound(parentExt, ua.getUser(), "global", "tut_congrats");
+                    ExtensionCommands.playSound(
+                            parentExt, ua.getUser(), "global", "announcer/tut_congrats");
                 }
             }
             ExtensionCommands.gameOver(parentExt, this.room, dcPlayers, winningTeam, false);
@@ -462,7 +601,8 @@ public class TutorialRoomHandler extends RoomHandler {
     @Override
     public List<Actor> getActors() {
         List<Actor> actors = new ArrayList<>();
-        actors.add(superMinion);
+        if (jakeBot != null) actors.add(jakeBot);
+        if (superMinion != null) actors.add(superMinion);
         actors.addAll(towers);
         actors.addAll(minions);
         Collections.addAll(actors, bases);
@@ -475,7 +615,8 @@ public class TutorialRoomHandler extends RoomHandler {
     @Override
     public List<Actor> getActorsInRadius(Point2D center, float radius) {
         List<Actor> actorsInRadius = new ArrayList<>();
-        actorsInRadius.add(superMinion);
+        if (jakeBot != null) actorsInRadius.add(jakeBot);
+        if (superMinion != null) actorsInRadius.add(superMinion);
         actorsInRadius.addAll(towers);
         actorsInRadius.addAll(minions);
         Collections.addAll(actorsInRadius, bases);
@@ -490,7 +631,8 @@ public class TutorialRoomHandler extends RoomHandler {
     @Override
     public List<Actor> getEnemiesInPolygon(int team, Path2D polygon) {
         List<Actor> enemiesInPolygon = new ArrayList<>();
-        enemiesInPolygon.add(superMinion);
+        if (jakeBot != null) enemiesInPolygon.add(jakeBot);
+        if (superMinion != null) enemiesInPolygon.add(superMinion);
         enemiesInPolygon.addAll(towers);
         enemiesInPolygon.addAll(minions);
         Collections.addAll(enemiesInPolygon, bases);
@@ -506,7 +648,8 @@ public class TutorialRoomHandler extends RoomHandler {
     @Override
     public List<Actor> getNonStructureEnemies(int team) {
         List<Actor> nonStructureEnemies = new ArrayList<>();
-        nonStructureEnemies.add(superMinion);
+        if (jakeBot != null) nonStructureEnemies.add(jakeBot);
+        if (superMinion != null) nonStructureEnemies.add(superMinion);
         nonStructureEnemies.addAll(towers);
         nonStructureEnemies.addAll(minions);
         Collections.addAll(nonStructureEnemies, bases);
@@ -528,6 +671,8 @@ public class TutorialRoomHandler extends RoomHandler {
             boolean towerFilter,
             boolean baseFilter) {
         List<Actor> eligibleActors = new ArrayList<>();
+        if (jakeBot != null) eligibleActors.add(jakeBot);
+        if (superMinion != null) eligibleActors.add(superMinion);
         eligibleActors.addAll(towers);
         eligibleActors.addAll(minions);
         Collections.addAll(eligibleActors, bases);

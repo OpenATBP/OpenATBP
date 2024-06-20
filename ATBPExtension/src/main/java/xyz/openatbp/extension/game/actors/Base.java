@@ -8,10 +8,7 @@ import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.Console;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.MapData;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 
@@ -23,19 +20,7 @@ public class Base extends Actor {
         this.currentHealth = 3500;
         this.maxHealth = 3500;
         this.team = team;
-        if (room.getGroupId().equalsIgnoreCase("practice")) {
-            if (team == 0)
-                this.location =
-                        new Point2D.Float(MapData.L1_PURPLE_BASE[0], MapData.L1_PURPLE_BASE[1]);
-            else
-                this.location = new Point2D.Float(MapData.L1_BLUE_BASE[0], MapData.L1_BLUE_BASE[1]);
-        } else {
-            if (team == 0)
-                this.location =
-                        new Point2D.Float(MapData.L2_PURPLE_BASE[0], MapData.L2_PURPLE_BASE[1]);
-            else
-                this.location = new Point2D.Float(MapData.L2_BLUE_BASE[0], MapData.L2_BLUE_BASE[1]);
-        }
+        this.location = GameModeSpawns.getBaseLocationForMode(room, team);
         if (team == 0) this.id = "base_purple";
         else this.id = "base_blue";
         this.parentExt = parentExt;
@@ -45,6 +30,11 @@ public class Base extends Actor {
         this.stats = this.initializeStats();
         ExtensionCommands.updateActorState(parentExt, room, this.id, ActorState.INVINCIBLE, true);
         ExtensionCommands.updateActorState(parentExt, room, this.id, ActorState.IMMUNITY, true);
+
+        if (room.getGroupId().equals("Tutorial")) {
+            this.currentHealth = 450;
+            this.maxHealth = 450;
+        }
     }
 
     public int getTeam() {

@@ -1,5 +1,7 @@
 package xyz.openatbp.extension;
 
+import java.awt.geom.Point2D;
+
 import com.smartfoxserver.v2.entities.Room;
 
 public class GameModeSpawns {
@@ -97,6 +99,22 @@ public class GameModeSpawns {
                 ExtensionCommands.createActor(
                         parentExt, room, MapData.getHealthActorData(1, room.getGroupId(), 2));
                 break;
+        }
+    }
+
+    public static Point2D getBaseLocationForMode(Room room, int team) {
+        String roomGroup = room.getGroupId();
+        Point2D L1_PURPLE = new Point2D.Float(MapData.L1_PURPLE_BASE[0], MapData.L1_PURPLE_BASE[1]);
+        Point2D L1_BLUE = new Point2D.Float(MapData.L1_BLUE_BASE[0], MapData.L1_BLUE_BASE[1]);
+        Point2D L2_PURPLE = new Point2D.Float(MapData.L2_PURPLE_BASE[0], MapData.L2_PURPLE_BASE[1]);
+        Point2D L2_BLUE = new Point2D.Float(MapData.L2_BLUE_BASE[0], MapData.L2_BLUE_BASE[1]);
+
+        if (roomGroup.equals("Practice") || roomGroup.equals("Tutorial")) {
+            if (team == 0) return L1_PURPLE;
+            else return L1_BLUE;
+        } else {
+            if (team == 0) return L2_PURPLE;
+            else return L2_BLUE;
         }
     }
 }

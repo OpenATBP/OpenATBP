@@ -741,6 +741,14 @@ public abstract class RoomHandler implements Runnable {
         scoreObject.putInt("blue", newBlueScore);
         scoreObject.putInt("purple", newPurpleScore);
         ExtensionCommands.updateScores(this.parentExt, this.room, newPurpleScore, newBlueScore);
+        handleLeadSound(newPurpleScore, newBlueScore, purpleScore, blueScore);
+        if (earner != null) {
+            earner.addGameStat("score", points);
+        }
+    }
+
+    protected void handleLeadSound(
+            int newPurpleScore, int newBlueScore, int purpleScore, int blueScore) {
         if (newBlueScore > newPurpleScore && blueScore <= purpleScore) {
             for (UserActor player : this.players) {
                 Runnable playLeadSound =
@@ -791,9 +799,6 @@ public abstract class RoomHandler implements Runnable {
                         .getTaskScheduler()
                         .schedule(playLeadSound2, getLeadRemainingTime(), TimeUnit.MILLISECONDS);
             }
-        }
-        if (earner != null) {
-            earner.addGameStat("score", points);
         }
     }
 

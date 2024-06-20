@@ -73,12 +73,9 @@ public class PracticeRoomHandler extends RoomHandler {
                 this.addMinion(1, minionNum, minionWave, 0);
                 this.addMinion(0, minionNum, minionWave, 0);
             } else if (minionNum == 4) {
-                for (int i = 0; i < 2; i++) { // i = lane
-                    if (i == 1) break;
-                    for (int g = 0; g < 2; g++) {
-                        if (!this.hasSuperMinion(i, g) && this.canSpawnSupers(g))
-                            this.addMinion(g, minionNum, minionWave, i);
-                    }
+                for (int g = 0; g < 2; g++) {
+                    if (!this.hasSuperMinion(0, g) && this.canSpawnSupers(g))
+                        this.addMinion(g, minionNum, minionWave, 0);
                 }
             }
         }
