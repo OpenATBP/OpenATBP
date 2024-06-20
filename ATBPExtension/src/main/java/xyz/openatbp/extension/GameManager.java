@@ -23,7 +23,7 @@ public class GameManager {
 
     // bh1 = Blue Health 1 ph1 = Purple Health 1. Numbers refer to top,bottom,and outside
     // respectively.
-    public static final String[] SPAWNS = {
+    public static final String[] L2_SPAWNS = {
         "bh1",
         "bh2",
         "bh3",
@@ -71,6 +71,7 @@ public class GameManager {
         for (User u : room.getUserList()) {
             ISFSObject data = new SFSObject();
             if (groupID.equals("Practice")
+                    || groupID.equals("Tutorial")
                     || (room.getName().contains("custom") && room.getMaxUsers() == 2)) {
                 data.putUtfString("set", "AT_1L_Arena");
             } else {
@@ -126,7 +127,7 @@ public class GameManager {
             float px = 0f;
             float pz = 0f;
             if (team == 0) {
-                if (room.getGroupId().equals("Practice")) {
+                if (room.getGroupId().equals("Practice") || room.getGroupId().equals("Tutorial")) {
                     px = (float) MapData.L1_PURPLE_SPAWNS[purpleNum].getX();
                     pz = (float) MapData.L1_PURPLE_SPAWNS[purpleNum].getY();
                 } else {
@@ -136,7 +137,7 @@ public class GameManager {
                 purpleNum++;
             }
             if (team == 1) {
-                if (room.getGroupId().equals("Practice")) {
+                if (room.getGroupId().equals("Practice") || room.getGroupId().equals("Tutorial")) {
                     px = (float) MapData.L1_PURPLE_SPAWNS[blueNum].getX() * -1;
                     pz = (float) MapData.L1_PURPLE_SPAWNS[blueNum].getY();
                 } else {
@@ -210,8 +211,14 @@ public class GameManager {
             ISFSObject data = new SFSObject();
             parentExt.send("cmd_match_starting", data, u); // Starts the game for everyone
         }
-        ExtensionCommands.playSound(
-                parentExt, room, "global", "announcer/welcome", new Point2D.Float(0, 0));
+
+        String sound;
+        if (room.getGroupId().equals("Tutorial")) {
+            sound = "announcer/tut_intro";
+        } else {
+            sound = "announcer/welcome";
+        }
+        ExtensionCommands.playSound(parentExt, room, "global", sound, new Point2D.Float(0, 0));
         ExtensionCommands.playSound(
                 parentExt,
                 room,
@@ -223,12 +230,18 @@ public class GameManager {
 
     private static void setRoomVariables(Room room) throws SFSVariableException {
         ISFSObject spawnTimers = new SFSObject();
-        for (String s : SPAWNS) { // Adds in spawn timers for all mobs/health. AKA time dead
+        for (String s : L2_SPAWNS) { // Adds in spawn timers for all mobs/health. AKA time dead
             spawnTimers.putInt(s, 0);
         }
         ISFSObject teamScore = new SFSObject();
         teamScore.putInt("blue", 0);
         teamScore.putInt("purple", 0);
+        List<RoomVariable> variables = getRoomVariables(teamScore, spawnTimers);
+        room.setVariables(variables);
+    }
+
+    private static List<RoomVariable> getRoomVariables(
+            ISFSObject teamScore, ISFSObject spawnTimers) {
         ISFSObject mapData = new SFSObject();
         mapData.putBool("blueUnlocked", false);
         mapData.putBool("purpleUnlocked", false);
@@ -239,7 +252,7 @@ public class GameManager {
         variables.add(scoreVar);
         variables.add(spawnVar);
         variables.add(mapVar);
-        room.setVariables(variables);
+        return variables;
     }
 
     private static void initializeMap(Room room, ATBPExtension parentExt) {
@@ -256,71 +269,15 @@ public class GameManager {
     }
 
     private static void spawnTowers(Room room, ATBPExtension parentExt) {
-        String roomStr = room.getGroupId();
-        if (!roomStr.equalsIgnoreCase("practice")) {
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getTowerActorData(0, 1, roomStr));
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getTowerActorData(0, 2, roomStr));
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getTowerActorData(1, 1, roomStr));
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getTowerActorData(1, 2, roomStr));
-
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getBaseTowerActorData(0, roomStr));
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getBaseTowerActorData(1, roomStr));
-        } else {
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getTowerActorData(0, 1, roomStr));
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getTowerActorData(1, 4, roomStr));
-
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getBaseTowerActorData(0, roomStr));
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getBaseTowerActorData(1, roomStr));
-        }
+        GameModeSpawns.spawnTowersForMode(room, parentExt);
     }
 
     private static void spawnAltars(Room room, ATBPExtension parentExt) {
-        if (room.getGroupId().equalsIgnoreCase("practice")) {
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getAltarActorData(0, room.getGroupId()));
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getAltarActorData(1, room.getGroupId()));
-
-        } else {
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getAltarActorData(0, room.getGroupId()));
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getAltarActorData(1, room.getGroupId()));
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getAltarActorData(2, room.getGroupId()));
-        }
+        GameModeSpawns.spawnAltarsForMode(room, parentExt);
     }
 
     private static void spawnHealth(Room room, ATBPExtension parentExt) {
-        if (room.getGroupId().equalsIgnoreCase("practice")) {
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getHealthActorData(0, room.getGroupId(), -1));
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getHealthActorData(1, room.getGroupId(), -1));
-        } else {
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getHealthActorData(0, room.getGroupId(), 0));
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getHealthActorData(0, room.getGroupId(), 1));
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getHealthActorData(0, room.getGroupId(), 2));
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getHealthActorData(1, room.getGroupId(), 0));
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getHealthActorData(1, room.getGroupId(), 1));
-            ExtensionCommands.createActor(
-                    parentExt, room, MapData.getHealthActorData(1, room.getGroupId(), 2));
-        }
+        GameModeSpawns.spawnHealthForMode(room, parentExt);
     }
 
     public static JsonNode getTeamData(
@@ -430,12 +387,10 @@ public class GameManager {
                 killsA += ua.getStat("kills");
                 deathsA += ua.getStat("deaths");
                 assistsA += ua.getStat("assists");
-                if (ua.hasGameStat("score")) scoreA += ua.getGameStat("score");
             } else {
                 killsB += ua.getStat("kills");
                 deathsB += ua.getStat("deaths");
                 assistsB += ua.getStat("assists");
-                if (ua.hasGameStat("score")) scoreB += ua.getGameStat("score");
             }
         }
         if (!dcPlayers.isEmpty()) {
@@ -445,15 +400,20 @@ public class GameManager {
                     killsA += ua.getStat("kills");
                     deathsA += ua.getStat("deaths");
                     assistsA += ua.getStat("assists");
-                    if (ua.hasGameStat("score")) scoreA += ua.getGameStat("score");
                 } else {
                     killsB += ua.getStat("kills");
                     deathsB += ua.getStat("deaths");
                     assistsB += ua.getStat("assists");
-                    if (ua.hasGameStat("score")) scoreB += ua.getGameStat("score");
                 }
             }
         }
+        ISFSObject scoreObject = room.getVariable("score").getSFSObjectValue();
+        int blueScore = scoreObject.getInt("blue");
+        int purpleScore = scoreObject.getInt("purple");
+
+        scoreA += purpleScore;
+        scoreB += blueScore;
+
         ObjectNode node = objectMapper.createObjectNode();
         node.put("killsA", killsA);
         node.put("killsB", killsB);

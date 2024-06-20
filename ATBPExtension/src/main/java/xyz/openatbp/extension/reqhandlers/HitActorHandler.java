@@ -33,6 +33,9 @@ public class HitActorHandler extends BaseClientRequestHandler {
                 Console.logWarning(targetId + " is not a valid target");
                 return;
             }
+            if (target.getId().equals("creep1_super12")) {
+                return;
+            }
             if (target.getActorType() == ActorType.BASE) {
                 Base b = (Base) target;
                 if (!b.isUnlocked()) return;

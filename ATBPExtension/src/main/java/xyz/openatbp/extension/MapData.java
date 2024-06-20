@@ -76,10 +76,10 @@ public class MapData {
     public static final float[] L2_PURPLE_BASE_TOWER = {(float) -34.36, (float) 0.0};
     public static final float[] L2_BLUE_BASE_TOWER = {(float) 34.51, (float) 0.0};
 
-    public static ISFSObject getBaseActorData(int team, String room) {
+    public static ISFSObject getBaseActorData(int team, String roomGroup) {
         float x;
         float z;
-        if (room.equalsIgnoreCase("practice")) {
+        if (roomGroup.equals("Practice") || roomGroup.equals("Tutorial")) {
             if (team == 0) {
                 x = L1_PURPLE_BASE[0];
                 z = L1_PURPLE_BASE[1];
@@ -96,6 +96,10 @@ public class MapData {
                 z = L2_BLUE_BASE[1];
             }
         }
+        return getBase(team, x, z);
+    }
+
+    private static ISFSObject getBase(int team, float x, float z) {
         String actor;
         if (team == 1) {
             actor = "base_blue";
@@ -115,12 +119,12 @@ public class MapData {
         return base;
     }
 
-    public static ISFSObject getBaseTowerActorData(int team, String room) {
+    public static ISFSObject getBaseTowerActorData(int team, String roomGroup) {
         float x;
         float z;
         String id;
         String towerID = "tower" + (1 + team);
-        if (room.equalsIgnoreCase("practice")) {
+        if (roomGroup.equals("Tutorial") || roomGroup.equals("Practice")) {
             if (team == 0) {
                 x = L1_PURPLE_TOWER_0[0];
                 id = "purple_tower0";
@@ -182,12 +186,12 @@ public class MapData {
         return baseTowers;
     }
 
-    public static ISFSObject getTowerActorData(int team, int tower, String room) { //
+    public static ISFSObject getTowerActorData(int team, int tower, String roomId) { //
         float x = 0;
         float z = 0;
         String id;
         String towerID = "tower" + (1 + team);
-        if (room.equalsIgnoreCase("practice")) {
+        if (roomId.equals("Practice") || roomId.equals("Tutorial")) {
             switch (tower) {
                 case 1:
                     x = L1_PURPLE_TOWER_1[0]; //
@@ -286,11 +290,11 @@ public class MapData {
         return practiceTowers;
     }
 
-    public static ISFSObject getAltarActorData(int type, String room) {
+    public static ISFSObject getAltarActorData(int type, String roomGroup) {
         float x = (float) 0.0;
         float z = (float) 0.0;
         String actorID = "altar_" + type;
-        if (room.equalsIgnoreCase("practice")) {
+        if (roomGroup.equals("Tutorial") || roomGroup.equals("Practice")) {
             if (type == 1) {
                 z = L1_DALTAR_Z;
                 actorID = "altar_1";
@@ -326,10 +330,10 @@ public class MapData {
         return altar;
     }
 
-    public static ISFSObject getHealthActorData(int team, String room, int type) {
+    public static ISFSObject getHealthActorData(int team, String roomGroup, int type) {
         float x = 0;
         float z = 0;
-        if (room.equalsIgnoreCase("practice")) {
+        if (roomGroup.equals("Tutorial") || roomGroup.equals("Practice")) {
             x = L1_BLUE_HEALTH_X;
             z = L1_BLUE_HEALTH_Z;
             if (team == 0) {
@@ -365,10 +369,10 @@ public class MapData {
         return health;
     }
 
-    public static ISFSObject getGuardianActorData(int team, String room) {
+    public static ISFSObject getGuardianActorData(int team, String roomGroup) {
         float x = 0;
         float z = 0;
-        if (room.equalsIgnoreCase("practice")) {
+        if (roomGroup.equals("Tutorial") || roomGroup.equals("Practice")) {
             x = L1_GUARDIAN_X;
             z = team == 1 ? L1_BLUE_GUARDIAN_AREA_Z : L1_PURPLE_GUARDIAN_AREA_Z;
         } else {
@@ -390,10 +394,10 @@ public class MapData {
         return guardian;
     }
 
-    public static Point2D getGuardianLocationData(int team, String room) {
+    public static Point2D getGuardianLocationData(int team, String roomGroup) {
         float x = 0;
         float z = 0;
-        if (room.equalsIgnoreCase("practice")) {
+        if (roomGroup.equals("Tutorial") || roomGroup.equals("Practice")) {
             x = L1_GUARDIAN_X;
             z = team == 1 ? L1_BLUE_GUARDIAN_AREA_Z : L1_PURPLE_GUARDIAN_AREA_Z;
         } else {

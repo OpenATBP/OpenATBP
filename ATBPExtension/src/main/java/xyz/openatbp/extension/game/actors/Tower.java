@@ -452,7 +452,8 @@ public class Tower extends Actor {
          */
         if (!this.id.contains("gumball")) {
             String[] towerIdComponents = this.id.split("_");
-            if (!room.getGroupId().equalsIgnoreCase("practice")) {
+            String roomGroup = room.getGroupId();
+            if (!roomGroup.equals("Tutorial") && !roomGroup.equals("Practice")) {
                 if (towerIdComponents[0].contains("blue")) {
                     return BLUE_TOWER_NUM[
                             (Integer.parseInt(towerIdComponents[1].replace("tower", ""))) - 1];
