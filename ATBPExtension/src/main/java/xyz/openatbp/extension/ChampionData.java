@@ -20,6 +20,12 @@ public class ChampionData {
     public static final double[] ELO_TIERS = {0, 1149, 1350, 1602};
     public static final double MAX_ELO = 2643;
 
+    public static int getXPLevels(int index) {
+        if (index < 0) return XP_LEVELS[0];
+        else if (index >= XP_LEVELS.length) return XP_LEVELS[XP_LEVELS.length - 1];
+        else return XP_LEVELS[index];
+    }
+
     public static int getXPLevel(int xp) {
         for (int i = 0; i < XP_LEVELS.length; i++) {
             if (xp < XP_LEVELS[i]) return i + 1;

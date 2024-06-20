@@ -15,7 +15,6 @@ import com.smartfoxserver.v2.exceptions.SFSJoinRoomException;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 
 import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.MapData;
 
 public class GotoRoomHandler extends BaseClientRequestHandler {
@@ -23,7 +22,6 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
     @Override
     public void handleClientRequest(
             User sender, ISFSObject params) { // Called when player is trying to join a match
-        Console.debugLog("trace!");
         trace(params.getDump());
         int team = 1;
         if (params.getUtfString("team").equalsIgnoreCase("purple")) team = 0;
@@ -74,26 +72,35 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
             CreateRoomSettings settings = new CreateRoomSettings();
             settings.setName(name);
             settings.setGame(true);
-            if (params.getUtfString("room_id").contains("pra")
-                    || params.getUtfString("room_id").contains("tutorial")) {
+            String roomId = params.getUtfString("room_id");
+
+            if (roomId.contains("tutorial")) {
+                settings.setGroupId("Tutorial");
                 settings.setMaxUsers(1);
+
+            } else if (roomId.contains("practice")) {
                 settings.setGroupId("Practice");
-            } else if (params.getUtfString("room_id").contains("custom")) {
+                settings.setMaxUsers(1);
+
+            } else if (roomId.contains("custom")) {
                 String[] roomIDSplit = params.getUtfString("room_id").split("_");
-                int roomSize =
-                        Integer.parseInt(roomIDSplit[roomIDSplit.length - 1].replace("p", ""));
+                String split = (roomIDSplit[roomIDSplit.length - 1]);
+                int roomSize = Integer.parseInt(split.replace("p", ""));
                 settings.setMaxUsers(roomSize);
                 if (roomSize != 2) settings.setGroupId("PVE");
                 else settings.setGroupId("Practice");
-            } else if (params.getUtfString("room_id").contains("3p")) { // Bot game mode
+
+            } else if (roomId.contains("3p")) {
+                settings.setGroupId("PVE");
                 settings.setMaxUsers(2); // TODO: Testing value
-                settings.setGroupId("PVE");
-            } else if (params.getUtfString("room_id").contains("6p")) {
-                settings.setMaxUsers(6);
+
+            } else if (roomId.contains("6p")) {
                 settings.setGroupId("PVP");
+                settings.setMaxUsers(6);
+
             } else {
-                settings.setMaxUsers(1);
                 settings.setGroupId("PVE");
+                settings.setMaxUsers(1);
             }
             try {
                 requestedRoom = parentExt.getApi().createRoom(sender.getZone(), settings, sender);

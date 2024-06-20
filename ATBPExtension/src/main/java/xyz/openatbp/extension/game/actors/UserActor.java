@@ -133,6 +133,12 @@ public class UserActor extends Actor {
         this.gooBuffStartTime = gooBuffStartTime;
     }
 
+    public void setCanCast(boolean q, boolean w, boolean e) {
+        this.canCast[0] = q;
+        this.canCast[1] = w;
+        this.canCast[2] = e;
+    }
+
     protected Point2D getRelativePoint(
             boolean external) { // Gets player's current location based on time
         double currentTime;

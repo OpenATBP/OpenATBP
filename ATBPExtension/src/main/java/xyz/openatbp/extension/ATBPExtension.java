@@ -358,7 +358,19 @@ public class ATBPExtension extends SFSExtension {
 
     public void startScripts(Room room) { // Creates a new task scheduler for a room
         if (!this.roomHandlers.containsKey(room.getName())) {
-            roomHandlers.put(room.getName(), new RoomHandler(this, room));
+            String groupId = room.getGroupId();
+            switch (groupId) {
+                case "Tutorial":
+                    roomHandlers.put(room.getName(), new TutorialRoomHandler(this, room));
+                    break;
+                case "Practice":
+                    roomHandlers.put(room.getName(), new PracticeRoomHandler(this, room));
+                    break;
+                case "PVE":
+                case "PVP":
+                    roomHandlers.put(room.getName(), new MainMapRoomHandler(this, room));
+                    break;
+            }
             Console.debugLog("Starting script for room " + room.getName());
         }
     }
