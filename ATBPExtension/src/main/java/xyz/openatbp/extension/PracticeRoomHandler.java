@@ -17,6 +17,8 @@ public class PracticeRoomHandler extends RoomHandler {
 
     private HashMap<User, UserActor> dcPlayers = new HashMap<>();
     private List<Actor> companions = new ArrayList<>();
+    private Point2D BOT_LOCATION = new Point2D.Float(-47.5f, -4);
+    private JakeBot jakeBot;
 
     public PracticeRoomHandler(ATBPExtension parentExt, Room room) {
         super(parentExt, room);
@@ -30,6 +32,29 @@ public class PracticeRoomHandler extends RoomHandler {
         }
         for (String key : towers1.keySet()) {
             towers.add(new Tower(parentExt, room, key, 1, towers1.get(key)));
+        }
+
+        ExtensionCommands.createWorldFX(
+                parentExt,
+                room,
+                "bot_ring",
+                "fx_aggrorange_3",
+                "bot_ring" + room,
+                1000 * 60 * 15,
+                (float) BOT_LOCATION.getX(),
+                (float) BOT_LOCATION.getY(),
+                false,
+                1,
+                0f);
+
+        jakeBot = new JakeBot(parentExt, room, BOT_LOCATION, 1);
+    }
+
+    @Override
+    public void run() {
+        super.run();
+        if (jakeBot != null) {
+            jakeBot.update(mSecondsRan);
         }
     }
 
@@ -169,9 +194,9 @@ public class PracticeRoomHandler extends RoomHandler {
 
     @Override
     public void spawnMonster(String monster) {
-        float x = 0;
-        float z = 0;
-        String actor = monster;
+        float x;
+        float z;
+        String actor;
         if (monster.equalsIgnoreCase("gnomes") || monster.equalsIgnoreCase("ironowls")) {
             char[] abc = {'a', 'b', 'c'};
             for (int i = 0;
@@ -336,6 +361,7 @@ public class PracticeRoomHandler extends RoomHandler {
     @Override
     public List<Actor> getActors() {
         List<Actor> actors = new ArrayList<>();
+        if (jakeBot != null) actors.add(jakeBot);
         actors.addAll(towers);
         actors.addAll(baseTowers);
         actors.addAll(minions);
@@ -350,6 +376,7 @@ public class PracticeRoomHandler extends RoomHandler {
     @Override
     public List<Actor> getActorsInRadius(Point2D center, float radius) {
         List<Actor> actorsInRadius = new ArrayList<>();
+        if (jakeBot != null) actorsInRadius.add(jakeBot);
         actorsInRadius.addAll(towers);
         actorsInRadius.addAll(baseTowers);
         actorsInRadius.addAll(minions);
@@ -366,6 +393,7 @@ public class PracticeRoomHandler extends RoomHandler {
     @Override
     public List<Actor> getEnemiesInPolygon(int team, Path2D polygon) {
         List<Actor> enemiesInPolygon = new ArrayList<>();
+        if (jakeBot != null) enemiesInPolygon.add(jakeBot);
         enemiesInPolygon.addAll(towers);
         enemiesInPolygon.addAll(baseTowers);
         enemiesInPolygon.addAll(minions);
@@ -383,6 +411,7 @@ public class PracticeRoomHandler extends RoomHandler {
     @Override
     public List<Actor> getNonStructureEnemies(int team) {
         List<Actor> nonStructureEnemies = new ArrayList<>();
+        if (jakeBot != null) nonStructureEnemies.add(jakeBot);
         nonStructureEnemies.addAll(towers);
         nonStructureEnemies.addAll(baseTowers);
         nonStructureEnemies.addAll(minions);
@@ -406,6 +435,7 @@ public class PracticeRoomHandler extends RoomHandler {
             boolean towerFilter,
             boolean baseFilter) {
         List<Actor> eligibleActors = new ArrayList<>();
+        if (jakeBot != null) eligibleActors.add(jakeBot);
         eligibleActors.addAll(towers);
         eligibleActors.addAll(baseTowers);
         eligibleActors.addAll(minions);

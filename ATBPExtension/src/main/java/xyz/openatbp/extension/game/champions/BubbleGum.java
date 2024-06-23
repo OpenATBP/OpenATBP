@@ -253,18 +253,22 @@ public class BubbleGum extends UserActor {
         try {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             List<Actor> actors = Champion.getActorsInRadius(handler, this.bombLocation, 3f);
+            JsonNode spellData = parentExt.getAttackData("peebles", "spell3");
             for (Actor a : actors) {
-                a.knockback(this.bombLocation);
-                JsonNode spellData = parentExt.getAttackData("peebles", "spell3");
-                if (a.getTeam() != this.team) {
+                if (a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER) {
+                    a.knockback(this.bombLocation);
+                    if (a.equals(this)) {
+                        ExtensionCommands.actorAnimate(
+                                parentExt, room, this.id, "spell3b", 325, false);
+                        Runnable animDelay =
+                                () ->
+                                        ExtensionCommands.actorAnimate(
+                                                parentExt, room, id, "spell3c", 350, false);
+                        scheduleTask(animDelay, 325);
+                    }
+                }
+                if (isNonStructure(a)) {
                     a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
-                } else if (a.equals(this)) {
-                    ExtensionCommands.actorAnimate(parentExt, room, this.id, "spell3b", 325, false);
-                    Runnable animDelay =
-                            () ->
-                                    ExtensionCommands.actorAnimate(
-                                            parentExt, room, id, "spell3c", 350, false);
-                    scheduleTask(animDelay, 325);
                 }
             }
             String useBombVo = SkinData.getBubbleGumEGruntVO(avatar);

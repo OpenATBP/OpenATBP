@@ -183,24 +183,6 @@ public class GameManager {
             u.setVariable(userStat);
             ExtensionCommands.updateActorData(parentExt, room, updateData);
         }
-        Point2D guardianLoc = MapData.getGuardianLocationData(0, room.getGroupId());
-        Point2D guardianLoc2 = MapData.getGuardianLocationData(1, room.getGroupId());
-        ExtensionCommands.moveActor(
-                parentExt,
-                room,
-                "gumball0",
-                guardianLoc,
-                new Point2D.Float((float) (guardianLoc.getX() + 1f), (float) guardianLoc.getY()),
-                0.01f,
-                true);
-        ExtensionCommands.moveActor(
-                parentExt,
-                room,
-                "gumball1",
-                guardianLoc2,
-                new Point2D.Float((float) (guardianLoc2.getX() - 1f), (float) guardianLoc2.getY()),
-                0.01f,
-                true);
         try { // Sets all the room variables once the game is about to begin
             setRoomVariables(room);
         } catch (SFSVariableException e) { // TODO: Disconnect all players if this fails
@@ -256,16 +238,16 @@ public class GameManager {
     }
 
     private static void initializeMap(Room room, ATBPExtension parentExt) {
-        String roomStr = room.getGroupId();
-        ExtensionCommands.createActor(parentExt, room, MapData.getBaseActorData(0, roomStr));
-        ExtensionCommands.createActor(parentExt, room, MapData.getBaseActorData(1, roomStr));
+        String groupId = room.getGroupId();
+        ExtensionCommands.createActor(parentExt, room, MapData.getBaseActorData(0, groupId));
+        ExtensionCommands.createActor(parentExt, room, MapData.getBaseActorData(1, groupId));
 
         spawnTowers(room, parentExt);
         spawnAltars(room, parentExt);
         spawnHealth(room, parentExt);
 
-        ExtensionCommands.createActor(parentExt, room, MapData.getGuardianActorData(0, roomStr));
-        ExtensionCommands.createActor(parentExt, room, MapData.getGuardianActorData(1, roomStr));
+        GameModeSpawns.spawnGuardians(parentExt, room, 0);
+        GameModeSpawns.spawnGuardians(parentExt, room, 1);
     }
 
     private static void spawnTowers(Room room, ATBPExtension parentExt) {

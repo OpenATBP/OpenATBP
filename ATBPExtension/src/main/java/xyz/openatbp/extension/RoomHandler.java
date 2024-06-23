@@ -197,6 +197,7 @@ public abstract class RoomHandler implements Runnable {
         }
 
         if (mSecondsRan % 500 == 0) {
+            announceKills();
             handleFountain();
         }
         try {
@@ -671,6 +672,104 @@ public abstract class RoomHandler implements Runnable {
                 parentExt, room, "music", "music/" + stingName, new Point2D.Float(0, 0));
         Runnable stingEnd = () -> this.playMainMusic = true;
         parentExt.getTaskScheduler().schedule(stingEnd, duration, TimeUnit.MILLISECONDS);
+    }
+
+    private void announceKills() {
+        try {
+            for (UserActor ua : this.getPlayers()) {
+                if (System.currentTimeMillis() - ua.getLastKilled() < 550
+                        && ua.getStat("kills") > 0) {
+
+                    int killerMulti = ua.getMultiKill();
+                    int killerSpree = ua.getKillingSpree();
+
+                    if (killerMulti > 1) {
+                        announceMultiKill(ua, killerMulti);
+                    } else if (killerSpree > 2) {
+                        announceKillingSpree(ua, killerSpree);
+                    } else {
+                        announceSingleKill(ua);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Console.logWarning("ANNOUNCER EXCEPTION OCCURED");
+        }
+    }
+
+    private void announceMultiKill(UserActor killer, int killerMulti) {
+        String[] allyMulties = ChampionData.ALLY_MULTIES;
+        String[] enemyMulties = ChampionData.ENEMY_MULTIES;
+        String[] ownMulties = ChampionData.OWN_MULTIES;
+
+        int index = Math.min(killerMulti, allyMulties.length - 1);
+
+        ExtensionCommands.playSound(
+                parentExt, killer.getUser(), "global", "announcer/" + ownMulties[index]);
+
+        for (UserActor userActor : this.getPlayers()) {
+            if (!userActor.equals(killer)) {
+                String sound =
+                        userActor.getTeam() == killer.getTeam()
+                                ? allyMulties[index]
+                                : enemyMulties[index];
+
+                ExtensionCommands.playSound(
+                        parentExt, userActor.getUser(), "global", "announcer/" + sound);
+            }
+        }
+    }
+
+    private void announceKillingSpree(UserActor killer, int killerSpree) {
+        String[] allySprees = ChampionData.ALLY_SPREES;
+        String[] enemySprees = ChampionData.ENEMY_SPREES;
+        String[] ownSprees = ChampionData.OWN_SPREES;
+
+        int index = Math.min(killerSpree, allySprees.length - 1);
+
+        ExtensionCommands.playSound(
+                parentExt, killer.getUser(), "global", "announcer/" + ownSprees[index]);
+
+        for (UserActor userActor : this.getPlayers()) {
+            if (!userActor.equals(killer)) {
+                String sound =
+                        userActor.getTeam() == killer.getTeam()
+                                ? allySprees[index]
+                                : enemySprees[index];
+
+                ExtensionCommands.playSound(
+                        parentExt, userActor.getUser(), "global", "announcer/" + sound);
+            }
+        }
+    }
+
+    private void announceSingleKill(UserActor killer) {
+        ExtensionCommands.playSound(
+                parentExt, killer.getUser(), "global", "announcer/you_defeated_enemy");
+
+        List<UserActor> killerLastKills = killer.getKilledPlayers();
+
+        if (!killerLastKills.isEmpty()) {
+            int index = killerLastKills.size() - 1;
+            UserActor killedPlayer = killerLastKills.get(index);
+
+            ExtensionCommands.playSound(
+                    parentExt, killedPlayer.getUser(), "global", "announcer/you_are_defeated");
+
+            // making a list and removing the killer and the killedPlayer causes
+            // ConcurrentModificationException for some
+            // reason
+
+            for (UserActor ua : this.getPlayers()) {
+                if (!ua.equals(killer) && !ua.equals(killedPlayer)) {
+                    String sound =
+                            ua.getTeam() == killer.getTeam() ? "enemy_defeated" : "ally_defeated";
+                    ExtensionCommands.playSound(
+                            parentExt, ua.getUser(), "global", "announcer/" + sound);
+                }
+            }
+        }
     }
 
     public void handleFountain() {

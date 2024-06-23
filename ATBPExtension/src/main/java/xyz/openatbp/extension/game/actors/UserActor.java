@@ -65,6 +65,7 @@ public class UserActor extends Actor {
     protected boolean hasGooBuff = false;
     protected long keeothBuffStartTime = 0;
     protected long gooBuffStartTime = 0;
+    protected List<UserActor> killedPlayers = new ArrayList<>();
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -201,6 +202,22 @@ public class UserActor extends Actor {
         return canCast;
     }
 
+    public int getMultiKill() {
+        return multiKill;
+    }
+
+    public int getKillingSpree() {
+        return killingSpree;
+    }
+
+    public long getLastKilled() {
+        return lastKilled;
+    }
+
+    public List<UserActor> getKilledPlayers() {
+        return killedPlayers;
+    }
+
     public void setPath(Point2D start, Point2D end) {
         this.movementLine = new Line2D.Float(start, end);
         this.timeTraveled = 0f;
@@ -267,7 +284,7 @@ public class UserActor extends Actor {
                         "sfx_turret_shot_hits_you",
                         this.location);
             }
-            Actor.AttackType type = this.getAttackType(attackData);
+            AttackType type = this.getAttackType(attackData);
             if (this.states.get(ActorState.BRUSH)) {
                 Runnable runnable = () -> UserActor.this.setState(ActorState.REVEALED, false);
                 this.setState(ActorState.REVEALED, true);
@@ -650,6 +667,11 @@ public class UserActor extends Actor {
             if (this.hasKeeothBuff) disableKeeothBuff();
             if (this.hasGooBuff) disableGooBuff();
 
+            if (a.getActorType() != ActorType.PLAYER) {
+                ExtensionCommands.playSound(
+                        parentExt, this.getUser(), "global", "announcer/you_are_defeated");
+            }
+
             if (this.getState(ActorState.POLYMORPH)) {
                 boolean swapAsset = true;
                 if (this.getChampionName(this.getAvatar()).equalsIgnoreCase("marceline")
@@ -706,18 +728,6 @@ public class UserActor extends Actor {
                     this.parentExt
                             .getRoomHandler(this.room.getName())
                             .addScore(ua, ua.getTeam(), 25);
-                } else {
-                    for (UserActor ua :
-                            this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
-                        if (ua.getTeam() != this.team) {
-                            ExtensionCommands.playSound(
-                                    parentExt,
-                                    ua.getUser(),
-                                    "global",
-                                    "announcer/enemy_defeated",
-                                    new Point2D.Float(0, 0));
-                        }
-                    }
                 }
                 for (Actor actor : this.aggressors.keySet()) {
                     if (actor.getActorType() == ActorType.PLAYER
@@ -726,17 +736,6 @@ public class UserActor extends Actor {
                         // ua.updateXPWorth("assist");
                         ua.addXP(this.getXPWorth());
                         ua.increaseStat("assists", 1);
-                    }
-                }
-                if (a.getActorType() == ActorType.PLAYER) {
-                    UserActor ua = (UserActor) a;
-                    if (ua.killingSpree < 3 && ua.multiKill < 2) {
-                        ExtensionCommands.playSound(
-                                this.parentExt,
-                                this.player,
-                                this.getId(),
-                                "announcer/you_are_defeated",
-                                new Point2D.Float(0, 0));
                     }
                 }
                 // Set<String> buffKeys = this.activeBuffs.keySet();
@@ -810,35 +809,6 @@ public class UserActor extends Actor {
 
     public void increaseStat(String key, double num) {
         // Console.debugLog("Increasing " + key + " by " + num);
-        if (key.equalsIgnoreCase("kills")) {
-            this.killingSpree++;
-            this.multiKill++;
-            this.lastKilled = System.currentTimeMillis();
-            if (this.hasGameStat("spree")) {
-                double endGameSpree = this.getGameStat("spree");
-                if (this.killingSpree > endGameSpree) {
-                    this.endGameStats.put("spree", (double) this.killingSpree);
-                }
-            } else {
-                this.endGameStats.put("spree", (double) this.killingSpree);
-            }
-            for (UserActor ua : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
-                if (ua.getTeam() == this.team) {
-                    boolean ally = !ua.getId().equalsIgnoreCase(this.id);
-                    String sound =
-                            ChampionData.getKOSoundEffect(
-                                    false, ally, this.multiKill, this.killingSpree);
-                    ExtensionCommands.playSound(
-                            parentExt, ua.getUser(), "global", sound, new Point2D.Float(0, 0));
-                } else {
-                    String sound =
-                            ChampionData.getKOSoundEffect(
-                                    true, false, this.multiKill, this.killingSpree);
-                    ExtensionCommands.playSound(
-                            parentExt, ua.getUser(), "global", sound, new Point2D.Float(0, 0));
-                }
-            }
-        }
         this.stats.put(key, this.stats.get(key) + num);
         ExtensionCommands.updateActorData(
                 this.parentExt, this.room, this.id, key, this.getPlayerStat(key));
@@ -1574,6 +1544,21 @@ public class UserActor extends Actor {
 
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
+        if (a.getActorType() == ActorType.PLAYER) {
+            this.killingSpree++;
+            this.multiKill++;
+            this.lastKilled = System.currentTimeMillis();
+            UserActor killedUA = (UserActor) a;
+            this.killedPlayers.add(killedUA);
+            if (this.hasGameStat("spree")) {
+                double endGameSpree = this.getGameStat("spree");
+                if (this.killingSpree > endGameSpree) {
+                    this.endGameStats.put("spree", (double) this.killingSpree);
+                }
+            } else {
+                this.endGameStats.put("spree", (double) this.killingSpree);
+            }
+        }
         this.addXP(a.getXPWorth());
         // if (a.getActorType() == ActorType.PLAYER) this.updateXPWorth("kill");
         if (a.getActorType() == ActorType.TOWER) {
