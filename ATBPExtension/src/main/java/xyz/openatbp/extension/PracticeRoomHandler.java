@@ -171,9 +171,8 @@ public class PracticeRoomHandler extends RoomHandler {
         try {
             this.gameOver = true;
             this.room.setProperty("state", 3);
-            boolean isRankedMatch = this.room.getGroupId().equals("PVP");
             ExtensionCommands.gameOver(
-                    parentExt, this.room, this.dcPlayers, winningTeam, isRankedMatch);
+                    parentExt, this.room, this.dcPlayers, winningTeam, false, false);
             for (UserActor ua : this.players) {
                 if (ua.getTeam() == winningTeam) {
                     ExtensionCommands.playSound(

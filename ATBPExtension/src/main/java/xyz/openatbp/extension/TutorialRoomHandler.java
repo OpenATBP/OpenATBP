@@ -1,10 +1,19 @@
 package xyz.openatbp.extension;
 
+import static com.mongodb.client.model.Filters.eq;
+
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.UpdateResult;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
@@ -464,10 +473,6 @@ public class TutorialRoomHandler extends RoomHandler {
     }
 
     @Override
-    protected void handleLeadSound(
-            int newPurpleScore, int newBlueScore, int purpleScore, int blueScore) {}
-
-    @Override
     public void handleAltars() {
         handleAltarsForMode(2);
     }
@@ -531,13 +536,37 @@ public class TutorialRoomHandler extends RoomHandler {
             this.gameOver = true;
             this.room.setProperty("state", 3);
             HashMap<User, UserActor> dcPlayers = new HashMap<>();
-            for (UserActor ua : this.getPlayers()) {
-                if (ua.getTeam() == winningTeam) {
-                    ExtensionCommands.playSound(
-                            parentExt, ua.getUser(), "global", "announcer/tut_congrats");
+            boolean tutorialCoins = false;
+            if (winningTeam == 0) {
+                ExtensionCommands.playSound(
+                        parentExt, tutorialPlayer.getUser(), "global", "announcer/tut_congrats");
+                MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
+                String tegID = (String) tutorialPlayer.getUser().getSession().getProperty("tegid");
+                Bson filter = eq("user.TEGid", tegID);
+                Document playerDoc = playerData.find(filter).first();
+
+                if (playerDoc != null) {
+                    Document playerObject = playerDoc.get("player", Document.class);
+
+                    if (playerObject != null) {
+                        Integer winsBots = playerObject.getInteger("winsBots");
+                        if (winsBots != null && winsBots == 0) {
+                            tutorialCoins = true;
+                            List<Bson> updateList = new ArrayList<>();
+                            updateList.add(Updates.inc("player.winsBots", 1));
+                            updateList.add(Updates.inc("player.coins", 700));
+
+                            Bson updates = Updates.combine(updateList);
+                            UpdateOptions options = new UpdateOptions().upsert(false);
+                            UpdateResult result = playerData.updateOne(filter, updates, options);
+
+                            Console.debugLog(result);
+                        }
+                    }
                 }
             }
-            ExtensionCommands.gameOver(parentExt, this.room, dcPlayers, winningTeam, false);
+            ExtensionCommands.gameOver(
+                    parentExt, this.room, dcPlayers, winningTeam, false, tutorialCoins);
         } catch (Exception e) {
             e.printStackTrace();
         }

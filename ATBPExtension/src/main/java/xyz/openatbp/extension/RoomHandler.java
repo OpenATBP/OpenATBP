@@ -24,6 +24,7 @@ public abstract class RoomHandler implements Runnable {
     protected List<Monster> campMonsters;
     protected Base[] bases = new Base[2];
     protected GumballGuardian[] guardians = new GumballGuardian[2];
+    protected ArrayList<BaseTower> baseTowers = new ArrayList<>();
     protected ArrayList<Tower> towers;
     protected boolean gameOver = false;
     protected boolean playMainMusic = false;
@@ -38,12 +39,19 @@ public abstract class RoomHandler implements Runnable {
     protected List<String> createdActorIds = new ArrayList<>();
     protected static boolean monsterDebug = false;
     protected static boolean xpDebug = false;
-    protected long lastPointLeadTime = 0;
     protected static final int FOUNTAIN_HEAL = 250; // every 0.5s
     protected int currentMinionWave = 0;
-    protected ArrayList<BaseTower> baseTowers = new ArrayList<>();
     protected List<Projectile> activeProjectiles = new ArrayList<>();
     protected ScheduledFuture<?> scriptHandler;
+
+    private enum PointLeadTeam {
+        PURPLE,
+        BLUE
+    }
+
+    private PointLeadTeam pointLeadTeam;
+
+    private boolean isAnnouncingKill = false;
 
     public RoomHandler(ATBPExtension parentExt, Room room) {
         this.parentExt = parentExt;
@@ -141,6 +149,7 @@ public abstract class RoomHandler implements Runnable {
                 secondsRan++;
                 if (secondsRan % 5 == 0) {
                     this.handlePassiveXP();
+                    handlePointLeadSound();
                 }
                 if (secondsRan == 1
                         || this.playMainMusic && secondsRan < (60 * 13) && !this.gameOver) {
@@ -680,6 +689,8 @@ public abstract class RoomHandler implements Runnable {
                 if (System.currentTimeMillis() - ua.getLastKilled() < 550
                         && ua.getStat("kills") > 0) {
 
+                    handleAnnouncerBoolean();
+
                     int killerMulti = ua.getMultiKill();
                     int killerSpree = ua.getKillingSpree();
 
@@ -772,6 +783,12 @@ public abstract class RoomHandler implements Runnable {
         }
     }
 
+    private void handleAnnouncerBoolean() {
+        isAnnouncingKill = true;
+        Runnable resetIsAnnouncingKill = () -> isAnnouncingKill = false;
+        parentExt.getTaskScheduler().schedule(resetIsAnnouncingKill, 800, TimeUnit.MILLISECONDS);
+    }
+
     public void handleFountain() {
         HashMap<Integer, Point2D> centers = getFountainsCenter();
 
@@ -840,63 +857,50 @@ public abstract class RoomHandler implements Runnable {
         scoreObject.putInt("blue", newBlueScore);
         scoreObject.putInt("purple", newPurpleScore);
         ExtensionCommands.updateScores(this.parentExt, this.room, newPurpleScore, newBlueScore);
-        handleLeadSound(newPurpleScore, newBlueScore, purpleScore, blueScore);
         if (earner != null) {
             earner.addGameStat("score", points);
         }
     }
 
-    protected void handleLeadSound(
-            int newPurpleScore, int newBlueScore, int purpleScore, int blueScore) {
-        if (newBlueScore > newPurpleScore && blueScore <= purpleScore) {
-            for (UserActor player : this.players) {
-                Runnable playLeadSound =
-                        () -> {
-                            if (player.getTeam() == 1) {
-                                ExtensionCommands.playSound(
-                                        parentExt,
-                                        player.getUser(),
-                                        "global",
-                                        "announcer/gained_point_lead",
-                                        new Point2D.Float(0f, 0f));
-                            } else {
-                                ExtensionCommands.playSound(
-                                        parentExt,
-                                        player.getUser(),
-                                        "global",
-                                        "announcer/lost_point_lead",
-                                        new Point2D.Float(0f, 0f));
-                            }
-                            lastPointLeadTime = System.currentTimeMillis();
-                        };
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(playLeadSound, getLeadRemainingTime(), TimeUnit.MILLISECONDS);
+    protected void handlePointLeadSound() {
+        if (isAnnouncingKill) {
+            // delay the sound to queue it up and play after the kill announcement
+            Runnable delaySound = this::announcePointLead;
+            parentExt.getTaskScheduler().schedule(delaySound, 500, TimeUnit.MILLISECONDS);
+        } else {
+            announcePointLead();
+        }
+    }
+
+    protected void announcePointLead() {
+        int purpleScore = room.getVariable("score").getSFSObjectValue().getInt("purple");
+        int blueScore = room.getVariable("score").getSFSObjectValue().getInt("blue");
+
+        if (pointLeadTeam == null && blueScore != purpleScore
+                || (pointLeadTeam == PointLeadTeam.PURPLE && blueScore > purpleScore)
+                || (pointLeadTeam == PointLeadTeam.BLUE && purpleScore > blueScore)) {
+
+            String purpleSound;
+            String blueSound;
+
+            if (purpleScore > blueScore) {
+                pointLeadTeam = PointLeadTeam.PURPLE;
+                purpleSound = "gained_point_lead";
+                blueSound = "lost_point_lead";
+            } else {
+                pointLeadTeam = PointLeadTeam.BLUE;
+                purpleSound = "lost_point_lead";
+                blueSound = "gained_point_lead";
             }
-        } else if (newPurpleScore > newBlueScore && blueScore >= purpleScore) {
-            for (UserActor player : this.players) {
-                Runnable playLeadSound2 =
-                        () -> {
-                            if (player.getTeam() == 0) {
-                                ExtensionCommands.playSound(
-                                        parentExt,
-                                        player.getUser(),
-                                        "global",
-                                        "announcer/gained_point_lead",
-                                        new Point2D.Float(0f, 0f));
-                            } else {
-                                ExtensionCommands.playSound(
-                                        parentExt,
-                                        player.getUser(),
-                                        "global",
-                                        "announcer/lost_point_lead",
-                                        new Point2D.Float(0f, 0f));
-                            }
-                            lastPointLeadTime = System.currentTimeMillis();
-                        };
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(playLeadSound2, getLeadRemainingTime(), TimeUnit.MILLISECONDS);
+
+            for (UserActor ua : this.getPlayers()) {
+                if (ua.getTeam() == 0) {
+                    ExtensionCommands.playSound(
+                            parentExt, ua.getUser(), "global", "announcer/" + purpleSound);
+                } else {
+                    ExtensionCommands.playSound(
+                            parentExt, ua.getUser(), "global", "announcer/" + blueSound);
+                }
             }
         }
     }
@@ -957,14 +961,6 @@ public abstract class RoomHandler implements Runnable {
                 return 2;
         }
         return -1;
-    }
-
-    private int getLeadRemainingTime() {
-        int elapsedTime = (int) (System.currentTimeMillis() - lastPointLeadTime);
-        if (elapsedTime < 5000) {
-            return 5000 - elapsedTime;
-        }
-        return 0;
     }
 
     public ArrayList<UserActor> getPlayers() {
