@@ -602,67 +602,52 @@ public class ChampionData {
         return getTier(originalElo) != getTier(originalElo + eloGain);
     }
 
-    private static String getDefeatedSound(boolean enemy, boolean ally) {
-        if (!enemy && !ally) return "announcer/you_defeated_enemy";
-        else if (ally) return "announcer/enemy_defeated";
-        return "";
-    }
+    public static String[] ALLY_MULTIES = {
+        "", "", "ko_double_ally", "ko_triple_ally", "ko_quad_ally", "ko_penta_ally"
+    };
 
-    public static String getKOSoundEffect(
-            boolean enemy, boolean ally, int multiKill, int killingSpree) {
-        if (multiKill > 1) {
-            String koSound = "announcer/ko_";
-            switch (multiKill) {
-                case 2:
-                    koSound += "double";
-                    break;
-                case 3:
-                    koSound += "triple";
-                    break;
-                case 4:
-                    koSound += "quad";
-                    break;
-                default:
-                    koSound += "penta";
-                    break;
-            }
-            if (ally) koSound += "_ally";
-            else if (enemy) koSound += "_enemy";
-            return koSound;
-        } else if (killingSpree > 1) {
-            String koSound = "announcer/";
-            String ko = "";
-            if (!enemy && !ally) ko += "you_are";
-            else if (enemy) ko += "enemy_is";
-            else ko += "ally_is";
-            switch (killingSpree) {
-                case 2:
-                    return getDefeatedSound(enemy, ally);
-                case 3:
-                    koSound += "kill1_" + ko + "_awesome";
-                    break;
-                case 4:
-                    koSound += "kill2_" + ko + "_math";
-                    break;
-                case 5:
-                    koSound += "kill3_" + ko + "_spicy";
-                    break;
-                case 6:
-                    koSound += "kill4_" + ko + "_tops";
-                    break;
-                case 7:
-                    koSound += "kill5_" + ko + "_animal";
-                    break;
-                case 8:
-                    koSound += "kill7_" + ko + "_demon";
-                    break;
-                default:
-                    koSound += "kill6_" + ko + "_god";
-                    break;
-            }
-            return koSound;
-        } else {
-            return getDefeatedSound(enemy, ally);
-        }
-    }
+    public static String[] ENEMY_MULTIES = {
+        "", "", "ko_double_enemy", "ko_triple_enemy", "ko_quad_enemy", "ko_penta_enemy"
+    };
+
+    public static String[] OWN_MULTIES = {"", "", "ko_double", "ko_triple", "ko_quad", "ko_penta"};
+
+    public static String[] ALLY_SPREES = {
+        "",
+        "",
+        "",
+        "kill1_ally_is_awesome",
+        "kill2_ally_is_math",
+        "kill3_ally_is_spicy",
+        "kill4_ally_is_tops",
+        "kill5_ally_is_animal",
+        "kill7_ally_is_demon",
+        "kill6_ally_is_god"
+    };
+
+    public static String[] ENEMY_SPREES = {
+        "",
+        "",
+        "",
+        "kill1_enemy_is_awesome",
+        "kill2_enemy_is_math",
+        "kill3_enemy_is_spicy",
+        "kill4_enemy_is_tops",
+        "kill5_enemy_is_animal",
+        "kill7_enemy_is_demon",
+        "kill6_enemy_is_god"
+    };
+
+    public static String[] OWN_SPREES = {
+        "",
+        "",
+        "",
+        "kill1_you_are_awesome",
+        "kill2_you_are_math",
+        "kill3_you_are_spicy",
+        "kill4_you_are_tops",
+        "kill5_you_are_animal",
+        "kill7_you_are_demon",
+        "kill6_you_are_god"
+    };
 }

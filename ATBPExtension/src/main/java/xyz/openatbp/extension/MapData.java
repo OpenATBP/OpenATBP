@@ -17,10 +17,9 @@ public class MapData {
     public static final float L1_GUARDIAN_X = (float) 57.8;
     public static final float L1_PURPLE_GUARDIAN_AREA_Z = (float) -0.5;
     public static final float L1_BLUE_GUARDIAN_AREA_Z = (float) 0;
-    public static final float L1_KEEOTH_X = (float) -21.3;
-    public static final float L1_KEEOTH_Z = (float) 11.6;
-    public static final float L1_GOOMONSTER_X = (float) 22.6;
-    public static final float L1_GOOMONSTER_Z = (float) -10.7;
+    public static final float L1_P_GUARDIAN_MODEL_X = -57.8f;
+    public static final float L1_B_GUARDIAN_MODEL_X = 57.8f;
+    public static final float L1_GUARDIAN_MODEL_Z = -0.4f;
     public static final float L2_GUARDIAN1_X = (float) 52.00;
     public static final float L2_GUARDIAN1_Z = (float) 0;
     public static final float[] L2_TOP_ALTAR = {(float) -13.38, (float) -26.08};

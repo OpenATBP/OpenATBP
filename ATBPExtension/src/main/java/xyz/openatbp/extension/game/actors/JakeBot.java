@@ -2,6 +2,7 @@ package xyz.openatbp.extension.game.actors;
 
 import static xyz.openatbp.extension.game.actors.UserActor.BASIC_ATTACK_DELAY;
 
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -13,6 +14,7 @@ import com.smartfoxserver.v2.entities.Room;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.pathfinding.MovementManager;
@@ -20,6 +22,8 @@ import xyz.openatbp.extension.pathfinding.MovementManager;
 public class JakeBot extends Actor {
     private boolean isAutoAttacking = false;
     private long lastBallon = 0;
+    private Point2D spawnPoint;
+    private Actor charmer;
 
     public JakeBot(ATBPExtension parentExt, Room room, Point2D spawnPoint, int num) {
         this.parentExt = parentExt;
@@ -32,6 +36,7 @@ public class JakeBot extends Actor {
         this.maxHealth = 750;
         this.team = 1;
         this.actorType = ActorType.COMPANION;
+        this.spawnPoint = spawnPoint;
         this.stats = this.initializeStats();
         ExtensionCommands.createActor(
                 parentExt, room, this.id, this.avatar, this.location, 0f, this.team);
@@ -39,6 +44,14 @@ public class JakeBot extends Actor {
 
     @Override
     public void handleKill(Actor a, JsonNode attackData) {}
+
+    @Override
+    public boolean damaged(Actor a, int damage, JsonNode attackData) {
+        if (room.getGroupId().equals("Practice")) {
+            return false;
+        }
+        return super.damaged(a, damage, attackData);
+    }
 
     @Override
     public void attack(Actor a) {
@@ -167,43 +180,83 @@ public class JakeBot extends Actor {
         handleDamageQueue();
         handleActiveEffects();
         if (dead) return;
-        if (this.attackCooldown > 0) this.attackCooldown -= 100;
         if (!this.isStopped() && this.canMove()) this.timeTraveled += 0.1f;
         this.location =
                 MovementManager.getRelativePoint(
                         this.movementLine, this.getPlayerStat("speed"), this.timeTraveled);
 
-        if (target == null) {
-            RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            List<Actor> potentialTargets = handler.getEligibleActors(team, true, true, true, true);
-            float closestDistance = 1000;
-            for (Actor a : potentialTargets) {
-                float distance = (float) a.getLocation().distance(this.getLocation());
-                if (distance < closestDistance) {
-                    closestDistance = distance;
-                    this.target = a;
+        if (room.getGroupId().equals("Tutorial")) {
+            if (this.attackCooldown > 0) this.attackCooldown -= 100;
+
+            if (target == null) {
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                List<Actor> potentialTargets =
+                        handler.getEligibleActors(team, true, true, true, true);
+                float closestDistance = 1000;
+                for (Actor a : potentialTargets) {
+                    float distance = (float) a.getLocation().distance(this.getLocation());
+                    if (distance < closestDistance) {
+                        closestDistance = distance;
+                        this.target = a;
+                    }
+                }
+            }
+
+            if (target != null) {
+                if (!withinRange(target) && canMove()) {
+                    moveWithCollision(target.getLocation());
+                } else if (withinRange(target)) {
+                    if (!isStopped()) stopMoving();
+                    if (canAttack()) attack(target);
+                }
+            }
+
+            if (!isAutoAttacking && System.currentTimeMillis() - lastBallon >= 10000) {
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                List<Actor> actorsInRadius =
+                        Champion.getEnemyActorsInRadius(handler, team, location, 2);
+                if (!actorsInRadius.isEmpty()) {
+                    ballon();
+                    lastBallon = System.currentTimeMillis();
+                }
+            }
+        } else {
+            if (this.location.distance(spawnPoint) > 0.1
+                    && canMove
+                    && !getState(ActorState.CHARMED)) {
+                moveWithCollision(spawnPoint);
+            }
+
+            if (this.getState(ActorState.CHARMED) && this.charmer != null) {
+                int minVictimDist = 1;
+                float dist = (float) this.location.distance(charmer.getLocation());
+                if (canMove() && charmer.getHealth() > 0 && dist > minVictimDist) {
+                    Line2D movementLine =
+                            Champion.getAbilityLine(
+                                    this.location, charmer.getLocation(), dist - minVictimDist);
+                    this.moveWithCollision(movementLine.getP2());
                 }
             }
         }
+    }
 
-        if (target != null) {
-            if (!withinRange(target) && canMove()) {
-                moveWithCollision(target.getLocation());
-            } else if (withinRange(target)) {
-                if (!isStopped()) stopMoving();
-                if (canAttack()) attack(target);
+    @Override
+    public boolean canMove() {
+        for (ActorState s : this.states.keySet()) {
+            if (s == ActorState.ROOTED
+                    || s == ActorState.STUNNED
+                    || s == ActorState.FEARED
+                    || s == ActorState.AIRBORNE) {
+                if (this.states.get(s)) return false;
             }
         }
+        return this.canMove;
+    }
 
-        if (!isAutoAttacking && System.currentTimeMillis() - lastBallon >= 10000) {
-            RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            List<Actor> actorsInRadius =
-                    Champion.getEnemyActorsInRadius(handler, team, location, 2);
-            if (!actorsInRadius.isEmpty()) {
-                ballon();
-                lastBallon = System.currentTimeMillis();
-            }
-        }
+    @Override
+    public void handleCharm(UserActor charmer, int duration) {
+        this.addState(ActorState.CHARMED, 0d, duration);
+        this.charmer = charmer;
     }
 
     @Override

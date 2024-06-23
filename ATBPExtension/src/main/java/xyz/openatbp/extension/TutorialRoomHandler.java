@@ -544,7 +544,34 @@ public class TutorialRoomHandler extends RoomHandler {
     }
 
     @Override
-    public void spawnMonster(String monster) {}
+    public void spawnMonster(String monster) {
+        float x;
+        float z;
+        String actor;
+        if (monster.equalsIgnoreCase("gnomes") || monster.equalsIgnoreCase("ironowls")) {
+            char[] abc = {'a', 'b', 'c'};
+            for (int i = 0;
+                    i < 3;
+                    i++) { // Gnomes and owls have three different mobs so need to be spawned in
+                // triplets
+                if (monster.equalsIgnoreCase("gnomes")) {
+                    actor = "gnome_" + abc[i];
+                    x = (float) MapData.L1_GNOMES[i].getX();
+                    z = (float) MapData.L1_GNOMES[i].getY();
+                } else {
+                    actor = "ironowl_" + abc[i];
+                    x = (float) MapData.L1_OWLS[i].getX();
+                    z = (float) MapData.L1_OWLS[i].getY();
+                }
+                Point2D spawnLoc = new Point2D.Float(x, z);
+                campMonsters.add(new Monster(parentExt, room, spawnLoc, actor));
+                ExtensionCommands.createActor(
+                        this.parentExt, this.room, actor, actor, spawnLoc, 0f, 2);
+                ExtensionCommands.moveActor(
+                        this.parentExt, this.room, actor, spawnLoc, spawnLoc, 5f, false);
+            }
+        }
+    }
 
     @Override
     public void handleSpawnDeath(Actor a) {}

@@ -70,6 +70,23 @@ public class Tower extends Actor {
         this.team = team;
     }
 
+    public Tower(ATBPExtension parentExt, Room room, String id, int team) {
+        this.currentHealth = 800;
+        this.maxHealth = 800;
+        this.id = id;
+        this.room = room;
+        this.team = team;
+        this.parentExt = parentExt;
+        this.lastHit = 0;
+        this.actorType = ActorType.TOWER;
+        this.attackCooldown = 1000;
+        this.avatar = "tower1";
+        if (team == 1) this.avatar = "tower2";
+        this.displayName = parentExt.getDisplayName(this.avatar);
+        this.stats = this.initializeStats();
+        this.xpWorth = 15;
+    }
+
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         if (this.destroyed) return true;
@@ -159,13 +176,6 @@ public class Tower extends Actor {
         if (!this.destroyed) {
             this.destroyed = true;
             this.dead = true;
-            UserActor earner = null;
-            if (a.getActorType() == ActorType.PLAYER) {
-                UserActor ua = (UserActor) a;
-                earner = (UserActor) a;
-                ua.addGameStat("towers", 1);
-            }
-            this.parentExt.getRoomHandler(this.room.getName()).addScore(earner, a.getTeam(), 50);
             ExtensionCommands.towerDown(parentExt, this.room, this.getTowerNum());
             ExtensionCommands.knockOutActor(parentExt, this.room, this.id, a.getId(), 100);
             ExtensionCommands.destroyActor(parentExt, this.room, this.id);
@@ -201,30 +211,22 @@ public class Tower extends Actor {
                 if (this.target != null && this.target.getActorType() == ActorType.PLAYER)
                     ExtensionCommands.removeFx(parentExt, u, this.id + "_aggro");
             }
-            if (this.getTowerNum() == 0 || this.getTowerNum() == 3) {
-                for (UserActor ua :
-                        this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
-                    if (ua.getTeam() == this.team) {
-                        ExtensionCommands.playSound(
-                                parentExt, ua.getUser(), "global", "announcer/base_tower_down");
-                    } else {
-                        ExtensionCommands.playSound(
-                                parentExt, ua.getUser(), "global", "announcer/you_destroyed_tower");
-                    }
-                }
-            } else {
-                for (UserActor ua :
-                        this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
-                    if (ua.getTeam() == this.team) {
-                        ExtensionCommands.playSound(
-                                parentExt, ua.getUser(), "global", "announcer/your_tower_down");
-                    } else {
-                        ExtensionCommands.playSound(
-                                parentExt, ua.getUser(), "global", "announcer/you_destroyed_tower");
-                    }
-                }
+            for (UserActor ua : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
+                String s = getTowerDownSound(ua);
+                ExtensionCommands.playSound(parentExt, ua.getUser(), "global", "announcer/" + s);
             }
+            UserActor earner = null;
+            if (a.getActorType() == ActorType.PLAYER) {
+                UserActor ua = (UserActor) a;
+                earner = (UserActor) a;
+                ua.addGameStat("towers", 1);
+            }
+            this.parentExt.getRoomHandler(this.room.getName()).addScore(earner, a.getTeam(), 50);
         }
+    }
+
+    protected String getTowerDownSound(UserActor ua) {
+        return ua.getTeam() == this.team ? "your_tower_down" : "you_destroyed_tower";
     }
 
     public List<UserActor> getUserActorsInTowerRadius() {
