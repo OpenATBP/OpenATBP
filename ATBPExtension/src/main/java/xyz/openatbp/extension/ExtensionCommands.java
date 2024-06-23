@@ -462,7 +462,8 @@ public class ExtensionCommands {
             Room room,
             HashMap<User, UserActor> dcPlayers,
             double winningTeam,
-            boolean isRankedMatch)
+            boolean isRankedMatch,
+            boolean tutorialCoins)
             throws JsonProcessingException {
         for (User u : room.getUserList()) {
             Room lastRoom = u.getLastJoinedRoom();
@@ -471,10 +472,12 @@ public class ExtensionCommands {
             ObjectNode node = objectMapper.createObjectNode();
             node.set(
                     "teamA",
-                    GameManager.getTeamData(parentExt, dcPlayers, 0, lastRoom, isRankedMatch));
+                    GameManager.getTeamData(
+                            parentExt, dcPlayers, 0, lastRoom, isRankedMatch, tutorialCoins));
             node.set(
                     "teamB",
-                    GameManager.getTeamData(parentExt, dcPlayers, 1, lastRoom, isRankedMatch));
+                    GameManager.getTeamData(
+                            parentExt, dcPlayers, 1, lastRoom, isRankedMatch, tutorialCoins));
             node.set(
                     "globalTeamData",
                     GameManager.getGlobalTeamData(parentExt, dcPlayers, lastRoom));

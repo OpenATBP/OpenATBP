@@ -204,7 +204,7 @@ public class MainMapRoomHandler extends RoomHandler {
             this.gameOver = true;
             this.room.setProperty("state", 3);
             ExtensionCommands.gameOver(
-                    parentExt, this.room, this.dcPlayers, winningTeam, IS_RANKED_MATCH);
+                    parentExt, this.room, this.dcPlayers, winningTeam, IS_RANKED_MATCH, false);
             for (UserActor ua : this.players) {
                 if (ua.getTeam() == winningTeam) {
                     ExtensionCommands.playSound(
@@ -338,27 +338,6 @@ public class MainMapRoomHandler extends RoomHandler {
             parentExt.stopScript(room.getName(), false);
         } catch (Exception e) {
             e.printStackTrace();
-        }
-    }
-
-    private void handlePassiveXP() {
-        double purpleLevel = 0;
-        double blueLevel = 0;
-        for (UserActor player : this.players) {
-            if (player.getTeam() == 0) purpleLevel += player.getLevel();
-            else if (player.getTeam() == 1) blueLevel += player.getLevel();
-        }
-        // Get the average level of players
-        purpleLevel = (int) Math.floor(purpleLevel / ((double) this.players.size() / 2));
-        blueLevel = (int) Math.floor(blueLevel / ((double) this.players.size() / 2));
-        for (UserActor player : this.players) {
-            int additionalXP =
-                    1; // Get more XP if you are below the average level of the enemy and get less
-            // xp if you are above.
-            if (player.getTeam() == 0) additionalXP *= (blueLevel - player.getLevel());
-            else if (player.getTeam() == 1) additionalXP *= (purpleLevel - player.getLevel());
-            if (purpleLevel == 0 || blueLevel == 0 || additionalXP < 0) additionalXP = 0;
-            player.addXP(2 + additionalXP + (xpDebug ? 100 : 0));
         }
     }
 

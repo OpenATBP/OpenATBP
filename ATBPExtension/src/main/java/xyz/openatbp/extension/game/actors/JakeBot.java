@@ -164,8 +164,10 @@ public class JakeBot extends Actor {
         if (this.dead) return;
         if (a.getActorType() == ActorType.PLAYER) {
             UserActor killer = (UserActor) a;
-            killer.increaseStat("kills", 1);
+            ExtensionCommands.playSound(
+                    parentExt, killer.getUser(), "global", "announcer/you_defeated_enemy");
         }
+
         this.dead = true;
         this.currentHealth = 0;
         this.setHealth(0, (int) this.maxHealth);
