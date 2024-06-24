@@ -76,7 +76,7 @@ public class Hunson extends UserActor {
         if (this.wActive && System.currentTimeMillis() - this.wStartTime >= W_DAMAGE_DURATION) {
             this.wActive = false;
         }
-        if (this.ultActivated && this.dead) {
+        if (this.ultActivated) {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, this.location, 4f)) {
@@ -84,22 +84,18 @@ public class Hunson extends UserActor {
                     a.addToDamageQueue(this, this.getSpellDamage(spellData) / 10d, spellData, true);
                 }
             }
-            if (System.currentTimeMillis() - this.ultStart >= E_DURATION) {
-                this.ultActivated = false;
-                ExtensionCommands.actorAnimate(
-                        this.parentExt, this.room, this.id, "idle", 500, false);
+        }
+        if (this.ultActivated && System.currentTimeMillis() - this.ultStart >= E_DURATION) {
+            this.ultActivated = false;
+            ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "idle", 500, false);
+        }
+        if (this.ultActivated && (this.dead || this.hasInterrupingCC())) {
+            if (hasInterrupingCC()) {
+                ExtensionCommands.playSound(
+                        this.parentExt, this.room, this.id, "sfx_skill_interrupted", this.location);
             }
-            if (this.ultActivated && this.hasInterrupingCC()) {
-                this.interruptE();
-                this.ultActivated = false;
-            }
-            if (this.currentHealth <= 0) {
-                ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultHead");
-                ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultRing");
-                ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultSuck");
-                this.ultActivated = false;
-            }
-        } else if (this.ultActivated) this.endUlt();
+            this.endUlt();
+        }
         if (this.qActivated
                 && System.currentTimeMillis() - this.qStartTime >= 6000
                 && this.qUses > 0) {
@@ -362,17 +358,7 @@ public class Hunson extends UserActor {
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultHead");
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultRing");
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultSuck");
-        ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "run", 500, false);
-    }
-
-    private void interruptE() {
-        this.canMove = true;
-        ExtensionCommands.playSound(
-                this.parentExt, this.room, this.id, "sfx_skill_interrupted", this.location);
-        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultHead");
-        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultRing");
-        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultSuck");
-        ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "run", 500, false);
+        ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "idle", 500, false);
     }
 
     private HunsonAbilityRunnable abilityRunnable(

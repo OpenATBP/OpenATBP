@@ -2,7 +2,6 @@ package xyz.openatbp.extension.game.actors;
 
 import static xyz.openatbp.extension.game.actors.UserActor.BASIC_ATTACK_DELAY;
 
-import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -23,7 +22,7 @@ public class JakeBot extends Actor {
     private boolean isAutoAttacking = false;
     private long lastBallon = 0;
     private Point2D spawnPoint;
-    private Actor charmer;
+    private UserActor charmer;
 
     public JakeBot(ATBPExtension parentExt, Room room, Point2D spawnPoint, int num) {
         this.parentExt = parentExt;
@@ -145,7 +144,7 @@ public class JakeBot extends Actor {
             if (a.getActorType() != ActorType.BASE
                     && a.getActorType() != ActorType.TOWER
                     && a.getTeam() != team) {
-                a.knockback(this.location);
+                a.knockback(this.location, 5f);
                 a.addToDamageQueue(this, getBallonDamage(), spellData, false);
             }
         }
@@ -229,15 +228,8 @@ public class JakeBot extends Actor {
                 moveWithCollision(spawnPoint);
             }
 
-            if (this.getState(ActorState.CHARMED) && this.charmer != null) {
-                int minVictimDist = 1;
-                float dist = (float) this.location.distance(charmer.getLocation());
-                if (canMove() && charmer.getHealth() > 0 && dist > minVictimDist) {
-                    Line2D movementLine =
-                            Champion.getAbilityLine(
-                                    this.location, charmer.getLocation(), dist - minVictimDist);
-                    this.moveWithCollision(movementLine.getP2());
-                }
+            if (this.getState(ActorState.CHARMED) && charmer != null) {
+                moveTowardsCharmer(charmer);
             }
         }
     }

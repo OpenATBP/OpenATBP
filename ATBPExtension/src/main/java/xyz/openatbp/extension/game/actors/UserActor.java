@@ -60,7 +60,6 @@ public class UserActor extends Actor {
     private Point2D queuedDest = null;
     protected boolean pickedUpHealthPack = false;
     protected long healthPackPickUpTime = 0;
-    protected UserActor charmer = null;
     protected boolean hasKeeothBuff = false;
     protected boolean hasGooBuff = false;
     protected long keeothBuffStartTime = 0;
@@ -974,21 +973,15 @@ public class UserActor extends Actor {
             }
         }
         if (this.changeTowerAggro && !isInTowerRadius(this, false)) this.changeTowerAggro = false;
-        if (this.getState(ActorState.CHARMED) && this.charmer != null) {
-            int minVictimDist = 1;
-            float dist = (float) this.location.distance(charmer.getLocation());
-            if (canMove() && charmer.getHealth() > 0 && dist > minVictimDist) {
-                Line2D movementLine =
-                        Champion.getAbilityLine(
-                                this.location, charmer.getLocation(), dist - minVictimDist);
-                this.moveWithCollision(movementLine.getP2());
-            }
-        }
+
         if (this.hasKeeothBuff && System.currentTimeMillis() - this.keeothBuffStartTime >= 90000) {
             disableKeeothBuff();
         }
         if (this.hasGooBuff && System.currentTimeMillis() - this.gooBuffStartTime >= 90000) {
             disableGooBuff();
+        }
+        if (this.getState(ActorState.CHARMED) && this.charmer != null) {
+            moveTowardsCharmer(charmer);
         }
     }
 

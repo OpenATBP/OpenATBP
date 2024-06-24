@@ -136,7 +136,10 @@ public class Monster extends Actor {
     @Override
     public void handleCharm(UserActor charmer, int duration) {
         this.addState(ActorState.CHARMED, 0d, duration);
-        if (charmer != null) this.target = charmer;
+        if (charmer != null) {
+            this.target = charmer;
+            this.charmer = charmer;
+        }
     }
 
     public boolean isProperActor(Actor a) {
@@ -170,8 +173,8 @@ public class Monster extends Actor {
     public void handleKill(Actor a, JsonNode attackData) {}
 
     @Override
-    public void knockback(Point2D source) {
-        super.knockback(source);
+    public void knockback(Point2D source, float distance) {
+        super.knockback(source, distance);
         this.attackRangeOverride = true;
     }
 
@@ -309,6 +312,10 @@ public class Monster extends Actor {
         if (this.headingBack && this.location.distance(startingLocation) <= 1f) {
             this.headingBack = false;
         }
+        if (this.getState(ActorState.CHARMED) && this.charmer != null) {
+            moveTowardsCharmer(charmer);
+        }
+
         if (msRan % 1000 * 60
                 == 0) { // Every second it checks average player level and scales accordingly
             int averagePLevel =
@@ -363,6 +370,19 @@ public class Monster extends Actor {
             }
         }
         if (this.attackCooldown > 0) this.reduceAttackCooldown();
+    }
+
+    @Override
+    public boolean canMove() {
+        for (ActorState s : this.states.keySet()) {
+            if (s == ActorState.ROOTED
+                    || s == ActorState.STUNNED
+                    || s == ActorState.FEARED
+                    || s == ActorState.AIRBORNE) {
+                if (this.states.get(s)) return false;
+            }
+        }
+        return this.canMove;
     }
 
     @Override

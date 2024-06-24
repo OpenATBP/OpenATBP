@@ -17,6 +17,8 @@ import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public abstract class Actor {
+    protected static final float KNOCKBACK_SPEED = 11;
+
     public enum AttackType {
         PHYSICAL,
         SPELL
@@ -49,6 +51,7 @@ public abstract class Actor {
     protected boolean towerAggroCompanion = false;
     protected Map<String, EffectHandler> effectHandlers = new HashMap<>();
     protected Map<String, FxHandler> fxHandlers = new HashMap<>();
+    protected UserActor charmer;
 
     public double getPHealth() {
         return currentHealth / maxHealth;
@@ -289,6 +292,17 @@ public abstract class Actor {
             this.timeTraveled = 0f;
             if (this.canMove()) this.moveWithCollision(this.movementLine.getP2());
             this.addState(ActorState.CHARMED, 0d, duration);
+        }
+    }
+
+    public void moveTowardsCharmer(UserActor charmer) {
+        int minVictimDist = 1;
+        float dist = (float) this.location.distance(charmer.getLocation());
+        if (canMove() && charmer.getHealth() > 0 && dist > minVictimDist) {
+            Line2D movementLine =
+                    Champion.getAbilityLine(
+                            this.location, charmer.getLocation(), dist - minVictimDist);
+            this.moveWithCollision(movementLine.getP2());
         }
     }
 
@@ -601,10 +615,10 @@ public abstract class Actor {
         return this.attackCooldown == 0;
     }
 
-    public void knockback(Point2D source) {
+    public void knockback(Point2D source, float distance) {
         this.stopMoving();
         Line2D originalLine = new Line2D.Double(source, this.location);
-        Line2D knockBackLine = Champion.extendLine(originalLine, 5f);
+        Line2D knockBackLine = Champion.extendLine(originalLine, distance);
         Point2D finalPoint =
                 MovementManager.getPathIntersectionPoint(
                         this.parentExt,
@@ -613,14 +627,13 @@ public abstract class Actor {
         if (finalPoint == null) finalPoint = knockBackLine.getP2();
         Line2D finalLine = new Line2D.Double(this.location, finalPoint);
         this.addState(ActorState.AIRBORNE, 0d, 250);
-        double speed = this.location.distance(finalLine.getP2()) / 0.275f;
         ExtensionCommands.knockBackActor(
                 this.parentExt,
                 this.room,
                 this.id,
                 this.location,
                 finalLine.getP2(),
-                (float) speed,
+                KNOCKBACK_SPEED,
                 false);
         this.setLocation(finalLine.getP2());
     }
