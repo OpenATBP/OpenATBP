@@ -256,7 +256,7 @@ public class BubbleGum extends UserActor {
             JsonNode spellData = parentExt.getAttackData("peebles", "spell3");
             for (Actor a : actors) {
                 if (a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER) {
-                    a.knockback(this.bombLocation);
+                    a.knockback(this.bombLocation, 5f);
                     if (a.equals(this)) {
                         ExtensionCommands.actorAnimate(
                                 parentExt, room, this.id, "spell3b", 325, false);

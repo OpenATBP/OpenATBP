@@ -346,7 +346,7 @@ public class Jake extends UserActor {
                     RoomHandler handler = parentExt.getRoomHandler(room.getName());
                     for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
                         if (this.isNonStructure(a)) {
-                            a.knockback(this.location);
+                            a.knockback(this.location, 5f);
                             a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                         }
                     }
