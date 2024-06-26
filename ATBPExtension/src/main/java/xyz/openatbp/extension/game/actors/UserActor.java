@@ -65,6 +65,7 @@ public class UserActor extends Actor {
     protected long keeothBuffStartTime = 0;
     protected long gooBuffStartTime = 0;
     protected List<UserActor> killedPlayers = new ArrayList<>();
+    protected long lastAutoTargetTime = 0;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -588,29 +589,24 @@ public class UserActor extends Actor {
             double critChance = this.getPlayerStat("criticalChance") / 100d;
             double random = Math.random();
             boolean crit = random < critChance;
-            if (crit
-                    && (this.avatar.equalsIgnoreCase("princessbubblegum_skin_hoth")
-                            || this.avatar.equalsIgnoreCase("princessbubblegum_skin_warrior"))) {
-                ExtensionCommands.attackActor(
-                        parentExt,
-                        room,
-                        this.id,
-                        a.getId(),
-                        (float) a.getLocation().getX(),
-                        (float) a.getLocation().getY(),
-                        false,
-                        true);
-            } else {
-                ExtensionCommands.attackActor(
-                        parentExt,
-                        room,
-                        this.id,
-                        a.getId(),
-                        (float) a.getLocation().getX(),
-                        (float) a.getLocation().getY(),
-                        crit,
-                        true);
+            String[] skinsWithNoCritAnimation = {
+                "princessbubblegum_skin_hoth", "princessbubblegum_skin_warrior"
+            };
+            for (String skin : skinsWithNoCritAnimation) {
+                if (this.avatar.equals(skin)) {
+                    crit = false;
+                    break;
+                }
             }
+            ExtensionCommands.attackActor(
+                    parentExt,
+                    room,
+                    this.id,
+                    a.getId(),
+                    (float) a.getLocation().getX(),
+                    (float) a.getLocation().getY(),
+                    crit,
+                    true);
             this.attackCooldown = this.getPlayerStat("attackSpeed");
             if (this.attackCooldown < BASIC_ATTACK_DELAY) this.attackCooldown = BASIC_ATTACK_DELAY;
             return crit;
@@ -914,7 +910,9 @@ public class UserActor extends Actor {
                 if (this.target.getHealth() <= 0) {
                     this.target = null;
                 }
-            } else if (this.autoAttackEnabled && idleTime > 2000) {
+            } else if (this.autoAttackEnabled
+                    && System.currentTimeMillis() - lastAutoTargetTime > 2000
+                    && idleTime > 500) {
                 Actor closestTarget = null;
                 double closestDistance = 1000;
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
@@ -928,6 +926,7 @@ public class UserActor extends Actor {
                 }
                 this.idleTime = 0;
                 this.target = closestTarget;
+                this.lastAutoTargetTime = System.currentTimeMillis();
             }
         }
         if (msRan % 1000 == 0) {

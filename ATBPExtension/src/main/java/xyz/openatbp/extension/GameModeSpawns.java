@@ -136,7 +136,7 @@ public class GameModeSpawns {
         return towerLocation;
     }
 
-    public static void spawnGuardians(ATBPExtension parentExt, Room room, int team) {
+    public static void spawnGuardianForMode(ATBPExtension parentExt, Room room, int team) {
         String roomGroup = room.getGroupId();
         float x;
         float z;
@@ -157,7 +157,7 @@ public class GameModeSpawns {
                 "gumball_guardian" + team,
                 "gumball_guardian",
                 "GumballGuardian_" + team + "_" + room,
-                4100,
+                4500,
                 x,
                 z,
                 false,
@@ -165,10 +165,17 @@ public class GameModeSpawns {
                 rotation);
 
         float outsideMapX = x;
-        if (team == 0) outsideMapX -= 50;
-        else outsideMapX += 50;
+        float moveX = x;
+        if (team == 0) {
+            outsideMapX -= 50;
+            moveX -= 40;
+        } else {
+            outsideMapX += 50;
+            moveX += 40;
+        }
 
         Point2D outsideMapPos = new Point2D.Float(outsideMapX, z);
+        Point2D movePos = new Point2D.Float(moveX, z);
         Point2D properPos = new Point2D.Float(x, z);
 
         ISFSObject guardian = new SFSObject();
@@ -183,15 +190,22 @@ public class GameModeSpawns {
         guardian.putInt("team", team);
 
         Runnable create = () -> ExtensionCommands.createActor(parentExt, room, guardian);
-
         Runnable move =
-                () -> {
-                    ExtensionCommands.moveActor(
-                            parentExt, room, "gumball" + team, outsideMapPos, properPos, 100, true);
-                    ExtensionCommands.snapActor(
-                            parentExt, room, "gumball" + team, outsideMapPos, properPos, true);
-                };
+                () ->
+                        ExtensionCommands.moveActor(
+                                parentExt,
+                                room,
+                                "gumball" + team,
+                                outsideMapPos,
+                                movePos,
+                                100,
+                                true);
+        Runnable snap =
+                () ->
+                        ExtensionCommands.snapActor(
+                                parentExt, room, "gumball" + team, outsideMapPos, properPos, true);
         parentExt.getTaskScheduler().schedule(create, 1000, TimeUnit.MILLISECONDS);
-        parentExt.getTaskScheduler().schedule(move, 4000, TimeUnit.MILLISECONDS);
+        parentExt.getTaskScheduler().schedule(move, 2000, TimeUnit.MILLISECONDS);
+        parentExt.getTaskScheduler().schedule(snap, 4000, TimeUnit.MILLISECONDS);
     }
 }

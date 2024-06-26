@@ -11,10 +11,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import com.smartfoxserver.v2.entities.User;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ChampionData;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.Champion;
@@ -132,7 +129,7 @@ public class Hunson extends UserActor {
                 && a.getHealth() - this.getPlayerStat("attackDamage") > -5
                 && !this.passiveActivated) {
             this.passiveActivated = true;
-            this.attackCooldown = 0;
+            this.attackCooldown = 500;
             ExtensionCommands.playSound(
                     this.parentExt,
                     this.room,

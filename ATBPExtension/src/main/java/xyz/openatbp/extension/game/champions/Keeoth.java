@@ -83,25 +83,13 @@ public class Keeoth extends Monster {
                     parentExt,
                     room,
                     id,
-                    "fx_target_ring_2",
-                    id + "_ring",
-                    1250,
+                    "lemongrab_ground_aoe_target",
+                    id + "specialCurcle",
+                    2500,
                     (float) playerLoc.getX(),
                     (float) playerLoc.getY(),
                     true,
-                    team,
-                    0f);
-            ExtensionCommands.createWorldFX(
-                    parentExt,
-                    room,
-                    id + "2",
-                    "fx_target_ring_1",
-                    id + "_ring2",
-                    1250,
-                    (float) playerLoc.getX(),
-                    (float) playerLoc.getY(),
-                    true,
-                    team,
+                    2,
                     0f);
             ExtensionCommands.actorAnimate(parentExt, room, id, "spell", 1250, false);
             Runnable keeothSpecial =

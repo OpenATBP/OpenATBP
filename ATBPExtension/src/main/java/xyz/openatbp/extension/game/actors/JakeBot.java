@@ -27,13 +27,13 @@ public class JakeBot extends Actor {
     public JakeBot(ATBPExtension parentExt, Room room, Point2D spawnPoint, int num) {
         this.parentExt = parentExt;
         this.room = room;
+        this.team = 1;
         this.id = "jake_bot" + team + num;
         this.dead = false;
         this.location = spawnPoint;
         this.avatar = "jake";
         this.currentHealth = 750;
         this.maxHealth = 750;
-        this.team = 1;
         this.actorType = ActorType.COMPANION;
         this.spawnPoint = spawnPoint;
         this.stats = this.initializeStats();
@@ -54,32 +54,30 @@ public class JakeBot extends Actor {
 
     @Override
     public void attack(Actor a) {
-        if (this.attackCooldown == 0) {
-            this.applyStopMovingDuringAttack();
-            ExtensionCommands.attackActor(
-                    parentExt,
-                    room,
-                    this.id,
-                    a.getId(),
-                    (float) a.getLocation().getX(),
-                    (float) a.getLocation().getY(),
-                    false,
-                    true);
-            this.attackCooldown = this.getPlayerStat("attackSpeed");
-            if (this.attackCooldown < BASIC_ATTACK_DELAY) this.attackCooldown = BASIC_ATTACK_DELAY;
-            double damage = this.getPlayerStat("attackDamage");
-            Champion.DelayedAttack delayedAttack =
-                    new Champion.DelayedAttack(parentExt, this, a, (int) damage, "basicAttack");
-            try {
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(delayedAttack, BASIC_ATTACK_DELAY, TimeUnit.MILLISECONDS);
-            } catch (NullPointerException e) {
-                // e.printStackTrace();
-                parentExt
-                        .getTaskScheduler()
-                        .schedule(delayedAttack, BASIC_ATTACK_DELAY, TimeUnit.MILLISECONDS);
-            }
+        this.applyStopMovingDuringAttack();
+        ExtensionCommands.attackActor(
+                parentExt,
+                room,
+                this.id,
+                a.getId(),
+                (float) a.getLocation().getX(),
+                (float) a.getLocation().getY(),
+                false,
+                true);
+        this.attackCooldown = this.getPlayerStat("attackSpeed");
+        if (this.attackCooldown < BASIC_ATTACK_DELAY) this.attackCooldown = BASIC_ATTACK_DELAY;
+        double damage = this.getPlayerStat("attackDamage");
+        Champion.DelayedAttack delayedAttack =
+                new Champion.DelayedAttack(parentExt, this, a, (int) damage, "basicAttack");
+        try {
+            parentExt
+                    .getTaskScheduler()
+                    .schedule(delayedAttack, BASIC_ATTACK_DELAY, TimeUnit.MILLISECONDS);
+        } catch (NullPointerException e) {
+            // e.printStackTrace();
+            parentExt
+                    .getTaskScheduler()
+                    .schedule(delayedAttack, BASIC_ATTACK_DELAY, TimeUnit.MILLISECONDS);
         }
         this.attackCooldown = getPlayerStat("attackSpeed");
     }

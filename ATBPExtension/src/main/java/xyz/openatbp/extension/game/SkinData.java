@@ -50,12 +50,14 @@ public class SkinData {
         return BMOEProjectileFX.getOrDefault(avatar, "projectile_bmo_bee");
     }
 
+    private static final Map<String, String> BubbleGumBasicAttackEmit = new HashMap<>();
     private static final Map<String, String> BubbleGumQVO = new HashMap<>();
     private static final Map<String, String> BubbleGumWVO = new HashMap<>();
     private static final Map<String, String> BubbleGumEVO = new HashMap<>();
     private static final Map<String, String> BubbleGumEGruntVO = new HashMap<>();
 
     static {
+        BubbleGumBasicAttackEmit.put("princessbubblegum_skin_hoth", "Tube");
         BubbleGumQVO.put("princessbubblegum_skin_prince", "vo/vo_gumball_potion");
         BubbleGumQVO.put("princessbubblegum_skin_young", "vo/vo_bubblegum_young_potion");
         BubbleGumWVO.put("princessbubblegum_skin_prince", "vo/vo_gumball_turret");
@@ -64,6 +66,10 @@ public class SkinData {
         BubbleGumEVO.put("princessbubblegum_skin_young", "vo/vo_bubblegum_young_bomb_hup");
         BubbleGumEGruntVO.put("princessbubblegum_skin_prince", "vo/vo_gumball_turret");
         BubbleGumEGruntVO.put("princessbubblegum_skin_young", "vo/vo_bubblegum_young_bomb_grunt");
+    }
+
+    public static String getBubbleGumBasicAttackEmit(String avatar) {
+        return BubbleGumBasicAttackEmit.getOrDefault(avatar, "weapon_holder");
     }
 
     public static String getBubbleGumQVO(String avatar) {

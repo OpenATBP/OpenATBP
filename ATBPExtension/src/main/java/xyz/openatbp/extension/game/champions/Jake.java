@@ -1,6 +1,5 @@
 package xyz.openatbp.extension.game.champions;
 
-import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.HashMap;
@@ -17,36 +16,29 @@ import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
-import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public class Jake extends UserActor {
     private static final int PASSIVE_PER_TARGET_CD = 8000;
     private static final double PASSIVE_ATTACKDAMAGE_VALUE = 0.4d;
     private static final double PASSIVE_SLOW_VALUE = 0.5d;
     private static final int PASSIVE_SLOW_DURATION = 1500;
-    private static final int Q_PROJECTILE_DELAY = 300;
-    private static final int Q_CAST_DELAY = 1300;
-    private static final int Q_SELFCRIPPLE_TIME = 1600;
+    private static final int Q_RESTRAINT_TIME = 1600;
     private static final int Q_STUN_DURATION = 2000;
+    private static final int Q_UNLOCK_SKILLS_DELAY = 500;
     private static final double E_SPEED_VALUE = 0.8;
     private static final int E_DURATION = 5000;
     private static final int E_STOMP_CD = 500;
-    public static final int Q_CHANGE_ANIMATION_DELAY = 700;
+    private boolean grabActive = false;
+    private Point2D grabPoint;
+    private float grabStatus = 0;
+    private Point2D qDestination;
+    private boolean blockAbilities = false;
+    private float offsetDistance = 1;
     private boolean ultActivated = false;
     private long lastStomped = 0;
     private boolean stompSoundChange = false;
-    private boolean dashActive = false;
     private Map<String, Long> lastPassiveTime = new HashMap<>();
-    private boolean qUsed = false;
-    private int qAnimationTime;
-    private Actor qVictim;
-    private Path2D qPolygon;
-    private boolean doGrab = false;
     private long ultStartTime = 0;
-    private boolean doQEndAnimation = false;
-    private static final float Q_FIRST_HALF_OFFSET = 0.75f;
-    private static final float Q_SECOND_HALF_OFFSET = 1.75f;
-    private static final float Q_SPELL_RANGE = 9;
 
     public Jake(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -55,13 +47,95 @@ public class Jake extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if (this.doQEndAnimation) {
-            ExtensionCommands.actorAnimate(parentExt, room, id, "spell1c", 500, false);
-            Runnable changeAnimation =
-                    () -> ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 1, false);
-            scheduleTask(changeAnimation, Q_CHANGE_ANIMATION_DELAY);
-            this.doQEndAnimation = false;
+        if (grabActive && hasInterrupingCC()) {
+            blockAbilities = false;
+            resetGrab();
+            if (!hasMovementCC()) canMove = true;
+            ExtensionCommands.playSound(
+                    this.parentExt, this.room, this.id, "sfx_skill_interrupted", this.location);
+            ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 10, false);
         }
+        if (grabActive) {
+            if (grabStatus == 5) offsetDistance = 1.75f;
+            Path2D rectangle = Champion.createRectangle(grabPoint, qDestination, 1, offsetDistance);
+            List<Actor> victims =
+                    parentExt.getRoomHandler(room.getName()).getEnemiesInPolygon(team, rectangle);
+
+            if (!victims.isEmpty()) {
+                resetGrab();
+                Actor victim = victims.get(0);
+                JsonNode spellData = parentExt.getAttackData(getChampionName(avatar), "spell2");
+
+                Point2D origLocation = this.location;
+
+                float distance = (float) origLocation.distance(victim.getLocation());
+                float modifier = ((130 / 9f) * distance) / 100;
+                double damage = 35 + Math.round(modifier * getPlayerStat("spellDamage"));
+
+                victim.addToDamageQueue(this, damage, spellData, false);
+                if (isNonStructure(victim))
+                    victim.addState(ActorState.STUNNED, 0d, Q_STUN_DURATION);
+                if (distance > 5) {
+                    ExtensionCommands.playSound(
+                            parentExt,
+                            room,
+                            victim.getId(),
+                            "sfx_oildrum_dead",
+                            victim.getLocation());
+
+                    ExtensionCommands.createActorFX(
+                            parentExt,
+                            room,
+                            victim.getId(),
+                            "jake_stomp_fx",
+                            500,
+                            this.id + "_jake_q_fx",
+                            false,
+                            "",
+                            false,
+                            false,
+                            team);
+                }
+                Point2D initialDashLocation =
+                        Champion.getAbilityLine(origLocation, victim.getLocation(), distance - 1)
+                                .getP2();
+
+                Point2D dashPoint = this.dash(initialDashLocation, true, 13);
+                double time = origLocation.distance(dashPoint) / 13;
+                int dashTimeMs = (int) (time * 1000);
+
+                ExtensionCommands.createActorFX(
+                        parentExt,
+                        room,
+                        id,
+                        "jake_trail",
+                        dashTimeMs,
+                        id + "qTrail",
+                        true,
+                        "",
+                        false,
+                        false,
+                        team);
+
+                ExtensionCommands.actorAnimate(parentExt, room, id, "spell1b", dashTimeMs, true);
+
+                Runnable nextAnimation =
+                        () -> {
+                            unlockAbilitiesAfterDelay();
+                            ExtensionCommands.actorAnimate(
+                                    parentExt, room, id, "spell1c", 500, false);
+                        };
+                scheduleTask(nextAnimation, dashTimeMs);
+            } else if (grabStatus < 8) {
+                grabPoint = Champion.getAbilityLine(grabPoint, qDestination, 1).getP2();
+                grabStatus++;
+            } else {
+                resetGrab();
+                unlockAbilitiesAfterDelay();
+                ExtensionCommands.actorAnimate(parentExt, room, id, "spell1c", 500, false);
+            }
+        }
+
         if (this.ultActivated && System.currentTimeMillis() - this.ultStartTime >= E_DURATION) {
             ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
             ExtensionCommands.removeFx(parentExt, room, id + "_stomp");
@@ -105,85 +179,12 @@ public class Jake extends UserActor {
                 }
             }
         }
-        if (qUsed && !doGrab && hasInterrupingCC()) {
-            this.qAnimationTime = 0;
-            this.dashActive = false;
-            this.qPolygon = null;
-            this.qUsed = false;
-            ExtensionCommands.playSound(parentExt, room, id, "sfx_skill_interrupted", location);
-            ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "idle", 500, false);
-        }
-        if (this.doGrab
-                && this.qVictim != null
-                && this.qPolygon != null
-                && this.qPolygon.contains(this.qVictim.getLocation())) {
-            JsonNode spellData = this.parentExt.getAttackData("jake", "spell1");
-            this.dashActive = true;
-            this.resetTarget();
-            double distance = this.location.distance(this.qVictim.getLocation());
-            double newTime = (distance / 15d) * 1000d;
-            Runnable animationDelay =
-                    () ->
-                            ExtensionCommands.actorAnimate(
-                                    this.parentExt, this.room, this.id, "spell1c", 250, false);
-            Runnable canCast =
-                    () -> {
-                        this.dashActive = false;
-                        this.qUsed = false;
-                        this.canCast[1] = true;
-                        this.canCast[2] = true;
-                    };
-            scheduleTask(animationDelay, (int) newTime);
-            scheduleTask(canCast, (int) newTime + 500);
-            if (this.getHealth() > 0) {
-                ExtensionCommands.actorAnimate(
-                        this.parentExt, this.room, this.id, "spell1b", (int) newTime, true);
-                Point2D dashPoint =
-                        MovementManager.getDashPoint(
-                                this, new Line2D.Float(this.location, this.qVictim.getLocation()));
-                if (dashPoint != null) this.dash(dashPoint, 15);
-                ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "jake_trail",
-                        (int) newTime,
-                        this.id,
-                        true,
-                        "",
-                        true,
-                        false,
-                        this.team);
-                double percentage = distance / 7d;
-                if (percentage < 0.5d) percentage = 0.5d;
-                System.out.println("percentage " + percentage);
-                double spellModifer = this.getPlayerStat("spellDamage") * percentage;
-                if (isNonStructure(this.qVictim))
-                    this.qVictim.addState(ActorState.STUNNED, 0d, Q_STUN_DURATION);
-                this.qVictim.addToDamageQueue(this, 35 + spellModifer, spellData, false);
-                if (distance >= 5.5d) {
-                    ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "sfx_oildrum_dead",
-                            this.qVictim.getLocation());
-                    ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.qVictim.getId(),
-                            "jake_stomp_fx",
-                            500,
-                            this.id + "_jake_q_fx",
-                            false,
-                            "",
-                            false,
-                            false,
-                            this.team);
-                }
-            }
-            this.doGrab = false;
-        }
+    }
+
+    @Override
+    public boolean canUseAbility(int ability) {
+        if (blockAbilities) return false;
+        return super.canUseAbility(ability);
     }
 
     @Override
@@ -196,13 +197,8 @@ public class Jake extends UserActor {
 
     @Override
     public boolean canAttack() {
-        if (this.ultActivated || this.qUsed) return false;
+        if (this.ultActivated) return false;
         return super.canAttack();
-    }
-
-    public boolean canMove() {
-        if (dashActive) return false;
-        else return super.canMove();
     }
 
     @Override
@@ -215,6 +211,7 @@ public class Jake extends UserActor {
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_jake_ring_2");
             updateStatMenu("speed");
         }
+        if (grabActive) resetGrab();
     }
 
     @Override
@@ -254,42 +251,21 @@ public class Jake extends UserActor {
             Point2D dest) {
         switch (ability) {
             case 1:
-                this.canCast[0] = false;
-                this.canCast[1] = false;
-                this.canCast[2] = false;
-                try {
-                    this.stopMoving(Q_SELFCRIPPLE_TIME);
-                    this.qUsed = true;
-                    this.qAnimationTime = 1300;
-                    Line2D qLine = Champion.getAbilityLine(this.location, dest, Q_SPELL_RANGE);
-                    this.qPolygon = createOctagon(this.location, dest);
-                    Runnable projectileDelay =
-                            () -> {
-                                if (this.getHealth() > 0) {
-                                    fireQProjectile(
-                                            new JakeQProjectile(
-                                                    this.parentExt,
-                                                    this,
-                                                    qLine,
-                                                    8.5f,
-                                                    1f,
-                                                    "stretchy_grab"),
-                                            this.location,
-                                            dest);
-                                }
-                            };
-
-                    scheduleTask(projectileDelay, Q_PROJECTILE_DELAY);
-                    String stretchSFX = SkinData.getJakeQSFX(avatar);
-                    String stretchVO = SkinData.getJakeQVO(avatar);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, stretchSFX, this.location);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, stretchVO, this.location);
-                } catch (Exception exception) {
-                    logExceptionMessage(avatar, ability);
-                    exception.printStackTrace();
-                }
+                stopMoving(Q_RESTRAINT_TIME);
+                blockAbilities = true;
+                Runnable activateHitbox =
+                        () -> {
+                            grabPoint = this.location;
+                            qDestination = Champion.getAbilityLine(location, dest, 9).getP2();
+                            grabActive = true;
+                        };
+                scheduleTask(activateHitbox, 500);
+                String stretchSFX = SkinData.getJakeQSFX(avatar);
+                String stretchVO = SkinData.getJakeQVO(avatar);
+                ExtensionCommands.playSound(
+                        this.parentExt, this.room, this.id, stretchSFX, this.location);
+                ExtensionCommands.playSound(
+                        this.parentExt, this.room, this.id, stretchVO, this.location);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -299,7 +275,7 @@ public class Jake extends UserActor {
                         gCooldown);
                 scheduleTask(
                         abilityHandler(ability, spellData, cooldown, gCooldown, dest),
-                        qAnimationTime);
+                        getReducedCooldown(cooldown));
                 break;
             case 2:
                 this.canCast[1] = false;
@@ -431,89 +407,15 @@ public class Jake extends UserActor {
         }
     }
 
-    private Path2D createOctagon(Point2D location, Point2D destination) {
-        Line2D abilityLine = Champion.getAbilityLine(location, destination, Q_SPELL_RANGE);
-        Line2D firstHalf = Champion.getAbilityLine(location, destination, 5f);
-        double angle =
-                Math.atan2(
-                        abilityLine.getY2() - abilityLine.getY1(),
-                        abilityLine.getX2() - abilityLine.getX1());
-        int PERPENDICULAR_ANGLE = 90;
-        Point2D bottomFirstHalf1 =
-                Champion.calculatePolygonPoint(
-                        abilityLine.getP1(),
-                        Q_FIRST_HALF_OFFSET,
-                        angle + Math.toRadians(PERPENDICULAR_ANGLE));
-        Point2D bottomFirstHalf2 =
-                Champion.calculatePolygonPoint(
-                        abilityLine.getP1(),
-                        Q_FIRST_HALF_OFFSET,
-                        angle - Math.toRadians(PERPENDICULAR_ANGLE));
-        Point2D topFirstHalf1 =
-                Champion.calculatePolygonPoint(
-                        firstHalf.getP2(),
-                        Q_FIRST_HALF_OFFSET,
-                        angle + Math.toRadians(PERPENDICULAR_ANGLE));
-        Point2D topFirstHalf2 =
-                Champion.calculatePolygonPoint(
-                        firstHalf.getP2(),
-                        Q_FIRST_HALF_OFFSET,
-                        angle - Math.toRadians(PERPENDICULAR_ANGLE));
-        Point2D bottomSecondHalf1 =
-                Champion.calculatePolygonPoint(
-                        firstHalf.getP2(),
-                        Q_SECOND_HALF_OFFSET,
-                        angle + Math.toRadians(PERPENDICULAR_ANGLE));
-        Point2D bottomSecondHalf2 =
-                Champion.calculatePolygonPoint(
-                        firstHalf.getP2(),
-                        Q_SECOND_HALF_OFFSET,
-                        angle - Math.toRadians(PERPENDICULAR_ANGLE));
-        Point2D topSecondHalf1 =
-                Champion.calculatePolygonPoint(
-                        abilityLine.getP2(),
-                        Q_SECOND_HALF_OFFSET,
-                        angle + Math.toRadians(PERPENDICULAR_ANGLE));
-        Point2D topSecondHalf2 =
-                Champion.calculatePolygonPoint(
-                        abilityLine.getP2(),
-                        Q_SECOND_HALF_OFFSET,
-                        angle - Math.toRadians(PERPENDICULAR_ANGLE));
-
-        Path2D octagon = new Path2D.Float();
-        octagon.moveTo(bottomFirstHalf1.getX(), bottomFirstHalf1.getY());
-        octagon.lineTo(topFirstHalf1.getX(), topFirstHalf1.getY());
-        octagon.lineTo(bottomSecondHalf1.getX(), bottomSecondHalf1.getY());
-        octagon.lineTo(topSecondHalf1.getX(), topSecondHalf1.getY());
-        octagon.lineTo(topSecondHalf2.getX(), topSecondHalf2.getY());
-        octagon.lineTo(bottomSecondHalf2.getX(), bottomSecondHalf2.getY());
-        octagon.lineTo(topFirstHalf2.getX(), topFirstHalf2.getY());
-        octagon.lineTo(bottomFirstHalf2.getX(), bottomFirstHalf2.getY());
-        return octagon;
+    private void unlockAbilitiesAfterDelay() {
+        Runnable unlock = () -> blockAbilities = false;
+        scheduleTask(unlock, Q_UNLOCK_SKILLS_DELAY);
     }
 
-    private void fireQProjectile(Projectile projectile, Point2D location, Point2D dest) {
-        double x = location.getX();
-        double y = location.getY();
-        double dx = dest.getX() - location.getX();
-        double dy = dest.getY() - location.getY();
-        double length = Math.sqrt(dx * dx + dy * dy);
-        double unitX = dx / length;
-        double unitY = dy / length;
-        double extendedX = x + Jake.Q_SPELL_RANGE * unitX;
-        double extendedY = y + Jake.Q_SPELL_RANGE * unitY;
-        Point2D lineEndPoint = new Point2D.Double(extendedX, extendedY);
-        double speed = 8.5;
-        ExtensionCommands.createProjectile(
-                parentExt,
-                this.room,
-                this,
-                projectile.getId(),
-                projectile.getProjectileAsset(),
-                location,
-                lineEndPoint,
-                (float) speed);
-        this.parentExt.getRoomHandler(this.room.getName()).addProjectile(projectile);
+    private void resetGrab() {
+        grabActive = false;
+        grabStatus = 0;
+        offsetDistance = 1;
     }
 
     private void doPassive() {
@@ -544,17 +446,7 @@ public class Jake extends UserActor {
 
         @Override
         protected void spellQ() {
-            Runnable enableQCasting = () -> canCast[0] = true;
-            int delay = getReducedCooldown(cooldown) - Q_CAST_DELAY;
-            scheduleTask(enableQCasting, delay);
-            Runnable enableCastingAbilities =
-                    () -> {
-                        if (!dashActive) {
-                            canCast[1] = true;
-                            canCast[2] = true;
-                        }
-                    };
-            scheduleTask(enableCastingAbilities, 500);
+            canCast[0] = true;
         }
 
         @Override
@@ -569,77 +461,5 @@ public class Jake extends UserActor {
 
         @Override
         protected void spellPassive() {}
-    }
-
-    private class JakeQProjectile extends Projectile {
-        private Actor victim = null;
-
-        public JakeQProjectile(
-                ATBPExtension parentExt,
-                UserActor owner,
-                Line2D path,
-                float speed,
-                float hitboxRadius,
-                String id) {
-            super(parentExt, owner, path, speed, hitboxRadius, id);
-        }
-
-        @Override
-        public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            List<Actor> eligibleActors =
-                    roomHandler.getEligibleActors(team, true, true, false, false);
-            for (Actor a : eligibleActors) {
-                double collisionRadius =
-                        parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
-                if (a.getLocation().distance(location) <= hitbox + collisionRadius
-                        && !a.getAvatar().equalsIgnoreCase("neptr_mine")) {
-                    return a;
-                }
-            }
-            return null;
-        }
-
-        @Override
-        public void destroy() {
-            super.destroy();
-            if (Jake.this.doGrab) return;
-            if (this.victim == null && !Jake.this.hasInterrupingCC())
-                Jake.this.doQEndAnimation = true;
-            Jake.this.qAnimationTime = 0;
-            Jake.this.dashActive = false;
-            Jake.this.qPolygon = null;
-            Jake.this.qUsed = false;
-        }
-
-        @Override
-        public void update(RoomHandler roomHandler) {
-            if (destroyed) return;
-            if (!Jake.this.doGrab
-                    && (this.destination.distance(this.getLocation()) <= 0.01
-                            || System.currentTimeMillis() - this.startTime
-                                    > this.estimatedDuration)) {
-                this.destroy();
-            }
-            this.updateTimeTraveled();
-            Actor hitActor = this.checkPlayerCollision(roomHandler);
-            if (hitActor != null) {
-                this.hit(hitActor);
-                return;
-            }
-            if (this.destination.distance(this.getLocation()) <= 0.01
-                    || System.currentTimeMillis() - this.startTime > this.estimatedDuration) {
-                this.destroy();
-            }
-        }
-
-        @Override
-        protected void hit(Actor victim) {
-            if (Jake.this.qPolygon != null && Jake.this.qPolygon.contains(victim.getLocation())) {
-                this.victim = victim;
-                Jake.this.qVictim = victim;
-                Jake.this.doGrab = true;
-                this.destroy();
-            }
-        }
     }
 }

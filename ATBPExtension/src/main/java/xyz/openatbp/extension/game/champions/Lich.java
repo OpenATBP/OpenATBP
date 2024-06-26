@@ -34,7 +34,7 @@ public class Lich extends UserActor {
     private boolean qActivated = false;
     private List<Point2D> slimePath = null;
     private HashMap<String, Long> slimedEnemies = null;
-    private Point2D ultLocation;
+    private Point2D eLocation;
     private int eUses = 0;
     private boolean eActive = false;
     private long eStartTime = 0;
@@ -80,16 +80,16 @@ public class Lich extends UserActor {
             }
             if (this.slimePath.size() > 150) this.slimePath.remove(this.slimePath.size() - 1);
         }
-        if (this.eActive) {
+        if (this.eActive && this.eLocation != null) {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            List<Actor> targets = Champion.getEnemyActorsInRadius(handler, team, ultLocation, 3f);
+            List<Actor> targets = Champion.getEnemyActorsInRadius(handler, team, eLocation, 3f);
             if (!targets.isEmpty()
                     && System.currentTimeMillis() - lastETickTime >= E_TICK_COOLDOWN) {
                 lastETickTime = System.currentTimeMillis();
                 JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(), "spell3");
                 double damage = getSpellDamage(spellData);
                 String eTickSound = "sfx_lich_charm_shot_hit";
-                ExtensionCommands.playSound(parentExt, room, "", eTickSound, ultLocation);
+                ExtensionCommands.playSound(parentExt, room, "", eTickSound, eLocation);
                 for (Actor a : targets) {
                     a.addToDamageQueue(this, damage / 2, spellData, true);
                 }
@@ -97,12 +97,16 @@ public class Lich extends UserActor {
         }
         if (this.eActive && System.currentTimeMillis() - this.eStartTime >= E_DURATION) {
             this.eActive = false;
-            this.eUses = 0;
-
-            Runnable enableECasting = () -> this.canCast[2] = true;
+            this.eLocation = null;
+            Runnable handleECooldown =
+                    () -> {
+                        this.canCast[2] = true;
+                        this.eUses = 0;
+                    };
             int baseECooldown = ChampionData.getBaseAbilityCooldown(this, 3);
             int delay = getReducedCooldown(baseECooldown);
-            scheduleTask(enableECasting, delay);
+
+            scheduleTask(handleECooldown, delay);
             ExtensionCommands.actorAbilityResponse(
                     this.parentExt, this.player, "e", true, delay, E_G_COOLDOWN);
         }
@@ -240,9 +244,9 @@ public class Lich extends UserActor {
                 this.eUses++;
                 if (this.eUses == 1) {
                     stopMoving(castDelay);
-                    this.ultLocation = dest;
+                    this.eLocation = dest;
                     ExtensionCommands.playSound(
-                            parentExt, room, this.id, "sfx_lich_death_pool", ultLocation);
+                            parentExt, room, this.id, "sfx_lich_death_pool", eLocation);
                     ExtensionCommands.playSound(parentExt, room, this.id, "sfx_lich_well", dest);
                     ExtensionCommands.playSound(parentExt, room, this.id, "vo/vo_lich_well", dest);
                     ExtensionCommands.createWorldFX(
@@ -262,41 +266,40 @@ public class Lich extends UserActor {
                     scheduleTask(
                             abilityRunnable(ability, spellData, cooldown, gCooldown, dest),
                             castDelay);
-                } else {
-                    ExtensionCommands.actorAnimate(
-                            this.parentExt, this.room, this.id, "idle", 100, false);
-                    Point2D teleportLocation =
-                            MovementManager.getDashPoint(
-                                    this, new Line2D.Float(location, ultLocation));
-                    ExtensionCommands.snapActor(
-                            parentExt, room, this.id, location, teleportLocation, false);
-                    this.setLocation(teleportLocation);
-                    if (this.skully != null) {
-                        this.skully.setLocation(teleportLocation);
+                } else if (this.eUses == 2) {
+                    if (eLocation != null) {
+                        ExtensionCommands.actorAnimate(
+                                this.parentExt, this.room, this.id, "idle", 100, false);
+                        Point2D teleportLocation =
+                                MovementManager.getDashPoint(
+                                        this, new Line2D.Float(location, eLocation));
                         ExtensionCommands.snapActor(
+                                parentExt, room, this.id, location, teleportLocation, false);
+                        this.setLocation(teleportLocation);
+                        if (this.skully != null) {
+                            this.skully.setLocation(teleportLocation);
+                            ExtensionCommands.snapActor(
+                                    parentExt,
+                                    room,
+                                    this.skully.getId(),
+                                    this.skully.getLocation(),
+                                    teleportLocation,
+                                    false);
+                        }
+                        ExtensionCommands.createActorFX(
                                 parentExt,
                                 room,
-                                this.skully.getId(),
-                                this.skully.getLocation(),
-                                teleportLocation,
-                                false);
+                                this.id,
+                                "lich_teleport",
+                                1000,
+                                this.id + "_lichTeleport",
+                                true,
+                                "Bip01",
+                                true,
+                                false,
+                                team);
                     }
-                    ExtensionCommands.createActorFX(
-                            parentExt,
-                            room,
-                            this.id,
-                            "lich_teleport",
-                            1000,
-                            this.id + "_lichTeleport",
-                            true,
-                            "Bip01",
-                            true,
-                            false,
-                            team);
                 }
-
-                break;
-            case 4: // Passive
                 break;
         }
     }
@@ -385,8 +388,8 @@ public class Lich extends UserActor {
                         "lich_death_puddle",
                         id + "_lichPool",
                         E_DURATION,
-                        (float) ultLocation.getX(),
-                        (float) ultLocation.getY(),
+                        (float) eLocation.getX(),
+                        (float) eLocation.getY(),
                         false,
                         team,
                         0f);
