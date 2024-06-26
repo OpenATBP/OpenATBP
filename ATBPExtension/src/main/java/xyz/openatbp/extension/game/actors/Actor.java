@@ -626,7 +626,9 @@ public abstract class Actor {
                         knockBackLine);
         if (finalPoint == null) finalPoint = knockBackLine.getP2();
         Line2D finalLine = new Line2D.Double(this.location, finalPoint);
-        this.addState(ActorState.AIRBORNE, 0d, 250);
+        double time = this.location.distance(finalLine.getP2()) / KNOCKBACK_SPEED;
+        int durationMs = (int) (time * 1000);
+        this.addState(ActorState.AIRBORNE, 0d, durationMs);
         ExtensionCommands.knockBackActor(
                 this.parentExt,
                 this.room,

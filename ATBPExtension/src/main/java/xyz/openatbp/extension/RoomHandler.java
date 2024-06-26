@@ -149,7 +149,9 @@ public abstract class RoomHandler implements Runnable {
                 secondsRan++;
                 if (secondsRan % 5 == 0) {
                     this.handlePassiveXP();
-                    handlePointLeadSound();
+                    if (!isAnnouncingKill) {
+                        announcePointLead();
+                    }
                 }
                 if (secondsRan == 1
                         || this.playMainMusic && secondsRan < (60 * 13) && !this.gameOver) {
@@ -786,7 +788,7 @@ public abstract class RoomHandler implements Runnable {
     private void handleAnnouncerBoolean() {
         isAnnouncingKill = true;
         Runnable resetIsAnnouncingKill = () -> isAnnouncingKill = false;
-        parentExt.getTaskScheduler().schedule(resetIsAnnouncingKill, 800, TimeUnit.MILLISECONDS);
+        parentExt.getTaskScheduler().schedule(resetIsAnnouncingKill, 100, TimeUnit.MILLISECONDS);
     }
 
     public void handleFountain() {
@@ -859,16 +861,6 @@ public abstract class RoomHandler implements Runnable {
         ExtensionCommands.updateScores(this.parentExt, this.room, newPurpleScore, newBlueScore);
         if (earner != null) {
             earner.addGameStat("score", points);
-        }
-    }
-
-    protected void handlePointLeadSound() {
-        if (isAnnouncingKill) {
-            // delay the sound to queue it up and play after the kill announcement
-            Runnable delaySound = this::announcePointLead;
-            parentExt.getTaskScheduler().schedule(delaySound, 500, TimeUnit.MILLISECONDS);
-        } else {
-            announcePointLead();
         }
     }
 

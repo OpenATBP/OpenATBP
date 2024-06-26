@@ -51,7 +51,7 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
             User sender,
             ISFSObject params,
             int spellNum) {
-        player.resetIdleTime();
+        // player.resetIdleTime();
         String userId = String.valueOf(sender.getId());
         String ability = params.getUtfString("id");
         float x = params.getFloat("x");

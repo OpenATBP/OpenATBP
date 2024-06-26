@@ -33,6 +33,7 @@ public class BMO extends UserActor {
     private long wStartTime = 0;
     private long lastWSound = 0;
     private boolean ultSlowActive = false;
+    private boolean passiveFxRemoved = false;
 
     public BMO(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -82,6 +83,34 @@ public class BMO extends UserActor {
         if (wActive && this.hasInterrupingCC()) {
             interrputW();
             this.wActive = false;
+        }
+    }
+
+    @Override
+    public void respawn() {
+        super.respawn();
+        if (passiveFxRemoved && passiveStacks == 3) {
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    id,
+                    SkinData.getBMOPassiveFX(avatar),
+                    1000 * 60 * 15,
+                    id + "_bmo_p_fx",
+                    true,
+                    "",
+                    false,
+                    false,
+                    team);
+        }
+    }
+
+    @Override
+    public void die(Actor a) {
+        super.die(a);
+        if (passiveStacks == 3) {
+            ExtensionCommands.removeFx(parentExt, room, id + "_bmo_p_fx");
+            passiveFxRemoved = true;
         }
     }
 

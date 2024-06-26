@@ -24,7 +24,7 @@ public class FlamePrincess extends UserActor {
     private static final int E_DURATION = 5000;
     private boolean passiveEnabled = false;
     private long lastPassiveUsage = 0;
-    private int ultUses = 3;
+    private int ultUses = 0;
     private int dashTime = 0;
     private boolean wUsed = false;
     private long ultStartTime = 0;
@@ -46,7 +46,7 @@ public class FlamePrincess extends UserActor {
     public void update(int msRan) {
         super.update(msRan);
         if (this.form == Form.ULT && System.currentTimeMillis() - this.ultStartTime >= E_DURATION) {
-            canCast[2] = false;
+            canCast[2] = false; // to be on the safe side :D
             endUlt();
         }
         if (this.form == Form.ULT) {
@@ -134,13 +134,11 @@ public class FlamePrincess extends UserActor {
 
     @Override
     public void attack(Actor a) {
-        if (this.attackCooldown == 0) {
-            this.applyStopMovingDuringAttack();
-            PassiveAttack passiveAttack = new PassiveAttack(a, this.handleAttack(a));
-            scheduleTask(
-                    new RangedAttack(a, passiveAttack, "flame_princess_projectile"),
-                    BASIC_ATTACK_DELAY);
-        }
+        this.applyStopMovingDuringAttack();
+        PassiveAttack passiveAttack = new PassiveAttack(a, this.handleAttack(a));
+        scheduleTask(
+                new RangedAttack(a, passiveAttack, "flame_princess_projectile"),
+                BASIC_ATTACK_DELAY);
     }
 
     @Override
@@ -165,7 +163,7 @@ public class FlamePrincess extends UserActor {
             int castDelay,
             Point2D dest) {
         super.useAbility(ability, spellData, cooldown, gCooldown, castDelay, dest);
-        if (ultUses == 3
+        if (ultUses == 0
                 && !passiveEnabled
                 && System.currentTimeMillis() - lastPassiveUsage >= PASSIVE_COOLDOWN) {
             ExtensionCommands.createActorFX(
@@ -272,7 +270,8 @@ public class FlamePrincess extends UserActor {
                 break;
             case 3:
                 this.canCast[2] = false;
-                if (this.form == Form.NORMAL) {
+                if (this.ultUses == 0) {
+                    this.ultUses++;
                     this.form = Form.ULT;
                     this.ultStartTime = System.currentTimeMillis();
                     this.stopMoving(castDelay);
@@ -295,7 +294,7 @@ public class FlamePrincess extends UserActor {
                             this.room,
                             this.id,
                             "flame_princess_ultimate_aoe",
-                            5000,
+                            5500,
                             this.id + "flameE",
                             true,
                             "",
@@ -309,21 +308,24 @@ public class FlamePrincess extends UserActor {
                     scheduleTask(
                             abilityRunnable(ability, spellData, cooldown, gCooldown, dest),
                             castDelay);
-                } else {
-                    if (this.ultUses > 0 && canDash()) {
+                } else if (this.ultUses < 5) {
+                    if (canDash()) {
+                        this.ultUses++;
                         Point2D ogLocation = this.location;
                         Point2D dashLocation = this.dash(dest, false, 15d);
                         double time = ogLocation.distance(dashLocation) / DASH_SPEED;
                         this.dashTime = (int) (time * 1000);
                         ExtensionCommands.actorAnimate(
                                 this.parentExt, this.room, this.id, "run", this.dashTime, false);
-                        this.ultUses--;
+                        if (System.currentTimeMillis() - ultStartTime > 4700) {
+                            this.ultStartTime += dashTime + 200;
+                        }
 
-                        int ultDelay = this.ultUses > 0 ? E_DASH_COOLDOWN : this.dashTime + 100;
+                        int ultDelay = ultUses < 4 ? E_DASH_COOLDOWN : dashTime + 200;
                         scheduleTask(
                                 abilityRunnable(ability, spellData, cooldown, gCooldown, dest),
                                 ultDelay);
-                    } else if (this.ultUses > 0 && !canDash()) {
+                    } else {
                         ExtensionCommands.playSound(
                                 this.parentExt,
                                 this.player,
@@ -342,7 +344,6 @@ public class FlamePrincess extends UserActor {
 
     private void endUlt() {
         this.form = Form.NORMAL;
-        this.ultUses = 3;
         if (this.fpScale == 1.5f) {
             ExtensionCommands.scaleActor(parentExt, room, id, 0.6667f);
             this.fpScale = 1;
@@ -350,10 +351,16 @@ public class FlamePrincess extends UserActor {
         if (!this.getState(ActorState.POLYMORPH)) { // poly asset swap handled elsewhere
             ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
         }
+        ExtensionCommands.removeFx(parentExt, room, id + "flameE");
+
         int delay = getReducedCooldown(getBaseUltCooldown());
+        Runnable handleECooldown =
+                () -> {
+                    this.ultUses = 0;
+                    this.canCast[2] = true;
+                };
         ExtensionCommands.actorAbilityResponse(parentExt, player, "e", true, delay, 0);
-        Runnable enableECasting = () -> canCast[2] = true;
-        scheduleTask(enableECasting, delay);
+        scheduleTask(handleECooldown, delay);
     }
 
     private FlameAbilityRunnable abilityRunnable(
@@ -408,10 +415,9 @@ public class FlamePrincess extends UserActor {
 
         @Override
         protected void spellE() {
-            if (ultUses > 0) canCast[2] = true;
-            if (ultUses == 0) {
+            if (ultUses < 4) canCast[2] = true;
+            if (ultUses == 4) {
                 endUlt();
-                ExtensionCommands.removeFx(parentExt, room, id + "flameE");
             }
         }
 

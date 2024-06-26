@@ -36,7 +36,7 @@ public class BubbleGum extends UserActor {
     private long potionSpawn;
     private List<Turret> turrets;
     private int turretNum = 0;
-    private boolean bombPlaced;
+    private int eUses = 0;
     private Point2D bombLocation;
     private long bombPlaceTime = 0;
 
@@ -104,7 +104,8 @@ public class BubbleGum extends UserActor {
         for (Turret t : turrets) {
             t.update(msRan);
         }
-        if (this.bombPlaced && System.currentTimeMillis() - this.bombPlaceTime >= E_DURATION) {
+        if (this.bombLocation != null
+                && System.currentTimeMillis() - this.bombPlaceTime >= E_DURATION) {
             int baseUltCooldown = ChampionData.getBaseAbilityCooldown(this, 3);
             this.useBomb(getReducedCooldown(baseUltCooldown), 250);
         }
@@ -131,7 +132,7 @@ public class BubbleGum extends UserActor {
                 handlePassiveStatusIcons(passiveAmmunition);
             }
             String projectile = "bubblegum_projectile";
-            String emit = "weapon_holder";
+            String emit = SkinData.getBubbleGumBasicAttackEmit(avatar);
             PassiveAttack passiveAttack = new PassiveAttack(this, a, this.handleAttack(a));
             RangedAttack rangedAttack = new RangedAttack(a, passiveAttack, projectile, emit);
             scheduleTask(rangedAttack, BASIC_ATTACK_DELAY);
@@ -202,10 +203,11 @@ public class BubbleGum extends UserActor {
                 break;
             case 3: // E
                 this.canCast[2] = false;
-                if (!this.bombPlaced) {
-                    this.bombPlaced = true;
-                    this.stopMoving();
+                this.eUses++;
+                if (this.eUses == 1) {
                     this.bombPlaceTime = System.currentTimeMillis();
+                    this.bombLocation = dest;
+                    this.stopMoving();
                     String bombVo = SkinData.getBubbleGumEVO(avatar);
                     ExtensionCommands.playSound(
                             this.parentExt, this.room, this.id, bombVo, this.location);
@@ -233,17 +235,13 @@ public class BubbleGum extends UserActor {
                             false,
                             this.team,
                             0f);
-                    this.bombLocation = dest;
                     ExtensionCommands.actorAbilityResponse(
                             this.parentExt, this.player, "e", true, E_SECOND_USE_DELAY, 0);
                     scheduleTask(
                             abilityRunnable(ability, spellData, cooldown, gCooldown, dest),
                             E_SECOND_USE_DELAY);
-                } else {
-                    this.useBomb(getReducedCooldown(cooldown), gCooldown);
-                    int delay1 = getReducedCooldown(cooldown);
-                    scheduleTask(
-                            abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay1);
+                } else if (this.eUses == 2) {
+                    useBomb(getReducedCooldown(cooldown), gCooldown);
                 }
                 break;
         }
@@ -252,23 +250,23 @@ public class BubbleGum extends UserActor {
     protected void useBomb(int cooldown, int gCooldown) {
         try {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            List<Actor> actors = Champion.getActorsInRadius(handler, this.bombLocation, 3f);
             JsonNode spellData = parentExt.getAttackData("peebles", "spell3");
+            List<Actor> actors = Champion.getEnemyActorsInRadius(handler, team, bombLocation, 3);
+            if (this.location.distance(bombLocation) <= 3) actors.add(this);
+
             for (Actor a : actors) {
-                if (a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER) {
-                    a.knockback(this.bombLocation, 5f);
+                if (a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE) {
                     if (a.equals(this)) {
-                        ExtensionCommands.actorAnimate(
-                                parentExt, room, this.id, "spell3b", 325, false);
+                        ExtensionCommands.actorAnimate(parentExt, room, id, "spell3b", 325, false);
                         Runnable animDelay =
                                 () ->
                                         ExtensionCommands.actorAnimate(
                                                 parentExt, room, id, "spell3c", 350, false);
                         scheduleTask(animDelay, 325);
+                    } else {
+                        a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                     }
-                }
-                if (isNonStructure(a)) {
-                    a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                    a.knockback(this.bombLocation, 5f);
                 }
             }
             String useBombVo = SkinData.getBubbleGumEGruntVO(avatar);
@@ -293,7 +291,12 @@ public class BubbleGum extends UserActor {
             logExceptionMessage(avatar, 3);
         }
         ExtensionCommands.actorAbilityResponse(parentExt, player, "e", true, cooldown, gCooldown);
-        this.bombPlaced = false;
+        Runnable handleECooldown =
+                () -> {
+                    this.eUses = 0;
+                    this.canCast[2] = true;
+                };
+        scheduleTask(handleECooldown, cooldown);
         this.bombLocation = null;
     }
 
@@ -374,7 +377,7 @@ public class BubbleGum extends UserActor {
 
         @Override
         protected void spellE() {
-            canCast[2] = true;
+            if (eUses == 1) canCast[2] = true;
         }
 
         @Override

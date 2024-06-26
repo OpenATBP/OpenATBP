@@ -246,8 +246,8 @@ public class GameManager {
         spawnAltars(room, parentExt);
         spawnHealth(room, parentExt);
 
-        GameModeSpawns.spawnGuardians(parentExt, room, 0);
-        GameModeSpawns.spawnGuardians(parentExt, room, 1);
+        GameModeSpawns.spawnGuardianForMode(parentExt, room, 0);
+        GameModeSpawns.spawnGuardianForMode(parentExt, room, 1);
     }
 
     private static void spawnTowers(Room room, ATBPExtension parentExt) {
