@@ -32,7 +32,8 @@ public class UserActor extends Actor {
     protected Map<Actor, ISFSObject> aggressors = new HashMap<>();
     protected String backpack;
     protected int futureCrystalTimer = 240;
-    protected int nailDamage = 0;
+    protected int magicNailStacks = 0;
+    protected static final int DAMAGE_PER_NAIL_POINT = 25;
     protected int moonTimer = 120;
     protected boolean moonActivated = false;
     protected Map<String, Double> endGameStats = new HashMap<>();
@@ -706,7 +707,10 @@ public class UserActor extends Actor {
                     String.valueOf(player.getId()),
                     realKiller.getId(),
                     this.deathTime);
-            if (this.nailDamage > 0) this.nailDamage /= 2;
+            if (this.magicNailStacks > 0) {
+                this.magicNailStacks /= 2;
+                this.updateStatMenu("attackDamage");
+            }
             try {
                 ExtensionCommands.handleDeathRecap(
                         parentExt,
@@ -718,8 +722,6 @@ public class UserActor extends Actor {
                 if (realKiller.getActorType() == ActorType.PLAYER) {
                     UserActor ua = (UserActor) realKiller;
                     ua.increaseStat("kills", 1);
-                    if (ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0)
-                        ua.addNailStacks(5);
                     this.parentExt
                             .getRoomHandler(this.room.getName())
                             .addScore(ua, ua.getTeam(), 25);
@@ -1508,20 +1510,14 @@ public class UserActor extends Actor {
         this.changeHealth((int) Math.round(damage * lifesteal));
     }
 
-    public void addNailStacks(int damage) {
-        this.nailDamage += damage;
-        if (this.nailDamage > 25 * level) this.nailDamage = 25 * level;
-        this.updateStatMenu("attackDamage");
-    }
-
     @Override
     public double getPlayerStat(String stat) {
         if (stat.equalsIgnoreCase("healthRegen")) {
             if (this.pickedUpHealthPack) return super.getPlayerStat(stat) + HEALTH_PACK_REGEN;
         }
         if (stat.equalsIgnoreCase("attackDamage")) {
-            if (this.dcBuff == 2) return (super.getPlayerStat(stat) + this.nailDamage) * 1.2f;
-            return super.getPlayerStat(stat) + this.nailDamage;
+            if (this.dcBuff == 2) return (super.getPlayerStat(stat) + this.magicNailStacks) * 1.2f;
+            return super.getPlayerStat(stat) + this.magicNailStacks;
         } else if (stat.equalsIgnoreCase("armor")) {
             if (this.dcBuff >= 1) return super.getPlayerStat(stat) * 1.2f;
         } else if (stat.equalsIgnoreCase("spellResist")) {
@@ -1551,6 +1547,7 @@ public class UserActor extends Actor {
                 this.endGameStats.put("spree", (double) this.killingSpree);
             }
         }
+        if (this.hasBackpackItem("junk_1_magic_nail")) addMagicNailStacks(a);
         this.addXP(a.getXPWorth());
         // if (a.getActorType() == ActorType.PLAYER) this.updateXPWorth("kill");
         if (a.getActorType() == ActorType.TOWER) {
@@ -1571,6 +1568,18 @@ public class UserActor extends Actor {
                 UserActor ua = (UserActor) actor;
                 ua.addXP((int) Math.floor(a.getXPWorth()));
             }
+        }
+    }
+
+    private void addMagicNailStacks(Actor killedActor) {
+        int pointsPutIntoNail = (int) this.getStat("sp_category1");
+        int amountOfStacks = killedActor.getActorType() == ActorType.PLAYER ? 5 : 2;
+        int stackCap = pointsPutIntoNail * DAMAGE_PER_NAIL_POINT;
+
+        if (pointsPutIntoNail > 0) {
+            if (magicNailStacks + amountOfStacks > stackCap) magicNailStacks = stackCap;
+            else magicNailStacks += amountOfStacks;
+            this.updateStatMenu("attackDamage");
         }
     }
 

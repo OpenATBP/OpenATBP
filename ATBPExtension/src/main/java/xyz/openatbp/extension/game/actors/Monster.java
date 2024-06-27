@@ -279,8 +279,6 @@ public class Monster extends Actor {
                 } else ua = (UserActor) a;
                 if (ua != null) {
                     ua.addGameStat("jungleMobs", 1);
-                    if (ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0)
-                        ua.addNailStacks(2);
                     roomHandler.addScore(ua, a.getTeam(), scoreValue);
                     // roomHandler.handleXPShare(ua,this.parentExt.getActorXP(this.id));
                     ExtensionCommands.knockOutActor(parentExt, this.room, this.id, ua.getId(), 45);
