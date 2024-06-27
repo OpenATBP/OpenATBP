@@ -23,32 +23,34 @@ public class MapData {
     public static final float L2_GUARDIAN1_X = (float) 52.00;
     public static final float L2_GUARDIAN1_Z = (float) 0;
     public static final float[] L2_TOP_ALTAR = {(float) -13.38, (float) -26.08};
-    public static final float[] L2_GOOMONSTER = {(float) 0.54, (float) -27.42};
     public static final float[] L2_LEFT_HEALTH = {(float) 12.50, (float) 0.05};
     public static final float[] L2_BOT_BLUE_HEALTH = {(float) 27.10, (float) 2.45};
     public static final float[] L2_BOT_ALTAR = {(float) 14.47, (float) 27.08};
-    public static final float[] L2_KEEOTH = {(float) 0.26, (float) 25.82};
-    public static final float[] HUGWOLF = {(float) 8.15, (float) 8.19};
+    public static final float[] L2_GOOMONSTER = {(float) -0.6, (float) -26.1};
+    public static final float[] L2_KEEOTH = {(float) 0, (float) 25};
+    public static final float[] HUGWOLF = {(float) 7.50, (float) 8.50};
+    public static final float[] GRASSBEAR = {(float) -9.20, (float) -8.60};
+
     public static final Point2D[] L2_OWLS = {
-        new Point2D.Double(9.57, -8.95),
-        new Point2D.Double(8.41, -8.68),
-        new Point2D.Double(8.42, -9.79)
+        new Point2D.Double(8.3, -8.6), // 10 points owl
+        new Point2D.Double(8.1, -7.6), // 5 points owl
+        new Point2D.Double(9.3, -8.5) // 5 points owl
     };
-    public static final float[] GRASS = {(float) -8.64, (float) -8.45};
+
     public static final Point2D[] L2_GNOMES = {
-        new Point2D.Double(-9.29, 8.03),
-        new Point2D.Double(-8.10, 8.26),
-        new Point2D.Double(-9.47, 8.84)
+        new Point2D.Double(-9.2, 7.50), // red
+        new Point2D.Double(-10.2, 7.40), // blue
+        new Point2D.Double(-9, 6.5) // yellow
     };
-    public static final Point2D[] L2_PURPLE_SPAWNS = { // top, mid, bot
-        new Point2D.Double(-49.068882, -2.6318564),
-        new Point2D.Double(-48.066704, -0.07888055),
-        new Point2D.Double(-49.068882, 2.6318564)
+    public static final Point2D[] L2_PURPLE_SPAWNS = {
+        new Point2D.Double(-49.068882, -2.6318564), // top
+        new Point2D.Double(-48.066704, -0.07888055), // mid
+        new Point2D.Double(-49.068882, 2.6318564) // bot
     };
-    public static final Point2D[] L1_PURPLE_SPAWNS = { // mid, top, bot
-        new Point2D.Double(-53.975643, -0.124769),
-        new Point2D.Double(-54.975643, -2.67774485),
-        new Point2D.Double(-54.975643, 2.67774485),
+    public static final Point2D[] L1_PURPLE_SPAWNS = {
+        new Point2D.Double(-53.975643, -0.124769), // mid
+        new Point2D.Double(-54.975643, -2.67774485), // top
+        new Point2D.Double(-54.975643, 2.67774485), // bot
     };
     public static final Point2D[] L1_OWLS = {
         new Point2D.Double(22.911673, -9.451605),

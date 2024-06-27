@@ -155,6 +155,18 @@ public class GooMonster extends Monster {
                                 false,
                                 team,
                                 0f);
+                        ExtensionCommands.createWorldFX(
+                                parentExt,
+                                room,
+                                id,
+                                "fx_target_ring_2",
+                                id + "_puddle_circle",
+                                3000,
+                                (float) puddleLocation.getX(),
+                                (float) puddleLocation.getY(),
+                                true,
+                                2,
+                                0f);
                     };
             parentExt.getTaskScheduler().schedule(oozeAttack, 1250, TimeUnit.MILLISECONDS);
         } else if (!this.usingAbility) {
