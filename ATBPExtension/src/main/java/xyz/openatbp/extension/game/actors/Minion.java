@@ -191,8 +191,6 @@ public class Minion extends Actor {
             } else ua = (UserActor) a;
             if (ua != null) {
                 ua.addGameStat("minions", 1);
-                if (ua.hasBackpackItem("junk_1_magic_nail") && ua.getStat("sp_category1") > 0)
-                    ua.addNailStacks(2);
                 this.parentExt.getRoomHandler(this.room.getName()).addScore(ua, a.getTeam(), 1);
                 ExtensionCommands.knockOutActor(parentExt, this.room, this.id, ua.getId(), 30);
                 ExtensionCommands.playSound(

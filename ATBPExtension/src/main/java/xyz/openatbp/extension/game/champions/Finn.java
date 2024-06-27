@@ -267,70 +267,54 @@ public class Finn extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
-                Runnable changeAnimation =
+                float W_SPELL_RANGE =
+                        location.distance(dest) >= 5 ? 5 : (float) this.location.distance(dest);
+                Path2D quadrangle =
+                        Champion.createRectangle(location, dest, W_SPELL_RANGE, W_OFFSET_DISTANCE);
+                Point2D ogLocation = this.location;
+                Point2D finalDashPoint = this.dash(dest, false, DASH_SPEED);
+                double time = ogLocation.distance(finalDashPoint) / DASH_SPEED;
+                int wTime = (int) (time * 1000);
+                Runnable endAnim =
                         () ->
                                 ExtensionCommands.actorAnimate(
-                                        this.parentExt, this.room, this.id, "run", 100, false);
-                int wTime = 0;
-                Point2D finalDashPoint = this.location;
-                try {
-                    float W_SPELL_RANGE =
-                            this.location.distance(dest) >= 5
-                                    ? 5
-                                    : (float) this.location.distance(dest);
-                    Path2D quadrangle =
-                            Champion.createRectangle(
-                                    location, dest, W_SPELL_RANGE, W_OFFSET_DISTANCE);
-                    Point2D ogLocation = this.location;
-                    finalDashPoint = this.dash(dest, false, DASH_SPEED);
-                    double time = ogLocation.distance(finalDashPoint) / DASH_SPEED;
-                    wTime = (int) (time * 1000);
-                    String dashFX = SkinData.getFinnWFX(avatar);
-                    ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            dashFX,
-                            wTime,
-                            this.id + "finnWTrail",
-                            true,
-                            "",
-                            true,
-                            false,
-                            this.team);
+                                        parentExt, room, id, "idle", wTime, false);
+                scheduleTask(endAnim, wTime);
+                String dashFX = SkinData.getFinnWFX(avatar);
+                String dashSFX = SkinData.getFinnWSFX(avatar);
+                ExtensionCommands.createActorFX(
+                        this.parentExt,
+                        this.room,
+                        this.id,
+                        dashFX,
+                        wTime,
+                        this.id + "finnWTrail",
+                        true,
+                        "",
+                        true,
+                        false,
+                        this.team);
+                ExtensionCommands.playSound(
+                        this.parentExt, this.room, this.id, dashSFX, this.location);
 
-                    RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
-                    List<Actor> actorsInPolygon =
-                            handler.getEnemiesInPolygon(this.team, quadrangle);
-                    if (!actorsInPolygon.isEmpty()) {
-                        for (Actor a : actorsInPolygon) {
-                            if (a.getActorType() == ActorType.TOWER
-                                    || a.getActorType() == ActorType.BASE) {
-                                a.addToDamageQueue(
-                                        this, getSpellDamage(spellData), spellData, false);
-                            } else {
-                                a.addToDamageQueue(
-                                        this,
-                                        handlePassive(a, getSpellDamage(spellData)),
-                                        spellData,
-                                        false);
-                                passiveStart = System.currentTimeMillis();
-                            }
+                RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
+                List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, quadrangle);
+                if (!actorsInPolygon.isEmpty()) {
+                    for (Actor a : actorsInPolygon) {
+                        if (a.getActorType() == ActorType.TOWER
+                                || a.getActorType() == ActorType.BASE) {
+                            a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                        } else {
+                            a.addToDamageQueue(
+                                    this,
+                                    handlePassive(a, getSpellDamage(spellData)),
+                                    spellData,
+                                    false);
+                            passiveStart = System.currentTimeMillis();
                         }
                     }
-
-                    String dashSFX = SkinData.getFinnWSFX(avatar);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, dashSFX, this.location);
-                    changeAnimation =
-                            () ->
-                                    ExtensionCommands.actorAnimate(
-                                            this.parentExt, this.room, this.id, "run", 100, false);
-                    scheduleTask(changeAnimation, wTime);
-                } catch (Exception exception) {
-                    logExceptionMessage(avatar, ability);
-                    exception.printStackTrace();
                 }
+
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
