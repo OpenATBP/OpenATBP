@@ -377,9 +377,9 @@ public class MainMapRoomHandler extends RoomHandler {
                     campMonsters.add(new Monster(parentExt, room, MapData.HUGWOLF, actor));
                     break;
                 case "grassbear":
-                    x = MapData.GRASS[0];
-                    z = MapData.GRASS[1];
-                    campMonsters.add(new Monster(parentExt, room, MapData.GRASS, actor));
+                    x = MapData.GRASSBEAR[0];
+                    z = MapData.GRASSBEAR[1];
+                    campMonsters.add(new Monster(parentExt, room, MapData.GRASSBEAR, actor));
                     break;
                 case "keeoth":
                     x = MapData.L2_KEEOTH[0];
