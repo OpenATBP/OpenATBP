@@ -5,6 +5,7 @@ import java.awt.geom.Point2D;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
@@ -186,9 +187,13 @@ public abstract class RoomHandler implements Runnable {
                     ISFSObject scoreObject = room.getVariable("score").getSFSObjectValue();
                     int blueScore = scoreObject.getInt("blue");
                     int purpleScore = scoreObject.getInt("purple");
-                    if (blueScore > purpleScore) this.gameOver(1);
-                    else if (purpleScore > blueScore) this.gameOver(0);
-                    else this.gameOver(-1);
+                    int winningTeam;
+                    if (blueScore != purpleScore) {
+                        winningTeam = purpleScore > blueScore ? 0 : 1;
+                    } else {
+                        winningTeam = getWinnerWhenTie();
+                    }
+                    this.gameOver(winningTeam);
                     return;
                 }
                 if (room.getUserList().isEmpty())
@@ -789,6 +794,48 @@ public abstract class RoomHandler implements Runnable {
         isAnnouncingKill = true;
         Runnable resetIsAnnouncingKill = () -> isAnnouncingKill = false;
         parentExt.getTaskScheduler().schedule(resetIsAnnouncingKill, 100, TimeUnit.MILLISECONDS);
+    }
+
+    protected int getWinnerWhenTie() {
+        int purpleKills = 0;
+        int blueKills = 0;
+        int purpleDeaths = 0;
+        int blueDeaths = 0;
+        int purpleAssists = 0;
+        int blueAssists = 0;
+
+        List<Tower> purpleTowers =
+                towers.stream().filter(t -> t.getTeam() == 0).collect(Collectors.toList());
+        List<Tower> blueTowers =
+                towers.stream().filter(t -> t.getTeam() == 1).collect(Collectors.toList());
+
+        int pTowersNum = purpleTowers.size();
+        int bTowersNum = blueTowers.size();
+
+        for (UserActor ua : players) {
+            if (ua.getTeam() == 0) {
+                purpleKills += ua.getStat("kills");
+                purpleDeaths += ua.getStat("deaths");
+                purpleAssists += ua.getStat("assists");
+            } else {
+                blueKills += ua.getStat("kills");
+                blueDeaths += ua.getStat("deaths");
+                blueAssists += ua.getStat("assists");
+            }
+        }
+
+        if (pTowersNum != bTowersNum) {
+            return pTowersNum > bTowersNum ? 0 : 1;
+        } else if (purpleKills != blueKills) {
+            return purpleKills > blueKills ? 0 : 1;
+        } else if (purpleDeaths != blueDeaths) {
+            return purpleDeaths < blueDeaths ? 0 : 1;
+        } else if (purpleAssists != blueAssists) {
+            return purpleAssists > blueAssists ? 0 : 1;
+        } else {
+            Random random = new Random();
+            return random.nextInt(2); // coin flip
+        }
     }
 
     public void handleFountain() {

@@ -31,7 +31,7 @@ public class Hunson extends UserActor {
     private static final int W_SOUND_DELAY = 625;
     private static final int W_CAST_DELAY = 400;
     public static final int W_FEAR_DURATION = 1500;
-    private static final int W_DAMAGE_DURATION = 1000;
+    private static final int W_DAMAGE_DURATION = 1500;
     private static final int E_DURATION = 3500;
     private static final int E_CAST_DELAY = 750;
     private static final double E_ARMOR_VALUE = 0.5d;
@@ -44,9 +44,7 @@ public class Hunson extends UserActor {
     private long qStartTime = 0;
     private long ultStart = 0;
     private long wStartTime = 0;
-    private boolean wActive = false;
     private List<Actor> fearedActors;
-    private Point2D wLocation = null;
 
     public Hunson(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -55,23 +53,13 @@ public class Hunson extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if (this.wActive && this.getHealth() > 0) {
-            RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            for (Actor a : Champion.getActorsInRadius(handler, wLocation, 2.5f)) {
-                if (isNonStructure(a)) {
-                    JsonNode spellData = parentExt.getAttackData(this.getAvatar(), "spell2");
-                    a.addToDamageQueue(
-                            Hunson.this, getSpellDamage(spellData) / 10d, spellData, true);
-                    if ((!a.getId().contains("turret") || !a.getId().contains("decoy"))
-                            && !this.fearedActors.contains(a)) {
-                        a.handleFear(Hunson.this.location, W_FEAR_DURATION);
-                        fearedActors.add(a);
-                    }
-                }
+        if (!fearedActors.isEmpty()
+                && System.currentTimeMillis() - wStartTime < W_DAMAGE_DURATION) {
+            JsonNode spellData = parentExt.getAttackData(this.getAvatar(), "spell2");
+            double damage = getSpellDamage(spellData) / 10d;
+            for (Actor a : fearedActors) { // poison damage
+                a.addToDamageQueue(Hunson.this, damage, spellData, true);
             }
-        }
-        if (this.wActive && System.currentTimeMillis() - this.wStartTime >= W_DAMAGE_DURATION) {
-            this.wActive = false;
         }
         if (this.ultActivated) {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
@@ -226,16 +214,7 @@ public class Hunson extends UserActor {
             case 2:
                 this.canCast[1] = false;
                 try {
-                    this.fearedActors = new ArrayList<>();
-                    this.wLocation = this.location;
                     this.stopMoving(castDelay);
-                    Runnable activateW =
-                            () -> {
-                                this.wActive = true;
-                                this.wStartTime = System.currentTimeMillis();
-                            };
-                    scheduleTask(activateW, castDelay);
-
                     ExtensionCommands.playSound(
                             this.parentExt, this.room, this.id, "hunson_power2a", this.location);
                     ExtensionCommands.createActorFX(
@@ -288,14 +267,13 @@ public class Hunson extends UserActor {
                             "sfx_hunson_scream1",
                             this.location);
                     Runnable soundDelay =
-                            () -> {
-                                ExtensionCommands.playSound(
-                                        this.parentExt,
-                                        this.room,
-                                        this.id,
-                                        "hunson_power3a",
-                                        this.location);
-                            };
+                            () ->
+                                    ExtensionCommands.playSound(
+                                            this.parentExt,
+                                            this.room,
+                                            this.id,
+                                            "hunson_power3a",
+                                            this.location);
                     scheduleTask(soundDelay, W_SOUND_DELAY);
                     ExtensionCommands.createActorFX(
                             this.parentExt,
@@ -377,6 +355,32 @@ public class Hunson extends UserActor {
 
         @Override
         protected void spellW() {
+            if (getHealth() > 0) {
+                fearedActors = new ArrayList<>();
+                wStartTime = System.currentTimeMillis();
+
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                for (Actor a : Champion.getActorsInRadius(handler, location, 2.5f)) {
+                    if (isNonStructure(a) && !fearedActors.contains(a)) {
+                        a.handleFear(location, W_FEAR_DURATION);
+                        fearedActors.add(a);
+                        ExtensionCommands.createActorFX(
+                                parentExt,
+                                room,
+                                a.getId(),
+                                "neptr_dot_poison",
+                                W_DAMAGE_DURATION,
+                                a.getId() + "hunson_poison",
+                                true,
+                                "",
+                                false,
+                                false,
+                                team);
+                    }
+                }
+            } else {
+                ExtensionCommands.removeFx(parentExt, room, id + "_fear");
+            }
             Runnable enableWCasting = () -> canCast[1] = true;
             int delay = getReducedCooldown(cooldown) - W_CAST_DELAY;
             scheduleTask(enableWCasting, delay);

@@ -286,7 +286,7 @@ public class UserActor extends Actor {
                         this.location);
             }
             AttackType type = this.getAttackType(attackData);
-            if (this.states.get(ActorState.BRUSH)) {
+            if (this.states.get(ActorState.BRUSH) && !attackData.has("attackName")) {
                 Runnable runnable = () -> UserActor.this.setState(ActorState.REVEALED, false);
                 this.setState(ActorState.REVEALED, true);
                 parentExt.getTaskScheduler().schedule(runnable, 3000, TimeUnit.MILLISECONDS);
@@ -814,9 +814,8 @@ public class UserActor extends Actor {
     protected boolean
             canRegenHealth() { // TODO: Does not account for health pots. Not sure if this should be
         // added for balance reasons.
-        return (this.currentHealth < this.maxHealth
-                        && System.currentTimeMillis() > this.lastHit + 1000)
-                || this.getPlayerStat("healthRegen") < 0;
+        // regen works while in combat ;)
+        return (this.currentHealth < this.maxHealth || this.getPlayerStat("healthRegen") < 0);
     }
 
     public void queueMovement(Point2D newDest) {

@@ -496,12 +496,10 @@ public class Marceline extends UserActor {
                         if (a.getTeam() != team && isNonStructure(a)) {
                             double damage = getSpellDamage(spellData);
                             a.addToDamageQueue(Marceline.this, damage, spellData, false);
-                            if (!a.getId().contains("turret") || !a.getId().contains("decoy")) {
-                                if (form == Form.VAMPIRE) {
-                                    a.handleCharm(Marceline.this, E_CHARM_DURATION);
-                                } else {
-                                    a.handleFear(Marceline.this.location, E_FEAR_DURATION);
-                                }
+                            if (form == Form.VAMPIRE) {
+                                a.handleCharm(Marceline.this, E_CHARM_DURATION);
+                            } else {
+                                a.handleFear(Marceline.this.location, E_FEAR_DURATION);
                             }
                         }
                     }

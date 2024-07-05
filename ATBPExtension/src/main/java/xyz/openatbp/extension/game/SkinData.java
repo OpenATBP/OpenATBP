@@ -406,6 +406,7 @@ public class SkinData {
     private static final Map<String, String> RattleBallsWSFX = new HashMap<>();
     private static final Map<String, String> RattleBallsESpinCycleSFX = new HashMap<>();
     private static final Map<String, String> RattleBallsESwordSpinFX = new HashMap<>();
+    private static final Map<String, String> RattleBallsESparklesFX = new HashMap<>();
 
     static {
         RattleBallsQTrailFX.put("rattleballs_skin_spidotron", "rattleballs_luchador_dash_trail");
@@ -421,6 +422,8 @@ public class SkinData {
                 "rattleballs_skin_spidotron", "rattleballs_luchador_sword_spin");
         RattleBallsESpinCycleSFX.put(
                 "rattleballs_skin_spidotron", "sfx_rattleballs_luchador_spin_cycle");
+        RattleBallsESparklesFX.put(
+                "rattleballs_skin_spidotron", "rattleballs_luchador_sword_sparkles");
     }
 
     public static String getRattleBallsQTrailFX(String avatar) {
@@ -458,4 +461,8 @@ public class SkinData {
     public static String getRattleBallsESpinCycleSFX(String avatar) {
         return RattleBallsESpinCycleSFX.getOrDefault(avatar, "sfx_rattleballs_spin_cycle");
     }
+
+    public static String getRattleBallsESparklesFX(String avatar) {
+        return RattleBallsESparklesFX.getOrDefault(avatar, "rattleballs_sword_sparkles");
+    } // doesn't seem to work correctly with any emit node :(
 }

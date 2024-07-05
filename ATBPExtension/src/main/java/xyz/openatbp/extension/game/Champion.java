@@ -6,6 +6,7 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -443,11 +444,16 @@ public class Champion {
                                 3000);
                 } else if (ua.hasBackpackItem("junk_4_grob_gob_glob_grod")
                         && ua.getStat("sp_category4") > 0) {
-                    if (!this.target.hasTempStat("spellDamage"))
-                        this.target.addEffect(
-                                "spellDamage",
-                                this.target.getPlayerStat("spellDamage") * -0.1,
-                                3000);
+                    if (!this.target.hasTempStat("spellDamage")) {
+                        Random random = new Random();
+                        int num = random.nextInt(4);
+                        if (num == 0) {
+                            int pointsPutIntoDevice = (int) ua.getStat("sp_category4");
+                            int POWER_DAMAGE_PER_POINT = 25;
+                            int decrease = (pointsPutIntoDevice * POWER_DAMAGE_PER_POINT) * -1;
+                            this.target.addEffect("spellDamage", decrease, 5000);
+                        }
+                    }
                 }
                 if (this.attack.contains("basic")
                         && this.target != null

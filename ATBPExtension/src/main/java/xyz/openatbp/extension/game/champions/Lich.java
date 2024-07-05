@@ -634,8 +634,7 @@ public class Lich extends UserActor {
                     team,
                     0f);
             victim.addToDamageQueue(Lich.this, getSpellDamage(spellData), spellData, false);
-            if (!victim.getId().contains("turret") || !victim.getId().contains("decoy"))
-                victim.handleCharm(Lich.this, W_CHARM_DURATION);
+            victim.handleCharm(Lich.this, W_CHARM_DURATION);
             destroy();
         }
     }
