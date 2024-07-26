@@ -493,15 +493,13 @@ public class Marceline extends UserActor {
 
                     RoomHandler handler = parentExt.getRoomHandler(room.getName());
                     for (Actor a : Champion.getActorsInRadius(handler, dest, 3)) {
-                        if (a.getTeam() != team && isNonStructure(a)) {
+                        if (isNonStructure(a)) {
                             double damage = getSpellDamage(spellData);
                             a.addToDamageQueue(Marceline.this, damage, spellData, false);
-                            if (!a.getId().contains("turret") || !a.getId().contains("decoy")) {
-                                if (form == Form.VAMPIRE) {
-                                    a.handleCharm(Marceline.this, E_CHARM_DURATION);
-                                } else {
-                                    a.handleFear(Marceline.this.location, E_FEAR_DURATION);
-                                }
+                            if (form == Form.VAMPIRE) {
+                                a.handleCharm(Marceline.this, E_CHARM_DURATION);
+                            } else {
+                                a.handleFear(Marceline.this.location, E_FEAR_DURATION);
                             }
                         }
                     }
