@@ -159,62 +159,91 @@ mongoClient.connect((err) => {
     });
   });
 
-  app.get('/register',(req,res) => {
-    res.render('register',{
-      'displayNames': JSON.stringify(displayNames)
+  app.get('/register', (req, res) => {
+    res.render('register', {
+      displayNames: JSON.stringify(displayNames),
     });
   });
 
-  app.get('/login',(req,res) => {
+  app.get('/login', (req, res) => {
     res.render('login');
-  })
+  });
 
-  app.post('/auth/register',(req,res) => {
-    if(req.body.username != "" && req.body.password != "" && req.body.name1 != "" && req.body.name3 != "" && req.body.password == req.body.confirm){
-      var names = [req.body.name1,req.body.name2,req.body.name3];
-      postRequest.handleRegister(req.body.username,req.body.password,names,playerCollection).then((user) => {
-        if(user == "login"){
-          res.redirect('/login');
-        }else{
+  app.post('/auth/register', (req, res) => {
+    if (
+      req.body.username != '' &&
+      req.body.password != '' &&
+      req.body.name1 != '' &&
+      req.body.name3 != '' &&
+      req.body.password == req.body.confirm
+    ) {
+      var names = [req.body.name1, req.body.name2, req.body.name3];
+      postRequest
+        .handleRegister(
+          req.body.username,
+          req.body.password,
+          names,
+          playerCollection
+        )
+        .then((user) => {
+          if (user == 'login') {
+            res.redirect('/login');
+          } else {
+            res.cookie('TEGid', user.user.TEGid);
+            res.cookie('authid', user.user.authid);
+            res.cookie('dname', user.user.dname);
+            res.cookie('authpass', user.user.authpass);
+            var date = Date.parse(user.session.expires_at);
+            console.log(date.valueOf());
+            res.cookie('session_token', user.session.token, {
+              maxAge: date.valueOf() - Date.now(),
+            });
+            res.cookie('logged', true);
+            res.redirect(config.httpserver.url);
+          }
+        })
+        .catch(console.error);
+    }
+  });
+
+  app.get('/auth/login', (req, res) => {
+    var session_token = '';
+    for (var h of req.rawHeaders) {
+      if (h.includes('session_token')) {
+        var cookies = h.split(';');
+        for (var c of cookies) {
+          if (c.includes('session_token')) {
+            session_token = c
+              .replace('session_token=', '')
+              .replace(' ', '')
+              .replace(';', '');
+          }
+        }
+      }
+    }
+    console.log(session_token);
+    if (req.query.username != '' && req.query.password != '') {
+      getRequest
+        .handleLogin(
+          req.query.username,
+          req.query.password,
+          session_token,
+          playerCollection
+        )
+        .then((user) => {
           res.cookie('TEGid', user.user.TEGid);
           res.cookie('authid', user.user.authid);
           res.cookie('dname', user.user.dname);
           res.cookie('authpass', user.user.authpass);
           var date = Date.parse(user.session.expires_at);
           console.log(date.valueOf());
-          res.cookie('session_token',user.session.token, {maxAge:date.valueOf()-Date.now()});
+          res.cookie('session_token', user.session.token, {
+            maxAge: date.valueOf() - Date.now(),
+          });
           res.cookie('logged', true);
           res.redirect(config.httpserver.url);
-        }
-      }).catch(console.error);
-    }
-  });
-
-  app.get('/auth/login',(req,res) => {
-    var session_token = "";
-    for(var h of req.rawHeaders){
-      if(h.includes("session_token")){
-        var cookies = h.split(";");
-        for(var c of cookies){
-          if(c.includes("session_token")){
-            session_token = c.replace("session_token=","").replace(" ","").replace(";","");
-          }
-        }
-      }
-    }
-    console.log(session_token);
-    if(req.query.username != "" && req.query.password != ""){
-      getRequest.handleLogin(req.query.username,req.query.password,session_token,playerCollection).then((user) => {
-        res.cookie('TEGid', user.user.TEGid);
-        res.cookie('authid', user.user.authid);
-        res.cookie('dname', user.user.dname);
-        res.cookie('authpass', user.user.authpass);
-        var date = Date.parse(user.session.expires_at);
-        console.log(date.valueOf());
-        res.cookie('session_token',user.session.token, {maxAge:date.valueOf()-Date.now()});
-        res.cookie('logged', true);
-        res.redirect(config.httpserver.url);
-      }).catch(console.error);
+        })
+        .catch(console.error);
     }
   });
 

@@ -7,45 +7,53 @@ const dbOp = require('./db-operations.js');
 const crypto = require('crypto');
 
 module.exports = {
-
-  handleRegister: function(username,password,names,collection){
-    return new Promise(function(resolve, reject) {
-      bcrypt.hash(password,10,(err,hash) => {
-        var name = "";
-        for(var i in names){
-          name+=names[i];
-          if(i != names.length-1 && names[i] != "") name+=" ";
+  handleRegister: function (username, password, names, collection) {
+    return new Promise(function (resolve, reject) {
+      bcrypt.hash(password, 10, (err, hash) => {
+        var name = '';
+        for (var i in names) {
+          name += names[i];
+          if (i != names.length - 1 && names[i] != '') name += ' ';
         }
-        collection.findOne({$or: [
-          {'user.authid': username},
-          {'user.dname': name}
-        ]}).then((user) => {
-          if(user != null){
-            resolve("login");
-          }else{
-
-            dbOp.createNewUser(username,name,hash,collection).then((u) => {
-              resolve(u);
-            }).catch(console.error);
-          }
-        }).catch(console.error);
+        collection
+          .findOne({
+            $or: [{ 'user.authid': username }, { 'user.dname': name }],
+          })
+          .then((user) => {
+            if (user != null) {
+              resolve('login');
+            } else {
+              dbOp
+                .createNewUser(username, name, hash, collection)
+                .then((u) => {
+                  resolve(u);
+                })
+                .catch(console.error);
+            }
+          })
+          .catch(console.error);
       });
     });
   },
-
 
   handleLogin: function (data, collection) {
     // /service/authenticate/login PROVIDES authToken [pid,TEGid,authid,authpass] RETURNS authToken.text={authToken}
     return new Promise(function (resolve, reject) {
       console.log('Auth ID: ' + data.authToken.authid);
       console.log('Auth Pass: ' + decodeURIComponent(data.authToken.authpass));
-      console.log("TEGID: " + data.authToken.TEGid);
+      console.log('TEGID: ' + data.authToken.TEGid);
       collection
-        .findOne({'user.authid': `${data.authToken.authid}`,'user.authpass':`${decodeURIComponent(data.authToken.authpass)}`,'user.TEGid':`${data.authToken.TEGid}`})
+        .findOne({
+          'user.authid': `${data.authToken.authid}`,
+          'user.authpass': `${decodeURIComponent(data.authToken.authpass)}`,
+          'user.TEGid': `${data.authToken.TEGid}`,
+        })
         .then((user) => {
           if (user != null) {
             //User exists
-            resolve(JSON.stringify({ authToken: { text: user.session.token } }));
+            resolve(
+              JSON.stringify({ authToken: { text: user.session.token } })
+            );
           } else {
             //User does not exist
             reject();

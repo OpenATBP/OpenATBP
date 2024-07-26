@@ -10,7 +10,7 @@ var newUserFunction = function (username, displayName, authpass, collection) {
       else {
         console.log(JSON.parse(data));
         var today = new Date();
-        today.setDate(today.getDate()+1);
+        today.setDate(today.getDate() + 1);
         for (var item of JSON.parse(data)) {
           console.log(item);
           inventoryArray.push(item.id);
@@ -25,7 +25,7 @@ var newUserFunction = function (username, displayName, authpass, collection) {
           session: {
             token: `${crypto.randomUUID()}`,
             expires_at: today,
-            renewable: false
+            renewable: false,
           },
           player: {
             playsPVP: 1.0,
