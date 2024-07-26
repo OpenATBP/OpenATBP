@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>OpenATBP Login</title>
+
+		<style type="text/css">
+			html, body {
+				margin: 0;
+				padding: 0;
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+			}
+			#container {
+				margin: 0;
+				padding: 0;
+				width: 100%;
+				height: 100%;
+				clear: both;
+			}
+		</style>
+	</head>
+	<body onresize="OnResize()">
+		<div id="container">
+			<form action="/auth/login" method="get">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" value="">
+        <label for="password">Password:</label>
+        <input type="text" id="password" name="password" value="">
+        <input type="submit" value="Submit">
+      </form>
+	</body>
+</html>

@@ -4,12 +4,13 @@ const fs = require('node:fs');
 var newUserFunction = function (username, displayName, authpass, collection) {
   //Creates new user in web server and database
   return new Promise((fulfill, reject) => {
-    var token = Math.random().toString(36).slice(2, 10);
     var inventoryArray = [];
     fs.readFile('data/shop.json', (err, data) => {
       if (err) reject(err);
       else {
         console.log(JSON.parse(data));
+        var today = new Date();
+        today.setDate(today.getDate()+1);
         for (var item of JSON.parse(data)) {
           console.log(item);
           inventoryArray.push(item.id);
@@ -20,6 +21,11 @@ var newUserFunction = function (username, displayName, authpass, collection) {
             dname: `${displayName}`,
             authid: `${username}`,
             authpass: `${authpass}`,
+          },
+          session: {
+            token: `${crypto.randomUUID()}`,
+            expires_at: today,
+            renewable: false
           },
           player: {
             playsPVP: 1.0,
@@ -46,7 +52,6 @@ var newUserFunction = function (username, displayName, authpass, collection) {
             scoreTotal: 0,
           },
           inventory: inventoryArray,
-          authToken: token,
           friends: [],
           betaTester: true, //TODO: Remove when open beta starts
         };
@@ -57,7 +62,7 @@ var newUserFunction = function (username, displayName, authpass, collection) {
           .updateOne(filter, update, opt)
           .then(() => {
             //Creates new user in the db
-            fulfill(playerFile.user);
+            fulfill(playerFile);
           })
           .catch((err) => {
             reject(err);

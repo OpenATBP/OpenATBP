@@ -1274,7 +1274,7 @@ module.exports = class ATBPLobbyServer {
         console.error('FATAL: MongoDB connect failed: ' + mongoError);
         process.exit(1);
       }
-      playerCollection = mongoClient.db('openatbp').collection('players');
+      playerCollection = mongoClient.db('openatbp').collection('users');
       this.server = net.createServer((socket) => {
         socket.setEncoding('utf8');
 
