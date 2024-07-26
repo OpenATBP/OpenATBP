@@ -253,6 +253,12 @@
   },
   {
     "type": "DEFAULT_SKIN",
+    "id": "huntresswizard",
+    "default": true,
+    "cost": 0
+  },
+  {
+    "type": "DEFAULT_SKIN",
     "id": "hunson",
     "default": true,
     "cost": 0
