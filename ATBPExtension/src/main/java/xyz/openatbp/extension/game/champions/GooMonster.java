@@ -81,35 +81,41 @@ public class GooMonster extends Monster {
 
     @Override
     public void die(Actor a) {
-        if (!this.dead
-                && (a.getActorType() == ActorType.PLAYER
-                        || a.getActorType() == ActorType.COMPANION)) {
-            for (UserActor u : parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
-                if (u.getTeam() == a.getTeam()) {
-                    u.addEffect(
-                            "speed",
-                            u.getPlayerStat("speed") * 0.1d,
-                            GOO_BUFF_DURATION,
-                            "jungle_buff_goo",
-                            "");
-                    u.setHasGooBuff(true);
-                    u.setGooBuffStartTime(System.currentTimeMillis());
+        if (isProperKiller(a)) {
+            List<UserActor> players = parentExt.getRoomHandler(room.getName()).getPlayers();
+            int killerTeam = a.getTeam();
+
+            for (UserActor ua : players) {
+                String sound = ua.getTeam() == killerTeam ? "you_goomonster" : "enemy_goomonster";
+                String finalSound = "announcer/" + sound;
+                ExtensionCommands.playSound(parentExt, ua.getUser(), "global", finalSound);
+
+                if (ua.getTeam() == killerTeam && ua.getHealth() > 0) {
+                    double delta = ua.getPlayerStat("speed") * 0.1d;
+                    ua.setHasGooBuff(true);
+                    ua.setGooBuffStartTime(System.currentTimeMillis());
+                    ua.addEffect("speed", delta, GOO_BUFF_DURATION, "jungle_buff_goo", "");
                     ExtensionCommands.addStatusIcon(
                             this.parentExt,
-                            u.getUser(),
+                            ua.getUser(),
                             "goomonster_buff",
                             "goomonster_buff_desc",
                             "icon_buff_goomonster",
                             GOO_BUFF_DURATION);
-                    ExtensionCommands.playSound(
-                            parentExt, u.getUser(), "global", "announcer/you_goomonster");
-                } else {
-                    ExtensionCommands.playSound(
-                            parentExt, u.getUser(), "global", "announcer/enemy_goomonster");
                 }
             }
         }
         super.die(a);
+    }
+
+    private boolean isProperKiller(Actor a) {
+        ActorType[] types = {ActorType.PLAYER, ActorType.COMPANION};
+        for (ActorType type : types) {
+            if (a.getActorType() == type) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

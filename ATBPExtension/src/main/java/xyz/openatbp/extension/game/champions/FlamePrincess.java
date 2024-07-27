@@ -22,6 +22,7 @@ public class FlamePrincess extends UserActor {
     private final int W_CAST_DELAY = 1000;
     private static final int E_DASH_COOLDOWN = 350;
     private static final int E_DURATION = 5000;
+    private static final int E_DASH_SPEED = 15;
     private boolean passiveEnabled = false;
     private long lastPassiveUsage = 0;
     private int ultUses = 0;
@@ -312,19 +313,21 @@ public class FlamePrincess extends UserActor {
                     if (canDash()) {
                         this.ultUses++;
                         Point2D ogLocation = this.location;
-                        Point2D dashLocation = this.dash(dest, false, 15d);
-                        double time = ogLocation.distance(dashLocation) / DASH_SPEED;
+                        Point2D dashLocation = this.dash(dest, false, E_DASH_SPEED);
+                        double time = ogLocation.distance(dashLocation) / E_DASH_SPEED;
                         this.dashTime = (int) (time * 1000);
                         ExtensionCommands.actorAnimate(
                                 this.parentExt, this.room, this.id, "run", this.dashTime, false);
-                        if (System.currentTimeMillis() - ultStartTime > 4700) {
-                            this.ultStartTime += dashTime + 200;
-                        }
+                        int remainingTime = (int) (System.currentTimeMillis() - ultStartTime);
 
-                        int ultDelay = ultUses < 4 ? E_DASH_COOLDOWN : dashTime + 200;
+                        if (remainingTime + dashTime > E_DURATION) { // handle last moment dashing
+                            int timeNeeded = remainingTime + dashTime - E_DURATION;
+                            this.ultStartTime += timeNeeded; // add time to complete anim
+                            this.ultUses = 5; // disable further dashing
+                        }
                         scheduleTask(
                                 abilityRunnable(ability, spellData, cooldown, gCooldown, dest),
-                                ultDelay);
+                                E_DASH_COOLDOWN);
                     } else {
                         ExtensionCommands.playSound(
                                 this.parentExt,

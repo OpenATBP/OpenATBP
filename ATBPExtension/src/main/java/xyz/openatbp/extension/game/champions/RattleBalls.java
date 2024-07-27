@@ -81,16 +81,20 @@ public class RattleBalls extends UserActor {
                     "sfx_rattleballs_rattle_balls_2",
                     this.location);
             ExtensionCommands.actorAnimate(
-                    this.parentExt, this.room, this.id, "spell3a", 250, true);
+                    this.parentExt, this.room, this.id, "spell1b", 400, false);
+
+            Runnable resetAnim =
+                    () -> ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 10, false);
+            scheduleTask(resetAnim, 400);
             ExtensionCommands.createActorFX(
                     this.parentExt,
                     this.room,
                     this.id,
                     qSwordSpin,
-                    250,
+                    500,
                     this.id + "_parrySpin",
                     true,
-                    "Bip001 Footsteps",
+                    "",
                     false,
                     false,
                     this.team);
@@ -99,7 +103,7 @@ public class RattleBalls extends UserActor {
                     this.room,
                     this.id,
                     "rattleballs_counter_trail",
-                    250,
+                    400,
                     this.id + "_trail",
                     true,
                     "Bip001 Prop1",
