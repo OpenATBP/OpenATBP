@@ -51,7 +51,7 @@
             console.log(nameObj.list1);
 
             //TODO: Could make this look cleaner but that is a future refactor project :P
-            var text1 = ""
+            var text1 = "<option></option>"
             for(var name of nameObj.list1){
               text1+=`<option>${name.toUpperCase()}</option>`;
             }
@@ -64,7 +64,7 @@
             }
             document.getElementById("name2").innerHTML=text2;
 
-            var text3 = ""
+            var text3 = "<option></option>"
             for(var name of nameObj.list3){
               text3+=`<option>${name.toUpperCase()}</option>`;
             }

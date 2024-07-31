@@ -193,16 +193,19 @@ mongoClient.connect((err) => {
     res.render('login');
   });
 
-  app.get('/data/users',(req,res) => {
-    res.send(JSON.stringify({users:onlinePlayers.length}));
+  app.get('/data/users', (req, res) => {
+    res.send(JSON.stringify({ users: onlinePlayers.length }));
   });
 
   app.post('/auth/register', (req, res) => {
+    var nameCount = 0;
+    if (req.body.name1 != '') nameCount++;
+    if (req.body.name2 != '') nameCount++;
+    if (req.body.name3 != '') nameCount++;
     if (
       req.body.username != '' &&
       req.body.password != '' &&
-      req.body.name1 != '' &&
-      req.body.name3 != '' &&
+      nameCount > 1 &&
       req.body.password == req.body.confirm
     ) {
       var names = [req.body.name1, req.body.name2, req.body.name3];

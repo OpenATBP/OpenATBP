@@ -17,7 +17,14 @@ module.exports = {
         }
         collection
           .findOne({
-            $or: [{ 'user.TEGid': username }, { 'user.dname': name }],
+            $or: [
+              { 'user.TEGid': username },
+              {
+                'user.dname': name
+                  .replace('[DEV] ', '')
+                  .replace('[ATBPDEV] ', ''),
+              },
+            ],
           })
           .then((user) => {
             if (user != null) {
