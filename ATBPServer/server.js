@@ -187,7 +187,7 @@ mongoClient.connect((err) => {
         )
         .then((user) => {
           if (user == 'login') {
-            res.redirect('/login');
+            res.redirect('/login?exists=true');
           } else {
             res.cookie('TEGid', user.user.TEGid);
             res.cookie('authid', user.user.authid);
@@ -202,8 +202,11 @@ mongoClient.connect((err) => {
             res.redirect(config.httpserver.url);
           }
         })
-        .catch(console.error);
-    }
+        .catch((e) => {
+          console.log(e);
+          res.redirect('/register?failed=true');
+        });
+    }else res.redirect('/register?failed=true');
   });
 
   app.get('/auth/login', (req, res) => {
@@ -243,7 +246,10 @@ mongoClient.connect((err) => {
           res.cookie('logged', true);
           res.redirect(config.httpserver.url);
         })
-        .catch(console.error);
+        .catch((e) => {
+          console.log(e);
+          res.redirect('/login?failed=true');
+        });
     }
   });
 

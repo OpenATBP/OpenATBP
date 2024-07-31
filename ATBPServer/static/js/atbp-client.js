@@ -68,6 +68,8 @@ var UnityRequest = function (
 var LoginModule = function () {};
 
 LoginModule.showLoginWindow = function () {
+  window.location.href = '/login';
+  /*
   if (true) {
     //TODO: Fix so it is variable
     window.location.href =
@@ -130,4 +132,5 @@ LoginModule.showLoginWindow = function () {
       }
     }
   }
+  */
 };

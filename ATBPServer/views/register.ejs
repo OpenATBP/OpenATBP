@@ -20,6 +20,11 @@
 			}
 		</style>
 	</head>
+	<script type="text/javascript">
+		const urlParams = new URLSearchParams(window.location.search);
+		const failed = urlParams.get('failed');
+		if(failed) window.alert("Registration failed!");
+	</script>
 	<body onresize="OnResize()">
 		<div id="container">
 			<form id="form" action="/auth/register" method="post">
@@ -34,6 +39,10 @@
         <select id="name3" name="name3"></select>
         <input type="submit" value="Submit">
       </form>
+			<br/>
+			<a href="/login">
+				<input type="button" value="Login"/>
+			</a>
       <script type="text/javascript">
             var names = '<%- displayNames %>';
             var nameObj = JSON.parse(names);

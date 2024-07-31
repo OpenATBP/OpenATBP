@@ -20,14 +20,25 @@
 			}
 		</style>
 	</head>
+	<script type="text/javascript">
+		const urlParams = new URLSearchParams(window.location.search);
+		const failed = urlParams.get('failed');
+		const exists = urlParams.get('exists');
+		if(failed) window.alert("Login failed!");
+		else if(exists) window.alert("User already exists! Please login.");
+	</script>
 	<body onresize="OnResize()">
 		<div id="container">
 			<form action="/auth/login" method="get">
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" value="">
         <label for="password">Password:</label>
-        <input type="text" id="password" name="password" value="">
+        <input type="password" id="password" name="password" value="">
         <input type="submit" value="Submit">
       </form>
+			<br/>
+			<a href="/register">
+				<input type="button" value="Register"/>
+			</a>
 	</body>
 </html>

@@ -115,4 +115,13 @@ module.exports = {
         });
     });
   },
+  handleForgotPassword: function(username,dname,password,collection){
+    return new Promise(function(resolve, reject) {
+      collection.findOne({"user.authid":username,"user.dname":dname}).then((u) => {
+        if(u != null){
+          bcrypt.hash()
+        }
+      })
+    });
+  }
 };
