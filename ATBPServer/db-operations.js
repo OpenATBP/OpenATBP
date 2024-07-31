@@ -23,9 +23,9 @@ var newUserFunction = function (
         }
         var playerFile = {
           user: {
-            TEGid: `${crypto.randomUUID()}`,
+            TEGid: `${username}`,
             dname: `${displayName}`,
-            authid: `${username}`,
+            authid: `${Math.floor(Math.random()*1000000000)}`,
             authpass: `${authpass}`,
           },
           session: {
@@ -64,7 +64,7 @@ var newUserFunction = function (
         };
         const opt = { upsert: true };
         const update = { $set: playerFile };
-        const filter = { 'user.authid': username };
+        const filter = { 'user.TEGid': username };
         collection
           .updateOne(filter, update, opt)
           .then(() => {
@@ -85,7 +85,7 @@ module.exports = {
     return new Promise(function (resolve, reject) {
       console.log('Client_ID: ' + clientId);
       collection
-        .findOne({ 'user.authid': clientId })
+        .findOne({ 'user.TEGid': clientId })
         .then((res) => {
           if (res != null) {
             if (res.player == undefined) {

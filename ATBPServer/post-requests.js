@@ -17,7 +17,7 @@ module.exports = {
         }
         collection
           .findOne({
-            $or: [{ 'user.authid': username }, { 'user.dname': name }],
+            $or: [{ 'user.TEGid': username }, { 'user.dname': name }],
           })
           .then((user) => {
             if (user != null) {
@@ -122,7 +122,7 @@ module.exports = {
   handleForgotPassword: function (username, forgot, password, collection) {
     return new Promise(function (resolve, reject) {
       collection
-        .findOne({ 'user.authid': username })
+        .findOne({ 'user.TEGid': username })
         .then((u) => {
           if (u != null) {
             bcrypt.compare(forgot, u.forgot, (err, res) => {
@@ -137,7 +137,7 @@ module.exports = {
                   };
                   collection
                     .updateOne(
-                      { 'user.authid': username },
+                      { 'user.TEGid': username },
                       {
                         $set: {
                           session: newSession,

@@ -132,7 +132,7 @@ module.exports = {
   handleLogin: function (username, password, token, collection) {
     return new Promise(function (resolve, reject) {
       collection
-        .findOne({ 'user.authid': username })
+        .findOne({ 'user.TEGid': username })
         .then((user) => {
           if (user != null) {
             bcrypt.compare(password, user.user.authpass, (err, res) => {
@@ -155,7 +155,7 @@ module.exports = {
                   const update = { $set: { session: newSession } };
                   user.session = newSession;
                   collection
-                    .updateOne({ 'user.authid': username }, update, options)
+                    .updateOne({ 'user.TEGid': username }, update, options)
                     .then((d) => {
                       resolve(user);
                     })

@@ -36,6 +36,23 @@ async function removeDuplicateFriends(collection) {
   }
 }
 
+async function convertUserNames(collection){
+  try {
+    var cursor = collection.find();
+    for await (var doc of cursor) {
+      var newId = `${Math.floor(Math.random()*1000000000)}`;
+      var q = { 'user.authpass': doc.user.authpass };
+      var o = { upsert: true };
+      var up = { $set: { 'user.authid': newId , 'user.TEGid': doc.user.authid} };
+
+      var res = await collection.updateOne(q, up, o);
+      console.log(res);
+    }
+  } finally {
+    console.log('Done!');
+  }
+}
+
 //Added to make everyone in the database a beta tester
 async function addBetaTesters(collection) {
   try {
@@ -124,6 +141,7 @@ mongoClient.connect((err) => {
   //removeDuplicateFriends(playerCollection).catch(console.dir);
   //addBetaTesters(playerCollection).catch(console.dir);
   //resetElo(playerCollection).catch(console.dir);
+  //convertUserNames(playerCollection).catch(console.dir);
 
   if (
     !fs.existsSync('static/crossdomain.xml') ||
