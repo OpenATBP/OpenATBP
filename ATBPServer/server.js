@@ -517,12 +517,14 @@ mongoClient.connect((err) => {
       playerCollection
         .findOne({ 'user.TEGid': req.body.username })
         .then((data) => {
-          playerObj.friends = data.friends;
-          onlinePlayers.push(playerObj);
+          if (data != null) {
+            playerObj.friends = data.friends;
+            onlinePlayers.push(playerObj);
+            res.send(postRequest.handlePresent(req.body));
+          }
         })
         .catch(console.error);
-    }
-    res.send(postRequest.handlePresent(req.body));
+    } else res.send(postRequest.handlePresent(req.body));
   });
 
   app.post('/service/shop/purchase', (req, res) => {
