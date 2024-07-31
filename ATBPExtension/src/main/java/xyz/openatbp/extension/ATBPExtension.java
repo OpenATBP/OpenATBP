@@ -101,7 +101,7 @@ public class ATBPExtension extends SFSExtension {
         try {
             mongoClient = MongoClients.create(props.getProperty("mongoURI"));
             database = mongoClient.getDatabase("openatbp");
-            playerDatabase = database.getCollection("players");
+            playerDatabase = database.getCollection("users");
             loadDefinitions();
             loadColliders();
             loadItems();

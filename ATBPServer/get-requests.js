@@ -11,7 +11,6 @@ module.exports = {
     return new Promise(function (resolve, reject) {
       var authTokenSplit = data.split('=');
       var authToken = data;
-      console.log('AuthToken: ' + authToken);
       collection
         .findOne({ 'session.token': authToken })
         .then((res) => {
@@ -132,7 +131,6 @@ module.exports = {
 
   handleLogin: function (username, password, token, collection) {
     return new Promise(function (resolve, reject) {
-      console.log(username);
       collection
         .findOne({ 'user.authid': username })
         .then((user) => {
@@ -154,7 +152,7 @@ module.exports = {
                     renewable: false,
                   };
                   const options = { upset: false };
-                  const update = { $set: { 'auth.session': newSession } };
+                  const update = { $set: { session: newSession } };
                   user.session = newSession;
                   collection
                     .updateOne({ 'user.authid': username }, update, options)

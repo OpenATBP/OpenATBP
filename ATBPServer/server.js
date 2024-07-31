@@ -165,6 +165,12 @@ mongoClient.connect((err) => {
     });
   });
 
+  app.get('/forgot', (req, res) => {
+    res.render('forgot', {
+      displayNames: JSON.stringify(displayNames),
+    });
+  });
+
   app.get('/login', (req, res) => {
     res.render('login');
   });
@@ -206,7 +212,36 @@ mongoClient.connect((err) => {
           console.log(e);
           res.redirect('/register?failed=true');
         });
-    }else res.redirect('/register?failed=true');
+    } else res.redirect('/register?failed=true');
+  });
+
+  app.post('/auth/forgot', (req, res) => {
+    var names = [req.body.name1, req.body.name2, req.body.name3];
+    var name = '';
+    for (var i in names) {
+      name += names[i];
+      if (i != names.length - 1 && names[i] != '') name += ' ';
+    }
+    if (req.body.password == req.body.confirm) {
+      postRequest
+        .handleForgotPassword(
+          req.body.username,
+          name,
+          req.body.password,
+          playerCollection
+        )
+        .then((data) => {
+          var date = Date.parse(data.session.expires_at);
+          res.cookie('session_token', data.session.token, {
+            maxAge: date.valueOf() - Date.now(),
+          });
+          res.redirect('/login');
+        })
+        .catch((e) => {
+          console.log(e);
+          res.redirect('/forgot?failed=true');
+        });
+    } else res.redirect('/forgot?failed=true');
   });
 
   app.get('/auth/login', (req, res) => {

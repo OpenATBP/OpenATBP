@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>OpenATBP Registration</title>
+
+		<style type="text/css">
+			html, body {
+				margin: 0;
+				padding: 0;
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+			}
+			#container {
+				margin: 0;
+				padding: 0;
+				width: 100%;
+				height: 100%;
+				clear: both;
+			}
+		</style>
+	</head>
+	<script type="text/javascript">
+		const urlParams = new URLSearchParams(window.location.search);
+		const failed = urlParams.get('failed');
+		if(failed) window.alert("Incorrect user credentials");
+	</script>
+	<body onresize="OnResize()">
+		<div id="container">
+			<form id="form" action="/auth/forgot" method="post">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" value=""></br>
+				<select id="name1" name="name1"></select>
+				<select id="name2" name="name2"></select>
+				<select id="name3" name="name3"></select><br/>
+        <label for="password">New Password:</label>
+        <input type="password" id="password" name="password" value="">
+        <label for="confirm">Confirm Password:</label>
+        <input type="password" id="confirm" name="confirm" value=""><br/>
+        <input type="submit" value="Submit">
+      </form>
+			<br/>
+			<a href="/login">
+				<input type="button" value="Login"/>
+			</a>
+      <script type="text/javascript">
+            var names = '<%- displayNames %>';
+            var nameObj = JSON.parse(names);
+            console.log(nameObj.list1);
+
+            //TODO: Could make this look cleaner but that is a future refactor project :P
+            var text1 = ""
+            for(var name of nameObj.list1){
+              text1+=`<option>${name.toUpperCase()}</option>`;
+            }
+            document.getElementById("name1").innerHTML=text1;
+            //document.getElementById("list1").innerHTML=text1;
+
+            var text2 = "<option></option>"
+            for(var name of nameObj.list2){
+              text2+=`<option>${name.toUpperCase()}</option>`;
+            }
+            document.getElementById("name2").innerHTML=text2;
+
+            var text3 = ""
+            for(var name of nameObj.list3){
+              text3+=`<option>${name.toUpperCase()}</option>`;
+            }
+            document.getElementById("name3").innerHTML=text3;
+      </script>
+	</body>
+</html>

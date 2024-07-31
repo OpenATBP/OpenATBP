@@ -40,8 +40,6 @@ module.exports = {
     // /service/authenticate/login PROVIDES authToken [pid,TEGid,authid,authpass] RETURNS authToken.text={authToken}
     return new Promise(function (resolve, reject) {
       console.log('Auth ID: ' + data.authToken.authid);
-      console.log('Auth Pass: ' + decodeURIComponent(data.authToken.authpass));
-      console.log('TEGID: ' + data.authToken.TEGid);
       collection
         .findOne({
           'user.authid': `${data.authToken.authid}`,
@@ -75,21 +73,25 @@ module.exports = {
       try {
         const foundItem = shopData.find((item) => item.id === itemToPurchase);
         if (foundItem) {
+          //TODO: This could be simplified
           collection
             .updateOne(
-              { authToken: token },
+              { 'session.token': token },
               { $inc: { 'player.coins': foundItem.cost * -1 } }
             )
             .then(() => {
               //Subtracts the coins from the player
               collection
                 .updateOne(
-                  { authToken: token },
+                  { 'session.token': token },
                   { $push: { inventory: itemToPurchase } }
                 )
-                .then(() => {
-                  //Adds the item to the inventory item
-                  resolve(JSON.stringify({ success: 'true' }));
+                .then((r) => {
+                  if (r.modifiedCount == 0) {
+                    resolve(JSON.stringify({ success: 'false' }));
+                  } else {
+                    resolve(JSON.stringify({ success: 'true' }));
+                  }
                 });
             });
         } else {
@@ -104,7 +106,7 @@ module.exports = {
     return new Promise(function (resolve, reject) {
       collection
         .updateOne(
-          { authToken: username },
+          { 'session.token': username },
           { $addToSet: { friends: newFriend } }
         )
         .then(() => {
@@ -115,13 +117,43 @@ module.exports = {
         });
     });
   },
-  handleForgotPassword: function(username,dname,password,collection){
-    return new Promise(function(resolve, reject) {
-      collection.findOne({"user.authid":username,"user.dname":dname}).then((u) => {
-        if(u != null){
-          bcrypt.hash()
-        }
-      })
+  handleForgotPassword: function (username, dname, password, collection) {
+    return new Promise(function (resolve, reject) {
+      collection
+        .findOne({ 'user.authid': username, 'user.dname': dname })
+        .then((u) => {
+          if (u != null) {
+            bcrypt.hash(password, 10, (err, hash) => {
+              var today = new Date();
+              today.setDate(today.getDate() + 1);
+              var newSession = {
+                token: `${crypto.randomUUID()}`,
+                expires_at: today,
+                renewable: false,
+              };
+              collection
+                .updateOne(
+                  { 'user.authid': username },
+                  {
+                    $set: {
+                      session: newSession,
+                      'user.authpass': hash,
+                    },
+                  }
+                )
+                .then((r) => {
+                  resolve(u);
+                })
+                .catch((e) => {
+                  reject(e);
+                });
+            });
+          } else reject();
+        })
+        .catch((e) => {
+          console.log(e);
+          reject();
+        });
     });
-  }
+  },
 };
