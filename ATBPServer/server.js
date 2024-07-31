@@ -193,6 +193,10 @@ mongoClient.connect((err) => {
     res.render('login');
   });
 
+  app.get('/data/users',(req,res) => {
+    return JSON.stringify({users:onlinePlayers.length});
+  });
+
   app.post('/auth/register', (req, res) => {
     if (
       req.body.username != '' &&
