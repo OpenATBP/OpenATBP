@@ -194,7 +194,7 @@ mongoClient.connect((err) => {
   });
 
   app.get('/data/users',(req,res) => {
-    return JSON.stringify({users:onlinePlayers.length});
+    res.send(JSON.stringify({users:onlinePlayers.length}));
   });
 
   app.post('/auth/register', (req, res) => {
