@@ -1,7 +1,13 @@
 const crypto = require('crypto');
 const fs = require('node:fs');
 
-var newUserFunction = function (username, displayName, authpass, collection) {
+var newUserFunction = function (
+  username,
+  displayName,
+  authpass,
+  forgot,
+  collection
+) {
   //Creates new user in web server and database
   return new Promise((fulfill, reject) => {
     var inventoryArray = [];
@@ -54,6 +60,7 @@ var newUserFunction = function (username, displayName, authpass, collection) {
           inventory: inventoryArray,
           friends: [],
           betaTester: true, //TODO: Remove when open beta starts
+          forgot: forgot,
         };
         const opt = { upsert: true };
         const update = { $set: playerFile };

@@ -166,9 +166,7 @@ mongoClient.connect((err) => {
   });
 
   app.get('/forgot', (req, res) => {
-    res.render('forgot', {
-      displayNames: JSON.stringify(displayNames),
-    });
+    res.render('forgot');
   });
 
   app.get('/login', (req, res) => {
@@ -189,6 +187,7 @@ mongoClient.connect((err) => {
           req.body.username,
           req.body.password,
           names,
+          req.body.forgot,
           playerCollection
         )
         .then((user) => {
@@ -216,25 +215,17 @@ mongoClient.connect((err) => {
   });
 
   app.post('/auth/forgot', (req, res) => {
-    var names = [req.body.name1, req.body.name2, req.body.name3];
-    var name = '';
-    for (var i in names) {
-      name += names[i];
-      if (i != names.length - 1 && names[i] != '') name += ' ';
-    }
     if (req.body.password == req.body.confirm) {
       postRequest
         .handleForgotPassword(
           req.body.username,
-          name,
+          req.body.forgot,
           req.body.password,
           playerCollection
         )
         .then((data) => {
-          var date = Date.parse(data.session.expires_at);
-          res.cookie('session_token', data.session.token, {
-            maxAge: date.valueOf() - Date.now(),
-          });
+          res.clearCookie('session_token');
+          res.cookie('logged', false);
           res.redirect('/login');
         })
         .catch((e) => {

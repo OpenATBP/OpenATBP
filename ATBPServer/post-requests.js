@@ -7,7 +7,7 @@ const dbOp = require('./db-operations.js');
 const crypto = require('crypto');
 
 module.exports = {
-  handleRegister: function (username, password, names, collection) {
+  handleRegister: function (username, password, names, forgot, collection) {
     return new Promise(function (resolve, reject) {
       bcrypt.hash(password, 10, (err, hash) => {
         var name = '';
@@ -23,12 +23,14 @@ module.exports = {
             if (user != null) {
               resolve('login');
             } else {
-              dbOp
-                .createNewUser(username, name, hash, collection)
-                .then((u) => {
-                  resolve(u);
-                })
-                .catch(console.error);
+              bcrypt.hash(forgot, 10, (er, has) => {
+                dbOp
+                  .createNewUser(username, name, hash, has, collection)
+                  .then((u) => {
+                    resolve(u);
+                  })
+                  .catch(console.error);
+              });
             }
           })
           .catch(console.error);
@@ -117,36 +119,40 @@ module.exports = {
         });
     });
   },
-  handleForgotPassword: function (username, dname, password, collection) {
+  handleForgotPassword: function (username, forgot, password, collection) {
     return new Promise(function (resolve, reject) {
       collection
-        .findOne({ 'user.authid': username, 'user.dname': dname })
+        .findOne({ 'user.authid': username })
         .then((u) => {
           if (u != null) {
-            bcrypt.hash(password, 10, (err, hash) => {
-              var today = new Date();
-              today.setDate(today.getDate() + 1);
-              var newSession = {
-                token: `${crypto.randomUUID()}`,
-                expires_at: today,
-                renewable: false,
-              };
-              collection
-                .updateOne(
-                  { 'user.authid': username },
-                  {
-                    $set: {
-                      session: newSession,
-                      'user.authpass': hash,
-                    },
-                  }
-                )
-                .then((r) => {
-                  resolve(u);
-                })
-                .catch((e) => {
-                  reject(e);
+            bcrypt.compare(forgot, u.forgot, (err, res) => {
+              if (res) {
+                bcrypt.hash(password, 10, (err, hash) => {
+                  var today = new Date();
+                  today.setDate(today.getDate() + 1);
+                  var newSession = {
+                    token: `${crypto.randomUUID()}`,
+                    expires_at: today,
+                    renewable: false,
+                  };
+                  collection
+                    .updateOne(
+                      { 'user.authid': username },
+                      {
+                        $set: {
+                          session: newSession,
+                          'user.authpass': hash,
+                        },
+                      }
+                    )
+                    .then((r) => {
+                      resolve(u);
+                    })
+                    .catch((e) => {
+                      reject(e);
+                    });
                 });
+              } else reject(e);
             });
           } else reject();
         })
