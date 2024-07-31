@@ -6,6 +6,7 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -409,9 +410,8 @@ public class Champion {
                     target.getTeam());
             JsonNode attackData;
             if (this.attacker.getActorType() == ActorType.MINION) {
-                attackData =
-                        this.parentExt.getAttackData(
-                                this.attacker.getAvatar().replace("0", ""), this.attack);
+                String actorName = this.attacker.getAvatar().replace("0", "");
+                attackData = this.parentExt.getAttackData(actorName, this.attack);
                 this.attacker.setCanMove(true);
             } else {
                 switch (this.attack) { // to make Rattleballs counter-attack possible
@@ -426,37 +426,39 @@ public class Champion {
                         ((ObjectNode) attackData).put("attackType", "physical");
                         break;
                     default:
-                        attackData =
-                                this.parentExt.getAttackData(
-                                        this.attacker.getAvatar(), this.attack);
+                        attackData = parentExt.getAttackData(attacker.getAvatar(), attack);
                 }
             }
             if (this.attacker.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) this.attacker;
+                boolean hasGrobDevice = ua.hasBackpackItem("junk_4_grob_gob_glob_grod");
+
                 if (ua.hasBackpackItem("junk_1_numb_chucks") && ua.getStat("sp_category1") > 0) {
-                    if (!this.target.hasTempStat(
-                            "attackSpeed")) // TODO: This will make this not apply when people are
-                        // impacted by other attackSpeed debuffs/buffs
-                        this.target.addEffect(
-                                "attackSpeed",
-                                this.target.getPlayerStat("attackSpeed") * -0.25,
-                                3000);
-                } else if (ua.hasBackpackItem("junk_4_grob_gob_glob_grod")
-                        && ua.getStat("sp_category4") > 0) {
-                    if (!this.target.hasTempStat("spellDamage"))
-                        this.target.addEffect(
-                                "spellDamage",
-                                this.target.getPlayerStat("spellDamage") * -0.1,
-                                3000);
+                    double delta = target.getPlayerStat("attackSpeed") * -0.25;
+                    this.target.addEffect("attackSpeed", delta, 3000);
+
+                } else if (hasGrobDevice && ua.getStat("sp_category4") > 0) {
+                    Random random = new Random();
+                    int num = random.nextInt(4);
+                    if (num == 0) {
+                        int pointsPutIntoDevice = (int) ua.getStat("sp_category4");
+                        int POWER_DAMAGE_PER_POINT = 25;
+                        int decrease = (pointsPutIntoDevice * POWER_DAMAGE_PER_POINT) * -1;
+                        this.target.addEffect("spellDamage", decrease, 5000);
+                    }
                 }
-                if (this.attack.contains("basic")
-                        && this.target != null
-                        && this.target.getActorType() != ActorType.TOWER
-                        && this.target.getActorType() != ActorType.BASE) ua.handleLifeSteal();
+
+                if (canLifeSteal()) ua.handleLifeSteal();
             }
             if (attacker.getActorType() == ActorType.MONSTER && !attacker.getId().contains("gnome"))
                 attacker.setCanMove(true);
             this.target.addToDamageQueue(this.attacker, this.damage, attackData, false);
+        }
+
+        private boolean canLifeSteal() {
+            return target != null
+                    && target.getActorType() != ActorType.TOWER
+                    && target.getActorType() != ActorType.BASE;
         }
     }
 

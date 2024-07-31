@@ -221,12 +221,10 @@ public class LSP extends UserActor {
                 List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(team, qRect);
                 if (!actorsInPolygon.isEmpty()) {
                     for (Actor a : actorsInPolygon) {
-                        if (a.getActorType() != ActorType.TOWER
-                                && a.getActorType() != ActorType.BASE) {
-                            if (!a.getId().contains("turret"))
-                                a.handleFear(LSP.this.location, Q_FEAR_DURATION);
-                            a.addToDamageQueue(
-                                    LSP.this, getSpellDamage(spellData), spellData, false);
+                        if (isNonStructure(a)) {
+                            double damage = getSpellDamage(spellData);
+                            a.handleFear(LSP.this.location, Q_FEAR_DURATION);
+                            a.addToDamageQueue(LSP.this, damage, spellData, false);
                             affectedActors.add(a);
                         }
                     }

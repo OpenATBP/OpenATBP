@@ -2,6 +2,7 @@ package xyz.openatbp.extension.game.champions;
 
 import java.awt.geom.Point2D;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -41,34 +42,44 @@ public class Keeoth extends Monster {
 
     @Override
     public void die(Actor a) {
-        if (!this.dead
-                && (a.getActorType() == ActorType.PLAYER
-                        || a.getActorType() == ActorType.COMPANION)) {
-            for (UserActor u : parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
-                if (u.getTeam() == a.getTeam()) {
-                    u.setHasKeeothBuff(true);
-                    u.setKeeothBuffStartTime(System.currentTimeMillis());
-                    u.addEffect("lifeSteal", 35d, KEEOTH_BUFF_DURATION, "jungle_buff_keeoth", "");
-                    u.addEffect("spellVamp", 40d, KEEOTH_BUFF_DURATION);
-                    u.addEffect("criticalChance", 35d, KEEOTH_BUFF_DURATION);
-                    double healthChange = (double) u.getHealth() * 0.3d;
-                    u.changeHealth((int) healthChange);
+        if (isProperKiller(a)) {
+            List<UserActor> players = parentExt.getRoomHandler(room.getName()).getPlayers();
+            int killerTeam = a.getTeam();
+
+            for (UserActor ua : players) {
+                String sound = ua.getTeam() == killerTeam ? "you_keeoth" : "enemy_keeoth";
+                String finalSound = "announcer/" + sound;
+                ExtensionCommands.playSound(parentExt, ua.getUser(), "global", finalSound);
+
+                if (ua.getTeam() == killerTeam && ua.getHealth() > 0) {
+                    ua.setHasKeeothBuff(true);
+                    ua.setKeeothBuffStartTime(System.currentTimeMillis());
+                    ua.addEffect("lifeSteal", 35d, KEEOTH_BUFF_DURATION, "jungle_buff_keeoth", "");
+                    ua.addEffect("spellVamp", 40d, KEEOTH_BUFF_DURATION);
+                    ua.addEffect("criticalChance", 35d, KEEOTH_BUFF_DURATION);
+                    double healthChange = (double) ua.getHealth() * 0.3d;
+                    ua.changeHealth((int) healthChange);
                     ExtensionCommands.addStatusIcon(
                             this.parentExt,
-                            u.getUser(),
+                            ua.getUser(),
                             "keeoth_buff",
                             "keeoth_buff_desc",
                             "icon_buff_keeoth",
                             KEEOTH_BUFF_DURATION);
-                    ExtensionCommands.playSound(
-                            parentExt, u.getUser(), "global", "announcer/you_keeoth");
-                } else {
-                    ExtensionCommands.playSound(
-                            parentExt, u.getUser(), "global", "announcer/enemy_keeoth");
                 }
             }
         }
         super.die(a);
+    }
+
+    private boolean isProperKiller(Actor a) {
+        ActorType[] types = {ActorType.PLAYER, ActorType.COMPANION};
+        for (ActorType type : types) {
+            if (a.getActorType() == type) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

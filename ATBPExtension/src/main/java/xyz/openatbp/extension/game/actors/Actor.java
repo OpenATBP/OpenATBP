@@ -18,6 +18,7 @@ import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public abstract class Actor {
     protected static final float KNOCKBACK_SPEED = 11;
+    protected static final int FEAR_MOVING_DISTANCE = 3; // should be close to og, subject to change
 
     public enum AttackType {
         PHYSICAL,
@@ -283,7 +284,10 @@ public abstract class Actor {
     }
 
     public void handleCharm(UserActor charmer, int duration) {
-        if (!this.states.get(ActorState.CHARMED) && !this.states.get(ActorState.IMMUNITY)) {
+        if (!this.states.get(ActorState.CHARMED)
+                && !this.states.get(ActorState.IMMUNITY)
+                && !this.getId().contains("turret")
+                && !this.getId().contains("decoy")) {
             // this.setState(ActorState.CHARMED, true);
             this.setTarget(charmer);
             this.movementLine = new Line2D.Float(this.location, charmer.getLocation());
@@ -321,11 +325,14 @@ public abstract class Actor {
     }
 
     public void handleFear(Point2D source, int duration) {
-        if (!this.hasMovementCC() && !this.states.get(ActorState.IMMUNITY)) {
+        if (!this.hasMovementCC()
+                && !this.states.get(ActorState.IMMUNITY)
+                && !this.getId().contains("turret")
+                && !this.getId().contains("decoy")) {
             this.target = null;
             this.canMove = true;
             Line2D sourceToPlayer = new Line2D.Float(source, this.location);
-            Line2D extendedLine = Champion.extendLine(sourceToPlayer, 15f);
+            Line2D extendedLine = Champion.extendLine(sourceToPlayer, FEAR_MOVING_DISTANCE);
             this.moveWithCollision(extendedLine.getP2());
             this.addState(ActorState.FEARED, 0d, duration);
         }
