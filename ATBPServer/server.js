@@ -36,14 +36,16 @@ async function removeDuplicateFriends(collection) {
   }
 }
 
-async function convertUserNames(collection){
+async function convertUserNames(collection) {
   try {
     var cursor = collection.find();
     for await (var doc of cursor) {
-      var newId = `${Math.floor(Math.random()*1000000000)}`;
+      var newId = `${Math.floor(Math.random() * 1000000000)}`;
       var q = { 'user.authpass': doc.user.authpass };
       var o = { upsert: true };
-      var up = { $set: { 'user.authid': newId , 'user.TEGid': doc.user.authid} };
+      var up = {
+        $set: { 'user.authid': newId, 'user.TEGid': doc.user.authid },
+      };
 
       var res = await collection.updateOne(q, up, o);
       console.log(res);

@@ -25,7 +25,7 @@ var newUserFunction = function (
           user: {
             TEGid: `${username}`,
             dname: `${displayName}`,
-            authid: `${Math.floor(Math.random()*1000000000)}`,
+            authid: `${Math.floor(Math.random() * 1000000000)}`,
             authpass: `${authpass}`,
           },
           session: {
