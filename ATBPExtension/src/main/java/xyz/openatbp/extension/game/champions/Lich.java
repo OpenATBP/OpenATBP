@@ -98,6 +98,7 @@ public class Lich extends UserActor {
         if (this.eActive && System.currentTimeMillis() - this.eStartTime >= E_DURATION) {
             this.eActive = false;
             this.eLocation = null;
+            ExtensionCommands.removeStatusIcon(parentExt, player, "ultDuration");
             Runnable handleECooldown =
                     () -> {
                         this.canCast[2] = true;
@@ -161,8 +162,7 @@ public class Lich extends UserActor {
             int gCooldown,
             int castDelay,
             Point2D dest) {
-        if (skully == null
-                && System.currentTimeMillis() - lastSkullySpawn > getReducedCooldown(40000)) {
+        if (skully == null && System.currentTimeMillis() - lastSkullySpawn > PASSIVE_COOLDOWN) {
             this.spawnSkully(this.location);
         }
         switch (ability) {
@@ -286,6 +286,7 @@ public class Lich extends UserActor {
                                     teleportLocation,
                                     false);
                         }
+                        ExtensionCommands.removeStatusIcon(parentExt, player, "ultDuration");
                         ExtensionCommands.createActorFX(
                                 parentExt,
                                 room,
@@ -316,7 +317,7 @@ public class Lich extends UserActor {
                 "icon_lich_passive",
                 PASSIVE_DURATION);
         ExtensionCommands.actorAbilityResponse(
-                parentExt, player, "passive", true, getReducedCooldown(PASSIVE_COOLDOWN), 2);
+                parentExt, player, "passive", true, PASSIVE_COOLDOWN, 0);
         ExtensionCommands.createActorFX(
                 this.parentExt,
                 this.room,
@@ -393,6 +394,13 @@ public class Lich extends UserActor {
                         false,
                         team,
                         0f);
+                ExtensionCommands.addStatusIcon(
+                        parentExt,
+                        player,
+                        "ultDuration",
+                        "lich_spell_3_description",
+                        "icon_lich_s3",
+                        E_DURATION);
             }
         }
 

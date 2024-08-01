@@ -129,7 +129,8 @@ public class FlamePrincess extends UserActor {
         if (passiveEnabled) {
             passiveEnabled = false;
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_flame_passive");
-            ExtensionCommands.actorAbilityResponse(parentExt, player, "passive", true, 10000, 0);
+            ExtensionCommands.actorAbilityResponse(
+                    parentExt, player, "passive", true, PASSIVE_COOLDOWN, 0);
         }
     }
 
@@ -163,10 +164,7 @@ public class FlamePrincess extends UserActor {
             int gCooldown,
             int castDelay,
             Point2D dest) {
-        super.useAbility(ability, spellData, cooldown, gCooldown, castDelay, dest);
-        if (ultUses == 0
-                && !passiveEnabled
-                && System.currentTimeMillis() - lastPassiveUsage >= PASSIVE_COOLDOWN) {
+        if (canTriggerPassive(ability)) {
             ExtensionCommands.createActorFX(
                     this.parentExt,
                     this.room,
@@ -191,6 +189,7 @@ public class FlamePrincess extends UserActor {
             case 1:
                 this.canCast[0] = false;
                 try {
+                    stopMoving();
                     Line2D abilityLine = Champion.getAbilityLine(location, dest, 8f);
                     ExtensionCommands.playSound(
                             parentExt,
@@ -226,6 +225,7 @@ public class FlamePrincess extends UserActor {
             case 2:
                 this.canCast[1] = false;
                 try {
+                    stopMoving();
                     this.wUsed = true;
                     ExtensionCommands.createWorldFX(
                             this.parentExt,
@@ -302,6 +302,13 @@ public class FlamePrincess extends UserActor {
                             true,
                             false,
                             this.team);
+                    ExtensionCommands.addStatusIcon(
+                            parentExt,
+                            player,
+                            "ultDurationIcon",
+                            "flame_spell_3_description",
+                            "icon_flame_s3",
+                            E_DURATION);
                     ExtensionCommands.scaleActor(this.parentExt, this.room, this.id, 1.5f);
                     this.fpScale = 1.5f;
                     ExtensionCommands.actorAbilityResponse(
@@ -345,6 +352,14 @@ public class FlamePrincess extends UserActor {
         return ChampionData.getBaseAbilityCooldown(this, 3);
     }
 
+    private boolean canTriggerPassive(int ability) {
+        long currentTime = System.currentTimeMillis();
+        boolean ready = !passiveEnabled && currentTime - lastPassiveUsage >= PASSIVE_COOLDOWN;
+
+        if (ready && ability != 3) return true;
+        return ready && ultUses == 0;
+    }
+
     private void endUlt() {
         this.form = Form.NORMAL;
         if (this.fpScale == 1.5f) {
@@ -355,7 +370,7 @@ public class FlamePrincess extends UserActor {
             ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
         }
         ExtensionCommands.removeFx(parentExt, room, id + "flameE");
-
+        ExtensionCommands.removeStatusIcon(parentExt, player, "ultDurationIcon");
         int delay = getReducedCooldown(getBaseUltCooldown());
         Runnable handleECooldown =
                 () -> {
@@ -523,7 +538,7 @@ public class FlamePrincess extends UserActor {
                 FlamePrincess.this.passiveEnabled = false;
                 ExtensionCommands.removeFx(parentExt, room, id + "_flame_passive");
                 ExtensionCommands.actorAbilityResponse(
-                        parentExt, player, "passive", true, 10000, 0);
+                        parentExt, player, "passive", true, PASSIVE_COOLDOWN, 0);
                 lastPassiveUsage = System.currentTimeMillis();
                 ExtensionCommands.createActorFX(
                         parentExt,
@@ -552,7 +567,7 @@ public class FlamePrincess extends UserActor {
                 FlamePrincess.this.passiveEnabled = false;
                 ExtensionCommands.removeFx(parentExt, room, id + "_flame_passive");
                 ExtensionCommands.actorAbilityResponse(
-                        parentExt, player, "passive", true, 10000, 0);
+                        parentExt, player, "passive", true, PASSIVE_COOLDOWN, 0);
                 lastPassiveUsage = System.currentTimeMillis();
             }
         }
