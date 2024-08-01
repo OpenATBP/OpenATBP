@@ -129,7 +129,8 @@ public class FlamePrincess extends UserActor {
         if (passiveEnabled) {
             passiveEnabled = false;
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_flame_passive");
-            ExtensionCommands.actorAbilityResponse(parentExt, player, "passive", true, 10000, 0);
+            ExtensionCommands.actorAbilityResponse(
+                    parentExt, player, "passive", true, PASSIVE_COOLDOWN, 0);
         }
     }
 
@@ -537,7 +538,7 @@ public class FlamePrincess extends UserActor {
                 FlamePrincess.this.passiveEnabled = false;
                 ExtensionCommands.removeFx(parentExt, room, id + "_flame_passive");
                 ExtensionCommands.actorAbilityResponse(
-                        parentExt, player, "passive", true, 10000, 0);
+                        parentExt, player, "passive", true, PASSIVE_COOLDOWN, 0);
                 lastPassiveUsage = System.currentTimeMillis();
                 ExtensionCommands.createActorFX(
                         parentExt,
@@ -566,7 +567,7 @@ public class FlamePrincess extends UserActor {
                 FlamePrincess.this.passiveEnabled = false;
                 ExtensionCommands.removeFx(parentExt, room, id + "_flame_passive");
                 ExtensionCommands.actorAbilityResponse(
-                        parentExt, player, "passive", true, 10000, 0);
+                        parentExt, player, "passive", true, PASSIVE_COOLDOWN, 0);
                 lastPassiveUsage = System.currentTimeMillis();
             }
         }
