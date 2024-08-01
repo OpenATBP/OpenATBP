@@ -107,7 +107,6 @@ public class Gunter extends UserActor {
             int gCooldown,
             int castDelay,
             Point2D dest) {
-        super.useAbility(ability, spellData, cooldown, gCooldown, castDelay, dest);
         switch (ability) {
             case 1:
                 this.canCast[0] = false;
@@ -157,6 +156,7 @@ public class Gunter extends UserActor {
             case 2:
                 this.canCast[1] = false;
                 try {
+                    stopMoving();
                     Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
                     ExtensionCommands.playSound(
                             this.parentExt, this.room, "", "sfx_gunter_wing_it", this.location);
@@ -183,6 +183,7 @@ public class Gunter extends UserActor {
             case 3:
                 this.canCast[2] = false;
                 try {
+                    stopMoving();
                     this.ultStartTime = System.currentTimeMillis();
                     this.ultActivated = true;
                     this.eTrapezoid =

@@ -189,6 +189,19 @@ public class IceKing extends UserActor {
     }
 
     @Override
+    public void attack(Actor a) {
+        if (this.attackCooldown == 0) {
+            applyStopMovingDuringAttack();
+            String emit = "Bip01";
+            String projectile = "iceKing_projectile";
+            if (this.bundle == AssetBundle.FLIGHT) emit = "Bip001 Neck";
+            BasicAttack basicAttack = new BasicAttack(this, a, handleAttack(a));
+            RangedAttack rangedAttack = new RangedAttack(a, basicAttack, projectile, emit);
+            scheduleTask(rangedAttack, BASIC_ATTACK_DELAY);
+        }
+    }
+
+    @Override
     public void handleSwapFromPoly() {
         String bundle =
                 this.bundle == AssetBundle.FLIGHT && this.ultActive
@@ -227,11 +240,11 @@ public class IceKing extends UserActor {
             int gCooldown,
             int castDelay,
             Point2D dest) {
-        super.useAbility(ability, spellData, cooldown, gCooldown, castDelay, dest);
         if (System.currentTimeMillis() > this.lastAbilityUsed)
             this.lastAbilityUsed = System.currentTimeMillis();
         switch (ability) {
             case 1:
+                stopMoving();
                 this.canCast[0] = false;
                 String freezeVO = SkinData.getIceKingQVO(avatar);
                 ExtensionCommands.playSound(
@@ -249,6 +262,7 @@ public class IceKing extends UserActor {
             case 2:
                 this.canCast[1] = false;
                 try {
+                    stopMoving();
                     this.wStartTime = System.currentTimeMillis();
                     this.wLocation = dest;
                     this.lastWHit = new HashMap<>();
@@ -322,6 +336,7 @@ public class IceKing extends UserActor {
             case 3:
                 this.canCast[2] = false;
                 try {
+                    stopMoving(castDelay);
                     this.ultActive = true;
                     this.ultLocation = this.location;
                     this.ultStartTime = System.currentTimeMillis();
@@ -472,5 +487,25 @@ public class IceKing extends UserActor {
 
         @Override
         protected void spellPassive() {}
+    }
+
+    private class BasicAttack implements Runnable {
+        Actor attacker;
+        Actor target;
+        boolean crit;
+
+        BasicAttack(Actor a, Actor t, boolean crit) {
+            this.attacker = a;
+            this.target = t;
+            this.crit = crit;
+        }
+
+        @Override
+        public void run() {
+            double damage = this.attacker.getPlayerStat("attackDamage");
+            if (crit) damage *= 2;
+            new Champion.DelayedAttack(parentExt, attacker, target, (int) damage, "basicAttack")
+                    .run();
+        }
     }
 }

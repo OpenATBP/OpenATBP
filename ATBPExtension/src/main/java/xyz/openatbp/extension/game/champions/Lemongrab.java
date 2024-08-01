@@ -134,11 +134,11 @@ public class Lemongrab extends UserActor {
             int gCooldown,
             int castDelay,
             Point2D dest) {
-        super.useAbility(ability, spellData, cooldown, gCooldown, castDelay, dest);
         switch (ability) {
             case 1:
                 this.canCast[0] = false;
                 try {
+                    stopMoving(castDelay);
                     Path2D trapezoid =
                             Champion.createTrapezoid(
                                     location,
@@ -197,6 +197,7 @@ public class Lemongrab extends UserActor {
             case 2:
                 this.canCast[1] = false;
                 try {
+                    stopMoving(castDelay);
                     ExtensionCommands.playSound(
                             this.parentExt,
                             this.room,
@@ -253,6 +254,7 @@ public class Lemongrab extends UserActor {
             case 3:
                 this.canCast[2] = false;
                 try {
+                    stopMoving();
                     this.isCastingUlt = true;
                     ExtensionCommands.createWorldFX(
                             this.parentExt,
