@@ -211,7 +211,10 @@ public class Jake extends UserActor {
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_jake_ring_2");
             updateStatMenu("speed");
         }
-        if (grabActive) resetGrab();
+        if (grabActive) {
+            resetGrab();
+            blockAbilities = false;
+        }
     }
 
     @Override

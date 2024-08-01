@@ -1044,10 +1044,7 @@ public class UserActor extends Actor {
             if (this.canCast[abilityIndex]) {
                 this.canCast[abilityIndex] = false;
                 int finalAbilityIndex = abilityIndex;
-                Runnable castReset =
-                        () -> {
-                            canCast[finalAbilityIndex] = true;
-                        };
+                Runnable castReset = () -> canCast[finalAbilityIndex] = true;
                 parentExt
                         .getTaskScheduler()
                         .schedule(castReset, getReducedCooldown(cooldown), TimeUnit.MILLISECONDS);

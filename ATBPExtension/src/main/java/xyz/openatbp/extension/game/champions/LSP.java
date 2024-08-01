@@ -309,15 +309,13 @@ public class LSP extends UserActor {
             this.victims.add(victim);
             JsonNode spellData = this.parentExt.getAttackData(LSP.this.avatar, "spell3");
             if (victim.getTeam() == LSP.this.team) {
-                victim.changeHealth((int) (getSpellDamage(spellData) * (1 - this.healReduction)));
+                int healValue = (int) (getSpellDamage(spellData) * (1 - this.healReduction));
+                victim.changeHealth(healValue);
                 this.healReduction += 0.3d;
                 if (this.healReduction > 0.7d) this.healReduction = 0.7d;
             } else {
-                victim.addToDamageQueue(
-                        LSP.this,
-                        getSpellDamage(spellData) * (1 - this.damageReduction),
-                        spellData,
-                        false);
+                double damage = getSpellDamage(spellData) * (1 - this.damageReduction);
+                victim.addToDamageQueue(LSP.this, damage, spellData, false);
                 this.damageReduction += 0.3d;
                 if (this.damageReduction > 0.7d) this.damageReduction = 0.7d;
             }
@@ -325,8 +323,10 @@ public class LSP extends UserActor {
 
         @Override
         public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            List<Actor> nonStructureEnemies = roomHandler.getNonStructureEnemies(team);
-            for (Actor a : nonStructureEnemies) {
+            int team = owner.getTeam();
+            List<Actor> actors = roomHandler.getEligibleActors(team, false, true, true, true);
+            actors.remove(LSP.this);
+            for (Actor a : actors) {
                 if (!this.victims.contains(a)) {
                     double collisionRadius =
                             parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
