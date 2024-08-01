@@ -90,6 +90,13 @@ async function resetElo(collection) {
   }
 }
 
+function getLowerCaseName(name) {
+  var firstLetter = name.charAt(name).toUpperCase();
+  var fullString = firstLetter;
+  fullString += name.toLowerCase().substring(1, name.length);
+  return fullString;
+}
+
 let config;
 try {
   config = require('./config.js');
@@ -199,9 +206,25 @@ mongoClient.connect((err) => {
 
   app.post('/auth/register', (req, res) => {
     var nameCount = 0;
-    if (req.body.name1 != '') nameCount++;
-    if (req.body.name2 != '') nameCount++;
-    if (req.body.name3 != '') nameCount++;
+    if (
+      req.body.name1 != '' &&
+      displayNames.list1.includes(getLowerCaseName(req.body.name1))
+    )
+      nameCount++;
+    else if (req.body.name1 != '') nameCount = -100;
+    if (
+      req.body.name2 != '' &&
+      displayNames.list2.includes(getLowerCaseName(req.body.name2))
+    )
+      nameCount++;
+    else if (req.body.name2 != '') nameCount = -100;
+    if (
+      req.body.name3 != '' &&
+      displayNames.list3.includes(getLowerCaseName(req.body.name3))
+    )
+      nameCount++;
+    else if (req.body.name3 != '') nameCount = -100;
+
     if (
       req.body.username != '' &&
       req.body.password != '' &&
