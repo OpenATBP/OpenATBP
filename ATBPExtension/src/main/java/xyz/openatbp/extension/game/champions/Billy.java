@@ -29,6 +29,7 @@ public class Billy extends UserActor {
     private static final int E_CAST_DELAY = 750;
     private static final int E_EMP_DURATION = 4500;
     private int passiveUses = 0;
+    private boolean jumpActive = false;
     private Point2D ultLocation = null;
     private long ultStartTime = 0;
     private long lastUltTick = 0;
@@ -94,6 +95,12 @@ public class Billy extends UserActor {
                     this.team,
                     0f);
         }
+    }
+
+    @Override
+    public boolean canUseAbility(int ability) {
+        if (jumpActive) return false;
+        return super.canUseAbility(ability);
     }
 
     @Override
@@ -176,6 +183,7 @@ public class Billy extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
+                this.jumpActive = true;
                 Point2D finalDashPoint = this.location;
                 double time = 0;
                 try {
@@ -317,6 +325,7 @@ public class Billy extends UserActor {
 
         @Override
         protected void spellW() {
+            jumpActive = false;
             Runnable enableWCasting = () -> canCast[1] = true;
             int cd = getReducedCooldown(cooldown);
             scheduleTask(enableWCasting, cd);

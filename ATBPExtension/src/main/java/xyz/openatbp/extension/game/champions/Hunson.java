@@ -44,9 +44,7 @@ public class Hunson extends UserActor {
     private long qStartTime = 0;
     private long ultStart = 0;
     private long wStartTime = 0;
-    private boolean wActive = false;
-    private List<Actor> fearedActors;
-    private Point2D wLocation = null;
+    private List<Actor> fearedActors = new ArrayList<>();
 
     public Hunson(User u, ATBPExtension parentExt) {
         super(u, parentExt);
