@@ -3,7 +3,7 @@ window.onload = function () {
   unity = document.getElementById('unity_player');
 };
 
-var OnResize = function() {
+var OnResize = function () {
   unity.style.width = window.innerWidth + 'px';
   unity.style.height = window.innerHeight + 'px';
 };
@@ -12,10 +12,7 @@ function Fireteam_CheckMSIBLoggedIn(name, callback) {
   var cookies = document.cookie.split(';');
   for (var c of cookies) {
     if (c.includes('logged')) {
-      returnOK = c
-        .replace('logged=', '')
-        .replace(' ', '')
-        .replace(';', '');
+      returnOK = c.replace('logged=', '').replace(' ', '').replace(';', '');
     }
   }
   console.log(returnOK);
@@ -71,7 +68,7 @@ var UnityRequest = function (
 };
 
 var LoginModule = {
-  showLoginWindow: function(){
+  showLoginWindow: function () {
     window.location.href = '/login';
-  }
+  },
 };

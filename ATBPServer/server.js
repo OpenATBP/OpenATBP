@@ -310,16 +310,26 @@ mongoClient.connect((err) => {
           playerCollection
         )
         .then((user) => {
-          res.cookie('TEGid', user.user.TEGid);
-          res.cookie('authid', user.user.authid);
-          res.cookie('dname', user.user.dname);
-          res.cookie('authpass', user.user.authpass);
           var date = Date.parse(user.session.expires_at);
+          res.cookie('TEGid', user.user.TEGid, {
+            maxAge: date.valueOf() - Date.now(),
+          });
+          res.cookie('authid', user.user.authid, {
+            maxAge: date.valueOf() - Date.now(),
+          });
+          res.cookie('dname', user.user.dname, {
+            maxAge: date.valueOf() - Date.now(),
+          });
+          res.cookie('authpass', user.user.authpass, {
+            maxAge: date.valueOf() - Date.now(),
+          });
           console.log(date.valueOf());
           res.cookie('session_token', user.session.token, {
             maxAge: date.valueOf() - Date.now(),
           });
-          res.cookie('logged', true);
+          res.cookie('logged', true, {
+            maxAge: date.valueOf() - Date.now(),
+          });
           res.redirect(config.httpserver.url);
         })
         .catch((e) => {
