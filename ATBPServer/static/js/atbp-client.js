@@ -3,16 +3,18 @@ window.onload = function () {
   unity = document.getElementById('unity_player');
 };
 
-function OnResize() {
+var OnResize = function () {
   unity.style.width = window.innerWidth + 'px';
   unity.style.height = window.innerHeight + 'px';
-}
+};
 
 function Fireteam_CheckMSIBLoggedIn(name, callback) {
-  returnOK = document.cookie
-    .split('; ')
-    .find((row) => row.startsWith('logged'))
-    ?.split('=')[1];
+  var cookies = document.cookie.split(';');
+  for (var c of cookies) {
+    if (c.includes('logged')) {
+      returnOK = c.replace('logged=', '').replace(' ', '').replace(';', '');
+    }
+  }
   console.log(returnOK);
   if (returnOK == undefined) returnOK = 'false';
   unity.SendMessage(name, callback, returnOK);
@@ -65,69 +67,8 @@ var UnityRequest = function (
   }
 };
 
-var LoginModule = function () {};
-
-LoginModule.showLoginWindow = function () {
-  if (true) {
-    //TODO: Fix so it is variable
-    window.location.href =
-      'https://discord.com/api/oauth2/authorize?client_id=' +
-      client_id +
-      '&redirect_uri=' +
-      redirect +
-      '&response_type=code&scope=identify';
-  } else {
-    console.log(discord_enabled);
-    var userName = prompt('Enter name');
-    if (userName != null) {
-      try {
-        fetch(`service/authenticate/user/${userName.replace('%20', '')}`, {
-          //If user exists, requests the user information to authenticate
-          Method: 'GET',
-          Body: JSON.stringify({ username: userName }),
-          Mode: 'cors',
-          Cache: 'default',
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            if (data != null) {
-              (document.cookie = `TEGid=${data.user.TEGid}`),
-                (document.cookie = `authid=${data.user.authid}`);
-              document.cookie = `dname=${data.user.dname}`;
-              document.cookie = `authpass=${data.user.authpass}`;
-              document.cookie = 'logged=true';
-              unity.SendMessage('MainGameController', 'HandleLogin', '');
-            } else {
-              //If user does not exist, it asks for a password to add as the authpass to the database. If passwords are stored, will need to hash
-              var password = prompt('New user! Enter password');
-              if (password != null) {
-                var xhr = new XMLHttpRequest();
-                xhr.open(
-                  'POST',
-                  `service/authenticate/user/${userName.replace('%20', ' ')}`
-                );
-
-                xhr.onload = () => {
-                  var userData = JSON.parse(xhr.response);
-
-                  (document.cookie = `TEGid=${userData.TEGid}`),
-                    (document.cookie = `authid=${userData.authid}`);
-                  document.cookie = `dname=${userData.dname}`;
-                  document.cookie = `authpass=${userData.authpass}`;
-                  document.cookie = 'logged=true';
-                  unity.SendMessage('MainGameController', 'HandleLogin', '');
-                };
-
-                xhr.send(JSON.stringify({ password: password }));
-              }
-            }
-          })
-          .catch((err) => {
-            console.log(err);
-          });
-      } catch (e) {
-        console.log(e);
-      }
-    }
-  }
+var LoginModule = {
+  showLoginWindow: function () {
+    window.location.href = '/login';
+  },
 };

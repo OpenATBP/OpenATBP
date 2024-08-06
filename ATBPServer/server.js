@@ -36,6 +36,25 @@ async function removeDuplicateFriends(collection) {
   }
 }
 
+async function convertUserNames(collection) {
+  try {
+    var cursor = collection.find();
+    for await (var doc of cursor) {
+      var newId = `${Math.floor(Math.random() * 1000000000)}`;
+      var q = { 'user.authpass': doc.user.authpass };
+      var o = { upsert: true };
+      var up = {
+        $set: { 'user.authid': newId, 'user.TEGid': doc.user.authid },
+      };
+
+      var res = await collection.updateOne(q, up, o);
+      console.log(res);
+    }
+  } finally {
+    console.log('Done!');
+  }
+}
+
 //Added to make everyone in the database a beta tester
 async function addBetaTesters(collection) {
   try {
@@ -69,6 +88,13 @@ async function resetElo(collection) {
   } finally {
     console.log('Done!');
   }
+}
+
+function getLowerCaseName(name) {
+  var firstLetter = name.charAt(name).toUpperCase();
+  var fullString = firstLetter;
+  fullString += name.toLowerCase().substring(1, name.length);
+  return fullString;
 }
 
 let config;
@@ -120,10 +146,11 @@ mongoClient.connect((err) => {
     process.exit(1);
   }
 
-  const playerCollection = mongoClient.db('openatbp').collection('players');
+  const playerCollection = mongoClient.db('openatbp').collection('users');
   //removeDuplicateFriends(playerCollection).catch(console.dir);
   //addBetaTesters(playerCollection).catch(console.dir);
   //resetElo(playerCollection).catch(console.dir);
+  //convertUserNames(playerCollection).catch(console.dir);
 
   if (
     !fs.existsSync('static/crossdomain.xml') ||
@@ -157,6 +184,159 @@ mongoClient.connect((err) => {
       redirect: config.discord.redirect_url,
       discord_enabled: config.discord.enable,
     });
+  });
+
+  app.get('/register', (req, res) => {
+    res.render('register', {
+      displayNames: JSON.stringify(displayNames),
+    });
+  });
+
+  app.get('/forgot', (req, res) => {
+    res.render('forgot');
+  });
+
+  app.get('/login', (req, res) => {
+    res.render('login');
+  });
+
+  app.get('/data/users', (req, res) => {
+    res.send(JSON.stringify({ users: onlinePlayers.length }));
+  });
+
+  app.post('/auth/register', (req, res) => {
+    var nameCount = 0;
+    if (
+      req.body.name1 != '' &&
+      displayNames.list1.includes(getLowerCaseName(req.body.name1))
+    )
+      nameCount++;
+    else if (req.body.name1 != '') nameCount = -100;
+    if (
+      req.body.name2 != '' &&
+      displayNames.list2.includes(getLowerCaseName(req.body.name2))
+    )
+      nameCount++;
+    else if (req.body.name2 != '') nameCount = -100;
+    if (
+      req.body.name3 != '' &&
+      displayNames.list3.includes(getLowerCaseName(req.body.name3))
+    )
+      nameCount++;
+    else if (req.body.name3 != '') nameCount = -100;
+
+    if (
+      req.body.username != '' &&
+      req.body.password != '' &&
+      nameCount > 1 &&
+      req.body.password == req.body.confirm
+    ) {
+      var names = [req.body.name1, req.body.name2, req.body.name3];
+      postRequest
+        .handleRegister(
+          req.body.username,
+          req.body.password,
+          names,
+          req.body.forgot,
+          playerCollection
+        )
+        .then((user) => {
+          if (user == 'login') {
+            res.redirect('/login?exists=true');
+          } else {
+            res.cookie('TEGid', user.user.TEGid);
+            res.cookie('authid', user.user.authid);
+            res.cookie('dname', user.user.dname);
+            res.cookie('authpass', user.user.authpass);
+            var date = Date.parse(user.session.expires_at);
+            console.log(date.valueOf());
+            res.cookie('session_token', user.session.token, {
+              maxAge: date.valueOf() - Date.now(),
+            });
+            res.cookie('logged', true);
+            res.redirect(config.httpserver.url);
+          }
+        })
+        .catch((e) => {
+          console.log(e);
+          res.redirect('/register?failed=true');
+        });
+    } else res.redirect('/register?failed=true');
+  });
+
+  app.post('/auth/forgot', (req, res) => {
+    if (req.body.password == req.body.confirm) {
+      postRequest
+        .handleForgotPassword(
+          req.body.username,
+          req.body.forgot,
+          req.body.password,
+          playerCollection
+        )
+        .then((data) => {
+          res.clearCookie('session_token');
+          res.cookie('logged', false);
+          res.redirect('/login');
+        })
+        .catch((e) => {
+          console.log(e);
+          res.redirect('/forgot?failed=true');
+        });
+    } else res.redirect('/forgot?failed=true');
+  });
+
+  app.get('/auth/login', (req, res) => {
+    var session_token = '';
+    for (var h of req.rawHeaders) {
+      if (h.includes('session_token')) {
+        var cookies = h.split(';');
+        for (var c of cookies) {
+          if (c.includes('session_token')) {
+            session_token = c
+              .replace('session_token=', '')
+              .replace(' ', '')
+              .replace(';', '');
+          }
+        }
+      }
+    }
+    console.log(session_token);
+    if (req.query.username != '' && req.query.password != '') {
+      getRequest
+        .handleLogin(
+          req.query.username,
+          req.query.password,
+          session_token,
+          playerCollection
+        )
+        .then((user) => {
+          var date = Date.parse(user.session.expires_at);
+          res.cookie('TEGid', user.user.TEGid, {
+            maxAge: date.valueOf() - Date.now(),
+          });
+          res.cookie('authid', user.user.authid, {
+            maxAge: date.valueOf() - Date.now(),
+          });
+          res.cookie('dname', user.user.dname, {
+            maxAge: date.valueOf() - Date.now(),
+          });
+          res.cookie('authpass', user.user.authpass, {
+            maxAge: date.valueOf() - Date.now(),
+          });
+          console.log(date.valueOf());
+          res.cookie('session_token', user.session.token, {
+            maxAge: date.valueOf() - Date.now(),
+          });
+          res.cookie('logged', true, {
+            maxAge: date.valueOf() - Date.now(),
+          });
+          res.redirect(config.httpserver.url);
+        })
+        .catch((e) => {
+          console.log(e);
+          res.redirect('/login?failed=true');
+        });
+    }
   });
 
   app.get('/service/presence/present', (req, res) => {
@@ -339,6 +519,7 @@ mongoClient.connect((err) => {
     postRequest
       .handleLogin(req.body, playerCollection)
       .then((data) => {
+        console.log(data);
         res.send(data);
       })
       .catch(console.error);
@@ -376,12 +557,14 @@ mongoClient.connect((err) => {
       playerCollection
         .findOne({ 'user.TEGid': req.body.username })
         .then((data) => {
-          playerObj.friends = data.friends;
-          onlinePlayers.push(playerObj);
+          if (data != null) {
+            playerObj.friends = data.friends;
+            onlinePlayers.push(playerObj);
+            res.send(postRequest.handlePresent(req.body));
+          }
         })
         .catch(console.error);
-    }
-    res.send(postRequest.handlePresent(req.body));
+    } else res.send(postRequest.handlePresent(req.body));
   });
 
   app.post('/service/shop/purchase', (req, res) => {

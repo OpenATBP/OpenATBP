@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>OpenATBP Login</title>
+		<title>OpenATBP Registration</title>
 
 		<style type="text/css">
 			html, body {
@@ -23,25 +23,24 @@
 	<script type="text/javascript">
 		const urlParams = new URLSearchParams(window.location.search);
 		const failed = urlParams.get('failed');
-		const exists = urlParams.get('exists');
-		if(failed) window.alert("Login failed!");
-		else if(exists) window.alert("User already exists! Please login.");
+		if(failed) window.alert("Incorrect user credentials");
 	</script>
 	<body onresize="OnResize()">
 		<div id="container">
-			<form action="/auth/login" method="get">
+			<form id="form" action="/auth/forgot" method="post">
         <label for="username">Username:</label>
-        <input type="text" id="username" name="username" value="">
-        <label for="password">Password:</label>
+        <input type="text" id="username" name="username" value=""></br>
+				<label for="forgot">Reset Phrase:</label>
+        <input type="text" id="forgot" name="forgot" value=""></br>
+        <label for="password">New Password:</label>
         <input type="password" id="password" name="password" value="">
+        <label for="confirm">Confirm Password:</label>
+        <input type="password" id="confirm" name="confirm" value=""><br/>
         <input type="submit" value="Submit">
       </form>
 			<br/>
-			<a href="/register">
-				<input type="button" value="Register"/>
-			</a>
-			<a href="/forgot">
-				<input type="button" value="Forgot Password"/>
+			<a href="/login">
+				<input type="button" value="Login"/>
 			</a>
 	</body>
 </html>

@@ -119,6 +119,7 @@ module.exports = {
     return validPlayers;
   },
   getTeams: function (players, teams, teamSize) {
+    console.log(players);
     var returnVal = {
       purple: [],
       blue: [],

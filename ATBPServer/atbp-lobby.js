@@ -345,6 +345,7 @@ function updateMatchmaking() {
 
 function startGame(players, type) {
   //Note, custom games do not use this.
+  console.log(players);
   var queueSize = 1;
   if (type.includes('p') && type != 'practice')
     queueSize = Number(type.replace('p', ''));
@@ -838,10 +839,11 @@ function handleRequest(jsonString, socket) {
       break;
 
     case 'login':
+      console.log(jsonObject['payload']);
       response = {
         cmd: 'login',
         payload: {
-          name: decodeURI(jsonObject['payload'].name),
+          name: decodeURIComponent(jsonObject['payload'].name),
           player: Number(jsonObject['payload'].auth_id),
           teg_id: jsonObject['payload'].teg_id,
         },
@@ -850,6 +852,7 @@ function handleRequest(jsonString, socket) {
 
     case 'auto_join':
       var act = jsonObject['payload'].act.split('_');
+      console.log(jsonObject['payload']);
       var type = act[act.length - 1];
       for (var q of queues.filter((qu) =>
         qu.players.includes(socket.player.teg_id)
@@ -1274,7 +1277,7 @@ module.exports = class ATBPLobbyServer {
         console.error('FATAL: MongoDB connect failed: ' + mongoError);
         process.exit(1);
       }
-      playerCollection = mongoClient.db('openatbp').collection('players');
+      playerCollection = mongoClient.db('openatbp').collection('users');
       this.server = net.createServer((socket) => {
         socket.setEncoding('utf8');
 

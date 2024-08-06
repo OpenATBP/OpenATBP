@@ -101,7 +101,7 @@ public class ATBPExtension extends SFSExtension {
         try {
             mongoClient = MongoClients.create(props.getProperty("mongoURI"));
             database = mongoClient.getDatabase("openatbp");
-            playerDatabase = database.getCollection("players");
+            playerDatabase = database.getCollection("users");
             loadDefinitions();
             loadColliders();
             loadItems();
@@ -477,9 +477,11 @@ public class ATBPExtension extends SFSExtension {
     @Override
     public void send(String cmdName, ISFSObject params, User recipient) {
         super.send(cmdName, params, recipient);
+        /*
         if (this.commandStressLog.containsKey(cmdName)) {
             this.commandStressLog.get(cmdName).update(params);
         } else this.commandStressLog.put(cmdName, new StressLogger(cmdName));
+         */
     }
 
     public boolean isBrushOccupied(RoomHandler room, UserActor a) {

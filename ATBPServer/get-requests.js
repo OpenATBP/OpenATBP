@@ -1,3 +1,6 @@
+const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+
 module.exports = {
   handlePresent: function () {
     // /service/presence/present
@@ -8,9 +11,8 @@ module.exports = {
     return new Promise(function (resolve, reject) {
       var authTokenSplit = data.split('=');
       var authToken = data;
-      console.log('AuthToken: ' + authToken);
       collection
-        .findOne({ authToken: authToken })
+        .findOne({ 'session.token': authToken })
         .then((res) => {
           if (res != null)
             resolve(JSON.stringify({ displayName: res.user.dname }));
@@ -26,7 +28,7 @@ module.exports = {
     return new Promise(function (resolve, reject) {
       var authToken = data;
       collection
-        .findOne({ authToken: authToken })
+        .findOne({ 'session.token': authToken })
         .then((res) => {
           if (res != null && res.betaTester != undefined) {
             resolve(JSON.stringify({ eligible: res.betaTester }));
@@ -54,7 +56,7 @@ module.exports = {
     // /service/shop/player?authToken={data.token} RETURNS player inventory from db
     return new Promise(function (resolve, reject) {
       collection
-        .findOne({ authToken: token })
+        .findOne({ 'session.token': token })
         .then((data) => {
           if (data != null) resolve(JSON.stringify(data.inventory));
         })
@@ -68,7 +70,7 @@ module.exports = {
     console.log('Getting data for: ' + data);
     return new Promise(function (resolve, reject) {
       collection
-        .findOne({ authToken: data })
+        .findOne({ 'session.token': data })
         .then((dat) => {
           if (dat != null) {
             switch (dat.player.elo + 1) {
@@ -124,6 +126,48 @@ module.exports = {
         .catch((err) => {
           reject(err);
         });
+    });
+  },
+
+  handleLogin: function (username, password, token, collection) {
+    return new Promise(function (resolve, reject) {
+      collection
+        .findOne({ 'user.TEGid': username })
+        .then((user) => {
+          if (user != null) {
+            bcrypt.compare(password, user.user.authpass, (err, res) => {
+              if (res) {
+                var expireDate = Date.parse(user.session.expires_at);
+                if (token != '' && Date.now() < expireDate.valueOf()) {
+                  if (user.session.token == token) {
+                    resolve(user);
+                  } else reject();
+                } else {
+                  var newToken = `${crypto.randomUUID()}`;
+                  var today = new Date();
+                  today.setDate(today.getDate() + 1);
+                  var newSession = {
+                    token: newToken,
+                    expires_at: today,
+                    renewable: false,
+                  };
+                  const options = { upset: false };
+                  const update = { $set: { session: newSession } };
+                  user.session = newSession;
+                  collection
+                    .updateOne({ 'user.TEGid': username }, update, options)
+                    .then((d) => {
+                      resolve(user);
+                    })
+                    .catch(console.error);
+                }
+              } else {
+                reject();
+              }
+            });
+          } else reject();
+        })
+        .catch(console.error);
     });
   },
 };
