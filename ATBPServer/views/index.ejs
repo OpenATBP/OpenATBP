@@ -1,48 +1,48 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>OpenATBP</title>
+  <head>
+    <title>OpenATBP</title>
 
-		<script type="text/javascript" src="js/jquery.min.js"></script>
+    <script type="text/javascript" src="js/jquery.min.js"></script>
     <link rel="stylesheet" href="css/bootstrap.min.css">
-		<script type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
-		<script type="text/javascript" src="js/atbp-client.js"></script>
+    <script type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="js/atbp-client.js"></script>
 
-		<style type="text/css">
-			/* Override to 16:10 */
-			.embed-responsive-16by9::before {
-				padding-top:62.5%
-			}
+    <style type="text/css">
+      /* Override to 16:10 */
+      .embed-responsive-16by9::before {
+        padding-top:62.5%
+      }
 
-			#main-container {
-				padding-top: 3rem;
-			}
-		</style>
-	</head>
-	<body>
-		<nav class="navbar navbar-dark bg-dark">
-		  <a class="navbar-brand" href="#">OpenATBP</a>
-		  <button class="navbar-toggler" type="button">
-		    <span class="navbar-toggler-icon"></span>
-		  </button>
-		  <div class="navbar-collapse"></div>
-		</nav>
+      #main-container {
+        padding-top: 3rem;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-dark bg-dark">
+      <a class="navbar-brand" href="#">OpenATBP</a>
+      <button class="navbar-toggler" type="button">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="navbar-collapse"></div>
+    </nav>
 
-		<main role="main" class="container" id="main-container">
-		  <div class="jumbotron" id="embed-container">
-		  	<h1>Unity plugin not detected!</h1>
-		  	<br/>
-		  	<h5>
-		  		Either use OpenATBPClient which has everything built in, or download Unity Web Player below. 
-		  	</h5>
-		  	<h5>
-		  		Note that Unity Web Player will only work with older, NPAPI-capable browsers such as Internet Explorer, Pale Moon, and WaterFox Classic.
-		  	</h5>
-		  	<br/>
-		  	<!-- Using the <a> tag has some weird formatting issues for some reason-->
-		  	<button class="btn btn-primary" onclick="location.href='https://github.com/OpenATBP/OpenATBPClient/releases/'">Download OpenATBPClient (recommended)</button>
-		  	<button class="btn btn-secondary" onclick="location.href='http://webplayer.unity3d.com/download_webplayer-3.x/UnityWebPlayer.exe'">Download Unity Web Player</button>
-		  </div>
-		</main>
-	</body>
+    <main role="main" class="container" id="main-container">
+      <div class="jumbotron" id="embed-container">
+        <h1>Unity plugin not detected!</h1>
+        <br/>
+        <h5>
+          Either use OpenATBPClient which has everything built in, or download Unity Web Player below. 
+        </h5>
+        <h5>
+          Note that Unity Web Player will only work with older, NPAPI-capable browsers such as Internet Explorer, Pale Moon, and WaterFox Classic.
+        </h5>
+        <br/>
+        <!-- Using the <a> tag has some weird formatting issues for some reason-->
+        <button class="btn btn-primary" onclick="location.href='https://github.com/OpenATBP/OpenATBPClient/releases/'">Download OpenATBPClient (recommended)</button>
+        <button class="btn btn-secondary" onclick="location.href='http://webplayer.unity3d.com/download_webplayer-3.x/UnityWebPlayer.exe'">Download Unity Web Player</button>
+      </div>
+    </main>
+  </body>
 </html>

@@ -1,46 +1,34 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>OpenATBP Registration</title>
+  <head>
+    <title>OpenATBP - Forgotten Password</title>
 
-		<style type="text/css">
-			html, body {
-				margin: 0;
-				padding: 0;
-				width: 100%;
-				height: 100%;
-				overflow: hidden;
-			}
-			#container {
-				margin: 0;
-				padding: 0;
-				width: 100%;
-				height: 100%;
-				clear: both;
-			}
-		</style>
-	</head>
-	<script type="text/javascript">
-		const urlParams = new URLSearchParams(window.location.search);
-		const failed = urlParams.get('failed');
-		if(failed) window.alert("Incorrect user credentials");
-	</script>
-	<body>
-		<div id="container">
-			<form id="form" action="/auth/forgot" method="post">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" value=""></br>
-				<label for="forgot">Reset Phrase:</label>
-        <input type="text" id="forgot" name="forgot" value=""></br>
-        <label for="password">New Password:</label>
-        <input type="password" id="password" name="password" value="">
-        <label for="confirm">Confirm Password:</label>
-        <input type="password" id="confirm" name="confirm" value=""><br/>
-        <input type="submit" value="Submit">
-      </form>
-			<br/>
-			<a href="/login">
-				<input type="button" value="Login"/>
-			</a>
-	</body>
+    <script type="text/javascript" src="js/jquery.min.js"></script>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <script type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
+
+    <script type="text/javascript">
+    const urlParams = new URLSearchParams(window.location.search);
+    const failed = urlParams.get('failed');
+    if(failed) window.alert("Incorrect user credentials");
+    </script>
+  </head>
+  <body>
+    <div id="container">
+      <form id="form" action="/auth/forgot" method="post">
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" value=""></br>
+        <label for="forgot">Reset Phrase:</label>
+    <input type="text" id="forgot" name="forgot" value=""></br>
+    <label for="password">New Password:</label>
+    <input type="password" id="password" name="password" value="">
+    <label for="confirm">Confirm Password:</label>
+    <input type="password" id="confirm" name="confirm" value=""><br/>
+    <input type="submit" value="Submit">
+    </form>
+      <br/>
+      <a href="/login">
+        <input type="button" value="Login"/>
+      </a>
+  </body>
 </html>

@@ -5,14 +5,14 @@ function isInternetExplorer() {
     return true;
   }
   return false;
-}
+};
 
 function createParam(name, val) {
   var param = document.createElement('param');
   param.setAttribute('name', name)
   param.setAttribute('value', val)
   return param
-}
+};
 
 function embedUnity() {
   var object = document.createElement('object');
@@ -52,14 +52,19 @@ function embedUnity() {
 
   var div = document.getElementById("embed-container");
   div.innerHTML = '';
-  if(!isInternetExplorer()) {object.appendChild(embed)};
-  div.appendChild(object);
-  unity = document.getElementById('unity-embed');
-}
+  if (!isInternetExplorer()) {
+    object.appendChild(embed);
+    div.appendChild(object);
+    unity = document.getElementById('unity-embed');
+  } else {
+    div.appendChild(object);
+    unity = document.getElementById('unity-object');
+  }
+};
 
 window.onload = function () {
   if(!isInternetExplorer()) {
-    for (var i = 0;i < navigator.plugins.length;i++) {
+    for (var i = 0; i < navigator.plugins.length; i++) {
       if (navigator.plugins[i].name.indexOf("Unity Player") != -1) {
         embedUnity();
       }
@@ -81,23 +86,23 @@ var OnResize = function () {
 
 function Fireteam_CheckMSIBLoggedIn(name, callback) {
   var cookies = document.cookie.split(';');
-  for (var c of cookies) {
-    if (c.includes('logged')) {
-      returnOK = c.replace('logged=', '').replace(' ', '').replace(';', '');
+  for (var i = 0; i < cookies.length; i++) {
+    if (cookies[i].indexOf("logged") != -1) {
+      returnOK = cookies[i].replace('logged=', '').replace(' ', '').replace(';', '');
     }
   }
   console.log(returnOK);
   if (returnOK == undefined) returnOK = 'false';
   unity.SendMessage(name, callback, returnOK);
-}
+};
 
 function Fireteam_GetCookies(name, callback) {
   unity.SendMessage(name, callback, document.cookie);
-}
+};
 
 function Fireteam_AspenInit(name, callback) {
   // stubbed
-}
+};
 
 var Fireteam_AspenSend = function (name, callback) {
   console.log('Fireteam!');
@@ -140,5 +145,5 @@ var UnityRequest = function (
 var LoginModule = {
   showLoginWindow: function () {
     window.location.href = '/login';
-  },
+  }
 };
