@@ -5,7 +5,7 @@
 
     <script type="text/javascript" src="js/jquery.min.js"></script>
       <link rel="stylesheet" href="css/bootstrap.min.css">
-    <script type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
+    <script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
   </head>
   <script type="text/javascript">
     const urlParams = new URLSearchParams(window.location.search);
@@ -15,6 +15,8 @@
     else if(exists) window.alert("User already exists! Please login.");
   </script>
   <body>
+  	<script type="text/javascript" src="js/jquery.min.js"></script>
+	<script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
     <div id="container">
       <form action="/auth/login" method="get">
         <label for="username">Username:</label>

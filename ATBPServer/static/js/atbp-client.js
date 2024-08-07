@@ -16,7 +16,6 @@ function createParam(name, val) {
 
 function embedUnity() {
   var object = document.createElement('object');
-  object.setAttribute('class', "embed-responsive embed-responsive-16by9");
   object.setAttribute('classid', "clsid:444785F1-DE89-4295-863A-D46C3A781394");
   object.setAttribute('codebase', "undefined/UnityWebPlayer.cab#version=2,0,0,0");
   object.setAttribute('id', "unity-object");
@@ -77,22 +76,24 @@ window.onload = function () {
       console.log("Failed to embed ActiveXObject")
     }
   }
+  OnResize();
 };
 
 var OnResize = function () {
-  unity.style.width = window.innerWidth + 'px';
-  unity.style.height = window.innerHeight + 'px';
+  unity.style.width = unity.parentElement.width;
+  unity.style.height = (window.innerHeight - 56) + 'px';
 };
 
 function Fireteam_CheckMSIBLoggedIn(name, callback) {
   var cookies = document.cookie.split(';');
+  var returnOK = null;
   for (var i = 0; i < cookies.length; i++) {
     if (cookies[i].indexOf("logged") != -1) {
       returnOK = cookies[i].replace('logged=', '').replace(' ', '').replace(';', '');
     }
   }
   console.log(returnOK);
-  if (returnOK == undefined) returnOK = 'false';
+  if (returnOK == null) returnOK = 'false';
   unity.SendMessage(name, callback, returnOK);
 };
 
