@@ -1,9 +1,7 @@
 var config = {};
 config.httpserver = {};
-config.sockpol = {};
-config.lobby = {};
-config.discord = {};
 config.lobbyserver = {};
+config.sockpol = {};
 
 config.httpserver.port = 8000;
 config.httpserver.mongouri = "mongodb://admin:password@127.0.0.1:27017";
@@ -18,12 +16,5 @@ config.lobbyserver.port = 6778;
 config.lobbyserver.gameIp = '127.0.0.1';
 config.lobbyserver.gamePort = '9933';
 config.lobbyserver.matchmakingEnabled = false;
-
-config.discord.client_id = 'client_id';
-config.discord.client_secret = 'client_secret';
-config.discord.oauth_url = 'https://discord.com/api/oauth2/authorize?client_id=&redirect_uri=';
-config.discord.redirect_url = 'http://127.0.0.1:8000/auth/';
-config.discord.backup = true;
-config.discord.enable = true;
 
 module.exports = config;

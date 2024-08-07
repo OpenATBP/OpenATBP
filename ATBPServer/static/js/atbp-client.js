@@ -54,7 +54,7 @@ function embedUnity() {
   div.innerHTML = '';
   if(!isInternetExplorer()) {object.appendChild(embed)};
   div.appendChild(object);
-  unity = document.getElementById('unity-object');
+  unity = document.getElementById('unity-embed');
 }
 
 window.onload = function () {
@@ -88,7 +88,7 @@ function Fireteam_CheckMSIBLoggedIn(name, callback) {
   }
   console.log(returnOK);
   if (returnOK == undefined) returnOK = 'false';
-  unity.SendMessage(name, callback, returnOK);*/
+  unity.SendMessage(name, callback, returnOK);
 }
 
 function Fireteam_GetCookies(name, callback) {
@@ -105,21 +105,20 @@ var Fireteam_AspenSend = function (name, callback) {
   console.log(callback);
 };
 
-function AchievementUnityComm() {}
+var AchievementUnityComm = {
+  doUnityLoaded: function () {
+    // stubbed
+  },
+  doUnityGameStarted: function () {
+    // stubbed
+  }
+}
 
-AchievementUnityComm.doUnityLoaded = function () {
-  // stubbed
-};
-
-AchievementUnityComm.doUnityGameStarted = function () {
-  // stubbed
-};
-
-function TopScoresModuleComm() {}
-
-TopScoresModuleComm.onScore = function () {
-  // stubbed
-};
+var TopScoresModuleComm = {
+  onScore: function () {
+    // stubbed
+  }
+}
 
 var UnityRequest = function (
   go_name,
