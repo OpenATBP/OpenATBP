@@ -255,11 +255,11 @@ function updateElo(socket) {
               break;
           }
           socket.player.elo = res.player.elo;
-        } else socket.close();
+        } else socket.end();
       })
       .catch((e) => {
         console.log(e);
-        socket.close();
+        socket.end();
       });
   } else console.log('Player collection is not initialized!');
 }
