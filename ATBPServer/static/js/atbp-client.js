@@ -14,6 +14,16 @@ function createParam(name, val) {
   return param
 };
 
+function logOut() {
+  document.cookie = "TEGid=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  document.cookie = "authid=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  document.cookie = "authpass=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  document.cookie = "dname=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  document.cookie = "logged=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  document.cookie = "session_token=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  location.reload();
+}
+
 function embedUnity() {
   var object = document.createElement('object');
   object.setAttribute('classid', "clsid:444785F1-DE89-4295-863A-D46C3A781394");
@@ -77,6 +87,19 @@ window.onload = function () {
     }
   }
   OnResize();
+  var cookies = document.cookie.split(';');
+  var displayName = null;
+  for (var i = 0; i < cookies.length; i++) {
+    if (cookies[i].indexOf("dname") != -1) {
+      displayName = cookies[i].replace('dname=', '').replace(' ', '').replace(';', '');
+    }
+  }
+  if (displayName != null) {
+    document.getElementById('login-button').remove();
+    document.getElementById('username-text').innerHTML = "Logged in as " + decodeURI(displayName);
+  } else {
+    document.getElementById('logout-button').remove();
+  }
 };
 
 var OnResize = function () {

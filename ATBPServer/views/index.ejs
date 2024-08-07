@@ -21,6 +21,7 @@
 	      background-color: #343a40;
 	      color: white;
 	      padding: 15px;
+	      padding-top: 56px;
 	      transition: transform 0.3s ease;
 	      transform: translateX(100%);
 	    }
@@ -31,6 +32,11 @@
 	      transition: margin-right 0.3s ease;
 	      margin-right: 0;
 	    }
+	    #bottom-links {
+	    	position: fixed;
+	    	width: 88%;
+	    	bottom: 8px;
+	    }
 	  </style>
   </head>
   <body onresize="OnResize();">
@@ -39,15 +45,28 @@
   	<script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
 
 	  <div id="sidebar">
-
+	  	<h4>Friend Requests</h4>
+	  	Coming soon™
+	  	<br/><br/>
+	  	<h4>Friend Search</h4>
+	  	Coming soon™
+	  	<div class="list-group" id="bottom-links">
+	  		<button type="button" class="list-group-item list-group-item-dark" onclick="location.href='https://discord.gg/tRTeBEWmJE'">Discord Chat</button>
+	  		<button type="button" class="list-group-item list-group-item-dark" onclick="location.href='https://github.com/OpenATBP/OpenATBP/issues'">Github Issues</button>
+  			<button type="button" class="list-group-item list-group-item-dark" id="login-button" onclick="location.href='/login'">Log In</button>
+  			<button type="button" class="list-group-item list-group-item-dark" id="logout-button" onclick="logOut();">Log Out</button>
+			</div>
 	  </div>
 
 	  <div id="content">
 	  	<nav class="navbar navbar-dark bg-dark d-flex justify-content-between">
 	      <a class="navbar-brand" href="#">OpenATBP</a>
+	      <section class="navbar-right">
+	      <span class="navbar-text px-2" id="username-text">Not logged in</span>
 	      <button class="navbar-toggler" type="button" id="sidebarCollapse">
-	        <span class="navbar-toggler-icon"></span>
+	      <span class="navbar-toggler-icon"></span>
 	      </button>
+	      </section>
 	    </nav>
       <div id="embed-container">
       	<div id="plugin-message" class="jumbotron">
