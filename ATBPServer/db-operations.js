@@ -61,6 +61,7 @@ var newUserFunction = function (
           friends: [],
           betaTester: true, //TODO: Remove when open beta starts
           forgot: forgot,
+          requests: []
         };
         const opt = { upsert: true };
         const update = { $set: playerFile };

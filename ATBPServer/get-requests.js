@@ -170,4 +170,35 @@ module.exports = {
         .catch(console.error);
     });
   },
+  handleFriendRequest: function(token, collection){
+    return new Promise(function(resolve, reject) {
+      collection.findOne({'session.token':token}).then((u) => {
+        if(u != null){
+          var openRequests = u.requests;
+          if (openRequests != undefined){
+            var names = [];
+            var errors = 0;
+            for(var n of openRequests){
+              console.log(n);
+              collection.findOne({'user.TEGid':n}).then((user) => {
+                if (user != null){
+                  names.push({'dname':user.user.dname,'username':user.user.TEGid});
+                }else errors++;
+                if(names.length + errors == openRequests.length){
+                  resolve(names);
+                }else console.log(names.length);
+              }).catch((err) => {
+                console.log(err);
+                errors++;
+              });
+            }
+            if(openRequests.length == 0) resolve([]);
+          }
+          else resolve([]);
+        }else reject();
+      }).catch((e) => {
+        reject(e);
+      });
+    });
+  }
 };

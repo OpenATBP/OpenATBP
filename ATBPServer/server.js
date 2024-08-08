@@ -90,6 +90,23 @@ async function resetElo(collection) {
   }
 }
 
+async function addRequests(collection) {
+  try {
+    var cursor = collection.find();
+    for await (var doc of cursor) {
+      //console.log(doc.friends);
+      var q = { 'user.TEGid': doc.user.TEGid };
+      var o = { upsert: true };
+      var up = { $set: { 'requests': [] } };
+
+      var res = await collection.updateOne(q, up, o);
+      console.log(res);
+    }
+  } finally {
+    console.log('Done!');
+  }
+}
+
 function getLowerCaseName(name) {
   var firstLetter = name.charAt(name).toUpperCase();
   var fullString = firstLetter;
@@ -151,6 +168,7 @@ mongoClient.connect((err) => {
   //addBetaTesters(playerCollection).catch(console.dir);
   //resetElo(playerCollection).catch(console.dir);
   //convertUserNames(playerCollection).catch(console.dir);
+  //addRequests(playerCollection).catch(console.dir);
 
   if (
     !fs.existsSync('static/crossdomain.xml') ||
@@ -200,8 +218,103 @@ mongoClient.connect((err) => {
     res.render('login');
   });
 
+  app.get('/friends',(req,res) => {
+    var session_token = '';
+    for (var h of req.rawHeaders) {
+      if (h.includes('session_token')) {
+        var cookies = h.split(';');
+        for (var c of cookies) {
+          if (c.includes('session_token')) {
+            session_token = c
+              .replace('session_token=', '')
+              .replace(' ', '')
+              .replace(';', '');
+          }
+        }
+      }
+    }
+    getRequest.handleFriendRequest(session_token,playerCollection).then((requests) => {
+      res.render('friends', {'requests':JSON.stringify(requests)});
+    }).catch((err) => {
+      console.log(err);
+      res.render('friends',{'requests':JSON.stringify([])});
+    });
+  });
+
   app.get('/data/users', (req, res) => {
     res.send(JSON.stringify({ users: onlinePlayers.length }));
+  });
+
+  app.post('/friend/accept/:friend',(req,res) => {
+    var session_token = '';
+    for (var h of req.rawHeaders) {
+      if (h.includes('session_token')) {
+        var cookies = h.split(';');
+        for (var c of cookies) {
+          if (c.includes('session_token')) {
+            session_token = c
+              .replace('session_token=', '')
+              .replace(' ', '')
+              .replace(';', '');
+          }
+        }
+      }
+    }
+    postRequest.handleAcceptFriend(session_token,req.params.friend,playerCollection).then((r) => {
+      //console.log("Here");
+      res.redirect(config.httpserver.url); //This doesn't work for some reason
+    }).catch(console.error);
+  });
+
+  app.post('/friend/decline/:friend',(req,res) => {
+    var session_token = '';
+    for (var h of req.rawHeaders) {
+      if (h.includes('session_token')) {
+        var cookies = h.split(';');
+        for (var c of cookies) {
+          if (c.includes('session_token')) {
+            session_token = c
+              .replace('session_token=', '')
+              .replace(' ', '')
+              .replace(';', '');
+          }
+        }
+      }
+    }
+
+    postRequest.handleDeclineFriend(session_token,req.params.friend,playerCollection).then(() => {
+      console.log("Removed friend!");
+      res.redirect(config.httpserver.url); //This doesn't work for some reason
+    }).catch(console.error);
+  });
+
+  app.post('/friend/add',(req,res) => {
+    var session_token = '';
+    for (var h of req.rawHeaders) {
+      if (h.includes('session_token')) {
+        var cookies = h.split(';');
+        for (var c of cookies) {
+          if (c.includes('session_token')) {
+            session_token = c
+              .replace('session_token=', '')
+              .replace(' ', '')
+              .replace(';', '');
+          }
+        }
+      }
+    }
+    playerCollection.findOne({'session.token':session_token}).then((u) => {
+      if(u != null && u.user.TEGid != req.body.username){
+        playerCollection.findOne({'user.TEGid':req.body.username}).then((user) => {
+          if(user != null){
+            postRequest.handleFriendRequest(u.user.TEGid,user.user.TEGid,playerCollection).then(() => {
+              console.log("Success!");
+              res.redirect('/friends?added=true');
+            }).catch(console.error);
+          }else res.redirect('/friends?added=false');
+        }).catch(console.error);
+      }else res.redirect('/friends?added=false');
+    }).catch(console.error);
   });
 
   app.post('/auth/register', (req, res) => {
