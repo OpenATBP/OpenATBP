@@ -5,32 +5,69 @@
 
     <script type="text/javascript" src="js/jquery.min.js"></script>
     <link rel="stylesheet" href="css/bootstrap.min.css">
-    <script type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
+    <script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
 
-    <script type="text/javascript">
-    const urlParams = new URLSearchParams(window.location.search);
-    const failed = urlParams.get('failed');
-    if(failed) window.alert("Incorrect user credentials");
-    </script>
+    <style>
+        body {
+          display: -ms-flexbox;
+          display: flex;
+          -ms-flex-align: center;
+          align-items: center;
+          padding-top: 40px;
+          padding-bottom: 40px;
+          background-image: url('bg3.png');
+          height:100vh;
+          background-size: cover;
+        }
+        .form-login {
+          width: 100%;
+          max-width: 330px;
+          padding: 15px;
+          margin: auto;
+        }
+        .form-login .checkbox {
+          font-weight: 400;
+        }
+        .form-login .form-control {
+          position: relative;
+          box-sizing: border-box;
+          height: auto;
+          padding: 10px;
+          font-size: 16px;
+        }
+        .form-login .form-control:focus {
+          z-index: 2;
+        }
+        #password {
+          margin-bottom: -1px;
+          border-bottom-right-radius: 0;
+          border-bottom-left-radius: 0;
+        }
+        #confirm {
+          margin-bottom: 10px;
+          border-top-left-radius: 0;
+          border-top-right-radius: 0;
+        }
+      </style>
   </head>
   <body>
-  	<script type="text/javascript" src="js/jquery.min.js"></script>
-	<script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
-    <div id="container">
-      <form id="form" action="/auth/forgot" method="post">
-    <label for="username">Username:</label>
-    <input type="text" id="username" name="username" value=""></br>
-        <label for="forgot">Reset Phrase:</label>
-    <input type="text" id="forgot" name="forgot" value=""></br>
-    <label for="password">New Password:</label>
-    <input type="password" id="password" name="password" value="">
-    <label for="confirm">Confirm Password:</label>
-    <input type="password" id="confirm" name="confirm" value=""><br/>
-    <input type="submit" value="Submit">
+    <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
+
+    <div class="container" style="width: 24rem;">
+    <div class="card text-center">
+    <form class="form-login" id="form" action="/auth/forgot" method="post">
+    <img class="mb-4" src="favicon.ico" alt="" width="128" height="128">
+    <h1 class="h3 mb-3 font-weight-normal">Forgot Password</h1>
+
+	<input type="text" id="username" class="form-control" placeholder="Username" name="username" required>
+    <input type="text" id="forgot" class="form-control mt-3" name="forgot" placeholder="Secret Phrase">
+    <input class="form-control mt-3 mb-0" type="password" id="password" name="password" placeholder="New password">
+    <input class="form-control mt-0 mb-3" type="password" id="confirm" name="confirm" placeholder="Confirm password">
+    <button class="btn btn-lg btn-primary btn-block" type="submit">Submit</button>
+    <p class="mt-3 text-muted">Remembered your password? <a href="/login">Login</a></p>
     </form>
-      <br/>
-      <a href="/login">
-        <input type="button" value="Login"/>
-      </a>
+  </div>
+</div>
   </body>
 </html>
