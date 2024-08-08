@@ -268,7 +268,8 @@ public class GameManager {
             int team,
             Room room,
             boolean isRankedMatch,
-            boolean tutorialCoins) {
+            boolean tutorialCoins,
+            int winningTeam) {
         final String[] STATS = {
             "damageDealtChamps",
             "damageReceivedPhysical",
@@ -303,7 +304,8 @@ public class GameManager {
             damageDealtPhysical
 
          */
-        int coins = isRankedMatch ? 100 : tutorialCoins ? 700 : 0;
+        int coins = isRankedMatch ? 80 : tutorialCoins ? 700 : 0;
+        if (team == winningTeam) coins += 20;
         ObjectNode node = objectMapper.createObjectNode();
         for (User u : room.getUserList()) {
             UserActor ua =

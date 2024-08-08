@@ -309,7 +309,9 @@ public class MainMapRoomHandler extends RoomHandler {
                                         "player.points",
                                         points)); // Always zero I have no idea what this is
                         // for?;
-                        updateList.add(Updates.inc("player.coins", 100));
+                        updateList.add(
+                                Updates.inc(
+                                        "player.coins", ua.getTeam() == winningTeam ? 100 : 80));
                         updateList.add(Updates.inc("player.kills", kills));
                         updateList.add(Updates.inc("player.deaths", deaths));
                         updateList.add(Updates.inc("player.assists", assists));
