@@ -18,8 +18,7 @@ var newUserFunction = function (
         var today = new Date();
         today.setDate(today.getDate() + 1);
         for (var item of JSON.parse(data)) {
-          console.log(item);
-          inventoryArray.push(item.id);
+          if (item.type == 'BACKPACK') inventoryArray.push(item.id);
         }
         var playerFile = {
           user: {
@@ -59,7 +58,7 @@ var newUserFunction = function (
           },
           inventory: inventoryArray,
           friends: [],
-          betaTester: true, //TODO: Remove when open beta starts
+          betaTester: false, //TODO: Remove when open beta starts
           forgot: forgot,
           requests: [],
         };
