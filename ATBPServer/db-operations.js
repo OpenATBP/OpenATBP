@@ -80,5 +80,5 @@ var newUserFunction = function (
 };
 
 module.exports = {
-  createNewUser: newUserFunction
+  createNewUser: newUserFunction,
 };
