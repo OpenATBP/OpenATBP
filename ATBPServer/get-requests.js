@@ -67,7 +67,6 @@ module.exports = {
   },
   handlePlayerChampions: function (data, collection) {
     // /service/data/user/champions/profile?authToken={data} RETURNS player info from db
-    console.log('Getting data for: ' + data);
     return new Promise(function (resolve, reject) {
       collection
         .findOne({ 'session.token': data })
@@ -168,6 +167,44 @@ module.exports = {
           } else reject();
         })
         .catch(console.error);
+    });
+  },
+  handleFriendRequest: function (token, collection) {
+    return new Promise(function (resolve, reject) {
+      collection
+        .findOne({ 'session.token': token })
+        .then((u) => {
+          if (u != null) {
+            var openRequests = u.requests;
+            if (openRequests != undefined) {
+              var names = [];
+              var errors = 0;
+              for (var n of openRequests) {
+                collection
+                  .findOne({ 'user.TEGid': n })
+                  .then((user) => {
+                    if (user != null) {
+                      names.push({
+                        dname: user.user.dname,
+                        username: user.user.TEGid,
+                      });
+                    } else errors++;
+                    if (names.length + errors == openRequests.length) {
+                      resolve(names);
+                    }
+                  })
+                  .catch((err) => {
+                    console.log(err);
+                    errors++;
+                  });
+              }
+              if (openRequests.length == 0) resolve([]);
+            } else resolve([]);
+          } else reject();
+        })
+        .catch((e) => {
+          reject(e);
+        });
     });
   },
 };

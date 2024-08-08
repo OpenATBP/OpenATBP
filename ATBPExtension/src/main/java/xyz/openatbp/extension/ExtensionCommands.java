@@ -473,11 +473,23 @@ public class ExtensionCommands {
             node.set(
                     "teamA",
                     GameManager.getTeamData(
-                            parentExt, dcPlayers, 0, lastRoom, isRankedMatch, tutorialCoins));
+                            parentExt,
+                            dcPlayers,
+                            0,
+                            lastRoom,
+                            isRankedMatch,
+                            tutorialCoins,
+                            (int) winningTeam));
             node.set(
                     "teamB",
                     GameManager.getTeamData(
-                            parentExt, dcPlayers, 1, lastRoom, isRankedMatch, tutorialCoins));
+                            parentExt,
+                            dcPlayers,
+                            1,
+                            lastRoom,
+                            isRankedMatch,
+                            tutorialCoins,
+                            (int) winningTeam));
             node.set(
                     "globalTeamData",
                     GameManager.getGlobalTeamData(parentExt, dcPlayers, lastRoom));

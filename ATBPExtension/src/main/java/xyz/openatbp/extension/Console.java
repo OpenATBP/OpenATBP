@@ -1,7 +1,7 @@
 package xyz.openatbp.extension;
 
 public class Console {
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
     private static final boolean WARNING = true;
 
     public static void log(Object line) {
