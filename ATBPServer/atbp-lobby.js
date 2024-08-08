@@ -669,12 +669,12 @@ function sendInvite(sender, recipient, custom) {
         })
         .catch(console.error);
     }
-  } else if (senderUser != undefined){
-      sendCommand(
-        senderUser,
-        custom ? 'custom_game_invite_declined' : 'invite_declined',
-        { player: recipient }
-      ).catch(console.error);
+  } else if (senderUser != undefined) {
+    sendCommand(
+      senderUser,
+      custom ? 'custom_game_invite_declined' : 'invite_declined',
+      { player: recipient }
+    ).catch(console.error);
   }
 }
 
