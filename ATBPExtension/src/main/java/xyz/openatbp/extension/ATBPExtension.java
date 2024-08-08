@@ -52,7 +52,6 @@ public class ATBPExtension extends SFSExtension {
     HashMap<String, List<String>> tips = new HashMap<>();
 
     HashMap<String, RoomHandler> roomHandlers = new HashMap<>();
-    Map<String, StressLogger> commandStressLog = new HashMap<>();
     MongoClient mongoClient;
     MongoDatabase database;
     MongoCollection<Document> playerDatabase;
