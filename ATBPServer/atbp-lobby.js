@@ -106,7 +106,6 @@ function leaveQueue(socket, disconnected) {
   }
   switch (socket.player.stage) {
     case 1: // IN QUEUE
-      console.log(`${socket.player.name} left QUEUE!`);
       if (!config.lobbyserver.matchmakingEnabled || users.length < 24) {
         var usersInQueue = users.filter(
           (u) =>
@@ -124,7 +123,6 @@ function leaveQueue(socket, disconnected) {
       }
       break;
     case 2: // IN CHAMP SELECT
-      console.log(`${socket.player.name} left CHAMP SELECT!`);
       var queue = queues.find((q) => q.players.includes(socket.player.teg_id));
       if (queue != undefined) {
         for (var qp of queue.players) {
@@ -148,7 +146,6 @@ function leaveQueue(socket, disconnected) {
       }
       break;
     case 3: // IN GAME
-      console.log(`${socket.player.name} left THE GAME!`);
       var queue = queues.find((q) => q.players.includes(socket.player.teg_id));
       if (queue != undefined) {
         queue.players = queue.players.filter((p) => p != socket.player.teg_id);
@@ -337,15 +334,11 @@ function updateMatchmaking() {
           maxQueueSize = validQueuePlayers.length;
       }
     }
-    console.log(
-      `Matchmaking for ${t} has ${usersInQueue.length} players but could only match ${maxQueueSize} players`
-    );
   }
 }
 
 function startGame(players, type) {
   //Note, custom games do not use this.
-  console.log(players);
   var queueSize = 1;
   if (type.includes('p') && type != 'practice')
     queueSize = Number(type.replace('p', ''));
@@ -553,7 +546,6 @@ function joinQueue(sockets, type) {
       teams,
       queueSize
     );
-    console.log(currentQueue);
     if (currentQueue.length == queueSize) {
       startGame(currentQueue, type);
     } else {
@@ -643,9 +635,6 @@ function sendInvite(sender, recipient, custom) {
     invitedPlayer != undefined &&
     team != undefined
   ) {
-    console.log(
-      `${senderUser.player.name} has sent ${invitedPlayer.player.name} an invite!`
-    );
     if (!custom) {
       sendCommand(invitedPlayer, 'receive_invite', {
         name: senderUser.player.name,
@@ -680,15 +669,12 @@ function sendInvite(sender, recipient, custom) {
         })
         .catch(console.error);
     }
-  } else {
-    console.log('FAILED TO SEND INVITE');
-    if (senderUser != undefined)
+  } else if (senderUser != undefined){
       sendCommand(
         senderUser,
         custom ? 'custom_game_invite_declined' : 'invite_declined',
         { player: recipient }
       ).catch(console.error);
-    else console.log('SENDING USER FOR INVITE IS INVALID: ' + sender);
   }
 }
 
@@ -700,10 +686,6 @@ function declineInvite(sender, recipient, custom) {
   );
   var command = custom ? 'custom_game_invite_declined' : 'invite_declined';
   if (senderUser != undefined) {
-    if (recipientUser != undefined)
-      console.log(
-        `${recipientUser.player.name} has declined an invite from ${senderUser.player.name}!`
-      );
     sendCommand(senderUser, command, { player: recipient }).catch(
       console.error
     );
@@ -718,9 +700,6 @@ function acceptInvite(sender, recipient, custom) {
     var senderUser = users.find((u) => u.player.teg_id == sender);
     var recipientUser = users.find((u) => u.player.teg_id == recipient);
     if (senderUser != undefined && recipientUser != undefined) {
-      console.log(
-        `${recipientUser.player.name} has accepted an invite from ${senderUser.player.name}!`
-      );
       var team = teams.find((t) => t.team == sender);
       if (team != undefined) {
         pendingInvites = pendingInvites.filter(
@@ -787,11 +766,8 @@ function acceptInvite(sender, recipient, custom) {
             }).catch(console.error);
           }
         }
-      } else console.log('FAILED TO ACCEPT INVITE BECAUSE TEAM IS INVALID');
-    } else
-      console.log(
-        'FAILED TO ACCEPT INVITE BECAUSE SENDER OR RECIPIENT IS INVALID'
-      );
+      }
+    }
   } else declineInvite(sender, recipient, custom);
 }
 
@@ -839,7 +815,6 @@ function handleRequest(jsonString, socket) {
       break;
 
     case 'login':
-      console.log(jsonObject['payload']);
       response = {
         cmd: 'login',
         payload: {
@@ -852,7 +827,6 @@ function handleRequest(jsonString, socket) {
 
     case 'auto_join':
       var act = jsonObject['payload'].act.split('_');
-      console.log(jsonObject['payload']);
       var type = act[act.length - 1];
       for (var q of queues.filter((qu) =>
         qu.players.includes(socket.player.teg_id)
@@ -941,12 +915,10 @@ function handleRequest(jsonString, socket) {
         if (queue.ready == queue.max) {
           queue.inGame = true;
           for (var qp of queue.players) {
-            console.log(qp);
             var queueUser = users.find((u) => u.player.teg_id == qp);
             if (queueUser != undefined) queueUser.player.stage = 3;
-            else console.log('Queue User is undefined!');
           }
-        } else console.log(`Ready: ${queue.ready} vs Max: ${queue.max}`);
+        }
       } else
         console.log(
           `${socket.player.name} has an undefined queue and tried to set ready!`
@@ -992,7 +964,7 @@ function handleRequest(jsonString, socket) {
             ).catch(console.error);
           }
         }
-      } else console.log('User not found!');
+      }
       break;
 
     case 'custom_game_chat_message':
@@ -1080,7 +1052,7 @@ function handleRequest(jsonString, socket) {
         );
         cancelAllInvites(socket.player.teg_id);
         team.stage = 1;
-      } else console.log("Can't unlock undefined team!");
+      }
       break;
 
     case 'custom_game_create':
@@ -1256,7 +1228,6 @@ function handleRequest(jsonString, socket) {
       };
       users.push(socket);
       updateElo(socket);
-      console.log('Logged In ->', response['payload'].name);
     }
   }
   if (unhandled) {
@@ -1321,7 +1292,6 @@ module.exports = class ATBPLobbyServer {
           for (var user of users) {
             if (user._readableState.ended || user == socket) {
               userExists = true;
-              console.log(user.player.name + ' logged out');
               if (user.player.onTeam) leaveTeam(user, true);
               else leaveQueue(user, true);
             }
@@ -1334,8 +1304,6 @@ module.exports = class ATBPLobbyServer {
 
         socket.on('end', (err) => {
           console.log(err);
-          if (socket.player != undefined)
-            console.log(`${socket.player.name}'s socket has ended!'`);
         });
       });
 
