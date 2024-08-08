@@ -159,7 +159,7 @@ module.exports = {
                       reject(e);
                     });
                 });
-              } else reject(e);
+              } else reject();
             });
           } else reject();
         })

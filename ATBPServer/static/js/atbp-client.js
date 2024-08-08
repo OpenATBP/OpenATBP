@@ -1,4 +1,4 @@
-var unity;
+var unity = null;
 
 function isInternetExplorer() {
   if (window.document.documentMode) {
@@ -103,8 +103,10 @@ window.onload = function () {
 };
 
 var OnResize = function () {
-  unity.style.width = unity.parentElement.width;
-  unity.style.height = (window.innerHeight - 56) + 'px';
+  if (unity != null) {
+    unity.style.width = unity.parentElement.width;
+    unity.style.height = (window.innerHeight - 56) + 'px';
+  }
 };
 
 function Fireteam_CheckMSIBLoggedIn(name, callback) {
