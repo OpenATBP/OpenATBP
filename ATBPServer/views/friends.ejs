@@ -31,10 +31,11 @@
 			<form action="/friend/add" method="post" id="addFriendForm">
 				<label for="username">Username</username>
 				<input type="text" id="username" name="username">
-				<input type="submit">
+				<input type="submit"><button style="margin-left:48px" type="button" onclick="location.href='/'">Play Game</button>
 			</form>
 			<form action="/friend/accept" method="post" id="requestForm"/>
 			<br/>
+		</div>
       <script type="text/javascript">
             var requests = '<%- requests %>';
 						requests = JSON.parse(requests);
