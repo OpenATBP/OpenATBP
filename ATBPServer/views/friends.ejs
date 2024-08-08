@@ -40,7 +40,7 @@
 						requests = JSON.parse(requests);
 						var html = ``;
 						for(var r of requests){
-							html+=`<p style="display:inline">${r.dname}</p><button type="button" value="${r.username}" onClick="sendPostRequest(this.value)">Submit</button><button type="button" value="${r.username}" onClick="sendDeclineRequest(this.value)">Decline</button><br/>`;
+							html+=`<p style="display:inline">${r.dname}</p><button type="button" value="${r.username}" onClick="sendPostRequest(this.value)">Accept</button><button type="button" value="${r.username}" onClick="sendDeclineRequest(this.value)">Decline</button><br/>`;
 						}
 						document.getElementById("requestForm").innerHTML=html;
 
