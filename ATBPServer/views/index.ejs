@@ -1,35 +1,103 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>Adventure Time Battle Party</title>
+  <head>
+    <title>OpenATBP</title>
 
-        <script type="text/javascript">
-              var client_id = '<%- client_id %>';
-              var redirect = encodeURIComponent('<%- redirect %>');
-              var discord_enabled = '<%- discord_enabled %>';
-        </script>
-		<script type="text/javascript" src="js/atbp-client.js"></script>
+    <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <script type="text/javascript" src="js/atbp-client.js"></script>
 
-		<style type="text/css">
-			html, body {
-				margin: 0;
-				padding: 0;
-				width: 100%;
-				height: 100%;
-				overflow: hidden;
-			}
-			#container {
-				margin: 0;
-				padding: 0;
-				width: 100%;
-				height: 100%;
-				clear: both;
-			}
-		</style>
-	</head>
-	<body onresize="OnResize()">
-		<div id="container">
-			<embed src="CNChampions.unity3d" id="unity_player" bgColor=#000000 logoimage="logoimage.png" progressbarimage="progressbarimage.png" progressframeimage="progressframeimage.png" width=100% height=100% type="application/vnd.unity" backgroundcolor="021E2F" bordercolor="DF2900" textcolor="DF2900" disablecontextmenu="true" disablefullscreen="false">
-		</div>
-	</body>
+	  <style>
+	    body {
+	      overflow: hidden;
+	    }
+	    #sidebar {
+	      position: fixed;
+	      right: 0;
+	      top: 0;
+	      bottom: 0;
+	      width: 250px;
+	      background-color: #343a40;
+	      color: white;
+	      padding: 15px;
+	      padding-top: 56px;
+	      transition: transform 0.3s ease;
+	      transform: translateX(100%);
+	    }
+	    #sidebar.show {
+	      transform: translateX(0);
+	    }
+	    #content {
+	      transition: margin-right 0.3s ease;
+	      margin-right: 0;
+	    }
+	    #bottom-links {
+	    	position: fixed;
+	    	width: 88%;
+	    	bottom: 8px;
+	    }
+	  </style>
+  </head>
+  <body onresize="OnResize();">
+  	<!-- Script include is needed both here and in <head> for it to work on Electron *shrug* -->
+  	<script type="text/javascript" src="js/jquery.min.js"></script>
+  	<script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
+
+	  <div id="sidebar">
+	  	<h4>Friend Requests</h4>
+	  	Coming soon™
+	  	<br/><br/>
+	  	<h4>Friend Search</h4>
+	  	Coming soon™
+	  	<div class="list-group" id="bottom-links">
+	  		<button type="button" class="list-group-item list-group-item-dark" onclick="location.href='https://discord.gg/tRTeBEWmJE'">Discord Chat</button>
+	  		<button type="button" class="list-group-item list-group-item-dark" onclick="location.href='https://github.com/OpenATBP/OpenATBP/issues'">Github Issues</button>
+  			<button type="button" class="list-group-item list-group-item-dark" id="login-button" onclick="location.href='/login'">Log In</button>
+  			<button type="button" class="list-group-item list-group-item-dark" id="logout-button" onclick="logOut();">Log Out</button>
+			</div>
+	  </div>
+
+	  <div id="content">
+	  	<nav class="navbar navbar-dark bg-dark d-flex justify-content-between">
+	      <a class="navbar-brand" href="#">OpenATBP</a>
+	      <section class="navbar-right">
+	      <span class="navbar-text px-2" id="username-text">Not logged in</span>
+	      <button class="navbar-toggler" type="button" id="sidebarCollapse">
+	      <span class="navbar-toggler-icon"></span>
+	      </button>
+	      </section>
+	    </nav>
+      <div id="embed-container">
+      	<div id="plugin-message" class="jumbotron">
+	        <h1>Unity plugin not detected!</h1>
+	        <br/>
+	        <h5>
+	          Either use OpenATBPClient which has everything built in, or download Unity Web Player below. 
+	        </h5>
+	        <h5>
+	          Note that Unity Web Player will only work with older, NPAPI-capable browsers such as Internet Explorer, Pale Moon, and WaterFox Classic.
+	        </h5>
+	        <br/>
+	        <!-- Using the <a> tag has some weird formatting issues for some reason-->
+	        <button class="btn btn-primary" onclick="location.href='https://github.com/OpenATBP/OpenATBPClient/releases/'">Download OpenATBPClient (recommended)</button>
+	        <button class="btn btn-secondary" onclick="location.href='http://webplayer.unity3d.com/download_webplayer-3.x/UnityWebPlayer.exe'">Download Unity Web Player</button>
+	      </div>
+      </div>
+    </div>
+
+	  <script>
+	    $(document).ready(function () {
+	      $('#sidebarCollapse').on('click', function () {
+	        $('#sidebar').toggleClass('show');
+	        if ($('#sidebar').hasClass('show')) {
+	          $('#content').css('margin-right', '250px');
+	        } else {
+	          $('#content').css('margin-right', '0');
+	        }
+	      });
+	    });
+	  </script>
+
+  </body>
 </html>

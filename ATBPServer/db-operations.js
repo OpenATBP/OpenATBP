@@ -81,33 +81,4 @@ var newUserFunction = function (
 
 module.exports = {
   createNewUser: newUserFunction,
-  findDiscordId: function (clientId, collection) {
-    return new Promise(function (resolve, reject) {
-      console.log('Client_ID: ' + clientId);
-      collection
-        .findOne({ 'user.TEGid': clientId })
-        .then((res) => {
-          if (res != null) {
-            if (res.player == undefined) {
-              if (res.user != undefined) {
-                console.log('Creating new user!');
-                newUserFunction(clientId, res.user.dname, 'discord', collection)
-                  .then((user) => {
-                    resolve(user);
-                  })
-                  .catch((e) => {
-                    reject(e);
-                  });
-              } else reject();
-            } else {
-              console.log('User exists!');
-              resolve(res.user);
-            }
-          } else reject();
-        })
-        .catch((e) => {
-          reject(e);
-        });
-    });
-  },
 };
