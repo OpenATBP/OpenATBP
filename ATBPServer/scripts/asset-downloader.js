@@ -3,7 +3,8 @@ const extract = require('extract-zip');
 const fs = require('fs');
 const path = require('path');
 
-const url = 'https://archive.org/download/openatbp-20240808/openatbp-20240808-full.zip';
+const url =
+  'https://archive.org/download/openatbp-20240808/openatbp-20240808-full.zip';
 const dl = new DownloaderHelper(url, './static/');
 
 dl.on('end', () => {
