@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>OpenATBP Registration</title>
+		<title>OpenATBP Friends</title>
 
 		<style type="text/css">
 			html, body {
@@ -31,12 +31,12 @@
 			<form action="/friend/add" method="post" id="addFriendForm">
 				<label for="username">Username</username>
 				<input type="text" id="username" name="username">
-				<input type="submit">
+				<input type="submit"><button style="margin-left:48px" type="button" onclick="location.href='/'">Play Game</button>
 			</form>
 			<form action="/friend/accept" method="post" id="requestForm"/>
 			<br/>
-      <script type="text/javascript">
-            var requests = '<%- requests %>';
+			<script type="text/javascript">
+						var requests = '<%- requests %>';
 						requests = JSON.parse(requests);
 						var html = ``;
 						for(var r of requests){
@@ -52,7 +52,8 @@
 							//console.log(formData);
 							fetch(`/friend/accept/${value}`, {
 								method: "POST",
-								body: JSON.stringify({test: "Test"})
+								body: JSON.stringify({test: "Test"}),
+								credentials: "include"
 							}).then(function() {
 								window.location.reload();
 							}).catch(console.error);
@@ -66,12 +67,13 @@
 							//console.log(formData);
 							fetch(`/friend/decline/${value}`, {
 								method: "POST",
-								body: JSON.stringify({test: "Test"})
+								body: JSON.stringify({test: "Test"}),
+								credentials: "include"
 							}).then(function() {
 								window.location.reload();
 							}).catch(console.error);
 						}
 
-      </script>
+			</script>
 	</body>
 </html>
