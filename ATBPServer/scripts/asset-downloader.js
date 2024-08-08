@@ -3,17 +3,18 @@ const extract = require('extract-zip');
 const fs = require('fs');
 const path = require('path');
 
-const url = 'https://archive.org/download/atbp-20150519/atbp-20150519-full.zip';
+const url =
+  'https://archive.org/download/openatbp-20240808/openatbp-20240808-full.zip';
 const dl = new DownloaderHelper(url, './static/');
 
 dl.on('end', () => {
   console.log('Download completed, extracting...');
   try {
-    extract('./static/atbp-20150519-full.zip', {
+    extract('./static/openatbp-20240808-full.zip', {
       dir: path.resolve('./static/'),
     }).then(() => {
       console.log('Extraction completed.');
-      fs.rmSync('./static/atbp-20150519-full.zip');
+      fs.rmSync('./static/openatbp-20240808-full.zip');
       console.log('Cleaned up.');
     });
   } catch (err) {

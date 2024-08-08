@@ -45,14 +45,14 @@ tasks.register('copySFS2XLibs', Copy) {
 }
 
 tasks.register('downloadDefinitions', Download) {
-    src 'https://archive.org/download/atbp-20150519/atbp-20150519-definitions.zip'
+    src 'https://archive.org/download/openatbp-20240808/openatbp-20240808-definitions.zip'
     dest buildDir
     overwrite false
 }
 
 tasks.register('extractDefinitions', Copy) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from zipTree(layout.buildDirectory.file("atbp-20150519-definitions.zip"))
+    from zipTree(layout.buildDirectory.file("openatbp-20240808-definitions.zip"))
     into new File(getSFS2XPath(), 'extensions/Champions/')
 }
 

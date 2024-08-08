@@ -4,33 +4,79 @@
     <title>OpenATBP - Login</title>
 
     <script type="text/javascript" src="js/jquery.min.js"></script>
-      <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/bootstrap.min.css">
     <script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
+
+    <style>
+        body {
+          display: -ms-flexbox;
+          display: flex;
+          -ms-flex-align: center;
+          align-items: center;
+          padding-top: 40px;
+          padding-bottom: 40px;
+          background-image: url('bg3.png');
+          height:100vh;
+          background-size: cover;
+        }
+        .form-login {
+          width: 100%;
+          max-width: 330px;
+          padding: 15px;
+          margin: auto;
+        }
+        .form-login .checkbox {
+          font-weight: 400;
+        }
+        .form-login .form-control {
+          position: relative;
+          box-sizing: border-box;
+          height: auto;
+          padding: 10px;
+          font-size: 16px;
+        }
+        .form-login .form-control:focus {
+          z-index: 2;
+        }
+        .form-login input[type="text"] {
+          margin-bottom: -1px;
+          border-bottom-right-radius: 0;
+          border-bottom-left-radius: 0;
+        }
+        .form-login input[type="password"] {
+          margin-bottom: 10px;
+          border-top-left-radius: 0;
+          border-top-right-radius: 0;
+        }
+      </style>
   </head>
-  <script type="text/javascript">
-    const urlParams = new URLSearchParams(window.location.search);
-    const failed = urlParams.get('failed');
-    const exists = urlParams.get('exists');
-    if(failed) window.alert("Login failed!");
-    else if(exists) window.alert("User already exists! Please login.");
-  </script>
   <body>
-  	<script type="text/javascript" src="js/jquery.min.js"></script>
-	<script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
-    <div id="container">
-      <form action="/auth/login" method="get">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" value="">
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" value="">
-        <input type="submit" value="Submit">
-      </form>
-      <br/>
-      <a href="/register">
-        <input type="button" value="Register"/>
-      </a>
-      <a href="/forgot">
-        <input type="button" value="Forgot Password"/>
-      </a>
+    <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
+    <!-- TODO: no URLSearchParams on Electron, REEEEEE -->
+    <script type="text/javascript">
+	  const urlParams = new URLSearchParams(window.location.search);
+	  const failed = urlParams.get('failed');
+	  if(failed) window.alert("Login failed!");
+  	</script>
+
+    <div class="container" style="width: 24rem;">
+    	<div class="card text-center">
+		    <form class="form-login" action="/auth/login" method="get" id="login">
+		      <img class="mb-4" src="favicon.ico" alt="" width="128" height="128">
+		      <h1 class="h3 mb-3 font-weight-normal">Log In</h1>
+		      <input type="text" id="username" class="form-control" placeholder="Username" name="username" required autofocus>
+		      <input type="password" id="password" class="form-control" placeholder="Password" name="password" required>
+		      <!--<div class="checkbox mb-3">
+		        <label>
+		          <input type="checkbox" value="remember-me"> Remember me
+		        </label>
+		      </div>-->
+		      <button class="btn btn-lg btn-primary btn-block" type="submit">Submit</button>
+		      <p class="mt-3 text-muted">Don't have an account yet? <a href="/register">Register</a></p>
+		      <p class="mt-3 text-muted">Forgot your password? <a href="/forgot">Reset password</a></p>
+		    </form>
+	    </div>
+	</div>
   </body>
 </html>
