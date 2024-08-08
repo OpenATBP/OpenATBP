@@ -48,7 +48,6 @@ module.exports = {
   handleLogin: function (data, collection) {
     // /service/authenticate/login PROVIDES authToken [pid,TEGid,authid,authpass] RETURNS authToken.text={authToken}
     return new Promise(function (resolve, reject) {
-      console.log('Auth ID: ' + data.authToken.authid);
       collection
         .findOne({
           'user.authid': `${data.authToken.authid}`,
@@ -194,7 +193,6 @@ module.exports = {
                       }
                     )
                     .then((r) => {
-                      console.log('Updated!');
                       resolve(r);
                     })
                     .catch((e) => {

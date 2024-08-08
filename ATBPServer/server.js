@@ -286,7 +286,6 @@ mongoClient.connect((err) => {
     postRequest
       .handleDeclineFriend(session_token, req.params.friend, playerCollection)
       .then(() => {
-        console.log('Removed friend!');
         res.redirect(config.httpserver.url); //This doesn't work for some reason
       })
       .catch(console.error);
@@ -322,7 +321,6 @@ mongoClient.connect((err) => {
                     playerCollection
                   )
                   .then(() => {
-                    console.log('Success!');
                     res.redirect('/friends?added=true');
                   })
                   .catch(console.error);
@@ -379,7 +377,6 @@ mongoClient.connect((err) => {
             res.cookie('dname', user.user.dname);
             res.cookie('authpass', user.user.authpass);
             var date = Date.parse(user.session.expires_at);
-            console.log(date.valueOf());
             res.cookie('session_token', user.session.token, {
               maxAge: date.valueOf() - Date.now(),
             });
@@ -430,7 +427,6 @@ mongoClient.connect((err) => {
         }
       }
     }
-    console.log(session_token);
     if (req.query.username != '' && req.query.password != '') {
       getRequest
         .handleLogin(
@@ -453,7 +449,6 @@ mongoClient.connect((err) => {
           res.cookie('authpass', user.user.authpass, {
             maxAge: date.valueOf() - Date.now(),
           });
-          console.log(date.valueOf());
           res.cookie('session_token', user.session.token, {
             maxAge: date.valueOf() - Date.now(),
           });
@@ -546,7 +541,6 @@ mongoClient.connect((err) => {
     postRequest
       .handleLogin(req.body, playerCollection)
       .then((data) => {
-        console.log(data);
         res.send(data);
       })
       .catch(console.error);
@@ -570,7 +564,6 @@ mongoClient.connect((err) => {
       }
     }
     if (test == onlinePlayers.length) {
-      console.log('Pushed!');
       var playerObj = {
         username: req.body.username,
         level: options.level,
@@ -595,7 +588,6 @@ mongoClient.connect((err) => {
   });
 
   app.post('/service/shop/purchase', (req, res) => {
-    console.log(req.body);
     postRequest
       .handlePurchase(
         req.query.authToken,
@@ -624,7 +616,6 @@ mongoClient.connect((err) => {
   });
 
   app.post('/service/friend/request', (req, res) => {
-    console.log(req.body);
     postRequest
       .handleFriendRequest(
         req.query.authToken,

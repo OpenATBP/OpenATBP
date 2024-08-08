@@ -67,7 +67,6 @@ module.exports = {
   },
   handlePlayerChampions: function (data, collection) {
     // /service/data/user/champions/profile?authToken={data} RETURNS player info from db
-    console.log('Getting data for: ' + data);
     return new Promise(function (resolve, reject) {
       collection
         .findOne({ 'session.token': data })
@@ -181,7 +180,6 @@ module.exports = {
               var names = [];
               var errors = 0;
               for (var n of openRequests) {
-                console.log(n);
                 collection
                   .findOne({ 'user.TEGid': n })
                   .then((user) => {
@@ -193,7 +191,7 @@ module.exports = {
                     } else errors++;
                     if (names.length + errors == openRequests.length) {
                       resolve(names);
-                    } else console.log(names.length);
+                    }
                   })
                   .catch((err) => {
                     console.log(err);

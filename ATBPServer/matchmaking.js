@@ -65,9 +65,7 @@ module.exports = {
               }
             }
             team++;
-          } else if (failedTeam == undefined)
-            failedTeam = searchTeam; //If there's no many, it'll mark the first team as a failed team and try to readd if all other attempts fail.
-          else console.log('THERE IS A FAILED TEAM');
+          } else if (failedTeam == undefined) failedTeam = searchTeam; //If there's no many, it'll mark the first team as a failed team and try to readd if all other attempts fail.
         } else if (searchTeam == undefined) {
           //Runs if the player does not have a team.
           var queueSearchObj = {
@@ -76,7 +74,7 @@ module.exports = {
             team: -1,
           };
           validPlayers.push(queueSearchObj);
-        } else console.log('UNHANDLED ELSE');
+        }
       }
       if (validPlayers.length == queueSize) return validPlayers; //If there is a full team, return.
     }
@@ -119,7 +117,6 @@ module.exports = {
     return validPlayers;
   },
   getTeams: function (players, teams, teamSize) {
-    console.log(players);
     var returnVal = {
       purple: [],
       blue: [],
@@ -173,7 +170,6 @@ module.exports = {
     findTeams([...returnVal.purple], [...returnVal.blue], 0);
     returnVal.purple = closestTeams[0] != undefined ? closestTeams[0] : [];
     returnVal.blue = closestTeams[1] != undefined ? closestTeams[1] : [];
-    console.log(returnVal);
     return returnVal;
   },
   createFakeUser: function (onTeam) {

@@ -14,7 +14,6 @@ var newUserFunction = function (
     fs.readFile('data/shop.json', (err, data) => {
       if (err) reject(err);
       else {
-        console.log(JSON.parse(data));
         var today = new Date();
         today.setDate(today.getDate() + 1);
         for (var item of JSON.parse(data)) {
