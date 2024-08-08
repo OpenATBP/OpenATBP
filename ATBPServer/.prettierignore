@@ -1,2 +1,3 @@
 static/css/bootstrap*
 static/js/bootstrap*
+*.min.js
