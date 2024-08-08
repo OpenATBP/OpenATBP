@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>OpenATBP Registration</title>
+		<title>OpenATBP Friends</title>
 
 		<style type="text/css">
 			html, body {
@@ -35,9 +35,8 @@
 			</form>
 			<form action="/friend/accept" method="post" id="requestForm"/>
 			<br/>
-		</div>
-      <script type="text/javascript">
-            var requests = '<%- requests %>';
+			<script type="text/javascript">
+						var requests = '<%- requests %>';
 						requests = JSON.parse(requests);
 						var html = ``;
 						for(var r of requests){
@@ -73,6 +72,6 @@
 							}).catch(console.error);
 						}
 
-      </script>
+			</script>
 	</body>
 </html>

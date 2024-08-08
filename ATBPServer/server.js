@@ -234,7 +234,7 @@ mongoClient.connect((err) => {
         res.render('friends', { requests: JSON.stringify(requests) });
       })
       .catch((err) => {
-        console.log(err);
+        console.log('Error', err);
         res.render('friends', { requests: JSON.stringify([]) });
       });
   });
@@ -538,8 +538,22 @@ mongoClient.connect((err) => {
   });
 
   app.post('/service/authenticate/login', (req, res) => {
+    var session_token = '';
+    for (var h of req.rawHeaders) {
+      if (h.includes('session_token')) {
+        var cookies = h.split(';');
+        for (var c of cookies) {
+          if (c.includes('session_token')) {
+            session_token = c
+              .replace('session_token=', '')
+              .replace(' ', '')
+              .replace(';', '');
+          }
+        }
+      }
+    }
     postRequest
-      .handleLogin(req.body, playerCollection)
+      .handleLogin(req.body, session_token, playerCollection)
       .then((data) => {
         res.send(data);
       })

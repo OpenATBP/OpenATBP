@@ -45,7 +45,7 @@ module.exports = {
     });
   },
 
-  handleLogin: function (data, collection) {
+  handleLogin: function (data, token, collection) {
     // /service/authenticate/login PROVIDES authToken [pid,TEGid,authid,authpass] RETURNS authToken.text={authToken}
     return new Promise(function (resolve, reject) {
       collection
@@ -53,6 +53,7 @@ module.exports = {
           'user.authid': `${data.authToken.authid}`,
           'user.authpass': `${decodeURIComponent(data.authToken.authpass)}`,
           'user.TEGid': `${data.authToken.TEGid}`,
+          'session.token': token,
         })
         .then((user) => {
           if (user != null) {
