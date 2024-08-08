@@ -97,7 +97,7 @@ async function addRequests(collection) {
       //console.log(doc.friends);
       var q = { 'user.TEGid': doc.user.TEGid };
       var o = { upsert: true };
-      var up = { $set: { 'requests': [] } };
+      var up = { $set: { requests: [] } };
 
       var res = await collection.updateOne(q, up, o);
       console.log(res);
@@ -218,7 +218,7 @@ mongoClient.connect((err) => {
     res.render('login');
   });
 
-  app.get('/friends',(req,res) => {
+  app.get('/friends', (req, res) => {
     var session_token = '';
     for (var h of req.rawHeaders) {
       if (h.includes('session_token')) {
@@ -233,19 +233,22 @@ mongoClient.connect((err) => {
         }
       }
     }
-    getRequest.handleFriendRequest(session_token,playerCollection).then((requests) => {
-      res.render('friends', {'requests':JSON.stringify(requests)});
-    }).catch((err) => {
-      console.log(err);
-      res.render('friends',{'requests':JSON.stringify([])});
-    });
+    getRequest
+      .handleFriendRequest(session_token, playerCollection)
+      .then((requests) => {
+        res.render('friends', { requests: JSON.stringify(requests) });
+      })
+      .catch((err) => {
+        console.log(err);
+        res.render('friends', { requests: JSON.stringify([]) });
+      });
   });
 
   app.get('/data/users', (req, res) => {
     res.send(JSON.stringify({ users: onlinePlayers.length }));
   });
 
-  app.post('/friend/accept/:friend',(req,res) => {
+  app.post('/friend/accept/:friend', (req, res) => {
     var session_token = '';
     for (var h of req.rawHeaders) {
       if (h.includes('session_token')) {
@@ -260,13 +263,16 @@ mongoClient.connect((err) => {
         }
       }
     }
-    postRequest.handleAcceptFriend(session_token,req.params.friend,playerCollection).then((r) => {
-      //console.log("Here");
-      res.redirect(config.httpserver.url); //This doesn't work for some reason
-    }).catch(console.error);
+    postRequest
+      .handleAcceptFriend(session_token, req.params.friend, playerCollection)
+      .then((r) => {
+        //console.log("Here");
+        res.redirect(config.httpserver.url); //This doesn't work for some reason
+      })
+      .catch(console.error);
   });
 
-  app.post('/friend/decline/:friend',(req,res) => {
+  app.post('/friend/decline/:friend', (req, res) => {
     var session_token = '';
     for (var h of req.rawHeaders) {
       if (h.includes('session_token')) {
@@ -282,13 +288,16 @@ mongoClient.connect((err) => {
       }
     }
 
-    postRequest.handleDeclineFriend(session_token,req.params.friend,playerCollection).then(() => {
-      console.log("Removed friend!");
-      res.redirect(config.httpserver.url); //This doesn't work for some reason
-    }).catch(console.error);
+    postRequest
+      .handleDeclineFriend(session_token, req.params.friend, playerCollection)
+      .then(() => {
+        console.log('Removed friend!');
+        res.redirect(config.httpserver.url); //This doesn't work for some reason
+      })
+      .catch(console.error);
   });
 
-  app.post('/friend/add',(req,res) => {
+  app.post('/friend/add', (req, res) => {
     var session_token = '';
     for (var h of req.rawHeaders) {
       if (h.includes('session_token')) {
@@ -303,18 +312,31 @@ mongoClient.connect((err) => {
         }
       }
     }
-    playerCollection.findOne({'session.token':session_token}).then((u) => {
-      if(u != null && u.user.TEGid != req.body.username){
-        playerCollection.findOne({'user.TEGid':req.body.username}).then((user) => {
-          if(user != null){
-            postRequest.handleFriendRequest(u.user.TEGid,user.user.TEGid,playerCollection).then(() => {
-              console.log("Success!");
-              res.redirect('/friends?added=true');
-            }).catch(console.error);
-          }else res.redirect('/friends?added=false');
-        }).catch(console.error);
-      }else res.redirect('/friends?added=false');
-    }).catch(console.error);
+    playerCollection
+      .findOne({ 'session.token': session_token })
+      .then((u) => {
+        if (u != null && u.user.TEGid != req.body.username) {
+          playerCollection
+            .findOne({ 'user.TEGid': req.body.username })
+            .then((user) => {
+              if (user != null) {
+                postRequest
+                  .handleFriendRequest(
+                    u.user.TEGid,
+                    user.user.TEGid,
+                    playerCollection
+                  )
+                  .then(() => {
+                    console.log('Success!');
+                    res.redirect('/friends?added=true');
+                  })
+                  .catch(console.error);
+              } else res.redirect('/friends?added=false');
+            })
+            .catch(console.error);
+        } else res.redirect('/friends?added=false');
+      })
+      .catch(console.error);
   });
 
   app.post('/auth/register', (req, res) => {

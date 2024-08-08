@@ -169,38 +169,59 @@ module.exports = {
         });
     });
   },
-  handleAcceptFriend: function(token,friend,collection){
-    return new Promise(function(resolve, reject) {
-      collection.findOne({'session.token':token}).then((u) => {
-        if (u != null){
+  handleAcceptFriend: function (token, friend, collection) {
+    return new Promise(function (resolve, reject) {
+      collection.findOne({ 'session.token': token }).then((u) => {
+        if (u != null) {
           var requests = u.requests;
-          if (requests != undefined){
-            if(requests.includes(friend)){
-              collection.updateOne({'session.token':token},{$addToSet: {'friends':friend},$pull:{'requests':friend}}).then((res) => {
-                collection.updateOne({'user.TEGid':friend},{$addToSet: {'friends':u.user.TEGid},$pull:{'requests':u.user.TEGid}}).then((r) => {
-                  console.log("Updated!");
-                  resolve(r);
-                }).catch((e) => {
+          if (requests != undefined) {
+            if (requests.includes(friend)) {
+              collection
+                .updateOne(
+                  { 'session.token': token },
+                  {
+                    $addToSet: { friends: friend },
+                    $pull: { requests: friend },
+                  }
+                )
+                .then((res) => {
+                  collection
+                    .updateOne(
+                      { 'user.TEGid': friend },
+                      {
+                        $addToSet: { friends: u.user.TEGid },
+                        $pull: { requests: u.user.TEGid },
+                      }
+                    )
+                    .then((r) => {
+                      console.log('Updated!');
+                      resolve(r);
+                    })
+                    .catch((e) => {
+                      console.log(e);
+                      reject();
+                    });
+                })
+                .catch((e) => {
                   console.log(e);
                   reject();
                 });
-              }).catch((e) => {
-                console.log(e);
-                reject();
-              });
             }
           }
-        }else reject();
-      })
-    });
-  },
-  handleDeclineFriend: function(token,friend,collection){
-    return new Promise(function(resolve, reject) {
-      collection.updateOne({'session.token':token},{$pull:{'requests':friend}}).then(() => {
-        resolve();
-      }).catch((e) => {
-        reject();
+        } else reject();
       });
     });
-  }
+  },
+  handleDeclineFriend: function (token, friend, collection) {
+    return new Promise(function (resolve, reject) {
+      collection
+        .updateOne({ 'session.token': token }, { $pull: { requests: friend } })
+        .then(() => {
+          resolve();
+        })
+        .catch((e) => {
+          reject();
+        });
+    });
+  },
 };
