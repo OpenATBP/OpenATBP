@@ -244,7 +244,6 @@ mongoClient.connect((err) => {
   });
 
   app.post('/friend/accept/:friend', (req, res) => {
-    console.log(req);
     var session_token = '';
     for (var h of req.rawHeaders) {
       if (h.includes('session_token')) {

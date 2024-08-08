@@ -171,8 +171,6 @@ module.exports = {
   },
   handleAcceptFriend: function (token, friend, collection) {
     return new Promise(function (resolve, reject) {
-      console.log('Token: ', token);
-      console.log('Friend: ', friend);
       collection.findOne({ 'session.token': token }).then((u) => {
         if (u != null) {
           var requests = u.requests;
