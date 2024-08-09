@@ -313,7 +313,6 @@ public class MovementManager {
                     if (p.distance(allPoints[i]) <= 0.5f) {
                         if (i != 0) return allPoints[i - 1];
                         else {
-                            Console.logWarning("Inside collider!");
                             return movementLine.getP1();
                         }
                     }

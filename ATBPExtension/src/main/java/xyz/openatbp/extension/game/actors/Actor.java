@@ -193,9 +193,6 @@ public abstract class Actor {
 
     public void setPath(List<Point2D> path) {
         if (path.size() == 0) {
-            Console.logWarning(
-                    (this.actorType == ActorType.PLAYER ? this.displayName : this.id)
-                            + " was given a 0 length path");
             this.path = null;
             return;
         }

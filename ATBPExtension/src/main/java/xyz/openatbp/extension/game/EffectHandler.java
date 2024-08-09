@@ -2,7 +2,6 @@ package xyz.openatbp.extension.game;
 
 import java.util.*;
 
-import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
@@ -80,7 +79,7 @@ public class EffectHandler {
                 if (this.parent.getActorType() == ActorType.PLAYER) {
                     UserActor ua = (UserActor) this.parent;
                     ua.handlePolymorph(true, duration);
-                } else Console.logWarning(this.parent.getId() + " got polymorphed somehow!");
+                }
                 break;
             case STUNNED:
             case ROOTED:

@@ -46,7 +46,7 @@ function safeSendAll(sockets, command, response) {
   return new Promise(function (resolve, reject) {
     if (sockets.length == 0) resolve(true);
     else {
-      console.log(`Sending ${command} to ${sockets[0].player.name}`);
+      //console.log(`Sending ${command} to ${sockets[0].player.name}`);
       sendCommand(sockets[0], command, response)
         .then(() => {
           sockets.shift();
