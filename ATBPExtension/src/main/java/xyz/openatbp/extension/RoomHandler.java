@@ -125,6 +125,10 @@ public abstract class RoomHandler implements Runnable {
             boolean towerFilter,
             boolean baseFilter);
 
+    public ScheduledFuture<?> getScriptHandler() {
+        return this.scriptHandler;
+    }
+
     public void run() {
         if (this.gameOver) return;
         if (!this.parentExt.roomHandlerExists(this.room.getName())

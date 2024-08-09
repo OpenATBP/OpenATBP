@@ -103,7 +103,8 @@ public abstract class Actor {
 
     public boolean withinRange(Actor a) {
         if (a.getActorType() == ActorType.BASE)
-            return a.getLocation().distance(this.location) - 1 <= this.getPlayerStat("attackRange");
+            return a.getLocation().distance(this.location) - 1.5f
+                    <= this.getPlayerStat("attackRange");
         return a.getLocation().distance(this.location) <= this.getPlayerStat("attackRange");
     }
 
