@@ -406,7 +406,9 @@ public class TutorialRoomHandler extends RoomHandler {
 
                     Runnable spawnBot =
                             () -> {
-                                jakeBot = new JakeBot(parentExt, room, new Point2D.Float(48, 0), 1);
+                                jakeBot =
+                                        new JakeBot(
+                                                parentExt, room, 1, new Point2D.Float(48, 0), 1);
                                 jakeBot.setLocation(new Point2D.Float(48, 0));
                                 ExtensionCommands.snapActor(
                                         parentExt,
