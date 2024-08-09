@@ -23,6 +23,7 @@ public class RattleBalls extends UserActor {
     private static final int W_CAST_DELAY = 500;
     private static final int E_DURATION = 3500;
     private static final double E_SPEED_VALUE = 0.14d;
+    public static final int E_SECOND_USE_DELAY = 800;
     private boolean passiveActive = false;
     private int passiveHits = 0;
     private long startPassiveStack = 0;
@@ -106,7 +107,12 @@ public class RattleBalls extends UserActor {
 
     @Override
     public boolean canUseAbility(int ability) {
-        if (qJumpActive || ultActive) return false;
+        // q jump active - cant use anything
+        // parry active - can only use Q
+        // ultActive - can only use E
+        if (qJumpActive) return false;
+        if (parryActive) return ability == 1;
+        if (ultActive) return ability == 3;
         return super.canUseAbility(ability);
     }
 
@@ -324,11 +330,13 @@ public class RattleBalls extends UserActor {
                             false,
                             false,
                             team);
+                    ExtensionCommands.actorAbilityResponse(
+                            parentExt, player, "e", true, E_SECOND_USE_DELAY, 0);
                     addEffect("speed", getStat("speed") * E_SPEED_VALUE, E_DURATION);
                 } else {
                     endUlt();
                 }
-                int eDelay = eCounter == 1 ? 500 : getReducedCooldown(cooldown);
+                int eDelay = eCounter == 1 ? E_SECOND_USE_DELAY : getReducedCooldown(cooldown);
                 scheduleTask(
                         abilityRunnable(ability, spellData, cooldown, gCooldown, dest), eDelay);
                 break;
