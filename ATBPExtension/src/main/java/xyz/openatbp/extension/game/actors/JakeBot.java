@@ -13,43 +13,16 @@ import com.smartfoxserver.v2.entities.Room;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
-import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.pathfinding.MovementManager;
 
-public class JakeBot extends Actor {
+public class JakeBot extends Bot {
     private boolean isAutoAttacking = false;
     private long lastBallon = 0;
-    private Point2D spawnPoint;
-    private UserActor charmer;
 
-    public JakeBot(ATBPExtension parentExt, Room room, Point2D spawnPoint, int num) {
-        this.parentExt = parentExt;
-        this.room = room;
-        this.team = 1;
-        this.id = "jake_bot" + team + num;
-        this.dead = false;
-        this.location = spawnPoint;
-        this.avatar = "jake";
-        this.currentHealth = 750;
-        this.maxHealth = 750;
-        this.actorType = ActorType.COMPANION;
-        this.spawnPoint = spawnPoint;
-        this.stats = this.initializeStats();
-        ExtensionCommands.createActor(
-                parentExt, room, this.id, this.avatar, this.location, 0f, this.team);
-    }
-
-    @Override
-    public void handleKill(Actor a, JsonNode attackData) {}
-
-    @Override
-    public boolean damaged(Actor a, int damage, JsonNode attackData) {
-        if (room.getGroupId().equals("Practice")) {
-            return false;
-        }
-        return super.damaged(a, damage, attackData);
+    public JakeBot(ATBPExtension parentExt, Room room, int team, Point2D spawnPoint, int num) {
+        super(parentExt, room, "jake", team, spawnPoint, num);
     }
 
     @Override
@@ -157,24 +130,6 @@ public class JakeBot extends Actor {
     }
 
     @Override
-    public void die(Actor a) {
-        if (this.dead) return;
-        if (a.getActorType() == ActorType.PLAYER) {
-            UserActor killer = (UserActor) a;
-            ExtensionCommands.playSound(
-                    parentExt, killer.getUser(), "global", "announcer/you_defeated_enemy");
-        }
-
-        this.dead = true;
-        this.currentHealth = 0;
-        this.setHealth(0, (int) this.maxHealth);
-        this.target = null;
-        this.canMove = false;
-        ExtensionCommands.knockOutActor(parentExt, room, id, a.getId(), 30);
-        ExtensionCommands.destroyActor(parentExt, room, this.id);
-    }
-
-    @Override
     public void update(int msRan) {
         handleDamageQueue();
         handleActiveEffects();
@@ -219,38 +174,6 @@ public class JakeBot extends Actor {
                     lastBallon = System.currentTimeMillis();
                 }
             }
-        } else {
-            if (this.location.distance(spawnPoint) > 0.1
-                    && canMove
-                    && !getState(ActorState.CHARMED)) {
-                moveWithCollision(spawnPoint);
-            }
-
-            if (this.getState(ActorState.CHARMED) && charmer != null) {
-                moveTowardsCharmer(charmer);
-            }
         }
     }
-
-    @Override
-    public boolean canMove() {
-        for (ActorState s : this.states.keySet()) {
-            if (s == ActorState.ROOTED
-                    || s == ActorState.STUNNED
-                    || s == ActorState.FEARED
-                    || s == ActorState.AIRBORNE) {
-                if (this.states.get(s)) return false;
-            }
-        }
-        return this.canMove;
-    }
-
-    @Override
-    public void handleCharm(UserActor charmer, int duration) {
-        this.addState(ActorState.CHARMED, 0d, duration);
-        this.charmer = charmer;
-    }
-
-    @Override
-    public void setTarget(Actor a) {}
 }

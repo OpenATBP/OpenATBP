@@ -18,7 +18,7 @@ public class PracticeRoomHandler extends RoomHandler {
     private HashMap<User, UserActor> dcPlayers = new HashMap<>();
     private List<Actor> companions = new ArrayList<>();
     private Point2D BOT_LOCATION = new Point2D.Float(-47.5f, -4);
-    private JakeBot jakeBot;
+    private Bot finnBot;
 
     public PracticeRoomHandler(ATBPExtension parentExt, Room room) {
         super(parentExt, room);
@@ -47,14 +47,14 @@ public class PracticeRoomHandler extends RoomHandler {
                 1,
                 0f);
 
-        jakeBot = new JakeBot(parentExt, room, BOT_LOCATION, 1);
+        finnBot = new Bot(parentExt, room, "finn", 1, BOT_LOCATION, 1);
     }
 
     @Override
     public void run() {
         super.run();
-        if (jakeBot != null) {
-            jakeBot.update(mSecondsRan);
+        if (finnBot != null) {
+            finnBot.update(mSecondsRan);
         }
     }
 
@@ -360,7 +360,7 @@ public class PracticeRoomHandler extends RoomHandler {
     @Override
     public List<Actor> getActors() {
         List<Actor> actors = new ArrayList<>();
-        if (jakeBot != null) actors.add(jakeBot);
+        if (finnBot != null) actors.add(finnBot);
         actors.addAll(towers);
         actors.addAll(baseTowers);
         actors.addAll(minions);
@@ -375,7 +375,7 @@ public class PracticeRoomHandler extends RoomHandler {
     @Override
     public List<Actor> getActorsInRadius(Point2D center, float radius) {
         List<Actor> actorsInRadius = new ArrayList<>();
-        if (jakeBot != null) actorsInRadius.add(jakeBot);
+        if (finnBot != null) actorsInRadius.add(finnBot);
         actorsInRadius.addAll(towers);
         actorsInRadius.addAll(baseTowers);
         actorsInRadius.addAll(minions);
@@ -392,7 +392,7 @@ public class PracticeRoomHandler extends RoomHandler {
     @Override
     public List<Actor> getEnemiesInPolygon(int team, Path2D polygon) {
         List<Actor> enemiesInPolygon = new ArrayList<>();
-        if (jakeBot != null) enemiesInPolygon.add(jakeBot);
+        if (finnBot != null) enemiesInPolygon.add(finnBot);
         enemiesInPolygon.addAll(towers);
         enemiesInPolygon.addAll(baseTowers);
         enemiesInPolygon.addAll(minions);
@@ -410,7 +410,7 @@ public class PracticeRoomHandler extends RoomHandler {
     @Override
     public List<Actor> getNonStructureEnemies(int team) {
         List<Actor> nonStructureEnemies = new ArrayList<>();
-        if (jakeBot != null) nonStructureEnemies.add(jakeBot);
+        if (finnBot != null) nonStructureEnemies.add(finnBot);
         nonStructureEnemies.addAll(towers);
         nonStructureEnemies.addAll(baseTowers);
         nonStructureEnemies.addAll(minions);
@@ -434,7 +434,7 @@ public class PracticeRoomHandler extends RoomHandler {
             boolean towerFilter,
             boolean baseFilter) {
         List<Actor> eligibleActors = new ArrayList<>();
-        if (jakeBot != null) eligibleActors.add(jakeBot);
+        if (finnBot != null) eligibleActors.add(finnBot);
         eligibleActors.addAll(towers);
         eligibleActors.addAll(baseTowers);
         eligibleActors.addAll(minions);

@@ -80,9 +80,7 @@ public class MagicMan extends UserActor {
     public void attack(Actor a) {
         if (this.attackCooldown == 0) {
             this.applyStopMovingDuringAttack();
-            if (this.getState(ActorState.INVISIBLE)) {
-                this.setState(ActorState.INVISIBLE, false);
-            }
+            unveil();
             String projectile = "magicman_projectile";
             MagicManPassive passiveAttack = new MagicManPassive(a, handleAttack(a));
             RangedAttack rangedAttack = new RangedAttack(a, passiveAttack, projectile);
@@ -115,9 +113,7 @@ public class MagicMan extends UserActor {
             case 1:
                 this.canCast[0] = false;
                 try {
-                    if (this.getState(ActorState.INVISIBLE)) {
-                        this.setState(ActorState.INVISIBLE, false);
-                    }
+                    unveil();
                     this.stopMoving(castDelay);
                     this.qStartTime = System.currentTimeMillis();
                     ExtensionCommands.playSound(
@@ -200,9 +196,7 @@ public class MagicMan extends UserActor {
                 this.canCast[1] = false;
                 try {
                     this.wUses++;
-                    if (this.getState(ActorState.INVISIBLE)) {
-                        this.setState(ActorState.INVISIBLE, false);
-                    }
+                    unveil();
                     if (this.wUses == 1) {
                         Point2D dashPoint =
                                 MovementManager.getDashPoint(
@@ -246,6 +240,7 @@ public class MagicMan extends UserActor {
                 this.canCast[2] = false;
                 Point2D dashPoint = this.location;
                 try {
+                    unveil();
                     this.canMove = false;
                     this.ultStarted = true;
                     Point2D firstLocation =
@@ -276,6 +271,12 @@ public class MagicMan extends UserActor {
                         abilityRunnable(ability, spellData, cooldown, gCooldown, dashPoint),
                         eDashTime);
                 break;
+        }
+    }
+
+    private void unveil() {
+        if (this.getState(ActorState.INVISIBLE)) {
+            this.setState(ActorState.INVISIBLE, false);
         }
     }
 
