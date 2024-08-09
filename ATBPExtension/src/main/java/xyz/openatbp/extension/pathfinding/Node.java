@@ -233,44 +233,6 @@ public class Node {
         return path;
     }
 
-    @Deprecated
-    public static List<Point2D> smoothPath(List<Point2D> points) {
-        Console.debugLog("Running!");
-        if (points.size() == 2) return points;
-        List<Point2D> funnel = new ArrayList<>();
-        funnel.add(points.get(0));
-        Console.debugLog("Here!");
-        Point2D apex = points.get(0);
-        Point2D left = points.get(0);
-
-        for (int i = 1; i < points.size(); i++) {
-            Point2D current = points.get(i);
-            double ccwVal = ccw(apex, left, current);
-            if (ccwVal > 0) {
-                left = current;
-            } else if (ccwVal < 0) {
-                while (funnel.size() > 1
-                        && ccw(
-                                        funnel.get(funnel.size() - 2),
-                                        funnel.get(funnel.size() - 1),
-                                        current)
-                                <= 0) {
-                    funnel.remove(funnel.size() - 1);
-                }
-                funnel.add(current);
-                apex = left;
-            } else {
-                funnel.add(current);
-                left = current;
-            }
-        }
-        funnel.add(points.get(points.size() - 1));
-        for (Point2D p : funnel) {
-            Console.debugLog("Path: x=" + p.getX() + " y=" + p.getY());
-        }
-        return funnel;
-    }
-
     private static double ccw(Point2D a, Point2D b, Point2D c) {
         Console.debugLog(
                 (b.getX() - a.getX()) * (c.getY() - a.getY())

@@ -287,7 +287,7 @@ public class Minion extends Actor {
         switch (this.state) {
             case IDLE:
                 // Console.logWarning(this.id + " is idle!");
-                this.mainPathIndex = this.findPathIndex();
+                this.mainPathIndex = this.findPathIndex(false);
                 this.moveWithCollision(this.getPathPoint());
                 this.state = State.MOVING;
                 break;
@@ -314,6 +314,7 @@ public class Minion extends Actor {
                 }
                 if (this.withinAggroRange(this.target.getLocation()) && !this.target.isDead()) {
                     if (this.withinRange(this.target) && conflictingMinion == null) {
+                        this.stopMoving();
                         this.state = State.ATTACKING;
                     } else if (conflictingMinion == null) {
                         if (this.target.getLocation().distance(this.movementLine.getP2()) > 0.1)
@@ -573,8 +574,8 @@ public class Minion extends Actor {
         return null;
     }
 
-    private int
-            findPathIndex() { // Finds the nearest point along the defined path for the minion to
+    private int findPathIndex(
+            boolean retry) { // Finds the nearest point along the defined path for the minion to
         // travel
         // to
         double[] pathX;
@@ -618,8 +619,15 @@ public class Minion extends Actor {
             else index--;
         }
         if (index == -1) {
-            this.movementLine = null;
-            return this.findPathIndex();
+            if (retry) {
+                if (team == 0) {
+                    if (lane == 0) return blueTopX.length - 1;
+                    else return blueBotX.length - 1;
+                } else return 0;
+            } else {
+                this.movementLine = null;
+                return this.findPathIndex(true);
+            }
         }
         return index;
     }
