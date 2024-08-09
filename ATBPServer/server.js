@@ -630,14 +630,21 @@ mongoClient.connect((err) => {
   });
 
   app.post('/service/friend/request', (req, res) => {
-    postRequest
-      .handleFriendRequest(
-        req.query.authToken,
-        req.body.toUserId,
-        playerCollection
-      )
-      .then((dat) => {
-        res.send(dat);
+    playerCollection
+      .findOne({ 'session.token': req.query.authToken })
+      .then((u) => {
+        if (u != null) {
+          postRequest
+            .handleFriendRequest(
+              u.user.TEGid,
+              req.body.toUserId,
+              playerCollection
+            )
+            .then((dat) => {
+              res.send(dat);
+            })
+            .catch(console.error);
+        }
       })
       .catch(console.error);
   });
