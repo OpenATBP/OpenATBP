@@ -374,7 +374,7 @@ function handleSkilledMatchmaking() {
               var allPlayerObjs = [];
               for(var qPlayer of validQueuePlayers){
                 allPlayerObjs.push(qPlayer.player);
-                console.log(q.player.teg_id)
+                console.log(qPlayer.player.teg_id)
               }
               startGame(allPlayerObjs, t);
               return;
