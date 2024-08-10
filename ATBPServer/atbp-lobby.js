@@ -956,7 +956,7 @@ function handleRequest(jsonString, socket) {
       break;
 
     case 'auto_join':
-
+    /*
       var fakeUsers = [];
       for(var i = 0; i < 18; i++){
         var fake = matchmaking.createFakeUser(false);
@@ -972,7 +972,7 @@ function handleRequest(jsonString, socket) {
       var fakeTeam2 = [fakeUsers[3].player.teg_id,fakeUsers[4].player.teg_id];
       teams.push(matchmaking.createFakeTeam(fakeTeam1));
       teams.push(matchmaking.createFakeTeam(fakeTeam2));
-
+      */
       var act = jsonObject['payload'].act.split('_');
       var type = act[act.length - 1];
       for (var q of queues.filter((qu) =>
