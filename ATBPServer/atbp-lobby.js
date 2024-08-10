@@ -262,7 +262,7 @@ function updateElo(socket) {
 }
 
 function handleSkilledMatchmaking(){
-  if(!config.lobbyserver.matchmakingEnabled || users.length < 30) return;
+  if(!config.lobbyserver.matchmakingEnabled || users.length < config.lobbyserver.matchmakingMin) return;
   var types = [];
   for (var u of users) {
     if (
@@ -645,7 +645,7 @@ function joinQueue(sockets, type) {
   }
   if (
     !config.lobbyserver.matchmakingEnabled ||
-    queueSize == 1 || users.length < 30
+    queueSize == 1 || users.length < config.lobbyserver.matchmakingMin
   ) {
     /*
     var fakeUser1 = matchmaking.createFakeUser(true);
