@@ -179,13 +179,14 @@ module.exports = {
         teg_id: `fake-user-${Math.random() * 100}`,
         player: Math.floor(Math.random() * 10000),
         queue: {
-          type: '3p',
-          started: Date.now() - Math.random() * 10000,
+          type: '6p',
+          started: Date.now(),
           visual: 1,
         },
         onTeam: onTeam,
         elo: Math.floor(Math.random() * 1500),
         stage: 1,
+        fake: true,
       },
     };
   },

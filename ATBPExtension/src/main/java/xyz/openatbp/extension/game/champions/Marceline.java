@@ -133,6 +133,10 @@ public class Marceline extends UserActor {
     public double getPlayerStat(String stat) {
         if (stat.equalsIgnoreCase("healthRegen") && this.form == Form.BEAST) {
             return super.getPlayerStat(stat) * PASSIVE_HP_REG_VALUE;
+        } else if (stat.equalsIgnoreCase("speed")) {
+            if (this.beastWActive) return super.getPlayerStat(stat) * (1 + W_BEAST_SPEED_VALUE);
+            else if (this.vampireWActive)
+                return super.getPlayerStat(stat) * (1 + W_VAMPIRE_SPEED_VALUE);
         }
         return super.getPlayerStat(stat);
     }
@@ -254,8 +258,8 @@ public class Marceline extends UserActor {
                                 true,
                                 false,
                                 this.team);
-                        this.addEffect(
-                                "speed", this.getStat("speed") * W_BEAST_SPEED_VALUE, W_DURATION);
+                        // this.addEffect("speed", this.getStat("speed") * W_BEAST_SPEED_VALUE,
+                        // W_DURATION);
                     } else {
                         this.vampireWActive = true;
                         this.vampireWStartTime = System.currentTimeMillis();
@@ -291,8 +295,8 @@ public class Marceline extends UserActor {
                                 true,
                                 false,
                                 this.team);
-                        this.addEffect(
-                                "speed", this.getStat("speed") * W_VAMPIRE_SPEED_VALUE, W_DURATION);
+                        // this.addEffect("speed", this.getStat("speed") * W_VAMPIRE_SPEED_VALUE,
+                        // W_DURATION);
                     }
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);

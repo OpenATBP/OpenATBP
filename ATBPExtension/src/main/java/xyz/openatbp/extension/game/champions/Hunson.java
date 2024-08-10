@@ -214,7 +214,6 @@ public class Hunson extends UserActor {
             case 2:
                 this.canCast[1] = false;
                 try {
-                    this.stopMoving(castDelay);
                     ExtensionCommands.playSound(
                             this.parentExt, this.room, this.id, "hunson_power2a", this.location);
                     ExtensionCommands.createActorFX(

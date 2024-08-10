@@ -56,8 +56,8 @@
 
     <script type="text/javascript">
     const urlParams = new URLSearchParams(window.location.search);
-    const failed = urlParams.get('failed');
-    const exists = urlParams.get('exists');
+    const failed = window.location.search.includes('failed');
+    const exists = window.location.search.includes('exists');
     if(failed) window.alert("Registration failed!");
     else if(exists) window.alert("User already exists! Please login.");
     </script>

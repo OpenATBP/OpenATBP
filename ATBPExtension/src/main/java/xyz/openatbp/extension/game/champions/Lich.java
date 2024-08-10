@@ -512,6 +512,11 @@ public class Lich extends UserActor {
             } else {
                 if (this.target.getHealth() <= 0) this.resetTarget();
                 else {
+                    if (this.location.distance(Lich.this.location) > 9) {
+                        this.target = null;
+                        this.moveWithCollision(Lich.this.location);
+                        return;
+                    }
                     if (!this.withinRange(this.target)
                             && !this.isPointNearDestination(this.target.getLocation())
                             && !this.isAutoAttacking) {
