@@ -8,7 +8,6 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 
 import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
@@ -30,7 +29,7 @@ public class HitActorHandler extends BaseClientRequestHandler {
             String targetId = params.getUtfString("target_id");
             Actor target = handler.getActor(targetId);
             if (target == null) {
-                Console.logWarning(targetId + " is not a valid target");
+
                 return;
             }
             if (target.getId().equals("creep1_super12")) {

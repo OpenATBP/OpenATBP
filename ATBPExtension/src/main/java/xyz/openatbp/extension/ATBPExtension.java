@@ -42,6 +42,7 @@ public class ATBPExtension extends SFSExtension {
     List<Obstacle> mainMapObstacles;
     List<Obstacle> practiceMapObstacles;
 
+    Map<String, StressLogger> commandStressLog = new HashMap<>();
     ArrayList<Vector<Float>>[] brushColliders;
     ArrayList<Vector<Float>>[] practiceBrushColliders;
     ArrayList<Path2D> mapPaths; // Contains all line paths of the colliders for the practice map
@@ -480,6 +481,7 @@ public class ATBPExtension extends SFSExtension {
         if (this.commandStressLog.containsKey(cmdName)) {
             this.commandStressLog.get(cmdName).update(params);
         } else this.commandStressLog.put(cmdName, new StressLogger(cmdName));
+
          */
     }
 

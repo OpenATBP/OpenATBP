@@ -450,7 +450,7 @@ public class UserActor extends Actor {
             this.isAutoAttacking = true;
             Runnable resetIsAttacking = () -> this.isAutoAttacking = false;
             scheduleTask(resetIsAttacking, BASIC_ATTACK_DELAY);
-        } else Console.logWarning(this.getDisplayName() + " used an undefined attack!");
+        }
     }
 
     public void checkTowerAggro(UserActor ua) {
@@ -1404,9 +1404,6 @@ public class UserActor extends Actor {
             if (tries == 0) attackNumber = "attack1";
             else if (tries == 1) attackNumber = "attack2";
             else if (tries == 2) attackNumber = "attack3";
-            else {
-                Console.logWarning(this.displayName + ": fourth attack detected!");
-            }
             ISFSObject attack1 = new SFSObject();
             attack1.putUtfString("atkName", attackData.get(precursor + "Name").asText());
             attack1.putInt("atkDamage", damage);

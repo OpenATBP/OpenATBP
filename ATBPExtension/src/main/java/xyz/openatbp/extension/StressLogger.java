@@ -23,24 +23,28 @@ public class StressLogger {
     }
 
     public void update(ISFSObject params) {
+        String target = this.getTarget(params);
+        if (target != null) {
+            Console.debugLog(target + " used " + this.command);
+        }
         long timeDiff = System.currentTimeMillis() - this.lastUsed;
         if (this.userCount.size() != 0 || this.getTarget(params) != null) {
-            String target = this.getTarget(params);
             if (target != null) {
-                if (this.userCount.containsKey(target)) {
+                if (this.userCount.containsKey(target) && this.userUsage.containsKey(target)) {
                     timeDiff = System.currentTimeMillis() - this.userUsage.get(target);
                     if (timeDiff >= 50) this.userCount.put(target, 1);
                     else {
                         this.userCount.put(target, this.userCount.get(target) + 1);
                     }
                 } else {
+                    // Console.debugLog("HELP ME");
                     this.userCount.put(target, 1);
                 }
                 this.userUsage.put(target, System.currentTimeMillis());
-            }
+            } else Console.logWarning("NULL");
             Set<String> keySet = new HashSet<>(this.userCount.keySet());
             for (String user : keySet) {
-                if (this.userCount.get(user) >= (this.command.contains("actor_data") ? 100 : 50))
+                if (this.userCount.get(user) >= (this.command.contains("actor_data") ? 100 : 10))
                     Console.logWarning(
                             user
                                     + " has used "

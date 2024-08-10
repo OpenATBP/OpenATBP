@@ -17,6 +17,7 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class ExtensionCommands {
+
     /**
      * @param id - ID of the actor
      * @param bundle - Name of the asset bundle containing the effect

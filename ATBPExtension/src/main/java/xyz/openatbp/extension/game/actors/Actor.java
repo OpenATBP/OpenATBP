@@ -103,7 +103,8 @@ public abstract class Actor {
 
     public boolean withinRange(Actor a) {
         if (a.getActorType() == ActorType.BASE)
-            return a.getLocation().distance(this.location) - 1 <= this.getPlayerStat("attackRange");
+            return a.getLocation().distance(this.location) - 1.5f
+                    <= this.getPlayerStat("attackRange");
         return a.getLocation().distance(this.location) <= this.getPlayerStat("attackRange");
     }
 
@@ -193,9 +194,6 @@ public abstract class Actor {
 
     public void setPath(List<Point2D> path) {
         if (path.size() == 0) {
-            Console.logWarning(
-                    (this.actorType == ActorType.PLAYER ? this.displayName : this.id)
-                            + " was given a 0 length path");
             this.path = null;
             return;
         }

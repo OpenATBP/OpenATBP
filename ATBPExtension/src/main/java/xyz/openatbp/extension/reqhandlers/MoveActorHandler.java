@@ -22,11 +22,6 @@ public class MoveActorHandler extends BaseClientRequestHandler {
         if (roomHandler == null && (int) sender.getLastJoinedRoom().getProperty("state") != 3)
             ExtensionCommands.abortGame(parentExt, sender.getLastJoinedRoom());
         if (roomHandler == null) {
-            Console.logWarning(
-                    sender.getId()
-                            + " tried to move in room "
-                            + sender.getLastJoinedRoom().getName()
-                            + " but failed!");
             return;
         }
         UserActor user = roomHandler.getPlayer(String.valueOf(sender.getId()));
@@ -52,6 +47,6 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             float dx = params.getFloat("dest_x");
             float dz = params.getFloat("dest_z");
             user.queueMovement(new Point2D.Float(dx, dz));
-        } else Console.logWarning(sender.getId() + " has no user object!");
+        }
     }
 }

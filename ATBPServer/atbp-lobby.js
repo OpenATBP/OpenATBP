@@ -262,7 +262,7 @@ function updateElo(socket) {
 }
 
 function updateMatchmaking() {
-  if (users.length < 12) return;
+  if (users.length < 12 || !config.lobbyserver.matchmakingEnabled) return;
   var types = [];
   for (var u of users) {
     if (
@@ -932,7 +932,8 @@ function handleRequest(jsonString, socket) {
       if (user != undefined) {
         var player = user.player;
         var team = teams.find((t) => t.players.includes(player.teg_id));
-        if (team != undefined && team.queueNum == -1) {
+        console.log(team);
+        if (team != undefined && team.stage < 2) {
           safeSendAll(
             users.filter((u) => team.players.includes(u.player.teg_id)),
             'chat_message',
@@ -968,10 +969,10 @@ function handleRequest(jsonString, socket) {
       break;
 
     case 'custom_game_chat_message':
-      var team = teams.find((t) => t.players.includes(socket.player));
+      var team = teams.find((t) => t.players.includes(socket.player.teg_id));
       if (team != undefined) {
         safeSendAll(
-          users.filter((u) => team.players.includes(u.player)),
+          users.filter((u) => team.players.includes(u.player.teg_id)),
           'custom_game_chat_message',
           {
             name: socket.player.name,

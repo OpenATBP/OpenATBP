@@ -58,7 +58,6 @@ public class ChampionData {
                 works = spentPoints >= 4; // Can't get a third level without spending 4 points
             else if (categoryPoints + 1 == 4)
                 works = spentPoints >= 6; // Can't get a fourth level without spending 6 points
-            else Console.logWarning("Failed everything!");
         }
         if (works) {
             spellPoints--;
@@ -125,8 +124,6 @@ public class ChampionData {
             toUpdate.putInt("availableSpellPoints", spellPoints);
             toUpdate.putUtfString("id", String.valueOf(user.getId()));
             return toUpdate;
-        } else {
-            Console.logWarning("Failed!: " + category);
         }
         return null;
     }
