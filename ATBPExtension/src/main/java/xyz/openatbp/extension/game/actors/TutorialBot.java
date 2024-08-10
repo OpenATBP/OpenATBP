@@ -17,11 +17,11 @@ import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.pathfinding.MovementManager;
 
-public class JakeBot extends Bot {
+public class TutorialBot extends Bot {
     private boolean isAutoAttacking = false;
     private long lastBallon = 0;
 
-    public JakeBot(ATBPExtension parentExt, Room room, int team, Point2D spawnPoint, int num) {
+    public TutorialBot(ATBPExtension parentExt, Room room, int team, Point2D spawnPoint, int num) {
         super(parentExt, room, "jake", team, spawnPoint, num);
     }
 

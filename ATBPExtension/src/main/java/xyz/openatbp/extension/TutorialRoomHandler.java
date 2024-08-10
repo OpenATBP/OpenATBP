@@ -40,7 +40,7 @@ public class TutorialRoomHandler extends RoomHandler {
     private int minionNum = 0;
     private List<Minion> minionsToDestroy = new ArrayList<>();
     private boolean enemyMinionsDestroyed = false;
-    private JakeBot jakeBot;
+    private TutorialBot jakeBot;
 
     public TutorialRoomHandler(ATBPExtension parentExt, Room room) {
         super(parentExt, room);
@@ -407,7 +407,7 @@ public class TutorialRoomHandler extends RoomHandler {
                     Runnable spawnBot =
                             () -> {
                                 jakeBot =
-                                        new JakeBot(
+                                        new TutorialBot(
                                                 parentExt, room, 1, new Point2D.Float(48, 0), 1);
                                 jakeBot.setLocation(new Point2D.Float(48, 0));
                                 ExtensionCommands.snapActor(

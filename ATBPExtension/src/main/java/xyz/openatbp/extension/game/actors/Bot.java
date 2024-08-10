@@ -1,21 +1,23 @@
 package xyz.openatbp.extension.game.actors;
 
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import com.smartfoxserver.v2.entities.Room;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public class Bot extends Actor {
-    private Point2D spawnPoint;
-    private UserActor charmer;
-    private static boolean movementDebug = false;
+    protected Point2D spawnPoint;
+    protected UserActor charmer;
+    protected static boolean movementDebug = false;
+    protected static final int deathTimeSeconds = 3;
 
     public Bot(
             ATBPExtension parentExt,
@@ -30,8 +32,8 @@ public class Bot extends Actor {
         this.id = avatar + team + num;
         this.location = spawnPoint;
         this.avatar = avatar;
-        this.currentHealth = 750;
-        this.maxHealth = 750;
+        this.currentHealth = 500;
+        this.maxHealth = 500;
         this.actorType = ActorType.COMPANION;
         this.spawnPoint = spawnPoint;
         this.stats = this.initializeStats();
@@ -46,31 +48,53 @@ public class Bot extends Actor {
     public void handleKill(Actor a, JsonNode attackData) {}
 
     @Override
-    public boolean damaged(Actor a, int damage, JsonNode attackData) {
-        if (room.getGroupId().equals("Practice")) {
-            return false;
-        }
-        return super.damaged(a, damage, attackData);
-    }
-
-    @Override
     public void attack(Actor a) {}
 
     @Override
     public void die(Actor a) {
         if (this.dead) return;
-        if (a.getActorType() == ActorType.PLAYER) {
-            UserActor killer = (UserActor) a;
-            ExtensionCommands.playSound(
-                    parentExt, killer.getUser(), "global", "announcer/you_defeated_enemy");
-        }
-
         this.dead = true;
         this.currentHealth = 0;
         this.setHealth(0, (int) this.maxHealth);
         this.target = null;
         this.canMove = false;
-        ExtensionCommands.knockOutActor(parentExt, room, id, a.getId(), 30);
+        ExtensionCommands.knockOutActor(parentExt, room, id, a.getId(), deathTimeSeconds);
+        if (a.getActorType() == ActorType.PLAYER) {
+            UserActor killer = (UserActor) a;
+            killer.increaseStat("kills", 1);
+            RoomHandler roomHandler = parentExt.getRoomHandler(room.getName());
+            roomHandler.addScore(killer, killer.getTeam(), 25);
+        }
+        if (!room.getGroupId().equals("Tutorial")) {
+            Runnable respawn = this::respawn;
+            parentExt.getTaskScheduler().schedule(respawn, deathTimeSeconds, TimeUnit.SECONDS);
+        }
+    }
+
+    protected void respawn() {
+        this.canMove = true;
+        this.setHealth((int) maxHealth, (int) maxHealth);
+        Point2D respawnPoint = spawnPoint;
+        this.location = respawnPoint;
+        this.movementLine = new Line2D.Float(respawnPoint, respawnPoint);
+        this.timeTraveled = 0f;
+        this.dead = false;
+        this.removeEffects();
+        ExtensionCommands.snapActor(parentExt, room, id, location, location, false);
+        ExtensionCommands.playSound(parentExt, room, id, "sfx/sfx_champion_respawn", location);
+        ExtensionCommands.respawnActor(parentExt, room, id);
+        ExtensionCommands.createActorFX(
+                parentExt,
+                room,
+                id,
+                "champion_respawn_effect",
+                1000,
+                id + "_respawn",
+                true,
+                "Bip001",
+                false,
+                false,
+                team);
     }
 
     @Override
