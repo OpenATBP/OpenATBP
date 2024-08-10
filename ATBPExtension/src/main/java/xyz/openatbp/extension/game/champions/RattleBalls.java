@@ -20,10 +20,11 @@ public class RattleBalls extends UserActor {
     private static final double PASSIVE_LIFE_STEAL_VALUE = 0.65d;
     private static final int PASSIVE_STACK_DURATION = 5000;
     private static final int Q_PARRY_DURATION = 1500;
+    private static final int Q_END_GCD = 500;
     private static final int W_CAST_DELAY = 500;
     private static final int E_DURATION = 3500;
     private static final double E_SPEED_VALUE = 0.14d;
-    public static final int E_SECOND_USE_DELAY = 800;
+    public static final int E_SECOND_USE_DELAY = 700;
     private boolean passiveActive = false;
     private int passiveHits = 0;
     private long startPassiveStack = 0;
@@ -165,6 +166,7 @@ public class RattleBalls extends UserActor {
             Point2D dest) {
         switch (ability) {
             case 1:
+                canCast[0] = false;
                 if (qUses > 0) {
                     qThrustRectangle =
                             Champion.createRectangle(
@@ -430,7 +432,7 @@ public class RattleBalls extends UserActor {
         if (triggerPassive) activatePassive();
         int baseQCooldown = ChampionData.getBaseAbilityCooldown(this, 1);
         int cd = getReducedCooldown(baseQCooldown);
-        ExtensionCommands.actorAbilityResponse(parentExt, player, "q", true, cd, 0);
+        ExtensionCommands.actorAbilityResponse(parentExt, player, "q", true, cd, Q_END_GCD);
         Runnable enableQCasting = () -> canCast[0] = true;
         scheduleTask(enableQCasting, cd);
     }

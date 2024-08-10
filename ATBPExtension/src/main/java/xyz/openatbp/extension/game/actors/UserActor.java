@@ -745,10 +745,6 @@ public class UserActor extends Actor {
                     .getTaskScheduler()
                     .schedule(
                             new Champion.RespawnCharacter(this), this.deathTime, TimeUnit.SECONDS);
-            Point2D respawnPoint = getRespawnPoint(); // to prevent tower targeting after respawn
-            this.location = respawnPoint;
-            this.movementLine = new Line2D.Float(respawnPoint, respawnPoint);
-            this.timeTraveled = 0f;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -1277,8 +1273,6 @@ public class UserActor extends Actor {
     }
 
     public void respawn() {
-        this.canMove = true;
-        this.setHealth((int) this.maxHealth, (int) this.maxHealth);
         Point2D respawnPoint = getRespawnPoint();
         Console.debugLog(
                 this.displayName
@@ -1291,6 +1285,8 @@ public class UserActor extends Actor {
         this.location = respawnPoint;
         this.movementLine = new Line2D.Float(respawnPoint, respawnPoint);
         this.timeTraveled = 0f;
+        this.canMove = true;
+        this.setHealth((int) this.maxHealth, (int) this.maxHealth);
         this.dead = false;
         this.removeEffects();
         ExtensionCommands.snapActor(
@@ -1525,10 +1521,12 @@ public class UserActor extends Actor {
 
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
-        if (a.getActorType() == ActorType.PLAYER) {
+        if (a.getActorType() == ActorType.PLAYER || a instanceof Bot) {
             this.killingSpree++;
             this.multiKill++;
             this.lastKilled = System.currentTimeMillis();
+        }
+        if (a.getActorType() == ActorType.PLAYER) {
             UserActor killedUA = (UserActor) a;
             this.killedPlayers.add(killedUA);
             if (this.hasGameStat("spree")) {
