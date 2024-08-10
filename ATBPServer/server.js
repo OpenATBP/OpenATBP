@@ -557,7 +557,11 @@ mongoClient.connect((err) => {
       .then((data) => {
         res.send(data);
       })
-      .catch(console.error);
+      .catch((e) => {
+        if (e) console.log(e);
+        //Doesn't work lol
+        res.redirect('/login?failed=true');
+      });
   });
 
   app.post('/service/presence/present', (req, res) => {

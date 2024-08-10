@@ -55,9 +55,17 @@
     <script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
     <!-- TODO: no URLSearchParams on Electron, REEEEEE -->
     <script type="text/javascript">
-	  const urlParams = new URLSearchParams(window.location.search);
-	  const failed = urlParams.get('failed');
-	  if(failed) window.alert("Login failed!");
+	  const failed = window.location.search.includes('failed');
+	  if(failed){
+      window.alert("Login failed! Please try again. Your cookies have been cleared");
+      document.cookie = 'TEGid=;expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'authid=;expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'authpass=;expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'dname=;expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'logged=;expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'session_token=;expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      location.href = '/login';
+    }
   	</script>
 
     <div class="container" style="width: 24rem;">
