@@ -374,6 +374,7 @@ function handleSkilledMatchmaking() {
               var allPlayerObjs = [];
               for(var qPlayer of validQueuePlayers){
                 allPlayerObjs.push(qPlayer.player);
+                console.log(q.player.teg_id)
               }
               startGame(allPlayerObjs, t);
               return;
@@ -401,7 +402,6 @@ function updateMatchmaking() {
     var usersInQueue = users.filter(
       (u) => u.player.queue.type == t && u.player.stage == 1
     );
-    console.log('USERS IN QUEUE: ' + usersInQueue.length);
     //console.log(usersInQueue);
     var timeSort = function (a, b) {
       if (a.player.queue.started < b.player.queue.started) return -1;
@@ -478,6 +478,7 @@ function startGame(players, type) {
     queueSize = Number(type.replace('p', ''));
   if (queueSize == 3) queueSize = 2; //Turns bots to 1v1
   var allTeams = matchmaking.getTeams(players, teams, queueSize / 2);
+  console.log(allTeams);
   if (allTeams == undefined) return;
   var blue = allTeams.blue;
   var purple = allTeams.purple;
