@@ -62,7 +62,7 @@ public class Gunter extends UserActor {
 
     @Override
     public boolean canUseAbility(int ability) {
-        if (ultActivated) return false;
+        if (ultActivated && ability != 1) return false;
         else return super.canUseAbility(ability);
     }
 
@@ -109,6 +109,11 @@ public class Gunter extends UserActor {
             Point2D dest) {
         switch (ability) {
             case 1:
+                if (this.ultActivated) {
+                    this.interruptE();
+                    this.eTrapezoid = null;
+                    this.ultActivated = false;
+                }
                 this.canCast[0] = false;
                 Point2D finalDastPoint = this.location;
                 try {

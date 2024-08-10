@@ -261,17 +261,18 @@ function updateElo(socket) {
   } else console.log('Player collection is not initialized!');
 }
 
-function handleSkilledMatchmaking(){
-  if(!config.lobbyserver.matchmakingEnabled || users.length < config.lobbyserver.matchmakingMin) return;
+function handleSkilledMatchmaking() {
+  if (
+    !config.lobbyserver.matchmakingEnabled ||
+    users.length < config.lobbyserver.matchmakingMin
+  )
+    return;
   var types = [];
   for (var u of users) {
-    if (
-      u.player.queue.type != null &&
-      !types.includes(u.player.queue.type)
-    )
+    if (u.player.queue.type != null && !types.includes(u.player.queue.type))
       types.push(u.player.queue.type);
   }
-  for(var t of types){
+  for (var t of types) {
     var maxQueueSize = 0;
     var queueSize = 1;
     if (t.includes('p') && t != 'practice')
@@ -280,14 +281,14 @@ function handleSkilledMatchmaking(){
     var usersInQueue = users.filter(
       (u) => u.player.queue.type == t && u.player.stage == 1
     );
-    console.log("USERS IN QUEUE: " + usersInQueue.length);
+    console.log('USERS IN QUEUE: ' + usersInQueue.length);
     var timeSort = function (a, b) {
       if (a.player.queue.started < b.player.queue.started) return -1;
       if (a.player.queue.started > b.player.queue.started) return 1;
       return 0;
     };
     usersInQueue.sort(timeSort);
-    for(var u of usersInQueue){
+    for (var u of usersInQueue) {
       var visualQueue = usersInQueue.length;
       if (visualQueue > 3) visualQueue = 3;
       if (u.player.queue.visual != visualQueue) {
@@ -299,65 +300,78 @@ function handleSkilledMatchmaking(){
           sendCommand(u, 'team_full', { full: true }).catch(console.error);
       }
       var validQueuePlayers = [u];
-      if(u.player.onTeam){
+      if (u.player.onTeam) {
         var team = teams.find((t) => t.players.includes(u.player.teg_id));
-        if(team != undefined){
-          for(var tp of team.players){
-            if(tp != u.player.teg_id){
+        if (team != undefined) {
+          for (var tp of team.players) {
+            if (tp != u.player.teg_id) {
               var tu = users.find((userObj) => userObj.player.teg_id == tp);
-              if(tu != undefined) validQueuePlayers.push(tu);
+              if (tu != undefined) validQueuePlayers.push(tu);
             }
           }
         }
       }
       var totalElo = 0;
-      for(var qp of validQueuePlayers){
-        totalElo+=qp.player.elo;
+      for (var qp of validQueuePlayers) {
+        totalElo += qp.player.elo;
       }
-      var averageElo = totalElo/validQueuePlayers.length;
-      for(var u2 of usersInQueue){
-        if(!validQueuePlayers.includes(u2)){
+      var averageElo = totalElo / validQueuePlayers.length;
+      for (var u2 of usersInQueue) {
+        if (!validQueuePlayers.includes(u2)) {
           var additionalUsers = [u2];
-          if(u2.player.onTeam){
+          if (u2.player.onTeam) {
             var team = teams.find((t) => t.players.includes(u2.player.teg_id));
-            if(team != undefined){
-              for(var tp of team.players){
-                if(tp != u2.player.teg_id){
+            if (team != undefined) {
+              for (var tp of team.players) {
+                if (tp != u2.player.teg_id) {
                   var tu = users.find((userObj) => userObj.player.teg_id == tp);
-                  if(tu != undefined && !validQueuePlayers.includes(tu)) additionalUsers.push(tu);
+                  if (tu != undefined && !validQueuePlayers.includes(tu))
+                    additionalUsers.push(tu);
                 }
               }
             }
           }
           var totalMoreElo = 0;
-          for(var qp of additionalUsers){
-            totalMoreElo+=qp.player.elo;
+          for (var qp of additionalUsers) {
+            totalMoreElo += qp.player.elo;
           }
-          var averageMoreElo = totalMoreElo/additionalUsers.length;
-          if(Math.abs(averageElo-averageMoreElo) < 100 + ((Date.now() - u2.player.queue.started)/1000)*12 && validQueuePlayers.length + additionalUsers.length <= queueSize){
-            for(var au of additionalUsers){
+          var averageMoreElo = totalMoreElo / additionalUsers.length;
+          if (
+            Math.abs(averageElo - averageMoreElo) <
+              100 + ((Date.now() - u2.player.queue.started) / 1000) * 12 &&
+            validQueuePlayers.length + additionalUsers.length <= queueSize
+          ) {
+            for (var au of additionalUsers) {
               validQueuePlayers.push(au);
             }
             totalElo = 0;
-            for(var qp of validQueuePlayers){
-              totalElo+=qp.player.elo;
+            for (var qp of validQueuePlayers) {
+              totalElo += qp.player.elo;
             }
-            averageElo = totalElo/validQueuePlayers.length;
-            if(validQueuePlayers.length == queueSize){
+            averageElo = totalElo / validQueuePlayers.length;
+            if (validQueuePlayers.length == queueSize) {
               var minElo = 10000;
               var maxElo = 0;
               var totalTotalElo = 0;
-              for(var testPlayer of validQueuePlayers){
-                if(testPlayer.player.elo > maxElo) maxElo = testPlayer.player.elo;
-                if(testPlayer.player.elo < minElo) minElo = testPlayer.player.elo;
-                totalTotalElo+=testPlayer.player.elo;
+              for (var testPlayer of validQueuePlayers) {
+                if (testPlayer.player.elo > maxElo)
+                  maxElo = testPlayer.player.elo;
+                if (testPlayer.player.elo < minElo)
+                  minElo = testPlayer.player.elo;
+                totalTotalElo += testPlayer.player.elo;
               }
-              console.log("ELO DIFF ", Math.abs(averageElo-averageMoreElo));
-              console.log("ALLOWED DIFF ", 100 + ((Date.now() - u2.player.queue.started)/1000)*12)
+              console.log('ELO DIFF ', Math.abs(averageElo - averageMoreElo));
+              console.log(
+                'ALLOWED DIFF ',
+                100 + ((Date.now() - u2.player.queue.started) / 1000) * 12
+              );
               console.log('MIN ELO ', minElo);
               console.log('MAX ELO ', maxElo);
-              console.log('AVERAGE ELO ', totalTotalElo/validQueuePlayers.length);
-              startGame(validQueuePlayers, t);
+              console.log(
+                'AVERAGE ELO ',
+                totalTotalElo / validQueuePlayers.length
+              );
+              startGame(validQueuePlayers, t); // TODO: Does not work right now because we are passing in users, not the user.player obj
               return;
             }
           }
@@ -371,10 +385,7 @@ function updateMatchmaking() {
   if (!config.lobbyserver.matchmakingEnabled) return;
   var types = [];
   for (var u of users) {
-    if (
-      u.player.queue.type != null &&
-      !types.includes(u.player.queue.type)
-    )
+    if (u.player.queue.type != null && !types.includes(u.player.queue.type))
       types.push(u.player.queue.type);
   }
   for (var t of types) {
@@ -386,7 +397,7 @@ function updateMatchmaking() {
     var usersInQueue = users.filter(
       (u) => u.player.queue.type == t && u.player.stage == 1
     );
-    console.log("USERS IN QUEUE: " + usersInQueue.length);
+    console.log('USERS IN QUEUE: ' + usersInQueue.length);
     //console.log(usersInQueue);
     var timeSort = function (a, b) {
       if (a.player.queue.started < b.player.queue.started) return -1;
@@ -437,15 +448,15 @@ function updateMatchmaking() {
         var minElo = 10000;
         var maxElo = 0;
         var totalElo = 0;
-        for(var testPlayer of validQueuePlayers){
-          if(testPlayer.elo > maxElo) maxElo = testPlayer.elo;
-          if(testPlayer.elo < minElo) minElo = testPlayer.elo;
-          totalElo+=testPlayer.elo;
+        for (var testPlayer of validQueuePlayers) {
+          if (testPlayer.elo > maxElo) maxElo = testPlayer.elo;
+          if (testPlayer.elo < minElo) minElo = testPlayer.elo;
+          totalElo += testPlayer.elo;
         }
         console.log(validQueuePlayers);
         console.log('MIN ELO ', minElo);
         console.log('MAX ELO ', maxElo);
-        console.log('AVERAGE ELO ', totalElo/validQueuePlayers.length);
+        console.log('AVERAGE ELO ', totalElo / validQueuePlayers.length);
         startGame(validQueuePlayers, t);
         break;
       } else {
@@ -645,7 +656,8 @@ function joinQueue(sockets, type) {
   }
   if (
     !config.lobbyserver.matchmakingEnabled ||
-    queueSize == 1 || users.length < config.lobbyserver.matchmakingMin
+    queueSize == 1 ||
+    users.length < config.lobbyserver.matchmakingMin
   ) {
     /*
     var fakeUser1 = matchmaking.createFakeUser(true);
@@ -940,7 +952,7 @@ function handleRequest(jsonString, socket) {
       break;
 
     case 'auto_join':
-    /*
+      /*
       var fakeUsers = [];
       for(var i = 0; i < 18; i++){
         var fake = matchmaking.createFakeUser(false);

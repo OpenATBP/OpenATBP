@@ -186,7 +186,7 @@ module.exports = {
         onTeam: onTeam,
         elo: Math.floor(Math.random() * 1500),
         stage: 1,
-        fake: true
+        fake: true,
       },
     };
   },
