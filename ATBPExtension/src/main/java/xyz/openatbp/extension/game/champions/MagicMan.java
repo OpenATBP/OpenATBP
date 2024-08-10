@@ -440,7 +440,7 @@ public class MagicMan extends UserActor {
         @Override
         public void die(Actor a) {
             this.stopMoving();
-            ExtensionCommands.knockOutActor(this.parentExt, this.room, this.id, a.getId(), 10000);
+            ExtensionCommands.destroyActor(parentExt, room, id);
             this.dead = true;
             ExtensionCommands.createWorldFX(
                     this.parentExt,
