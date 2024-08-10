@@ -17,7 +17,7 @@ const mongoClient = new MongoClient(config.httpserver.mongouri, {
 });
 
 var matchMakingUpdate = setInterval(() => {
-  updateMatchmaking();
+  handleSkilledMatchmaking();
 }, 2000);
 
 function tryParseJSONObject(jsonString) {
@@ -59,7 +59,7 @@ function safeSendAll(sockets, command, response) {
 
 function sendCommand(socket, command, response) {
   return new Promise(function (resolve, reject) {
-    if (socket != undefined) {
+    if (socket != undefined && socket.player.fake == undefined) {
       if (command == undefined && response == undefined) reject();
       var package = {
         cmd: command,
@@ -89,7 +89,7 @@ function removeDuplicateQueues(ids, queueNum) {
 }
 
 function removeTeam(team) {
-  console.log(`Removing team ${team.team}`);
+  //console.log(`Removing team ${team.team}`);
   for (var tp of team.players) {
     var teamPlayer = users.find((u) => u.player.teg_id == tp);
     if (teamPlayer != undefined) {
@@ -138,7 +138,7 @@ function leaveQueue(socket, disconnected) {
               sendCommand(queuePlayer, 'team_disband', {
                 reason: 'error_lobby_playerLeftMatch',
               }).catch(console.error);
-            } else console.log(`${qp} has no valid user object!`);
+            }
           }
         }
         queue.players = [];
@@ -261,13 +261,118 @@ function updateElo(socket) {
   } else console.log('Player collection is not initialized!');
 }
 
-function updateMatchmaking() {
-  if (users.length < 12 || !config.lobbyserver.matchmakingEnabled) return;
+function handleSkilledMatchmaking(){
+  if(!config.lobbyserver.matchmakingEnabled || users.length < 30) return;
   var types = [];
   for (var u of users) {
     if (
       u.player.queue.type != null &&
-      u.player.queue.queueNum == -1 &&
+      !types.includes(u.player.queue.type)
+    )
+      types.push(u.player.queue.type);
+  }
+  for(var t of types){
+    var maxQueueSize = 0;
+    var queueSize = 1;
+    if (t.includes('p') && t != 'practice')
+      queueSize = Number(t.replace('p', ''));
+    if (queueSize == 3) queueSize = 2; //Turns bots to 1v1
+    var usersInQueue = users.filter(
+      (u) => u.player.queue.type == t && u.player.stage == 1
+    );
+    console.log("USERS IN QUEUE: " + usersInQueue.length);
+    var timeSort = function (a, b) {
+      if (a.player.queue.started < b.player.queue.started) return -1;
+      if (a.player.queue.started > b.player.queue.started) return 1;
+      return 0;
+    };
+    usersInQueue.sort(timeSort);
+    for(var u of usersInQueue){
+      var visualQueue = usersInQueue.length;
+      if (visualQueue > 3) visualQueue = 3;
+      if (u.player.queue.visual != visualQueue) {
+        u.player.queue.visual = visualQueue;
+        sendCommand(u, 'queue_update', { size: visualQueue }).catch(
+          console.error
+        );
+        if (visualQueue == 3 && u.player.onTeam)
+          sendCommand(u, 'team_full', { full: true }).catch(console.error);
+      }
+      var validQueuePlayers = [u];
+      if(u.player.onTeam){
+        var team = teams.find((t) => t.players.includes(u.player.teg_id));
+        if(team != undefined){
+          for(var tp of team.players){
+            if(tp != u.player.teg_id){
+              var tu = users.find((userObj) => userObj.player.teg_id == tp);
+              if(tu != undefined) validQueuePlayers.push(tu);
+            }
+          }
+        }
+      }
+      var totalElo = 0;
+      for(var qp of validQueuePlayers){
+        totalElo+=qp.player.elo;
+      }
+      var averageElo = totalElo/validQueuePlayers.length;
+      for(var u2 of usersInQueue){
+        if(!validQueuePlayers.includes(u2)){
+          var additionalUsers = [u2];
+          if(u2.player.onTeam){
+            var team = teams.find((t) => t.players.includes(u2.player.teg_id));
+            if(team != undefined){
+              for(var tp of team.players){
+                if(tp != u2.player.teg_id){
+                  var tu = users.find((userObj) => userObj.player.teg_id == tp);
+                  if(tu != undefined && !validQueuePlayers.includes(tu)) additionalUsers.push(tu);
+                }
+              }
+            }
+          }
+          var totalMoreElo = 0;
+          for(var qp of additionalUsers){
+            totalMoreElo+=qp.player.elo;
+          }
+          var averageMoreElo = totalMoreElo/additionalUsers.length;
+          if(Math.abs(averageElo-averageMoreElo) < 100 + ((Date.now() - u2.player.queue.started)/1000)*12 && validQueuePlayers.length + additionalUsers.length <= queueSize){
+            for(var au of additionalUsers){
+              validQueuePlayers.push(au);
+            }
+            totalElo = 0;
+            for(var qp of validQueuePlayers){
+              totalElo+=qp.player.elo;
+            }
+            averageElo = totalElo/validQueuePlayers.length;
+            if(validQueuePlayers.length == queueSize){
+              var minElo = 10000;
+              var maxElo = 0;
+              var totalTotalElo = 0;
+              for(var testPlayer of validQueuePlayers){
+                if(testPlayer.player.elo > maxElo) maxElo = testPlayer.player.elo;
+                if(testPlayer.player.elo < minElo) minElo = testPlayer.player.elo;
+                totalTotalElo+=testPlayer.player.elo;
+              }
+              console.log("ELO DIFF ", Math.abs(averageElo-averageMoreElo));
+              console.log("ALLOWED DIFF ", 100 + ((Date.now() - u2.player.queue.started)/1000)*12)
+              console.log('MIN ELO ', minElo);
+              console.log('MAX ELO ', maxElo);
+              console.log('AVERAGE ELO ', totalTotalElo/validQueuePlayers.length);
+              startGame(validQueuePlayers, t);
+              return;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+function updateMatchmaking() {
+  if (!config.lobbyserver.matchmakingEnabled) return;
+  var types = [];
+  for (var u of users) {
+    if (
+      u.player.queue.type != null &&
       !types.includes(u.player.queue.type)
     )
       types.push(u.player.queue.type);
@@ -279,8 +384,10 @@ function updateMatchmaking() {
       queueSize = Number(t.replace('p', ''));
     if (queueSize == 3) queueSize = 2; //Turns bots to 1v1
     var usersInQueue = users.filter(
-      (u) => u.player.queue.type == t && u.player.queue.queueNum == -1
+      (u) => u.player.queue.type == t && u.player.stage == 1
     );
+    console.log("USERS IN QUEUE: " + usersInQueue.length);
+    //console.log(usersInQueue);
     var timeSort = function (a, b) {
       if (a.player.queue.started < b.player.queue.started) return -1;
       if (a.player.queue.started > b.player.queue.started) return 1;
@@ -327,6 +434,18 @@ function updateMatchmaking() {
         }
       }
       if (validQueuePlayers.length == queueSize) {
+        var minElo = 10000;
+        var maxElo = 0;
+        var totalElo = 0;
+        for(var testPlayer of validQueuePlayers){
+          if(testPlayer.elo > maxElo) maxElo = testPlayer.elo;
+          if(testPlayer.elo < minElo) minElo = testPlayer.elo;
+          totalElo+=testPlayer.elo;
+        }
+        console.log(validQueuePlayers);
+        console.log('MIN ELO ', minElo);
+        console.log('MAX ELO ', maxElo);
+        console.log('AVERAGE ELO ', totalElo/validQueuePlayers.length);
         startGame(validQueuePlayers, t);
         break;
       } else {
@@ -356,7 +475,7 @@ function startGame(players, type) {
       user.player.stage = 2;
       var t = teams.find((tm) => tm.players.includes(user.player.teg_id));
       if (t != undefined) removeTeam(t);
-    } else console.log(`${p.teg_id} has no valid user!`);
+    }
   }
 
   var queueObj = {
@@ -374,7 +493,6 @@ function startGame(players, type) {
     var user = users.find((u) => u.player.teg_id == bp.teg_id);
     if (user == undefined) {
       failed = true;
-      console.log('GAME FAILED TO START DUE TO BLUE TEAM MEMBER ' + bp);
       break;
     } else {
       var playerObj = {
@@ -392,7 +510,6 @@ function startGame(players, type) {
     for (var pp of purple) {
       var user = users.find((u) => u.player.teg_id == pp.teg_id);
       if (user == undefined) {
-        console.log('GAME FAILED TO START DUE TO PURPLE TEAM MEMBER ' + pp);
         return;
       } else {
         var playerObj = {
@@ -528,8 +645,7 @@ function joinQueue(sockets, type) {
   }
   if (
     !config.lobbyserver.matchmakingEnabled ||
-    queueSize == 1 ||
-    users.length < 18
+    queueSize == 1 || users.length < 30
   ) {
     /*
     var fakeUser1 = matchmaking.createFakeUser(true);
@@ -601,7 +717,6 @@ function cleanUpPlayers() {
     for (var tp of t.players) {
       if (users.find((u) => u.player.teg_id == tp) == undefined) {
         invalidTeamPlayers.push(tp);
-        console.log(`${tp} is an invalid team member!`);
       }
     }
     t.players = t.players.filter((tp) => !invalidTeamPlayers.includes(tp));
@@ -613,7 +728,6 @@ function cleanUpPlayers() {
       var user = users.find((u) => u.player.teg_id == qp);
       if (user == undefined || (!user.player.inGame && user.player.stage < 2)) {
         invalidQueuePlayers.push(qp);
-        console.log(`${qp} is an invalid queue member!`);
       }
     }
     q.players = q.players.filter((qp) => !invalidQueuePlayers.includes(qp));
@@ -689,7 +803,7 @@ function declineInvite(sender, recipient, custom) {
     sendCommand(senderUser, command, { player: recipient }).catch(
       console.error
     );
-  } else console.log('SENDER FOR DECLINED INVITE IS INVALID: ' + sender);
+  }
 }
 
 function acceptInvite(sender, recipient, custom) {
@@ -826,6 +940,23 @@ function handleRequest(jsonString, socket) {
       break;
 
     case 'auto_join':
+    /*
+      var fakeUsers = [];
+      for(var i = 0; i < 18; i++){
+        var fake = matchmaking.createFakeUser(false);
+        users.push(fake);
+        fakeUsers.push(fake);
+      }
+      fakeUsers[0].player.onTeam = true;
+      fakeUsers[1].player.onTeam = true;
+      fakeUsers[2].player.onTeam = true;
+      fakeUsers[3].player.onTeam = true;
+      fakeUsers[4].player.onTeam = true;
+      var fakeTeam1 = [fakeUsers[0].player.teg_id,fakeUsers[1].player.teg_id,fakeUsers[2].player.teg_id];
+      var fakeTeam2 = [fakeUsers[3].player.teg_id,fakeUsers[4].player.teg_id];
+      teams.push(matchmaking.createFakeTeam(fakeTeam1));
+      teams.push(matchmaking.createFakeTeam(fakeTeam2));
+      */
       var act = jsonObject['payload'].act.split('_');
       var type = act[act.length - 1];
       for (var q of queues.filter((qu) =>
@@ -932,7 +1063,6 @@ function handleRequest(jsonString, socket) {
       if (user != undefined) {
         var player = user.player;
         var team = teams.find((t) => t.players.includes(player.teg_id));
-        console.log(team);
         if (team != undefined && team.stage < 2) {
           safeSendAll(
             users.filter((u) => team.players.includes(u.player.teg_id)),
