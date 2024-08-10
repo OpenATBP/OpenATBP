@@ -375,7 +375,7 @@ function handleSkilledMatchmaking() {
               for(var qPlayer of validQueuePlayers){
                 allPlayerObjs.append(qPlayer.player);
               }
-              startGame(allPlayerObjs, t); // TODO: Does not work right now because we are passing in users, not the user.player obj
+              startGame(allPlayerObjs, t);
               return;
             }
           }
