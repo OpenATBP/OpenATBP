@@ -371,7 +371,11 @@ function handleSkilledMatchmaking() {
                 'AVERAGE ELO ',
                 totalTotalElo / validQueuePlayers.length
               );
-              startGame(validQueuePlayers, t); // TODO: Does not work right now because we are passing in users, not the user.player obj
+              var allPlayerObjs = [];
+              for(var qPlayer of validQueuePlayers){
+                allPlayerObjs.append(qPlayer.player);
+              }
+              startGame(allPlayerObjs, t); // TODO: Does not work right now because we are passing in users, not the user.player obj
               return;
             }
           }
