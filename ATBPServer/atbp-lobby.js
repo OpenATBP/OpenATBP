@@ -371,11 +371,11 @@ function handleSkilledMatchmaking() {
                 'AVERAGE ELO ',
                 totalTotalElo / validQueuePlayers.length
               );
-              var allPlayerObjs = [];
-              for(var qPlayer of validQueuePlayers){
-                allPlayerObjs.push(qPlayer.player);
-                console.log(qPlayer.player.teg_id)
-              }
+              var allPlayerObjs = matchmaking.searchForFullGame(
+                validQueuePlayers,
+                teams,
+                queueSize
+              );
               startGame(allPlayerObjs, t);
               return;
             }
@@ -1438,7 +1438,7 @@ module.exports = class ATBPLobbyServer {
           console.log(err);
           var userExists = false;
           for (var user of users) {
-            if (user._readableState.ended || user == socket) {
+            if ((user._readableState != undefined && user._readableState.ended) || user == socket) {
               userExists = true;
               if (user.player.onTeam) leaveTeam(user, true);
               else leaveQueue(user, true);
