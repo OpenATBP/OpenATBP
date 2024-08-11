@@ -957,7 +957,7 @@ function handleRequest(jsonString, socket) {
       break;
 
     case 'auto_join':
-    /*
+      /*
       var fakeUsers = [];
       for(var i = 0; i < 18; i++){
         var fake = matchmaking.createFakeUser(false);
@@ -1438,7 +1438,10 @@ module.exports = class ATBPLobbyServer {
           console.log(err);
           var userExists = false;
           for (var user of users) {
-            if ((user._readableState != undefined && user._readableState.ended) || user == socket) {
+            if (
+              (user._readableState != undefined && user._readableState.ended) ||
+              user == socket
+            ) {
               userExists = true;
               if (user.player.onTeam) leaveTeam(user, true);
               else leaveQueue(user, true);
