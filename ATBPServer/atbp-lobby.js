@@ -281,7 +281,6 @@ function handleSkilledMatchmaking() {
     var usersInQueue = users.filter(
       (u) => u.player.queue.type == t && u.player.stage == 1
     );
-    console.log('USERS IN QUEUE: ' + usersInQueue.length);
     var timeSort = function (a, b) {
       if (a.player.queue.started < b.player.queue.started) return -1;
       if (a.player.queue.started > b.player.queue.started) return 1;
