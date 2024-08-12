@@ -118,7 +118,7 @@ module.exports = {
     // /authenticate/user/{username} RETURNS username from database
     return new Promise(function (resolve, reject) {
       collection
-        .findOne({ 'user.TEGid': { $regex: new RegExp(username, 'i') } })
+        .findOne({ 'user.TEGid': {$regex: new RegExp(`^${username}$`, 'i')} })
         .then((data) => {
           resolve(data);
         })
@@ -131,9 +131,10 @@ module.exports = {
   handleLogin: function (username, password, token, collection) {
     return new Promise(function (resolve, reject) {
       collection
-        .findOne({ 'user.TEGid': { $regex: new RegExp(username, 'i') } })
+        .findOne({ 'user.TEGid': {$regex: new RegExp(`^${username}$`, 'i')} })
         .then((user) => {
           if (user != null) {
+            console.log(user);
             bcrypt.compare(password, user.user.authpass, (err, res) => {
               if (res) {
                 var expireDate = Date.parse(user.session.expires_at);
@@ -155,7 +156,7 @@ module.exports = {
                   user.session = newSession;
                   collection
                     .updateOne(
-                      { 'user.TEGid': { $regex: new RegExp(username, 'i') } },
+                      { 'user.TEGid': {$regex: new RegExp(`^${username}$`, 'i')} },
                       update,
                       options
                     )
@@ -168,7 +169,7 @@ module.exports = {
                 reject();
               }
             });
-          } else reject();
+          } else reject("Null user");
         })
         .catch(console.error);
     });
