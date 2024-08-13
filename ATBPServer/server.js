@@ -106,6 +106,22 @@ async function addRequests(collection) {
   }
 }
 
+function addChampData(collection){
+  var champs = ['billy','bmo','cinnamonbun','finn','fionna','flame','gunter','hunson','iceking','jake','lemongrab','lich','lsp','magicman','marceline','neptr','peppermintbutler','princessbubblegum','rattleballs'];
+  for (var c of champs){
+    var data = {
+      'champion': c,
+      'playsPVP': 0,
+      'winsPVP': 0,
+      'kills': 0,
+      'deaths': 0,
+      'assists': 0,
+      'damage': 0
+    };
+    collection.insertOne(data).catch(console.error);
+  }
+}
+
 function getLowerCaseName(name) {
   var firstLetter = name.charAt(name).toUpperCase();
   var fullString = firstLetter;
@@ -163,11 +179,13 @@ mongoClient.connect((err) => {
   }
 
   const playerCollection = mongoClient.db('openatbp').collection('users');
+  const champCollection = mongoClient.db('openatbp').collection('champions');
   //removeDuplicateFriends(playerCollection).catch(console.dir);
   //addBetaTesters(playerCollection).catch(console.dir);
   //resetElo(playerCollection).catch(console.dir);
   //convertUserNames(playerCollection).catch(console.dir);
   //addRequests(playerCollection).catch(console.dir);
+  //addChampData(champCollection);
 
   if (
     !fs.existsSync('static/crossdomain.xml') ||

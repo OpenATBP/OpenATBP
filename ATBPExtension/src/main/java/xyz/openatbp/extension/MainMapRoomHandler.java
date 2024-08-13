@@ -205,6 +205,7 @@ public class MainMapRoomHandler extends RoomHandler {
             this.room.setProperty("state", 3);
             ExtensionCommands.gameOver(
                     parentExt, this.room, this.dcPlayers, winningTeam, IS_RANKED_MATCH, false);
+            logChampionData(winningTeam);
             for (UserActor ua : this.players) {
                 if (ua.getTeam() == winningTeam) {
                     ExtensionCommands.playSound(

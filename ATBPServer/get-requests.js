@@ -134,7 +134,6 @@ module.exports = {
         .findOne({ 'user.TEGid': {$regex: new RegExp(`^${username}$`, 'i')} })
         .then((user) => {
           if (user != null) {
-            console.log(user);
             bcrypt.compare(password, user.user.authpass, (err, res) => {
               if (res) {
                 var expireDate = Date.parse(user.session.expires_at);

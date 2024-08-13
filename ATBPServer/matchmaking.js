@@ -195,4 +195,11 @@ module.exports = {
       players: players,
     };
   },
+  getPlayerObject: function(user, team){
+    return {
+      teg_id: user.player.teg_id,
+      elo: user.player.elo,
+      team: team,
+    };
+  }
 };

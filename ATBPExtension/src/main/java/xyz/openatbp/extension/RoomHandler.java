@@ -1,11 +1,19 @@
 package xyz.openatbp.extension;
 
+import static com.mongodb.client.model.Filters.eq;
+
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.Updates;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
@@ -127,6 +135,29 @@ public abstract class RoomHandler implements Runnable {
 
     public ScheduledFuture<?> getScriptHandler() {
         return this.scriptHandler;
+    }
+
+    protected void logChampionData(int winningTeam) {
+
+        for (UserActor ua : this.players) {
+            String champion = ua.getChampionName(ua.getAvatar());
+            MongoCollection<Document> champData = this.parentExt.getChampionDatabase();
+            Document data = champData.find(eq("champion", champion)).first();
+            if (data != null) {
+                List<Bson> updateList = new ArrayList<>();
+                updateList.add(Updates.inc("playsPVP", 1));
+                updateList.add(Updates.inc("winsPVP", ua.getTeam() == winningTeam ? 1 : 0));
+                updateList.add(Updates.inc("kills", (int) ua.getStat("kills")));
+                updateList.add(Updates.inc("deaths", (int) ua.getStat("deaths")));
+                updateList.add(Updates.inc("assists", (int) ua.getStat("assists")));
+                if (ua.hasGameStat("damageDealtChamps"))
+                    updateList.add(
+                            Updates.inc("damage", (int) ua.getGameStat("damageDealtChamps")));
+                Bson updates = Updates.combine(updateList);
+                UpdateOptions options = new UpdateOptions().upsert(true);
+                Console.debugLog(champData.updateOne(data, updates, options));
+            }
+        }
     }
 
     public void run() {
