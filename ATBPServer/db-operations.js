@@ -21,7 +21,7 @@ var newUserFunction = function (
         }
         var playerFile = {
           user: {
-            TEGid: `${username}`,
+            TEGid: `${username.toLowerCase()}`,
             dname: `${displayName}`,
             authid: `${Math.floor(Math.random() * 1000000000)}`,
             authpass: `${authpass}`,

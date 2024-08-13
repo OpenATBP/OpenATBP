@@ -167,6 +167,7 @@ public class Finn extends UserActor {
 
     @Override
     public double getPlayerStat(String stat) {
+        /* NERF 8/13/24
         if (stat.equalsIgnoreCase("attackSpeed")
                 && finnUltRing != null
                 && finnUltRing.contains(this.getLocation())) {
@@ -176,6 +177,7 @@ public class Finn extends UserActor {
                     ? BASIC_ATTACK_DELAY
                     : currentAttackSpeed - modifier;
         }
+         */
         return super.getPlayerStat(stat);
     }
 

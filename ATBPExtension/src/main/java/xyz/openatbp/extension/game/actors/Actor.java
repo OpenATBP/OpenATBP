@@ -14,6 +14,7 @@ import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.game.*;
+import xyz.openatbp.extension.game.champions.IceKing;
 import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public abstract class Actor {
@@ -378,6 +379,7 @@ public abstract class Actor {
     public abstract void handleKill(Actor a, JsonNode attackData);
 
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
+        if (a.getClass() == IceKing.class && this.hasMovementCC()) damage *= 1.1;
         this.currentHealth -= damage;
         if (this.currentHealth <= 0) this.currentHealth = 0;
         ISFSObject updateData = new SFSObject();
@@ -622,13 +624,20 @@ public abstract class Actor {
 
     public void knockback(Point2D source, float distance) {
         this.stopMoving();
+        boolean isPracticeMap = this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap();
         Line2D originalLine = new Line2D.Double(source, this.location);
+        if (MovementManager.insideAnyObstacle(this.parentExt, isPracticeMap, source)) {
+            for (Point2D p : MovementManager.findAllPoints(originalLine)) {
+                if (!MovementManager.insideAnyObstacle(this.parentExt, isPracticeMap, p)) {
+                    originalLine = new Line2D.Double(p, this.location);
+                    break;
+                }
+            }
+        }
         Line2D knockBackLine = Champion.extendLine(originalLine, distance);
         Point2D finalPoint =
                 MovementManager.getPathIntersectionPoint(
-                        this.parentExt,
-                        this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap(),
-                        knockBackLine);
+                        this.parentExt, isPracticeMap, knockBackLine);
         if (finalPoint == null) finalPoint = knockBackLine.getP2();
         Line2D finalLine = new Line2D.Double(this.location, finalPoint);
         double time = this.location.distance(finalLine.getP2()) / KNOCKBACK_SPEED;

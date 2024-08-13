@@ -18,7 +18,7 @@ module.exports = {
         collection
           .findOne({
             $or: [
-              { 'user.TEGid': username },
+              { 'user.TEGid': { $regex: new RegExp(`^${username}$`, 'i') } },
               {
                 'user.dname': name
                   .replace('[DEV] ', '')
@@ -129,7 +129,7 @@ module.exports = {
   handleForgotPassword: function (username, forgot, password, collection) {
     return new Promise(function (resolve, reject) {
       collection
-        .findOne({ 'user.TEGid': username })
+        .findOne({ 'user.TEGid': { $regex: new RegExp(`^${username}$`, 'i') } })
         .then((u) => {
           if (u != null) {
             bcrypt.compare(forgot, u.forgot, (err, res) => {
@@ -144,7 +144,11 @@ module.exports = {
                   };
                   collection
                     .updateOne(
-                      { 'user.TEGid': username },
+                      {
+                        'user.TEGid': {
+                          $regex: new RegExp(`^${username}$`, 'i'),
+                        },
+                      },
                       {
                         $set: {
                           session: newSession,
@@ -159,9 +163,9 @@ module.exports = {
                       reject(e);
                     });
                 });
-              } else reject();
+              } else reject('No user found');
             });
-          } else reject();
+          } else reject('Null');
         })
         .catch((e) => {
           console.log(e);

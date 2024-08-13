@@ -125,7 +125,7 @@ public class Minion extends Actor {
             ExtensionCommands.createActor(
                     parentExt, room, this.id + "_test", "gnome_a", this.location, 0f, this.team);
         this.attackCooldown = this.getPlayerStat("attackSpeed");
-        this.xpWorth = 5;
+        this.xpWorth = 7;
     }
 
     @Override
@@ -388,6 +388,27 @@ public class Minion extends Actor {
                                 "basicAttack"),
                         (int) (time * 1000),
                         TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public double getPlayerStat(String stat) {
+        int activeDCBuff = this.parentExt.getRoomHandler(this.room.getName()).getDcWeight();
+        int dcBuff = 0;
+        if (activeDCBuff > 0 && this.team == 1) dcBuff = activeDCBuff;
+        else if (activeDCBuff < 0 && this.team == 0) dcBuff = Math.abs(activeDCBuff);
+        if (stat.equalsIgnoreCase("attackDamage")) {
+            if (dcBuff == 2) return super.getPlayerStat(stat) * 1.2f;
+            return super.getPlayerStat(stat);
+        } else if (stat.equalsIgnoreCase("armor")) {
+            if (dcBuff >= 1) return super.getPlayerStat(stat) * 1.2f;
+        } else if (stat.equalsIgnoreCase("spellResist")) {
+            if (dcBuff >= 1) return super.getPlayerStat(stat) * 1.2f;
+        } else if (stat.equalsIgnoreCase("speed")) {
+            if (dcBuff >= 1) return super.getPlayerStat(stat) * 1.15f;
+        } else if (stat.equalsIgnoreCase("spellDamage")) {
+            if (dcBuff == 2) return super.getPlayerStat(stat) * 1.2f;
+        }
+        return super.getPlayerStat(stat);
     }
 
     public void resetTarget() {

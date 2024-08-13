@@ -205,6 +205,7 @@ public class MainMapRoomHandler extends RoomHandler {
             this.room.setProperty("state", 3);
             ExtensionCommands.gameOver(
                     parentExt, this.room, this.dcPlayers, winningTeam, IS_RANKED_MATCH, false);
+            logChampionData(winningTeam);
             for (UserActor ua : this.players) {
                 if (ua.getTeam() == winningTeam) {
                     ExtensionCommands.playSound(
@@ -465,6 +466,8 @@ public class MainMapRoomHandler extends RoomHandler {
         if (this.players.size() == 1) return;
         try {
             UserActor player = this.getPlayer(String.valueOf(user.getId()));
+            if (player.getTeam() == 0) this.dcWeight++;
+            else if (player.getTeam() == 1) this.dcWeight--;
             this.dcPlayers.put(user, player);
             player.destroy();
             MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();

@@ -165,6 +165,8 @@ public class PeppermintButler extends UserActor {
         } else if (stat.equalsIgnoreCase("attackDamage") && this.form == Form.FERAL)
             return super.getPlayerStat("attackDamage")
                     + (this.getStat("attackDamage") * E_ATTACK_DAMAGE_VALUE);
+        else if (stat.equalsIgnoreCase("attackRange") && this.form == Form.FERAL)
+            return super.getPlayerStat(stat) + 0.1d;
         return super.getPlayerStat(stat);
     }
 
@@ -370,12 +372,17 @@ public class PeppermintButler extends UserActor {
                         };
                 int holdUp = 500;
                 scheduleTask(animationDelay, holdUp);
+                int timeStill = this.timeStopped - PASSIVE_TIME;
+                int cdrMultiplier = timeStill / 250;
+                double actualMultipler = (double) cdrMultiplier / 100d;
+                if (actualMultipler > 0.2d) actualMultipler = 0.2d;
+                if (actualMultipler < 0) actualMultipler = 0d;
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
                         "w",
                         true,
-                        getReducedCooldown(cooldown),
+                        (int) Math.floor(getReducedCooldown(cooldown) * (1 - actualMultipler)),
                         gCooldown);
                 break;
             case 3:

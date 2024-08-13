@@ -92,7 +92,7 @@ public class IceKing extends UserActor {
             if (!actorsInUlt.isEmpty()) {
                 for (Actor a : actorsInUlt) {
                     if (a.equals(this)) {
-                        this.addEffect("speed", this.getStat("speed"), 150);
+                        this.addEffect("speed", this.getStat("speed") * 0.9, 150);
                         this.updateStatMenu("speed");
                     } else if (a.getTeam() != this.team && a.getActorType() != ActorType.BASE) {
                         JsonNode spellData = this.parentExt.getAttackData("iceking", "spell3");

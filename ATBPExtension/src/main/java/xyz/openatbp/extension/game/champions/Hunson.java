@@ -73,6 +73,7 @@ public class Hunson extends UserActor {
         if (this.ultActivated && System.currentTimeMillis() - this.ultStart >= E_DURATION) {
             this.ultActivated = false;
             ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "idle", 500, false);
+            if (!this.isStopped()) this.move(this.movementLine.getP2());
         }
         if (this.ultActivated && (this.dead || this.hasInterrupingCC())) {
             if (hasInterrupingCC()) {
@@ -99,15 +100,16 @@ public class Hunson extends UserActor {
     }
 
     @Override
-    public boolean canMove() {
-        if (this.ultActivated) return false;
-        return super.canMove();
-    }
-
-    @Override
     public void die(Actor a) {
         super.die(a);
         if (this.ultActivated) this.endUlt();
+    }
+
+    @Override
+    public double getPlayerStat(String stat) {
+        if (stat.equalsIgnoreCase("speed") && this.ultActivated)
+            return super.getPlayerStat(stat) * 0.40d;
+        return super.getPlayerStat(stat);
     }
 
     @Override
@@ -258,7 +260,7 @@ public class Hunson extends UserActor {
                 this.canCast[2] = false;
                 try {
                     this.resetTarget();
-                    this.stopMoving(E_DURATION + castDelay);
+                    this.stopMoving(castDelay);
                     ExtensionCommands.playSound(
                             this.parentExt,
                             this.room,
@@ -286,18 +288,18 @@ public class Hunson extends UserActor {
                             true,
                             false,
                             this.team);
-                    ExtensionCommands.createWorldFX(
+                    ExtensionCommands.createActorFX(
                             this.parentExt,
                             this.room,
                             this.id,
                             "fx_target_ring_4",
-                            this.id + "_ultRing",
                             E_DURATION + castDelay,
-                            (float) this.location.getX(),
-                            (float) this.location.getY(),
+                            this.id + "_ultRing",
                             true,
-                            this.team,
-                            0f);
+                            "",
+                            true,
+                            true,
+                            this.team);
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
@@ -328,11 +330,11 @@ public class Hunson extends UserActor {
 
     private void endUlt() {
         this.ultActivated = false;
-        this.canMove = true;
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultHead");
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultRing");
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultSuck");
         ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "idle", 500, false);
+        if (!this.isStopped()) this.move(this.movementLine.getP2());
     }
 
     private HunsonAbilityRunnable abilityRunnable(

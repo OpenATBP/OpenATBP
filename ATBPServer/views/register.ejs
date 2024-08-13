@@ -55,11 +55,16 @@
 		<script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
 
     <script type="text/javascript">
-    const urlParams = new URLSearchParams(window.location.search);
     const failed = window.location.search.includes('failed');
     const exists = window.location.search.includes('exists');
     if(failed) window.alert("Registration failed!");
     else if(exists) window.alert("User already exists! Please login.");
+
+		function blockSpecialChar(e){
+			var format = /[ `!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/;
+			return e.key != undefined ? !format.test(e.key) : !format.test(String.fromCharCode(e.charCode));
+		}
+
     </script>
 
     <div class="container" style="width: 32rem;">
@@ -68,7 +73,7 @@
           <img class="mb-4" src="favicon.ico" alt="" width="128" height="128">
           <h1 class="h3 mb-3 font-weight-normal">Register</h1>
 
-          <input type="text" id="username" class="form-control" placeholder="Username" name="username" required autofocus>
+          <input type="text" id="username" class="form-control" placeholder="Username" name="username" required autofocus onkeypress="return blockSpecialChar(event)">
 
           <input type="password" id="password" class="form-control mt-3 mb-0" placeholder="Password" name="password" required>
           <input type="password" id="confirm" class="form-control mt-0 mb-3" placeholder="Confirm Password" name="confirm" required>
@@ -90,7 +95,6 @@
       <script type="text/javascript">
             var names = '<%- displayNames %>';
             var nameObj = JSON.parse(names);
-            console.log(nameObj.list1);
 
             //TODO: Could make this look cleaner but that is a future refactor project :P
             var text1 = "<option></option>"

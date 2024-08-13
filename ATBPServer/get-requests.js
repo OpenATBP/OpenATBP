@@ -98,7 +98,7 @@ module.exports = {
             friends.push({
               user_id: name,
               name: p.name,
-              avatar: 'assets/portraits/lich.png',
+              avatar: 'assets/pfp/default.jpg',
               options: {
                 location: p.location,
                 game: 'ATBP',
@@ -118,7 +118,7 @@ module.exports = {
     // /authenticate/user/{username} RETURNS username from database
     return new Promise(function (resolve, reject) {
       collection
-        .findOne({ 'user.TEGid': username })
+        .findOne({ 'user.TEGid': { $regex: new RegExp(`^${username}$`, 'i') } })
         .then((data) => {
           resolve(data);
         })
@@ -131,7 +131,7 @@ module.exports = {
   handleLogin: function (username, password, token, collection) {
     return new Promise(function (resolve, reject) {
       collection
-        .findOne({ 'user.TEGid': username })
+        .findOne({ 'user.TEGid': { $regex: new RegExp(`^${username}$`, 'i') } })
         .then((user) => {
           if (user != null) {
             bcrypt.compare(password, user.user.authpass, (err, res) => {
@@ -154,7 +154,15 @@ module.exports = {
                   const update = { $set: { session: newSession } };
                   user.session = newSession;
                   collection
-                    .updateOne({ 'user.TEGid': username }, update, options)
+                    .updateOne(
+                      {
+                        'user.TEGid': {
+                          $regex: new RegExp(`^${username}$`, 'i'),
+                        },
+                      },
+                      update,
+                      options
+                    )
                     .then((d) => {
                       resolve(user);
                     })
@@ -164,7 +172,7 @@ module.exports = {
                 reject();
               }
             });
-          } else reject();
+          } else reject('Null user');
         })
         .catch(console.error);
     });
