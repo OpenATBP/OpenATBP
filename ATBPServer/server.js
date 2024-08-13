@@ -106,17 +106,37 @@ async function addRequests(collection) {
   }
 }
 
-function addChampData(collection){
-  var champs = ['billy','bmo','cinnamonbun','finn','fionna','flame','gunter','hunson','iceking','jake','lemongrab','lich','lsp','magicman','marceline','neptr','peppermintbutler','princessbubblegum','rattleballs'];
-  for (var c of champs){
+function addChampData(collection) {
+  var champs = [
+    'billy',
+    'bmo',
+    'cinnamonbun',
+    'finn',
+    'fionna',
+    'flame',
+    'gunter',
+    'hunson',
+    'iceking',
+    'jake',
+    'lemongrab',
+    'lich',
+    'lsp',
+    'magicman',
+    'marceline',
+    'neptr',
+    'peppermintbutler',
+    'princessbubblegum',
+    'rattleballs',
+  ];
+  for (var c of champs) {
     var data = {
-      'champion': c,
-      'playsPVP': 0,
-      'winsPVP': 0,
-      'kills': 0,
-      'deaths': 0,
-      'assists': 0,
-      'damage': 0
+      champion: c,
+      playsPVP: 0,
+      winsPVP: 0,
+      kills: 0,
+      deaths: 0,
+      assists: 0,
+      damage: 0,
     };
     collection.insertOne(data).catch(console.error);
   }
