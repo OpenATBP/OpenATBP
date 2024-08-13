@@ -406,7 +406,7 @@ public class UserActor extends Actor {
             this.attackCooldown = this.getPlayerStat("attackSpeed");
             if (this.attackCooldown < BASIC_ATTACK_DELAY) this.attackCooldown = BASIC_ATTACK_DELAY;
             double damage = this.getPlayerStat("attackDamage");
-            if (crit) damage *= 2;
+            if (crit) damage *= this.getPlayerStat("criticalDamage");
             Champion.DelayedAttack delayedAttack =
                     new Champion.DelayedAttack(parentExt, this, a, (int) damage, "basicAttack");
             try {

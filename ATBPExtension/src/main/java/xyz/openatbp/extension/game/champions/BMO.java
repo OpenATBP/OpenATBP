@@ -369,6 +369,14 @@ public class BMO extends UserActor {
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_pixels_aoe");
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_target_ring_4.5");
         ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "run", 500, false);
+        int baseCooldown = ChampionData.getBaseAbilityCooldown(this, 2);
+        ExtensionCommands.actorAbilityResponse(
+                this.parentExt,
+                this.player,
+                "w",
+                true,
+                getReducedCooldown(baseCooldown),
+                baseCooldown);
     }
 
     private void wEnd(int cooldown, int gCooldown) {

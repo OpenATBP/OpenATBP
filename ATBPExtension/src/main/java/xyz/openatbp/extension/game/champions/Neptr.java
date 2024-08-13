@@ -53,6 +53,7 @@ public class Neptr extends UserActor {
                 && System.currentTimeMillis() - this.passiveStart >= PASSIVE_DURATION) {
             this.passiveActive = false;
             ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "passive");
+            if (this.invisOrInBrush(this)) this.setState(ActorState.BRUSH, true);
         }
         if (this.isStopped() && !this.soundPlayed) {
             String moveEndSFX = SkinData.getNeptrMoveEndSFX(avatar);

@@ -629,12 +629,14 @@ function leaveTeam(socket, disconnected) {
         for (var p of team.players) {
           var teamPlayer = users.find((u) => u.player.teg_id == p);
           var playerObj = {
-            name: teamPlayer.name,
-            teg_id: teamPlayer.teg_id,
-            player: teamPlayer.player,
+            name: teamPlayer.player.name,
+            teg_id: teamPlayer.player.teg_id,
+            player: teamPlayer.player.player,
           };
           teamObj.push(playerObj);
         }
+        console.log(teamObj);
+        console.log(team.team);
         safeSendAll(
           users.filter((u) => team.players.includes(u.player.teg_id)),
           'team_update',
@@ -835,7 +837,7 @@ function acceptInvite(sender, recipient, custom) {
       var team = teams.find((t) => t.team == sender);
       if (team != undefined) {
         pendingInvites = pendingInvites.filter(
-          (i) => i.recipient != recipient || i.sender != sender
+          (i) => i.recipient != recipient && i.sender != sender
         );
         declineAllInvites(recipient);
         if (!custom) {
@@ -1046,7 +1048,10 @@ function handleRequest(jsonString, socket) {
         var teamNum = purpleMember != undefined ? 0 : 1;
         var myTeam = teamNum == 0 ? queue.purple : queue.blue;
         var myUser = teamNum == 0 ? purpleMember : blueMember; // This sucks lmao
-        if (myUser.is_ready) return;
+        var sameCharacter = myTeam.find(
+          (tp) => tp.avatar == jsonObject['payload'].name
+        );
+        if (myUser.is_ready || sameCharacter != undefined) return;
         myUser.is_ready = true;
         queue.ready++;
         var teamPackage = {

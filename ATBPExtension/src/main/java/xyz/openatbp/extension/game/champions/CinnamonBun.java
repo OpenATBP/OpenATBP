@@ -244,7 +244,7 @@ public class CinnamonBun extends UserActor {
                     double slideX = Champion.getAbilityLine(origLocation, dest, 1.5f).getX2();
                     double slideY = Champion.getAbilityLine(origLocation, dest, 1.5f).getY2();
                     float rotation = getRotation(dest);
-                    finalDashPoint = this.dash(wLine.getP2(), true, 15d);
+                    finalDashPoint = this.dash(wLine.getP2(), false, 15d);
                     double time = origLocation.distance(finalDashPoint) / 15d;
                     int wTime = (int) (time * 1000);
                     Line2D wPolyStartLine = Champion.getAbilityLine(origLocation, dest, 0.5f);

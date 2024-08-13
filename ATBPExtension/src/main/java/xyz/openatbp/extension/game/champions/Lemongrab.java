@@ -241,13 +241,6 @@ public class Lemongrab extends UserActor {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
                 }
-                ExtensionCommands.actorAbilityResponse(
-                        this.parentExt,
-                        this.player,
-                        "w",
-                        true,
-                        getReducedCooldown(cooldown),
-                        gCooldown);
                 scheduleTask(
                         abilityRunnable(ability, spellData, cooldown, gCooldown, dest), W_DELAY);
                 break;
@@ -338,8 +331,12 @@ public class Lemongrab extends UserActor {
                         0f);
                 List<Actor> affectedActors = new ArrayList<>();
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                boolean hitPlayer = false;
+                boolean hitAnything = false;
                 for (Actor a : Champion.getActorsInRadius(handler, dest, 1f)) {
                     if (isNonStructure(a)) {
+                        hitAnything = true;
+                        if (a.getActorType() == ActorType.PLAYER) hitPlayer = true;
                         affectedActors.add(a);
                         a.addToDamageQueue(
                                 Lemongrab.this, getSpellDamage(spellData), spellData, false);
@@ -350,13 +347,26 @@ public class Lemongrab extends UserActor {
                 RoomHandler handler1 = parentExt.getRoomHandler(room.getName());
                 for (Actor a : Champion.getActorsInRadius(handler1, dest, 2f)) {
                     if (isNonStructure(a) && !affectedActors.contains(a)) {
+                        hitAnything = true;
+                        if (a.getActorType() == ActorType.PLAYER) hitPlayer = true;
                         double damage = 60d + (getPlayerStat("spellDamage") * 0.4d);
                         a.addState(ActorState.BLINDED, 0d, W_BLIND_DURATION);
                         a.addToDamageQueue(Lemongrab.this, damage, spellData, false);
                     }
                 }
                 juice = false;
-            }
+                ExtensionCommands.actorAbilityResponse(
+                        parentExt,
+                        player,
+                        "w",
+                        true,
+                        hitAnything && !hitPlayer
+                                ? (int) Math.floor(getReducedCooldown(cooldown) * 0.7)
+                                : getReducedCooldown(cooldown),
+                        gCooldown);
+            } else
+                ExtensionCommands.actorAbilityResponse(
+                        parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
         }
 
         @Override

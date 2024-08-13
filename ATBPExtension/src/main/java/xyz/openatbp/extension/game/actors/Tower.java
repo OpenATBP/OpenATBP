@@ -27,6 +27,7 @@ public class Tower extends Actor {
     private boolean isFocusingPlayer = false;
     private boolean isFocusingCompanion = false;
     private int numberOfAttacks = 0;
+    private List<UserActor> usersTargeted;
 
     public Tower(ATBPExtension parentExt, Room room, String id, int team, Point2D location) {
         this.currentHealth = 800;
@@ -43,6 +44,7 @@ public class Tower extends Actor {
         if (team == 1) this.avatar = "tower2";
         this.displayName = parentExt.getDisplayName(this.avatar);
         this.stats = this.initializeStats();
+        this.usersTargeted = new ArrayList<>();
         this.xpWorth = 15;
         ExtensionCommands.createWorldFX(
                 parentExt,
@@ -68,6 +70,7 @@ public class Tower extends Actor {
         this.parentExt = parentExt;
         this.room = room;
         this.team = team;
+        this.usersTargeted = new ArrayList<>();
     }
 
     public Tower(ATBPExtension parentExt, Room room, String id, int team) {
@@ -85,6 +88,7 @@ public class Tower extends Actor {
         this.displayName = parentExt.getDisplayName(this.avatar);
         this.stats = this.initializeStats();
         this.xpWorth = 15;
+        this.usersTargeted = new ArrayList<>();
     }
 
     @Override
@@ -499,12 +503,20 @@ public class Tower extends Actor {
         if (a.getActorType() == ActorType.PLAYER) {
             UserActor ua = (UserActor) a;
             ExtensionCommands.removeFx(this.parentExt, ua.getUser(), this.id + "_aggro");
+            this.usersTargeted.remove(ua);
         }
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_target");
         this.target = null;
     }
 
     public void targetPlayer(UserActor user) {
+        if (this.usersTargeted.size() > 0) {
+            for (UserActor t : new ArrayList<>(this.usersTargeted)) {
+                ExtensionCommands.removeFx(this.parentExt, t.getUser(), this.id + "_aggro");
+                this.usersTargeted.remove(t);
+            }
+        }
+        this.usersTargeted.add(user);
         ExtensionCommands.setTarget(this.parentExt, user.getUser(), this.id, user.getId());
         ExtensionCommands.createWorldFX(
                 this.parentExt,

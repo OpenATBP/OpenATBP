@@ -55,6 +55,7 @@ public class Monster extends Actor {
         if (movementDebug)
             ExtensionCommands.createActor(
                     parentExt, room, id + "_test", "creep", this.location, 0f, 2);
+        this.updateMaxHealth();
     }
 
     public Monster(
@@ -74,6 +75,7 @@ public class Monster extends Actor {
         this.actorType = ActorType.MONSTER;
         this.xpWorth = this.parentExt.getActorXP(this.id);
         this.displayName = parentExt.getDisplayName(monsterName);
+        this.updateMaxHealth();
     }
 
     @Override
@@ -139,6 +141,16 @@ public class Monster extends Actor {
         if (charmer != null) {
             this.target = charmer;
             this.charmer = charmer;
+        }
+    }
+
+    public void updateMaxHealth() {
+        int averagePLevel = parentExt.getRoomHandler(this.room.getName()).getAveragePlayerLevel();
+        if (averagePLevel != level) {
+            int levelDiff = averagePLevel - level;
+            this.maxHealth += parentExt.getHealthScaling(this.id) * levelDiff;
+            this.level = averagePLevel;
+            Champion.updateServerHealth(this.parentExt, this);
         }
     }
 
@@ -316,14 +328,7 @@ public class Monster extends Actor {
 
         if (msRan % 1000 * 60
                 == 0) { // Every second it checks average player level and scales accordingly
-            int averagePLevel =
-                    parentExt.getRoomHandler(this.room.getName()).getAveragePlayerLevel();
-            if (averagePLevel != level) {
-                int levelDiff = averagePLevel - level;
-                this.maxHealth += parentExt.getHealthScaling(this.id) * levelDiff;
-                this.level = averagePLevel;
-                Champion.updateServerHealth(this.parentExt, this);
-            }
+            this.updateMaxHealth();
         }
         if (this.movementLine != null)
             this.location =
