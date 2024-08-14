@@ -142,6 +142,28 @@ function addChampData(collection) {
   }
 }
 
+async function cleanupUsers(collection) {
+  try {
+    var cursor = collection.find();
+    var num = 0;
+    for await (var doc of cursor) {
+      if(doc.user.dname.includes("COOL GUY")){
+        num++;
+        var q = { 'user.TEGid': doc.user.TEGid };
+        var o = { upsert: false };
+        var up = { $set: { 'user.dname': `COOL GUY ${num}` } };
+        var res = await collection.updateOne(q, up, o);
+        console.log(doc.user.dname);
+        console.log(res);
+      }
+      //var res = await collection.updateOne(q, up, o);
+      //console.log(res);
+    }
+  } finally {
+    console.log('Done!');
+  }
+}
+
 function getLowerCaseName(name) {
   var firstLetter = name.charAt(name).toUpperCase();
   var fullString = firstLetter;
@@ -206,6 +228,7 @@ mongoClient.connect((err) => {
   //convertUserNames(playerCollection).catch(console.dir);
   //addRequests(playerCollection).catch(console.dir);
   //addChampData(champCollection);
+  //cleanupUsers(playerCollection).catch(console.dir);
 
   if (
     !fs.existsSync('static/crossdomain.xml') ||

@@ -313,7 +313,7 @@ function handleSkilledMatchmaking() {
           }
         }
       }
-      var totalElo = 0;
+      var totalElo = u.player.onTeam ? 200 : 0;
       for (var qp of validQueuePlayers) {
         totalElo += qp.elo;
       }
@@ -344,7 +344,7 @@ function handleSkilledMatchmaking() {
               }
             }
           }
-          var totalMoreElo = 0;
+          var totalMoreElo = u2.player.onTeam ? 200 : 0;
           for (var qp of additionalUsers) {
             totalMoreElo += qp.elo;
           }

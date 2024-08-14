@@ -466,8 +466,8 @@ public class MainMapRoomHandler extends RoomHandler {
         if (this.players.size() == 1) return;
         try {
             UserActor player = this.getPlayer(String.valueOf(user.getId()));
-            if (player.getTeam() == 0) this.dcWeight++;
-            else if (player.getTeam() == 1) this.dcWeight--;
+            if (player.getTeam() == 0) this.dcWeight--;
+            else if (player.getTeam() == 1) this.dcWeight++;
             this.dcPlayers.put(user, player);
             player.destroy();
             MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();

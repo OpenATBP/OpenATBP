@@ -165,8 +165,10 @@ public class PeppermintButler extends UserActor {
         } else if (stat.equalsIgnoreCase("attackDamage") && this.form == Form.FERAL)
             return super.getPlayerStat("attackDamage")
                     + (this.getStat("attackDamage") * E_ATTACK_DAMAGE_VALUE);
-        else if (stat.equalsIgnoreCase("attackRange") && this.form == Form.FERAL)
+        else if (stat.equalsIgnoreCase("attackRange") && this.form == Form.FERAL) {
             return super.getPlayerStat(stat) + 0.1d;
+        }
+
         return super.getPlayerStat(stat);
     }
 

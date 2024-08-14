@@ -314,8 +314,7 @@ public class Lemongrab extends UserActor {
         @Override
         protected void spellW() {
             Runnable enableWCasting = () -> canCast[1] = true;
-            int delay = getReducedCooldown(cooldown) - W_CAST_DELAY;
-            scheduleTask(enableWCasting, delay);
+            scheduleTask(enableWCasting, W_CAST_DELAY + 1000);
             if (juice) {
                 ExtensionCommands.createWorldFX(
                         parentExt,
