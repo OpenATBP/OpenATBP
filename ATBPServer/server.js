@@ -164,6 +164,46 @@ async function cleanupUsers(collection) {
   }
 }
 
+async function clearPlayerData(playerCollection,champCollection){
+
+  try {
+    var cursor = playerCollection.find();
+    for await (var doc of cursor) {
+      var stats = ['playsPVP','disconnects','winsPVP','kills','deaths','assists','towers','minions','jungleMobs','altars','largestSpree','largestMulti','scoreHighest','scoreTotal'];
+      var docPlayer = doc.player;
+      for(var k of Object.keys(docPlayer)){
+        if(stats.includes(k)) docPlayer[k] = 0;
+      }
+      var q = { 'user.TEGid': doc.user.TEGid };
+      var o = { upsert: false };
+      var up = { $set: { 'player': docPlayer, 'champion': {} } };
+      var res = await playerCollection.updateOne(q, up, o);
+      console.log(res);
+
+    }
+  } finally {
+    console.log('Done!');
+  }
+
+  try{
+    var cursor2 = champCollection.find();
+    for await(var doc of cursor2){
+      for(var k of Object.keys(doc)){
+        if(k != 'champion' && k != '_id'){
+          doc[k] = 0;
+        }
+      }
+      var q = { 'champion': doc.champion };
+      var o = { upsert: false };
+      var up = { $set: doc };
+      var res = await champCollection.updateOne(q, up, o);
+      console.log(res);
+    }
+  } finally {
+    console.log("Done 2");
+  }
+}
+
 function getLowerCaseName(name) {
   var firstLetter = name.charAt(name).toUpperCase();
   var fullString = firstLetter;
@@ -229,6 +269,7 @@ mongoClient.connect((err) => {
   //addRequests(playerCollection).catch(console.dir);
   //addChampData(champCollection);
   //cleanupUsers(playerCollection).catch(console.dir);
+  clearPlayerData(playerCollection,champCollection).catch(console.dir);
 
   if (
     !fs.existsSync('static/crossdomain.xml') ||

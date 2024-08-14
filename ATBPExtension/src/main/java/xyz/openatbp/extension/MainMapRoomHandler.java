@@ -244,6 +244,7 @@ public class MainMapRoomHandler extends RoomHandler {
                         else if (ua.getTeam() == winningTeam) win = 1d;
                         else win = 0d;
                         int eloGain = ChampionData.getEloGain(ua, this.players, win);
+                        if (dataObj.get("player").get("playsPVP").asInt() < 10) eloGain *= 2;
                         int currentElo = dataObj.get("player").get("elo").asInt();
                         for (double tierElo : ChampionData.ELO_TIERS) {
                             if (currentElo + eloGain + 1 == (int) tierElo) {

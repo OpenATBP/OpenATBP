@@ -1539,12 +1539,18 @@ public class UserActor extends Actor {
             }
         }
         if (this.hasBackpackItem("junk_1_magic_nail")) addMagicNailStacks(a);
-        this.addXP(a.getXPWorth());
+        int additionalXP = 0;
+        if (a.getActorType() == ActorType.PLAYER) {
+            UserActor ua = (UserActor) a;
+            int levelDiff = ua.getLevel() - this.level;
+            if (levelDiff > 0) additionalXP = 15 * levelDiff;
+        }
+        this.addXP(a.getXPWorth() + additionalXP);
         // if (a.getActorType() == ActorType.PLAYER) this.updateXPWorth("kill");
         if (a.getActorType() == ActorType.TOWER) {
             for (UserActor ua : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                 if (ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) {
-                    ua.addXP(a.getXPWorth());
+                    ua.addXP(a.getXPWorth() + additionalXP);
                 }
             }
             return;

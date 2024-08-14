@@ -174,6 +174,7 @@ public class PracticeRoomHandler extends RoomHandler {
             ExtensionCommands.gameOver(
                     parentExt, this.room, this.dcPlayers, winningTeam, false, false);
             // logChampionData(winningTeam);
+
             for (UserActor ua : this.players) {
                 if (ua.getTeam() == winningTeam) {
                     ExtensionCommands.playSound(

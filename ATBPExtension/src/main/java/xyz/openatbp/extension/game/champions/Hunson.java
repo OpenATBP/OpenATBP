@@ -254,7 +254,8 @@ public class Hunson extends UserActor {
                         getReducedCooldown(cooldown),
                         gCooldown);
                 scheduleTask(
-                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), castDelay);
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, this.location),
+                        W_CAST_DELAY);
                 break;
             case 3:
                 this.canCast[2] = false;
@@ -361,9 +362,9 @@ public class Hunson extends UserActor {
                 wStartTime = System.currentTimeMillis();
 
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
-                for (Actor a : Champion.getActorsInRadius(handler, location, 2.5f)) {
+                for (Actor a : Champion.getActorsInRadius(handler, dest, 2.5f)) {
                     if (isNonStructure(a) && !fearedActors.contains(a)) {
-                        a.handleFear(location, W_FEAR_DURATION);
+                        a.handleFear(dest, W_FEAR_DURATION);
                         fearedActors.add(a);
                         ExtensionCommands.createActorFX(
                                 parentExt,
