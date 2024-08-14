@@ -269,7 +269,7 @@ mongoClient.connect((err) => {
   //addRequests(playerCollection).catch(console.dir);
   //addChampData(champCollection);
   //cleanupUsers(playerCollection).catch(console.dir);
-  clearPlayerData(playerCollection,champCollection).catch(console.dir);
+  //clearPlayerData(playerCollection,champCollection).catch(console.dir);
 
   if (
     !fs.existsSync('static/crossdomain.xml') ||
