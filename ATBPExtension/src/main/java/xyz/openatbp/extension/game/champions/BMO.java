@@ -371,12 +371,7 @@ public class BMO extends UserActor {
         ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "run", 500, false);
         int baseCooldown = ChampionData.getBaseAbilityCooldown(this, 2);
         ExtensionCommands.actorAbilityResponse(
-                this.parentExt,
-                this.player,
-                "w",
-                true,
-                getReducedCooldown(baseCooldown),
-                0);
+                this.parentExt, this.player, "w", true, getReducedCooldown(baseCooldown), 0);
     }
 
     private void wEnd(int cooldown, int gCooldown) {
