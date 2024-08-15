@@ -376,7 +376,7 @@ public class BMO extends UserActor {
                 "w",
                 true,
                 getReducedCooldown(baseCooldown),
-                baseCooldown);
+                0);
     }
 
     private void wEnd(int cooldown, int gCooldown) {

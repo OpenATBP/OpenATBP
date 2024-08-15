@@ -330,10 +330,12 @@ function handleSkilledMatchmaking() {
             additionalUsers[0].team = 1;
             var team = teams.find((t) => t.players.includes(u2.player.teg_id));
             if (team != undefined) {
-              if(additionalUsers.length + team.players.length <= 3){
+              if (additionalUsers.length + team.players.length <= 3) {
                 for (var tp of team.players) {
                   if (tp != u2.player.teg_id) {
-                    var tu = users.find((userObj) => userObj.player.teg_id == tp);
+                    var tu = users.find(
+                      (userObj) => userObj.player.teg_id == tp
+                    );
                     var tObj = matchmaking.getPlayerObject(tu, 1);
                     if (
                       tu != undefined &&

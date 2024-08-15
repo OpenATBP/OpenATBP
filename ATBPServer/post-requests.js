@@ -115,7 +115,7 @@ module.exports = {
     return new Promise(function (resolve, reject) {
       collection
         .updateOne(
-          { 'user.TEGid': newFriend },
+          { 'user.TEGid': { $regex: new RegExp(`^${newFriend}$`, 'i') } },
           { $addToSet: { requests: username } }
         )
         .then(() => {

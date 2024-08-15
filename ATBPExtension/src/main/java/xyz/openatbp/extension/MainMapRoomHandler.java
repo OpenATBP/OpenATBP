@@ -476,7 +476,7 @@ public class MainMapRoomHandler extends RoomHandler {
                     playerData
                             .find(eq("user.TEGid", (String) user.getSession().getProperty("tegid")))
                             .first();
-            if (data != null && IS_RANKED_MATCH) {
+            if (data != null && IS_RANKED_MATCH && this.secondsRan >= 5) {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode dataObj = mapper.readTree(data.toJson());
                 double disconnects = dataObj.get("player").get("disconnects").asInt();

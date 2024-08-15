@@ -147,7 +147,7 @@ async function cleanupUsers(collection) {
     var cursor = collection.find();
     var num = 0;
     for await (var doc of cursor) {
-      if(doc.user.dname.includes("COOL GUY")){
+      if (doc.user.dname.includes('COOL GUY')) {
         num++;
         var q = { 'user.TEGid': doc.user.TEGid };
         var o = { upsert: false };
@@ -164,27 +164,38 @@ async function cleanupUsers(collection) {
   }
 }
 
-async function clearPlayerData(playerCollection,champCollection){
-
+async function clearPlayerData(playerCollection, champCollection) {
   try {
     var cursor = playerCollection.find();
     for await (var doc of cursor) {
-      var stats = ['playsPVP','disconnects','winsPVP','kills','deaths','assists','towers','minions','jungleMobs','altars','largestSpree','largestMulti','scoreHighest','scoreTotal'];
-      var docPlayer = doc.player;
-      for(var k of Object.keys(docPlayer)){
-        if(stats.includes(k)) docPlayer[k] = 0;
-      }
+      var stats = [
+        'playsPVP',
+        'disconnects',
+        'winsPVP',
+        'kills',
+        'deaths',
+        'assists',
+        'towers',
+        'minions',
+        'jungleMobs',
+        'altars',
+        'largestSpree',
+        'largestMulti',
+        'scoreHighest',
+        'scoreTotal',
+      ];
       var q = { 'user.TEGid': doc.user.TEGid };
       var o = { upsert: false };
-      var up = { $set: { 'player': docPlayer, 'champion': {} } };
-      var res = await playerCollection.updateOne(q, up, o);
-      console.log(res);
-
+      var up = { $set: { 'player.playsPVP': 1 } };
+      if (doc.player.playsPVP == 0) {
+        var res = await playerCollection.updateOne(q, up, o);
+        console.log(res);
+      }
     }
   } finally {
     console.log('Done!');
   }
-
+  /*
   try{
     var cursor2 = champCollection.find();
     for await(var doc of cursor2){
@@ -202,6 +213,7 @@ async function clearPlayerData(playerCollection,champCollection){
   } finally {
     console.log("Done 2");
   }
+  */
 }
 
 function getLowerCaseName(name) {
@@ -262,6 +274,8 @@ mongoClient.connect((err) => {
 
   const playerCollection = mongoClient.db('openatbp').collection('users');
   const champCollection = mongoClient.db('openatbp').collection('champions');
+  //TODO: Put all the testing commands into a separate file
+
   //removeDuplicateFriends(playerCollection).catch(console.dir);
   //addBetaTesters(playerCollection).catch(console.dir);
   //resetElo(playerCollection).catch(console.dir);

@@ -19,7 +19,8 @@ var newUserFunction = function (
         for (var item of JSON.parse(data)) {
           if (item.type == 'BACKPACK') inventoryArray.push(item.id);
         }
-        if(displayName.charAt(displayName.length-1) == " ") displayName = displayName.substring(0,displayName.length-1);
+        if (displayName.charAt(displayName.length - 1) == ' ')
+          displayName = displayName.substring(0, displayName.length - 1);
         var playerFile = {
           user: {
             TEGid: `${username.toLowerCase()}`,
