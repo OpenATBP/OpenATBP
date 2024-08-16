@@ -262,6 +262,7 @@ public class Lemongrab extends UserActor {
                             this.team,
                             0f);
                     String voiceLine = "";
+                    String ultLayeredVoice = "";
                     switch (this.unacceptableLevels) {
                         case 0:
                             voiceLine = "lemongrab_dungeon_3hours";
@@ -269,19 +270,27 @@ public class Lemongrab extends UserActor {
                             break;
                         case 1:
                             voiceLine = "lemongrab_dungeon_30days";
+                            ultLayeredVoice = "vo/lemongrab_ooo";
                             ultDelay = 1000;
                             break;
                         case 2:
                             voiceLine = "lemongrab_dungeon_12years";
+                            ultLayeredVoice = "vo/lemongrab_haha";
                             ultDelay = 750;
                             break;
                         case 3:
                             voiceLine = "lemongrab_dungeon_1myears";
+                            ultLayeredVoice = "vo/lemongrab_unacceptable";
                             ultDelay = 500;
                             break;
                     }
                     ExtensionCommands.playSound(
                             this.parentExt, this.room, this.id, voiceLine, this.location);
+
+                    if(ultLayeredVoice != ""){
+                        ExtensionCommands.playSound(
+                            this.parentExt, this.room, this.id, ultLayeredVoice, this.location);
+                    }
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
