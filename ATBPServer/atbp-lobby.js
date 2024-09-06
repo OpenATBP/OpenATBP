@@ -1,6 +1,7 @@
 const net = require('net');
 const config = require('./config.js');
 const matchmaking = require('./matchmaking.js');
+const dbOperations = require('./db-operations.js');
 
 var queues = [];
 var users = [];
@@ -125,6 +126,7 @@ function leaveQueue(socket, disconnected) {
     case 2: // IN CHAMP SELECT
       var queue = queues.find((q) => q.players.includes(socket.player.teg_id));
       if (queue != undefined) {
+        if(queue.type == '6p' && Date.now() < queue.endTime) handleDodge(socket);
         for (var qp of queue.players) {
           if (qp != socket.player.teg_id) {
             var queuePlayer = users.find((u) => u.player.teg_id == qp);
@@ -146,8 +148,10 @@ function leaveQueue(socket, disconnected) {
       }
       break;
     case 3: // IN GAME
+      console.log("IN GAME!");
       var queue = queues.find((q) => q.players.includes(socket.player.teg_id));
       if (queue != undefined) {
+        if(queue.type == '6p' && Date.now() < queue.endTime) handleDodge(socket);
         queue.players = queue.players.filter((p) => p != socket.player.teg_id);
       }
       queues = queues.filter((q) => q.players.length > 0);
@@ -262,6 +266,18 @@ function updateElo(socket) {
 }
 
 function handleSkilledMatchmaking() {
+  //Going to hijack this lol
+
+  for(var u of users){
+    if(u.player.queueData.dodgeCount != 0){
+      var dodgesToRemove = Math.floor((Date.now() - u.player.queueData.lastDodge) / (1000*60*30))
+      if(dodgesToRemove > 0){
+        u.player.queueData.dodgeCount-=dodgesToRemove;
+        if(u.player.queueData.dodgeCount < 0) u.player.queueData.dodgeCount = 0
+      }
+    }
+  }
+
   if (
     !config.lobbyserver.matchmakingEnabled ||
     users.length < config.lobbyserver.matchmakingMin
@@ -277,7 +293,7 @@ function handleSkilledMatchmaking() {
     var queueSize = 1;
     if (t.includes('p') && t != 'practice')
       queueSize = Number(t.replace('p', ''));
-    if (queueSize == 3) queueSize = 2; //Turns bots to 1v1
+    if (queueSize == 3) queueSize = 4; //Turns bots to 2v2
     var usersInQueue = users.filter(
       (u) => u.player.queue.type == t && u.player.stage == 1
     );
@@ -409,7 +425,7 @@ function updateMatchmaking() {
     var queueSize = 1;
     if (t.includes('p') && t != 'practice')
       queueSize = Number(t.replace('p', ''));
-    if (queueSize == 3) queueSize = 2; //Turns bots to 1v1
+    if (queueSize == 3) queueSize = 4; //Turns bots to 2v2
     var usersInQueue = users.filter(
       (u) => u.player.queue.type == t && u.player.stage == 1
     );
@@ -487,7 +503,7 @@ function startGame(players, type) {
   var queueSize = 1;
   if (type.includes('p') && type != 'practice')
     queueSize = Number(type.replace('p', ''));
-  if (queueSize == 3) queueSize = 2; //Turns bots to 1v1
+  if (queueSize == 3) queueSize = 4; //Turns bots to 2v2
   var allTeams = matchmaking.getTeams(players, teams, queueSize / 2);
   console.log(allTeams);
   if (allTeams == undefined) return;
@@ -504,7 +520,6 @@ function startGame(players, type) {
       if (t != undefined) removeTeam(t);
     }
   }
-
   var queueObj = {
     type: type,
     players: playerIds,
@@ -514,6 +529,7 @@ function startGame(players, type) {
     ready: 0,
     max: queueSize,
     inGame: false,
+    endTime: Date.now() + (61*1000)
   };
 
   for (var bp of blue) {
@@ -666,11 +682,16 @@ function joinQueue(sockets, type) {
   var queueSize = 1;
   if (type.includes('p') && type != 'practice')
     queueSize = Number(type.replace('p', ''));
-  if (queueSize == 3) queueSize = 2; //Turns bots to 1v1
+  if (queueSize == 3) queueSize = 4; //Turns bots to 2v2
   for (var s of sockets) {
-    s.player.stage = 1; //STAGE IS IN QUEUE
-    s.player.queue.started = Date.now();
-    s.player.queue.type = type;
+    if(s.player.queueData.queueBan == -1 || s.player.queueData.queueBan <= Date.now()){
+      s.player.stage = 1; //STAGE IS IN QUEUE
+      s.player.queue.started = Date.now();
+      s.player.queue.type = type;
+    }else{
+      var mins = ((s.player.queueData.queueBan - Date.now()) / 1000) / 60;
+      sendCommand(s,'team_disband',{'reason':`You are banned from queue \n for ${Math.round(mins)} minute(s)`}).catch(console.error);
+    }
   }
   if (
     !config.lobbyserver.matchmakingEnabled ||
@@ -708,6 +729,22 @@ function joinQueue(sockets, type) {
         }
       }
     }
+  }
+}
+
+function handleDodge(socket){
+  console.log(`${socket.player.name} DODGED!`);
+  socket.player.queueData.dodgeCount++;
+  if(socket.player.queueData.lastDodge < Date.now() - (1000*60*30)) socket.player.queueData.dodgeCount++;
+  socket.player.queueData.lastDodge = Date.now();
+  if(socket.player.queueData.dodgeCount >= 3){
+    socket.player.queueData.queueBan = Date.now() + ((1000*60*30) * (1+socket.player.queueData.timesOffended));
+    socket.player.queueData.timesOffended++;
+    var eloLoss = Math.round(socket.player.elo * (-0.05*socket.player.queueData.timesOffended));
+    dbOperations.handleQueueData(socket.player,playerCollection);
+    playerCollection.updateOne({"user.TEGid":socket.player.teg_id},{$inc: {"player.elo":eloLoss, "player.disconnects":socket.player.queueData.timesOffended}}).then(() => {
+      updateElo(socket);
+    }).catch(console.error);
   }
 }
 
@@ -1078,6 +1115,7 @@ function handleRequest(jsonString, socket) {
         ).catch(console.error);
         if (queue.ready == queue.max) {
           queue.inGame = true;
+          queue.endTime = Date.now() + 30 * 1000
           for (var qp of queue.players) {
             var queueUser = users.find((u) => u.player.teg_id == qp);
             if (queueUser != undefined) queueUser.player.stage = 3;
@@ -1389,7 +1427,13 @@ function handleRequest(jsonString, socket) {
         onTeam: false,
         elo: 0,
         stage: 0, //0 = IN LOBBY, 1 = SEARCHING FOR GAME, 2 = CHAMP SELECT, 3 = IN GAME
+        queueData: {}
       };
+      playerCollection.findOne({"user.TEGid":socket.player.teg_id}).then((data) => {
+        if(data != undefined){
+          socket.player.queueData = data.queue;
+        }else console.log("UNDEFINED");
+      }).catch(console.error);
       users.push(socket);
       updateElo(socket);
     }
@@ -1461,16 +1505,30 @@ module.exports = class ATBPLobbyServer {
               userExists = true;
               if (user.player.onTeam) leaveTeam(user, true);
               else leaveQueue(user, true);
+              dbOperations.handleQueueData(user.player,playerCollection);
             }
           }
-          if (!userExists) console.log('Socket left with no player: ', socket);
           users = users.filter(
             (user) => !user._readableState.ended && user != socket
           );
         });
 
         socket.on('end', (err) => {
-          console.log(err);
+          var userExists = false;
+          for (var user of users) {
+            if (
+              (user._readableState != undefined && user._readableState.ended) ||
+              user == socket
+            ) {
+              userExists = true;
+              if (user.player.onTeam) leaveTeam(user, true);
+              else leaveQueue(user, true);
+              dbOperations.handleQueueData(user.player,playerCollection);
+            }
+          }
+          users = users.filter(
+            (user) => !user._readableState.ended && user != socket
+          );
         });
       });
 

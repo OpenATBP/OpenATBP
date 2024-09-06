@@ -35,43 +35,6 @@ async function removeDuplicateFriends(collection) {
   }
 }
 
-async function convertUserNames(collection) {
-  try {
-    var cursor = collection.find();
-    for await (var doc of cursor) {
-      var newId = `${Math.floor(Math.random() * 1000000000)}`;
-      var q = { 'user.authpass': doc.user.authpass };
-      var o = { upsert: true };
-      var up = {
-        $set: { 'user.authid': newId, 'user.TEGid': doc.user.authid },
-      };
-
-      var res = await collection.updateOne(q, up, o);
-      console.log(res);
-    }
-  } finally {
-    console.log('Done!');
-  }
-}
-
-//Added to make everyone in the database a beta tester
-async function addBetaTesters(collection) {
-  try {
-    var cursor = collection.find();
-    for await (var doc of cursor) {
-      //console.log(doc.friends);
-      var q = { 'user.TEGid': doc.user.TEGid };
-      var o = { upsert: true };
-      var up = { $set: { betaTester: true } };
-
-      var res = await collection.updateOne(q, up, o);
-      console.log(res);
-    }
-  } finally {
-    console.log('Done!');
-  }
-}
-
 async function resetElo(collection) {
   try {
     var cursor = collection.find();
@@ -89,20 +52,52 @@ async function resetElo(collection) {
   }
 }
 
-async function addRequests(collection) {
+async function addQueueData(collection) {
   try {
     var cursor = collection.find();
     for await (var doc of cursor) {
       //console.log(doc.friends);
       var q = { 'user.TEGid': doc.user.TEGid };
       var o = { upsert: true };
-      var up = { $set: { requests: [] } };
+      var up = { $set: { "queue": {"lastDodge":-1,"queueBan":-1,"dodgeCount":0,"timesOffended":0} } };
 
       var res = await collection.updateOne(q, up, o);
       console.log(res);
     }
   } finally {
     console.log('Done!');
+  }
+}
+
+async function curveElo(collection) {
+  var allUsers = [];
+  try {
+    var cursor = collection.find();
+    for await (var doc of cursor) {
+      allUsers.push(doc);
+    }
+  } finally {
+    var allElo = 0;
+    var topElo = -1;
+    var bottomElo = 10000;
+    for(var u of allUsers){
+      allElo+=u.player.elo;
+      if(u.player.elo > topElo) topElo = u.player.elo;
+      if(u.player.elo < bottomElo) bottomElo = u.player.elo;
+    }
+    console.log("TOP ELO: " + topElo);
+    console.log("BOT ELO: " + bottomElo);
+    console.log("AVERAGE ELO: " + Math.round(allElo/allUsers.length));
+    if(bottomElo < 800) bottomElo = 800;
+    var maxElo = 2500;
+    var botElo = 800;
+    var lowPoint = {x:bottomElo,y:botElo};
+    var highPoint = {x:topElo,y:maxElo};
+    allUsers.sort((a,b) => {return a.player.elo - b.player.elo});
+    for(var u of allUsers){
+      var newElo = Math.floor(highPoint.y + ((lowPoint.y-highPoint.y)/(lowPoint.x-highPoint.x)) * (u.player.elo - highPoint.x));
+      console.log(`${u.user.dname} ELO is ${u.player.elo} but would become ${newElo}`);
+    }
   }
 }
 
@@ -142,28 +137,6 @@ function addChampData(collection) {
   }
 }
 
-async function cleanupUsers(collection) {
-  try {
-    var cursor = collection.find();
-    var num = 0;
-    for await (var doc of cursor) {
-      if (doc.user.dname.includes('COOL GUY')) {
-        num++;
-        var q = { 'user.TEGid': doc.user.TEGid };
-        var o = { upsert: false };
-        var up = { $set: { 'user.dname': `COOL GUY ${num}` } };
-        var res = await collection.updateOne(q, up, o);
-        console.log(doc.user.dname);
-        console.log(res);
-      }
-      //var res = await collection.updateOne(q, up, o);
-      //console.log(res);
-    }
-  } finally {
-    console.log('Done!');
-  }
-}
-
 async function clearPlayerData(playerCollection, champCollection) {
   try {
     var cursor = playerCollection.find();
@@ -195,25 +168,6 @@ async function clearPlayerData(playerCollection, champCollection) {
   } finally {
     console.log('Done!');
   }
-  /*
-  try{
-    var cursor2 = champCollection.find();
-    for await(var doc of cursor2){
-      for(var k of Object.keys(doc)){
-        if(k != 'champion' && k != '_id'){
-          doc[k] = 0;
-        }
-      }
-      var q = { 'champion': doc.champion };
-      var o = { upsert: false };
-      var up = { $set: doc };
-      var res = await champCollection.updateOne(q, up, o);
-      console.log(res);
-    }
-  } finally {
-    console.log("Done 2");
-  }
-  */
 }
 
 function getLowerCaseName(name) {
@@ -276,14 +230,8 @@ mongoClient.connect((err) => {
   const champCollection = mongoClient.db('openatbp').collection('champions');
   //TODO: Put all the testing commands into a separate file
 
-  //removeDuplicateFriends(playerCollection).catch(console.dir);
-  //addBetaTesters(playerCollection).catch(console.dir);
-  //resetElo(playerCollection).catch(console.dir);
-  //convertUserNames(playerCollection).catch(console.dir);
-  //addRequests(playerCollection).catch(console.dir);
-  //addChampData(champCollection);
-  //cleanupUsers(playerCollection).catch(console.dir);
-  //clearPlayerData(playerCollection,champCollection).catch(console.dir);
+  //addQueueData(playerCollection);
+  curveElo(playerCollection);
 
   if (
     !fs.existsSync('static/crossdomain.xml') ||
@@ -645,6 +593,7 @@ mongoClient.connect((err) => {
   });
 
   app.get('/service/authenticate/user/:username', (req, res) => {
+    console.log(res);
     getRequest
       .handleBrowserLogin(req.params.username, playerCollection)
       .then((data) => {
@@ -654,6 +603,7 @@ mongoClient.connect((err) => {
   });
 
   app.post('/service/authenticate/login', (req, res) => {
+    console.log(req.socket.remoteAddress);
     var session_token = '';
     for (var h of req.rawHeaders) {
       if (h.includes('session_token')) {
@@ -671,6 +621,9 @@ mongoClient.connect((err) => {
     postRequest
       .handleLogin(req.body, session_token, playerCollection)
       .then((data) => {
+        playerCollection.updateOne({"session.token":session_token},{$set:{"address":req.socket.remoteAddress}},{upsert:true}).then(() => {
+          console.log("Inserted!");
+        }).catch(console.error);
         res.send(data);
       })
       .catch((e) => {

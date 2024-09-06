@@ -80,6 +80,13 @@ var newUserFunction = function (
   });
 };
 
+var handleQueueData = function(player,playerDatabase){
+  if(player != undefined){
+    playerDatabase.updateOne({"user.TEGid":player.teg_id},{$set:{"queue":player.queueData}},{upsert:true}).catch(console.error);
+  }
+};
+
 module.exports = {
   createNewUser: newUserFunction,
+  handleQueueData: handleQueueData
 };
