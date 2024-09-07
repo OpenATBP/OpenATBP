@@ -225,8 +225,8 @@ module.exports = {
         var teamToJoin = random > 0.5 ? 0 : 1;
         if (teamToJoin == 0) returnVal.purple.push(up);
         else returnVal.blue.push(up);
-        if (returnVal.purple.length == 3) availableTeam = 1;
-        else if (returnVal.blue.length == 3) availableTeam = 0;
+        if (returnVal.purple.length == teamSize) availableTeam = 1;
+        else if (returnVal.blue.length == teamSize) availableTeam = 0;
       } else if (availableTeam == 0) returnVal.purple.push(up);
       else if (availableTeam == 1) returnVal.blue.push(up);
     }

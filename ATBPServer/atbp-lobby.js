@@ -105,6 +105,7 @@ function leaveQueue(socket, disconnected) {
     console.log('SOCKET IS UNDEFINED AND TRIED TO LEAVE QUEUE');
     return;
   }
+  console.log(socket.player.name + 'LEFT QUEUE');
   switch (socket.player.stage) {
     case 1: // IN QUEUE
       if (!config.lobbyserver.matchmakingEnabled || users.length < 24) {
@@ -647,9 +648,21 @@ function leaveTeam(socket, disconnected) {
   var team = teams.find((t) => t.players.includes(socket.player.teg_id));
   if (team != undefined) {
     declineInvite(team.team, socket.player.teg_id, team.type == 'custom');
-    if (team.stage != 0) leaveQueue(socket, false);
+    if (team.stage != 0) {
+      //leaveQueue(socket, false);
+      for (var u of users.filter((us) =>
+        team.players.includes(us.player.teg_id)
+      )) {
+        if (team.stage == 1) u.player.onTeam = false;
+        leaveQueue(u, false);
+        team.stage = 0;
+      }
+    }
     team.players = team.players.filter((tp) => tp != socket.player.teg_id);
-    if (team.team == socket.player.teg_id && team.stage == 0) {
+    console.log(
+      `TEAM: ${team.team} Socket: ${socket.player.teg_id} Stage: ${team.stage}`
+    );
+    if (team.team == socket.player.teg_id && team.stage <= 1) {
       safeSendAll(
         users.filter((u) => team.players.includes(u.player.teg_id)),
         'team_disband',
@@ -940,9 +953,13 @@ function acceptInvite(sender, recipient, custom) {
                   { players: teamObjs, team: team.team }
                 )
                   .then(() => {
-                    if (team.players.length == 3) {
+                    if (
+                      team.players.length == 3 ||
+                      (team.type.includes('3p') && team.players.length == 2)
+                    ) {
                       var act = team.type.split('_');
                       var type = act[act.length - 1];
+                      team.stage = 1;
                       joinQueue(
                         users.filter((u) =>
                           team.players.includes(u.player.teg_id)
