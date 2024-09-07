@@ -1324,6 +1324,16 @@ function handleRequest(jsonString, socket) {
       var team = teams.find((t) => t.team == jsonObject['payload'].team);
       var act = team.type.split('_');
       var type = act[act.length - 1];
+      /*
+      var fakeUser1 = matchmaking.createFakeUser(true);
+      var fakeUser2 = matchmaking.createFakeUser(true);
+      users.push(fakeUser1);
+      users.push(fakeUser2);
+      teams.push(matchmaking.createFakeTeam([fakeUser1.player.teg_id,fakeUser2.player.teg_id]));
+      users.push(matchmaking.createFakeUser(false));
+      users.push(matchmaking.createFakeUser(false));
+      users.push(matchmaking.createFakeUser(false));
+      */
       if (team != undefined) {
         joinQueue(
           users.filter((u) => team.players.includes(u.player.teg_id)),

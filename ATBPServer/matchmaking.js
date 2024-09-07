@@ -179,7 +179,7 @@ module.exports = {
         teg_id: `fake-user-${Math.random() * 100}`,
         player: Math.floor(Math.random() * 10000),
         queue: {
-          type: '6p',
+          type: '3p',
           started: Date.now(),
           visual: 1,
         },
@@ -217,8 +217,8 @@ module.exports = {
     }
     var unassignedPlayers = players.filter((p) => p.team == -1);
     var availableTeam = -1;
-    if (returnVal.purple.length == 3) availableTeam = 1;
-    else if (returnVal.blue.length == 3) availableTeam = 0;
+    if (returnVal.purple.length == teamSize) availableTeam = 1;
+    else if (returnVal.blue.length == teamSize) availableTeam = 0;
     for (var up of unassignedPlayers) {
       if (availableTeam == -1) {
         var random = Math.random();

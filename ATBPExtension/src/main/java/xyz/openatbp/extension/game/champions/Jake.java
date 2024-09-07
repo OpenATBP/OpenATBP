@@ -50,7 +50,7 @@ public class Jake extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if (grabActive && hasInterrupingCC()) {
+        if (grabActive && (hasInterrupingCC() || this.dead)) {
             blockAbilities = false;
             resetGrab();
             if (!hasMovementCC()) canMove = true;
