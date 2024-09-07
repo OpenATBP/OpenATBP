@@ -224,7 +224,7 @@ public class Fionna extends UserActor {
             case 3:
                 this.canCast[2] = false;
                 try {
-                    this.stopMoving(castDelay);
+                    // BUFF Patch 9/7/24 this.stopMoving(castDelay);
                     this.ultActivated = true;
                     this.ultStartTime = System.currentTimeMillis();
                     ExtensionCommands.addStatusIcon(

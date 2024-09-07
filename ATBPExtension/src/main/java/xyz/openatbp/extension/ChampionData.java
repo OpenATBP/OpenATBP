@@ -280,16 +280,16 @@ public class ChampionData {
             int lv10Cooldown;
             switch (championName) {
                 case "billy":
-                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 10000 : 45000;
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 45000;
                     break;
                 case "bmo":
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 11000 : 37500;
                     break;
                 case "cinnamonbun":
-                    lv10Cooldown = abilityNumber == 1 ? 4500 : abilityNumber == 2 ? 12000 : 42000;
+                    lv10Cooldown = abilityNumber == 1 ? 4500 : abilityNumber == 2 ? 14000 : 42000;
                     break;
                 case "finn":
-                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 7000 : 26000;
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 10000 : 26000;
                     break;
                 case "fionna":
                     lv10Cooldown = abilityNumber == 1 ? 7000 : abilityNumber == 2 ? 5000 : 60000;

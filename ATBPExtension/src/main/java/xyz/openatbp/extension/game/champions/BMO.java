@@ -484,7 +484,7 @@ public class BMO extends UserActor {
             ExtensionCommands.playSound(
                     parentExt, room, "", "akubat_projectileHit1", victim.getLocation());
             if (ultSlowActive) applySlow(victim);
-            this.damageReduction += 0.3d;
+            this.damageReduction += 0.15d;
             if (this.damageReduction > 0.7d) this.damageReduction = 0.7d;
         }
 

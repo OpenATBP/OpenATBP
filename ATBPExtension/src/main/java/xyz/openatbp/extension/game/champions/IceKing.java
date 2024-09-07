@@ -215,6 +215,7 @@ public class IceKing extends UserActor {
         if (attackData.has("attackName")
                 && attackData.get("attackName").asText().contains("basic_attack")
                 && this.iceShield) {
+            damage /= 2;
             a.addState(ActorState.SLOWED, PASSIVE_SLOW_VALUE, PASSIVE_SLOW_DURAITON);
             a.addEffect(
                     "attackSpeed",

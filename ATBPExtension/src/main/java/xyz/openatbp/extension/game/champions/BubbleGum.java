@@ -3,7 +3,9 @@ package xyz.openatbp.extension.game.champions;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -39,6 +41,7 @@ public class BubbleGum extends UserActor {
     private int eUses = 0;
     private Point2D bombLocation;
     private long bombPlaceTime = 0;
+    private Map<String, Integer> passiveVictims = new HashMap<>();
 
     public BubbleGum(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -121,15 +124,25 @@ public class BubbleGum extends UserActor {
     }
 
     @Override
-    public void attack(Actor a) { // TODO: Implement debuff stacking :<
+    public void attack(Actor a) {
         if (this.attackCooldown == 0) {
             this.applyStopMovingDuringAttack();
-            if (this.passiveAmmunition > 0 && a.getActorType() == ActorType.PLAYER) {
+            if (this.passiveAmmunition > 0
+                    && a.getActorType()
+                            == ActorType.PLAYER) { // TODO: Applying the passive here feels wrong
                 this.passiveAmmunition--;
                 this.passiveTimeStamp = System.currentTimeMillis();
                 double delta = a.getStat("attackSpeed") * PASSIVE_ATTACKSPEED_VALUE;
+                if (passiveVictims.containsKey(a.getId())) {
+                    passiveVictims.put(a.getId(), passiveVictims.get(a.getId()) + 1);
+                    if (passiveVictims.get(a.getId()) == 3) {
+                        a.addState(ActorState.SLOWED, 0.25, PASSIVE_EFFECT_DURATION / 2);
+                        passiveVictims = new HashMap<>();
+                    }
+                } else passiveVictims.put(a.getId(), 1);
                 a.addEffect("attackSpeed", delta, PASSIVE_EFFECT_DURATION);
                 handlePassiveStatusIcons(passiveAmmunition);
+                if (this.passiveAmmunition == 0) passiveVictims = new HashMap<>();
             }
             String projectile = "bubblegum_projectile";
             String emit = SkinData.getBubbleGumBasicAttackEmit(avatar);

@@ -130,4 +130,8 @@ public abstract class Projectile {
     public boolean isDestroyed() {
         return this.destroyed;
     }
+
+    public int getTeam() {
+        return this.owner.getTeam();
+    }
 }

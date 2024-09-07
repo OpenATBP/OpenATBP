@@ -686,16 +686,23 @@ public abstract class RoomHandler implements Runnable {
     private void handlePassiveXP() {
         double purpleLevel = 0;
         double blueLevel = 0;
+        int purpleCount = 0;
+        int blueCount = 0;
         for (UserActor player : this.players) {
-            if (player.getTeam() == 0) purpleLevel += player.getLevel();
-            else if (player.getTeam() == 1) blueLevel += player.getLevel();
+            if (player.getTeam() == 0) {
+                purpleLevel += player.getLevel();
+                purpleCount++;
+            } else if (player.getTeam() == 1) {
+                blueLevel += player.getLevel();
+                blueCount++;
+            }
         }
         // Get the average level of players
-        purpleLevel = (int) Math.floor(purpleLevel / ((double) this.players.size() / 2));
-        blueLevel = (int) Math.floor(blueLevel / ((double) this.players.size() / 2));
+        purpleLevel = (int) Math.floor(purpleLevel / ((double) purpleCount));
+        blueLevel = (int) Math.floor(blueLevel / ((double) blueCount));
         for (UserActor player : this.players) {
             int additionalXP =
-                    1; // Get more XP if you are below the average level of the enemy and get less
+                    2; // Get more XP if you are below the average level of the enemy and get less
             // xp if you are above.
             if (player.getTeam() == 0) additionalXP *= (blueLevel - player.getLevel());
             else if (player.getTeam() == 1) additionalXP *= (purpleLevel - player.getLevel());
@@ -1254,5 +1261,9 @@ public abstract class RoomHandler implements Runnable {
 
     public boolean isPracticeMap() {
         return room.getGroupId().equals("Practice") || room.getGroupId().equals("Tutorial");
+    }
+
+    public List<Projectile> getActiveProjectiles() {
+        return this.activeProjectiles;
     }
 }

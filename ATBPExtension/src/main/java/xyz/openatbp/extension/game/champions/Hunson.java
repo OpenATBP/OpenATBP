@@ -115,9 +115,7 @@ public class Hunson extends UserActor {
     @Override
     public void attack(Actor a) {
         super.attack(a);
-        if (this.hasStatusEffect(a)
-                && a.getHealth() - this.getPlayerStat("attackDamage") > -5
-                && !this.passiveActivated) {
+        if (this.hasStatusEffect(a) && !this.passiveActivated) {
             this.passiveActivated = true;
             this.attackCooldown = 500;
             ExtensionCommands.playSound(

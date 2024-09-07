@@ -335,11 +335,13 @@ public class MagicMan extends UserActor {
                         false,
                         team,
                         0f);
-                double damageModifier = getPlayerStat("spellDamage") * 0.001d;
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 for (Actor a : Champion.getActorsInRadius(handler, location, 4f)) {
                     if (isNonStructure(a)) {
-                        double damage = (double) (a.getHealth()) * (0.35d + damageModifier);
+                        double damage = (double) (a.getHealth()) * (0.35d);
+                        if (a.getActorType() == ActorType.MONSTER
+                                && (a.getId().contains("keeoth")
+                                        || a.getId().contains("goomonster"))) damage /= 2;
                         a.addToDamageQueue(MagicMan.this, damage, spellData, false);
                         a.addEffect("armor", a.getStat("armor") * -E_ARMOR_VALUE, E_ARMOR_DURATION);
                         a.addState(ActorState.SLOWED, E_SLOW_VALUE, E_SLOW_DURATION);

@@ -22,6 +22,7 @@ public class Jake extends UserActor {
     private static final double PASSIVE_ATTACKDAMAGE_VALUE = 0.4d;
     private static final double PASSIVE_SLOW_VALUE = 0.5d;
     private static final int PASSIVE_SLOW_DURATION = 1500;
+    private static final int PASSIVE_ROOT_DURATION = 1000;
     private static final int Q_RESTRAINT_TIME = 1600;
     private static final int Q_STUN_DURATION = 2000;
     private static final int Q_UNLOCK_SKILLS_DELAY = 500;
@@ -429,7 +430,7 @@ public class Jake extends UserActor {
                 getPlayerStat("attackDamage") * PASSIVE_ATTACKDAMAGE_VALUE,
                 attackData,
                 false);
-        target.addState(ActorState.SLOWED, PASSIVE_SLOW_VALUE, PASSIVE_SLOW_DURATION);
+        target.addState(ActorState.ROOTED, 0, PASSIVE_ROOT_DURATION);
         if (!this.avatar.contains("cake"))
             ExtensionCommands.playSound(
                     this.parentExt, this.room, this.id, "vo/vo_jake_passive_1", this.location);
