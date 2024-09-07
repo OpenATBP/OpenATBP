@@ -231,7 +231,7 @@ mongoClient.connect((err) => {
   //TODO: Put all the testing commands into a separate file
 
   //addQueueData(playerCollection);
-  curveElo(playerCollection);
+  //curveElo(playerCollection);
 
   if (
     !fs.existsSync('static/crossdomain.xml') ||

@@ -269,7 +269,7 @@ function handleSkilledMatchmaking() {
   //Going to hijack this lol
 
   for(var u of users){
-    if(u.player.queueData.dodgeCount != 0){
+    if(u.player != undefined && u.player.queueData != null && u.player.queueData.dodgeCount != 0){
       var dodgesToRemove = Math.floor((Date.now() - u.player.queueData.lastDodge) / (1000*60*30))
       if(dodgesToRemove > 0){
         u.player.queueData.dodgeCount-=dodgesToRemove;
@@ -504,7 +504,7 @@ function startGame(players, type) {
   if (type.includes('p') && type != 'practice')
     queueSize = Number(type.replace('p', ''));
   if (queueSize == 3) queueSize = 4; //Turns bots to 2v2
-  var allTeams = matchmaking.getTeams(players, teams, queueSize / 2);
+  var allTeams = matchmaking.getRandomTeams(players, teams, queueSize / 2);
   console.log(allTeams);
   if (allTeams == undefined) return;
   var blue = allTeams.blue;
@@ -698,7 +698,7 @@ function joinQueue(sockets, type) {
     queueSize == 1 ||
     users.length < config.lobbyserver.matchmakingMin
   ) {
-    /*
+/*
     var fakeUser1 = matchmaking.createFakeUser(true);
     var fakeUser2 = matchmaking.createFakeUser(true);
     users.push(fakeUser1);
@@ -707,7 +707,7 @@ function joinQueue(sockets, type) {
     users.push(matchmaking.createFakeUser(false));
     users.push(matchmaking.createFakeUser(false));
     users.push(matchmaking.createFakeUser(false));
-    */
+*/
     var currentQueue = matchmaking.searchForFullGame(
       users.filter((u) => u.player.queue.type == type && u.player.stage == 1),
       teams,
