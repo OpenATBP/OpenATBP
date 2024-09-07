@@ -51,7 +51,7 @@ public class Keeoth extends Monster {
                 String finalSound = "announcer/" + sound;
                 ExtensionCommands.playSound(parentExt, ua.getUser(), "global", finalSound);
 
-                if (ua.getTeam() == killerTeam && ua.getHealth() > 0) {
+                if (ua.getTeam() == killerTeam && ua.getHealth() > 0 && !ua.isDead()) {
                     ua.setHasKeeothBuff(true);
                     ua.setKeeothBuffStartTime(System.currentTimeMillis());
                     ua.addEffect("lifeSteal", 35d, KEEOTH_BUFF_DURATION, "jungle_buff_keeoth", "");

@@ -83,7 +83,7 @@ public class Hunson extends UserActor {
             this.endUlt();
         }
         if (this.qActivated
-                && System.currentTimeMillis() - this.qStartTime >= 6000
+                && System.currentTimeMillis() - this.qStartTime >= 4500
                 && this.qUses > 0) {
             this.qUses = 0;
             int baseQCooldown = ChampionData.getBaseAbilityCooldown(this, 1);

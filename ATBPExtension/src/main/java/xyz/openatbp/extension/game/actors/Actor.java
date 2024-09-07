@@ -635,9 +635,10 @@ public abstract class Actor {
             }
         }
         Line2D knockBackLine = Champion.extendLine(originalLine, distance);
+        Line2D actualKnockbackLine = new Line2D.Double(this.location, knockBackLine.getP2());
         Point2D finalPoint =
                 MovementManager.getPathIntersectionPoint(
-                        this.parentExt, isPracticeMap, knockBackLine);
+                        this.parentExt, isPracticeMap, actualKnockbackLine);
         if (finalPoint == null) finalPoint = knockBackLine.getP2();
         Line2D finalLine = new Line2D.Double(this.location, finalPoint);
         double time = this.location.distance(finalLine.getP2()) / KNOCKBACK_SPEED;

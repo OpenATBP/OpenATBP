@@ -59,7 +59,16 @@ async function addQueueData(collection) {
       //console.log(doc.friends);
       var q = { 'user.TEGid': doc.user.TEGid };
       var o = { upsert: true };
-      var up = { $set: { "queue": {"lastDodge":-1,"queueBan":-1,"dodgeCount":0,"timesOffended":0} } };
+      var up = {
+        $set: {
+          queue: {
+            lastDodge: -1,
+            queueBan: -1,
+            dodgeCount: 0,
+            timesOffended: 0,
+          },
+        },
+      };
 
       var res = await collection.updateOne(q, up, o);
       console.log(res);
@@ -80,23 +89,31 @@ async function curveElo(collection) {
     var allElo = 0;
     var topElo = -1;
     var bottomElo = 10000;
-    for(var u of allUsers){
-      allElo+=u.player.elo;
-      if(u.player.elo > topElo) topElo = u.player.elo;
-      if(u.player.elo < bottomElo) bottomElo = u.player.elo;
+    for (var u of allUsers) {
+      allElo += u.player.elo;
+      if (u.player.elo > topElo) topElo = u.player.elo;
+      if (u.player.elo < bottomElo) bottomElo = u.player.elo;
     }
-    console.log("TOP ELO: " + topElo);
-    console.log("BOT ELO: " + bottomElo);
-    console.log("AVERAGE ELO: " + Math.round(allElo/allUsers.length));
-    if(bottomElo < 800) bottomElo = 800;
+    console.log('TOP ELO: ' + topElo);
+    console.log('BOT ELO: ' + bottomElo);
+    console.log('AVERAGE ELO: ' + Math.round(allElo / allUsers.length));
+    if (bottomElo < 800) bottomElo = 800;
     var maxElo = 2500;
     var botElo = 800;
-    var lowPoint = {x:bottomElo,y:botElo};
-    var highPoint = {x:topElo,y:maxElo};
-    allUsers.sort((a,b) => {return a.player.elo - b.player.elo});
-    for(var u of allUsers){
-      var newElo = Math.floor(highPoint.y + ((lowPoint.y-highPoint.y)/(lowPoint.x-highPoint.x)) * (u.player.elo - highPoint.x));
-      console.log(`${u.user.dname} ELO is ${u.player.elo} but would become ${newElo}`);
+    var lowPoint = { x: bottomElo, y: botElo };
+    var highPoint = { x: topElo, y: maxElo };
+    allUsers.sort((a, b) => {
+      return a.player.elo - b.player.elo;
+    });
+    for (var u of allUsers) {
+      var newElo = Math.floor(
+        highPoint.y +
+          ((lowPoint.y - highPoint.y) / (lowPoint.x - highPoint.x)) *
+            (u.player.elo - highPoint.x)
+      );
+      console.log(
+        `${u.user.dname} ELO is ${u.player.elo} but would become ${newElo}`
+      );
     }
   }
 }
@@ -621,9 +638,16 @@ mongoClient.connect((err) => {
     postRequest
       .handleLogin(req.body, session_token, playerCollection)
       .then((data) => {
-        playerCollection.updateOne({"session.token":session_token},{$set:{"address":req.socket.remoteAddress}},{upsert:true}).then(() => {
-          console.log("Inserted!");
-        }).catch(console.error);
+        playerCollection
+          .updateOne(
+            { 'session.token': session_token },
+            { $set: { address: req.socket.remoteAddress } },
+            { upsert: true }
+          )
+          .then(() => {
+            console.log('Inserted!');
+          })
+          .catch(console.error);
         res.send(data);
       })
       .catch((e) => {

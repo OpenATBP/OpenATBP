@@ -22,7 +22,7 @@ public class Billy extends UserActor {
     private static final int W_ATTACKSPEED_DURATION = 4000;
     private static final float W_ATTACKSPEED_VALUE = 0.7f;
     private static final int W_SPEED_DURATION = 6000;
-    private static final float W_SPEED_VALUE = 0.6f;
+    private static final float W_SPEED_VALUE = 0.5f;
     private static final float Q_OFFSET_DISTANCE = 1.5f;
     private static final float Q_SPELL_RANGE = 4.5f;
     private static final int W_CRATER_OFFSET = 1;
@@ -153,7 +153,7 @@ public class Billy extends UserActor {
                     if (!actorsInPolygon.isEmpty()) {
                         for (Actor a : actorsInPolygon) {
                             if (isNonStructure(a)) {
-                                a.knockback(this.location, 5f);
+                                a.knockback(this.location, 3.5f);
                                 if (this.passiveUses == 3) a.addState(ActorState.STUNNED, 0d, 2000);
                             }
                             a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);

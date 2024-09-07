@@ -72,6 +72,7 @@ public class Tower extends Actor {
         this.room = room;
         this.team = team;
         this.usersTargeted = new ArrayList<>();
+        this.actorType = ActorType.TOWER;
     }
 
     public Tower(ATBPExtension parentExt, Room room, String id, int team) {

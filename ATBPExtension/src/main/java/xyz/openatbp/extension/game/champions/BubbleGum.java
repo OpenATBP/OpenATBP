@@ -279,7 +279,7 @@ public class BubbleGum extends UserActor {
                     } else {
                         a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                     }
-                    a.knockback(this.bombLocation, 5f);
+                    a.knockback(this.bombLocation, 3.5f);
                 }
             }
             String useBombVo = SkinData.getBubbleGumEGruntVO(avatar);
