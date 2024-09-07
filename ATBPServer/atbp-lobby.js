@@ -1494,6 +1494,26 @@ function handleRequest(jsonString, socket) {
         .then((data) => {
           if (data != undefined) {
             socket.player.queueData = data.queue;
+            if (data.queue == undefined) {
+              socket.player.queueData = {
+                lastDodge: -1,
+                queueBan: -1,
+                dodgeCount: 0,
+                timesOffended: 0,
+              };
+            }
+            playerCollection
+              .updateOne(
+                { 'user.TEGid': data.user.TEGid },
+                { $set: { address: socket.remoteAddress } },
+                { upsert: true }
+              )
+              .then(() => {
+                console.log(
+                  `${socket.player.name} logged in with the address: ${socket.remoteAddress}`
+                );
+              })
+              .catch(console.error);
           } else console.log('UNDEFINED');
         })
         .catch(console.error);

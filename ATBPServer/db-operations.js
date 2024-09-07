@@ -62,6 +62,13 @@ var newUserFunction = function (
           betaTester: false, //TODO: Remove when open beta starts
           forgot: forgot,
           requests: [],
+          address: 'newAccount',
+          queue: {
+            lastDodge: -1,
+            queueBan: -1,
+            dodgeCount: 0,
+            timesOffended: 0,
+          },
         };
         const opt = { upsert: true };
         const update = { $set: playerFile };

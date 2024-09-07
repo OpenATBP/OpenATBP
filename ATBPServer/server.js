@@ -111,8 +111,31 @@ async function curveElo(collection) {
           ((lowPoint.y - highPoint.y) / (lowPoint.x - highPoint.x)) *
             (u.player.elo - highPoint.x)
       );
+      if (newElo < 500) newElo = 500;
+      var tiers = [0, 1149, 1350, 1602];
+      var tier = 1.0;
+      for (var i = 0; i < tiers.length; i++) {
+        var currentCap = tiers[i];
+        var maxCap = i + 1 == tiers.length ? 2643 : tiers[i + 1];
+        if (newElo > currentCap && newElo < maxCap) {
+          tier += i;
+          break;
+        } else if (newElo == currentCap) {
+          newElo++;
+          tier += 1;
+          break;
+        }
+      }
+
+      var q = { 'user.TEGid': u.user.TEGid };
+      var o = { upsert: true };
+      var up = { $set: { 'player.elo': newElo, 'player.tier': tier } };
+
+      var res = await collection.updateOne(q, up, o);
+      console.log(res);
+
       console.log(
-        `${u.user.dname} ELO is ${u.player.elo} but would become ${newElo}`
+        `${u.user.dname} ELO is ${u.player.elo} but would become ${newElo} at tier ${tier}`
       );
     }
   }
@@ -620,7 +643,6 @@ mongoClient.connect((err) => {
   });
 
   app.post('/service/authenticate/login', (req, res) => {
-    console.log(req.socket.remoteAddress);
     var session_token = '';
     for (var h of req.rawHeaders) {
       if (h.includes('session_token')) {
@@ -638,16 +660,6 @@ mongoClient.connect((err) => {
     postRequest
       .handleLogin(req.body, session_token, playerCollection)
       .then((data) => {
-        playerCollection
-          .updateOne(
-            { 'session.token': session_token },
-            { $set: { address: req.socket.remoteAddress } },
-            { upsert: true }
-          )
-          .then(() => {
-            console.log('Inserted!');
-          })
-          .catch(console.error);
         res.send(data);
       })
       .catch((e) => {
