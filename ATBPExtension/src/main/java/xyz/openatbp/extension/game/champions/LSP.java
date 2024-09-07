@@ -287,7 +287,7 @@ public class LSP extends UserActor {
         protected void spellPassive() {}
     }
 
-    private class LSPUltProjectile extends Projectile {
+    public class LSPUltProjectile extends Projectile {
 
         private List<Actor> victims;
         private double damageReduction = 0d;

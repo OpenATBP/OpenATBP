@@ -460,7 +460,7 @@ public class BMO extends UserActor {
         protected void spellPassive() {}
     }
 
-    private class BMOUltProjectile extends Projectile {
+    public class BMOUltProjectile extends Projectile {
         private List<Actor> victims;
         private double damageReduction = 0d;
 

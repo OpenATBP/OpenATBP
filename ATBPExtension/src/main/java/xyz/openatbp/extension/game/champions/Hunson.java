@@ -20,9 +20,9 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class Hunson extends UserActor {
-    private static final int PASSIVE_DURATION = 5000;
-    private static final int PASSIVE_ATTACKSPEED_DURATION = 5000;
-    private static final int PASSIVE_SPEED_DURATION = 5000;
+    private static final int PASSIVE_DURATION = 3500;
+    private static final int PASSIVE_ATTACKSPEED_DURATION = 3500;
+    private static final int PASSIVE_SPEED_DURATION = 3500;
     private static final double PASSIVE_SPEED_VALUE = 1d;
     private static final double PASSIVE_ATTACKSPEED_VALUE = 0.5d;
     private static final double Q_SLOW_VALUE = 0.1d;
@@ -44,6 +44,8 @@ public class Hunson extends UserActor {
     private long qStartTime = 0;
     private long ultStart = 0;
     private long wStartTime = 0;
+    private long passiveStartTime = 0;
+    private boolean canUsePassive = true;
     private List<Actor> fearedActors = new ArrayList<>();
 
     public Hunson(User u, ATBPExtension parentExt) {
@@ -115,8 +117,10 @@ public class Hunson extends UserActor {
     @Override
     public void attack(Actor a) {
         super.attack(a);
-        if (this.hasStatusEffect(a) && !this.passiveActivated) {
+        if (this.hasStatusEffect(a) && !this.passiveActivated && this.canUsePassive) {
             this.passiveActivated = true;
+            this.canUsePassive = false;
+            this.passiveStartTime = System.currentTimeMillis();
             this.attackCooldown = 500;
             ExtensionCommands.playSound(
                     this.parentExt,
@@ -157,7 +161,8 @@ public class Hunson extends UserActor {
             double delta = this.getStat("attackSpeed") * -PASSIVE_ATTACKSPEED_VALUE;
             this.addEffect("attackSpeed", delta, PASSIVE_ATTACKSPEED_DURATION);
             this.addEffect("speed", PASSIVE_SPEED_VALUE, PASSIVE_SPEED_DURATION);
-            scheduleTask(abilityRunnable(4, null, 0, 0, null), PASSIVE_DURATION);
+            int cooldown = ChampionData.getBaseAbilityCooldown(this, 4);
+            scheduleTask(abilityRunnable(4, null, cooldown, 0, null), PASSIVE_DURATION);
         }
     }
 
@@ -413,6 +418,10 @@ public class Hunson extends UserActor {
         @Override
         protected void spellPassive() {
             passiveActivated = false;
+            ExtensionCommands.actorAbilityResponse(
+                    parentExt, player, "passive", true, getReducedCooldown(cooldown), 0);
+            Runnable allowPassive = () -> canUsePassive = true;
+            scheduleTask(allowPassive, getReducedCooldown(cooldown));
         }
     }
 
