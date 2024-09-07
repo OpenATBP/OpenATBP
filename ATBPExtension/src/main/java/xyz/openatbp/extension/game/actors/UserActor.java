@@ -89,6 +89,23 @@ public class UserActor extends Actor {
         this.actorType = ActorType.PLAYER;
         this.backpack = u.getVariable("player").getSFSObjectValue().getUtfString("backpack");
         this.xpWorth = 25;
+
+        for (String k : this.stats.keySet()) {
+            if (k.contains("PerLevel")) {
+                String stat = k.replace("PerLevel", "");
+                double levelStat = this.stats.get(k);
+                if (k.equalsIgnoreCase("healthPerLevel")) {
+                    this.setHealth(
+                            (int) ((this.getMaxHealth() + levelStat) * this.getPHealth()),
+                            (int) (this.getMaxHealth() + levelStat));
+                } else if (k.contains("attackSpeed")) {
+                    this.increaseStat(stat, (levelStat * -1));
+                } else {
+                    this.increaseStat(stat, levelStat);
+                }
+            }
+        }
+
         Properties props = parentExt.getConfigProperties();
         movementDebug = Boolean.parseBoolean(props.getProperty("movementDebug", "false"));
         invincibleDebug = Boolean.parseBoolean(props.getProperty("invincibleDebug", "false"));

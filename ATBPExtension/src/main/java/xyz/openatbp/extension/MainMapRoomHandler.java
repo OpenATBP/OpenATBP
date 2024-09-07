@@ -246,6 +246,12 @@ public class MainMapRoomHandler extends RoomHandler {
                         int eloGain = ChampionData.getEloGain(ua, this.players, win);
                         if (dataObj.get("player").get("playsPVP").asInt() < 10) eloGain *= 2;
                         int currentElo = dataObj.get("player").get("elo").asInt();
+                        int currentTier = ChampionData.getTier(currentElo);
+                        if (ChampionData.getTier(currentElo + eloGain) < currentTier
+                                && currentElo != ChampionData.ELO_TIERS[currentTier] + 1) {
+                            eloGain =
+                                    (int) ((ChampionData.ELO_TIERS[currentTier] + 1) - currentElo);
+                        }
                         for (double tierElo : ChampionData.ELO_TIERS) {
                             if (currentElo + eloGain + 1 == (int) tierElo) {
                                 eloGain++;

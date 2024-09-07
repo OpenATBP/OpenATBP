@@ -553,6 +553,7 @@ public class ChampionData {
     public static int getEloGain(UserActor ua, List<UserActor> players, double result) {
         double myElo = ua.getUser().getVariable("player").getSFSObjectValue().getInt("elo");
         double teamCount = 0;
+        int myTeamCount = 0;
         double teamElo = 0;
         for (UserActor u : players) {
             if (u.getTeam() != ua.getTeam()) {
@@ -560,7 +561,7 @@ public class ChampionData {
                         u.getUser().getVariable("player").getSFSObjectValue().getInt("elo");
                 teamCount++;
                 teamElo += enemyElo;
-            }
+            } else myTeamCount++;
         }
         int tier = getTier(myElo);
         double kFactor = 100;
@@ -576,6 +577,7 @@ public class ChampionData {
                 break;
         }
         double averageEnemyElo = Math.round(teamElo / teamCount);
+        if (myTeamCount < teamCount) averageEnemyElo += 100 * (teamCount - myTeamCount);
         double myProb = 1d / (1 + Math.pow(10, (averageEnemyElo - myElo) / 400));
         double eloGain = Math.round(kFactor * (result - myProb));
         Console.debugLog(ua.getDisplayName() + " ELO: " + myElo);
