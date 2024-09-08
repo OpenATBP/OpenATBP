@@ -15,6 +15,7 @@ import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.champions.CinnamonBun;
 
 public class Tower extends Actor {
     private final int[] PURPLE_TOWER_NUM = {2, 1};
@@ -71,6 +72,7 @@ public class Tower extends Actor {
         this.room = room;
         this.team = team;
         this.usersTargeted = new ArrayList<>();
+        this.actorType = ActorType.TOWER;
     }
 
     public Tower(ATBPExtension parentExt, Room room, String id, int team) {
@@ -122,6 +124,7 @@ public class Tower extends Actor {
             }
             return false;
         } else if (a.getActorType() == ActorType.MINION) damage *= 0.5;
+        if (a.getActorType() == ActorType.PLAYER && a.getClass() == CinnamonBun.class) damage /= 2;
         this.changeHealth(this.getMitigatedDamage(damage, this.getAttackType(attackData), a) * -1);
         boolean notify = System.currentTimeMillis() - this.lastHit >= 1000 * 5;
         if (notify) ExtensionCommands.towerAttacked(parentExt, this.room, this.getTowerNum());

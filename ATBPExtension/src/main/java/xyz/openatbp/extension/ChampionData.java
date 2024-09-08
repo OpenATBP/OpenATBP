@@ -280,16 +280,16 @@ public class ChampionData {
             int lv10Cooldown;
             switch (championName) {
                 case "billy":
-                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 10000 : 45000;
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 45000;
                     break;
                 case "bmo":
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 11000 : 37500;
                     break;
                 case "cinnamonbun":
-                    lv10Cooldown = abilityNumber == 1 ? 4500 : abilityNumber == 2 ? 12000 : 42000;
+                    lv10Cooldown = abilityNumber == 1 ? 4500 : abilityNumber == 2 ? 14000 : 42000;
                     break;
                 case "finn":
-                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 7000 : 26000;
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 10000 : 26000;
                     break;
                 case "fionna":
                     lv10Cooldown = abilityNumber == 1 ? 7000 : abilityNumber == 2 ? 5000 : 60000;
@@ -553,6 +553,7 @@ public class ChampionData {
     public static int getEloGain(UserActor ua, List<UserActor> players, double result) {
         double myElo = ua.getUser().getVariable("player").getSFSObjectValue().getInt("elo");
         double teamCount = 0;
+        int myTeamCount = 0;
         double teamElo = 0;
         for (UserActor u : players) {
             if (u.getTeam() != ua.getTeam()) {
@@ -560,7 +561,7 @@ public class ChampionData {
                         u.getUser().getVariable("player").getSFSObjectValue().getInt("elo");
                 teamCount++;
                 teamElo += enemyElo;
-            }
+            } else myTeamCount++;
         }
         int tier = getTier(myElo);
         double kFactor = 100;
@@ -576,6 +577,7 @@ public class ChampionData {
                 break;
         }
         double averageEnemyElo = Math.round(teamElo / teamCount);
+        if (myTeamCount < teamCount) averageEnemyElo += 100 * (teamCount - myTeamCount);
         double myProb = 1d / (1 + Math.pow(10, (averageEnemyElo - myElo) / 400));
         double eloGain = Math.round(kFactor * (result - myProb));
         Console.debugLog(ua.getDisplayName() + " ELO: " + myElo);

@@ -244,7 +244,14 @@ public class MainMapRoomHandler extends RoomHandler {
                         else if (ua.getTeam() == winningTeam) win = 1d;
                         else win = 0d;
                         int eloGain = ChampionData.getEloGain(ua, this.players, win);
+                        if (dataObj.get("player").get("playsPVP").asInt() < 10) eloGain *= 2;
                         int currentElo = dataObj.get("player").get("elo").asInt();
+                        int currentTier = ChampionData.getTier(currentElo);
+                        if (ChampionData.getTier(currentElo + eloGain) < currentTier
+                                && currentElo != ChampionData.ELO_TIERS[currentTier] + 1) {
+                            eloGain =
+                                    (int) ((ChampionData.ELO_TIERS[currentTier] + 1) - currentElo);
+                        }
                         for (double tierElo : ChampionData.ELO_TIERS) {
                             if (currentElo + eloGain + 1 == (int) tierElo) {
                                 eloGain++;
@@ -466,8 +473,8 @@ public class MainMapRoomHandler extends RoomHandler {
         if (this.players.size() == 1) return;
         try {
             UserActor player = this.getPlayer(String.valueOf(user.getId()));
-            if (player.getTeam() == 0) this.dcWeight++;
-            else if (player.getTeam() == 1) this.dcWeight--;
+            if (player.getTeam() == 0) this.dcWeight--;
+            else if (player.getTeam() == 1) this.dcWeight++;
             this.dcPlayers.put(user, player);
             player.destroy();
             MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
@@ -475,7 +482,7 @@ public class MainMapRoomHandler extends RoomHandler {
                     playerData
                             .find(eq("user.TEGid", (String) user.getSession().getProperty("tegid")))
                             .first();
-            if (data != null && IS_RANKED_MATCH) {
+            if (data != null && IS_RANKED_MATCH && this.secondsRan >= 5) {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode dataObj = mapper.readTree(data.toJson());
                 double disconnects = dataObj.get("player").get("disconnects").asInt();

@@ -1,6 +1,7 @@
 const net = require('net');
 const config = require('./config.js');
 const matchmaking = require('./matchmaking.js');
+const dbOperations = require('./db-operations.js');
 
 var queues = [];
 var users = [];
@@ -104,6 +105,7 @@ function leaveQueue(socket, disconnected) {
     console.log('SOCKET IS UNDEFINED AND TRIED TO LEAVE QUEUE');
     return;
   }
+  console.log(socket.player.name + 'LEFT QUEUE');
   switch (socket.player.stage) {
     case 1: // IN QUEUE
       if (!config.lobbyserver.matchmakingEnabled || users.length < 24) {
@@ -125,6 +127,8 @@ function leaveQueue(socket, disconnected) {
     case 2: // IN CHAMP SELECT
       var queue = queues.find((q) => q.players.includes(socket.player.teg_id));
       if (queue != undefined) {
+        if (queue.type == '6p' && Date.now() < queue.endTime)
+          handleDodge(socket);
         for (var qp of queue.players) {
           if (qp != socket.player.teg_id) {
             var queuePlayer = users.find((u) => u.player.teg_id == qp);
@@ -146,8 +150,11 @@ function leaveQueue(socket, disconnected) {
       }
       break;
     case 3: // IN GAME
+      console.log('IN GAME!');
       var queue = queues.find((q) => q.players.includes(socket.player.teg_id));
       if (queue != undefined) {
+        if (queue.type == '6p' && Date.now() < queue.endTime)
+          handleDodge(socket);
         queue.players = queue.players.filter((p) => p != socket.player.teg_id);
       }
       queues = queues.filter((q) => q.players.length > 0);
@@ -262,6 +269,25 @@ function updateElo(socket) {
 }
 
 function handleSkilledMatchmaking() {
+  //Going to hijack this lol
+
+  for (var u of users) {
+    if (
+      u.player != undefined &&
+      u.player.queueData != null &&
+      u.player.queueData.dodgeCount != 0
+    ) {
+      var dodgesToRemove = Math.floor(
+        (Date.now() - u.player.queueData.lastDodge) / (1000 * 60 * 30)
+      );
+      if (dodgesToRemove > 0) {
+        u.player.queueData.dodgeCount -= dodgesToRemove;
+        if (u.player.queueData.dodgeCount < 0)
+          u.player.queueData.dodgeCount = 0;
+      }
+    }
+  }
+
   if (
     !config.lobbyserver.matchmakingEnabled ||
     users.length < config.lobbyserver.matchmakingMin
@@ -277,7 +303,7 @@ function handleSkilledMatchmaking() {
     var queueSize = 1;
     if (t.includes('p') && t != 'practice')
       queueSize = Number(t.replace('p', ''));
-    if (queueSize == 3) queueSize = 2; //Turns bots to 1v1
+    if (queueSize == 3) queueSize = 4; //Turns bots to 2v2
     var usersInQueue = users.filter(
       (u) => u.player.queue.type == t && u.player.stage == 1
     );
@@ -313,7 +339,7 @@ function handleSkilledMatchmaking() {
           }
         }
       }
-      var totalElo = 0;
+      var totalElo = u.player.onTeam ? 200 : 0;
       for (var qp of validQueuePlayers) {
         totalElo += qp.elo;
       }
@@ -330,21 +356,25 @@ function handleSkilledMatchmaking() {
             additionalUsers[0].team = 1;
             var team = teams.find((t) => t.players.includes(u2.player.teg_id));
             if (team != undefined) {
-              for (var tp of team.players) {
-                if (tp != u2.player.teg_id) {
-                  var tu = users.find((userObj) => userObj.player.teg_id == tp);
-                  var tObj = matchmaking.getPlayerObject(tu, 1);
-                  if (
-                    tu != undefined &&
-                    !validQueuePlayers.includes(tObj) &&
-                    !additionalUsers.includes(tObj)
-                  )
-                    additionalUsers.push(tObj);
+              if (additionalUsers.length + team.players.length <= 3) {
+                for (var tp of team.players) {
+                  if (tp != u2.player.teg_id) {
+                    var tu = users.find(
+                      (userObj) => userObj.player.teg_id == tp
+                    );
+                    var tObj = matchmaking.getPlayerObject(tu, 1);
+                    if (
+                      tu != undefined &&
+                      !validQueuePlayers.includes(tObj) &&
+                      !additionalUsers.includes(tObj)
+                    )
+                      additionalUsers.push(tObj);
+                  }
                 }
               }
             }
           }
-          var totalMoreElo = 0;
+          var totalMoreElo = u2.player.onTeam ? 200 : 0;
           for (var qp of additionalUsers) {
             totalMoreElo += qp.elo;
           }
@@ -405,7 +435,7 @@ function updateMatchmaking() {
     var queueSize = 1;
     if (t.includes('p') && t != 'practice')
       queueSize = Number(t.replace('p', ''));
-    if (queueSize == 3) queueSize = 2; //Turns bots to 1v1
+    if (queueSize == 3) queueSize = 4; //Turns bots to 2v2
     var usersInQueue = users.filter(
       (u) => u.player.queue.type == t && u.player.stage == 1
     );
@@ -483,8 +513,8 @@ function startGame(players, type) {
   var queueSize = 1;
   if (type.includes('p') && type != 'practice')
     queueSize = Number(type.replace('p', ''));
-  if (queueSize == 3) queueSize = 2; //Turns bots to 1v1
-  var allTeams = matchmaking.getTeams(players, teams, queueSize / 2);
+  if (queueSize == 3) queueSize = 4; //Turns bots to 2v2
+  var allTeams = matchmaking.getRandomTeams(players, teams, queueSize / 2);
   console.log(allTeams);
   if (allTeams == undefined) return;
   var blue = allTeams.blue;
@@ -500,7 +530,6 @@ function startGame(players, type) {
       if (t != undefined) removeTeam(t);
     }
   }
-
   var queueObj = {
     type: type,
     players: playerIds,
@@ -510,6 +539,7 @@ function startGame(players, type) {
     ready: 0,
     max: queueSize,
     inGame: false,
+    endTime: Date.now() + 61 * 1000,
   };
 
   for (var bp of blue) {
@@ -618,9 +648,21 @@ function leaveTeam(socket, disconnected) {
   var team = teams.find((t) => t.players.includes(socket.player.teg_id));
   if (team != undefined) {
     declineInvite(team.team, socket.player.teg_id, team.type == 'custom');
-    if (team.stage != 0) leaveQueue(socket, false);
+    if (team.stage != 0) {
+      //leaveQueue(socket, false);
+      for (var u of users.filter((us) =>
+        team.players.includes(us.player.teg_id)
+      )) {
+        if (team.stage == 1) u.player.onTeam = false;
+        leaveQueue(u, false);
+        team.stage = 0;
+      }
+    }
     team.players = team.players.filter((tp) => tp != socket.player.teg_id);
-    if (team.team == socket.player.teg_id && team.stage == 0) {
+    console.log(
+      `TEAM: ${team.team} Socket: ${socket.player.teg_id} Stage: ${team.stage}`
+    );
+    if (team.team == socket.player.teg_id && team.stage <= 1) {
       safeSendAll(
         users.filter((u) => team.players.includes(u.player.teg_id)),
         'team_disband',
@@ -662,11 +704,21 @@ function joinQueue(sockets, type) {
   var queueSize = 1;
   if (type.includes('p') && type != 'practice')
     queueSize = Number(type.replace('p', ''));
-  if (queueSize == 3) queueSize = 2; //Turns bots to 1v1
+  if (queueSize == 3) queueSize = 4; //Turns bots to 2v2
   for (var s of sockets) {
-    s.player.stage = 1; //STAGE IS IN QUEUE
-    s.player.queue.started = Date.now();
-    s.player.queue.type = type;
+    if (
+      s.player.queueData.queueBan == -1 ||
+      s.player.queueData.queueBan <= Date.now()
+    ) {
+      s.player.stage = 1; //STAGE IS IN QUEUE
+      s.player.queue.started = Date.now();
+      s.player.queue.type = type;
+    } else {
+      var mins = (s.player.queueData.queueBan - Date.now()) / 1000 / 60;
+      sendCommand(s, 'team_disband', {
+        reason: `You are banned from queue \n for ${Math.round(mins)} minute(s)`,
+      }).catch(console.error);
+    }
   }
   if (
     !config.lobbyserver.matchmakingEnabled ||
@@ -682,7 +734,7 @@ function joinQueue(sockets, type) {
     users.push(matchmaking.createFakeUser(false));
     users.push(matchmaking.createFakeUser(false));
     users.push(matchmaking.createFakeUser(false));
-    */
+*/
     var currentQueue = matchmaking.searchForFullGame(
       users.filter((u) => u.player.queue.type == type && u.player.stage == 1),
       teams,
@@ -704,6 +756,37 @@ function joinQueue(sockets, type) {
         }
       }
     }
+  }
+}
+
+function handleDodge(socket) {
+  console.log(`${socket.player.name} DODGED!`);
+  socket.player.queueData.dodgeCount++;
+  if (socket.player.queueData.lastDodge < Date.now() - 1000 * 60 * 30)
+    socket.player.queueData.dodgeCount++;
+  socket.player.queueData.lastDodge = Date.now();
+  if (socket.player.queueData.dodgeCount >= 3) {
+    socket.player.queueData.queueBan =
+      Date.now() + 1000 * 60 * 30 * (1 + socket.player.queueData.timesOffended);
+    socket.player.queueData.timesOffended++;
+    var eloLoss = Math.round(
+      socket.player.elo * (-0.05 * socket.player.queueData.timesOffended)
+    );
+    dbOperations.handleQueueData(socket.player, playerCollection);
+    playerCollection
+      .updateOne(
+        { 'user.TEGid': socket.player.teg_id },
+        {
+          $inc: {
+            'player.elo': eloLoss,
+            'player.disconnects': socket.player.queueData.timesOffended,
+          },
+        }
+      )
+      .then(() => {
+        updateElo(socket);
+      })
+      .catch(console.error);
   }
 }
 
@@ -870,9 +953,13 @@ function acceptInvite(sender, recipient, custom) {
                   { players: teamObjs, team: team.team }
                 )
                   .then(() => {
-                    if (team.players.length == 3) {
+                    if (
+                      team.players.length == 3 ||
+                      (team.type.includes('3p') && team.players.length == 2)
+                    ) {
                       var act = team.type.split('_');
                       var type = act[act.length - 1];
+                      team.stage = 1;
                       joinQueue(
                         users.filter((u) =>
                           team.players.includes(u.player.teg_id)
@@ -1073,7 +1160,39 @@ function handleRequest(jsonString, socket) {
           teamPackage
         ).catch(console.error);
         if (queue.ready == queue.max) {
+          var trashGame = () => {
+            for (var qp of queue.players) {
+              var queueUser = users.find((u) => u.player.teg_id == qp);
+              if (queuePlayer != undefined) {
+                queuePlayer.player.queue = {
+                  type: null,
+                  started: -1,
+                  visual: 1,
+                };
+                queuePlayer.player.stage = 0;
+                sendCommand(queuePlayer, 'team_disband', {
+                  reason: 'error_send_room_fail',
+                }).catch(console.error);
+              }
+            }
+          };
+          var blueCharacters = [];
+          var purpleCharacters = [];
+          for (var bp of queue.blue) {
+            if (blueCharacters.includes(bp.avatar)) {
+              trashGame();
+              return;
+            } else blueCharacters.push(bp.avatar);
+          }
+
+          for (var pp of queue.purple) {
+            if (purpleCharacters.includes(pp.avatar)) {
+              trashGame();
+              return;
+            } else purpleCharacters.push(pp.avatar);
+          }
           queue.inGame = true;
+          queue.endTime = Date.now() + 30 * 1000;
           for (var qp of queue.players) {
             var queueUser = users.find((u) => u.player.teg_id == qp);
             if (queueUser != undefined) queueUser.player.stage = 3;
@@ -1205,6 +1324,16 @@ function handleRequest(jsonString, socket) {
       var team = teams.find((t) => t.team == jsonObject['payload'].team);
       var act = team.type.split('_');
       var type = act[act.length - 1];
+      /*
+      var fakeUser1 = matchmaking.createFakeUser(true);
+      var fakeUser2 = matchmaking.createFakeUser(true);
+      users.push(fakeUser1);
+      users.push(fakeUser2);
+      teams.push(matchmaking.createFakeTeam([fakeUser1.player.teg_id,fakeUser2.player.teg_id]));
+      users.push(matchmaking.createFakeUser(false));
+      users.push(matchmaking.createFakeUser(false));
+      users.push(matchmaking.createFakeUser(false));
+      */
       if (team != undefined) {
         joinQueue(
           users.filter((u) => team.players.includes(u.player.teg_id)),
@@ -1385,7 +1514,36 @@ function handleRequest(jsonString, socket) {
         onTeam: false,
         elo: 0,
         stage: 0, //0 = IN LOBBY, 1 = SEARCHING FOR GAME, 2 = CHAMP SELECT, 3 = IN GAME
+        queueData: {},
       };
+      playerCollection
+        .findOne({ 'user.TEGid': socket.player.teg_id })
+        .then((data) => {
+          if (data != undefined) {
+            socket.player.queueData = data.queue;
+            if (data.queue == undefined) {
+              socket.player.queueData = {
+                lastDodge: -1,
+                queueBan: -1,
+                dodgeCount: 0,
+                timesOffended: 0,
+              };
+            }
+            playerCollection
+              .updateOne(
+                { 'user.TEGid': data.user.TEGid },
+                { $set: { address: socket.remoteAddress } },
+                { upsert: true }
+              )
+              .then(() => {
+                console.log(
+                  `${socket.player.name} logged in with the address: ${socket.remoteAddress}`
+                );
+              })
+              .catch(console.error);
+          } else console.log('UNDEFINED');
+        })
+        .catch(console.error);
       users.push(socket);
       updateElo(socket);
     }
@@ -1457,16 +1615,30 @@ module.exports = class ATBPLobbyServer {
               userExists = true;
               if (user.player.onTeam) leaveTeam(user, true);
               else leaveQueue(user, true);
+              dbOperations.handleQueueData(user.player, playerCollection);
             }
           }
-          if (!userExists) console.log('Socket left with no player: ', socket);
           users = users.filter(
             (user) => !user._readableState.ended && user != socket
           );
         });
 
         socket.on('end', (err) => {
-          console.log(err);
+          var userExists = false;
+          for (var user of users) {
+            if (
+              (user._readableState != undefined && user._readableState.ended) ||
+              user == socket
+            ) {
+              userExists = true;
+              if (user.player.onTeam) leaveTeam(user, true);
+              else leaveQueue(user, true);
+              dbOperations.handleQueueData(user.player, playerCollection);
+            }
+          }
+          users = users.filter(
+            (user) => !user._readableState.ended && user != socket
+          );
         });
       });
 

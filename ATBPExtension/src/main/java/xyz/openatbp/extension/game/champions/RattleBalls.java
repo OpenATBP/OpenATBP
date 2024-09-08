@@ -12,6 +12,7 @@ import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.SkinData;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -79,6 +80,14 @@ public class RattleBalls extends UserActor {
                     JsonNode spellData = parentExt.getAttackData(avatar, "spell3");
                     a.addToDamageQueue(
                             this, (double) getSpellDamage(spellData) / 10d, spellData, true);
+                }
+            }
+            for (Projectile p : parentExt.getRoomHandler(room.getName()).getActiveProjectiles()) {
+                if (p.getClass() != LSP.LSPUltProjectile.class
+                        && p.getClass() != BMO.BMOUltProjectile.class
+                        && p.getTeam() != this.team
+                        && p.getLocation().distance(this.location) <= 2f) {
+                    p.destroy();
                 }
             }
         }

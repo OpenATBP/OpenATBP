@@ -241,6 +241,8 @@ public class Lemongrab extends UserActor {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
                 }
+                ExtensionCommands.actorAbilityResponse(
+                        parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
                 scheduleTask(
                         abilityRunnable(ability, spellData, cooldown, gCooldown, dest), W_DELAY);
                 break;
@@ -314,8 +316,7 @@ public class Lemongrab extends UserActor {
         @Override
         protected void spellW() {
             Runnable enableWCasting = () -> canCast[1] = true;
-            int delay = getReducedCooldown(cooldown) - W_CAST_DELAY;
-            scheduleTask(enableWCasting, delay);
+            scheduleTask(enableWCasting, W_CAST_DELAY + 1000);
             if (juice) {
                 ExtensionCommands.createWorldFX(
                         parentExt,
@@ -355,18 +356,16 @@ public class Lemongrab extends UserActor {
                     }
                 }
                 juice = false;
-                ExtensionCommands.actorAbilityResponse(
-                        parentExt,
-                        player,
-                        "w",
-                        true,
-                        hitAnything && !hitPlayer
-                                ? (int) Math.floor(getReducedCooldown(cooldown) * 0.7)
-                                : getReducedCooldown(cooldown),
-                        gCooldown);
-            } else
-                ExtensionCommands.actorAbilityResponse(
-                        parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
+                if (hitAnything && !hitPlayer) {
+                    ExtensionCommands.actorAbilityResponse(
+                            parentExt,
+                            player,
+                            "w",
+                            true,
+                            (int) (Math.floor(getReducedCooldown(cooldown) * 0.7) - W_DELAY),
+                            0);
+                }
+            }
         }
 
         @Override

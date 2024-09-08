@@ -33,21 +33,22 @@ public class PracticeRoomHandler extends RoomHandler {
         for (String key : towers1.keySet()) {
             towers.add(new Tower(parentExt, room, key, 1, towers1.get(key)));
         }
+        if (this.players.size() == 1) {
+            ExtensionCommands.createWorldFX(
+                    parentExt,
+                    room,
+                    "bot_ring",
+                    "fx_aggrorange_3",
+                    "bot_ring" + room,
+                    1000 * 60 * 15,
+                    (float) BOT_LOCATION.getX(),
+                    (float) BOT_LOCATION.getY(),
+                    false,
+                    1,
+                    0f);
 
-        ExtensionCommands.createWorldFX(
-                parentExt,
-                room,
-                "bot_ring",
-                "fx_aggrorange_3",
-                "bot_ring" + room,
-                1000 * 60 * 15,
-                (float) BOT_LOCATION.getX(),
-                (float) BOT_LOCATION.getY(),
-                false,
-                1,
-                0f);
-
-        finnBot = new Bot(parentExt, room, "finn", 1, BOT_LOCATION, 1);
+            finnBot = new Bot(parentExt, room, "finn", 1, BOT_LOCATION, 1);
+        }
     }
 
     @Override
@@ -174,6 +175,7 @@ public class PracticeRoomHandler extends RoomHandler {
             ExtensionCommands.gameOver(
                     parentExt, this.room, this.dcPlayers, winningTeam, false, false);
             // logChampionData(winningTeam);
+
             for (UserActor ua : this.players) {
                 if (ua.getTeam() == winningTeam) {
                     ExtensionCommands.playSound(

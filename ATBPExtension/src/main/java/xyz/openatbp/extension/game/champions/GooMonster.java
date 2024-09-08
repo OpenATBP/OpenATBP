@@ -90,7 +90,7 @@ public class GooMonster extends Monster {
                 String finalSound = "announcer/" + sound;
                 ExtensionCommands.playSound(parentExt, ua.getUser(), "global", finalSound);
 
-                if (ua.getTeam() == killerTeam && ua.getHealth() > 0) {
+                if (ua.getTeam() == killerTeam && ua.getHealth() > 0 && !ua.isDead()) {
                     double delta = ua.getPlayerStat("speed") * 0.1d;
                     ua.setHasGooBuff(true);
                     ua.setGooBuffStartTime(System.currentTimeMillis());

@@ -617,7 +617,7 @@ public class Lich extends UserActor {
         }
     }
 
-    private class LichCharm extends Projectile {
+    public class LichCharm extends Projectile {
 
         public LichCharm(
                 ATBPExtension parentExt,

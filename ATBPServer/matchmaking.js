@@ -179,7 +179,7 @@ module.exports = {
         teg_id: `fake-user-${Math.random() * 100}`,
         player: Math.floor(Math.random() * 10000),
         queue: {
-          type: '6p',
+          type: '3p',
           started: Date.now(),
           visual: 1,
         },
@@ -201,5 +201,35 @@ module.exports = {
       elo: user.player.elo,
       team: team,
     };
+  },
+  getRandomTeams: function (players, teams, teamSize) {
+    var returnVal = {
+      purple: [],
+      blue: [],
+    };
+    if (players.length == 1) {
+      returnVal.purple.push(players[0]);
+      return returnVal;
+    }
+    for (var p of players) {
+      if (p.team == 0) returnVal.purple.push(p);
+      else if (p.team == 1) returnVal.blue.push(p);
+    }
+    var unassignedPlayers = players.filter((p) => p.team == -1);
+    var availableTeam = -1;
+    if (returnVal.purple.length == teamSize) availableTeam = 1;
+    else if (returnVal.blue.length == teamSize) availableTeam = 0;
+    for (var up of unassignedPlayers) {
+      if (availableTeam == -1) {
+        var random = Math.random();
+        var teamToJoin = random > 0.5 ? 0 : 1;
+        if (teamToJoin == 0) returnVal.purple.push(up);
+        else returnVal.blue.push(up);
+        if (returnVal.purple.length == teamSize) availableTeam = 1;
+        else if (returnVal.blue.length == teamSize) availableTeam = 0;
+      } else if (availableTeam == 0) returnVal.purple.push(up);
+      else if (availableTeam == 1) returnVal.blue.push(up);
+    }
+    return returnVal;
   },
 };

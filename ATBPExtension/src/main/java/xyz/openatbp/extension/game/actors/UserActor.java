@@ -89,6 +89,23 @@ public class UserActor extends Actor {
         this.actorType = ActorType.PLAYER;
         this.backpack = u.getVariable("player").getSFSObjectValue().getUtfString("backpack");
         this.xpWorth = 25;
+
+        for (String k : this.stats.keySet()) {
+            if (k.contains("PerLevel")) {
+                String stat = k.replace("PerLevel", "");
+                double levelStat = this.stats.get(k);
+                if (k.equalsIgnoreCase("healthPerLevel")) {
+                    this.setHealth(
+                            (int) ((this.getMaxHealth() + levelStat) * this.getPHealth()),
+                            (int) (this.getMaxHealth() + levelStat));
+                } else if (k.contains("attackSpeed")) {
+                    this.increaseStat(stat, (levelStat * -1));
+                } else {
+                    this.increaseStat(stat, levelStat);
+                }
+            }
+        }
+
         Properties props = parentExt.getConfigProperties();
         movementDebug = Boolean.parseBoolean(props.getProperty("movementDebug", "false"));
         invincibleDebug = Boolean.parseBoolean(props.getProperty("invincibleDebug", "false"));
@@ -1539,12 +1556,18 @@ public class UserActor extends Actor {
             }
         }
         if (this.hasBackpackItem("junk_1_magic_nail")) addMagicNailStacks(a);
-        this.addXP(a.getXPWorth());
+        int additionalXP = 0;
+        if (a.getActorType() == ActorType.PLAYER) {
+            UserActor ua = (UserActor) a;
+            int levelDiff = ua.getLevel() - this.level;
+            if (levelDiff > 0) additionalXP = 15 * levelDiff;
+        }
+        this.addXP(a.getXPWorth() + additionalXP);
         // if (a.getActorType() == ActorType.PLAYER) this.updateXPWorth("kill");
         if (a.getActorType() == ActorType.TOWER) {
             for (UserActor ua : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                 if (ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) {
-                    ua.addXP(a.getXPWorth());
+                    ua.addXP(a.getXPWorth() + additionalXP);
                 }
             }
             return;

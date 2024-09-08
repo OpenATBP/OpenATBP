@@ -20,9 +20,9 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class Hunson extends UserActor {
-    private static final int PASSIVE_DURATION = 5000;
-    private static final int PASSIVE_ATTACKSPEED_DURATION = 5000;
-    private static final int PASSIVE_SPEED_DURATION = 5000;
+    private static final int PASSIVE_DURATION = 3500;
+    private static final int PASSIVE_ATTACKSPEED_DURATION = 3500;
+    private static final int PASSIVE_SPEED_DURATION = 3500;
     private static final double PASSIVE_SPEED_VALUE = 1d;
     private static final double PASSIVE_ATTACKSPEED_VALUE = 0.5d;
     private static final double Q_SLOW_VALUE = 0.1d;
@@ -44,6 +44,8 @@ public class Hunson extends UserActor {
     private long qStartTime = 0;
     private long ultStart = 0;
     private long wStartTime = 0;
+    private long passiveStartTime = 0;
+    private boolean canUsePassive = true;
     private List<Actor> fearedActors = new ArrayList<>();
 
     public Hunson(User u, ATBPExtension parentExt) {
@@ -83,7 +85,7 @@ public class Hunson extends UserActor {
             this.endUlt();
         }
         if (this.qActivated
-                && System.currentTimeMillis() - this.qStartTime >= 6000
+                && System.currentTimeMillis() - this.qStartTime >= 4500
                 && this.qUses > 0) {
             this.qUses = 0;
             int baseQCooldown = ChampionData.getBaseAbilityCooldown(this, 1);
@@ -115,10 +117,10 @@ public class Hunson extends UserActor {
     @Override
     public void attack(Actor a) {
         super.attack(a);
-        if (this.hasStatusEffect(a)
-                && a.getHealth() - this.getPlayerStat("attackDamage") > -5
-                && !this.passiveActivated) {
+        if (this.hasStatusEffect(a) && !this.passiveActivated && this.canUsePassive) {
             this.passiveActivated = true;
+            this.canUsePassive = false;
+            this.passiveStartTime = System.currentTimeMillis();
             this.attackCooldown = 500;
             ExtensionCommands.playSound(
                     this.parentExt,
@@ -159,7 +161,8 @@ public class Hunson extends UserActor {
             double delta = this.getStat("attackSpeed") * -PASSIVE_ATTACKSPEED_VALUE;
             this.addEffect("attackSpeed", delta, PASSIVE_ATTACKSPEED_DURATION);
             this.addEffect("speed", PASSIVE_SPEED_VALUE, PASSIVE_SPEED_DURATION);
-            scheduleTask(abilityRunnable(4, null, 0, 0, null), PASSIVE_DURATION);
+            int cooldown = ChampionData.getBaseAbilityCooldown(this, 4);
+            scheduleTask(abilityRunnable(4, null, cooldown, 0, null), PASSIVE_DURATION);
         }
     }
 
@@ -254,7 +257,8 @@ public class Hunson extends UserActor {
                         getReducedCooldown(cooldown),
                         gCooldown);
                 scheduleTask(
-                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), castDelay);
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, this.location),
+                        W_CAST_DELAY);
                 break;
             case 3:
                 this.canCast[2] = false;
@@ -361,9 +365,9 @@ public class Hunson extends UserActor {
                 wStartTime = System.currentTimeMillis();
 
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
-                for (Actor a : Champion.getActorsInRadius(handler, location, 2.5f)) {
+                for (Actor a : Champion.getActorsInRadius(handler, dest, 2.5f)) {
                     if (isNonStructure(a) && !fearedActors.contains(a)) {
-                        a.handleFear(location, W_FEAR_DURATION);
+                        a.handleFear(dest, W_FEAR_DURATION);
                         fearedActors.add(a);
                         ExtensionCommands.createActorFX(
                                 parentExt,
@@ -414,6 +418,10 @@ public class Hunson extends UserActor {
         @Override
         protected void spellPassive() {
             passiveActivated = false;
+            ExtensionCommands.actorAbilityResponse(
+                    parentExt, player, "passive", true, getReducedCooldown(cooldown), 0);
+            Runnable allowPassive = () -> canUsePassive = true;
+            scheduleTask(allowPassive, getReducedCooldown(cooldown));
         }
     }
 

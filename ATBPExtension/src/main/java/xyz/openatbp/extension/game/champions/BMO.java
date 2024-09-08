@@ -371,12 +371,7 @@ public class BMO extends UserActor {
         ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "run", 500, false);
         int baseCooldown = ChampionData.getBaseAbilityCooldown(this, 2);
         ExtensionCommands.actorAbilityResponse(
-                this.parentExt,
-                this.player,
-                "w",
-                true,
-                getReducedCooldown(baseCooldown),
-                baseCooldown);
+                this.parentExt, this.player, "w", true, getReducedCooldown(baseCooldown), 0);
     }
 
     private void wEnd(int cooldown, int gCooldown) {
@@ -465,7 +460,7 @@ public class BMO extends UserActor {
         protected void spellPassive() {}
     }
 
-    private class BMOUltProjectile extends Projectile {
+    public class BMOUltProjectile extends Projectile {
         private List<Actor> victims;
         private double damageReduction = 0d;
 
@@ -489,7 +484,7 @@ public class BMO extends UserActor {
             ExtensionCommands.playSound(
                     parentExt, room, "", "akubat_projectileHit1", victim.getLocation());
             if (ultSlowActive) applySlow(victim);
-            this.damageReduction += 0.3d;
+            this.damageReduction += 0.15d;
             if (this.damageReduction > 0.7d) this.damageReduction = 0.7d;
         }
 

@@ -19,6 +19,8 @@ var newUserFunction = function (
         for (var item of JSON.parse(data)) {
           if (item.type == 'BACKPACK') inventoryArray.push(item.id);
         }
+        if (displayName.charAt(displayName.length - 1) == ' ')
+          displayName = displayName.substring(0, displayName.length - 1);
         var playerFile = {
           user: {
             TEGid: `${username.toLowerCase()}`,
@@ -60,6 +62,13 @@ var newUserFunction = function (
           betaTester: false, //TODO: Remove when open beta starts
           forgot: forgot,
           requests: [],
+          address: 'newAccount',
+          queue: {
+            lastDodge: -1,
+            queueBan: -1,
+            dodgeCount: 0,
+            timesOffended: 0,
+          },
         };
         const opt = { upsert: true };
         const update = { $set: playerFile };
@@ -78,6 +87,19 @@ var newUserFunction = function (
   });
 };
 
+var handleQueueData = function (player, playerDatabase) {
+  if (player != undefined) {
+    playerDatabase
+      .updateOne(
+        { 'user.TEGid': player.teg_id },
+        { $set: { queue: player.queueData } },
+        { upsert: true }
+      )
+      .catch(console.error);
+  }
+};
+
 module.exports = {
   createNewUser: newUserFunction,
+  handleQueueData: handleQueueData,
 };

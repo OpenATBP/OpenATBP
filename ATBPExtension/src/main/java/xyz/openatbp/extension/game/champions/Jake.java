@@ -5,9 +5,11 @@ import java.awt.geom.Point2D;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
@@ -22,6 +24,7 @@ public class Jake extends UserActor {
     private static final double PASSIVE_ATTACKDAMAGE_VALUE = 0.4d;
     private static final double PASSIVE_SLOW_VALUE = 0.5d;
     private static final int PASSIVE_SLOW_DURATION = 1500;
+    private static final int PASSIVE_ROOT_DURATION = 1000;
     private static final int Q_RESTRAINT_TIME = 1600;
     private static final int Q_STUN_DURATION = 2000;
     private static final int Q_UNLOCK_SKILLS_DELAY = 500;
@@ -47,7 +50,7 @@ public class Jake extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if (grabActive && hasInterrupingCC()) {
+        if (grabActive && (hasInterrupingCC() || this.dead)) {
             blockAbilities = false;
             resetGrab();
             if (!hasMovementCC()) canMove = true;
@@ -325,7 +328,7 @@ public class Jake extends UserActor {
                     RoomHandler handler = parentExt.getRoomHandler(room.getName());
                     for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
                         if (this.isNonStructure(a)) {
-                            a.knockback(this.location, 5f);
+                            a.knockback(this.location, 3.5f);
                             a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
                         }
                     }
@@ -422,17 +425,27 @@ public class Jake extends UserActor {
     }
 
     private void doPassive() {
-        lastPassiveTime.put(target.getId(), System.currentTimeMillis());
-        JsonNode attackData = this.parentExt.getAttackData("jake", "spell4");
-        target.addToDamageQueue(
-                this,
-                getPlayerStat("attackDamage") * PASSIVE_ATTACKDAMAGE_VALUE,
-                attackData,
-                false);
-        target.addState(ActorState.SLOWED, PASSIVE_SLOW_VALUE, PASSIVE_SLOW_DURATION);
-        if (!this.avatar.contains("cake"))
-            ExtensionCommands.playSound(
-                    this.parentExt, this.room, this.id, "vo/vo_jake_passive_1", this.location);
+        Runnable passive =
+                () -> {
+                    lastPassiveTime.put(target.getId(), System.currentTimeMillis());
+                    JsonNode attackData = this.parentExt.getAttackData("jake", "spell4");
+                    target.addToDamageQueue(
+                            this,
+                            getPlayerStat("attackDamage") * PASSIVE_ATTACKDAMAGE_VALUE,
+                            attackData,
+                            false);
+                    target.addState(ActorState.ROOTED, 0, PASSIVE_ROOT_DURATION);
+                    if (!this.avatar.contains("cake"))
+                        ExtensionCommands.playSound(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                "vo/vo_jake_passive_1",
+                                this.location);
+                };
+        SmartFoxServer.getInstance()
+                .getTaskScheduler()
+                .schedule(passive, BASIC_ATTACK_DELAY, TimeUnit.MILLISECONDS);
     }
 
     private JakeAbilityHandler abilityHandler(

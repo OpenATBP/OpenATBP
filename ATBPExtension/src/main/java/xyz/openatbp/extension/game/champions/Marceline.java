@@ -472,24 +472,25 @@ public class Marceline extends UserActor {
                 updateStatMenu("healthRegen");
 
                 if (canDoUltAttack) {
+                    Marceline.this.addState(ActorState.IMMUNITY, 0d, E_IMMUNITY_DURATION);
+                    setState(ActorState.CLEANSED, true);
+                    Marceline.this.cleanseEffects();
+                    ExtensionCommands.createActorFX(
+                            parentExt,
+                            room,
+                            id,
+                            "statusEffect_immunity",
+                            E_IMMUNITY_DURATION,
+                            id + "_ultImmunity",
+                            true,
+                            "displayBar",
+                            false,
+                            false,
+                            team);
                     if (form == Form.BEAST) { // she gets immunity only if ult is not interrupted
-                        Marceline.this.addState(ActorState.IMMUNITY, 0d, E_IMMUNITY_DURATION);
-                        setState(ActorState.CLEANSED, true);
-                        Marceline.this.cleanseEffects();
                         String eToBeastVO = SkinData.getMarcelineEBeastVO(avatar);
                         ExtensionCommands.playSound(parentExt, room, id, eToBeastVO, location);
-                        ExtensionCommands.createActorFX(
-                                parentExt,
-                                room,
-                                id,
-                                "statusEffect_immunity",
-                                E_IMMUNITY_DURATION,
-                                id + "_ultImmunity",
-                                true,
-                                "displayBar",
-                                false,
-                                false,
-                                team);
+
                     } else {
                         String eToVampireVO = SkinData.getMarcelineEVampireVO(avatar);
                         ExtensionCommands.playSound(parentExt, room, id, eToVampireVO, location);
