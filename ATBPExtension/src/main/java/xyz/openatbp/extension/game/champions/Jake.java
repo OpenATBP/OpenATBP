@@ -231,18 +231,18 @@ public class Jake extends UserActor {
     @Override
     public void attack(Actor a) {
         super.attack(a);
-        if (isNonStructure(target)) {
+        if (isNonStructure(a)) {
             if (!lastPassiveTime.isEmpty()) {
-                if (lastPassiveTime.containsKey(target.getId())) {
-                    if (System.currentTimeMillis() - lastPassiveTime.get(target.getId())
+                if (lastPassiveTime.containsKey(a.getId())) {
+                    if (System.currentTimeMillis() - lastPassiveTime.get(a.getId())
                             >= PASSIVE_PER_TARGET_CD) {
-                        doPassive();
+                        doPassive(a);
                     }
                 } else {
-                    doPassive();
+                    doPassive(a);
                 }
             } else {
-                doPassive();
+                doPassive(a);
             }
         }
     }
@@ -424,7 +424,7 @@ public class Jake extends UserActor {
         offsetDistance = 1;
     }
 
-    private void doPassive() {
+    private void doPassive(Actor target) {
         Runnable passive =
                 () -> {
                     lastPassiveTime.put(target.getId(), System.currentTimeMillis());
