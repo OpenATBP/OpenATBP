@@ -116,7 +116,7 @@ public class PracticeRoomHandler extends RoomHandler {
     public Point2D getAltarLocation(int altar) {
         double altar_x = 0d;
         double altar_y;
-        altar_y = altar == 0 ? MapData.L1_AALTAR_Z : MapData.L1_DALTAR_Z;
+        altar_y = altar == 1 ? MapData.L1_AALTAR_Z : MapData.L1_DALTAR_Z;
         return new Point2D.Double(altar_x, altar_y);
     }
 

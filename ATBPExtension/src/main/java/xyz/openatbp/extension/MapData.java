@@ -296,7 +296,7 @@ public class MapData {
         float z = (float) 0.0;
         String actorID = "altar_" + type;
         if (roomGroup.equals("Tutorial") || roomGroup.equals("Practice")) {
-            if (type == 1) {
+            if (type == 0) {
                 z = L1_DALTAR_Z;
                 actorID = "altar_1";
             } else {

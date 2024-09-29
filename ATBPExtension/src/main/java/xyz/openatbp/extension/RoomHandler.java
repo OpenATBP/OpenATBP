@@ -41,8 +41,8 @@ public abstract class RoomHandler implements Runnable {
     protected int mSecondsRan = 0;
     protected int secondsRan = 0;
     protected int[] altarStatus = {0, 0, 0};
-    protected int[] purpleFastCaptureCounter = {0, 0, 0};
-    protected int[] blueFastCaptureCounter = {0, 0, 0};
+    protected int[] purpleInstantCaptureCounter = {0, 0, 0};
+    protected int[] blueInstantCaptureCounter = {0, 0, 0};
     protected HashMap<String, Integer> cooldowns = new HashMap<>();
     protected HashMap<String, Long> destroyedIds = new HashMap<>();
     protected List<String> createdActorIds = new ArrayList<>();
@@ -418,8 +418,8 @@ public abstract class RoomHandler implements Runnable {
                                     "sfx_altar_" + currentStage,
                                     altarLocation);
                             this.altarStatus[i]--;
-                            if (this.purpleFastCaptureCounter[i] > 0)
-                                this.purpleFastCaptureCounter[i] = 0;
+                            if (this.purpleInstantCaptureCounter[i] > 0)
+                                this.purpleInstantCaptureCounter[i] = 0;
                             break;
 
                         case "blueDecrease":
@@ -432,19 +432,29 @@ public abstract class RoomHandler implements Runnable {
                                     "sfx_altar_" + currentStage,
                                     altarLocation);
                             this.altarStatus[i]++;
-                            if (this.blueFastCaptureCounter[i] > 0)
-                                this.blueFastCaptureCounter[i] = 0;
+                            if (this.blueInstantCaptureCounter[i] > 0)
+                                this.blueInstantCaptureCounter[i] = 0;
+                            break;
+
+                        case "purpleFasterIncrease":
+                            this.altarStatus[i] += 2;
+                            createAltarFX(i, currentStage, 2, FX_DURATION, altarLocation, 0);
+                            break;
+
+                        case "blueFasterIncrease":
+                            this.altarStatus[i] -= 2;
+                            createAltarFX(i, currentStage, 2, FX_DURATION, altarLocation, 1);
                             break;
 
                         case "purpleCounterIncrease":
-                            this.purpleFastCaptureCounter[i]++;
+                            this.purpleInstantCaptureCounter[i]++;
                             break;
 
                         case "blueCounterIncrease":
-                            this.blueFastCaptureCounter[i]++;
+                            this.blueInstantCaptureCounter[i]++;
                             break;
 
-                        case "purpleFastCapture":
+                        case "purpleInstantCapture":
                             deficit = MAX_STAGE - currentStage;
                             this.altarStatus[i] += deficit;
                             ExtensionCommands.playSound(
@@ -463,7 +473,7 @@ public abstract class RoomHandler implements Runnable {
                                     0);
                             break;
 
-                        case "blueFastCapture":
+                        case "blueInstantCapture":
                             deficit = (MAX_STAGE - currentStage) * -1;
                             this.altarStatus[i] += deficit;
                             ExtensionCommands.playSound(
@@ -484,46 +494,12 @@ public abstract class RoomHandler implements Runnable {
 
                         case "purpleIncrease":
                             this.altarStatus[i]++;
-                            ExtensionCommands.createActorFX(
-                                    this.parentExt,
-                                    this.room,
-                                    "altar_" + i,
-                                    "fx_altar_" + (currentStage + 1),
-                                    FX_DURATION,
-                                    "altar_" + i + (currentStage + 1),
-                                    false,
-                                    "Bip001",
-                                    false,
-                                    true,
-                                    0);
-                            ExtensionCommands.playSound(
-                                    this.parentExt,
-                                    this.room,
-                                    "",
-                                    "sfx_altar_" + (currentStage + 1),
-                                    altarLocation);
+                            createAltarFX(i, currentStage, 1, FX_DURATION, altarLocation, 0);
                             break;
 
                         case "blueIncrease":
                             this.altarStatus[i]--;
-                            ExtensionCommands.createActorFX(
-                                    this.parentExt,
-                                    this.room,
-                                    "altar_" + i,
-                                    "fx_altar_" + (currentStage + 1),
-                                    FX_DURATION,
-                                    "altar_" + i + (currentStage + 1),
-                                    false,
-                                    "Bip001",
-                                    false,
-                                    true,
-                                    1);
-                            ExtensionCommands.playSound(
-                                    this.parentExt,
-                                    this.room,
-                                    "",
-                                    "sfx_altar_" + (currentStage + 1),
-                                    altarLocation);
+                            createAltarFX(i, currentStage, 1, FX_DURATION, altarLocation, 1);
                             break;
                     }
                     if (Math.abs(this.altarStatus[i]) >= 5) {
@@ -540,9 +516,10 @@ public abstract class RoomHandler implements Runnable {
                         this.parentExt
                                 .getTaskScheduler()
                                 .schedule(captureAltar, 400, TimeUnit.MILLISECONDS);
-                        if (this.purpleFastCaptureCounter[i] > 0)
-                            this.purpleFastCaptureCounter[i] = 0;
-                        if (this.blueFastCaptureCounter[i] > 0) this.blueFastCaptureCounter[i] = 0;
+                        if (this.purpleInstantCaptureCounter[i] > 0)
+                            this.purpleInstantCaptureCounter[i] = 0;
+                        if (this.blueInstantCaptureCounter[i] > 0)
+                            this.blueInstantCaptureCounter[i] = 0;
                     }
                 }
             }
@@ -550,7 +527,8 @@ public abstract class RoomHandler implements Runnable {
     }
 
     private String determineAltarAction(int altarIndex) {
-        // hierarchy: fast status decrease, status decrease, fast capture/counter increase, status
+        // hierarchy: fast status decrease, status decrease, faster increase, instant counter
+        // increase, instant capture, status
         // increase
         Point2D altarLocation = getAltarLocation(altarIndex);
         List<UserActor> uasInArea = Champion.getUserActorsInRadius(this, altarLocation, 2);
@@ -568,8 +546,8 @@ public abstract class RoomHandler implements Runnable {
         int purpleCount = purplePlayers.size();
         int blueCount = bluePlayers.size();
         int status = this.altarStatus[altarIndex];
-        int purpleCounter = this.purpleFastCaptureCounter[altarIndex];
-        int blueCounter = this.blueFastCaptureCounter[altarIndex];
+        int purpleCounter = this.purpleInstantCaptureCounter[altarIndex];
+        int blueCounter = this.blueInstantCaptureCounter[altarIndex];
 
         if (purpleCount - blueCount > 1 && status < 0) {
             return "purpleFastDecrease";
@@ -589,10 +567,16 @@ public abstract class RoomHandler implements Runnable {
             return "blueDecrease";
         }
 
-        if (purpleCount - blueCount > 1 && status >= 0) {
-            return purpleCounter < 1 ? "purpleCounterIncrease" : "purpleFastCapture";
-        } else if (blueCount - purpleCount > 1 && status <= 0) {
-            return blueCounter < 1 ? "blueCounterIncrease" : "blueFastCapture";
+        if (purpleCount - blueCount > 1 && status > 0) {
+            return "purpleFasterIncrease";
+        } else if (blueCount - purpleCount > 1 && status < 0) {
+            return "blueFasterIncrease";
+        }
+
+        if (purpleCount - blueCount > 1 && status == 0) {
+            return purpleCounter < 1 ? "purpleCounterIncrease" : "purpleInstantCapture";
+        } else if (blueCount - purpleCount > 1 && status == 0) {
+            return blueCounter < 1 ? "blueCounterIncrease" : "blueInstantCapture";
         }
 
         if (purpleCount - blueCount == 1) {
@@ -604,16 +588,41 @@ public abstract class RoomHandler implements Runnable {
         return "";
     }
 
+    private void createAltarFX(
+            int altarIndex,
+            int currentStage,
+            int increment,
+            int fxDuration,
+            Point2D altarLocation,
+            int team) {
+        int cappedFxStage = Math.min(currentStage + increment, 5);
+        // if current stage + increment is bigger than 5, default to 5 to create proper FX
+        ExtensionCommands.createActorFX(
+                this.parentExt,
+                this.room,
+                "altar_" + altarIndex,
+                "fx_altar_" + cappedFxStage,
+                fxDuration,
+                "altar_" + altarIndex + cappedFxStage,
+                false,
+                "Bip001",
+                false,
+                true,
+                team);
+        ExtensionCommands.playSound(
+                this.parentExt, this.room, "", "sfx_altar_" + cappedFxStage, altarLocation);
+    }
+
     private void resetAltar(int altarIndex) {
         int currentStage = Math.abs(this.altarStatus[altarIndex]);
         for (int i = 1; i <= currentStage; i++) {
             ExtensionCommands.removeFx(this.parentExt, this.room, ("altar_" + altarIndex) + i);
         }
         this.altarStatus[altarIndex] = 0;
-        if (this.purpleFastCaptureCounter[altarIndex] > 0)
-            this.purpleFastCaptureCounter[altarIndex] = 0;
-        if (this.blueFastCaptureCounter[altarIndex] > 0)
-            this.blueFastCaptureCounter[altarIndex] = 0;
+        if (this.purpleInstantCaptureCounter[altarIndex] > 0)
+            this.purpleInstantCaptureCounter[altarIndex] = 0;
+        if (this.blueInstantCaptureCounter[altarIndex] > 0)
+            this.blueInstantCaptureCounter[altarIndex] = 0;
     }
 
     public void captureAltar(int i, int team, String altarId) {
