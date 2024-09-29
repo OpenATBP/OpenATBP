@@ -39,6 +39,7 @@ public class Marceline extends UserActor {
     private long vampireWStartTime = 0;
     private long bestWStartTime = 0;
     private boolean eUsed = false;
+    private boolean hadCCDuringECast = false;
 
     private enum Form {
         BEAST,
@@ -120,7 +121,7 @@ public class Marceline extends UserActor {
             ExtensionCommands.playSound(
                     this.parentExt, this.player, this.id, "marceline_regen_loop", this.location);
         }
-        if (this.eUsed) this.canDoUltAttack = !this.hasInterrupingCC() && this.getHealth() > 0;
+        checkForDisablingUltAttack();
     }
 
     @Override
@@ -191,6 +192,8 @@ public class Marceline extends UserActor {
             Point2D dest) {
         switch (ability) {
             case 1:
+                ExtensionCommands.actorAbilityResponse(
+                        parentExt, player, "passive", true, 50000, 0);
                 this.canCast[0] = false;
                 try {
                     this.stopMoving(castDelay);
@@ -357,6 +360,14 @@ public class Marceline extends UserActor {
         }
     }
 
+    private void checkForDisablingUltAttack() {
+        if (eUsed && !hadCCDuringECast && hasInterrupingCC()) {
+            canDoUltAttack = false;
+            hadCCDuringECast = true;
+            // disable ult attack if player was cc'd even for a brief moment during cast
+        }
+    }
+
     private class MarcelineAttack implements Runnable {
 
         Actor target;
@@ -510,6 +521,8 @@ public class Marceline extends UserActor {
                     }
                 } else {
                     canMove = true;
+                    hadCCDuringECast = false;
+                    canDoUltAttack = true;
                     ExtensionCommands.playSound(
                             parentExt, room, id, "sfx_skill_interrupted", location);
                 }

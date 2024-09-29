@@ -148,10 +148,12 @@ public class Lich extends UserActor {
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
         super.handleKill(a, attackData);
-        if (attackData.has("spellType")
-                && (attackData.get("spellType").asText().equalsIgnoreCase("spell1")
-                        || attackData.get("spellType").asText().equalsIgnoreCase("passive")))
-            this.increaseStat("spellDamage", 1);
+        if (attackData.has("spellName")) {
+            String sn = attackData.get("spellName").asText();
+            if (sn.contains("1") || sn.contains("4")) {
+                this.increaseStat("spellDamage", 1);
+            }
+        }
     }
 
     @Override
