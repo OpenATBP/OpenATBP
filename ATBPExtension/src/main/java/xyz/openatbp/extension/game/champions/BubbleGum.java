@@ -127,23 +127,6 @@ public class BubbleGum extends UserActor {
     public void attack(Actor a) {
         if (this.attackCooldown == 0) {
             this.applyStopMovingDuringAttack();
-            if (this.passiveAmmunition > 0
-                    && a.getActorType()
-                            == ActorType.PLAYER) { // TODO: Applying the passive here feels wrong
-                this.passiveAmmunition--;
-                this.passiveTimeStamp = System.currentTimeMillis();
-                double delta = a.getStat("attackSpeed") * PASSIVE_ATTACKSPEED_VALUE;
-                if (passiveVictims.containsKey(a.getId())) {
-                    passiveVictims.put(a.getId(), passiveVictims.get(a.getId()) + 1);
-                    if (passiveVictims.get(a.getId()) == 3) {
-                        a.addState(ActorState.SLOWED, 0.25, PASSIVE_EFFECT_DURATION / 2);
-                        passiveVictims = new HashMap<>();
-                    }
-                } else passiveVictims.put(a.getId(), 1);
-                a.addEffect("attackSpeed", delta, PASSIVE_EFFECT_DURATION);
-                handlePassiveStatusIcons(passiveAmmunition);
-                if (this.passiveAmmunition == 0) passiveVictims = new HashMap<>();
-            }
             String projectile = "bubblegum_projectile";
             String emit = SkinData.getBubbleGumBasicAttackEmit(avatar);
             PassiveAttack passiveAttack = new PassiveAttack(this, a, this.handleAttack(a));
@@ -413,6 +396,24 @@ public class BubbleGum extends UserActor {
         public void run() {
             double damage = this.attacker.getPlayerStat("attackDamage");
             if (crit) damage *= 2;
+            if (BubbleGum.this.passiveAmmunition > 0
+                    && this.target.getActorType()
+                            == ActorType.PLAYER) { // TODO: Applying the passive here feels wrong
+                BubbleGum.this.passiveAmmunition--;
+                BubbleGum.this.passiveTimeStamp = System.currentTimeMillis();
+                double delta = this.target.getStat("attackSpeed") * PASSIVE_ATTACKSPEED_VALUE;
+                if (passiveVictims.containsKey(this.target.getId())) {
+                    passiveVictims.put(
+                            this.target.getId(), passiveVictims.get(this.target.getId()) + 1);
+                    if (passiveVictims.get(this.target.getId()) == 3) {
+                        this.target.addState(ActorState.SLOWED, 0.25, PASSIVE_EFFECT_DURATION / 2);
+                        passiveVictims = new HashMap<>();
+                    }
+                } else passiveVictims.put(this.target.getId(), 1);
+                this.target.addEffect("attackSpeed", delta, PASSIVE_EFFECT_DURATION);
+                handlePassiveStatusIcons(passiveAmmunition);
+                if (BubbleGum.this.passiveAmmunition == 0) passiveVictims = new HashMap<>();
+            }
             new Champion.DelayedAttack(
                             parentExt, this.attacker, this.target, (int) damage, "basicAttack")
                     .run();

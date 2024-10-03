@@ -120,7 +120,8 @@ public class Marceline extends UserActor {
             ExtensionCommands.playSound(
                     this.parentExt, this.player, this.id, "marceline_regen_loop", this.location);
         }
-        if (this.eUsed) this.canDoUltAttack = !this.hasInterrupingCC() && this.getHealth() > 0;
+        if (this.eUsed)
+            this.canDoUltAttack = !this.hasInterrupingCC() && this.getHealth() > 0 && !this.dead;
     }
 
     @Override
@@ -471,7 +472,7 @@ public class Marceline extends UserActor {
                 }
                 updateStatMenu("healthRegen");
 
-                if (canDoUltAttack) {
+                if (canDoUltAttack && !dead) {
                     Marceline.this.addState(ActorState.IMMUNITY, 0d, E_IMMUNITY_DURATION);
                     setState(ActorState.CLEANSED, true);
                     Marceline.this.cleanseEffects();
@@ -497,7 +498,8 @@ public class Marceline extends UserActor {
                     }
 
                     RoomHandler handler = parentExt.getRoomHandler(room.getName());
-                    for (Actor a : Champion.getActorsInRadius(handler, dest, 3)) {
+                    for (Actor a :
+                            Champion.getActorsInRadius(handler, Marceline.this.location, 3)) {
                         if (isNonStructure(a)) {
                             double damage = getSpellDamage(spellData);
                             a.addToDamageQueue(Marceline.this, damage, spellData, false);

@@ -188,6 +188,7 @@ module.exports = {
         stage: 1,
         fake: true,
       },
+      _readableState: { ended: false },
     };
   },
   createFakeTeam: function (players) {

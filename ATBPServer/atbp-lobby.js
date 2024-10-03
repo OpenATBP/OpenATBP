@@ -153,8 +153,10 @@ function leaveQueue(socket, disconnected) {
       console.log('IN GAME!');
       var queue = queues.find((q) => q.players.includes(socket.player.teg_id));
       if (queue != undefined) {
-        if (queue.type == '6p' && Date.now() < queue.endTime)
+        if (queue.type == '6p' && Date.now() < queue.endTime) {
           handleDodge(socket);
+          queue.endTime = -1;
+        }
         queue.players = queue.players.filter((p) => p != socket.player.teg_id);
       }
       queues = queues.filter((q) => q.players.length > 0);
@@ -514,7 +516,7 @@ function startGame(players, type) {
   if (type.includes('p') && type != 'practice')
     queueSize = Number(type.replace('p', ''));
   if (queueSize == 3) queueSize = 4; //Turns bots to 2v2
-  var allTeams = matchmaking.getRandomTeams(players, teams, queueSize / 2);
+  var allTeams = matchmaking.getTeams(players, teams, queueSize / 2);
   console.log(allTeams);
   if (allTeams == undefined) return;
   var blue = allTeams.blue;
@@ -649,27 +651,34 @@ function leaveTeam(socket, disconnected) {
   if (team != undefined) {
     declineInvite(team.team, socket.player.teg_id, team.type == 'custom');
     if (team.stage != 0) {
+      //If team is not in team creation screen
       //leaveQueue(socket, false);
       for (var u of users.filter((us) =>
         team.players.includes(us.player.teg_id)
       )) {
-        if (team.stage == 1) u.player.onTeam = false;
-        leaveQueue(u, false);
-        team.stage = 0;
+        if (team.stage == 2) {
+          //If team is in champ select, set all players to not be on team
+          u.player.onTeam = false;
+        } else if (team.stage == 1) {
+          leaveQueue(u, false);
+        }
       }
+      team.stage = 0;
     }
     team.players = team.players.filter((tp) => tp != socket.player.teg_id);
     console.log(
       `TEAM: ${team.team} Socket: ${socket.player.teg_id} Stage: ${team.stage}`
     );
     if (team.team == socket.player.teg_id && team.stage <= 1) {
+      //If party leader leaves and team is in team select or queue
       safeSendAll(
         users.filter((u) => team.players.includes(u.player.teg_id)),
         'team_disband',
-        { reason: 'error_lobby_teamLeader' }
-      ).catch(console.error);
+        { reason: 'error_lobby_teamLeader' } //Disband team
+      ).catch(console.error); //TODO: May need to reset team data for the users?
       teams = teams.filter((t) => t.team != socket.player.teg_id);
     } else if (team.team != socket.player.teg_id) {
+      //If it's not the team leader
       if (team.type == 'custom') {
         updateCustomGame(team, socket, -2);
       } else {
@@ -930,6 +939,17 @@ function acceptInvite(sender, recipient, custom) {
         );
         declineAllInvites(recipient);
         if (!custom) {
+          if (
+            senderUser.player.queueData.queueBan != -1 &&
+            senderUser.player.queueData.queueBan > Date.now()
+          ) {
+            var mins =
+              (senderUser.player.queueData.queueBan - Date.now()) / 1000 / 60;
+            sendCommand(senderUser, 'team_disband', {
+              reason: `You are banned from queue \n for ${Math.round(mins)} minute(s)`,
+            }).catch(console.error);
+            return;
+          }
           if (team.players.length < 3 && team.stage == 0) {
             recipientUser.player.onTeam = true;
             team.players.push(recipient);
