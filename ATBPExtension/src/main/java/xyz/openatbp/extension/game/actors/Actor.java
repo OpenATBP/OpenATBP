@@ -13,6 +13,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.champions.IceKing;
 import xyz.openatbp.extension.pathfinding.MovementManager;
@@ -467,16 +468,12 @@ public abstract class Actor {
             if (this.damaged(damager, (int) damage, attackData)) {
                 if (damager.getId().contains("turret") || damager.getId().contains("skully")) {
                     int enemyTeam = damager.getTeam() == 0 ? 1 : 0;
+                    RoomHandler rh = parentExt.getRoomHandler(room.getName());
+
                     if (damager.getId().contains("turret")) {
-                        damager =
-                                this.parentExt
-                                        .getRoomHandler(this.room.getName())
-                                        .getEnemyChampion(enemyTeam, "princessbubblegum");
+                        damager = rh.getEnemyChampion(enemyTeam, "princessbubblegum");
                     } else if (damager.getId().contains("skully")) {
-                        damager =
-                                this.parentExt
-                                        .getRoomHandler(this.room.getName())
-                                        .getEnemyChampion(enemyTeam, "lich");
+                        damager = rh.getEnemyChampion(enemyTeam, "lich");
                     }
                 }
                 damager.handleKill(this, attackData);

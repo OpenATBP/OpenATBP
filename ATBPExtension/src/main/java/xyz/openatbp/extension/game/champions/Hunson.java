@@ -418,10 +418,9 @@ public class Hunson extends UserActor {
         @Override
         protected void spellPassive() {
             passiveActivated = false;
-            ExtensionCommands.actorAbilityResponse(
-                    parentExt, player, "passive", true, getReducedCooldown(cooldown), 0);
+            ExtensionCommands.actorAbilityResponse(parentExt, player, "passive", true, cooldown, 0);
             Runnable allowPassive = () -> canUsePassive = true;
-            scheduleTask(allowPassive, getReducedCooldown(cooldown));
+            scheduleTask(allowPassive, cooldown);
         }
     }
 
