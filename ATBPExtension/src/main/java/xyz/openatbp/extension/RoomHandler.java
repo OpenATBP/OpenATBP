@@ -536,9 +536,9 @@ public abstract class RoomHandler implements Runnable {
         List<UserActor> bluePlayers = new ArrayList<>();
 
         for (UserActor ua : uasInArea) {
-            if (ua.getTeam() == 0 && ua.getHealth() > 0) {
+            if (ua.getTeam() == 0 && ua.getHealth() > 0 && !ua.isDead()) {
                 purplePlayers.add(ua);
-            } else if (ua.getTeam() == 1 && ua.getHealth() > 0) {
+            } else if (ua.getTeam() == 1 && ua.getHealth() > 0 && !ua.isDead()) {
                 bluePlayers.add(ua);
             }
         }

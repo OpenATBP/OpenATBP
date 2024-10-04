@@ -44,8 +44,8 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
         float practiceZ = (float) MapData.L1_PURPLE_SPAWNS[0].getY();
         float battleLabX = (float) MapData.L2_PURPLE_SPAWNS[0].getX();
         float battleLabZ = (float) MapData.L2_PURPLE_SPAWNS[0].getY();
-        float x = room_id.contains("practice") ? practiceX : battleLabX;
-        float z = room_id.contains("practice") ? practiceZ : battleLabZ;
+        float x = room_id.contains("practice") || room_id.contains("3p") ? practiceX : battleLabX;
+        float z = room_id.contains("practice") || room_id.contains("3p") ? practiceZ : battleLabZ;
         if (team == 1) x *= -1;
         location.putFloat("x", x);
         location.putFloat("z", z);
@@ -87,7 +87,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
                 String split = (roomIDSplit[roomIDSplit.length - 1]);
                 int roomSize = Integer.parseInt(split.replace("p", ""));
                 settings.setMaxUsers(roomSize);
-                if (roomSize != 2) settings.setGroupId("PVE");
+                if (roomSize > 4) settings.setGroupId("PVE");
                 else settings.setGroupId("Practice");
 
             } else if (roomId.contains("3p")) {

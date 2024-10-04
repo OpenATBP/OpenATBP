@@ -324,6 +324,20 @@ public abstract class Actor {
         return false;
     }
 
+    public boolean hasAttackCC() {
+        ActorState[] cc = {
+            ActorState.AIRBORNE,
+            ActorState.STUNNED,
+            ActorState.CHARMED,
+            ActorState.FEARED,
+            ActorState.BLINDED
+        };
+        for (ActorState effect : cc) {
+            if (this.states.get(effect)) return true;
+        }
+        return false;
+    }
+
     public void handleFear(Point2D source, int duration) {
         if (!this.hasMovementCC()
                 && !this.states.get(ActorState.IMMUNITY)

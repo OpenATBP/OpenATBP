@@ -376,7 +376,7 @@ public class Champion {
                 if (this.attacker.getActorType() == ActorType.MINION) attacker.setCanMove(true);
                 return;
             }
-            if (this.attacker.getState(ActorState.BLINDED) || this.attacker.isDead()) {
+            if (this.attacker.hasAttackCC() || this.attacker.isDead()) {
                 if (this.attacker.getActorType() == ActorType.PLAYER)
                     ExtensionCommands.playSound(
                             parentExt,
