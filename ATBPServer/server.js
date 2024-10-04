@@ -2,6 +2,7 @@ const fs = require('fs');
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
+const cors = require('cors');
 
 const database = require('./db-operations.js');
 const getRequest = require('./get-requests.js');
@@ -217,6 +218,23 @@ function getLowerCaseName(name) {
   return fullString;
 }
 
+async function getTopPlayers(players) {
+  try {
+    const projection = {
+      'user.dname': 1,
+      'player.elo': 1,
+    };
+
+    const topPlayers = await players
+      .find({}, { projection })
+      .sort({ 'player.elo': -1 })
+      .toArray();
+    return topPlayers.filter((p) => p.player != undefined);
+  } catch (err) {
+    console.log(err);
+  }
+}
+
 let config;
 try {
   config = require('./config.js');
@@ -298,6 +316,7 @@ mongoClient.connect((err) => {
   app.use(express.static('static'));
   app.use(bodyParser.urlencoded({ extended: false }));
   app.use(bodyParser.json());
+  app.use(cors());
 
   app.get('/', (req, res) => {
     res.render('index');
@@ -345,6 +364,15 @@ mongoClient.connect((err) => {
 
   app.get('/data/users', (req, res) => {
     res.send(JSON.stringify({ users: onlinePlayers.length }));
+  });
+
+  app.get('/data/rankings', async (req, res) => {
+    try {
+      const topPlayers = await getTopPlayers(playerCollection);
+      res.send(topPlayers);
+    } catch (err) {
+      res.send(err);
+    }
   });
 
   app.post('/friend/accept/:friend', (req, res) => {
