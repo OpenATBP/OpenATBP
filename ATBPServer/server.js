@@ -229,7 +229,7 @@ async function getTopPlayers(players) {
       .find({}, { projection })
       .sort({ 'player.elo': -1 })
       .toArray();
-    return topPlayers;
+    return topPlayers.filter((p) => p.player != undefined);
   } catch (err) {
     console.log(err);
   }
