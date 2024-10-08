@@ -67,6 +67,7 @@ public class UserActor extends Actor {
     protected long gooBuffStartTime = 0;
     protected List<UserActor> killedPlayers = new ArrayList<>();
     protected long lastAutoTargetTime = 0;
+    protected long stealthEmbargo = -1;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -282,6 +283,12 @@ public class UserActor extends Actor {
         else this.hits += 0.2d;
     }
 
+    public void preventStealth() {
+        Console.debugLog("Prevent stealth");
+        this.addState(ActorState.REVEALED, 0d, 3000);
+        this.stealthEmbargo = System.currentTimeMillis() + 3000;
+    }
+
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         try {
             if (invincibleDebug) return false;
@@ -303,11 +310,7 @@ public class UserActor extends Actor {
                         this.location);
             }
             AttackType type = this.getAttackType(attackData);
-            if (this.states.get(ActorState.BRUSH) && !attackData.has("attackName")) {
-                Runnable runnable = () -> UserActor.this.setState(ActorState.REVEALED, false);
-                this.setState(ActorState.REVEALED, true);
-                parentExt.getTaskScheduler().schedule(runnable, 3000, TimeUnit.MILLISECONDS);
-            }
+            this.preventStealth();
             if (!moonActivated
                     && this.hasBackpackItem("junk_3_battle_moon")
                     && this.getStat("sp_category3") > 0
@@ -408,6 +411,7 @@ public class UserActor extends Actor {
     public void attack(Actor a) {
         if (this.attackCooldown == 0) {
             this.applyStopMovingDuringAttack();
+            this.preventStealth();
             double critChance = this.getPlayerStat("criticalChance") / 100d;
             double random = Math.random();
             boolean crit = random < critChance;
@@ -607,12 +611,13 @@ public class UserActor extends Actor {
             double critChance = this.getPlayerStat("criticalChance") / 100d;
             double random = Math.random();
             boolean crit = random < critChance;
+            boolean critAnimation = crit;
             String[] skinsWithNoCritAnimation = {
                 "princessbubblegum_skin_hoth", "princessbubblegum_skin_warrior"
             };
             for (String skin : skinsWithNoCritAnimation) {
                 if (this.avatar.equals(skin)) {
-                    crit = false;
+                    critAnimation = false;
                     break;
                 }
             }
@@ -623,9 +628,10 @@ public class UserActor extends Actor {
                     a.getId(),
                     (float) a.getLocation().getX(),
                     (float) a.getLocation().getY(),
-                    crit,
+                    critAnimation,
                     true);
             this.attackCooldown = this.getPlayerStat("attackSpeed");
+            this.preventStealth();
             if (this.attackCooldown < BASIC_ATTACK_DELAY) this.attackCooldown = BASIC_ATTACK_DELAY;
             return crit;
         }
@@ -897,13 +903,22 @@ public class UserActor extends Actor {
                 ExtensionCommands.changeBrush(
                         parentExt, room, this.id, parentExt.getBrushNum(this.location));
                 this.setState(ActorState.BRUSH, true);
+                if (this.stealthEmbargo <= System.currentTimeMillis())
+                    this.setState(ActorState.REVEALED, false);
+            } else if (this.stealthEmbargo != -1
+                    && this.stealthEmbargo <= System.currentTimeMillis()) {
                 this.setState(ActorState.REVEALED, false);
+                this.stealthEmbargo = -1;
             }
         } else {
             if (this.states.get(ActorState.BRUSH)) {
                 this.setState(ActorState.BRUSH, false);
                 this.setState(ActorState.REVEALED, true);
                 ExtensionCommands.changeBrush(parentExt, room, this.id, -1);
+            } else if (!this.states.get(ActorState.REVEALED)
+                    && !this.states.get(ActorState.INVISIBLE)
+                    && !this.states.get(ActorState.STEALTH)) {
+                this.setState(ActorState.REVEALED, true);
             }
         }
         if (this.attackCooldown > 0) this.reduceAttackCooldown();
