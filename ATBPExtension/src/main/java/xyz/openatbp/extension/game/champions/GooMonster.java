@@ -29,7 +29,7 @@ public class GooMonster extends Monster {
     private Point2D puddleLocation;
     private boolean puddleActivated;
     private long puddleStarted;
-    private static final int GOO_BUFF_DURATION = 90000;
+    private static final int GOO_BUFF_DURATION = 60000;
 
     public GooMonster(
             ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName) {
