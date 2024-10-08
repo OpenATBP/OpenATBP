@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.Room;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorState;
@@ -59,6 +60,7 @@ public class Minion extends Actor {
     private Map<UserActor, Integer> aggressors;
     private static boolean movementDebug = false;
     private State state;
+    private int movementAttempts = 0;
 
     public Minion(ATBPExtension parentExt, Room room, int team, int minionNum, int wave, int lane) {
         this.avatar = "creep" + team;
@@ -286,20 +288,44 @@ public class Minion extends Actor {
 
         switch (this.state) {
             case IDLE:
-                // Console.logWarning(this.id + " is idle!");
                 this.mainPathIndex = this.findPathIndex(false);
                 this.moveWithCollision(this.getPathPoint());
                 this.state = State.MOVING;
                 break;
             case MOVING:
                 if (this.getState(ActorState.CHARMED) || this.getState(ActorState.FEARED)) return;
+                if (this.movementAttempts != 0 && !this.isStopped()) this.movementAttempts = 0;
                 if (this.location.distance(this.getPathPoint()) <= 0.1d) {
                     this.moveAlongPath();
                     return;
                 } else if (this.isStopped()) {
+                    this.movementAttempts++;
+                    if (this.movementAttempts == 10) {
+                        this.addToDamageQueue(
+                                this,
+                                10d,
+                                this.parentExt.getAttackData(this.avatar, "basicAttack"),
+                                false);
+                        return;
+                    }
                     // this.canMove = true;
+                    Point2D pathPoint = this.getPathPoint();
+                    if (this.team == 0) {
+                        if (pathPoint.getX() < this.location.getX()
+                                && this.isValidPathIndex(this.mainPathIndex - 1)) {
+                            this.mainPathIndex--;
+                            this.moveWithCollision(this.getPathPoint());
+                            return;
+                        }
+                    } else {
+                        if (pathPoint.getX() > this.location.getX()
+                                && this.isValidPathIndex(this.mainPathIndex + 1)) {
+                            this.mainPathIndex++;
+                            this.moveWithCollision(this.getPathPoint());
+                            return;
+                        }
+                    }
                     this.moveWithCollision(this.getPathPoint());
-                    return;
                 }
                 Actor potentialTarget = this.searchForTarget();
                 if (potentialTarget != null) {
@@ -309,7 +335,7 @@ public class Minion extends Actor {
                 break;
             case TARGETING:
                 if (this.target == null) {
-                    this.state = State.IDLE;
+                    this.moveToLane();
                     return;
                 }
                 if (this.withinAggroRange(this.target.getLocation()) && !this.target.isDead()) {
@@ -326,7 +352,7 @@ public class Minion extends Actor {
                 break;
             case ATTACKING:
                 if (this.target == null) {
-                    this.state = State.IDLE;
+                    this.moveToLane();
                     return;
                 } else if (this.target.isDead()) {
                     Actor target = this.searchForTarget();
@@ -412,7 +438,7 @@ public class Minion extends Actor {
     }
 
     public void resetTarget() {
-        this.state = State.IDLE;
+        this.moveToLane();
         this.target = null;
     }
 
@@ -533,6 +559,50 @@ public class Minion extends Actor {
             if (a.getState(state)) return true;
         }
         return false;
+    }
+
+    private boolean isValidPathIndex(int index) {
+        return index >= 0
+                && index
+                        < (this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()
+                                ? this.practiceX.length
+                                : this.blueBotX.length);
+    }
+
+    public void moveToLane() {
+        Console.debugLog("Moving to lane...");
+        int pathIndex = this.findPathIndex(false);
+        this.mainPathIndex = pathIndex;
+        int nextPathIndex = this.team == 0 ? pathIndex - 1 : pathIndex + 1;
+        int pastPathIndex = this.team == 0 ? pathIndex + 1 : pathIndex - 1;
+        Point2D closestPoint = this.getPathPoint();
+        double closestDist = this.location.distance(closestPoint);
+        if (this.isValidPathIndex(pastPathIndex)) {
+            Line2D pastLinePath =
+                    new Line2D.Double(
+                            this.getPathPoint(pastPathIndex), this.getPathPoint(pathIndex));
+            for (Point2D p : MovementManager.findAllPoints(pastLinePath)) {
+                if (p.distance(this.location) < closestDist) {
+                    closestPoint = p;
+                    closestDist = p.distance(this.location);
+                }
+            }
+        }
+        if (this.isValidPathIndex(nextPathIndex)) {
+            Line2D nextLinePath =
+                    new Line2D.Double(
+                            this.getPathPoint(pathIndex), this.getPathPoint(nextPathIndex));
+            for (Point2D p : MovementManager.findAllPoints(nextLinePath)) {
+                if (p.distance(this.location) < closestDist) {
+                    closestPoint = p;
+                    closestDist = p.distance(this.location);
+                }
+            }
+        }
+        if (closestPoint != null) {
+            this.moveWithCollision(closestPoint);
+        } else this.moveWithCollision(this.getPathPoint());
+        this.state = State.MOVING;
     }
 
     private Actor searchForTarget() {
