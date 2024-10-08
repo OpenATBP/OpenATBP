@@ -72,7 +72,9 @@ public class GameManager {
             ISFSObject data = new SFSObject();
             if (groupID.equals("Practice")
                     || groupID.equals("Tutorial")
-                    || (room.getMaxUsers() <= 4 && !room.getName().contains("1p"))) {
+                    || (room.getMaxUsers() <= 4
+                            && !room.getName().contains("1p")
+                            && !(room.getMaxUsers() == 1 && room.getName().contains("custom")))) {
                 data.putUtfString("set", "AT_1L_Arena");
             } else {
                 data.putUtfString("set", "AT_2L_Arena");
