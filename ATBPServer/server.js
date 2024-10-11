@@ -235,6 +235,15 @@ async function getTopPlayers(players) {
   }
 }
 
+async function getGlobalChampionStats(champions) {
+    try {
+        let globalStats = await champions.find({}).toArray();
+        return globalStats;
+    } catch (err) {
+        console.log(err);
+    }
+}
+
 let config;
 try {
   config = require('./config.js');
@@ -374,6 +383,16 @@ mongoClient.connect((err) => {
       res.send(err);
     }
   });
+
+  app.get('/data/champstats', async (req, res) => {
+    try {
+        let globalStats = await getGlobalChampionStats(champCollection);
+        res.send(globalStats);
+    } catch (err) {
+        console.log(err);
+        res.send("An error occured while fetching data");
+    }
+});
 
   app.post('/friend/accept/:friend', (req, res) => {
     var session_token = '';
