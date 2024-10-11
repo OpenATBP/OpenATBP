@@ -10,6 +10,7 @@ const postRequest = require('./post-requests.js');
 
 const ATBPLobbyServer = require('./atbp-lobby.js');
 const SocketPolicyServer = require('./socket-policy.js');
+var lobbyServer;
 
 const displayNames = require('./data/names.json');
 const shopData = require('./data/shop.json');
@@ -334,6 +335,12 @@ mongoClient.connect((err) => {
 
   app.get('/login', (req, res) => {
     res.render('login');
+  });
+
+  app.get('/location/:id/:location',(req,res) => {
+    console.log(req.params.id);
+    lobbyServer.addPlayerLocation(req.params.id,req.params.location);
+    res.send({});
   });
 
   app.get('/friends', (req, res) => {
@@ -789,7 +796,7 @@ mongoClient.connect((err) => {
   app.listen(config.httpserver.port, () => {
     console.info(`Express server running on port ${config.httpserver.port}!`);
     if (config.lobbyserver.enable) {
-      const lobbyServer = new ATBPLobbyServer(config.lobbyserver.port);
+      lobbyServer = new ATBPLobbyServer(config.lobbyserver.port);
       lobbyServer.start(() => {
         console.info(
           `Lobby server running on port ${config.lobbyserver.port}!`
