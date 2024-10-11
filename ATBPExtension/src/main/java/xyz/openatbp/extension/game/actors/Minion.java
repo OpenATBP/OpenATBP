@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.Room;
 
 import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorState;
@@ -60,7 +59,6 @@ public class Minion extends Actor {
     private Map<UserActor, Integer> aggressors;
     private static boolean movementDebug = false;
     private State state;
-    private int movementAttempts = 0;
 
     public Minion(ATBPExtension parentExt, Room room, int team, int minionNum, int wave, int lane) {
         this.avatar = "creep" + team;
@@ -294,20 +292,10 @@ public class Minion extends Actor {
                 break;
             case MOVING:
                 if (this.getState(ActorState.CHARMED) || this.getState(ActorState.FEARED)) return;
-                if (this.movementAttempts != 0 && !this.isStopped()) this.movementAttempts = 0;
                 if (this.location.distance(this.getPathPoint()) <= 0.1d) {
                     this.moveAlongPath();
                     return;
                 } else if (this.isStopped()) {
-                    this.movementAttempts++;
-                    if (this.movementAttempts == 10) {
-                        this.addToDamageQueue(
-                                this,
-                                10d,
-                                this.parentExt.getAttackData(this.avatar, "basicAttack"),
-                                false);
-                        return;
-                    }
                     // this.canMove = true;
                     Point2D pathPoint = this.getPathPoint();
                     if (this.team == 0) {
@@ -570,7 +558,6 @@ public class Minion extends Actor {
     }
 
     public void moveToLane() {
-        Console.debugLog("Moving to lane...");
         int pathIndex = this.findPathIndex(false);
         this.mainPathIndex = pathIndex;
         int nextPathIndex = this.team == 0 ? pathIndex - 1 : pathIndex + 1;

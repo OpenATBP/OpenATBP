@@ -57,6 +57,7 @@ public class ATBPExtension extends SFSExtension {
     MongoDatabase database;
     MongoCollection<Document> playerDatabase;
     MongoCollection<Document> championDatabase;
+    MongoCollection<Document> matchHistoryDatabase;
     public static final int MAP_SIZE_X = 61;
     public static final int MAIN_MAP_SIZE_Y = 31;
     public static final int PRAC_MAP_SIZE_Y = 20;
@@ -104,6 +105,7 @@ public class ATBPExtension extends SFSExtension {
             database = mongoClient.getDatabase("openatbp");
             playerDatabase = database.getCollection("users");
             championDatabase = database.getCollection("champions");
+            matchHistoryDatabase = database.getCollection("matches");
             loadDefinitions();
             loadColliders();
             loadItems();
@@ -508,6 +510,10 @@ public class ATBPExtension extends SFSExtension {
 
     public MongoCollection<Document> getChampionDatabase() {
         return this.championDatabase;
+    }
+
+    public MongoCollection<Document> getMatchHistoryDatabase() {
+        return this.matchHistoryDatabase;
     }
 
     public int getElo(String tegID) {
