@@ -326,6 +326,7 @@ mongoClient.connect((err) => {
   app.use(bodyParser.urlencoded({ extended: false }));
   app.use(bodyParser.json());
   app.use(cors());
+  app.use(express.json());
 
   app.get('/', (req, res) => {
     res.render('index');
@@ -391,6 +392,42 @@ mongoClient.connect((err) => {
     } catch (err) {
         console.log(err);
         res.send("An error occured while fetching data");
+    }
+});
+
+app.post('/data/player', async (req, res) => {
+    try {
+        const {playerName} = req.body;
+
+        let normalizedPlayerName = playerName.toUpperCase();
+        const query = {'user.dname': normalizedPlayerName};
+
+        const projection = {
+            projection: {
+                'user.dname': 1,
+                'player.playsPVP': 1,
+                'player.winsPVP': 1,
+                'player.elo': 1,
+                'player.kills': 1,
+                'player.deaths': 1,
+                'player.largestSpree': 1,
+                'player.largestMulti': 1,
+                'player.rank': 1
+            },
+        }
+        const player = await playerCollection.findOne(query,projection);
+        const allPlayers = await playerCollection.find().sort({'player.elo': -1}).toArray();
+        const playerIndex = allPlayers.findIndex(player => player.user.dname === normalizedPlayerName);
+
+        if (playerIndex != -1) {
+            player.player.leaderboardPosition = playerIndex + 1;
+            res.send(player);
+        } else {
+            res.send({message: 'Player not found'});
+        }
+
+    } catch (err) {
+        console.log(err);
     }
 });
 
