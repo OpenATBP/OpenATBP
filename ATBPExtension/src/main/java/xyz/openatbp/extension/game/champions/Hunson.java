@@ -2,9 +2,8 @@ package xyz.openatbp.extension.game.champions;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -45,8 +44,9 @@ public class Hunson extends UserActor {
     private long ultStart = 0;
     private long wStartTime = 0;
     private long passiveStartTime = 0;
+    private Point2D wLocation;
     private boolean canUsePassive = true;
-    private List<Actor> fearedActors = new ArrayList<>();
+    private HashMap<Actor, Long> fearedActors = new HashMap<>();
 
     public Hunson(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -55,14 +55,50 @@ public class Hunson extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if (!fearedActors.isEmpty()
-                && System.currentTimeMillis() - wStartTime < W_DAMAGE_DURATION) {
+        if (wLocation != null && System.currentTimeMillis() - wStartTime >= 1100) {
+            wLocation = null;
+        }
+
+        if (wLocation != null) {
+            RoomHandler rh = parentExt.getRoomHandler(room.getName());
+            for (Actor a : rh.getActorsInRadius(wLocation, 2.5f)) {
+                if (a.getTeam() != this.team && !fearedActors.containsKey(a)) {
+                    fearedActors.put(a, System.currentTimeMillis());
+                    a.handleFear(wLocation, 1500);
+
+                    ExtensionCommands.createActorFX(
+                            parentExt,
+                            room,
+                            a.getId(),
+                            "neptr_dot_poison",
+                            W_DAMAGE_DURATION,
+                            id + "hunsonW" + Math.random(),
+                            true,
+                            "",
+                            false,
+                            false,
+                            a.getTeam());
+                }
+            }
+        }
+
+        Iterator<Map.Entry<Actor, Long>> iterator = fearedActors.entrySet().iterator();
+
+        while (iterator.hasNext()) {
+            Map.Entry<Actor, Long> entry = iterator.next();
+            if (System.currentTimeMillis() - entry.getValue() >= 1500) {
+                iterator.remove();
+            }
+        }
+
+        if (!fearedActors.isEmpty()) {
             JsonNode spellData = parentExt.getAttackData(this.getAvatar(), "spell2");
             double damage = getSpellDamage(spellData) / 10d;
-            for (Actor a : fearedActors) { // poison damage
+            for (Actor a : fearedActors.keySet()) {
                 a.addToDamageQueue(Hunson.this, damage, spellData, true);
             }
         }
+
         if (this.ultActivated) {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
@@ -361,28 +397,9 @@ public class Hunson extends UserActor {
         @Override
         protected void spellW() {
             if (getHealth() > 0) {
-                fearedActors = new ArrayList<>();
+                wLocation = location;
                 wStartTime = System.currentTimeMillis();
 
-                RoomHandler handler = parentExt.getRoomHandler(room.getName());
-                for (Actor a : Champion.getActorsInRadius(handler, dest, 2.5f)) {
-                    if (isNonStructure(a) && !fearedActors.contains(a)) {
-                        a.handleFear(dest, W_FEAR_DURATION);
-                        fearedActors.add(a);
-                        ExtensionCommands.createActorFX(
-                                parentExt,
-                                room,
-                                a.getId(),
-                                "neptr_dot_poison",
-                                W_DAMAGE_DURATION,
-                                a.getId() + "hunson_poison",
-                                true,
-                                "",
-                                false,
-                                false,
-                                team);
-                    }
-                }
             } else {
                 ExtensionCommands.removeFx(parentExt, room, id + "_fear");
             }
