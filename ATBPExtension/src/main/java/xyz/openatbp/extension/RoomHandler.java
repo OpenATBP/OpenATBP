@@ -64,6 +64,8 @@ public abstract class RoomHandler implements Runnable {
     private PointLeadTeam pointLeadTeam;
 
     private boolean isAnnouncingKill = false;
+    private static final int SINGLE_KILL_COOLDOWN = 5000;
+    private long lastSingleKillAnnouncement = 0;
 
     public RoomHandler(ATBPExtension parentExt, Room room) {
         this.parentExt = parentExt;
@@ -839,7 +841,9 @@ public abstract class RoomHandler implements Runnable {
                         announceMultiKill(ua, killerMulti);
                     } else if (killerSpree > 2) {
                         announceKillingSpree(ua, killerSpree);
-                    } else {
+                    } else if (System.currentTimeMillis() - lastSingleKillAnnouncement
+                            > SINGLE_KILL_COOLDOWN) {
+                        lastSingleKillAnnouncement = System.currentTimeMillis();
                         announceSingleKill(ua);
                     }
                 }
