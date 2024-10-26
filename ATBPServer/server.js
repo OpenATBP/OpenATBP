@@ -236,12 +236,12 @@ async function getTopPlayers(players) {
 }
 
 async function getGlobalChampionStats(champions) {
-    try {
-        let globalStats = await champions.find({}).toArray();
-        return globalStats;
-    } catch (err) {
-        console.log(err);
-    }
+  try {
+    let globalStats = await champions.find({}).toArray();
+    return globalStats;
+  } catch (err) {
+    console.log(err);
+  }
 }
 
 let config;
@@ -387,49 +387,53 @@ mongoClient.connect((err) => {
 
   app.get('/data/champstats', async (req, res) => {
     try {
-        let globalStats = await getGlobalChampionStats(champCollection);
-        res.send(globalStats);
+      let globalStats = await getGlobalChampionStats(champCollection);
+      res.send(globalStats);
     } catch (err) {
-        console.log(err);
-        res.send("An error occured while fetching data");
+      console.log(err);
+      res.send('An error occured while fetching data');
     }
-});
+  });
 
-app.post('/data/player', async (req, res) => {
+  app.post('/data/player', async (req, res) => {
     try {
-        const {playerName} = req.body;
+      const { playerName } = req.body;
 
-        let normalizedPlayerName = playerName.toUpperCase();
-        const query = {'user.dname': normalizedPlayerName};
+      let normalizedPlayerName = playerName.toUpperCase();
+      const query = { 'user.dname': normalizedPlayerName };
 
-        const projection = {
-            projection: {
-                'user.dname': 1,
-                'player.playsPVP': 1,
-                'player.winsPVP': 1,
-                'player.elo': 1,
-                'player.kills': 1,
-                'player.deaths': 1,
-                'player.largestSpree': 1,
-                'player.largestMulti': 1,
-                'player.rank': 1
-            },
-        }
-        const player = await playerCollection.findOne(query,projection);
-        const allPlayers = await playerCollection.find().sort({'player.elo': -1}).toArray();
-        const playerIndex = allPlayers.findIndex(player => player.user.dname === normalizedPlayerName);
+      const projection = {
+        projection: {
+          'user.dname': 1,
+          'player.playsPVP': 1,
+          'player.winsPVP': 1,
+          'player.elo': 1,
+          'player.kills': 1,
+          'player.deaths': 1,
+          'player.largestSpree': 1,
+          'player.largestMulti': 1,
+          'player.rank': 1,
+        },
+      };
+      const player = await playerCollection.findOne(query, projection);
+      const allPlayers = await playerCollection
+        .find()
+        .sort({ 'player.elo': -1 })
+        .toArray();
+      const playerIndex = allPlayers.findIndex(
+        (player) => player.user.dname === normalizedPlayerName
+      );
 
-        if (playerIndex != -1) {
-            player.player.leaderboardPosition = playerIndex + 1;
-            res.send(player);
-        } else {
-            res.send({message: 'Player not found'});
-        }
-
+      if (playerIndex != -1) {
+        player.player.leaderboardPosition = playerIndex + 1;
+        res.send(player);
+      } else {
+        res.send({ message: 'Player not found' });
+      }
     } catch (err) {
-        console.log(err);
+      console.log(err);
     }
-});
+  });
 
   app.post('/friend/accept/:friend', (req, res) => {
     var session_token = '';
