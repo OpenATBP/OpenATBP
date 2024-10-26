@@ -185,6 +185,66 @@ public class Jake extends UserActor {
     }
 
     @Override
+    public Point2D dash(Point2D dest, boolean noClip, double dashSpeed) {
+        this.isDashing = true;
+        if (movementDebug)
+            ExtensionCommands.createWorldFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    "gnome_a",
+                    this.id + "_test" + Math.random(),
+                    5000,
+                    (float) dest.getX(),
+                    (float) dest.getY(),
+                    false,
+                    0,
+                    0f);
+        Point2D dashPoint = dest;
+        /*
+        if (MovementManager.insideAnyObstacle(
+                this.parentExt,
+                this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap(),
+                dest)) {
+            Line2D extendedLine =
+                    MovementManager.extendLine(new Line2D.Double(this.location, dest), 5f);
+            Point2D[] points = MovementManager.findAllPoints(extendedLine);
+            boolean atDashPoint = false;
+            for (Point2D p : points) {
+                if (p.distance(dest) <= 0.01 && !atDashPoint) atDashPoint = true;
+                if (atDashPoint) {
+                    if (!MovementManager.insideAnyObstacle(
+                            this.parentExt,
+                            this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap(),
+                            p)) {
+                        dashPoint = p;
+                        break;
+                    }
+                }
+            }
+            if (dashPoint == null) dashPoint = dest;
+        } else dashPoint = dest;
+
+         */
+        double time = dashPoint.distance(this.location) / dashSpeed;
+        int timeMs = (int) (time * 1000d);
+        this.stopMoving(timeMs);
+        Runnable setIsDashing = () -> this.isDashing = false;
+        parentExt.getTaskScheduler().schedule(setIsDashing, timeMs, TimeUnit.MILLISECONDS);
+        ExtensionCommands.moveActor(
+                this.parentExt,
+                this.room,
+                this.id,
+                this.location,
+                dashPoint,
+                (float) dashSpeed,
+                true);
+        this.setLocation(dashPoint);
+        this.target = null;
+        return dashPoint;
+    }
+
+    @Override
     public boolean canUseAbility(int ability) {
         if (blockAbilities) return false;
         return super.canUseAbility(ability);

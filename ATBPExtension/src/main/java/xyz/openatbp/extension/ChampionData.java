@@ -276,6 +276,7 @@ public class ChampionData {
         JsonNode abilityData =
                 userActor.getParentExt().getAttackData(championName, "spell" + abilityNumber);
         int lv1Cooldown = abilityData.get("spellCoolDown").asInt();
+        if (abilityNumber == 4) return lv1Cooldown;
         if (championLevel > 1) {
             int lv10Cooldown;
             switch (championName) {

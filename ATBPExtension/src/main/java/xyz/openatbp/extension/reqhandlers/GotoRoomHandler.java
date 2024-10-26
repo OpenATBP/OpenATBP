@@ -87,7 +87,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
                 String split = (roomIDSplit[roomIDSplit.length - 1]);
                 int roomSize = Integer.parseInt(split.replace("p", ""));
                 settings.setMaxUsers(roomSize);
-                if (roomSize > 4) settings.setGroupId("PVE");
+                if (roomSize > 4 || roomSize == 1) settings.setGroupId("PVE");
                 else settings.setGroupId("Practice");
 
             } else if (roomId.contains("3p")) {

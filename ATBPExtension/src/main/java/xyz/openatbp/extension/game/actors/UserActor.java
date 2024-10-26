@@ -607,12 +607,13 @@ public class UserActor extends Actor {
             double critChance = this.getPlayerStat("criticalChance") / 100d;
             double random = Math.random();
             boolean crit = random < critChance;
+            boolean critAnimation = crit;
             String[] skinsWithNoCritAnimation = {
                 "princessbubblegum_skin_hoth", "princessbubblegum_skin_warrior"
             };
             for (String skin : skinsWithNoCritAnimation) {
                 if (this.avatar.equals(skin)) {
-                    crit = false;
+                    critAnimation = false;
                     break;
                 }
             }
@@ -623,7 +624,7 @@ public class UserActor extends Actor {
                     a.getId(),
                     (float) a.getLocation().getX(),
                     (float) a.getLocation().getY(),
-                    crit,
+                    critAnimation,
                     true);
             this.attackCooldown = this.getPlayerStat("attackSpeed");
             if (this.attackCooldown < BASIC_ATTACK_DELAY) this.attackCooldown = BASIC_ATTACK_DELAY;

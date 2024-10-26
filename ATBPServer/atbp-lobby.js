@@ -182,7 +182,7 @@ function updateCustomGame(team, user, teamJoined) {
       teamN: [],
       teamA: [],
       teamB: [],
-      ready: team.players.length > 1,
+      ready: team.players.length >= 1,
     };
     if (teamJoined == 0) {
       if (team.custom.teamA.length == 3) return;
