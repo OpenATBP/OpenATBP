@@ -92,6 +92,23 @@ module.exports = {
     // /service/presence/roster/{TEGiid} RETURNS friends list from db
     return new Promise(function (resolve, reject) {
       var friends = [];
+      for (var p of onlinePlayers){
+        if(p.username != username){
+          friends.push({
+            user_id: p.username,
+            name: p.name,
+            avatar: 'assets/pfp/default.jpg',
+            options: {
+              location: p.location,
+              game: 'ATBP',
+              tier: p.tier,
+              level: p.level,
+              elo: p.elo,
+            },
+          });
+        }
+      }
+      /*
       for (var name of friendsList) {
         for (var p of onlinePlayers) {
           if (p.username == name) {
@@ -111,6 +128,7 @@ module.exports = {
           }
         }
       }
+      */
       resolve(JSON.stringify({ roster: friends }));
     });
   },

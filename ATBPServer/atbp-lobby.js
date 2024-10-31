@@ -1673,11 +1673,9 @@ module.exports = class ATBPLobbyServer {
     if (this.server) this.server.close(callback());
   }
   addPlayerLocation(player,location){
-    console.log(player);
-    console.log(location);
     var user = users.find((u) => u.player.teg_id == player);
     if(user != undefined){
-      user.player.location = location;
+      user.player.location = location; //TODO: Not used right now but could be useful
       console.log("Location updated!");
     }
   }
