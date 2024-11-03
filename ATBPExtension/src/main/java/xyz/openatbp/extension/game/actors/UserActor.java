@@ -321,6 +321,7 @@ public class UserActor extends Actor {
             double moonChance = ChampionData.getCustomJunkStat(this, "junk_3_battle_moon");
             if (moonChance > 0) {
                 if (Math.random() < moonChance) {
+                    Console.debugLog("Moon blocked damage! Chance: " + moonChance);
                     ExtensionCommands.playSound(
                             this.parentExt,
                             this.room,
@@ -334,11 +335,13 @@ public class UserActor extends Actor {
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
                 this.addDamageGameStat(ua, newDamage, type);
-                double cubeEffect = ChampionData.getCustomJunkStat(ua, "junk_4_anti_magic_cube");
-                if (cubeEffect > 0) {
+                double cubeEffect = ChampionData.getCustomJunkStat(ua, "junk_4_antimagic_cube");
+                if (type == AttackType.SPELL && cubeEffect > 0) {
                     this.addEffect(
                             "spellDamage", this.getStat("spellDamage") * cubeEffect * -1, 5000);
                     // TODO: Add icon for this effect
+                    // TODO: Bug, seems to not apply consistently. Especially with dot / constant
+                    // abilities.
                 }
                 if (ChampionData.getJunkLevel(ua, "junk_2_peppermint_tank") > 0
                         && type == AttackType.SPELL) {
@@ -411,6 +414,7 @@ public class UserActor extends Actor {
 
     private void triggerSpellShield() {
         this.spellShieldActive = false;
+        this.spellShieldCooldown = System.currentTimeMillis() + 90000;
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_spellShield");
         ExtensionCommands.removeStatusIcon(
                 this.parentExt, this.getUser(), "junk_4_grob_gob_glob_grod_name");
@@ -918,8 +922,8 @@ public class UserActor extends Actor {
                     1000 * 60 * 15,
                     this.id + "_battlemoon",
                     true,
-                    "",
-                    true,
+                    "Bip01 Head",
+                    false,
                     false,
                     this.team);
             this.moonVfxActivated = true;
@@ -952,7 +956,16 @@ public class UserActor extends Actor {
                     "junk_4_grob_gob_glob_grod",
                     0f);
         }
-        if (ChampionData.getJunkLevel(this, "junk_2_simon_pretrikovs_glasses") > 0) {
+        if (ChampionData.getJunkLevel(this, "junk_2_simon_petrikovs_glasses") > 0) {
+            for (UserActor ua : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
+                if (ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) {
+                    if (ua.getLocation().distance(this.location) <= 5f)
+                        ua.setGlassesBuff(
+                                ChampionData.getCustomJunkStat(
+                                        this, "junk_2_simon_petrikovs_glasses"));
+                    else ua.setGlassesBuff(-1d);
+                }
+            }
             for (UserActor ua :
                     Champion.getUserActorsInRadius(
                             this.parentExt.getRoomHandler(this.room.getName()),
@@ -1065,13 +1078,13 @@ public class UserActor extends Actor {
         if (msRan % 1000 == 0) {
 
             if (ChampionData.getJunkLevel(this, "junk_4_flame_cloak") > 0) {
-                for (UserActor ua :
-                        Champion.getUserActorsInRadius(
+                for (Actor a :
+                        Champion.getActorsInRadius(
                                 this.parentExt.getRoomHandler(this.room.getName()),
                                 this.location,
-                                0.5f)) {
-                    if (ua.getTeam() != this.team) {
-                        ua.addToDamageQueue(
+                                1f)) {
+                    if (a.getTeam() != this.team) {
+                        a.addToDamageQueue(
                                 this,
                                 this.getPlayerStat("spellDamage")
                                         * ChampionData.getCustomJunkStat(
@@ -1451,7 +1464,7 @@ public class UserActor extends Actor {
 
     public void setGlassesBuff(double buff) {
         if (this.glassesBuff != buff) {
-            if (buff != -1) {
+            if (this.glassesBuff == -1) {
                 ExtensionCommands.addStatusIcon(
                         this.parentExt,
                         this.getUser(),
@@ -1459,12 +1472,13 @@ public class UserActor extends Actor {
                         "junk_2_simon_petrikovs_glasses_mod3",
                         "junk_2_simon_petrikovs_glasses",
                         0f);
-            } else {
+            } else if (buff == -1) {
                 ExtensionCommands.removeStatusIcon(
                         this.parentExt, this.getUser(), "junk_2_simon_petrikovs_glasses_name");
             }
         }
         this.glassesBuff = buff;
+        this.updateStatMenu("spellDamage");
     }
 
     @Override
@@ -1777,6 +1791,7 @@ public class UserActor extends Actor {
                                 this.location,
                                 5f)) {
                     if (ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) {
+                        Console.debugLog("Healed player from ghost pouch!");
                         ua.changeHealth((int) (ua.maxHealth * healfactor));
                         // TODO: Add effect / SFX
                     }
@@ -1906,9 +1921,10 @@ public class UserActor extends Actor {
                                             + (this.getPlayerStat("spellDamage")
                                                     * attackData.get("damageRatio").asDouble()));
             if (ChampionData.getJunkLevel(this, "junk_2_demonic_wishing_eye") > 0) {
-                double chance = this.getPlayerStat("criticalChance");
+                double chance = this.getPlayerStat("criticalChance") / 100d;
                 if (!singleTarget) chance /= 2d;
                 if (Math.random() < chance) {
+                    Console.debugLog("Ability crit! Chance: " + chance);
                     damage *= 2;
                     ExtensionCommands.playSound(
                             this.parentExt, this.room, "", "sfx/sfx_map_ping", this.location);

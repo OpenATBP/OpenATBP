@@ -10,10 +10,7 @@ import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.Console;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.champions.IceKing;
 import xyz.openatbp.extension.pathfinding.MovementManager;
@@ -395,6 +392,38 @@ public abstract class Actor {
 
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         if (a.getClass() == IceKing.class && this.hasMovementCC()) damage *= 1.1;
+        if (a.getActorType() == ActorType.PLAYER) {
+            UserActor ua = (UserActor) a;
+            if (ChampionData.getJunkLevel(ua, "junk_2_peppermint_tank") > 0
+                    && getAttackType(attackData) == AttackType.SPELL) {
+                if (ua.getLocation().distance(this.location) < 2d) {
+                    damage +=
+                            (damage * ChampionData.getCustomJunkStat(ua, "junk_2_peppermint_tank"));
+                    Console.debugLog("Increased damage from peppermint tank.");
+                }
+            }
+            if (ChampionData.getJunkLevel(ua, "junk_2_electrode_gun") > 0) {
+                if (Math.random() < 0.1d) {
+                    for (UserActor u :
+                            Champion.getUserActorsInRadius(
+                                    this.parentExt.getRoomHandler(this.room.getName()),
+                                    this.location,
+                                    2f)) {
+                        if (u.getTeam() == this.team && !u.getId().equalsIgnoreCase(this.id)) {
+                            u.addToDamageQueue(
+                                    a,
+                                    damage
+                                            * ChampionData.getCustomJunkStat(
+                                                    ua, "junk_2_electrode_gun"),
+                                    attackData,
+                                    false);
+                            Console.debugLog("Damage from electrode gun!");
+                            // TODO: Set different attack data for electrode gun damage
+                        }
+                    }
+                }
+            }
+        }
         this.currentHealth -= damage;
         if (this.currentHealth <= 0) this.currentHealth = 0;
         ISFSObject updateData = new SFSObject();

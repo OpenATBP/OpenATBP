@@ -9,10 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import com.smartfoxserver.v2.entities.Room;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ChampionData;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
@@ -222,6 +219,37 @@ public class Minion extends Actor {
                 aggressors.put(ua, 0);
                 if (ChampionData.getJunkLevel(ua, "junk_1_grass_sword") > 0) {
                     damage += (damage * ChampionData.getCustomJunkStat(ua, "junk_1_grass_sword"));
+                }
+                if (ChampionData.getJunkLevel(ua, "junk_2_peppermint_tank") > 0
+                        && getAttackType(attackData) == AttackType.SPELL) {
+                    if (ua.getLocation().distance(this.location) < 2d) {
+                        damage +=
+                                (damage
+                                        * ChampionData.getCustomJunkStat(
+                                                ua, "junk_2_peppermint_tank"));
+                        Console.debugLog("Increased damage from peppermint tank.");
+                    }
+                }
+                if (ChampionData.getJunkLevel(ua, "junk_2_electrode_gun") > 0) {
+                    if (Math.random() < 0.1d) {
+                        for (UserActor u :
+                                Champion.getUserActorsInRadius(
+                                        this.parentExt.getRoomHandler(this.room.getName()),
+                                        this.location,
+                                        2f)) {
+                            if (u.getTeam() == this.team && !u.getId().equalsIgnoreCase(this.id)) {
+                                u.addToDamageQueue(
+                                        a,
+                                        damage
+                                                * ChampionData.getCustomJunkStat(
+                                                        ua, "junk_2_electrode_gun"),
+                                        attackData,
+                                        false);
+                                // TODO: Set different attack data for electrode gun damage
+                                Console.debugLog("Damage from electrode gun!");
+                            }
+                        }
+                    }
                 }
             }
             if (a.getActorType() == ActorType.TOWER) {
