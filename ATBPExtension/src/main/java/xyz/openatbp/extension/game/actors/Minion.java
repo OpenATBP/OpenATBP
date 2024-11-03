@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.Room;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorState;
@@ -217,7 +218,11 @@ public class Minion extends Actor {
         try {
             if (this.dead) return true;
             if (a.getActorType() == ActorType.PLAYER) {
-                aggressors.put((UserActor) a, 0);
+                UserActor ua = (UserActor) a;
+                aggressors.put(ua, 0);
+                if (ChampionData.getJunkLevel(ua, "junk_1_grass_sword") > 0) {
+                    damage += (damage * ChampionData.getCustomJunkStat(ua, "junk_1_grass_sword"));
+                }
             }
             if (a.getActorType() == ActorType.TOWER) {
                 if (this.type == MinionType.SUPER) damage = (int) Math.round(damage * 0.25);

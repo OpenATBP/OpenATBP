@@ -4,6 +4,8 @@ import java.util.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -36,6 +38,55 @@ public class ChampionData {
     public static int getLevelXP(int level) {
         if (level == 0) return 0;
         return XP_LEVELS[level - 1];
+    }
+
+    public static int getJunkLevel(UserActor ua, String item) {
+        String[] items = ChampionData.getBackpackInventory(ua.getParentExt(), ua.getBackpack());
+        for (int i = 0; i < items.length; i++) {
+            if (items[i].equalsIgnoreCase(item)) {
+                int cat = i + 1;
+                return (int) ua.getStat("sp_category" + cat);
+            }
+        }
+        return -1;
+    }
+
+    public static double getCustomJunkStat(UserActor ua, String item) {
+        int level = getJunkLevel(ua, item);
+        if (level > 0) {
+            double[] stats = new double[4];
+            switch (item) {
+                case "junk_3_battle_moon":
+                case "junk_2_simon_petrikovs_glasses":
+                case "junk_5_ghost_pouch":
+                    stats = new double[] {0.03, 0.05, 0.1, 0.15};
+                    break;
+                case "junk_4_future_crystal":
+                    stats = new double[] {0.25, 0.4, 0.5, 0.75};
+                    break;
+                case "junk_1_numb_chucks":
+                    stats = new double[] {-0.1, -0.15, -0.2, -0.3};
+                    break;
+                case "junk_4_antimagic_cube":
+                    stats = new double[] {0.05, 0.1, 0.15, 0.2};
+                    break;
+                case "junk_2_peppermint_tank":
+                    stats = new double[] {0.05, 0.1, 0.15, 0.25};
+                    break;
+                case "junk_4_flame_cloak":
+                    stats = new double[] {0.2, 0.25, 0.3, 0.4};
+                    break;
+                case "junk_1_demon_blood_sword":
+                case "junk_1_grass_sword":
+                    stats = new double[] {0.15, 0.2, 0.25, 0.3};
+                    break;
+                case "junk_2_electrode_gun":
+                    stats = new double[] {0.25, 0.3, 0.4, 0.5};
+                    break;
+            }
+            return stats[level - 1];
+        }
+        return -1;
     }
 
     public static ISFSObject useSpellPoint(
@@ -353,6 +404,16 @@ public class ChampionData {
             }
         }
         return lv1Cooldown;
+    }
+
+    public static JsonNode getFlameCloakAttackData() {
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        node.put("spellName", "Flame Cloak");
+        node.put("spellDescription", "Oof ouch owie");
+        node.put("spellShortDescription", "OWW");
+        node.put("spellIconImage", "junk_4_flame_cloak");
+        node.put("spellType", "SPELL");
+        return node;
     }
 
     public static int[] getBuildPath(String actor, String backpack) {

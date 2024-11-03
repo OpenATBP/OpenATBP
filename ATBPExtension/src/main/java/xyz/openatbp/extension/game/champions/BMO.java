@@ -67,7 +67,7 @@ public class BMO extends UserActor {
             RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
             List<Actor> targets = Champion.getEnemyActorsInRadius(handler, team, location, 4f);
             JsonNode spellData = parentExt.getAttackData("bmo", "spell2");
-            double damage = (double) getSpellDamage(spellData) / 10d;
+            double damage = (double) getSpellDamage(spellData, false) / 10d;
             for (Actor a : targets) {
                 if (a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE) {
                     a.addToDamageQueue(this, damage, spellData, true);
@@ -169,7 +169,8 @@ public class BMO extends UserActor {
                                 a.addState(ActorState.BLINDED, 0d, Q_BLIND_DURATION);
                                 if (this.passiveStacks == 3) applySlow(a);
                             }
-                            a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                            a.addToDamageQueue(
+                                    this, getSpellDamage(spellData, false), spellData, false);
                         }
                     }
                     if (this.passiveStacks == 3) usePassiveStacks();
@@ -384,7 +385,7 @@ public class BMO extends UserActor {
                 double damageMultiplier = 1 + (wDuration / 10000d);
                 a.addToDamageQueue(
                         this,
-                        (this.getSpellDamage(spellData)) * damageMultiplier,
+                        (this.getSpellDamage(spellData, false)) * damageMultiplier,
                         spellData,
                         false);
                 a.addState(ActorState.STUNNED, 0d, 1000);
@@ -480,7 +481,10 @@ public class BMO extends UserActor {
             this.victims.add(victim);
             JsonNode spellData = this.parentExt.getAttackData(BMO.this.avatar, "spell3");
             victim.addToDamageQueue(
-                    BMO.this, getSpellDamage(spellData) * (1 - damageReduction), spellData, false);
+                    BMO.this,
+                    getSpellDamage(spellData, true) * (1 - damageReduction),
+                    spellData,
+                    false);
             ExtensionCommands.playSound(
                     parentExt, room, "", "akubat_projectileHit1", victim.getLocation());
             if (ultSlowActive) applySlow(victim);

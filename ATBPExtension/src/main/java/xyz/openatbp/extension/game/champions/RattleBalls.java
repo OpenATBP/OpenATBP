@@ -79,7 +79,7 @@ public class RattleBalls extends UserActor {
                 if (isNonStructure(a)) {
                     JsonNode spellData = parentExt.getAttackData(avatar, "spell3");
                     a.addToDamageQueue(
-                            this, (double) getSpellDamage(spellData) / 10d, spellData, true);
+                            this, (double) getSpellDamage(spellData, false) / 10d, spellData, true);
                 }
             }
             for (Projectile p : parentExt.getRoomHandler(room.getName()).getActiveProjectiles()) {
@@ -230,7 +230,7 @@ public class RattleBalls extends UserActor {
                         for (Actor a : enemiesInPolygon) {
                             if (isNonStructure(a)) {
                                 a.addToDamageQueue(
-                                        this, getSpellDamage(spellData), spellData, false);
+                                        this, getSpellDamage(spellData, true), spellData, false);
                             }
                         }
                     }
@@ -416,7 +416,7 @@ public class RattleBalls extends UserActor {
         for (Actor a : affectedActors) {
             if (isNonStructure(a)) {
                 JsonNode spellData = parentExt.getAttackData(avatar, "spell1");
-                a.addToDamageQueue(this, getSpellDamage(spellData) + 25, spellData, false);
+                a.addToDamageQueue(this, getSpellDamage(spellData, true) + 25, spellData, false);
             }
         }
     }
@@ -548,7 +548,10 @@ public class RattleBalls extends UserActor {
                     if (isNonStructure(a)) {
                         a.handlePull(location, 1.2);
                         a.addToDamageQueue(
-                                RattleBalls.this, getSpellDamage(spellData), spellData, false);
+                                RattleBalls.this,
+                                getSpellDamage(spellData, true),
+                                spellData,
+                                false);
                     }
                 }
             }

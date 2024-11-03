@@ -417,7 +417,8 @@ public abstract class Actor {
         if (attacker.getActorType() == ActorType.PLAYER
                 && this.getAttackType(attackData) == AttackType.SPELL
                 && this.getActorType() != ActorType.TOWER
-                && this.getActorType() != ActorType.BASE) {
+                && this.getActorType() != ActorType.BASE
+                && !attackData.get("spellName").asText().equalsIgnoreCase("flame cloak")) {
             UserActor ua = (UserActor) attacker;
             ua.addHit(dotDamage);
             ua.handleSpellVamp(this.getMitigatedDamage(damage, AttackType.SPELL, ua), dotDamage);

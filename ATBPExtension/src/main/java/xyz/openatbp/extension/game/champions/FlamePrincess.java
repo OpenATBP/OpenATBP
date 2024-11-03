@@ -55,7 +55,7 @@ public class FlamePrincess extends UserActor {
             for (Actor a : Champion.getActorsInRadius(handler, this.location, 2)) {
                 if (a.getTeam() != this.team && isNonStructure(a)) {
                     JsonNode attackData = this.parentExt.getAttackData(getAvatar(), "spell3");
-                    double damage = (double) this.getSpellDamage(attackData) / 10;
+                    double damage = (double) this.getSpellDamage(attackData, false) / 10;
                     a.addToDamageQueue(this, damage, attackData, true);
                 }
             }
@@ -75,7 +75,7 @@ public class FlamePrincess extends UserActor {
                                 && isNonStructure(affectedActor)) {
                             JsonNode spellData = this.parentExt.getAttackData("flame", "spell2");
                             affectedActor.addToDamageQueue(
-                                    this, getSpellDamage(spellData) / 10d, spellData, true);
+                                    this, getSpellDamage(spellData, false) / 10d, spellData, true);
                         }
                     }
                 }
@@ -418,7 +418,7 @@ public class FlamePrincess extends UserActor {
                     userActor.addState(ActorState.POLYMORPH, 0d, 3000);
                     lastPolymorphTime = System.currentTimeMillis();
                 }
-                double newDamage = getSpellDamage(spellData);
+                double newDamage = getSpellDamage(spellData, true);
                 if (isNonStructure(a))
                     a.addToDamageQueue(
                             FlamePrincess.this,
@@ -463,7 +463,7 @@ public class FlamePrincess extends UserActor {
             this.hitPlayer = true;
             JsonNode attackData = parentExt.getAttackData(getAvatar(), "spell1");
             victim.addToDamageQueue(
-                    FlamePrincess.this, getSpellDamage(attackData), attackData, false);
+                    FlamePrincess.this, getSpellDamage(attackData, true), attackData, false);
             ExtensionCommands.playSound(
                     parentExt, room, "", "akubat_projectileHit1", victim.getLocation());
             ExtensionCommands.createActorFX(
@@ -496,7 +496,7 @@ public class FlamePrincess extends UserActor {
                             Champion.extendLine(path, 0.75f),
                             0.75f)) {
                 if (!a.getId().equalsIgnoreCase(victim.getId()) && a.getTeam() != team) {
-                    double newDamage = (double) getSpellDamage(attackData) * 1.2d;
+                    double newDamage = (double) getSpellDamage(attackData, true) * 1.2d;
                     a.addToDamageQueue(
                             FlamePrincess.this, Math.round(newDamage), attackData, false);
                 }

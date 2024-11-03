@@ -84,6 +84,96 @@
     "cost": 350
   },
   {
+    "type": "BACKPACK",
+    "id": "belt_beta_assassin",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_rng",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_support",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_tank",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_jungle",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_laner",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_risk",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_adc",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_power",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_warlock",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_bruiser",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_anti_tank",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_anti_mage",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_hybrid",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_vamp",
+    "default": false,
+    "cost": 350
+  },
+  {
     "type": "DEFAULT_SKIN",
     "id": "billy",
     "default": true,
