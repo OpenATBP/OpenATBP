@@ -1,87 +1,9 @@
 [
   {
     "type": "BACKPACK",
-    "id": "belt_bella_noche",
-    "default": false,
-    "cost": 350
-  },
-  {
-    "type": "BACKPACK",
-    "id": "belt_billys_bag",
-    "default": false,
-    "cost": 350
-  },
-  {
-    "type": "BACKPACK",
-    "id": "belt_bindle_of_bravery",
-    "default": false,
-    "cost": 350
-  },
-  {
-    "type": "BACKPACK",
-    "id": "belt_candy_monarch",
-    "default": false,
-    "cost": 350
-  },
-  {
-    "type": "BACKPACK",
     "id": "belt_champions",
     "default": true,
     "cost": 0
-  },
-  {
-    "type": "BACKPACK",
-    "id": "belt_enchanters",
-    "default": false,
-    "cost": 350
-  },
-  {
-    "type": "BACKPACK",
-    "id": "belt_fridjitsu",
-    "default": false,
-    "cost": 350
-  },
-  {
-    "type": "BACKPACK",
-    "id": "belt_hewers_haversack",
-    "default": false,
-    "cost": 350
-  },
-  {
-    "type": "BACKPACK",
-    "id": "belt_ice_monarch",
-    "default": false,
-    "cost": 350
-  },
-  {
-    "type": "BACKPACK",
-    "id": "belt_meta_science",
-    "default": false,
-    "cost": 350
-  },
-  {
-    "type": "BACKPACK",
-    "id": "belt_sorcerous_satchel",
-    "default": false,
-    "cost": 350
-  },
-  {
-    "type": "BACKPACK",
-    "id": "belt_techno_tank",
-    "default": false,
-    "cost": 350
-  },
-  {
-    "type": "BACKPACK",
-    "id": "belt_ultimate_wizard",
-    "default": false,
-    "cost": 350
-  },
-  {
-    "type": "BACKPACK",
-    "id": "belt_vampire_rocker",
-    "default": false,
-    "cost": 350
   },
   {
     "type": "BACKPACK",
