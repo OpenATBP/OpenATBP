@@ -144,6 +144,7 @@ var Fireteam_AspenSend = function (name, callback) {
   console.log('Fireteam!');
   console.log(name);
   console.log(callback);
+  /*
   var cookies = document.cookie.split(';');
   var displayName = null;
   for (var i = 0; i < cookies.length; i++) {
@@ -166,6 +167,7 @@ var Fireteam_AspenSend = function (name, callback) {
       }
     ).catch(console.error);
   }
+  */
 };
 
 var AchievementUnityComm = {

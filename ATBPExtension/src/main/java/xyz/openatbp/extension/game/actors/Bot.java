@@ -64,6 +64,7 @@ public class Bot extends Actor {
             killer.increaseStat("kills", 1);
             RoomHandler roomHandler = parentExt.getRoomHandler(room.getName());
             roomHandler.addScore(killer, killer.getTeam(), 25);
+            killer.addXP(150);
         }
         if (!room.getGroupId().equals("Tutorial")) {
             Runnable respawn = this::respawn;

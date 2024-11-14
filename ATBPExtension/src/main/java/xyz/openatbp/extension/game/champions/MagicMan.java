@@ -77,6 +77,12 @@ public class MagicMan extends UserActor {
     }
 
     @Override
+    public void preventStealth() {
+        if (this.magicManClone != null) return;
+        super.preventStealth();
+    }
+
+    @Override
     public void attack(Actor a) {
         if (this.attackCooldown == 0) {
             this.applyStopMovingDuringAttack();

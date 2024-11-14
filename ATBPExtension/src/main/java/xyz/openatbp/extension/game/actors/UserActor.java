@@ -76,6 +76,7 @@ public class UserActor extends Actor {
     protected long iFrame = -1;
     protected String numbChuckVictim;
     protected boolean numbSlow = false;
+    protected List<UserActor> simonUsers = new ArrayList<>();
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -942,16 +943,15 @@ public class UserActor extends Actor {
                     0f);
         }
         if (ChampionData.getJunkLevel(this, "junk_2_simon_petrikovs_glasses") > 0) {
-            for (UserActor ua :
-                    Champion.getUserActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()),
-                            this.location,
-                            5f)) {
+
+            for (UserActor ua : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
                 if (ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) {
-                    ua.setGlassesBuff(
-                            this.getStat("spellDamage")
-                                    * ChampionData.getCustomJunkStat(
-                                            this, "junk_2_simon_petrikovs_glasses"));
+                    if (ua.getLocation().distance(this.location) <= 5f)
+                        ua.setGlassesBuff(
+                                ChampionData.getCustomJunkStat(
+                                        this, "junk_2_simon_petrikovs_glasses"),
+                                this);
+                    else ua.setGlassesBuff(-1d, this);
                 }
             }
         }
@@ -1440,7 +1440,8 @@ public class UserActor extends Actor {
         ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bundle);
     }
 
-    public void setGlassesBuff(double buff) {
+    public void setGlassesBuff(double buff, UserActor holder) {
+        if (buff != -1 && !this.simonUsers.contains(holder)) this.simonUsers.add(holder);
         if (this.glassesBuff != buff) {
             if (this.glassesBuff == -1) {
                 ExtensionCommands.addStatusIcon(
@@ -1451,8 +1452,14 @@ public class UserActor extends Actor {
                         "junk_2_simon_petrikovs_glasses",
                         0f);
             } else if (buff == -1) {
-                ExtensionCommands.removeStatusIcon(
-                        this.parentExt, this.getUser(), "junk_2_simon_petrikovs_glasses_name");
+                this.simonUsers.remove(holder);
+                if (this.simonUsers.size() == 0) {
+                    ExtensionCommands.removeStatusIcon(
+                            this.parentExt, this.getUser(), "junk_2_simon_petrikovs_glasses_name");
+                    this.glassesBuff = -1d;
+                    this.updateStatMenu("spellDamage");
+                    return;
+                }
             }
         }
         this.glassesBuff = buff;

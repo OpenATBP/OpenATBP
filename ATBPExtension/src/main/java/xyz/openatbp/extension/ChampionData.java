@@ -73,7 +73,7 @@ public class ChampionData {
                     stats = new double[] {0.05, 0.1, 0.15, 0.25};
                     break;
                 case "junk_4_flame_cloak":
-                    stats = new double[] {0.05, 0.07, 0.1, 0.2};
+                    stats = new double[] {0.05, 0.07, 0.1, 0.1};
                     break;
                 case "junk_1_demon_blood_sword":
                 case "junk_1_grass_sword":
@@ -83,7 +83,7 @@ public class ChampionData {
                     stats = new double[] {0.25, 0.3, 0.4, 0.5};
                     break;
                 case "junk_2_simon_petrikovs_glasses":
-                    stats = new double[] {1.0, 1.25, 1.5, 2.0};
+                    stats = new double[] {50d, 75d, 100d, 150d};
                     break;
             }
             return stats[level - 1];

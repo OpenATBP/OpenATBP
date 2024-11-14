@@ -80,6 +80,45 @@ async function addQueueData(collection) {
   }
 }
 
+async function addCustomBags(collection) {
+  try {
+    var cursor = collection.find();
+    for await (var doc of cursor) {
+      //console.log(doc.friends);
+      var q = { 'user.TEGid': doc.user.TEGid };
+      var o = { upsert: true };
+      var up = {
+        $addToSet: {
+          inventory: {
+            $each: [
+              'belt_beta_assassin',
+              'belt_beta_tank',
+              'belt_beta_rng',
+              'belt_beta_support',
+              'belt_beta_jungle',
+              'belt_beta_laner',
+              'belt_beta_risk',
+              'belt_beta_adc',
+              'belt_beta_power',
+              'belt_beta_warlock',
+              'belt_beta_bruiser',
+              'belt_beta_anti_tank',
+              'belt_beta_anti_mage',
+              'belt_beta_hybrid',
+              'belt_beta_vamp',
+            ],
+          },
+        },
+      };
+
+      var res = await collection.updateOne(q, up, o);
+      console.log(res);
+    }
+  } finally {
+    console.log('Done!');
+  }
+}
+
 async function curveElo(collection) {
   var allUsers = [];
   try {
@@ -300,6 +339,7 @@ mongoClient.connect((err) => {
 
   //addQueueData(playerCollection);
   //curveElo(playerCollection);
+  //addCustomBags(playerCollection);
 
   if (
     !fs.existsSync('static/crossdomain.xml') ||
