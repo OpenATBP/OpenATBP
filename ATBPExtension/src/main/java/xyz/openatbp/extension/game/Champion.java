@@ -17,7 +17,6 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 
 import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.actors.Actor;
@@ -435,12 +434,9 @@ public class Champion {
                 boolean hasGrobDevice = ua.hasBackpackItem("junk_4_grob_gob_glob_grod");
 
                 if (ua.hasBackpackItem("junk_1_numb_chucks") && ua.getStat("sp_category1") > 0) {
-                    double delta =
-                            target.getPlayerStat("attackSpeed")
-                                    * ChampionData.getCustomJunkStat(ua, "junk_1_numb_chucks");
-                    this.target.addEffect("attackSpeed", delta, 3000);
-
-                } else if (hasGrobDevice && ua.getStat("sp_category4") > 0) {
+                    ua.handleNumbChuckStacks(target);
+                }
+                if (hasGrobDevice && ua.getStat("sp_category4") > 0) {
                     Random random = new Random();
                     int num = random.nextInt(4);
                     if (num == 0) {

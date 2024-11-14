@@ -58,7 +58,7 @@ public class Keeoth extends Monster {
                     ua.addEffect("spellVamp", 40d, KEEOTH_BUFF_DURATION);
                     ua.addEffect("criticalChance", 35d, KEEOTH_BUFF_DURATION);
                     double healthChange = (double) ua.getHealth() * 0.3d;
-                    ua.changeHealth((int) healthChange);
+                    ua.heal((int) healthChange);
                     ExtensionCommands.addStatusIcon(
                             this.parentExt,
                             ua.getUser(),

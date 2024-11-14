@@ -230,27 +230,7 @@ public class Minion extends Actor {
                         Console.debugLog("Increased damage from peppermint tank.");
                     }
                 }
-                if (ChampionData.getJunkLevel(ua, "junk_2_electrode_gun") > 0) {
-                    if (Math.random() < 0.1d) {
-                        for (UserActor u :
-                                Champion.getUserActorsInRadius(
-                                        this.parentExt.getRoomHandler(this.room.getName()),
-                                        this.location,
-                                        2f)) {
-                            if (u.getTeam() == this.team && !u.getId().equalsIgnoreCase(this.id)) {
-                                u.addToDamageQueue(
-                                        a,
-                                        damage
-                                                * ChampionData.getCustomJunkStat(
-                                                        ua, "junk_2_electrode_gun"),
-                                        attackData,
-                                        false);
-                                // TODO: Set different attack data for electrode gun damage
-                                Console.debugLog("Damage from electrode gun!");
-                            }
-                        }
-                    }
-                }
+                this.handleElectrodeGun(ua, a, damage, attackData);
             }
             if (a.getActorType() == ActorType.TOWER) {
                 if (this.type == MinionType.SUPER) damage = (int) Math.round(damage * 0.25);

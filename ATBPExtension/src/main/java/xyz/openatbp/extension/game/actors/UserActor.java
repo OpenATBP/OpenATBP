@@ -74,6 +74,8 @@ public class UserActor extends Actor {
     protected long spellShieldCooldown = -1;
     protected boolean spellShieldActive = false;
     protected long iFrame = -1;
+    protected String numbChuckVictim;
+    protected boolean numbSlow = false;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -336,9 +338,10 @@ public class UserActor extends Actor {
                 UserActor ua = (UserActor) a;
                 this.addDamageGameStat(ua, newDamage, type);
                 double cubeEffect = ChampionData.getCustomJunkStat(ua, "junk_4_antimagic_cube");
-                if (type == AttackType.SPELL && cubeEffect > 0) {
-                    this.addEffect(
-                            "spellDamage", this.getStat("spellDamage") * cubeEffect * -1, 5000);
+                if (!this.effectHandlers.containsKey("spellDamage")
+                        && type == AttackType.SPELL
+                        && cubeEffect != -1) {
+                    this.addEffect("spellDamage", cubeEffect, 5000);
                     // TODO: Add icon for this effect
                     // TODO: Bug, seems to not apply consistently. Especially with dot / constant
                     // abilities.
@@ -352,26 +355,7 @@ public class UserActor extends Actor {
                                                 ua, "junk_2_peppermint_tank"));
                     }
                 }
-                if (ChampionData.getJunkLevel(ua, "junk_2_electrode_gun") > 0) {
-                    if (Math.random() < 0.1d) {
-                        for (UserActor u :
-                                Champion.getUserActorsInRadius(
-                                        this.parentExt.getRoomHandler(this.room.getName()),
-                                        this.location,
-                                        2f)) {
-                            if (u.getTeam() == this.team && !u.getId().equalsIgnoreCase(this.id)) {
-                                u.addToDamageQueue(
-                                        a,
-                                        damage
-                                                * ChampionData.getCustomJunkStat(
-                                                        ua, "junk_2_electrode_gun"),
-                                        attackData,
-                                        false);
-                                // TODO: Set different attack data for electrode gun damage
-                            }
-                        }
-                    }
-                }
+                this.handleElectrodeGun(ua, a, damage, attackData);
                 if (type == AttackType.SPELL
                         && (this.spellShieldActive || System.currentTimeMillis() < iFrame)) {
                     if (this.spellShieldActive) triggerSpellShield();
@@ -884,7 +868,8 @@ public class UserActor extends Actor {
             canRegenHealth() { // TODO: Does not account for health pots. Not sure if this should be
         // added for balance reasons.
         // regen works while in combat
-        return (this.currentHealth < this.maxHealth || this.getPlayerStat("healthRegen") < 0);
+        return ((this.currentHealth < this.maxHealth || this.getPlayerStat("healthRegen") < 0)
+                && ChampionData.getJunkLevel(this, "junk_1_ax_bass") < 1);
     }
 
     public void queueMovement(Point2D newDest) {
@@ -957,15 +942,6 @@ public class UserActor extends Actor {
                     0f);
         }
         if (ChampionData.getJunkLevel(this, "junk_2_simon_petrikovs_glasses") > 0) {
-            for (UserActor ua : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
-                if (ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) {
-                    if (ua.getLocation().distance(this.location) <= 5f)
-                        ua.setGlassesBuff(
-                                ChampionData.getCustomJunkStat(
-                                        this, "junk_2_simon_petrikovs_glasses"));
-                    else ua.setGlassesBuff(-1d);
-                }
-            }
             for (UserActor ua :
                     Champion.getUserActorsInRadius(
                             this.parentExt.getRoomHandler(this.room.getName()),
@@ -973,7 +949,9 @@ public class UserActor extends Actor {
                             5f)) {
                 if (ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) {
                     ua.setGlassesBuff(
-                            ChampionData.getCustomJunkStat(this, "junk_2_simon_petrikovs_glasses"));
+                            this.getStat("spellDamage")
+                                    * ChampionData.getCustomJunkStat(
+                                            this, "junk_2_simon_petrikovs_glasses"));
                 }
             }
         }
@@ -1086,7 +1064,7 @@ public class UserActor extends Actor {
                     if (a.getTeam() != this.team) {
                         a.addToDamageQueue(
                                 this,
-                                this.getPlayerStat("spellDamage")
+                                this.maxHealth
                                         * ChampionData.getCustomJunkStat(
                                                 this, "junk_4_flame_cloak"),
                                 ChampionData.getFlameCloakAttackData(),
@@ -1478,6 +1456,7 @@ public class UserActor extends Actor {
             }
         }
         this.glassesBuff = buff;
+        Console.debugLog("Setting glasses buff to " + buff);
         this.updateStatMenu("spellDamage");
     }
 
@@ -1495,7 +1474,7 @@ public class UserActor extends Actor {
 
     public void handleCyclopsHealing() {
         if (this.getHealth() != this.maxHealth && !this.pickedUpHealthPack) {
-            this.changeHealth((int) (this.getMaxHealth() * 0.15d));
+            this.heal((int) (this.getMaxHealth() * 0.15d));
         }
         ExtensionCommands.createActorFX(
                 this.parentExt,
@@ -1759,7 +1738,7 @@ public class UserActor extends Actor {
         } else if (stat.equalsIgnoreCase("spellDamage")) {
             double spellDamage = super.getPlayerStat(stat);
             if (this.dcBuff == 2) spellDamage *= 1.2f;
-            if (this.glassesBuff != -1) spellDamage *= (1 + this.glassesBuff);
+            if (this.glassesBuff != -1) spellDamage += this.glassesBuff;
             return spellDamage + this.lightningSwordStacks;
         }
         return super.getPlayerStat(stat);
@@ -2130,6 +2109,33 @@ public class UserActor extends Actor {
 
     public void removeIconHandler(String iconName) {
         this.iconHandlers.remove(iconName);
+    }
+
+    public void handleNumbChuckStacks(Actor a) {
+        if (this.numbChuckVictim == null) {
+            this.numbChuckVictim = a.getId();
+            this.numbSlow = true;
+            return;
+        }
+        if (a.getId().equalsIgnoreCase(this.numbChuckVictim)) {
+            if (this.numbSlow) {
+                a.addState(
+                        ActorState.SLOWED,
+                        ChampionData.getCustomJunkStat(this, "junk_1_numb_chucks"),
+                        1500);
+                Console.debugLog("Numb Chuck slow applied!");
+            }
+            this.numbSlow = !this.numbSlow;
+        } else {
+            this.numbChuckVictim = a.getId();
+            this.numbSlow = true;
+        }
+    }
+
+    @Override
+    public void heal(int delta) {
+        if (ChampionData.getJunkLevel(this, "junk_1_ax_bass") > 0) return;
+        super.heal(delta);
     }
 
     protected class MovementStopper implements Runnable {
