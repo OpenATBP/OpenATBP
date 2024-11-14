@@ -144,6 +144,28 @@ var Fireteam_AspenSend = function (name, callback) {
   console.log('Fireteam!');
   console.log(name);
   console.log(callback);
+  var cookies = document.cookie.split(';');
+  var displayName = null;
+  for (var i = 0; i < cookies.length; i++) {
+    if (cookies[i].indexOf('TEGid') != -1) {
+      displayName = cookies[i]
+        .replace('TEGid=', '')
+        .replace(' ', '')
+        .replace(';', '');
+    }
+  }
+  var jsonObj = JSON.parse(callback);
+  if (jsonObj.gameLocation != undefined) {
+    fetch(
+      'http://127.0.0.1:8000/location/' +
+        displayName +
+        '/' +
+        jsonObj.gameLocation,
+      (res) => {
+        console.log(res.json());
+      }
+    ).catch(console.error);
+  }
 };
 
 var AchievementUnityComm = {

@@ -9,9 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import com.smartfoxserver.v2.entities.Room;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
@@ -217,7 +215,22 @@ public class Minion extends Actor {
         try {
             if (this.dead) return true;
             if (a.getActorType() == ActorType.PLAYER) {
-                aggressors.put((UserActor) a, 0);
+                UserActor ua = (UserActor) a;
+                aggressors.put(ua, 0);
+                if (ChampionData.getJunkLevel(ua, "junk_1_grass_sword") > 0) {
+                    damage += (damage * ChampionData.getCustomJunkStat(ua, "junk_1_grass_sword"));
+                }
+                if (ChampionData.getJunkLevel(ua, "junk_2_peppermint_tank") > 0
+                        && getAttackType(attackData) == AttackType.SPELL) {
+                    if (ua.getLocation().distance(this.location) < 2d) {
+                        damage +=
+                                (damage
+                                        * ChampionData.getCustomJunkStat(
+                                                ua, "junk_2_peppermint_tank"));
+                        Console.debugLog("Increased damage from peppermint tank.");
+                    }
+                }
+                this.handleElectrodeGun(ua, a, damage, attackData);
             }
             if (a.getActorType() == ActorType.TOWER) {
                 if (this.type == MinionType.SUPER) damage = (int) Math.round(damage * 0.25);
@@ -286,7 +299,6 @@ public class Minion extends Actor {
 
         switch (this.state) {
             case IDLE:
-                // Console.logWarning(this.id + " is idle!");
                 this.mainPathIndex = this.findPathIndex(false);
                 this.moveWithCollision(this.getPathPoint());
                 this.state = State.MOVING;
@@ -298,8 +310,23 @@ public class Minion extends Actor {
                     return;
                 } else if (this.isStopped()) {
                     // this.canMove = true;
+                    Point2D pathPoint = this.getPathPoint();
+                    if (this.team == 0) {
+                        if (pathPoint.getX() < this.location.getX()
+                                && this.isValidPathIndex(this.mainPathIndex - 1)) {
+                            this.mainPathIndex--;
+                            this.moveWithCollision(this.getPathPoint());
+                            return;
+                        }
+                    } else {
+                        if (pathPoint.getX() > this.location.getX()
+                                && this.isValidPathIndex(this.mainPathIndex + 1)) {
+                            this.mainPathIndex++;
+                            this.moveWithCollision(this.getPathPoint());
+                            return;
+                        }
+                    }
                     this.moveWithCollision(this.getPathPoint());
-                    return;
                 }
                 Actor potentialTarget = this.searchForTarget();
                 if (potentialTarget != null) {
@@ -309,7 +336,7 @@ public class Minion extends Actor {
                 break;
             case TARGETING:
                 if (this.target == null) {
-                    this.state = State.IDLE;
+                    this.moveToLane();
                     return;
                 }
                 if (this.withinAggroRange(this.target.getLocation()) && !this.target.isDead()) {
@@ -326,7 +353,7 @@ public class Minion extends Actor {
                 break;
             case ATTACKING:
                 if (this.target == null) {
-                    this.state = State.IDLE;
+                    this.moveToLane();
                     return;
                 } else if (this.target.isDead()) {
                     Actor target = this.searchForTarget();
@@ -412,7 +439,7 @@ public class Minion extends Actor {
     }
 
     public void resetTarget() {
-        this.state = State.IDLE;
+        this.moveToLane();
         this.target = null;
     }
 
@@ -533,6 +560,49 @@ public class Minion extends Actor {
             if (a.getState(state)) return true;
         }
         return false;
+    }
+
+    private boolean isValidPathIndex(int index) {
+        return index >= 0
+                && index
+                        < (this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()
+                                ? this.practiceX.length
+                                : this.blueBotX.length);
+    }
+
+    public void moveToLane() {
+        int pathIndex = this.findPathIndex(false);
+        this.mainPathIndex = pathIndex;
+        int nextPathIndex = this.team == 0 ? pathIndex - 1 : pathIndex + 1;
+        int pastPathIndex = this.team == 0 ? pathIndex + 1 : pathIndex - 1;
+        Point2D closestPoint = this.getPathPoint();
+        double closestDist = this.location.distance(closestPoint);
+        if (this.isValidPathIndex(pastPathIndex)) {
+            Line2D pastLinePath =
+                    new Line2D.Double(
+                            this.getPathPoint(pastPathIndex), this.getPathPoint(pathIndex));
+            for (Point2D p : MovementManager.findAllPoints(pastLinePath)) {
+                if (p.distance(this.location) < closestDist) {
+                    closestPoint = p;
+                    closestDist = p.distance(this.location);
+                }
+            }
+        }
+        if (this.isValidPathIndex(nextPathIndex)) {
+            Line2D nextLinePath =
+                    new Line2D.Double(
+                            this.getPathPoint(pathIndex), this.getPathPoint(nextPathIndex));
+            for (Point2D p : MovementManager.findAllPoints(nextLinePath)) {
+                if (p.distance(this.location) < closestDist) {
+                    closestPoint = p;
+                    closestDist = p.distance(this.location);
+                }
+            }
+        }
+        if (closestPoint != null) {
+            this.moveWithCollision(closestPoint);
+        } else this.moveWithCollision(this.getPathPoint());
+        this.state = State.MOVING;
     }
 
     private Actor searchForTarget() {

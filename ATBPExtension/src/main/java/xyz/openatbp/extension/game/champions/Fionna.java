@@ -412,7 +412,7 @@ public class Fionna extends UserActor {
                             && a.getActorType() != ActorType.BASE
                             && a.getActorType() != ActorType.TOWER) {
                         actorsHitWithQ.add(a);
-                        double damage = getSpellDamage(spellData);
+                        double damage = getSpellDamage(spellData, true);
                         a.addToDamageQueue(Fionna.this, damage, spellData, false);
                         if (dashInt == 1) a.addState(ActorState.SLOWED, 0.5d, 1000);
                     }

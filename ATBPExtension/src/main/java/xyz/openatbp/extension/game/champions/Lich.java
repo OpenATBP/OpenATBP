@@ -60,7 +60,7 @@ public class Lich extends UserActor {
                         if (slimedEnemies.containsKey(a.getId())) {
                             if (System.currentTimeMillis() - slimedEnemies.get(a.getId()) >= 1000) {
                                 a.addToDamageQueue(
-                                        this, getSpellDamage(attackData), attackData, true);
+                                        this, getSpellDamage(attackData, false), attackData, true);
                                 if (isNonStructure(a)) {
                                     applySlow(a);
                                 }
@@ -68,7 +68,8 @@ public class Lich extends UserActor {
                                 break;
                             }
                         } else {
-                            a.addToDamageQueue(this, getSpellDamage(attackData), attackData, true);
+                            a.addToDamageQueue(
+                                    this, getSpellDamage(attackData, false), attackData, true);
                             if (isNonStructure(a)) {
                                 applySlow(a);
                             }
@@ -87,7 +88,7 @@ public class Lich extends UserActor {
                     && System.currentTimeMillis() - lastETickTime >= E_TICK_COOLDOWN) {
                 lastETickTime = System.currentTimeMillis();
                 JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(), "spell3");
-                double damage = getSpellDamage(spellData);
+                double damage = getSpellDamage(spellData, false);
                 String eTickSound = "sfx_lich_charm_shot_hit";
                 ExtensionCommands.playSound(parentExt, room, "", eTickSound, eLocation);
                 for (Actor a : targets) {
@@ -648,7 +649,7 @@ public class Lich extends UserActor {
                     false,
                     team,
                     0f);
-            victim.addToDamageQueue(Lich.this, getSpellDamage(spellData), spellData, false);
+            victim.addToDamageQueue(Lich.this, getSpellDamage(spellData, true), spellData, false);
             victim.handleCharm(Lich.this, W_CHARM_DURATION);
             destroy();
         }

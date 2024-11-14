@@ -388,7 +388,8 @@ public class MagicMan extends UserActor {
             if (!playersHitBySnake.contains(victim)) {
                 playersHitBySnake.add(victim);
                 JsonNode spellData = parentExt.getAttackData(MagicMan.this.avatar, "spell1");
-                victim.addToDamageQueue(MagicMan.this, getSpellDamage(spellData), spellData, false);
+                victim.addToDamageQueue(
+                        MagicMan.this, getSpellDamage(spellData, true), spellData, false);
             }
             this.destroy();
         }
@@ -465,7 +466,7 @@ public class MagicMan extends UserActor {
             for (Actor actor : Champion.getActorsInRadius(handler, this.location, 2.5f)) {
                 if (isNonStructure(actor)) {
                     actor.addToDamageQueue(
-                            MagicMan.this, getSpellDamage(spellData), spellData, false);
+                            MagicMan.this, getSpellDamage(spellData, true), spellData, false);
                 }
             }
             this.timeTraveled = 0;

@@ -434,10 +434,9 @@ public class Champion {
                 boolean hasGrobDevice = ua.hasBackpackItem("junk_4_grob_gob_glob_grod");
 
                 if (ua.hasBackpackItem("junk_1_numb_chucks") && ua.getStat("sp_category1") > 0) {
-                    double delta = target.getPlayerStat("attackSpeed") * -0.25;
-                    this.target.addEffect("attackSpeed", delta, 3000);
-
-                } else if (hasGrobDevice && ua.getStat("sp_category4") > 0) {
+                    ua.handleNumbChuckStacks(target);
+                }
+                if (hasGrobDevice && ua.getStat("sp_category4") > 0) {
                     Random random = new Random();
                     int num = random.nextInt(4);
                     if (num == 0) {

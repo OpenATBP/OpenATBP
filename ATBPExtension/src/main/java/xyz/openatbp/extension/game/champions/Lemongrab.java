@@ -153,7 +153,8 @@ public class Lemongrab extends UserActor {
                         for (Actor a : actorsInTrapezoid) {
                             if (isNonStructure(a))
                                 a.addState(ActorState.SLOWED, Q_SLOW_VALUE, Q_SLOW_DURATION);
-                            a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                            a.addToDamageQueue(
+                                    this, getSpellDamage(spellData, true), spellData, false);
                         }
                     }
                     ExtensionCommands.playSound(
@@ -340,7 +341,7 @@ public class Lemongrab extends UserActor {
                         if (a.getActorType() == ActorType.PLAYER) hitPlayer = true;
                         affectedActors.add(a);
                         a.addToDamageQueue(
-                                Lemongrab.this, getSpellDamage(spellData), spellData, false);
+                                Lemongrab.this, getSpellDamage(spellData, true), spellData, false);
                         a.addState(ActorState.BLINDED, 0d, W_BLIND_DURATION);
                         a.addState(ActorState.SILENCED, 0d, W_SILENCE_DURATION);
                     }
@@ -387,7 +388,7 @@ public class Lemongrab extends UserActor {
                         false,
                         team,
                         0f);
-                double damage = getSpellDamage(spellData);
+                double damage = getSpellDamage(spellData, true);
                 double duration = 2000d;
                 damage *= (1d + (0.1d * unacceptableLevels));
                 duration *= (1d + (0.1d * unacceptableLevels));

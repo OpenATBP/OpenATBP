@@ -77,7 +77,7 @@ public class BubbleGum extends UserActor {
                     if (a.getTeam() != this.team) {
                         JsonNode spellData =
                                 this.parentExt.getAttackData("princessbubblegum", "spell1");
-                        double damage = this.getSpellDamage(spellData) / 10f;
+                        double damage = this.getSpellDamage(spellData, false) / 10f;
                         a.addToDamageQueue(this, damage, spellData, true);
                         if (isNonStructure(a)) {
                             a.addState(ActorState.SLOWED, Q_SLOW_VALUE, Q_SLOW_DURATION);
@@ -260,7 +260,7 @@ public class BubbleGum extends UserActor {
                                                 parentExt, room, id, "spell3c", 350, false);
                         scheduleTask(animDelay, 325);
                     } else {
-                        a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                        a.addToDamageQueue(this, getSpellDamage(spellData, true), spellData, false);
                     }
                     a.knockback(this.bombLocation, 3.5f);
                 }

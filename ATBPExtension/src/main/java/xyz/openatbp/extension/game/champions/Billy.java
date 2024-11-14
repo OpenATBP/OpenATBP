@@ -59,7 +59,7 @@ public class Billy extends UserActor {
                 if (damageReduction >= 0.7d) damageReduction = 0.7d;
                 a.addToDamageQueue(
                         this,
-                        (this.getSpellDamage(spellData) / 5d) * damageReduction,
+                        (this.getSpellDamage(spellData, false) / 5d) * damageReduction,
                         spellData,
                         true);
             }
@@ -156,7 +156,8 @@ public class Billy extends UserActor {
                                 a.knockback(this.location, 3.5f);
                                 if (this.passiveUses == 3) a.addState(ActorState.STUNNED, 0d, 2000);
                             }
-                            a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                            a.addToDamageQueue(
+                                    this, getSpellDamage(spellData, true), spellData, false);
                         }
                     }
                     if (this.passiveUses == 3) this.usePassiveAbility();
@@ -348,7 +349,8 @@ public class Billy extends UserActor {
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 for (Actor a : Champion.getActorsInRadius(handler, dest, 2f)) {
                     if (isNonStructure(a)) {
-                        a.addToDamageQueue(Billy.this, getSpellDamage(spellData), spellData, false);
+                        a.addToDamageQueue(
+                                Billy.this, getSpellDamage(spellData, true), spellData, false);
                     }
                 }
             }
@@ -399,7 +401,8 @@ public class Billy extends UserActor {
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 for (Actor a : Champion.getActorsInRadius(handler, ultLoc, 2.25f)) {
                     if (isNonStructure(a)) {
-                        a.addToDamageQueue(Billy.this, getSpellDamage(spellData), spellData, false);
+                        a.addToDamageQueue(
+                                Billy.this, getSpellDamage(spellData, true), spellData, false);
                     }
                 }
             }

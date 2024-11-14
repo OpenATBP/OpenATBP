@@ -93,8 +93,9 @@ public class Monster extends Actor {
                     && this.state == AggroState.PASSIVE) return false;
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
-                if (ua.hasBackpackItem("junk_1_demon_blood_sword")
-                        && ua.getStat("sp_category1") > 0) damage *= 1.3;
+                if (ChampionData.getJunkLevel(ua, "junk_1_demon_blood_sword") > 0) {
+                    damage *= (1 + ChampionData.getCustomJunkStat(ua, "junk_1_demon_blood_sword"));
+                }
             }
             AttackType attackType = this.getAttackType(attackData);
             int newDamage = this.getMitigatedDamage(damage, attackType, a);

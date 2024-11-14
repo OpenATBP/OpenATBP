@@ -1,85 +1,97 @@
 [
   {
     "type": "BACKPACK",
-    "id": "belt_bella_noche",
-    "default": false,
-    "cost": 350
-  },
-  {
-    "type": "BACKPACK",
-    "id": "belt_billys_bag",
-    "default": false,
-    "cost": 350
-  },
-  {
-    "type": "BACKPACK",
-    "id": "belt_bindle_of_bravery",
-    "default": false,
-    "cost": 350
-  },
-  {
-    "type": "BACKPACK",
-    "id": "belt_candy_monarch",
-    "default": false,
-    "cost": 350
-  },
-  {
-    "type": "BACKPACK",
     "id": "belt_champions",
     "default": true,
     "cost": 0
   },
   {
     "type": "BACKPACK",
-    "id": "belt_enchanters",
+    "id": "belt_beta_assassin",
     "default": false,
     "cost": 350
   },
   {
     "type": "BACKPACK",
-    "id": "belt_fridjitsu",
+    "id": "belt_beta_rng",
     "default": false,
     "cost": 350
   },
   {
     "type": "BACKPACK",
-    "id": "belt_hewers_haversack",
+    "id": "belt_beta_support",
     "default": false,
     "cost": 350
   },
   {
     "type": "BACKPACK",
-    "id": "belt_ice_monarch",
+    "id": "belt_beta_tank",
     "default": false,
     "cost": 350
   },
   {
     "type": "BACKPACK",
-    "id": "belt_meta_science",
+    "id": "belt_beta_jungle",
     "default": false,
     "cost": 350
   },
   {
     "type": "BACKPACK",
-    "id": "belt_sorcerous_satchel",
+    "id": "belt_beta_laner",
     "default": false,
     "cost": 350
   },
   {
     "type": "BACKPACK",
-    "id": "belt_techno_tank",
+    "id": "belt_beta_risk",
     "default": false,
     "cost": 350
   },
   {
     "type": "BACKPACK",
-    "id": "belt_ultimate_wizard",
+    "id": "belt_beta_adc",
     "default": false,
     "cost": 350
   },
   {
     "type": "BACKPACK",
-    "id": "belt_vampire_rocker",
+    "id": "belt_beta_power",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_warlock",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_bruiser",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_anti_tank",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_anti_mage",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_hybrid",
+    "default": false,
+    "cost": 350
+  },
+  {
+    "type": "BACKPACK",
+    "id": "belt_beta_vamp",
     "default": false,
     "cost": 350
   },
@@ -105,7 +117,7 @@
     "type": "CUSTOM_SKIN",
     "id": "bmo_skin_noir",
     "default": false,
-    "cost": 1250
+    "cost": 2000
   },
   {
     "type": "CUSTOM_SKIN",
@@ -117,7 +129,7 @@
     "type": "CUSTOM_SKIN",
     "id": "bmo_skin_soccer",
     "default": false,
-    "cost": 500
+    "cost": 1250
   },
   {
     "type": "CUSTOM_SKIN",
@@ -237,7 +249,7 @@
     "type": "CUSTOM_SKIN",
     "id": "gunter_skin_evil",
     "default": false,
-    "cost": 2500
+    "cost": 1250
   },
   {
     "type": "CUSTOM_SKIN",
@@ -279,7 +291,7 @@
     "type": "CUSTOM_SKIN",
     "id": "iceking_skin_young",
     "default": false,
-    "cost": 1250
+    "cost": 2000
   },
   {
     "type": "DEFAULT_SKIN",
@@ -297,19 +309,19 @@
     "type": "CUSTOM_SKIN",
     "id": "jake_skin_guardian",
     "default": false,
-    "cost": 1250
+    "cost": 2500
   },
   {
     "type": "CUSTOM_SKIN",
     "id": "jake_skin_randy",
     "default": false,
-    "cost": 1250
+    "cost": 2000
   },
   {
     "type": "CUSTOM_SKIN",
     "id": "jake_skin_wizard",
     "default": false,
-    "cost": 2500
+    "cost": 1250
   },
   {
     "type": "CUSTOM_SKIN",
@@ -327,7 +339,7 @@
     "type": "CUSTOM_SKIN",
     "id": "lemongrab_skin_2",
     "default": false,
-    "cost": 500
+    "cost": 1250
   },
   {
     "type": "CUSTOM_SKIN",
@@ -351,7 +363,7 @@
     "type": "CUSTOM_SKIN",
     "id": "lich_skin_skeleton",
     "default": false,
-    "cost": 2500
+    "cost": 1250
   },
   {
     "type": "DEFAULT_SKIN",
@@ -411,7 +423,7 @@
     "type": "CUSTOM_SKIN",
     "id": "marceline_skin_mohawk",
     "default": false,
-    "cost": 2500
+    "cost": 1250
   },
   {
     "type": "CUSTOM_SKIN",
@@ -429,7 +441,7 @@
     "type": "CUSTOM_SKIN",
     "id": "neptr_skin_racing",
     "default": false,
-    "cost": 1250
+    "cost": 2000
   },
   {
     "type": "DEFAULT_SKIN",
@@ -441,7 +453,7 @@
     "type": "CUSTOM_SKIN",
     "id": "peppermintbutler_skin_crowley",
     "default": false,
-    "cost": 500
+    "cost": 1250
   },
   {
     "type": "CUSTOM_SKIN",
@@ -459,7 +471,7 @@
     "type": "CUSTOM_SKIN",
     "id": "peppermintbutler_skin_zombie",
     "default": false,
-    "cost": 2500
+    "cost": 2000
   },
   {
     "type": "DEFAULT_SKIN",
@@ -477,7 +489,7 @@
     "type": "CUSTOM_SKIN",
     "id": "princessbubblegum_skin_prince",
     "default": false,
-    "cost": 2500
+    "cost": 2000
   },
   {
     "type": "CUSTOM_SKIN",
@@ -489,7 +501,7 @@
     "type": "CUSTOM_SKIN",
     "id": "princessbubblegum_skin_young",
     "default": false,
-    "cost": 2500
+    "cost": 2000
   },
   {
     "type": "DEFAULT_SKIN",

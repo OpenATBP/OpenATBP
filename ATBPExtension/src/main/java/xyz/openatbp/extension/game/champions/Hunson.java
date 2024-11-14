@@ -93,7 +93,7 @@ public class Hunson extends UserActor {
 
         if (!fearedActors.isEmpty()) {
             JsonNode spellData = parentExt.getAttackData(this.getAvatar(), "spell2");
-            double damage = getSpellDamage(spellData) / 10d;
+            double damage = getSpellDamage(spellData, false) / 10d;
             for (Actor a : fearedActors.keySet()) {
                 a.addToDamageQueue(Hunson.this, damage, spellData, true);
             }
@@ -104,7 +104,8 @@ public class Hunson extends UserActor {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, this.location, 4f)) {
                 if (this.isNonStructure(a)) {
-                    a.addToDamageQueue(this, this.getSpellDamage(spellData) / 10d, spellData, true);
+                    a.addToDamageQueue(
+                            this, this.getSpellDamage(spellData, false) / 10d, spellData, true);
                 }
             }
         }
@@ -459,7 +460,7 @@ public class Hunson extends UserActor {
         @Override
         protected void hit(Actor victim) {
             JsonNode spellData = parentExt.getAttackData(avatar, "spell1");
-            double damage = getSpellDamage(spellData);
+            double damage = getSpellDamage(spellData, true);
             if (qVictims.containsKey(victim)) {
                 int timesHit = qVictims.get(victim);
                 if (timesHit == 1) damage *= 0.3d;

@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -31,11 +32,11 @@ public class UserActor extends Actor {
     private long timeKilled;
     protected Map<Actor, ISFSObject> aggressors = new HashMap<>();
     protected String backpack;
-    protected int futureCrystalTimer = 240;
+    private boolean futureCrystalActive = true;
     protected int magicNailStacks = 0;
+    protected int lightningSwordStacks = 0;
     protected static final int DAMAGE_PER_NAIL_POINT = 25;
-    protected int moonTimer = 120;
-    protected boolean moonActivated = false;
+    protected static final int DAMAGE_PER_LIGHTNING_POINT = 35;
     protected Map<String, Double> endGameStats = new HashMap<>();
     protected int killingSpree = 0;
     protected int multiKill = 0;
@@ -67,6 +68,14 @@ public class UserActor extends Actor {
     protected long gooBuffStartTime = 0;
     protected List<UserActor> killedPlayers = new ArrayList<>();
     protected long lastAutoTargetTime = 0;
+    protected long stealthEmbargo = -1;
+    private boolean moonVfxActivated = false;
+    protected double glassesBuff = -1;
+    protected long spellShieldCooldown = -1;
+    protected boolean spellShieldActive = false;
+    protected long iFrame = -1;
+    protected String numbChuckVictim;
+    protected boolean numbSlow = false;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -282,6 +291,13 @@ public class UserActor extends Actor {
         else this.hits += 0.2d;
     }
 
+    public void preventStealth() {
+        Console.debugLog("Prevent stealth");
+        this.addState(ActorState.REVEALED, 0d, 3000);
+        this.setState(ActorState.INVISIBLE, false);
+        this.stealthEmbargo = System.currentTimeMillis() + 3000;
+    }
+
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         try {
             if (invincibleDebug) return false;
@@ -303,40 +319,11 @@ public class UserActor extends Actor {
                         this.location);
             }
             AttackType type = this.getAttackType(attackData);
-            if (this.states.get(ActorState.BRUSH) && !attackData.has("attackName")) {
-                Runnable runnable = () -> UserActor.this.setState(ActorState.REVEALED, false);
-                this.setState(ActorState.REVEALED, true);
-                parentExt.getTaskScheduler().schedule(runnable, 3000, TimeUnit.MILLISECONDS);
-            }
-            if (!moonActivated
-                    && this.hasBackpackItem("junk_3_battle_moon")
-                    && this.getStat("sp_category3") > 0
-                    && type == AttackType.PHYSICAL) {
-                int timer = (int) (130 - (10 * getPlayerStat("sp_category3")));
-                if (moonTimer > timer) {
-                    this.moonActivated = true;
-                    int duration = (int) (3 + (1 * getPlayerStat("sp_category3")));
-                    parentExt
-                            .getTaskScheduler()
-                            .schedule(new BattleMoon(), duration, TimeUnit.SECONDS);
-                    ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "fx_junk_battle_moon",
-                            duration * 1000,
-                            this.id + "_battleMoon",
-                            true,
-                            "Bip01 Head",
-                            false,
-                            false,
-                            this.team);
-                    ArrayList<User> users = new ArrayList<>();
-                    users.add(this.player);
-                    if (a.getActorType() == ActorType.PLAYER) {
-                        UserActor ua = (UserActor) a;
-                        users.add(ua.getUser());
-                    }
+            this.preventStealth();
+            double moonChance = ChampionData.getCustomJunkStat(this, "junk_3_battle_moon");
+            if (moonChance > 0) {
+                if (Math.random() < moonChance) {
+                    Console.debugLog("Moon blocked damage! Chance: " + moonChance);
                     ExtensionCommands.playSound(
                             this.parentExt,
                             this.room,
@@ -345,31 +332,42 @@ public class UserActor extends Actor {
                             this.getRelativePoint(false));
                     return false;
                 }
-            } else if (moonActivated && type == AttackType.PHYSICAL) {
-                ArrayList<User> users = new ArrayList<>();
-                users.add(this.player);
-                if (a.getActorType() == ActorType.PLAYER) {
-                    UserActor ua = (UserActor) a;
-                    users.add(ua.getUser());
-                }
-                ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "sfx_junk_battle_moon",
-                        this.getRelativePoint(false));
-                return false;
             }
             int newDamage = this.getMitigatedDamage(damage, type, a);
-            if (a.getActorType() == ActorType.PLAYER)
-                this.addDamageGameStat((UserActor) a, newDamage, type);
+            if (a.getActorType() == ActorType.PLAYER) {
+                UserActor ua = (UserActor) a;
+                this.addDamageGameStat(ua, newDamage, type);
+                double cubeEffect = ChampionData.getCustomJunkStat(ua, "junk_4_antimagic_cube");
+                if (!this.effectHandlers.containsKey("spellDamage")
+                        && type == AttackType.SPELL
+                        && cubeEffect != -1) {
+                    this.addEffect("spellDamage", cubeEffect, 5000);
+                    // TODO: Add icon for this effect
+                    // TODO: Bug, seems to not apply consistently. Especially with dot / constant
+                    // abilities.
+                }
+                if (ChampionData.getJunkLevel(ua, "junk_2_peppermint_tank") > 0
+                        && type == AttackType.SPELL) {
+                    if (ua.getLocation().distance(this.location) < 2d) {
+                        newDamage +=
+                                (newDamage
+                                        * ChampionData.getCustomJunkStat(
+                                                ua, "junk_2_peppermint_tank"));
+                    }
+                }
+                this.handleElectrodeGun(ua, a, damage, attackData);
+                if (type == AttackType.SPELL
+                        && (this.spellShieldActive || System.currentTimeMillis() < iFrame)) {
+                    if (this.spellShieldActive) triggerSpellShield();
+                    return false;
+                }
+            }
             this.handleDamageTakenStat(type, newDamage);
             ExtensionCommands.damageActor(parentExt, this.room, this.id, newDamage);
             this.processHitData(a, attackData, newDamage);
             if (this.hasTempStat("healthRegen")) {
                 this.effectHandlers.get("healthRegen").endAllEffects();
             }
-
             this.changeHealth(newDamage * -1);
             if (this.currentHealth > 0) return false;
             else {
@@ -380,15 +378,13 @@ public class UserActor extends Actor {
                         return false;
                     }
                 }
-                if (this.hasBackpackItem("junk_4_future_crystal")
-                        && this.getStat("sp_category4") > 0) {
-                    double points = (int) this.getStat("sp_category4");
-                    int timer = (int) (250 - (10 * points));
-                    if (this.futureCrystalTimer >= timer) {
-                        double healthPerc = (5 + (5 * points)) / 100;
-                        double health = Math.floor(this.maxHealth * healthPerc);
-                        this.changeHealth((int) health);
-                        this.futureCrystalTimer = 0;
+                if (this.futureCrystalActive
+                        && ChampionData.getJunkLevel(this, "junk_4_future_crystal") > 0) {
+                    if (Math.random()
+                            < ChampionData.getCustomJunkStat(this, "junk_4_future_crystal")) {
+                        this.futureCrystalActive = false;
+                        int targetHealth = (int) Math.round(this.maxHealth * 0.3d);
+                        this.changeHealth(targetHealth - this.getHealth());
                         return false;
                     }
                 }
@@ -400,6 +396,15 @@ public class UserActor extends Actor {
         }
     }
 
+    private void triggerSpellShield() {
+        this.spellShieldActive = false;
+        this.spellShieldCooldown = System.currentTimeMillis() + 90000;
+        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_spellShield");
+        ExtensionCommands.removeStatusIcon(
+                this.parentExt, this.getUser(), "junk_4_grob_gob_glob_grod_name");
+        this.iFrame = System.currentTimeMillis() + 500;
+    }
+
     public double getAttackCooldown() {
         return this.attackCooldown;
     }
@@ -408,6 +413,7 @@ public class UserActor extends Actor {
     public void attack(Actor a) {
         if (this.attackCooldown == 0) {
             this.applyStopMovingDuringAttack();
+            this.preventStealth();
             double critChance = this.getPlayerStat("criticalChance") / 100d;
             double random = Math.random();
             boolean crit = random < critChance;
@@ -463,6 +469,7 @@ public class UserActor extends Actor {
 
     public void applyStopMovingDuringAttack() {
         if (this.parentExt.getActorData(this.getAvatar()).has("attackType")) {
+            this.preventStealth();
             this.stopMoving();
             this.isAutoAttacking = true;
             Runnable resetIsAttacking = () -> this.isAutoAttacking = false;
@@ -627,6 +634,7 @@ public class UserActor extends Actor {
                     critAnimation,
                     true);
             this.attackCooldown = this.getPlayerStat("attackSpeed");
+            this.preventStealth();
             if (this.attackCooldown < BASIC_ATTACK_DELAY) this.attackCooldown = BASIC_ATTACK_DELAY;
             return crit;
         }
@@ -666,6 +674,33 @@ public class UserActor extends Actor {
         }
         if (this.xpWorth < 10) this.xpWorth = 10;
         else if (xpWorth > 50) this.xpWorth = 50;
+    }
+
+    @Override
+    public void handleFear(Point2D source, int duration) {
+        if (this.spellShieldActive || System.currentTimeMillis() < iFrame) {
+            if (this.spellShieldActive) this.triggerSpellShield();
+            return;
+        }
+        super.handleFear(source, duration);
+    }
+
+    @Override
+    public void handlePull(Point2D source, double pullDistance) {
+        if (this.spellShieldActive || System.currentTimeMillis() < iFrame) {
+            if (this.spellShieldActive) this.triggerSpellShield();
+            return;
+        }
+        super.handlePull(source, pullDistance);
+    }
+
+    @Override
+    public void knockback(Point2D source, float distance) {
+        if (this.spellShieldActive || System.currentTimeMillis() < iFrame) {
+            if (this.spellShieldActive) this.triggerSpellShield();
+            return;
+        }
+        super.knockback(source, distance);
     }
 
     @Override
@@ -728,6 +763,10 @@ public class UserActor extends Actor {
             if (this.magicNailStacks > 0) {
                 this.magicNailStacks /= 2;
                 this.updateStatMenu("attackDamage");
+            }
+            if (this.lightningSwordStacks > 0) {
+                this.lightningSwordStacks /= 2;
+                this.updateStatMenu("spellDamage");
             }
             try {
                 ExtensionCommands.handleDeathRecap(
@@ -829,7 +868,8 @@ public class UserActor extends Actor {
             canRegenHealth() { // TODO: Does not account for health pots. Not sure if this should be
         // added for balance reasons.
         // regen works while in combat
-        return (this.currentHealth < this.maxHealth || this.getPlayerStat("healthRegen") < 0);
+        return ((this.currentHealth < this.maxHealth || this.getPlayerStat("healthRegen") < 0)
+                && ChampionData.getJunkLevel(this, "junk_1_ax_bass") < 1);
     }
 
     public void queueMovement(Point2D newDest) {
@@ -856,6 +896,66 @@ public class UserActor extends Actor {
                 this.respawn();
             else return;
         }
+        if (!this.moonVfxActivated
+                && this.hasBackpackItem("junk_3_battle_moon")
+                && ChampionData.getJunkLevel(this, "junk_3_battle_moon") > 0) {
+            ExtensionCommands.createActorFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    "fx_junk_battle_moon",
+                    1000 * 60 * 15,
+                    this.id + "_battlemoon",
+                    true,
+                    "Bip01 Head",
+                    false,
+                    false,
+                    this.team);
+            this.moonVfxActivated = true;
+        } else if (this.moonVfxActivated
+                && ChampionData.getJunkLevel(this, "junk_3_battle_moon") < 1) {
+            this.moonVfxActivated = false;
+            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_battlemoon");
+        }
+        if (!this.spellShieldActive
+                && ChampionData.getJunkLevel(this, "junk_4_grob_gob_glob_grod") > 0
+                && System.currentTimeMillis() > this.spellShieldCooldown) {
+            this.spellShieldActive = true;
+            ExtensionCommands.createActorFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    "ice_king_frost_shield",
+                    1000 * 60 * 15,
+                    this.id + "_spellShield",
+                    true,
+                    "",
+                    true,
+                    false,
+                    this.team);
+            ExtensionCommands.addStatusIcon(
+                    this.parentExt,
+                    this.getUser(),
+                    "junk_4_grob_gob_glob_grod_name",
+                    "junk_4_grob_gob_glob_grod_mod3",
+                    "junk_4_grob_gob_glob_grod",
+                    0f);
+        }
+        if (ChampionData.getJunkLevel(this, "junk_2_simon_petrikovs_glasses") > 0) {
+            for (UserActor ua :
+                    Champion.getUserActorsInRadius(
+                            this.parentExt.getRoomHandler(this.room.getName()),
+                            this.location,
+                            5f)) {
+                if (ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) {
+                    ua.setGlassesBuff(
+                            this.getStat("spellDamage")
+                                    * ChampionData.getCustomJunkStat(
+                                            this, "junk_2_simon_petrikovs_glasses"));
+                }
+            }
+        }
+
         if (this.canMove()
                 && !this.isAutoAttacking
                 && !this.isDashing
@@ -898,13 +998,22 @@ public class UserActor extends Actor {
                 ExtensionCommands.changeBrush(
                         parentExt, room, this.id, parentExt.getBrushNum(this.location));
                 this.setState(ActorState.BRUSH, true);
+                if (this.stealthEmbargo <= System.currentTimeMillis())
+                    this.setState(ActorState.REVEALED, false);
+            } else if (this.stealthEmbargo != -1
+                    && this.stealthEmbargo <= System.currentTimeMillis()) {
                 this.setState(ActorState.REVEALED, false);
+                this.stealthEmbargo = -1;
             }
         } else {
             if (this.states.get(ActorState.BRUSH)) {
                 this.setState(ActorState.BRUSH, false);
-                this.setState(ActorState.REVEALED, true);
+                if (!this.getState(ActorState.INVISIBLE)) this.setState(ActorState.REVEALED, true);
                 ExtensionCommands.changeBrush(parentExt, room, this.id, -1);
+            } else if (!this.states.get(ActorState.REVEALED)
+                    && !this.states.get(ActorState.INVISIBLE)
+                    && !this.states.get(ActorState.STEALTH)) {
+                this.setState(ActorState.REVEALED, true);
             }
         }
         if (this.attackCooldown > 0) this.reduceAttackCooldown();
@@ -945,8 +1054,24 @@ public class UserActor extends Actor {
             }
         }
         if (msRan % 1000 == 0) {
-            this.futureCrystalTimer++;
-            this.moonTimer++;
+
+            if (ChampionData.getJunkLevel(this, "junk_4_flame_cloak") > 0) {
+                for (Actor a :
+                        Champion.getActorsInRadius(
+                                this.parentExt.getRoomHandler(this.room.getName()),
+                                this.location,
+                                1f)) {
+                    if (a.getTeam() != this.team) {
+                        a.addToDamageQueue(
+                                this,
+                                this.maxHealth
+                                        * ChampionData.getCustomJunkStat(
+                                                this, "junk_4_flame_cloak"),
+                                ChampionData.getFlameCloakAttackData(),
+                                true);
+                    }
+                }
+            }
 
             if (this.canRegenHealth()) {
                 regenHealth();
@@ -1256,13 +1381,91 @@ public class UserActor extends Actor {
                 getOppositeTeam());
     }
 
+    @Override
+    public void addState(ActorState state, double delta, int duration) {
+        if (this.spellShieldActive || System.currentTimeMillis() < iFrame) {
+            ActorState[] ccStates = {
+                ActorState.BRUSH,
+                ActorState.CLEANSED,
+                ActorState.IMMUNITY,
+                ActorState.INVINCIBLE,
+                ActorState.INVISIBLE,
+                ActorState.REVEALED,
+                ActorState.STEALTH,
+                ActorState.TRANSFORMED
+            };
+            for (ActorState s : ccStates) {
+                if (state == s) {
+                    super.addState(state, delta, duration);
+                    return;
+                }
+            }
+            if (this.spellShieldActive) {
+                triggerSpellShield();
+            }
+            return;
+        }
+        super.addState(state, delta, duration);
+    }
+
+    @Override
+    public void addState(ActorState state, double delta, int duration, String fxId, String emit) {
+        if (this.spellShieldActive || System.currentTimeMillis() < iFrame) {
+            ActorState[] ccStates = {
+                ActorState.BRUSH,
+                ActorState.CLEANSED,
+                ActorState.IMMUNITY,
+                ActorState.INVINCIBLE,
+                ActorState.INVISIBLE,
+                ActorState.REVEALED,
+                ActorState.STEALTH,
+                ActorState.TRANSFORMED
+            };
+            for (ActorState s : ccStates) {
+                if (state == s) {
+                    super.addState(state, delta, duration, fxId, emit);
+                    return;
+                }
+            }
+            if (this.spellShieldActive) {
+                triggerSpellShield();
+            }
+            return;
+        }
+        super.addState(state, delta, duration, fxId, emit);
+    }
+
     public void handleSwapFromPoly() {
         String bundle = this.getSkinAssetBundle();
         ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bundle);
     }
 
+    public void setGlassesBuff(double buff) {
+        if (this.glassesBuff != buff) {
+            if (this.glassesBuff == -1) {
+                ExtensionCommands.addStatusIcon(
+                        this.parentExt,
+                        this.getUser(),
+                        "junk_2_simon_petrikovs_glasses_name",
+                        "junk_2_simon_petrikovs_glasses_mod3",
+                        "junk_2_simon_petrikovs_glasses",
+                        0f);
+            } else if (buff == -1) {
+                ExtensionCommands.removeStatusIcon(
+                        this.parentExt, this.getUser(), "junk_2_simon_petrikovs_glasses_name");
+            }
+        }
+        this.glassesBuff = buff;
+        Console.debugLog("Setting glasses buff to " + buff);
+        this.updateStatMenu("spellDamage");
+    }
+
     @Override
     public void handleCharm(UserActor charmer, int duration) {
+        if (this.spellShieldActive || System.currentTimeMillis() < iFrame) {
+            if (this.spellShieldActive) this.triggerSpellShield();
+            return;
+        }
         if (!this.states.get(ActorState.CHARMED) && !this.states.get(ActorState.IMMUNITY)) {
             this.charmer = charmer;
             this.addState(ActorState.CHARMED, 0d, duration);
@@ -1271,7 +1474,7 @@ public class UserActor extends Actor {
 
     public void handleCyclopsHealing() {
         if (this.getHealth() != this.maxHealth && !this.pickedUpHealthPack) {
-            this.changeHealth((int) (this.getMaxHealth() * 0.15d));
+            this.heal((int) (this.getMaxHealth() * 0.15d));
         }
         ExtensionCommands.createActorFX(
                 this.parentExt,
@@ -1301,6 +1504,7 @@ public class UserActor extends Actor {
                         + " for team "
                         + this.team);
         this.location = respawnPoint;
+        this.futureCrystalActive = true;
         this.movementLine = new Line2D.Float(respawnPoint, respawnPoint);
         this.timeTraveled = 0f;
         this.canMove = true;
@@ -1343,10 +1547,10 @@ public class UserActor extends Actor {
 
     public void addXP(int xp) {
         if (this.level != 10) {
-            if (this.hasBackpackItem("junk_5_glasses_of_nerdicon")
-                    && this.getStat("sp_category5") > 0) {
-                double multiplier = 1 + ((5 * this.getStat("sp_category5")) / 100);
-                xp *= multiplier;
+            double glassesModifier =
+                    ChampionData.getCustomJunkStat(this, "junk_5_glasses_of_nerdicon");
+            if (glassesModifier > 0) {
+                xp *= (1 + glassesModifier);
             }
             this.xp += xp;
             HashMap<String, Double> updateData = new HashMap<>(3);
@@ -1532,7 +1736,10 @@ public class UserActor extends Actor {
         } else if (stat.equalsIgnoreCase("speed")) {
             if (this.dcBuff >= 1) return super.getPlayerStat(stat) * 1.15f;
         } else if (stat.equalsIgnoreCase("spellDamage")) {
-            if (this.dcBuff == 2) return super.getPlayerStat(stat) * 1.2f;
+            double spellDamage = super.getPlayerStat(stat);
+            if (this.dcBuff == 2) spellDamage *= 1.2f;
+            if (this.glassesBuff != -1) spellDamage += this.glassesBuff;
+            return spellDamage + this.lightningSwordStacks;
         }
         return super.getPlayerStat(stat);
     }
@@ -1555,13 +1762,54 @@ public class UserActor extends Actor {
             } else {
                 this.endGameStats.put("spree", (double) this.killingSpree);
             }
+            if (ChampionData.getJunkLevel(this, "junk_5_ghost_pouch") > 0) {
+                double healfactor = ChampionData.getCustomJunkStat(this, "junk_5_ghost_pouch");
+                for (UserActor ua :
+                        Champion.getUserActorsInRadius(
+                                this.parentExt.getRoomHandler(this.room.getName()),
+                                this.location,
+                                5f)) {
+                    if (ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) {
+                        Console.debugLog("Healed player from ghost pouch!");
+                        ua.changeHealth((int) (ua.maxHealth * healfactor));
+                        // TODO: Add effect / SFX
+                    }
+                }
+            }
+            if (ChampionData.getJunkLevel(this, "junk_1_night_sword") > 0) {
+                this.setState(ActorState.REVEALED, false);
+                this.addState(ActorState.INVISIBLE, 0d, 2000);
+                Runnable reveal =
+                        () -> {
+                            if (!this.getState(ActorState.BRUSH))
+                                this.setState(ActorState.REVEALED, true);
+                        };
+                SmartFoxServer.getInstance()
+                        .getTaskScheduler()
+                        .schedule(reveal, 2000, TimeUnit.MILLISECONDS);
+            }
         }
-        if (this.hasBackpackItem("junk_1_magic_nail")) addMagicNailStacks(a);
+        if (ChampionData.getJunkLevel(this, "junk_1_magic_nail") > 0) addMagicNailStacks(a);
+        if (ChampionData.getJunkLevel(this, "junk_2_lightning_sword") > 0)
+            addLightningSwordStacks(a);
+
         int additionalXP = 0;
         if (a.getActorType() == ActorType.PLAYER) {
             UserActor ua = (UserActor) a;
             int levelDiff = ua.getLevel() - this.level;
             if (levelDiff > 0) additionalXP = 15 * levelDiff;
+        } else if (a.getActorType() == ActorType.MONSTER) {
+            if (ChampionData.getJunkLevel(this, "junk_1_demon_blood_sword") > 0)
+                additionalXP += ((double) a.getXPWorth() * 0.15d);
+            if (ChampionData.getJunkLevel(this, "junk_1_grass_sword") > 0) {
+                additionalXP -= ((double) a.getXPWorth() * 0.15d);
+            }
+        } else if (a.getActorType() == ActorType.MINION) {
+            if (ChampionData.getJunkLevel(this, "junk_1_demon_blood_sword") > 0)
+                additionalXP -= ((double) a.getXPWorth() * 0.1d);
+            if (ChampionData.getJunkLevel(this, "junk_1_grass_sword") > 0) {
+                additionalXP += ((double) a.getXPWorth() * 0.1d);
+            }
         }
         this.addXP(a.getXPWorth() + additionalXP);
         // if (a.getActorType() == ActorType.PLAYER) this.updateXPWorth("kill");
@@ -1598,6 +1846,18 @@ public class UserActor extends Actor {
         }
     }
 
+    private void addLightningSwordStacks(Actor killedActor) {
+        int pointsPutIntoNail = ChampionData.getJunkLevel(this, "junk_2_lightning_sword");
+        int amountOfStacks = killedActor.getActorType() == ActorType.PLAYER ? 5 : 2;
+        int stackCap = pointsPutIntoNail * DAMAGE_PER_LIGHTNING_POINT;
+
+        if (pointsPutIntoNail > 0) {
+            if (lightningSwordStacks + amountOfStacks > stackCap) lightningSwordStacks = stackCap;
+            else lightningSwordStacks += amountOfStacks;
+            this.updateStatMenu("spellDamage");
+        }
+    }
+
     public boolean getState(ActorState state) {
         return this.states.get(state);
     }
@@ -1631,13 +1891,25 @@ public class UserActor extends Actor {
         return this.endGameStats.containsKey(stat);
     }
 
-    public int getSpellDamage(JsonNode attackData) {
+    public int getSpellDamage(JsonNode attackData, boolean singleTarget) {
         try {
-            return (int)
-                    Math.round(
-                            attackData.get("damage").asDouble()
-                                    + (this.getPlayerStat("spellDamage")
-                                            * attackData.get("damageRatio").asDouble()));
+            int damage =
+                    (int)
+                            Math.round(
+                                    attackData.get("damage").asDouble()
+                                            + (this.getPlayerStat("spellDamage")
+                                                    * attackData.get("damageRatio").asDouble()));
+            if (ChampionData.getJunkLevel(this, "junk_2_demonic_wishing_eye") > 0) {
+                double chance = this.getPlayerStat("criticalChance") / 100d;
+                if (!singleTarget) chance /= 2d;
+                if (Math.random() < chance) {
+                    Console.debugLog("Ability crit! Chance: " + chance);
+                    damage *= 2;
+                    ExtensionCommands.playSound(
+                            this.parentExt, this.room, "", "sfx/sfx_map_ping", this.location);
+                }
+            }
+            return damage;
         } catch (Exception e) {
             e.printStackTrace();
             return attackData.get("damage").asInt();
@@ -1839,6 +2111,33 @@ public class UserActor extends Actor {
         this.iconHandlers.remove(iconName);
     }
 
+    public void handleNumbChuckStacks(Actor a) {
+        if (this.numbChuckVictim == null) {
+            this.numbChuckVictim = a.getId();
+            this.numbSlow = true;
+            return;
+        }
+        if (a.getId().equalsIgnoreCase(this.numbChuckVictim)) {
+            if (this.numbSlow) {
+                a.addState(
+                        ActorState.SLOWED,
+                        ChampionData.getCustomJunkStat(this, "junk_1_numb_chucks"),
+                        1500);
+                Console.debugLog("Numb Chuck slow applied!");
+            }
+            this.numbSlow = !this.numbSlow;
+        } else {
+            this.numbChuckVictim = a.getId();
+            this.numbSlow = true;
+        }
+    }
+
+    @Override
+    public void heal(int delta) {
+        if (ChampionData.getJunkLevel(this, "junk_1_ax_bass") > 0) return;
+        super.heal(delta);
+    }
+
     protected class MovementStopper implements Runnable {
 
         boolean move;
@@ -1884,15 +2183,6 @@ public class UserActor extends Actor {
             parentExt
                     .getTaskScheduler()
                     .schedule(attackRunnable, (int) (time * 1000), TimeUnit.MILLISECONDS);
-        }
-    }
-
-    protected class BattleMoon implements Runnable {
-
-        @Override
-        public void run() {
-            moonActivated = false;
-            moonTimer = 0;
         }
     }
 }
