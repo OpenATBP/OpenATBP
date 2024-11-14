@@ -67,7 +67,7 @@ public class Jake extends UserActor {
             if (!victims.isEmpty()) {
                 resetGrab();
                 Actor victim = victims.get(0);
-                JsonNode spellData = parentExt.getAttackData(getChampionName(avatar), "spell2");
+                JsonNode spellData = parentExt.getAttackData(getChampionName(avatar), "spell1");
 
                 Point2D origLocation = this.location;
 

@@ -948,9 +948,8 @@ public class UserActor extends Actor {
                 if (ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) {
                     if (ua.getLocation().distance(this.location) <= 5f)
                         ua.setGlassesBuff(
-                                this.getStat("spellDamage")
-                                        * ChampionData.getCustomJunkStat(
-                                                this, "junk_2_simon_petrikovs_glasses"),
+                                ChampionData.getCustomJunkStat(
+                                        this, "junk_2_simon_petrikovs_glasses"),
                                 this);
                     else ua.setGlassesBuff(-1d, this);
                 }
