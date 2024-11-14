@@ -106,7 +106,7 @@ async function addCustomBags(collection) {
               'belt_beta_anti_mage',
               'belt_beta_hybrid',
               'belt_beta_vamp',
-            ]
+            ],
           },
         },
       };
