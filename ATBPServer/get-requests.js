@@ -92,8 +92,8 @@ module.exports = {
     // /service/presence/roster/{TEGiid} RETURNS friends list from db
     return new Promise(function (resolve, reject) {
       var friends = [];
-      for (var p of onlinePlayers){
-        if(p.username != username){
+      for (var p of onlinePlayers) {
+        if (p.username != username) {
           friends.push({
             user_id: p.username,
             name: p.name,

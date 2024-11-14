@@ -347,9 +347,9 @@ mongoClient.connect((err) => {
     res.render('login');
   });
 
-  app.get('/location/:id/:location',(req,res) => {
+  app.get('/location/:id/:location', (req, res) => {
     console.log(req.params.id);
-    lobbyServer.addPlayerLocation(req.params.id,req.params.location);
+    lobbyServer.addPlayerLocation(req.params.id, req.params.location);
     res.send({});
   });
 

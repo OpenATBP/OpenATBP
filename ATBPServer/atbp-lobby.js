@@ -1536,7 +1536,7 @@ function handleRequest(jsonString, socket) {
         stage: 0, //0 = IN LOBBY, 1 = SEARCHING FOR GAME, 2 = CHAMP SELECT, 3 = IN GAME
         queueData: {},
         location: '',
-        gameId: ''
+        gameId: '',
       };
       playerCollection
         .findOne({ 'user.TEGid': socket.player.teg_id })
@@ -1672,11 +1672,11 @@ module.exports = class ATBPLobbyServer {
   stop(callback) {
     if (this.server) this.server.close(callback());
   }
-  addPlayerLocation(player,location){
+  addPlayerLocation(player, location) {
     var user = users.find((u) => u.player.teg_id == player);
-    if(user != undefined){
+    if (user != undefined) {
       user.player.location = location; //TODO: Not used right now but could be useful
-      console.log("Location updated!");
+      console.log('Location updated!');
     }
   }
 };
