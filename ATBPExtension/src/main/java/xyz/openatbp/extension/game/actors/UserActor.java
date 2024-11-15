@@ -292,6 +292,11 @@ public class UserActor extends Actor {
         else this.hits += 0.2d;
     }
 
+    protected JsonNode getSpellData(int spell) {
+        JsonNode actorDef = parentExt.getDefinition(this.avatar);
+        return actorDef.get("MonoBehaviours").get("ActorData").get("spell" + spell);
+    }
+
     public void preventStealth() {
         Console.debugLog("Prevent stealth");
         this.addState(ActorState.REVEALED, 0d, 3000);
@@ -1061,7 +1066,7 @@ public class UserActor extends Actor {
                                 this.parentExt.getRoomHandler(this.room.getName()),
                                 this.location,
                                 1f)) {
-                    if (a.getTeam() != this.team) {
+                    if (a.getTeam() != this.team && !isNonStructure(a)) {
                         a.addToDamageQueue(
                                 this,
                                 this.maxHealth
