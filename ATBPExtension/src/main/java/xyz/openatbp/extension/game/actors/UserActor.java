@@ -1066,7 +1066,7 @@ public class UserActor extends Actor {
                                 this.parentExt.getRoomHandler(this.room.getName()),
                                 this.location,
                                 1f)) {
-                    if (a.getTeam() != this.team && !isNonStructure(a)) {
+                    if (a.getTeam() != this.team && isNonStructure(a)) {
                         a.addToDamageQueue(
                                 this,
                                 this.maxHealth
