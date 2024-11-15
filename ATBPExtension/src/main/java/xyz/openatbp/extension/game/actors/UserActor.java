@@ -795,6 +795,9 @@ public class UserActor extends Actor {
                         UserActor ua = (UserActor) actor;
                         // ua.updateXPWorth("assist");
                         ua.addXP(this.getXPWorth());
+                        if (ChampionData.getJunkLevel(ua, "junk_5_ghost_pouch") > 0) {
+                            ua.useGhostPouch();
+                        }
                         ua.increaseStat("assists", 1);
                     }
                 }
@@ -1756,6 +1759,19 @@ public class UserActor extends Actor {
         return super.getPlayerStat(stat);
     }
 
+    public void useGhostPouch() {
+        double healfactor = ChampionData.getCustomJunkStat(this, "junk_5_ghost_pouch");
+        for (UserActor ua :
+                Champion.getUserActorsInRadius(
+                        this.parentExt.getRoomHandler(this.room.getName()), this.location, 5f)) {
+            if (ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) {
+                Console.debugLog("Healed player from ghost pouch!");
+                ua.changeHealth((int) (ua.maxHealth * healfactor));
+                // TODO: Add effect / SFX
+            }
+        }
+    }
+
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
         if (a.getActorType() == ActorType.PLAYER || a instanceof Bot) {
@@ -1775,18 +1791,7 @@ public class UserActor extends Actor {
                 this.endGameStats.put("spree", (double) this.killingSpree);
             }
             if (ChampionData.getJunkLevel(this, "junk_5_ghost_pouch") > 0) {
-                double healfactor = ChampionData.getCustomJunkStat(this, "junk_5_ghost_pouch");
-                for (UserActor ua :
-                        Champion.getUserActorsInRadius(
-                                this.parentExt.getRoomHandler(this.room.getName()),
-                                this.location,
-                                5f)) {
-                    if (ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) {
-                        Console.debugLog("Healed player from ghost pouch!");
-                        ua.changeHealth((int) (ua.maxHealth * healfactor));
-                        // TODO: Add effect / SFX
-                    }
-                }
+                this.useGhostPouch();
             }
             if (ChampionData.getJunkLevel(this, "junk_1_night_sword") > 0) {
                 this.setState(ActorState.REVEALED, false);
