@@ -10,6 +10,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.MongoIterable;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
 import org.bson.Document;
@@ -62,6 +64,8 @@ public abstract class RoomHandler implements Runnable {
     private PointLeadTeam pointLeadTeam;
 
     private boolean isAnnouncingKill = false;
+    private static final int SINGLE_KILL_COOLDOWN = 5000;
+    private long lastSingleKillAnnouncement = 0;
 
     public RoomHandler(ATBPExtension parentExt, Room room) {
         this.parentExt = parentExt;
@@ -142,8 +146,17 @@ public abstract class RoomHandler implements Runnable {
 
         for (UserActor ua : this.players) {
             String champion = ua.getChampionName(ua.getAvatar());
-            MongoCollection<Document> champData = this.parentExt.getChampionDatabase();
+            MongoDatabase db = parentExt.database;
+            MongoIterable<String> collections = db.listCollectionNames();
+            ArrayList<String> collectionStrings = new ArrayList<>();
+            for (String collection : collections) {
+                collectionStrings.add(collection);
+            }
+            if (!collectionStrings.contains("champions")) {
+                createChampionsCollectionsIfNotPresent(db);
+            }
             MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
+            MongoCollection<Document> champData = this.parentExt.getChampionDatabase();
             Document data = champData.find(eq("champion", champion)).first();
             if (data != null) {
                 List<Bson> updateList = new ArrayList<>();
@@ -188,6 +201,43 @@ public abstract class RoomHandler implements Runnable {
                     Console.debugLog(playerData.updateOne(pData, updates2, options2));
                 }
             }
+        }
+    }
+
+    public void createChampionsCollectionsIfNotPresent(MongoDatabase db) {
+        String[] avatars = {
+            "billy",
+            "bmo",
+            "cinnamonbun",
+            "finn",
+            "fionna",
+            "flameprincess",
+            "gunter",
+            "hunson",
+            "iceking",
+            "jake",
+            "lemongrab",
+            "lich",
+            "lsp",
+            "magicman",
+            "marceline",
+            "neptr",
+            "peppermintbutler",
+            "princessbubblegum",
+            "rattleballs"
+        };
+        db.createCollection("champions");
+        MongoCollection<Document> champions = db.getCollection("champions");
+        for (String avatar : avatars) {
+            Document champDocument =
+                    new Document("champion", avatar)
+                            .append("playsPVP", 0)
+                            .append("winsPVP", 0)
+                            .append("kills", 0)
+                            .append("deaths", 0)
+                            .append("assists", 0)
+                            .append("damage", 0);
+            champions.insertOne(champDocument);
         }
     }
 
@@ -791,7 +841,9 @@ public abstract class RoomHandler implements Runnable {
                         announceMultiKill(ua, killerMulti);
                     } else if (killerSpree > 2) {
                         announceKillingSpree(ua, killerSpree);
-                    } else {
+                    } else if (System.currentTimeMillis() - lastSingleKillAnnouncement
+                            > SINGLE_KILL_COOLDOWN) {
+                        lastSingleKillAnnouncement = System.currentTimeMillis();
                         announceSingleKill(ua);
                     }
                 }
