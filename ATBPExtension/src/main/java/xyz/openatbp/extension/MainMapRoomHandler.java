@@ -14,6 +14,7 @@ import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
 
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
@@ -197,6 +198,67 @@ public class MainMapRoomHandler extends RoomHandler {
         }
     }
 
+    public void logMatchHistory(int winningTeam) {
+        final String[] STATS = {
+            "damageDealtChamps",
+            "damageReceivedPhysical",
+            "damageReceivedSpell",
+            "spree",
+            "damageReceivedTotal",
+            "damageDealtSpell",
+            "score",
+            "timeDead",
+            "damageDealtTotal",
+            "damageDealtPhysical"
+        };
+        Console.debugLog("Started to log...");
+        MongoCollection<Document> collection = this.parentExt.getMatchHistoryDatabase();
+        ObjectId objId = new ObjectId();
+        Document newDoc = new Document().append("_id", objId).append("winner", winningTeam);
+        ArrayList<Bson> updateList = new ArrayList<>();
+        Document teamA = new Document();
+        Document teamB = new Document();
+        for (UserActor ua : this.players) {
+            Document pDoc = new Document();
+            double win;
+            if (winningTeam == -1) win = 0.5d;
+            else if (ua.getTeam() == winningTeam) win = 1d;
+            else win = 0d;
+            pDoc.append("kills", ua.getStat("kills"));
+            pDoc.append("deaths", ua.getStat("deaths"));
+            pDoc.append("assists", ua.getStat("assists"));
+            pDoc.append("champion", ua.getAvatar().split("_")[0]);
+            for (String s : STATS) {
+                if (ua.hasGameStat(s)) pDoc.append(s, ua.getGameStat(s));
+            }
+            pDoc.append(
+                    "elo", ua.getUser().getVariable("player").getSFSObjectValue().getInt("elo"));
+            pDoc.append("eloGain", ChampionData.getEloGain(ua, this.players, win));
+            if (ua.getTeam() == 0) teamA.append(ua.getDisplayName(), pDoc);
+            else teamB.append(ua.getDisplayName(), pDoc);
+        }
+        updateList.add(Updates.set("0", teamA));
+        updateList.add(Updates.set("1", teamB));
+        Bson updates = Updates.combine(updateList);
+        Console.debugLog(collection.updateOne(newDoc, updates, new UpdateOptions().upsert(true)));
+        for (UserActor ua : this.players) {
+            String tegID = (String) ua.getUser().getSession().getProperty("tegid");
+            MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
+            Document data = playerData.find(eq("user.TEGid", tegID)).first();
+            if (data != null) {
+                try {
+                    List<Bson> updateList2 = new ArrayList<>();
+                    updateList2.add(Updates.addToSet("history", objId));
+                    Bson updates2 = Updates.combine(updateList2);
+                    UpdateOptions options = new UpdateOptions().upsert(true);
+                    Console.debugLog(playerData.updateOne(data, updates2, options));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
     @Override
     public void gameOver(int winningTeam) {
         if (this.gameOver) return;
@@ -205,7 +267,10 @@ public class MainMapRoomHandler extends RoomHandler {
             this.room.setProperty("state", 3);
             ExtensionCommands.gameOver(
                     parentExt, this.room, this.dcPlayers, winningTeam, IS_RANKED_MATCH, false);
-            logChampionData(winningTeam);
+            if (IS_RANKED_MATCH) {
+                logChampionData(winningTeam);
+                logMatchHistory(winningTeam);
+            }
             for (UserActor ua : this.players) {
                 if (ua.getTeam() == winningTeam) {
                     ExtensionCommands.playSound(
