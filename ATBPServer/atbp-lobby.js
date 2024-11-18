@@ -516,7 +516,7 @@ function startGame(players, type) {
   if (type.includes('p') && type != 'practice')
     queueSize = Number(type.replace('p', ''));
   if (queueSize == 3) queueSize = 4; //Turns bots to 2v2
-  var allTeams = matchmaking.getTeams(players, teams, queueSize / 2);
+  var allTeams = matchmaking.getRandomTeams(players, teams, queueSize / 2);
   console.log(allTeams);
   if (allTeams == undefined) return;
   var blue = allTeams.blue;

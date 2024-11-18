@@ -67,13 +67,18 @@ public class Jake extends UserActor {
             if (!victims.isEmpty()) {
                 resetGrab();
                 Actor victim = victims.get(0);
-                JsonNode spellData = parentExt.getAttackData(getChampionName(avatar), "spell2");
+                JsonNode spellData = parentExt.getAttackData(getChampionName(avatar), "spell1");
 
                 Point2D origLocation = this.location;
 
                 float distance = (float) origLocation.distance(victim.getLocation());
                 float modifier = ((130 / 9f) * distance) / 100;
-                double damage = 35 + Math.round(modifier * getPlayerStat("spellDamage"));
+                double damage =
+                        35
+                                + Math.round(
+                                        modifier
+                                                * getPlayerStat(
+                                                        "spellDamage")); // TODO tie to xml file
 
                 victim.addToDamageQueue(this, damage, spellData, false);
                 if (isNonStructure(victim))

@@ -1215,6 +1215,11 @@ public class UserActor extends Actor {
         }
     }
 
+    protected JsonNode getSpellData(int spell) {
+        JsonNode actorDef = parentExt.getDefinition(this.avatar);
+        return actorDef.get("MonoBehaviours").get("ActorData").get("spell" + spell);
+    }
+
     public void handleSwapToPoly(int duration) {
         this.addState(ActorState.SLOWED, 0.3d, duration);
         ExtensionCommands.swapActorAsset(parentExt, this.room, this.id, "flambit");

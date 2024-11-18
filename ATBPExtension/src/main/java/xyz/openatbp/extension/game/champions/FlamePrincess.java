@@ -557,7 +557,11 @@ public class FlamePrincess extends UserActor {
                             .getTaskScheduler()
                             .schedule(
                                     new Champion.DelayedAttack(
-                                            parentExt, FlamePrincess.this, target, 20, "spell4"),
+                                            parentExt,
+                                            FlamePrincess.this,
+                                            target,
+                                            getSpellDamage(getSpellData(4)),
+                                            "spell4"),
                                     i + 1,
                                     TimeUnit.SECONDS);
                 }
