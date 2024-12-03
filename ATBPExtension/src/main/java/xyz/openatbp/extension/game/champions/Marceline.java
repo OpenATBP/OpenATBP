@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
@@ -383,6 +384,7 @@ public class Marceline extends UserActor {
             if (beastWActive && form == Form.BEAST) {
                 if (crit) damage *= 4;
                 else damage *= 2;
+                if(crit && grassSwordCooldown >= ChampionData.getCustomJunkStat(Marceline.this,"junk_1_grass_sword")) damage*=1.25d;
                 double lifesteal = 1d;
                 if (this.target != null
                         && isNonStructure(this.target)

@@ -420,16 +420,31 @@ public class Minion extends Actor {
     @Override
     public double getPlayerStat(String stat) {
         int activeDCBuff = this.parentExt.getRoomHandler(this.room.getName()).getDcWeight();
+        boolean hasGrapeJuice = false;
+        for(UserActor ua : Champion.getUserActorsInRadius(this.parentExt.getRoomHandler(this.room.getName()),this.location,7f)){
+            if(ua.getTeam() == this.team && ChampionData.getCustomJunkStat(ua,"junk_1_grape_juice_sword") > 0){
+                hasGrapeJuice = true;
+                break;
+            }
+        }
         int dcBuff = 0;
         if (activeDCBuff > 0 && this.team == 1) dcBuff = activeDCBuff;
         else if (activeDCBuff < 0 && this.team == 0) dcBuff = Math.abs(activeDCBuff);
         if (stat.equalsIgnoreCase("attackDamage")) {
-            if (dcBuff == 2) return super.getPlayerStat(stat) * 1.2f;
-            return super.getPlayerStat(stat);
+            double attackDamage = super.getPlayerStat(stat);
+            if (dcBuff == 2) attackDamage *= 1.2f;
+            if(hasGrapeJuice) attackDamage*=1.15d;
+            return attackDamage;
         } else if (stat.equalsIgnoreCase("armor")) {
-            if (dcBuff >= 1) return super.getPlayerStat(stat) * 1.2f;
+            double armor = super.getPlayerStat(stat);
+            if (dcBuff >= 1) armor *= 1.2f;
+            if(hasGrapeJuice) armor*=1.5f;
+            return armor;
         } else if (stat.equalsIgnoreCase("spellResist")) {
-            if (dcBuff >= 1) return super.getPlayerStat(stat) * 1.2f;
+            double mr = super.getPlayerStat(stat);
+            if (dcBuff >= 1) mr *= 1.2f;
+            if(hasGrapeJuice) mr*=1.5f;
+            return mr;
         } else if (stat.equalsIgnoreCase("speed")) {
             if (dcBuff >= 1) return super.getPlayerStat(stat) * 1.15f;
         } else if (stat.equalsIgnoreCase("spellDamage")) {

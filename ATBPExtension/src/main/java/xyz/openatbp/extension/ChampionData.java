@@ -70,13 +70,11 @@ public class ChampionData {
                     stats = new double[] {-25, -50, -75, -100};
                     break;
                 case "junk_2_peppermint_tank":
+                case "junk_3_globs_helmet":
                     stats = new double[] {0.05, 0.1, 0.15, 0.25};
                     break;
-                case "junk_4_flame_cloak":
-                    stats = new double[] {0.05, 0.07, 0.1, 0.1};
-                    break;
                 case "junk_1_demon_blood_sword":
-                case "junk_1_grass_sword":
+                case "junk_1_grape_juice_sword":
                     stats = new double[] {0.15, 0.2, 0.25, 0.3};
                     break;
                 case "junk_2_electrode_gun":
@@ -85,6 +83,14 @@ public class ChampionData {
                 case "junk_2_simon_petrikovs_glasses":
                     stats = new double[] {50d, 75d, 100d, 150d};
                     break;
+                case "junk_1_grass_sword":
+                    stats = new double[]{60,50,40,20};
+                    break;
+                case "junk_1_fight_king_sword":
+                    stats = new double[]{2000,4000,7000,12000};
+                    break;
+                case "junk_2_cosmic_gauntlet":
+                    stats = new double[]{1000,2000,3000,4000};
             }
             return stats[level - 1];
         }

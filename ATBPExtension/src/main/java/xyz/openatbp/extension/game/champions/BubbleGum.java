@@ -395,7 +395,10 @@ public class BubbleGum extends UserActor {
         @Override
         public void run() {
             double damage = this.attacker.getPlayerStat("attackDamage");
-            if (crit) damage *= 2;
+            if (crit){
+                damage *= 2;
+                damage = handleGrassSwordProc(damage);
+            }
             if (BubbleGum.this.passiveAmmunition > 0
                     && this.target.getActorType()
                             == ActorType.PLAYER) { // TODO: Applying the passive here feels wrong

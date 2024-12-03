@@ -510,7 +510,10 @@ public class MagicMan extends UserActor {
         @Override
         public void run() {
             double damage = getPlayerStat("attackDamage");
-            if (crit) damage *= 2;
+            if (crit){
+                damage *= 2;
+                damage = handleGrassSwordProc(damage);
+            }
             new Champion.DelayedAttack(
                             parentExt, MagicMan.this, target, (int) damage, "basicAttack")
                     .run();

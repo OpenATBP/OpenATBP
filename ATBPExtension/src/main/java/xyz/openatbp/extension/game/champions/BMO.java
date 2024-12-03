@@ -529,7 +529,10 @@ public class BMO extends UserActor {
 
         public void run() {
             double damage = BMO.this.getPlayerStat("attackDamage");
-            if (crit) damage *= 2;
+            if (crit){
+                damage *= 2;
+                damage = handleGrassSwordProc(damage);
+            }
             new Champion.DelayedAttack(
                             parentExt, BMO.this, this.target, (int) damage, "basicAttack")
                     .run();

@@ -26,6 +26,14 @@ public class Monster extends Actor {
         BIG
     }
 
+    enum BuffType {
+        GNOME,
+        WOLF,
+        BEAR,
+        OWL,
+        NONE
+    }
+
     private AggroState state = AggroState.PASSIVE;
     private final Point2D startingLocation;
     private final MonsterType type;
@@ -440,5 +448,27 @@ public class Monster extends Actor {
                 this.moveWithCollision(this.target.getLocation());
             }
         }
+    }
+
+    public BuffType getBuffType() {
+        if (this.avatar.equalsIgnoreCase("gnome_a")) return BuffType.GNOME;
+        if (this.avatar.equalsIgnoreCase("grassbear")) return BuffType.BEAR;
+        if (this.avatar.equalsIgnoreCase("hugwolf")) return BuffType.WOLF;
+        if (this.avatar.equalsIgnoreCase("ironowl_a")) return BuffType.OWL;
+        return BuffType.NONE;
+    }
+
+    public String getBuffDescription() {
+        switch (this.getBuffType()) {
+            case OWL:
+                return "Increased AD by 15!";
+            case GNOME:
+                return "Increased AP by 30!";
+            case BEAR:
+                return "Increased armor by 5!";
+            case WOLF:
+                return "Increased MR by 5!";
+        }
+        return "invalid buff";
     }
 }
