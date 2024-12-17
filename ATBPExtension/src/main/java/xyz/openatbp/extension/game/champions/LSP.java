@@ -353,7 +353,7 @@ public class LSP extends UserActor {
         @Override
         public void run() {
             double damage = LSP.this.getPlayerStat("attackDamage");
-            if (crit){
+            if (crit) {
                 damage *= 2;
                 damage = handleGrassSwordProc(damage);
             }

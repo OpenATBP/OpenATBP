@@ -93,7 +93,8 @@ public class GooMonster extends Monster {
 
                 if (ua.getTeam() == killerTeam && ua.getHealth() > 0 && !ua.isDead()) {
                     double delta = ua.getPlayerStat("speed") * 0.1d;
-                    if(ChampionData.getCustomJunkStat(ua,"junk_1_demon_blood_sword") > 0) delta+=0.15;
+                    if (ChampionData.getCustomJunkStat(ua, "junk_1_demon_blood_sword") > 0)
+                        delta += 0.15;
                     ua.setHasGooBuff(true);
                     ua.setGooBuffStartTime(System.currentTimeMillis());
                     ua.addEffect("speed", delta, GOO_BUFF_DURATION, "jungle_buff_goo", "");

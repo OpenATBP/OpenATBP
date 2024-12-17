@@ -89,6 +89,7 @@ public class UserActor extends Actor {
     protected long lastSpell = -1;
     protected int fightKingStacks = 0;
     protected int cosmicStacks = 0;
+    private boolean flameCloakEffectActivated = false;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -316,22 +317,24 @@ public class UserActor extends Actor {
         this.stealthEmbargo = System.currentTimeMillis() + 3000;
     }
 
-    public void handleLichHand(UserActor ua){
-        if(this.lichHandDamageApplies(ua)){
+    public void handleLichHand(UserActor ua) {
+        if (this.lichHandDamageApplies(ua)) {
             this.lichHandTimesHit++;
             Console.debugLog("Lich hand damage proc!");
-        }else{
+        } else {
             this.lichVictim = ua.getId();
             this.lichHandTimesHit = 0;
         }
         this.lichLastHit = System.currentTimeMillis();
     }
 
-    public boolean lichHandDamageApplies(UserActor ua){
-        return ChampionData.getJunkLevel(this,"junk_2_lich_hand") > 0 && this.lichVictim.equalsIgnoreCase(ua.getId()) && System.currentTimeMillis() > this.lichLastHit + 1000;
+    public boolean lichHandDamageApplies(UserActor ua) {
+        return ChampionData.getJunkLevel(this, "junk_2_lich_hand") > 0
+                && this.lichVictim.equalsIgnoreCase(ua.getId())
+                && System.currentTimeMillis() > this.lichLastHit + 1000;
     }
 
-    public int getLichHandTimesHit(){
+    public int getLichHandTimesHit() {
         return this.lichHandTimesHit;
     }
 
@@ -374,8 +377,8 @@ public class UserActor extends Actor {
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
                 this.addDamageGameStat(ua, newDamage, type);
-                if(type == AttackType.SPELL){
-                    newDamage+= 15*fightKingStacks;
+                if (type == AttackType.SPELL) {
+                    newDamage += 15 * fightKingStacks;
                     this.fightKingStacks = 0;
                 }
                 double cubeEffect = ChampionData.getCustomJunkStat(ua, "junk_4_antimagic_cube");
@@ -396,14 +399,16 @@ public class UserActor extends Actor {
                                                 ua, "junk_2_peppermint_tank"));
                     }
                 }
-                if(ua.lichHandDamageApplies(this)){
-                    newDamage += (newDamage*(0.1 * ua.getLichHandTimesHit()));
+                if (ua.lichHandDamageApplies(this)) {
+                    newDamage += (newDamage * (0.1 * ua.getLichHandTimesHit()));
                 }
                 ua.handleLichHand(this);
                 this.handleElectrodeGun(ua, a, damage, attackData);
 
-                if(this.maxHealth > ua.getMaxHealth() && ChampionData.getJunkLevel(ua,"junk_3_globs_helmet") > 0){
-                    newDamage += newDamage*ChampionData.getCustomJunkStat(ua,"junk_3_grobs_helmet");
+                if (this.maxHealth > ua.getMaxHealth()
+                        && ChampionData.getJunkLevel(ua, "junk_3_globs_helmet") > 0) {
+                    newDamage +=
+                            newDamage * ChampionData.getCustomJunkStat(ua, "junk_3_grobs_helmet");
                 }
 
                 if (type == AttackType.SPELL
@@ -412,7 +417,7 @@ public class UserActor extends Actor {
                     return false;
                 }
             }
-            newDamage = this.getMitigatedDamage(newDamage,type,a);
+            newDamage = this.getMitigatedDamage(newDamage, type, a);
             this.handleDamageTakenStat(type, newDamage);
             ExtensionCommands.damageActor(parentExt, this.room, this.id, newDamage);
             this.processHitData(a, attackData, newDamage);
@@ -460,10 +465,10 @@ public class UserActor extends Actor {
         return this.attackCooldown;
     }
 
-    public double handleGrassSwordProc(double damage){ //TODO: Add indicator or something
-        if(this.grassSwordCooldown >= ChampionData.getCustomJunkStat(this,"junk_1_grass_sword")){
+    public double handleGrassSwordProc(double damage) { // TODO: Add indicator or something
+        if (this.grassSwordCooldown >= ChampionData.getCustomJunkStat(this, "junk_1_grass_sword")) {
             this.grassSwordCooldown = 0;
-            return damage*1.25d;
+            return damage * 1.25d;
         }
         return damage;
     }
@@ -489,7 +494,7 @@ public class UserActor extends Actor {
             this.attackCooldown = this.getPlayerStat("attackSpeed");
             if (this.attackCooldown < BASIC_ATTACK_DELAY) this.attackCooldown = BASIC_ATTACK_DELAY;
             double damage = this.getPlayerStat("attackDamage");
-            if (crit){
+            if (crit) {
                 damage *= this.getPlayerStat("criticalDamage");
                 damage = this.handleGrassSwordProc(damage);
             }
@@ -832,7 +837,7 @@ public class UserActor extends Actor {
                 this.lightningSwordStacks /= 2;
                 this.updateStatMenu("spellDamage");
             }
-            if (this.robeStacks > 0){
+            if (this.robeStacks > 0) {
                 this.robeStacks /= 2;
                 this.updateStatMenu("coolDownReduction");
             }
@@ -1042,6 +1047,28 @@ public class UserActor extends Actor {
         } else if (this.hits < 0) this.hits = 0;
         this.location = this.getRelativePoint(false);
         this.handlePathing();
+
+        if (!this.flameCloakEffectActivated
+                && ChampionData.getJunkLevel(this, "junk_4_flame_cloak") > 0) {
+            ExtensionCommands.createActorFX(
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    "fx_target_ring_1.5",
+                    1000 * 60 * 15,
+                    this.id + "_flameCloak",
+                    true,
+                    "",
+                    true,
+                    true,
+                    this.team);
+            this.flameCloakEffectActivated = true;
+        } else if (this.flameCloakEffectActivated
+                && ChampionData.getJunkLevel(this, "junk_4_flame_cloak") == 0) {
+            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_flameCloak");
+            this.flameCloakEffectActivated = false;
+        }
+
         if (movementDebug)
             ExtensionCommands.moveActor(
                     this.parentExt,
@@ -1130,7 +1157,7 @@ public class UserActor extends Actor {
                         Champion.getActorsInRadius(
                                 this.parentExt.getRoomHandler(this.room.getName()),
                                 this.location,
-                                1f)) {
+                                1.5f)) {
                     if (a.getTeam() != this.team && isNonStructure(a)) {
                         a.addToDamageQueue(
                                 this,
@@ -1160,12 +1187,18 @@ public class UserActor extends Actor {
                 }
             } else if (this.roboStacks > 0) this.roboStacks = 0;
 
-            if (ChampionData.getJunkLevel(this,"junk_1_grass_sword") > 0){
+            if (ChampionData.getJunkLevel(this, "junk_1_grass_sword") > 0) {
                 this.grassSwordCooldown++;
             }
 
-            if(this.fightKingStacks > 0 && System.currentTimeMillis() >= ChampionData.getCustomJunkStat(this,"junk_1_fight_king_sword")) this.fightKingStacks = 0;
-            if(this.cosmicStacks > 0 && System.currentTimeMillis() >= ChampionData.getCustomJunkStat(this,"junk_2_cosmic_gauntlet")) this.cosmicStacks = 0;
+            if (this.fightKingStacks > 0
+                    && System.currentTimeMillis()
+                            >= ChampionData.getCustomJunkStat(this, "junk_1_fight_king_sword"))
+                this.fightKingStacks = 0;
+            if (this.cosmicStacks > 0
+                    && System.currentTimeMillis()
+                            >= ChampionData.getCustomJunkStat(this, "junk_2_cosmic_gauntlet"))
+                this.cosmicStacks = 0;
 
             if (this.canRegenHealth()) {
                 regenHealth();
@@ -1851,7 +1884,7 @@ public class UserActor extends Actor {
             if (this.dcBuff == 2) spellDamage *= 1.2f;
             if (this.glassesBuff != -1) spellDamage += this.glassesBuff;
             return spellDamage + this.lightningSwordStacks + (30 * this.getMonsterBuffCount(stat));
-        } else if(stat.equalsIgnoreCase("coolDownReduction")){
+        } else if (stat.equalsIgnoreCase("coolDownReduction")) {
             return super.getPlayerStat(stat) + this.robeStacks;
         }
         return super.getPlayerStat(stat);
@@ -1953,7 +1986,7 @@ public class UserActor extends Actor {
         if (ChampionData.getJunkLevel(this, "junk_1_magic_nail") > 0) addMagicNailStacks(a);
         if (ChampionData.getJunkLevel(this, "junk_2_lightning_sword") > 0)
             addLightningSwordStacks(a);
-        if (ChampionData.getJunkLevel(this,"junk_4_wizard_robe") > 0) addRobeStacks(a);
+        if (ChampionData.getJunkLevel(this, "junk_4_wizard_robe") > 0) addRobeStacks(a);
 
         int additionalXP = 0;
         if (a.getActorType() == ActorType.PLAYER) {
@@ -1968,7 +2001,7 @@ public class UserActor extends Actor {
             }
 
         } else if (a.getActorType() == ActorType.MINION) {
-            if (ChampionData.getJunkLevel(this, "junk_1_grass_sword") > 0) {
+            if (ChampionData.getJunkLevel(this, "junk_1_grape_juice_sword") > 0) {
                 additionalXP += ((double) a.getXPWorth() * 0.1d);
             }
         }
@@ -2019,7 +2052,7 @@ public class UserActor extends Actor {
         }
     }
 
-    private void addRobeStacks(Actor killedActor){
+    private void addRobeStacks(Actor killedActor) {
         int pointsPutIntoRobe = ChampionData.getJunkLevel(this, "junk_4_wizard_robe");
         double amountOfStacks = killedActor.getActorType() == ActorType.PLAYER ? 0.5 : 0.1;
         int stackCap = pointsPutIntoRobe * CDR_PER_ROBE_POINT;
@@ -2252,21 +2285,21 @@ public class UserActor extends Actor {
         ExtensionCommands.destroyActor(this.parentExt, this.room, this.id);
     }
 
-    public void setLastAuto(){
+    public void setLastAuto() {
         this.lastAuto = System.currentTimeMillis();
-        if(ChampionData.getJunkLevel(this,"junk_1_fight_king_sword") > 0) this.fightKingStacks++;
+        if (ChampionData.getJunkLevel(this, "junk_1_fight_king_sword") > 0) this.fightKingStacks++;
     }
 
-    public void setLastSpell(){
+    public void setLastSpell() {
         this.lastSpell = System.currentTimeMillis();
-        if(ChampionData.getJunkLevel(this,"junk_2_cosmic_gauntlet") > 0) this.cosmicStacks++;
+        if (ChampionData.getJunkLevel(this, "junk_2_cosmic_gauntlet") > 0) this.cosmicStacks++;
     }
 
-    public int getCosmicStacks(){
+    public int getCosmicStacks() {
         return this.cosmicStacks;
     }
 
-    public void resetCosmicStacks(){
+    public void resetCosmicStacks() {
         this.cosmicStacks = 0;
     }
 

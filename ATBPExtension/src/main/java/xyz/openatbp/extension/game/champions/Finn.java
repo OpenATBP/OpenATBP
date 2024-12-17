@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
@@ -601,7 +600,7 @@ public class Finn extends UserActor {
         @Override
         public void run() {
             double damage = getPlayerStat("attackDamage");
-            if (this.crit){
+            if (this.crit) {
                 damage *= 2;
                 damage = handleGrassSwordProc(damage);
             }

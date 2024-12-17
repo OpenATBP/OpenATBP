@@ -217,8 +217,11 @@ public class Minion extends Actor {
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
                 aggressors.put(ua, 0);
-                if (ChampionData.getJunkLevel(ua, "junk_1_grass_sword") > 0) {
-                    damage += (damage * ChampionData.getCustomJunkStat(ua, "junk_1_grass_sword"));
+                if (ChampionData.getJunkLevel(ua, "junk_1_grape_juice_sword") > 0) {
+                    damage +=
+                            (damage
+                                    * ChampionData.getCustomJunkStat(
+                                            ua, "junk_1_grape_juice_sword"));
                 }
                 if (ChampionData.getJunkLevel(ua, "junk_2_peppermint_tank") > 0
                         && getAttackType(attackData) == AttackType.SPELL) {
@@ -421,8 +424,11 @@ public class Minion extends Actor {
     public double getPlayerStat(String stat) {
         int activeDCBuff = this.parentExt.getRoomHandler(this.room.getName()).getDcWeight();
         boolean hasGrapeJuice = false;
-        for(UserActor ua : Champion.getUserActorsInRadius(this.parentExt.getRoomHandler(this.room.getName()),this.location,7f)){
-            if(ua.getTeam() == this.team && ChampionData.getCustomJunkStat(ua,"junk_1_grape_juice_sword") > 0){
+        for (UserActor ua :
+                Champion.getUserActorsInRadius(
+                        this.parentExt.getRoomHandler(this.room.getName()), this.location, 7f)) {
+            if (ua.getTeam() == this.team
+                    && ChampionData.getCustomJunkStat(ua, "junk_1_grape_juice_sword") > 0) {
                 hasGrapeJuice = true;
                 break;
             }
@@ -433,20 +439,23 @@ public class Minion extends Actor {
         if (stat.equalsIgnoreCase("attackDamage")) {
             double attackDamage = super.getPlayerStat(stat);
             if (dcBuff == 2) attackDamage *= 1.2f;
-            if(hasGrapeJuice) attackDamage*=1.15d;
+            if (hasGrapeJuice) attackDamage *= 1.15d;
             return attackDamage;
         } else if (stat.equalsIgnoreCase("armor")) {
             double armor = super.getPlayerStat(stat);
             if (dcBuff >= 1) armor *= 1.2f;
-            if(hasGrapeJuice) armor*=1.5f;
+            if (hasGrapeJuice) armor *= 1.5f;
             return armor;
         } else if (stat.equalsIgnoreCase("spellResist")) {
             double mr = super.getPlayerStat(stat);
             if (dcBuff >= 1) mr *= 1.2f;
-            if(hasGrapeJuice) mr*=1.5f;
+            if (hasGrapeJuice) mr *= 1.5f;
             return mr;
         } else if (stat.equalsIgnoreCase("speed")) {
-            if (dcBuff >= 1) return super.getPlayerStat(stat) * 1.15f;
+            double speed = super.getPlayerStat(stat);
+            if (dcBuff >= 1) speed *= 1.15f;
+            if (hasGrapeJuice) speed += 0.3f;
+            return speed;
         } else if (stat.equalsIgnoreCase("spellDamage")) {
             if (dcBuff == 2) return super.getPlayerStat(stat) * 1.2f;
         }
@@ -469,39 +478,59 @@ public class Minion extends Actor {
     private Point2D getPathPoint() {
         double x;
         double y;
-        if (!this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
-            if (this.lane == 0) {
-                x = blueTopX[this.mainPathIndex];
-                y = blueTopY[this.mainPathIndex];
+        try{
+            if (!this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
+                if (this.lane == 0) {
+                    x = blueTopX[this.mainPathIndex];
+                    y = blueTopY[this.mainPathIndex];
+                } else {
+                    x = blueBotX[this.mainPathIndex];
+                    y = blueBotY[this.mainPathIndex];
+                }
             } else {
-                x = blueBotX[this.mainPathIndex];
-                y = blueBotY[this.mainPathIndex];
+                x = practiceX[this.mainPathIndex];
+                y = practiceY[this.mainPathIndex];
             }
-        } else {
-            x = practiceX[this.mainPathIndex];
-            y = practiceY[this.mainPathIndex];
+            return new Point2D.Double(x, y);
+        }catch(ArrayIndexOutOfBoundsException e) {
+            e.printStackTrace();
+            if(!this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()){
+                if (this.team == 0){
+                    this.mainPathIndex = 0;
+                }else{
+                    if(this.lane == 0){
+                        this.mainPathIndex = blueTopX.length-1;
+                    }else this.mainPathIndex = blueBotX.length-1;
+                }
+            }else{
+                if(this.team == 0) this.mainPathIndex = 0;
+                else this.mainPathIndex = practiceX.length-1;
+            }
+            return getPathPoint();
         }
-
-        return new Point2D.Double(x, y);
     }
 
     private Point2D getPathPoint(int mainPathIndex) {
         double x;
         double y;
-        if (!this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
-            if (this.lane == 0) {
-                x = blueTopX[mainPathIndex];
-                y = blueTopY[mainPathIndex];
+        try{
+            if (!this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
+                if (this.lane == 0) {
+                    x = blueTopX[mainPathIndex];
+                    y = blueTopY[mainPathIndex];
+                } else {
+                    x = blueBotX[mainPathIndex];
+                    y = blueBotY[mainPathIndex];
+                }
             } else {
-                x = blueBotX[mainPathIndex];
-                y = blueBotY[mainPathIndex];
+                x = practiceX[mainPathIndex];
+                y = practiceY[mainPathIndex];
             }
-        } else {
-            x = practiceX[mainPathIndex];
-            y = practiceY[mainPathIndex];
+            return new Point2D.Double(x, y);
+        }catch (ArrayIndexOutOfBoundsException e){
+            e.printStackTrace();
+            return null;
         }
-
-        return new Point2D.Double(x, y);
     }
 
     private void moveAlongPath() {
@@ -614,9 +643,7 @@ public class Minion extends Actor {
                 }
             }
         }
-        if (closestPoint != null) {
-            this.moveWithCollision(closestPoint);
-        } else this.moveWithCollision(this.getPathPoint());
+        this.moveWithCollision(closestPoint);
         this.state = State.MOVING;
     }
 

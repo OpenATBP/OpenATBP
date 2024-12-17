@@ -529,7 +529,7 @@ public class BMO extends UserActor {
 
         public void run() {
             double damage = BMO.this.getPlayerStat("attackDamage");
-            if (crit){
+            if (crit) {
                 damage *= 2;
                 damage = handleGrassSwordProc(damage);
             }

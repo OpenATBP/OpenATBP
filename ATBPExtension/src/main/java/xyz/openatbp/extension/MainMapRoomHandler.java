@@ -236,7 +236,7 @@ public class MainMapRoomHandler extends RoomHandler {
             }
             pDoc.append(
                     "elo", ua.getUser().getVariable("player").getSFSObjectValue().getInt("elo"));
-            pDoc.append("eloGain", ChampionData.getEloGain(ua, this.players, win));
+            pDoc.append("eloGain", win > 0 ? 1 : 0);
             if (ua.getTeam() == 0) teamA.append(ua.getDisplayName(), pDoc);
             else teamB.append(ua.getDisplayName(), pDoc);
         }
@@ -311,8 +311,7 @@ public class MainMapRoomHandler extends RoomHandler {
                         if (winningTeam == -1) win = 0.5d;
                         else if (ua.getTeam() == winningTeam) win = 1d;
                         else win = 0d;
-                        int eloGain = ChampionData.getEloGain(ua, this.players, win);
-                        if (dataObj.get("player").get("playsPVP").asInt() < 10) eloGain *= 2;
+                        int eloGain = win > 0 ? 1 : 0;
                         int currentElo = dataObj.get("player").get("elo").asInt();
                         int currentTier = ChampionData.getTier(currentElo);
                         if (ChampionData.getTier(currentElo + eloGain) < currentTier

@@ -507,7 +507,7 @@ public class IceKing extends UserActor {
         @Override
         public void run() {
             double damage = this.attacker.getPlayerStat("attackDamage");
-            if (crit){
+            if (crit) {
                 damage *= 2;
                 damage = handleGrassSwordProc(damage);
             }

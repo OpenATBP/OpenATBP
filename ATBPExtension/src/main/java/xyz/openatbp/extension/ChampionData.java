@@ -19,8 +19,8 @@ import xyz.openatbp.extension.game.actors.UserActor;
 public class ChampionData {
 
     private static final int[] XP_LEVELS = {100, 210, 350, 520, 720, 950, 1210, 1500, 1820, 2170};
-    public static final double[] ELO_TIERS = {0, 1149, 1350, 1602};
-    public static final double MAX_ELO = 2643;
+    public static final double[] ELO_TIERS = {0, 50, 100, 200};
+    public static final double MAX_ELO = 500;
 
     public static int getXPLevels(int index) {
         if (index < 0) return XP_LEVELS[0];
@@ -84,13 +84,13 @@ public class ChampionData {
                     stats = new double[] {50d, 75d, 100d, 150d};
                     break;
                 case "junk_1_grass_sword":
-                    stats = new double[]{60,50,40,20};
+                    stats = new double[] {60, 50, 40, 20};
                     break;
                 case "junk_1_fight_king_sword":
-                    stats = new double[]{2000,4000,7000,12000};
+                    stats = new double[] {2000, 4000, 7000, 12000};
                     break;
                 case "junk_2_cosmic_gauntlet":
-                    stats = new double[]{1000,2000,3000,4000};
+                    stats = new double[] {1000, 2000, 3000, 4000};
             }
             return stats[level - 1];
         }
@@ -445,6 +445,7 @@ public class ChampionData {
         return buildPath;
     }
 
+    @Deprecated
     public static int getEloGain(UserActor ua, List<UserActor> players, double result) {
         double myElo = ua.getUser().getVariable("player").getSFSObjectValue().getInt("elo");
         double teamCount = 0;

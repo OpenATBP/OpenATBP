@@ -58,10 +58,11 @@ public class Keeoth extends Monster {
                     ua.addEffect("lifeSteal", 35d, KEEOTH_BUFF_DURATION, "jungle_buff_keeoth", "");
                     ua.addEffect("spellVamp", 40d, KEEOTH_BUFF_DURATION);
                     double critChange = 35d;
-                    if(ChampionData.getCustomJunkStat(ua,"junk_1_demon_blood_sword") > 0) critChange+=5d;
+                    if (ChampionData.getCustomJunkStat(ua, "junk_1_demon_blood_sword") > 0)
+                        critChange += 5d;
                     ua.addEffect("criticalChance", critChange, KEEOTH_BUFF_DURATION);
                     double healthChange = (double) ua.getHealth() * 0.3d;
-                    ua.heal((int) healthChange); //TODO: Maybe change?
+                    ua.heal((int) healthChange); // TODO: Maybe change?
                     ExtensionCommands.addStatusIcon(
                             this.parentExt,
                             ua.getUser(),

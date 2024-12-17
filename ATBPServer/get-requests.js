@@ -48,8 +48,8 @@ module.exports = {
   handleChampConfig: function () {
     // /service/data/config/champions/ Not sure if this is what it should be returning or not.
     return JSON.stringify({
-      upperELO: 2643.0,
-      eloTier: ['0', '1149', '1350', '1602'], //This changes the tiers that change your icon based on elo. 500 marks bronze and 2000 is burple
+      upperELO: 500.0,
+      eloTier: ['0', '50', '100', '200'], //This changes the tiers that change your icon based on elo. 500 marks bronze and 2000 is burple
     });
   },
   handlePlayerInventory: function (token, collection) {
@@ -74,9 +74,9 @@ module.exports = {
           if (dat != null) {
             switch (dat.player.elo + 1) {
               case 0: //Should never happen
-              case 1149:
-              case 1350:
-              case 1602:
+              case 50:
+              case 100:
+              case 200:
                 dat.player.elo++;
                 break;
             }

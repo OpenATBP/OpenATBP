@@ -437,7 +437,7 @@ public class Champion {
                     ua.handleNumbChuckStacks(target);
                 }
 
-                this.damage+=this.damage*(20*ua.getCosmicStacks());
+                this.damage += this.damage * (20 * ua.getCosmicStacks());
                 ua.resetCosmicStacks();
 
                 if (hasGrobDevice && ua.getStat("sp_category4") > 0) {
@@ -453,7 +453,7 @@ public class Champion {
 
                 if (ua.getRoboStacks() > 0) {
                     ua.resetRoboStacks();
-                    target.addState(ActorState.SLOWED, 0.1, 3000); // TODO: Make scalable
+                    target.addState(ActorState.SLOWED, 0.2, 3000); // TODO: Make scalable
                 }
 
                 if (canLifeSteal()) ua.handleLifeSteal();

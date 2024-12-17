@@ -124,7 +124,7 @@ public class Tower extends Actor {
             }
             return false;
         } else if (a.getActorType() == ActorType.MINION) damage *= 0.5;
-        if (a.getActorType() == ActorType.PLAYER && a.getClass() == CinnamonBun.class) damage /= 2;
+        if (a.getActorType() == ActorType.PLAYER && a.getClass() == CinnamonBun.class) damage *= 0.75d;
         this.changeHealth(this.getMitigatedDamage(damage, this.getAttackType(attackData), a) * -1);
         boolean notify = System.currentTimeMillis() - this.lastHit >= 1000 * 5;
         if (notify) ExtensionCommands.towerAttacked(parentExt, this.room, this.getTowerNum());
