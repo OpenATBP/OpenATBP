@@ -317,17 +317,6 @@ public class UserActor extends Actor {
         this.stealthEmbargo = System.currentTimeMillis() + 3000;
     }
 
-    public void handleLichHand(UserActor ua) {
-        if (this.lichHandDamageApplies(ua)) {
-            this.lichHandTimesHit++;
-            Console.debugLog("Lich hand damage proc!");
-        } else {
-            this.lichVictim = ua.getId();
-            this.lichHandTimesHit = 0;
-        }
-        this.lichLastHit = System.currentTimeMillis();
-    }
-
     public void resetFightKingStacks() {
         Console.debugLog("Reset fight king stack");
         this.fightKingStacks = 0;
@@ -335,12 +324,14 @@ public class UserActor extends Actor {
     }
 
     public boolean lichHandDamageApplies(UserActor ua) {
+        if (this.lichVictim == null || ua == null) return false;
+        Console.debugLog("");
         return ChampionData.getJunkLevel(this, "junk_2_lich_hand") > 0
                 && this.lichVictim.equalsIgnoreCase(ua.getId())
                 && System.currentTimeMillis() > this.lichLastHit + 1000;
     }
 
-    public int getLichHandTimesHit() {
+    public double getLichHandTimesHit() {
         return this.lichHandTimesHit;
     }
 
@@ -383,7 +374,8 @@ public class UserActor extends Actor {
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
                 this.addDamageGameStat(ua, newDamage, type);
-                if (type == AttackType.SPELL) {
+                if (type == AttackType.SPELL
+                        && ChampionData.getJunkLevel(ua, "junk_1_fight_king_sword") > 0) {
                     newDamage += 15 * fightKingStacks;
                     ua.resetFightKingStacks();
                 }
@@ -406,15 +398,21 @@ public class UserActor extends Actor {
                     }
                 }
                 if (ua.lichHandDamageApplies(this)) {
-                    newDamage += (newDamage * (0.1 * ua.getLichHandTimesHit()));
+                    Console.debugLog("Lich hand damage " + ua.getLichHandTimesHit());
+                    newDamage += ((double) newDamage * (0.1d * ua.getLichHandTimesHit()));
+                    ua.handleLichHandHit();
+                } else if (ChampionData.getJunkLevel(ua, "junk_2_lich_hand") > 0
+                        && (ua.getLichVictim() == null
+                                || !ua.getLichVictim().equalsIgnoreCase(this.id))) {
+                    Console.debugLog("Setting Lich Victim");
+                    ua.setLichVictim(this.id);
                 }
-                ua.handleLichHand(this);
                 this.handleElectrodeGun(ua, a, damage, attackData);
 
                 if (this.maxHealth > ua.getMaxHealth()
                         && ChampionData.getJunkLevel(ua, "junk_3_globs_helmet") > 0) {
                     newDamage +=
-                            newDamage * ChampionData.getCustomJunkStat(ua, "junk_3_grobs_helmet");
+                            newDamage * ChampionData.getCustomJunkStat(ua, "junk_3_globs_helmet");
                 }
 
                 if (type == AttackType.SPELL
@@ -467,6 +465,21 @@ public class UserActor extends Actor {
         this.iFrame = System.currentTimeMillis() + 500;
     }
 
+    public String getLichVictim() {
+        return this.lichVictim;
+    }
+
+    public void setLichVictim(String id) {
+        this.lichVictim = id;
+        this.lichHandTimesHit = 0;
+        this.lichLastHit = System.currentTimeMillis();
+    }
+
+    public void handleLichHandHit() {
+        this.lichHandTimesHit++;
+        this.lichLastHit = System.currentTimeMillis();
+    }
+
     public double getAttackCooldown() {
         return this.attackCooldown;
     }
@@ -474,8 +487,9 @@ public class UserActor extends Actor {
     public double handleGrassSwordProc(double damage) { // TODO: Add indicator or something
         if (this.grassSwordCooldown >= ChampionData.getCustomJunkStat(this, "junk_1_grass_sword")) {
             this.grassSwordCooldown = 0;
-            return damage * 1.25d;
-        }
+            ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "grass_sword_icon");
+            return damage * 1.5d;
+        } else Console.debugLog("Grass sword CD: " + this.grassSwordCooldown);
         return damage;
     }
 
@@ -1194,8 +1208,19 @@ public class UserActor extends Actor {
                 }
             } else if (this.roboStacks > 0) this.resetRoboStacks();
 
-            if (ChampionData.getJunkLevel(this, "junk_1_grass_sword") > 0) {
+            if (ChampionData.getJunkLevel(this, "junk_1_grass_sword") > 0
+                    && this.grassSwordCooldown
+                            <= ChampionData.getCustomJunkStat(this, "junk_1_grass_sword")) {
                 this.grassSwordCooldown++;
+                if (this.grassSwordCooldown
+                        == ChampionData.getCustomJunkStat(this, "junk_1_grass_sword"))
+                    ExtensionCommands.addStatusIcon(
+                            this.parentExt,
+                            this.player,
+                            "grass_sword_icon",
+                            "junk_1_grass_sword_mod3",
+                            "junk_1_grass_sword",
+                            0f);
             }
 
             if (this.fightKingStacks > 0
@@ -1595,10 +1620,10 @@ public class UserActor extends Actor {
                     return;
                 }
             }
+            this.glassesBuff = buff;
+            Console.debugLog("Setting glasses buff to " + buff);
+            this.updateStatMenu("spellDamage");
         }
-        this.glassesBuff = buff;
-        Console.debugLog("Setting glasses buff to " + buff);
-        this.updateStatMenu("spellDamage");
     }
 
     @Override

@@ -129,7 +129,9 @@ public class Fionna extends UserActor {
             case "armor":
             case "spellResist":
                 if (this.swordType == SwordType.FEARLESS)
-                    return super.getPlayerStat(stat) + (this.getStat(stat) * SPELLRESIST_FEARLESS);
+                    return Math.round(
+                            super.getPlayerStat(stat)
+                                    + (this.getStat(stat) * SPELLRESIST_FEARLESS));
                 break;
             case "attackDamage":
             case "spellDamage":
