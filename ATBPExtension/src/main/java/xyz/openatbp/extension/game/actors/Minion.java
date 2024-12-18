@@ -286,7 +286,8 @@ public class Minion extends Actor {
             this.idleTime = 0;
         } else {
             this.idleTime++;
-            if (this.idleTime >= 5000) Console.debugLog(this.id + " has state: " + this.state);
+            if (this.idleTime >= 5000)
+                Console.logWarning(this.id + " has state: " + this.state + " for " + this.idleTime);
         }
         this.location =
                 MovementManager.getRelativePoint(
