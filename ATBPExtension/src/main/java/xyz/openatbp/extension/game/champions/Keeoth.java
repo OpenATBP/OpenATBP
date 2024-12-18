@@ -13,6 +13,7 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorType;
@@ -56,9 +57,12 @@ public class Keeoth extends Monster {
                     ua.setKeeothBuffStartTime(System.currentTimeMillis());
                     ua.addEffect("lifeSteal", 35d, KEEOTH_BUFF_DURATION, "jungle_buff_keeoth", "");
                     ua.addEffect("spellVamp", 40d, KEEOTH_BUFF_DURATION);
-                    ua.addEffect("criticalChance", 35d, KEEOTH_BUFF_DURATION);
+                    double critChange = 35d;
+                    if (ChampionData.getCustomJunkStat(ua, "junk_1_demon_blood_sword") > 0)
+                        critChange += 5d;
+                    ua.addEffect("criticalChance", critChange, KEEOTH_BUFF_DURATION);
                     double healthChange = (double) ua.getHealth() * 0.3d;
-                    ua.heal((int) healthChange);
+                    ua.heal((int) healthChange); // TODO: Maybe change?
                     ExtensionCommands.addStatusIcon(
                             this.parentExt,
                             ua.getUser(),

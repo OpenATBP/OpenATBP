@@ -82,6 +82,7 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
         int castDelay = spellData.get("castDelay").asInt();
         int baseCooldown = ChampionData.getBaseAbilityCooldown(player, spellNum);
         player.useAbility(spellNum, spellData, baseCooldown, gCooldown, castDelay, oldLocation);
+        player.setLastSpell();
         player.preventStealth();
     }
 

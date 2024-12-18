@@ -19,8 +19,8 @@ import xyz.openatbp.extension.game.actors.UserActor;
 public class ChampionData {
 
     private static final int[] XP_LEVELS = {100, 210, 350, 520, 720, 950, 1210, 1500, 1820, 2170};
-    public static final double[] ELO_TIERS = {0, 1149, 1350, 1602};
-    public static final double MAX_ELO = 2643;
+    public static final double[] ELO_TIERS = {0, 25, 75, 200};
+    public static final double MAX_ELO = 500;
 
     public static int getXPLevels(int index) {
         if (index < 0) return XP_LEVELS[0];
@@ -64,19 +64,17 @@ public class ChampionData {
                     stats = new double[] {0.25, 0.4, 0.5, 0.75};
                     break;
                 case "junk_1_numb_chucks":
-                    stats = new double[] {-0.1, -0.15, -0.2, -0.3};
+                    stats = new double[] {0.1, 0.15, 0.2, 0.3};
                     break;
                 case "junk_4_antimagic_cube":
                     stats = new double[] {-25, -50, -75, -100};
                     break;
                 case "junk_2_peppermint_tank":
+                case "junk_3_globs_helmet":
                     stats = new double[] {0.05, 0.1, 0.15, 0.25};
                     break;
-                case "junk_4_flame_cloak":
-                    stats = new double[] {0.05, 0.07, 0.1, 0.1};
-                    break;
                 case "junk_1_demon_blood_sword":
-                case "junk_1_grass_sword":
+                case "junk_1_grape_juice_sword":
                     stats = new double[] {0.15, 0.2, 0.25, 0.3};
                     break;
                 case "junk_2_electrode_gun":
@@ -85,6 +83,14 @@ public class ChampionData {
                 case "junk_2_simon_petrikovs_glasses":
                     stats = new double[] {50d, 75d, 100d, 150d};
                     break;
+                case "junk_1_grass_sword":
+                    stats = new double[] {60, 50, 40, 20};
+                    break;
+                case "junk_1_fight_king_sword":
+                    stats = new double[] {2000, 4000, 7000, 12000};
+                    break;
+                case "junk_2_cosmic_gauntlet":
+                    stats = new double[] {1000, 2000, 3000, 4000};
             }
             return stats[level - 1];
         }
@@ -439,6 +445,7 @@ public class ChampionData {
         return buildPath;
     }
 
+    @Deprecated
     public static int getEloGain(UserActor ua, List<UserActor> players, double result) {
         double myElo = ua.getUser().getVariable("player").getSFSObjectValue().getInt("elo");
         double teamCount = 0;

@@ -600,7 +600,10 @@ public class Finn extends UserActor {
         @Override
         public void run() {
             double damage = getPlayerStat("attackDamage");
-            if (this.crit) damage *= 2;
+            if (this.crit) {
+                damage *= 2;
+                damage = handleGrassSwordProc(damage);
+            }
             if (target.getActorType() != ActorType.TOWER && target.getActorType() != ActorType.BASE)
                 damage = handlePassive(target, damage);
             new Champion.DelayedAttack(parentExt, Finn.this, target, (int) damage, "basicAttack")

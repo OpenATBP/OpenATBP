@@ -102,6 +102,11 @@ public class Fionna extends UserActor {
     }
 
     @Override
+    protected boolean canRegenHealth() {
+        return super.canRegenHealth() || this.getPlayerStat("healthRegen") < 0;
+    }
+
+    @Override
     public double getPlayerStat(String stat) {
         switch (stat) {
             case "healthRegen":
@@ -124,7 +129,9 @@ public class Fionna extends UserActor {
             case "armor":
             case "spellResist":
                 if (this.swordType == SwordType.FEARLESS)
-                    return super.getPlayerStat(stat) + (this.getStat(stat) * SPELLRESIST_FEARLESS);
+                    return Math.round(
+                            super.getPlayerStat(stat)
+                                    + (this.getStat(stat) * SPELLRESIST_FEARLESS));
                 break;
             case "attackDamage":
             case "spellDamage":

@@ -392,7 +392,7 @@ public abstract class Actor {
 
     public void handleElectrodeGun(UserActor ua, Actor a, int damage, JsonNode attackData) {
         if (ChampionData.getJunkLevel(ua, "junk_2_electrode_gun") > 0) {
-            if (Math.random() < 0.1d) {
+            if (Math.random() <= 0.25d) {
                 for (Actor actor :
                         Champion.getActorsInRadius(
                                 this.parentExt.getRoomHandler(this.room.getName()),
@@ -566,8 +566,8 @@ public abstract class Actor {
             if (spellResist < 0) spellResist = 0;
             double modifier;
             if (attackType == AttackType.PHYSICAL) {
-                modifier = 100 / (100 + armor);
-            } else modifier = 100 / (100 + spellResist);
+                modifier = (100 - armor) / 100d; // Max Armor 80
+            } else modifier = (100 - spellResist) / 100d; // Max Shields 60
             return (int) Math.round(rawDamage * modifier);
         } catch (Exception e) {
             e.printStackTrace();

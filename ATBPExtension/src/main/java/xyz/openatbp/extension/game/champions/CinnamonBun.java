@@ -169,6 +169,7 @@ public class CinnamonBun extends UserActor {
                 this.ultEffectsApplied = false;
             }
         }
+        /*
         if (testing
                 && System.currentTimeMillis() - testingTime
                         >= E_DURATION) { // TODO: REMOVE AFTER FIXING ABILITIES
@@ -179,6 +180,8 @@ public class CinnamonBun extends UserActor {
                     this.parentExt, this.player, "e", true, getReducedCooldown(baseCooldown), 500);
             scheduleTask(resetCanCast, getReducedCooldown(baseCooldown));
         }
+
+         */
     }
 
     @Override

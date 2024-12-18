@@ -13,6 +13,7 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorState;
@@ -92,6 +93,8 @@ public class GooMonster extends Monster {
 
                 if (ua.getTeam() == killerTeam && ua.getHealth() > 0 && !ua.isDead()) {
                     double delta = ua.getPlayerStat("speed") * 0.1d;
+                    if (ChampionData.getCustomJunkStat(ua, "junk_1_demon_blood_sword") > 0)
+                        delta += 0.15;
                     ua.setHasGooBuff(true);
                     ua.setGooBuffStartTime(System.currentTimeMillis());
                     ua.addEffect("speed", delta, GOO_BUFF_DURATION, "jungle_buff_goo", "");

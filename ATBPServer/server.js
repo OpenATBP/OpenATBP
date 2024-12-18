@@ -44,7 +44,7 @@ async function resetElo(collection) {
       //console.log(doc.friends);
       var q = { 'user.TEGid': doc.user.TEGid };
       var o = { upsert: true };
-      var up = { $set: { 'player.elo': 1150.0, 'player.tier': 1.0 } };
+      var up = { $set: { 'player.elo': 1.0, 'player.tier': 1.0 } };
 
       var res = await collection.updateOne(q, up, o);
       console.log(res);
@@ -116,69 +116,6 @@ async function addCustomBags(collection) {
     }
   } finally {
     console.log('Done!');
-  }
-}
-
-async function curveElo(collection) {
-  var allUsers = [];
-  try {
-    var cursor = collection.find();
-    for await (var doc of cursor) {
-      allUsers.push(doc);
-    }
-  } finally {
-    var allElo = 0;
-    var topElo = -1;
-    var bottomElo = 10000;
-    for (var u of allUsers) {
-      allElo += u.player.elo;
-      if (u.player.elo > topElo) topElo = u.player.elo;
-      if (u.player.elo < bottomElo) bottomElo = u.player.elo;
-    }
-    console.log('TOP ELO: ' + topElo);
-    console.log('BOT ELO: ' + bottomElo);
-    console.log('AVERAGE ELO: ' + Math.round(allElo / allUsers.length));
-    if (bottomElo < 800) bottomElo = 800;
-    var maxElo = 2500;
-    var botElo = 800;
-    var lowPoint = { x: bottomElo, y: botElo };
-    var highPoint = { x: topElo, y: maxElo };
-    allUsers.sort((a, b) => {
-      return a.player.elo - b.player.elo;
-    });
-    for (var u of allUsers) {
-      var newElo = Math.floor(
-        highPoint.y +
-          ((lowPoint.y - highPoint.y) / (lowPoint.x - highPoint.x)) *
-            (u.player.elo - highPoint.x)
-      );
-      if (newElo < 500) newElo = 500;
-      var tiers = [0, 1149, 1350, 1602];
-      var tier = 1.0;
-      for (var i = 0; i < tiers.length; i++) {
-        var currentCap = tiers[i];
-        var maxCap = i + 1 == tiers.length ? 2643 : tiers[i + 1];
-        if (newElo > currentCap && newElo < maxCap) {
-          tier += i;
-          break;
-        } else if (newElo == currentCap) {
-          newElo++;
-          tier += 1;
-          break;
-        }
-      }
-
-      var q = { 'user.TEGid': u.user.TEGid };
-      var o = { upsert: true };
-      var up = { $set: { 'player.elo': newElo, 'player.tier': tier } };
-
-      var res = await collection.updateOne(q, up, o);
-      console.log(res);
-
-      console.log(
-        `${u.user.dname} ELO is ${u.player.elo} but would become ${newElo} at tier ${tier}`
-      );
-    }
   }
 }
 

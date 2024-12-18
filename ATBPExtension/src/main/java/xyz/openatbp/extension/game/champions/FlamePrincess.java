@@ -73,6 +73,7 @@ public class FlamePrincess extends UserActor {
                         if (!affectedActor.getId().equalsIgnoreCase(this.id)
                                 && affectedActor.getTeam() != this.team
                                 && isNonStructure(affectedActor)) {
+                            handlePassive(2);
                             JsonNode spellData = this.parentExt.getAttackData("flame", "spell2");
                             affectedActor.addToDamageQueue(
                                     this, getSpellDamage(spellData, false) / 10d, spellData, true);
@@ -156,14 +157,7 @@ public class FlamePrincess extends UserActor {
         else return super.canMove();
     }
 
-    @Override
-    public void useAbility(
-            int ability,
-            JsonNode spellData,
-            int cooldown,
-            int gCooldown,
-            int castDelay,
-            Point2D dest) {
+    public void handlePassive(int ability) {
         if (canTriggerPassive(ability)) {
             ExtensionCommands.createActorFX(
                     this.parentExt,
@@ -185,6 +179,16 @@ public class FlamePrincess extends UserActor {
                     this.location);
             passiveEnabled = true;
         }
+    }
+
+    @Override
+    public void useAbility(
+            int ability,
+            JsonNode spellData,
+            int cooldown,
+            int gCooldown,
+            int castDelay,
+            Point2D dest) {
         switch (ability) {
             case 1:
                 this.canCast[0] = false;
@@ -461,6 +465,7 @@ public class FlamePrincess extends UserActor {
         public void hit(Actor victim) {
             if (this.hitPlayer) return;
             this.hitPlayer = true;
+            handlePassive(1);
             JsonNode attackData = parentExt.getAttackData(getAvatar(), "spell1");
             victim.addToDamageQueue(
                     FlamePrincess.this, getSpellDamage(attackData, true), attackData, false);
@@ -528,7 +533,10 @@ public class FlamePrincess extends UserActor {
         @Override
         public void run() {
             double damage = getPlayerStat("attackDamage");
-            if (crit) damage *= 2;
+            if (crit) {
+                damage *= 2;
+                damage = handleGrassSwordProc(damage);
+            }
             new Champion.DelayedAttack(
                             parentExt, FlamePrincess.this, target, (int) damage, "basicAttack")
                     .run();
@@ -557,13 +565,18 @@ public class FlamePrincess extends UserActor {
                             .getTaskScheduler()
                             .schedule(
                                     new Champion.DelayedAttack(
-                                            parentExt, FlamePrincess.this, target, 20, "spell4"),
+                                            parentExt,
+                                            FlamePrincess.this,
+                                            target,
+                                            getSpellDamage(getSpellData(4), true),
+                                            "spell4"),
                                     i + 1,
                                     TimeUnit.SECONDS);
                 }
             }
-            if (FlamePrincess.this.passiveEnabled && target.getActorType() == ActorType.BASE
-                    || target.getActorType() == ActorType.TOWER) {
+            if (FlamePrincess.this.passiveEnabled
+                    && (target.getActorType() == ActorType.BASE
+                            || target.getActorType() == ActorType.TOWER)) {
                 FlamePrincess.this.passiveEnabled = false;
                 ExtensionCommands.removeFx(parentExt, room, id + "_flame_passive");
                 ExtensionCommands.actorAbilityResponse(

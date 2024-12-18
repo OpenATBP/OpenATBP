@@ -395,7 +395,10 @@ public class BubbleGum extends UserActor {
         @Override
         public void run() {
             double damage = this.attacker.getPlayerStat("attackDamage");
-            if (crit) damage *= 2;
+            if (crit) {
+                damage *= 2;
+                damage = handleGrassSwordProc(damage);
+            }
             if (BubbleGum.this.passiveAmmunition > 0
                     && this.target.getActorType()
                             == ActorType.PLAYER) { // TODO: Applying the passive here feels wrong
@@ -443,7 +446,7 @@ public class BubbleGum extends UserActor {
             this.actorType = ActorType.COMPANION;
             this.stats = this.initializeStats();
             this.attackCooldown = this.getPlayerStat("attackSpeed");
-            this.setStat("attackDamage", BubbleGum.this.getStat("attackDamage"));
+            this.setStat("attackDamage", 10 + BubbleGum.this.getPlayerStat("spellDamage") * 0.4);
             this.iconName = "Turret #" + turretNum;
             ExtensionCommands.addStatusIcon(
                     parentExt, player, iconName, "Turret placed!", "icon_pb_s2", TURRET_LIFETIME);

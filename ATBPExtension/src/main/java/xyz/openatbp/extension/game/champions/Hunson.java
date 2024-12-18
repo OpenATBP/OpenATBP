@@ -463,8 +463,7 @@ public class Hunson extends UserActor {
             double damage = getSpellDamage(spellData, true);
             if (qVictims.containsKey(victim)) {
                 int timesHit = qVictims.get(victim);
-                if (timesHit == 1) damage *= 0.3d;
-                else if (timesHit == 2) damage *= 0.1d;
+                if (timesHit == 2) damage *= 1.75d;
                 qVictims.put(victim, timesHit + 1);
             } else {
                 qVictims.put(victim, 1);

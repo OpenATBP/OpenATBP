@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
@@ -17,7 +18,7 @@ import xyz.openatbp.extension.game.actors.UserActor;
 public class Marceline extends UserActor {
     private static final double PASSIVE_HP_REG_VALUE = 1.5d;
     private static final int PASSIVE_HP_REG_SOUND_DELAY = 3000;
-    private static final int Q_ROOT_DURATION = 3000;
+    private static final int Q_ROOT_DURATION = 2000;
     private static final int Q_SLOW_DURATION = 1500;
     private static final double Q_SLOW_VALUE = 0.15d;
     private static final int W_DURATION = 4500;
@@ -383,6 +384,10 @@ public class Marceline extends UserActor {
             if (beastWActive && form == Form.BEAST) {
                 if (crit) damage *= 4;
                 else damage *= 2;
+                if (crit
+                        && grassSwordCooldown
+                                >= ChampionData.getCustomJunkStat(
+                                        Marceline.this, "junk_1_grass_sword")) damage *= 1.25d;
                 double lifesteal = 1d;
                 if (this.target != null
                         && isNonStructure(this.target)

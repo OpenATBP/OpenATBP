@@ -79,12 +79,6 @@
   },
   {
     "type": "BACKPACK",
-    "id": "belt_beta_anti_mage",
-    "default": false,
-    "cost": 350
-  },
-  {
-    "type": "BACKPACK",
     "id": "belt_beta_hybrid",
     "default": false,
     "cost": 350
