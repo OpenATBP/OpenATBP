@@ -211,10 +211,8 @@ public class MainMapRoomHandler extends RoomHandler {
             "damageDealtTotal",
             "damageDealtPhysical"
         };
-
         Console.debugLog("Started to log...");
         MongoCollection<Document> collection = this.parentExt.getMatchHistoryDatabase();
-
         ObjectId objId = new ObjectId();
         Document newDoc = new Document().append("_id", objId).append("winner", winningTeam);
         ArrayList<Bson> updateList = new ArrayList<>();
@@ -226,7 +224,6 @@ public class MainMapRoomHandler extends RoomHandler {
             if (winningTeam == -1) win = 0.5d;
             else if (ua.getTeam() == winningTeam) win = 1d;
             else win = 0d;
-
             pDoc.append("kills", ua.getStat("kills"));
             pDoc.append("deaths", ua.getStat("deaths"));
             pDoc.append("assists", ua.getStat("assists"));

@@ -73,7 +73,12 @@ public class Jake extends UserActor {
 
                 float distance = (float) origLocation.distance(victim.getLocation());
                 float modifier = ((130 / 9f) * distance) / 100;
-                double damage = 35 + Math.round(modifier * getPlayerStat("spellDamage"));
+                double damage =
+                        35
+                                + Math.round(
+                                        modifier
+                                                * getPlayerStat(
+                                                        "spellDamage")); // TODO tie to xml file
 
                 victim.addToDamageQueue(this, damage, spellData, false);
                 if (isNonStructure(victim))
