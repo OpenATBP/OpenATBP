@@ -437,7 +437,7 @@ public class Champion {
                     ua.handleNumbChuckStacks(target);
                 }
 
-                this.damage += this.damage * (20 * ua.getCosmicStacks());
+                this.damage += (20 * ua.getCosmicStacks());
                 ua.resetCosmicStacks();
 
                 if (hasGrobDevice && ua.getStat("sp_category4") > 0) {

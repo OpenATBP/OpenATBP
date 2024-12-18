@@ -446,7 +446,7 @@ public class BubbleGum extends UserActor {
             this.actorType = ActorType.COMPANION;
             this.stats = this.initializeStats();
             this.attackCooldown = this.getPlayerStat("attackSpeed");
-            this.setStat("attackDamage", BubbleGum.this.getPlayerStat("spellDamage")*0.5);
+            this.setStat("attackDamage", 10 + BubbleGum.this.getPlayerStat("spellDamage") * 0.4);
             this.iconName = "Turret #" + turretNum;
             ExtensionCommands.addStatusIcon(
                     parentExt, player, iconName, "Turret placed!", "icon_pb_s2", TURRET_LIFETIME);

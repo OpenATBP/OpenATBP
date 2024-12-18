@@ -18,7 +18,7 @@ import xyz.openatbp.extension.game.actors.UserActor;
 public class Marceline extends UserActor {
     private static final double PASSIVE_HP_REG_VALUE = 1.5d;
     private static final int PASSIVE_HP_REG_SOUND_DELAY = 3000;
-    private static final int Q_ROOT_DURATION = 3000;
+    private static final int Q_ROOT_DURATION = 2000;
     private static final int Q_SLOW_DURATION = 1500;
     private static final double Q_SLOW_VALUE = 0.15d;
     private static final int W_DURATION = 4500;

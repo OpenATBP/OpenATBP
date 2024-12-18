@@ -259,8 +259,8 @@ function updateElo(socket) {
         if (res != null) {
           switch (res.player.elo + 1) {
             case 0:
-            case 50:
-            case 100:
+            case 25:
+            case 75:
             case 200:
               res.player.elo++;
               break;

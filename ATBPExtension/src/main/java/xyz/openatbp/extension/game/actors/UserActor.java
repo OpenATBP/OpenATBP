@@ -35,7 +35,7 @@ public class UserActor extends Actor {
     private boolean futureCrystalActive = true;
     protected int magicNailStacks = 0;
     protected int lightningSwordStacks = 0;
-    protected int robeStacks = 0;
+    protected double robeStacks = 0;
     protected static final int DAMAGE_PER_NAIL_POINT = 25;
     protected static final int DAMAGE_PER_LIGHTNING_POINT = 35;
     protected static final int CDR_PER_ROBE_POINT = 10;
@@ -328,6 +328,12 @@ public class UserActor extends Actor {
         this.lichLastHit = System.currentTimeMillis();
     }
 
+    public void resetFightKingStacks() {
+        Console.debugLog("Reset fight king stack");
+        this.fightKingStacks = 0;
+        ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "fight_king_icon");
+    }
+
     public boolean lichHandDamageApplies(UserActor ua) {
         return ChampionData.getJunkLevel(this, "junk_2_lich_hand") > 0
                 && this.lichVictim.equalsIgnoreCase(ua.getId())
@@ -379,7 +385,7 @@ public class UserActor extends Actor {
                 this.addDamageGameStat(ua, newDamage, type);
                 if (type == AttackType.SPELL) {
                     newDamage += 15 * fightKingStacks;
-                    this.fightKingStacks = 0;
+                    ua.resetFightKingStacks();
                 }
                 double cubeEffect = ChampionData.getCustomJunkStat(ua, "junk_4_antimagic_cube");
                 if (!this.effectHandlers.containsKey("spellDamage")
@@ -1171,6 +1177,7 @@ public class UserActor extends Actor {
             if (ChampionData.getJunkLevel(this, "junk_3_robo_suit") > 0) {
                 if (this.roboStacks < 3) {
                     this.roboStacks++;
+                    this.updateStatMenu("speed");
                     if (this.roboStacks == 3)
                         ExtensionCommands.createActorFX(
                                 this.parentExt,
@@ -1185,20 +1192,20 @@ public class UserActor extends Actor {
                                 false,
                                 this.team);
                 }
-            } else if (this.roboStacks > 0) this.roboStacks = 0;
+            } else if (this.roboStacks > 0) this.resetRoboStacks();
 
             if (ChampionData.getJunkLevel(this, "junk_1_grass_sword") > 0) {
                 this.grassSwordCooldown++;
             }
 
             if (this.fightKingStacks > 0
-                    && System.currentTimeMillis()
+                    && System.currentTimeMillis() - this.lastAuto
                             >= ChampionData.getCustomJunkStat(this, "junk_1_fight_king_sword"))
-                this.fightKingStacks = 0;
+                this.resetFightKingStacks();
             if (this.cosmicStacks > 0
-                    && System.currentTimeMillis()
+                    && System.currentTimeMillis() - this.lastSpell
                             >= ChampionData.getCustomJunkStat(this, "junk_2_cosmic_gauntlet"))
-                this.cosmicStacks = 0;
+                this.resetCosmicStacks();
 
             if (this.canRegenHealth()) {
                 regenHealth();
@@ -1290,7 +1297,6 @@ public class UserActor extends Actor {
         } else {
             this.stopMoving();
         }
-        this.setLastSpell();
         if (this.getClass() == UserActor.class) {
             String abilityString = "q";
             int abilityIndex = 0;
@@ -1897,6 +1903,7 @@ public class UserActor extends Actor {
     public void resetRoboStacks() {
         this.roboStacks = -10;
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_roboSpeed");
+        this.updateStatMenu("speed");
     }
 
     public void useGhostPouch() {
@@ -2060,6 +2067,7 @@ public class UserActor extends Actor {
         if (pointsPutIntoRobe > 0) {
             if (robeStacks + amountOfStacks > stackCap) robeStacks = stackCap;
             else robeStacks += amountOfStacks;
+            Console.debugLog("Robe stacks: " + this.robeStacks);
             this.updateStatMenu("coolDownReduction");
         }
     }
@@ -2287,12 +2295,35 @@ public class UserActor extends Actor {
 
     public void setLastAuto() {
         this.lastAuto = System.currentTimeMillis();
-        if (ChampionData.getJunkLevel(this, "junk_1_fight_king_sword") > 0) this.fightKingStacks++;
+        if (ChampionData.getJunkLevel(this, "junk_1_fight_king_sword") > 0) {
+            if (this.fightKingStacks > 0)
+                ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "fight_king_icon");
+            ExtensionCommands.addStatusIcon(
+                    this.parentExt,
+                    this.player,
+                    "fight_king_icon",
+                    "Your next ability is enhanced!",
+                    "junk_1_fight_king_sword",
+                    (int) ChampionData.getCustomJunkStat(this, "junk_1_fight_king_sword"));
+            this.fightKingStacks++;
+        }
     }
 
     public void setLastSpell() {
         this.lastSpell = System.currentTimeMillis();
-        if (ChampionData.getJunkLevel(this, "junk_2_cosmic_gauntlet") > 0) this.cosmicStacks++;
+        if (ChampionData.getJunkLevel(this, "junk_2_cosmic_gauntlet") > 0) {
+            if (this.cosmicStacks > 0)
+                ExtensionCommands.removeStatusIcon(
+                        this.parentExt, this.player, "cosmic_gauntlet_icon");
+            this.cosmicStacks++;
+            ExtensionCommands.addStatusIcon(
+                    this.parentExt,
+                    this.player,
+                    "cosmic_gauntlet_icon",
+                    "Your next attack is empowered!",
+                    "junk_2_cosmic_gauntlet",
+                    (int) ChampionData.getCustomJunkStat(this, "junk_2_cosmic_gauntlet"));
+        }
     }
 
     public int getCosmicStacks() {
@@ -2301,6 +2332,7 @@ public class UserActor extends Actor {
 
     public void resetCosmicStacks() {
         this.cosmicStacks = 0;
+        ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "cosmic_gauntlet_icon");
     }
 
     public void logExceptionMessage(String avatar, int spellNum) {

@@ -102,6 +102,11 @@ public class Fionna extends UserActor {
     }
 
     @Override
+    protected boolean canRegenHealth() {
+        return super.canRegenHealth() || this.getPlayerStat("healthRegen") < 0;
+    }
+
+    @Override
     public double getPlayerStat(String stat) {
         switch (stat) {
             case "healthRegen":

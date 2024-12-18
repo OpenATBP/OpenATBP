@@ -157,7 +157,7 @@ public class FlamePrincess extends UserActor {
         else return super.canMove();
     }
 
-    public void handlePassive(int ability){
+    public void handlePassive(int ability) {
         if (canTriggerPassive(ability)) {
             ExtensionCommands.createActorFX(
                     this.parentExt,
@@ -574,8 +574,9 @@ public class FlamePrincess extends UserActor {
                                     TimeUnit.SECONDS);
                 }
             }
-            if (FlamePrincess.this.passiveEnabled && target.getActorType() == ActorType.BASE
-                    || target.getActorType() == ActorType.TOWER) {
+            if (FlamePrincess.this.passiveEnabled
+                    && (target.getActorType() == ActorType.BASE
+                            || target.getActorType() == ActorType.TOWER)) {
                 FlamePrincess.this.passiveEnabled = false;
                 ExtensionCommands.removeFx(parentExt, room, id + "_flame_passive");
                 ExtensionCommands.actorAbilityResponse(

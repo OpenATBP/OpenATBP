@@ -247,7 +247,8 @@ public class PeppermintButler extends UserActor {
                 && !stopPassive
                 && this.form != Form.FERAL
                 && !isCapturingAltar()
-                && !dead) return true;
+                && !dead
+                && ChampionData.getJunkLevel(this, "junk_1_ax_bass") < 1) return true;
         return super.canRegenHealth();
     }
 

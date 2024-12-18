@@ -19,7 +19,7 @@ import xyz.openatbp.extension.pathfinding.MovementManager;
 public class Lich extends UserActor {
     private static final int PASSIVE_DURATION = 20000;
     private static final int PASSIVE_COOLDOWN = 40000;
-    private static final double SKULLY_DAMAGE_PERCENTAGE = 0.5;
+    private static final double SKULLY_DAMAGE_PERCENTAGE = 0.4;
     private static final int Q_SPEED_DURATION = 6000;
     private static final double Q_SPEED_VALUE = 0.25d;
     private static final int Q_DURATION = 6000;
