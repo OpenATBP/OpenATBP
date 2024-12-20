@@ -336,15 +336,16 @@ public abstract class Actor {
     }
 
     public void handleFear(Point2D source, int duration) {
-        if (!this.hasMovementCC()
-                && !this.states.get(ActorState.IMMUNITY)
+        if (!this.states.get(ActorState.IMMUNITY)
                 && !this.getId().contains("turret")
                 && !this.getId().contains("decoy")) {
             this.target = null;
-            this.canMove = true;
-            Line2D sourceToPlayer = new Line2D.Float(source, this.location);
-            Line2D extendedLine = Champion.extendLine(sourceToPlayer, FEAR_MOVING_DISTANCE);
-            this.moveWithCollision(extendedLine.getP2());
+            if (!this.hasMovementCC()) {
+                this.canMove = true;
+                Line2D sourceToPlayer = new Line2D.Float(source, this.location);
+                Line2D extendedLine = Champion.extendLine(sourceToPlayer, FEAR_MOVING_DISTANCE);
+                this.moveWithCollision(extendedLine.getP2());
+            }
             this.addState(ActorState.FEARED, 0d, duration);
         }
     }

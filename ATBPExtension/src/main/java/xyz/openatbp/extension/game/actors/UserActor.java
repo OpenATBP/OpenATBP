@@ -1021,11 +1021,11 @@ public class UserActor extends Actor {
                     this.parentExt,
                     this.room,
                     this.id,
-                    "ice_king_frost_shield",
+                    "spell_shield",
                     1000 * 60 * 15,
                     this.id + "_spellShield",
                     true,
-                    "",
+                    "Bip001 Pelvis",
                     true,
                     false,
                     this.team);
