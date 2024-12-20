@@ -54,7 +54,7 @@ public class LSP extends UserActor {
             for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
                 if (this.isNonStructure(a)) {
                     a.addToDamageQueue(
-                            this, (double) getSpellDamage(spellData) / 10d, spellData, true);
+                            this, (double) getSpellDamage(spellData, false) / 10d, spellData, true);
                 }
             }
         }
@@ -222,7 +222,7 @@ public class LSP extends UserActor {
                 if (!actorsInPolygon.isEmpty()) {
                     for (Actor a : actorsInPolygon) {
                         if (isNonStructure(a)) {
-                            double damage = getSpellDamage(spellData);
+                            double damage = getSpellDamage(spellData, true);
                             a.handleFear(LSP.this.location, Q_FEAR_DURATION);
                             a.addToDamageQueue(LSP.this, damage, spellData, false);
                             affectedActors.add(a);
@@ -309,12 +309,12 @@ public class LSP extends UserActor {
             this.victims.add(victim);
             JsonNode spellData = this.parentExt.getAttackData(LSP.this.avatar, "spell3");
             if (victim.getTeam() == LSP.this.team) {
-                int healValue = (int) (getSpellDamage(spellData) * (1 - this.healReduction));
+                int healValue = (int) (getSpellDamage(spellData, false) * (1 - this.healReduction));
                 victim.changeHealth(healValue);
                 this.healReduction += 0.3d;
                 if (this.healReduction > 0.7d) this.healReduction = 0.7d;
             } else {
-                double damage = getSpellDamage(spellData) * (1 - this.damageReduction);
+                double damage = getSpellDamage(spellData, true) * (1 - this.damageReduction);
                 victim.addToDamageQueue(LSP.this, damage, spellData, false);
                 this.damageReduction += 0.3d;
                 if (this.damageReduction > 0.7d) this.damageReduction = 0.7d;
@@ -353,7 +353,10 @@ public class LSP extends UserActor {
         @Override
         public void run() {
             double damage = LSP.this.getPlayerStat("attackDamage");
-            if (crit) damage *= 2;
+            if (crit) {
+                damage *= 2;
+                damage = handleGrassSwordProc(damage);
+            }
             new Champion.DelayedAttack(
                             parentExt, LSP.this, this.target, (int) damage, "basicAttack")
                     .run();

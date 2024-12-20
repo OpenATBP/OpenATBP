@@ -26,6 +26,14 @@ public class Monster extends Actor {
         BIG
     }
 
+    enum BuffType {
+        GNOME,
+        WOLF,
+        BEAR,
+        OWL,
+        NONE
+    }
+
     private AggroState state = AggroState.PASSIVE;
     private final Point2D startingLocation;
     private final MonsterType type;
@@ -93,8 +101,9 @@ public class Monster extends Actor {
                     && this.state == AggroState.PASSIVE) return false;
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
-                if (ua.hasBackpackItem("junk_1_demon_blood_sword")
-                        && ua.getStat("sp_category1") > 0) damage *= 1.3;
+                if (ChampionData.getJunkLevel(ua, "junk_1_demon_blood_sword") > 0) {
+                    damage *= (1 + ChampionData.getCustomJunkStat(ua, "junk_1_demon_blood_sword"));
+                }
             }
             AttackType attackType = this.getAttackType(attackData);
             int newDamage = this.getMitigatedDamage(damage, attackType, a);
@@ -439,5 +448,27 @@ public class Monster extends Actor {
                 this.moveWithCollision(this.target.getLocation());
             }
         }
+    }
+
+    public BuffType getBuffType() {
+        if (this.avatar.equalsIgnoreCase("gnome_a")) return BuffType.GNOME;
+        if (this.avatar.equalsIgnoreCase("grassbear")) return BuffType.BEAR;
+        if (this.avatar.equalsIgnoreCase("hugwolf")) return BuffType.WOLF;
+        if (this.avatar.equalsIgnoreCase("ironowl_a")) return BuffType.OWL;
+        return BuffType.NONE;
+    }
+
+    public String getBuffDescription() {
+        switch (this.getBuffType()) {
+            case OWL:
+                return "Increased AD by 15!";
+            case GNOME:
+                return "Increased AP by 30!";
+            case BEAR:
+                return "Increased armor by 5!";
+            case WOLF:
+                return "Increased MR by 5!";
+        }
+        return "invalid buff";
     }
 }

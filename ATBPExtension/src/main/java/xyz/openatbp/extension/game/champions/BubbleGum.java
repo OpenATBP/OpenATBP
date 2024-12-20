@@ -77,7 +77,7 @@ public class BubbleGum extends UserActor {
                     if (a.getTeam() != this.team) {
                         JsonNode spellData =
                                 this.parentExt.getAttackData("princessbubblegum", "spell1");
-                        double damage = this.getSpellDamage(spellData) / 10f;
+                        double damage = this.getSpellDamage(spellData, false) / 10f;
                         a.addToDamageQueue(this, damage, spellData, true);
                         if (isNonStructure(a)) {
                             a.addState(ActorState.SLOWED, Q_SLOW_VALUE, Q_SLOW_DURATION);
@@ -260,7 +260,7 @@ public class BubbleGum extends UserActor {
                                                 parentExt, room, id, "spell3c", 350, false);
                         scheduleTask(animDelay, 325);
                     } else {
-                        a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                        a.addToDamageQueue(this, getSpellDamage(spellData, true), spellData, false);
                     }
                     a.knockback(this.bombLocation, 3.5f);
                 }
@@ -395,7 +395,10 @@ public class BubbleGum extends UserActor {
         @Override
         public void run() {
             double damage = this.attacker.getPlayerStat("attackDamage");
-            if (crit) damage *= 2;
+            if (crit) {
+                damage *= 2;
+                damage = handleGrassSwordProc(damage);
+            }
             if (BubbleGum.this.passiveAmmunition > 0
                     && this.target.getActorType()
                             == ActorType.PLAYER) { // TODO: Applying the passive here feels wrong
@@ -443,7 +446,7 @@ public class BubbleGum extends UserActor {
             this.actorType = ActorType.COMPANION;
             this.stats = this.initializeStats();
             this.attackCooldown = this.getPlayerStat("attackSpeed");
-            this.setStat("attackDamage", BubbleGum.this.getStat("attackDamage"));
+            this.setStat("attackDamage", 10 + BubbleGum.this.getPlayerStat("spellDamage") * 0.4);
             this.iconName = "Turret #" + turretNum;
             ExtensionCommands.addStatusIcon(
                     parentExt, player, iconName, "Turret placed!", "icon_pb_s2", TURRET_LIFETIME);

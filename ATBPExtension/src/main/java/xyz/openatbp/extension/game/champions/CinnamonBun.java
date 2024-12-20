@@ -63,7 +63,8 @@ public class CinnamonBun extends UserActor {
             List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, this.wPolygon);
             if (!actorsInPolygon.isEmpty()) {
                 for (Actor a : actorsInPolygon) {
-                    a.addToDamageQueue(this, getSpellDamage(spellData) / 10d, spellData, true);
+                    a.addToDamageQueue(
+                            this, getSpellDamage(spellData, false) / 10d, spellData, true);
                     if (isNonStructure(a)) a.addState(ActorState.SLOWED, percentage, duration);
                 }
             }
@@ -71,7 +72,7 @@ public class CinnamonBun extends UserActor {
 
         if (this.ultPoint != null && System.currentTimeMillis() - this.ultStart < E_DURATION) {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
-            double tickDamage = getSpellDamage(spellData);
+            double tickDamage = getSpellDamage(spellData, false);
             int radius = 2;
             if (this.ultUses > 1 && this.ultPoint2 == null) {
                 radius = 4;
@@ -134,13 +135,14 @@ public class CinnamonBun extends UserActor {
 
             for (Actor a : Champion.getActorsInRadius(handler, this.ultPoint, radius)) {
                 if (a.getTeam() != this.team) {
-                    a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                    a.addToDamageQueue(this, getSpellDamage(spellData, false), spellData, false);
                 }
             }
             if (this.ultPoint2 != null) {
                 for (Actor a : Champion.getActorsInRadius(handler, this.ultPoint2, radius)) {
                     if (a.getTeam() != this.team) {
-                        a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                        a.addToDamageQueue(
+                                this, getSpellDamage(spellData, false), spellData, false);
                     }
                 }
                 ExtensionCommands.createWorldFX(
@@ -167,6 +169,7 @@ public class CinnamonBun extends UserActor {
                 this.ultEffectsApplied = false;
             }
         }
+        /*
         if (testing
                 && System.currentTimeMillis() - testingTime
                         >= E_DURATION) { // TODO: REMOVE AFTER FIXING ABILITIES
@@ -177,6 +180,8 @@ public class CinnamonBun extends UserActor {
                     this.parentExt, this.player, "e", true, getReducedCooldown(baseCooldown), 500);
             scheduleTask(resetCanCast, getReducedCooldown(baseCooldown));
         }
+
+         */
     }
 
     @Override
@@ -215,7 +220,8 @@ public class CinnamonBun extends UserActor {
                     List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, qRect);
                     if (!actorsInPolygon.isEmpty()) {
                         for (Actor a : actorsInPolygon) {
-                            a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                            a.addToDamageQueue(
+                                    this, getSpellDamage(spellData, true), spellData, false);
                         }
                     }
                     this.attackCooldown = 0;
@@ -460,7 +466,7 @@ public class CinnamonBun extends UserActor {
                                 Champion.getActorsInRadius(handler1, this.ultPoint, radius)) {
                             if (a.getTeam() != this.team) {
                                 a.addToDamageQueue(
-                                        this, getSpellDamage(spellData), spellData, false);
+                                        this, getSpellDamage(spellData, false), spellData, false);
                             }
                         }
                         if (this.ultPoint2 != null) {
@@ -485,7 +491,10 @@ public class CinnamonBun extends UserActor {
                                     Champion.getActorsInRadius(handler2, this.ultPoint2, radius)) {
                                 if (a.getTeam() != this.team) {
                                     a.addToDamageQueue(
-                                            this, getSpellDamage(spellData), spellData, false);
+                                            this,
+                                            getSpellDamage(spellData, false),
+                                            spellData,
+                                            false);
                                 }
                             }
                         }

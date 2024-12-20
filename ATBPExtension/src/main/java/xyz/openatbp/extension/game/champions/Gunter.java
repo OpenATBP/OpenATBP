@@ -44,7 +44,7 @@ public class Gunter extends UserActor {
             List<Actor> actorsInTrapezoid = handler.getEnemiesInPolygon(this.team, this.eTrapezoid);
             if (!actorsInTrapezoid.isEmpty()) {
                 for (Actor a : actorsInTrapezoid) {
-                    double damage = getSpellDamage(spellData) / 10d;
+                    double damage = getSpellDamage(spellData, false) / 10d;
                     a.addToDamageQueue(this, damage, spellData, true);
                 }
             }
@@ -260,7 +260,7 @@ public class Gunter extends UserActor {
         for (Actor actor : enemyActorsInRadius) {
             if (actor.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE) {
                 JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(), "spell4");
-                actor.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                actor.addToDamageQueue(this, getSpellDamage(spellData, true), spellData, false);
             }
         }
     }
@@ -311,7 +311,7 @@ public class Gunter extends UserActor {
                 for (Actor a : affectedActors) {
                     if (a.getTeam() != team && isNonStructure(a)) {
                         a.addToDamageQueue(
-                                Gunter.this, getSpellDamage(spellData), spellData, false);
+                                Gunter.this, getSpellDamage(spellData, true), spellData, false);
                     }
                 }
             }
@@ -346,7 +346,7 @@ public class Gunter extends UserActor {
         @Override
         protected void hit(Actor victim) {
             JsonNode spellData = parentExt.getAttackData(getAvatar(), "spell2");
-            victim.addToDamageQueue(Gunter.this, getSpellDamage(spellData), spellData, false);
+            victim.addToDamageQueue(Gunter.this, getSpellDamage(spellData, true), spellData, false);
             ExtensionCommands.playSound(
                     parentExt, room, "", "sfx_gunter_bottle_shatter", this.location);
             ExtensionCommands.createWorldFX(

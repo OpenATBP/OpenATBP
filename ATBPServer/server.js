@@ -10,6 +10,7 @@ const postRequest = require('./post-requests.js');
 
 const ATBPLobbyServer = require('./atbp-lobby.js');
 const SocketPolicyServer = require('./socket-policy.js');
+var lobbyServer;
 
 const displayNames = require('./data/names.json');
 const shopData = require('./data/shop.json');
@@ -43,7 +44,7 @@ async function resetElo(collection) {
       //console.log(doc.friends);
       var q = { 'user.TEGid': doc.user.TEGid };
       var o = { upsert: true };
-      var up = { $set: { 'player.elo': 1150.0, 'player.tier': 1.0 } };
+      var up = { $set: { 'player.elo': 1.0, 'player.tier': 1.0 } };
 
       var res = await collection.updateOne(q, up, o);
       console.log(res);
@@ -79,66 +80,42 @@ async function addQueueData(collection) {
   }
 }
 
-async function curveElo(collection) {
-  var allUsers = [];
+async function addCustomBags(collection) {
   try {
     var cursor = collection.find();
     for await (var doc of cursor) {
-      allUsers.push(doc);
-    }
-  } finally {
-    var allElo = 0;
-    var topElo = -1;
-    var bottomElo = 10000;
-    for (var u of allUsers) {
-      allElo += u.player.elo;
-      if (u.player.elo > topElo) topElo = u.player.elo;
-      if (u.player.elo < bottomElo) bottomElo = u.player.elo;
-    }
-    console.log('TOP ELO: ' + topElo);
-    console.log('BOT ELO: ' + bottomElo);
-    console.log('AVERAGE ELO: ' + Math.round(allElo / allUsers.length));
-    if (bottomElo < 800) bottomElo = 800;
-    var maxElo = 2500;
-    var botElo = 800;
-    var lowPoint = { x: bottomElo, y: botElo };
-    var highPoint = { x: topElo, y: maxElo };
-    allUsers.sort((a, b) => {
-      return a.player.elo - b.player.elo;
-    });
-    for (var u of allUsers) {
-      var newElo = Math.floor(
-        highPoint.y +
-          ((lowPoint.y - highPoint.y) / (lowPoint.x - highPoint.x)) *
-            (u.player.elo - highPoint.x)
-      );
-      if (newElo < 500) newElo = 500;
-      var tiers = [0, 1149, 1350, 1602];
-      var tier = 1.0;
-      for (var i = 0; i < tiers.length; i++) {
-        var currentCap = tiers[i];
-        var maxCap = i + 1 == tiers.length ? 2643 : tiers[i + 1];
-        if (newElo > currentCap && newElo < maxCap) {
-          tier += i;
-          break;
-        } else if (newElo == currentCap) {
-          newElo++;
-          tier += 1;
-          break;
-        }
-      }
-
-      var q = { 'user.TEGid': u.user.TEGid };
+      //console.log(doc.friends);
+      var q = { 'user.TEGid': doc.user.TEGid };
       var o = { upsert: true };
-      var up = { $set: { 'player.elo': newElo, 'player.tier': tier } };
+      var up = {
+        $addToSet: {
+          inventory: {
+            $each: [
+              'belt_beta_assassin',
+              'belt_beta_tank',
+              'belt_beta_rng',
+              'belt_beta_support',
+              'belt_beta_jungle',
+              'belt_beta_laner',
+              'belt_beta_risk',
+              'belt_beta_adc',
+              'belt_beta_power',
+              'belt_beta_warlock',
+              'belt_beta_bruiser',
+              'belt_beta_anti_tank',
+              'belt_beta_anti_mage',
+              'belt_beta_hybrid',
+              'belt_beta_vamp',
+            ],
+          },
+        },
+      };
 
       var res = await collection.updateOne(q, up, o);
       console.log(res);
-
-      console.log(
-        `${u.user.dname} ELO is ${u.player.elo} but would become ${newElo} at tier ${tier}`
-      );
     }
+  } finally {
+    console.log('Done!');
   }
 }
 
@@ -178,36 +155,48 @@ function addChampData(collection) {
   }
 }
 
-async function clearPlayerData(playerCollection, champCollection) {
+async function wipePlayerData(playerCollection) {
   try {
     var cursor = playerCollection.find();
     for await (var doc of cursor) {
-      var stats = [
-        'playsPVP',
-        'disconnects',
-        'winsPVP',
-        'kills',
-        'deaths',
-        'assists',
-        'towers',
-        'minions',
-        'jungleMobs',
-        'altars',
-        'largestSpree',
-        'largestMulti',
-        'scoreHighest',
-        'scoreTotal',
-      ];
+      //console.log(doc.friends);
       var q = { 'user.TEGid': doc.user.TEGid };
-      var o = { upsert: false };
-      var up = { $set: { 'player.playsPVP': 1 } };
-      if (doc.player.playsPVP == 0) {
-        var res = await playerCollection.updateOne(q, up, o);
-        console.log(res);
-      }
+      var o = { upsert: true };
+      var up = {
+        $set: {
+          player: {
+            playsPVP: 1,
+            tier: 1.0,
+            elo: 1,
+            disconnects: 0,
+            playsBots: doc.player.playsBots,
+            rank: doc.player.rank,
+            rankProgress: doc.player.rankProgress,
+            winsPVP: 1,
+            winsBots: doc.player.winsBots,
+            points: 0,
+            coins: doc.player.coins,
+            kills: 0,
+            deaths: 0,
+            assists: 0,
+            towers: 0,
+            minions: 0,
+            jungleMobs: 0,
+            altars: 0,
+            largestSpree: 0,
+            largestMulti: 0,
+            scoreHighest: 0,
+            scoreTotal: 0,
+          },
+          champion: {},
+        },
+      };
+      var res = await playerCollection.updateOne(q, up, o);
+      console.log(res);
+      return;
     }
   } finally {
-    console.log('Done!');
+    console.log('Done');
   }
 }
 
@@ -299,6 +288,9 @@ mongoClient.connect((err) => {
 
   //addQueueData(playerCollection);
   //curveElo(playerCollection);
+  //addCustomBags(playerCollection);
+  //addChampData(champCollection);
+  //wipePlayerData(playerCollection);
 
   if (
     !fs.existsSync('static/crossdomain.xml') ||
@@ -344,6 +336,12 @@ mongoClient.connect((err) => {
 
   app.get('/login', (req, res) => {
     res.render('login');
+  });
+
+  app.get('/location/:id/:location', (req, res) => {
+    console.log(req.params.id);
+    lobbyServer.addPlayerLocation(req.params.id, req.params.location);
+    res.send({});
   });
 
   app.get('/friends', (req, res) => {
@@ -849,7 +847,7 @@ mongoClient.connect((err) => {
   app.listen(config.httpserver.port, () => {
     console.info(`Express server running on port ${config.httpserver.port}!`);
     if (config.lobbyserver.enable) {
-      const lobbyServer = new ATBPLobbyServer(config.lobbyserver.port);
+      lobbyServer = new ATBPLobbyServer(config.lobbyserver.port);
       lobbyServer.start(() => {
         console.info(
           `Lobby server running on port ${config.lobbyserver.port}!`

@@ -72,7 +72,8 @@ public class Neptr extends UserActor {
                 && System.currentTimeMillis() - this.ultDamageStartTime < E_DAMAGE_DURATION) {
             JsonNode attackData = this.parentExt.getAttackData(this.avatar, "spell3");
             for (Actor a : impactedActors) {
-                a.addToDamageQueue(this, this.getSpellDamage(attackData) / 10d, attackData, true);
+                a.addToDamageQueue(
+                        this, this.getSpellDamage(attackData, false) / 10d, attackData, true);
             }
         }
 
@@ -452,7 +453,7 @@ public class Neptr extends UserActor {
             JsonNode spellData = parentExt.getAttackData(Neptr.this.getAvatar(), "spell1");
             victim.addToDamageQueue(
                     Neptr.this,
-                    getSpellDamage(spellData) * (1 - damageReduction),
+                    getSpellDamage(spellData, true) * (1 - damageReduction),
                     spellData,
                     false);
             ExtensionCommands.playSound(
@@ -601,7 +602,7 @@ public class Neptr extends UserActor {
                                                     Neptr.this.avatar, "spell2");
                                     target.addToDamageQueue(
                                             Neptr.this,
-                                            getSpellDamage(spellData),
+                                            getSpellDamage(spellData, true),
                                             spellData,
                                             false);
                                     target.addState(

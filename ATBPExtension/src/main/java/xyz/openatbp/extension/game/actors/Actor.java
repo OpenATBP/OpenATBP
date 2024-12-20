@@ -10,10 +10,7 @@ import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.Console;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.champions.IceKing;
 import xyz.openatbp.extension.pathfinding.MovementManager;
@@ -339,15 +336,16 @@ public abstract class Actor {
     }
 
     public void handleFear(Point2D source, int duration) {
-        if (!this.hasMovementCC()
-                && !this.states.get(ActorState.IMMUNITY)
+        if (!this.states.get(ActorState.IMMUNITY)
                 && !this.getId().contains("turret")
                 && !this.getId().contains("decoy")) {
             this.target = null;
-            this.canMove = true;
-            Line2D sourceToPlayer = new Line2D.Float(source, this.location);
-            Line2D extendedLine = Champion.extendLine(sourceToPlayer, FEAR_MOVING_DISTANCE);
-            this.moveWithCollision(extendedLine.getP2());
+            if (!this.hasMovementCC()) {
+                this.canMove = true;
+                Line2D sourceToPlayer = new Line2D.Float(source, this.location);
+                Line2D extendedLine = Champion.extendLine(sourceToPlayer, FEAR_MOVING_DISTANCE);
+                this.moveWithCollision(extendedLine.getP2());
+            }
             this.addState(ActorState.FEARED, 0d, duration);
         }
     }
@@ -393,8 +391,42 @@ public abstract class Actor {
 
     public abstract void handleKill(Actor a, JsonNode attackData);
 
+    public void handleElectrodeGun(UserActor ua, Actor a, int damage, JsonNode attackData) {
+        if (ChampionData.getJunkLevel(ua, "junk_2_electrode_gun") > 0) {
+            if (Math.random() <= 0.25d) {
+                for (Actor actor :
+                        Champion.getActorsInRadius(
+                                this.parentExt.getRoomHandler(this.room.getName()),
+                                this.location,
+                                2f)) {
+                    if (actor.getTeam() == this.team && !actor.getId().equalsIgnoreCase(this.id)) {
+                        actor.addToDamageQueue(
+                                a,
+                                damage * ChampionData.getCustomJunkStat(ua, "junk_2_electrode_gun"),
+                                attackData,
+                                false);
+                        // TODO: Set different attack data for electrode gun damage
+                        Console.debugLog("Damage from electrode gun!");
+                    }
+                }
+            }
+        }
+    }
+
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         if (a.getClass() == IceKing.class && this.hasMovementCC()) damage *= 1.1;
+        if (a.getActorType() == ActorType.PLAYER) {
+            UserActor ua = (UserActor) a;
+            if (ChampionData.getJunkLevel(ua, "junk_2_peppermint_tank") > 0
+                    && getAttackType(attackData) == AttackType.SPELL) {
+                if (ua.getLocation().distance(this.location) < 2d) {
+                    damage +=
+                            (damage * ChampionData.getCustomJunkStat(ua, "junk_2_peppermint_tank"));
+                    Console.debugLog("Increased damage from peppermint tank.");
+                }
+            }
+            this.handleElectrodeGun(ua, a, damage, attackData);
+        }
         this.currentHealth -= damage;
         if (this.currentHealth <= 0) this.currentHealth = 0;
         ISFSObject updateData = new SFSObject();
@@ -417,7 +449,8 @@ public abstract class Actor {
         if (attacker.getActorType() == ActorType.PLAYER
                 && this.getAttackType(attackData) == AttackType.SPELL
                 && this.getActorType() != ActorType.TOWER
-                && this.getActorType() != ActorType.BASE) {
+                && this.getActorType() != ActorType.BASE
+                && !attackData.get("spellName").asText().equalsIgnoreCase("flame cloak")) {
             UserActor ua = (UserActor) attacker;
             ua.addHit(dotDamage);
             ua.handleSpellVamp(this.getMitigatedDamage(damage, AttackType.SPELL, ua), dotDamage);
@@ -508,6 +541,10 @@ public abstract class Actor {
         ExtensionCommands.updateActorData(this.parentExt, this.room, this.id, data);
     }
 
+    public void heal(int delta) {
+        this.changeHealth(delta);
+    }
+
     public void setHealth(int currentHealth, int maxHealth) {
         this.currentHealth = currentHealth;
         this.maxHealth = maxHealth;
@@ -530,8 +567,8 @@ public abstract class Actor {
             if (spellResist < 0) spellResist = 0;
             double modifier;
             if (attackType == AttackType.PHYSICAL) {
-                modifier = 100 / (100 + armor);
-            } else modifier = 100 / (100 + spellResist);
+                modifier = (100 - armor) / 100d; // Max Armor 80
+            } else modifier = (100 - spellResist) / 100d; // Max Shields 60
             return (int) Math.round(rawDamage * modifier);
         } catch (Exception e) {
             e.printStackTrace();

@@ -19,7 +19,7 @@ import xyz.openatbp.extension.pathfinding.MovementManager;
 public class Lich extends UserActor {
     private static final int PASSIVE_DURATION = 20000;
     private static final int PASSIVE_COOLDOWN = 40000;
-    private static final double SKULLY_DAMAGE_PERCENTAGE = 0.8;
+    private static final double SKULLY_DAMAGE_PERCENTAGE = 0.4;
     private static final int Q_SPEED_DURATION = 6000;
     private static final double Q_SPEED_VALUE = 0.25d;
     private static final int Q_DURATION = 6000;
@@ -60,7 +60,7 @@ public class Lich extends UserActor {
                         if (slimedEnemies.containsKey(a.getId())) {
                             if (System.currentTimeMillis() - slimedEnemies.get(a.getId()) >= 1000) {
                                 a.addToDamageQueue(
-                                        this, getSpellDamage(attackData), attackData, true);
+                                        this, getSpellDamage(attackData, false), attackData, true);
                                 if (isNonStructure(a)) {
                                     applySlow(a);
                                 }
@@ -68,7 +68,8 @@ public class Lich extends UserActor {
                                 break;
                             }
                         } else {
-                            a.addToDamageQueue(this, getSpellDamage(attackData), attackData, true);
+                            a.addToDamageQueue(
+                                    this, getSpellDamage(attackData, false), attackData, true);
                             if (isNonStructure(a)) {
                                 applySlow(a);
                             }
@@ -87,7 +88,7 @@ public class Lich extends UserActor {
                     && System.currentTimeMillis() - lastETickTime >= E_TICK_COOLDOWN) {
                 lastETickTime = System.currentTimeMillis();
                 JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(), "spell3");
-                double damage = getSpellDamage(spellData);
+                double damage = getSpellDamage(spellData, false);
                 String eTickSound = "sfx_lich_charm_shot_hit";
                 ExtensionCommands.playSound(parentExt, room, "", eTickSound, eLocation);
                 for (Actor a : targets) {
@@ -604,13 +605,16 @@ public class Lich extends UserActor {
         public void run() {
             if (attacker.getClass() == Lich.class) {
                 double damage = this.attacker.getPlayerStat("attackDamage");
-                if (crit) damage *= 2;
+                if (crit) {
+                    damage *= 2;
+                    damage = handleGrassSwordProc(damage);
+                }
                 new Champion.DelayedAttack(parentExt, attacker, target, (int) damage, "basicAttack")
                         .run();
                 Lich.this.setSkullyTarget(this.target);
             } else if (attacker.getClass() == Skully.class) {
                 double damage =
-                        25d + (Lich.this.getPlayerStat("attackDamage") * SKULLY_DAMAGE_PERCENTAGE);
+                        10d + (Lich.this.getPlayerStat("spellDamage") * SKULLY_DAMAGE_PERCENTAGE);
                 new Champion.DelayedAttack(
                                 parentExt, attacker, target, (int) damage, "skullyAttack")
                         .run();
@@ -648,7 +652,7 @@ public class Lich extends UserActor {
                     false,
                     team,
                     0f);
-            victim.addToDamageQueue(Lich.this, getSpellDamage(spellData), spellData, false);
+            victim.addToDamageQueue(Lich.this, getSpellDamage(spellData, true), spellData, false);
             victim.handleCharm(Lich.this, W_CHARM_DURATION);
             destroy();
         }

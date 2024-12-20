@@ -680,8 +680,14 @@ public abstract class RoomHandler implements Runnable {
         for (int n = 1; n < 6; n++) {
             ExtensionCommands.removeFx(this.parentExt, this.room, altarId + n);
         }
-        if (i == 1) addScore(null, team, 15);
-        else addScore(null, team, 10);
+        List<UserActor> gooUsers = new ArrayList<>();
+        for (UserActor ua : this.players) {
+            if (ua.getTeam() == team
+                    && ChampionData.getJunkLevel(ua, "junk_5_bubblegums_googoomama") > 0)
+                gooUsers.add(ua);
+        }
+        if (i == 1) addScore(null, team, 15 + (gooUsers.size() * 5));
+        else addScore(null, team, 10 + (gooUsers.size() * 5));
         cooldowns.put(altarId + "__" + "altar", 180);
         ExtensionCommands.createActorFX(
                 this.parentExt,
@@ -704,11 +710,16 @@ public abstract class RoomHandler implements Runnable {
                     if (i == 1) {
                         u.addEffect(
                                 "attackDamage",
-                                u.getStat("attackDamage") * 0.25d,
+                                (u.getStat("attackDamage") * 0.25d)
+                                        * (gooUsers.contains(u) ? 1.5 : 1),
                                 1000 * 60,
                                 "altar_buff_offense",
                                 "");
-                        u.addEffect("spellDamage", u.getStat("spellDamage") * 0.25d, 1000 * 60);
+                        u.addEffect(
+                                "spellDamage",
+                                (u.getStat("spellDamage") * 0.25d)
+                                        * (gooUsers.contains(u) ? 1.5 : 1),
+                                1000 * 60);
                         Champion.handleStatusIcon(
                                 parentExt, u, "icon_altar_attack", "altar2_description", 1000 * 60);
                     } else {
@@ -716,10 +727,21 @@ public abstract class RoomHandler implements Runnable {
                         double addMR = u.getStat("spellResist") * 0.5d;
                         if (addArmor == 0) addArmor = 5d;
                         if (addMR == 0) addMR = 5d;
-                        u.addEffect("armor", addArmor, 1000 * 60, "altar_buff_defense", "");
-                        u.addEffect("spellResist", addMR, 1000 * 60);
+                        u.addEffect(
+                                "armor",
+                                (addArmor) * (gooUsers.contains(u) ? 1.5 : 1),
+                                1000 * 60,
+                                "altar_buff_defense",
+                                "");
+                        u.addEffect(
+                                "spellResist",
+                                (addMR) * (gooUsers.contains(u) ? 1.5 : 1),
+                                1000 * 60);
                         Champion.handleStatusIcon(
                                 parentExt, u, "icon_altar_armor", "altar1_description", 1000 * 60);
+                    }
+                    if (gooUsers.contains(u)) {
+                        u.addXP(25);
                     }
                     // cooldowns.put(u.getId()+"__buff__"+buffName,60);
                     ExtensionCommands.knockOutActor(

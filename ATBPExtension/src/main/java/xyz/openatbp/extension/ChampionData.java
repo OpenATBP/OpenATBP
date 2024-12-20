@@ -4,6 +4,8 @@ import java.util.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -17,8 +19,8 @@ import xyz.openatbp.extension.game.actors.UserActor;
 public class ChampionData {
 
     private static final int[] XP_LEVELS = {100, 210, 350, 520, 720, 950, 1210, 1500, 1820, 2170};
-    public static final double[] ELO_TIERS = {0, 1149, 1350, 1602};
-    public static final double MAX_ELO = 2643;
+    public static final double[] ELO_TIERS = {0, 25, 75, 200};
+    public static final double MAX_ELO = 500;
 
     public static int getXPLevels(int index) {
         if (index < 0) return XP_LEVELS[0];
@@ -36,6 +38,63 @@ public class ChampionData {
     public static int getLevelXP(int level) {
         if (level == 0) return 0;
         return XP_LEVELS[level - 1];
+    }
+
+    public static int getJunkLevel(UserActor ua, String item) {
+        String[] items = ChampionData.getBackpackInventory(ua.getParentExt(), ua.getBackpack());
+        for (int i = 0; i < items.length; i++) {
+            if (items[i].equalsIgnoreCase(item)) {
+                int cat = i + 1;
+                return (int) ua.getStat("sp_category" + cat);
+            }
+        }
+        return -1;
+    }
+
+    public static double getCustomJunkStat(UserActor ua, String item) {
+        int level = getJunkLevel(ua, item);
+        if (level > 0) {
+            double[] stats = new double[4];
+            switch (item) {
+                case "junk_3_battle_moon":
+                case "junk_5_ghost_pouch":
+                    stats = new double[] {0.03, 0.05, 0.1, 0.15};
+                    break;
+                case "junk_4_future_crystal":
+                    stats = new double[] {0.25, 0.4, 0.5, 0.75};
+                    break;
+                case "junk_1_numb_chucks":
+                    stats = new double[] {0.1, 0.15, 0.2, 0.3};
+                    break;
+                case "junk_4_antimagic_cube":
+                    stats = new double[] {-25, -50, -75, -100};
+                    break;
+                case "junk_2_peppermint_tank":
+                case "junk_3_globs_helmet":
+                    stats = new double[] {0.05, 0.1, 0.15, 0.25};
+                    break;
+                case "junk_1_demon_blood_sword":
+                case "junk_1_grape_juice_sword":
+                    stats = new double[] {0.15, 0.2, 0.25, 0.3};
+                    break;
+                case "junk_2_electrode_gun":
+                    stats = new double[] {0.25, 0.3, 0.4, 0.5};
+                    break;
+                case "junk_2_simon_petrikovs_glasses":
+                    stats = new double[] {50d, 75d, 100d, 150d};
+                    break;
+                case "junk_1_grass_sword":
+                    stats = new double[] {60, 50, 40, 20};
+                    break;
+                case "junk_1_fight_king_sword":
+                    stats = new double[] {2000, 4000, 7000, 12000};
+                    break;
+                case "junk_2_cosmic_gauntlet":
+                    stats = new double[] {1000, 2000, 3000, 4000};
+            }
+            return stats[level - 1];
+        }
+        return -1;
     }
 
     public static ISFSObject useSpellPoint(
@@ -355,6 +414,16 @@ public class ChampionData {
         return lv1Cooldown;
     }
 
+    public static JsonNode getFlameCloakAttackData() {
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        node.put("spellName", "Flame Cloak");
+        node.put("spellDescription", "Oof ouch owie");
+        node.put("spellShortDescription", "OWW");
+        node.put("spellIconImage", "junk_4_flame_cloak");
+        node.put("spellType", "SPELL");
+        return node;
+    }
+
     public static int[] getBuildPath(String actor, String backpack) {
         int[] buildPath = {1, 1, 2, 2, 1, 2, 1, 2, 5, 5};
         String avatar = actor;
@@ -363,185 +432,10 @@ public class ChampionData {
         }
         switch (avatar) {
             case "billy":
-            case "cinnamonbun":
                 if (backpack.equalsIgnoreCase("belt_ultimate_wizard")) {
                     buildPath = new int[] {2, 2, 3, 3, 2, 3, 2, 3, 4, 4};
                 } else if (backpack.equalsIgnoreCase("belt_sorcerous_satchel")) {
                     buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 3, 3};
-                }
-                break;
-            case "bmo":
-                if (backpack.equalsIgnoreCase("belt_billys_bag")) {
-                    buildPath = new int[] {1, 1, 5, 5, 1, 5, 1, 5, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_bella_noche")) {
-                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 2, 2};
-                } else if (backpack.equalsIgnoreCase("belt_champions")) {
-                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_techno_tank")) {
-                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 2, 2};
-                }
-                break;
-            case "finn":
-                if (backpack.equalsIgnoreCase("belt_techno_tank")) {
-                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
-                } else if (backpack.equalsIgnoreCase("belt_bella_noche")) {
-                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
-                } else if (backpack.equalsIgnoreCase("belt_billys_bag")) {
-                    buildPath = new int[] {1, 1, 5, 5, 1, 5, 1, 5, 3, 3};
-                }
-                break;
-            case "fionna":
-                if (backpack.equalsIgnoreCase("belt_billys_bag")) {
-                    buildPath = new int[] {1, 1, 5, 5, 1, 5, 1, 5, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_bindle_of_bravery")) {
-                    buildPath = new int[] {1, 1, 5, 5, 1, 5, 1, 5, 4, 4};
-                } else if (backpack.equalsIgnoreCase("belt_fridjitsu")) {
-                    buildPath = new int[] {1, 1, 5, 5, 1, 5, 1, 5, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_bella_noche")) {
-                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
-                }
-                break;
-            case "flame":
-                if (backpack.equalsIgnoreCase("belt_champions")) {
-                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_bella_noche")) {
-                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 2, 2};
-                } else if (backpack.equalsIgnoreCase("belt_billys_bag")) {
-                    buildPath = new int[] {1, 1, 5, 5, 1, 5, 1, 5, 2, 2};
-                }
-                break;
-            case "gunter":
-                if (backpack.equalsIgnoreCase("belt_fridjitsu")) {
-                    buildPath = new int[] {1, 1, 5, 5, 1, 5, 1, 5, 2, 2};
-                } else if (backpack.equalsIgnoreCase("belt_ultimate_wizard")) {
-                    buildPath = new int[] {2, 2, 3, 3, 2, 3, 2, 3, 4, 4};
-                } else if (backpack.equalsIgnoreCase("belt_champions")) {
-                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_bella_noche")) {
-                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_billys_bag")) {
-                    buildPath = new int[] {1, 1, 5, 5, 1, 5, 1, 5, 2, 2};
-                }
-                break;
-            case "iceking":
-                if (backpack.equalsIgnoreCase("belt_ultimate_wizard")) {
-                    buildPath = new int[] {2, 2, 3, 3, 2, 3, 2, 3, 4, 4};
-                } else if (backpack.equalsIgnoreCase("belt_champions")) {
-                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_fridjitsu")) {
-                    buildPath = new int[] {1, 1, 5, 5, 1, 5, 1, 5, 2, 2};
-                }
-                break;
-            case "jake":
-                if (backpack.equalsIgnoreCase("belt_sorcerous_satchel")) {
-                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_ultimate_wizard")) {
-                    buildPath = new int[] {2, 2, 3, 3, 2, 3, 2, 3, 4, 4};
-                } else if (backpack.equalsIgnoreCase("belt_champions")) {
-                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
-                }
-                break;
-            case "lemongrab":
-                if (backpack.equalsIgnoreCase("belt_ultimate_wizard")) {
-                    buildPath = new int[] {2, 2, 3, 3, 2, 3, 2, 3, 4, 4};
-                } else if (backpack.equalsIgnoreCase("belt_champions")) {
-                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_candy_monarch")) {
-                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_techno_tank")) {
-                    buildPath = new int[] {2, 2, 3, 3, 2, 3, 2, 3, 5, 5};
-                }
-                break;
-            case "lich":
-                if (backpack.equalsIgnoreCase("belt_bella_noche")) {
-                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 2, 2};
-                } else if (backpack.equalsIgnoreCase("belt_billys_bag")) {
-                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
-                } else if (backpack.equalsIgnoreCase("belt_champions")) {
-                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_techno_tank")) {
-                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 2, 2};
-                }
-                break;
-            case "lsp":
-                if (backpack.equalsIgnoreCase("belt_billys_bag")) {
-                    buildPath = new int[] {1, 1, 5, 5, 1, 5, 1, 5, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_champions")) {
-                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_techno_tank")) {
-                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 2, 2};
-                } else if (backpack.equalsIgnoreCase("belt_bella_noche")) {
-                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
-                }
-                break;
-            case "magicman":
-                if (backpack.equalsIgnoreCase("belt_champions")) {
-                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_bella_noche")) {
-                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_billys_bag")) {
-                    buildPath = new int[] {1, 1, 5, 5, 1, 5, 1, 5, 2, 2};
-                }
-                break;
-            case "marceline":
-                if (backpack.equalsIgnoreCase("belt_bella_noche")) {
-                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 2, 2};
-                } else if (backpack.equalsIgnoreCase("belt_ultimate_wizard")) {
-                    buildPath = new int[] {2, 2, 3, 3, 2, 3, 2, 3, 4, 4};
-                } else if (backpack.equalsIgnoreCase("belt_sorcerous_satchel")) {
-                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_billys_bag")) {
-                    buildPath = new int[] {1, 1, 5, 5, 1, 5, 1, 5, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_champions")) {
-                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_techno_tank")) {
-                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 2, 2};
-                }
-                break;
-            case "neptr":
-                if (backpack.equalsIgnoreCase("belt_ultimate_wizard")) {
-                    buildPath = new int[] {2, 2, 3, 3, 2, 3, 2, 3, 4, 4};
-                } else if (backpack.equalsIgnoreCase("belt_champions")) {
-                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_sorcerous_satchel")) {
-                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 3, 3};
-                }
-                break;
-            case "peppermintbutler":
-                if (backpack.equalsIgnoreCase("belt_techno_tank")) {
-                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
-                } else if (backpack.equalsIgnoreCase("belt_bella_noche")) {
-                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
-                } else if (backpack.equalsIgnoreCase("belt_billys_bag")) {
-                    buildPath = new int[] {1, 1, 5, 5, 1, 5, 1, 5, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_candy_monarch")) {
-                    buildPath = new int[] {1, 1, 4, 4, 1, 4, 1, 4, 2, 2};
-                } else if (backpack.equalsIgnoreCase("belt_fridjitsu")) {
-                    buildPath = new int[] {1, 1, 5, 5, 1, 5, 1, 5, 3, 3};
-                }
-                break;
-            case "princessbubblegum":
-                if (backpack.equalsIgnoreCase("belt_bella_noche")) {
-                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 2, 2};
-                } else if (backpack.equalsIgnoreCase("belt_billys_bag")) {
-                    buildPath = new int[] {1, 1, 5, 5, 1, 5, 1, 5, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_champions")) {
-                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
-                }
-                break;
-            case "rattleballs":
-                if (backpack.equalsIgnoreCase("belt_techno_tank")) {
-                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 2, 2};
-                } else if (backpack.equalsIgnoreCase("belt_bella_noche")) {
-                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 2, 2};
-                } else if (backpack.equalsIgnoreCase("belt_billys_bag")) {
-                    buildPath = new int[] {1, 1, 5, 5, 1, 5, 1, 5, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_champions")) {
-                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_candy_monarch")) {
-                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
-                } else if (backpack.equalsIgnoreCase("belt_hewers_haversack")) {
-                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
                 }
                 break;
             default:
@@ -551,6 +445,7 @@ public class ChampionData {
         return buildPath;
     }
 
+    @Deprecated
     public static int getEloGain(UserActor ua, List<UserActor> players, double result) {
         double myElo = ua.getUser().getVariable("player").getSFSObjectValue().getInt("elo");
         double teamCount = 0;

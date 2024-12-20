@@ -14,7 +14,6 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 
 import xyz.openatbp.extension.*;
-import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 @MultiHandler
@@ -83,7 +82,8 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
         int castDelay = spellData.get("castDelay").asInt();
         int baseCooldown = ChampionData.getBaseAbilityCooldown(player, spellNum);
         player.useAbility(spellNum, spellData, baseCooldown, gCooldown, castDelay, oldLocation);
-        if (player.getState(ActorState.BRUSH)) player.setState(ActorState.REVEALED, true);
+        player.setLastSpell();
+        player.preventStealth();
     }
 
     private JsonNode getSpellData(String avatar, int spell) {

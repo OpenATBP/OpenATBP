@@ -157,7 +157,7 @@ public class Jake extends UserActor {
                 for (Actor a : Champion.getActorsInRadius(handler, this.location, 2f)) {
                     if (this.isNonStructure(a)) {
                         JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
-                        double damage = (double) (getSpellDamage(spellData)) / 2d;
+                        double damage = (double) (getSpellDamage(spellData, false)) / 2d;
                         a.addToDamageQueue(this, (int) damage, spellData, true);
                     }
                 }
@@ -394,7 +394,8 @@ public class Jake extends UserActor {
                     for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
                         if (this.isNonStructure(a)) {
                             a.knockback(this.location, 3.5f);
-                            a.addToDamageQueue(this, getSpellDamage(spellData), spellData, false);
+                            a.addToDamageQueue(
+                                    this, getSpellDamage(spellData, true), spellData, false);
                         }
                     }
 

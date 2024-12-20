@@ -77,6 +77,12 @@ public class MagicMan extends UserActor {
     }
 
     @Override
+    public void preventStealth() {
+        if (this.magicManClone != null) return;
+        super.preventStealth();
+    }
+
+    @Override
     public void attack(Actor a) {
         if (this.attackCooldown == 0) {
             this.applyStopMovingDuringAttack();
@@ -388,7 +394,8 @@ public class MagicMan extends UserActor {
             if (!playersHitBySnake.contains(victim)) {
                 playersHitBySnake.add(victim);
                 JsonNode spellData = parentExt.getAttackData(MagicMan.this.avatar, "spell1");
-                victim.addToDamageQueue(MagicMan.this, getSpellDamage(spellData), spellData, false);
+                victim.addToDamageQueue(
+                        MagicMan.this, getSpellDamage(spellData, true), spellData, false);
             }
             this.destroy();
         }
@@ -465,7 +472,7 @@ public class MagicMan extends UserActor {
             for (Actor actor : Champion.getActorsInRadius(handler, this.location, 2.5f)) {
                 if (isNonStructure(actor)) {
                     actor.addToDamageQueue(
-                            MagicMan.this, getSpellDamage(spellData), spellData, false);
+                            MagicMan.this, getSpellDamage(spellData, true), spellData, false);
                 }
             }
             this.timeTraveled = 0;
@@ -503,7 +510,10 @@ public class MagicMan extends UserActor {
         @Override
         public void run() {
             double damage = getPlayerStat("attackDamage");
-            if (crit) damage *= 2;
+            if (crit) {
+                damage *= 2;
+                damage = handleGrassSwordProc(damage);
+            }
             new Champion.DelayedAttack(
                             parentExt, MagicMan.this, target, (int) damage, "basicAttack")
                     .run();

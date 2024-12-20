@@ -434,10 +434,13 @@ public class Champion {
                 boolean hasGrobDevice = ua.hasBackpackItem("junk_4_grob_gob_glob_grod");
 
                 if (ua.hasBackpackItem("junk_1_numb_chucks") && ua.getStat("sp_category1") > 0) {
-                    double delta = target.getPlayerStat("attackSpeed") * -0.25;
-                    this.target.addEffect("attackSpeed", delta, 3000);
+                    ua.handleNumbChuckStacks(target);
+                }
 
-                } else if (hasGrobDevice && ua.getStat("sp_category4") > 0) {
+                this.damage += (20 * ua.getCosmicStacks());
+                ua.resetCosmicStacks();
+
+                if (hasGrobDevice && ua.getStat("sp_category4") > 0) {
                     Random random = new Random();
                     int num = random.nextInt(4);
                     if (num == 0) {
@@ -446,6 +449,11 @@ public class Champion {
                         int decrease = (pointsPutIntoDevice * POWER_DAMAGE_PER_POINT) * -1;
                         this.target.addEffect("spellDamage", decrease, 5000);
                     }
+                }
+
+                if (ua.getRoboStacks() > 0) {
+                    ua.resetRoboStacks();
+                    target.addState(ActorState.SLOWED, 0.2, 3000); // TODO: Make scalable
                 }
 
                 if (canLifeSteal()) ua.handleLifeSteal();

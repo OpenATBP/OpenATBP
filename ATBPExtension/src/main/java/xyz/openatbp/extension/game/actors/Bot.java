@@ -64,6 +64,7 @@ public class Bot extends Actor {
             killer.increaseStat("kills", 1);
             RoomHandler roomHandler = parentExt.getRoomHandler(room.getName());
             roomHandler.addScore(killer, killer.getTeam(), 25);
+            killer.addXP(150);
         }
         if (!room.getGroupId().equals("Tutorial")) {
             Runnable respawn = this::respawn;
@@ -115,6 +116,16 @@ public class Bot extends Actor {
                     location,
                     (float) getPlayerStat("speed"),
                     true);
+        }
+
+        for (UserActor ua : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
+            if (!ua.getId().equalsIgnoreCase(this.id)) {
+                if (ua.getLocation().distance(this.location) <= 5f)
+                    ua.setGlassesBuff(
+                            ChampionData.getCustomJunkStat(ua, "junk_2_simon_petrikovs_glasses"),
+                            ua);
+                else ua.setGlassesBuff(-1d, ua);
+            }
         }
 
         moveTowardsSpawnPoint();

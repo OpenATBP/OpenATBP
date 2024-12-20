@@ -102,6 +102,11 @@ public class Fionna extends UserActor {
     }
 
     @Override
+    protected boolean canRegenHealth() {
+        return super.canRegenHealth() || this.getPlayerStat("healthRegen") < 0;
+    }
+
+    @Override
     public double getPlayerStat(String stat) {
         switch (stat) {
             case "healthRegen":
@@ -124,7 +129,9 @@ public class Fionna extends UserActor {
             case "armor":
             case "spellResist":
                 if (this.swordType == SwordType.FEARLESS)
-                    return super.getPlayerStat(stat) + (this.getStat(stat) * SPELLRESIST_FEARLESS);
+                    return Math.round(
+                            super.getPlayerStat(stat)
+                                    + (this.getStat(stat) * SPELLRESIST_FEARLESS));
                 break;
             case "attackDamage":
             case "spellDamage":
@@ -412,7 +419,7 @@ public class Fionna extends UserActor {
                             && a.getActorType() != ActorType.BASE
                             && a.getActorType() != ActorType.TOWER) {
                         actorsHitWithQ.add(a);
-                        double damage = getSpellDamage(spellData);
+                        double damage = getSpellDamage(spellData, true);
                         a.addToDamageQueue(Fionna.this, damage, spellData, false);
                         if (dashInt == 1) a.addState(ActorState.SLOWED, 0.5d, 1000);
                     }
