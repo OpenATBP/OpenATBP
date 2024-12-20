@@ -155,36 +155,48 @@ function addChampData(collection) {
   }
 }
 
-async function clearPlayerData(playerCollection, champCollection) {
+async function wipePlayerData(playerCollection) {
   try {
     var cursor = playerCollection.find();
     for await (var doc of cursor) {
-      var stats = [
-        'playsPVP',
-        'disconnects',
-        'winsPVP',
-        'kills',
-        'deaths',
-        'assists',
-        'towers',
-        'minions',
-        'jungleMobs',
-        'altars',
-        'largestSpree',
-        'largestMulti',
-        'scoreHighest',
-        'scoreTotal',
-      ];
+      //console.log(doc.friends);
       var q = { 'user.TEGid': doc.user.TEGid };
-      var o = { upsert: false };
-      var up = { $set: { 'player.playsPVP': 1 } };
-      if (doc.player.playsPVP == 0) {
-        var res = await playerCollection.updateOne(q, up, o);
-        console.log(res);
-      }
+      var o = { upsert: true };
+      var up = {
+        $set: {
+          player: {
+            playsPVP: 1,
+            tier: 1.0,
+            elo: 1,
+            disconnects: 0,
+            playsBots: doc.player.playsBots,
+            rank: doc.player.rank,
+            rankProgress: doc.player.rankProgress,
+            winsPVP: 1,
+            winsBots: doc.player.winsBots,
+            points: 0,
+            coins: doc.player.coins,
+            kills: 0,
+            deaths: 0,
+            assists: 0,
+            towers: 0,
+            minions: 0,
+            jungleMobs: 0,
+            altars: 0,
+            largestSpree: 0,
+            largestMulti: 0,
+            scoreHighest: 0,
+            scoreTotal: 0,
+          },
+          champion: {},
+        },
+      };
+      var res = await playerCollection.updateOne(q, up, o);
+      console.log(res);
+      return;
     }
   } finally {
-    console.log('Done!');
+    console.log('Done');
   }
 }
 
@@ -277,6 +289,8 @@ mongoClient.connect((err) => {
   //addQueueData(playerCollection);
   //curveElo(playerCollection);
   //addCustomBags(playerCollection);
+  //addChampData(champCollection);
+  //wipePlayerData(playerCollection);
 
   if (
     !fs.existsSync('static/crossdomain.xml') ||

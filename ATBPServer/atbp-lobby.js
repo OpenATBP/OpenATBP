@@ -21,7 +21,6 @@ var matchMakingUpdate = setInterval(() => {
   handleSkilledMatchmaking();
 }, 2000);
 
-
 function tryParseJSONObject(jsonString) {
   try {
     var obj = JSON.parse(jsonString);
@@ -90,8 +89,8 @@ function removeDuplicateQueues(ids, queueNum) {
   queues = queues.filter((q) => q.players.length > 0);
 }
 
-function keepClientsAlive(){
-  safeSendAll(users,"ghost_hunter",{});
+function keepClientsAlive() {
+  safeSendAll(users, 'ghost_hunter', {});
 }
 
 function removeTeam(team) {
