@@ -263,6 +263,9 @@ function updateElo(socket) {
             case 200:
               res.player.elo++;
               break;
+            case 74:
+              res.player.elo+=2;
+              break;
           }
           socket.player.elo = res.player.elo;
         } else socket.end();
