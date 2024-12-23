@@ -426,6 +426,17 @@ public abstract class Actor {
                 }
             }
             this.handleElectrodeGun(ua, a, damage, attackData);
+            if (ua.lichHandDamageApplies(this)) {
+                Console.debugLog("Lich hand damage " + ua.getLichHandTimesHit());
+                damage += ((double) damage * (0.1d * ua.getLichHandTimesHit()));
+                Console.debugLog("New damage from Lich Hand: " + damage);
+                ua.handleLichHandHit();
+            } else if (ChampionData.getJunkLevel(ua, "junk_2_lich_hand") > 0
+                    && (ua.getLichVictim() == null
+                            || !ua.getLichVictim().equalsIgnoreCase(this.id))) {
+                Console.debugLog("Setting Lich Victim");
+                ua.setLichVictim(this.id);
+            }
         }
         this.currentHealth -= damage;
         if (this.currentHealth <= 0) this.currentHealth = 0;

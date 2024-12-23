@@ -323,12 +323,11 @@ public class UserActor extends Actor {
         ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "fight_king_icon");
     }
 
-    public boolean lichHandDamageApplies(UserActor ua) {
-        if (this.lichVictim == null || ua == null) return false;
+    public boolean lichHandDamageApplies(Actor a) {
+        if (this.lichVictim == null || a == null) return false;
         Console.debugLog("");
         return ChampionData.getJunkLevel(this, "junk_2_lich_hand") > 0
-                && this.lichVictim.equalsIgnoreCase(ua.getId())
-                && System.currentTimeMillis() > this.lichLastHit + 1000;
+                && this.lichVictim.equalsIgnoreCase(a.getId());
     }
 
     public double getLichHandTimesHit() {
@@ -476,8 +475,11 @@ public class UserActor extends Actor {
     }
 
     public void handleLichHandHit() {
-        this.lichHandTimesHit++;
-        this.lichLastHit = System.currentTimeMillis();
+        if (System.currentTimeMillis() > this.lichLastHit + 1000) {
+            Console.debugLog("Registered");
+            this.lichHandTimesHit++;
+            this.lichLastHit = System.currentTimeMillis();
+        }
     }
 
     public double getAttackCooldown() {
