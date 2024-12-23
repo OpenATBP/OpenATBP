@@ -264,7 +264,7 @@ function updateElo(socket) {
               res.player.elo++;
               break;
             case 74:
-              res.player.elo+=2;
+              res.player.elo += 2;
               break;
           }
           socket.player.elo = res.player.elo;

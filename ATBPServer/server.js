@@ -160,7 +160,7 @@ async function wipePlayerData(playerCollection) {
     var cursor = playerCollection.find();
     for await (var doc of cursor) {
       //console.log(doc.friends);
-      if(doc != null && doc.player != undefined){
+      if (doc != null && doc.player != undefined) {
         var q = { 'user.TEGid': doc.user.TEGid };
         var o = { upsert: true };
         var up = {
@@ -195,7 +195,6 @@ async function wipePlayerData(playerCollection) {
         var res = await playerCollection.updateOne(q, up, o);
         console.log(res);
       }
-
     }
   } finally {
     console.log('Done');

@@ -80,7 +80,7 @@ module.exports = {
                 dat.player.elo++;
                 break;
               case 74:
-                dat.player.elo+=2;
+                dat.player.elo += 2;
                 break;
             }
             resolve(JSON.stringify(dat.player));
