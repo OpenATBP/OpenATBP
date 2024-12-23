@@ -104,6 +104,16 @@ public class Monster extends Actor {
                 if (ChampionData.getJunkLevel(ua, "junk_1_demon_blood_sword") > 0) {
                     damage *= (1 + ChampionData.getCustomJunkStat(ua, "junk_1_demon_blood_sword"));
                 }
+                if (ua.lichHandDamageApplies(this)) {
+                    Console.debugLog("Lich hand damage " + ua.getLichHandTimesHit());
+                    damage += ((double) damage * (0.1d * ua.getLichHandTimesHit()));
+                    ua.handleLichHandHit();
+                } else if (ChampionData.getJunkLevel(ua, "junk_2_lich_hand") > 0
+                        && (ua.getLichVictim() == null
+                                || !ua.getLichVictim().equalsIgnoreCase(this.id))) {
+                    Console.debugLog("Setting Lich Victim");
+                    ua.setLichVictim(this.id);
+                }
             }
             AttackType attackType = this.getAttackType(attackData);
             int newDamage = this.getMitigatedDamage(damage, attackType, a);

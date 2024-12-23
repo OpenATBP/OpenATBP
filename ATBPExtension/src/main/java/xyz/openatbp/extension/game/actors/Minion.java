@@ -235,6 +235,17 @@ public class Minion extends Actor {
                     }
                 }
                 this.handleElectrodeGun(ua, a, damage, attackData);
+
+                if (ua.lichHandDamageApplies(this)) {
+                    Console.debugLog("Lich hand damage " + ua.getLichHandTimesHit());
+                    damage += ((double) damage * (0.1d * ua.getLichHandTimesHit()));
+                    ua.handleLichHandHit();
+                } else if (ChampionData.getJunkLevel(ua, "junk_2_lich_hand") > 0
+                        && (ua.getLichVictim() == null
+                                || !ua.getLichVictim().equalsIgnoreCase(this.id))) {
+                    Console.debugLog("Setting Lich Victim");
+                    ua.setLichVictim(this.id);
+                }
             }
             if (a.getActorType() == ActorType.TOWER) {
                 if (this.type == MinionType.SUPER) damage = (int) Math.round(damage * 0.25);

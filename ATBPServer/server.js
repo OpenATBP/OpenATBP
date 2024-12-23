@@ -160,40 +160,41 @@ async function wipePlayerData(playerCollection) {
     var cursor = playerCollection.find();
     for await (var doc of cursor) {
       //console.log(doc.friends);
-      var q = { 'user.TEGid': doc.user.TEGid };
-      var o = { upsert: true };
-      var up = {
-        $set: {
-          player: {
-            playsPVP: 1,
-            tier: 1.0,
-            elo: 1,
-            disconnects: 0,
-            playsBots: doc.player.playsBots,
-            rank: doc.player.rank,
-            rankProgress: doc.player.rankProgress,
-            winsPVP: 1,
-            winsBots: doc.player.winsBots,
-            points: 0,
-            coins: doc.player.coins,
-            kills: 0,
-            deaths: 0,
-            assists: 0,
-            towers: 0,
-            minions: 0,
-            jungleMobs: 0,
-            altars: 0,
-            largestSpree: 0,
-            largestMulti: 0,
-            scoreHighest: 0,
-            scoreTotal: 0,
+      if (doc != null && doc.player != undefined) {
+        var q = { 'user.TEGid': doc.user.TEGid };
+        var o = { upsert: true };
+        var up = {
+          $set: {
+            player: {
+              playsPVP: 1,
+              tier: 1.0,
+              elo: 1,
+              disconnects: 0,
+              playsBots: doc.player.playsBots,
+              rank: doc.player.rank,
+              rankProgress: doc.player.rankProgress,
+              winsPVP: 1,
+              winsBots: doc.player.winsBots,
+              points: 0,
+              coins: doc.player.coins,
+              kills: 0,
+              deaths: 0,
+              assists: 0,
+              towers: 0,
+              minions: 0,
+              jungleMobs: 0,
+              altars: 0,
+              largestSpree: 0,
+              largestMulti: 0,
+              scoreHighest: 0,
+              scoreTotal: 0,
+            },
+            champion: {},
           },
-          champion: {},
-        },
-      };
-      var res = await playerCollection.updateOne(q, up, o);
-      console.log(res);
-      return;
+        };
+        var res = await playerCollection.updateOne(q, up, o);
+        console.log(res);
+      }
     }
   } finally {
     console.log('Done');
