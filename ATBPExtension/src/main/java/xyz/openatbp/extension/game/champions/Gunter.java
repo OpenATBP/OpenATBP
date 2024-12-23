@@ -54,6 +54,11 @@ public class Gunter extends UserActor {
             this.eTrapezoid = null;
             this.ultActivated = false;
         }
+        if (this.ultActivated
+                && System.currentTimeMillis() - ultStartTime >= 2000
+                && !hasInterrupingCC()) {
+            ExtensionCommands.actorAnimate(parentExt, room, id, "spell3c", 100, false);
+        }
         if (this.ultActivated && System.currentTimeMillis() - this.ultStartTime >= E_DURATION) {
             ultActivated = false;
             eTrapezoid = null;
