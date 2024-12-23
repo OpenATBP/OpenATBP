@@ -565,10 +565,12 @@ public abstract class Actor {
                     this.getPlayerStat("spellResist") - attacker.getPlayerStat("spellPenetration");
             if (armor < 0) armor = 0;
             if (spellResist < 0) spellResist = 0;
+            if (armor > 80) armor = 80;
+            if (spellResist > 70) spellResist = 70;
             double modifier;
             if (attackType == AttackType.PHYSICAL) {
                 modifier = (100 - armor) / 100d; // Max Armor 80
-            } else modifier = (100 - spellResist) / 100d; // Max Shields 60
+            } else modifier = (100 - spellResist) / 100d; // Max Shields 70
             return (int) Math.round(rawDamage * modifier);
         } catch (Exception e) {
             e.printStackTrace();

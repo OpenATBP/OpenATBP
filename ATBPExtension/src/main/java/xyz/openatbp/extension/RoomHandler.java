@@ -723,8 +723,8 @@ public abstract class RoomHandler implements Runnable {
                         Champion.handleStatusIcon(
                                 parentExt, u, "icon_altar_attack", "altar2_description", 1000 * 60);
                     } else {
-                        double addArmor = u.getStat("armor") * 0.5d;
-                        double addMR = u.getStat("spellResist") * 0.5d;
+                        double addArmor = u.getStat("armor") * 0.25d;
+                        double addMR = u.getStat("spellResist") * 0.25d;
                         if (addArmor == 0) addArmor = 5d;
                         if (addMR == 0) addMR = 5d;
                         u.addEffect(
