@@ -2,9 +2,7 @@ package xyz.openatbp.extension.game.champions;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -32,8 +30,8 @@ public class Lich extends UserActor {
     private Skully skully;
     private long lastSkullySpawn;
     private boolean qActivated = false;
-    private List<Point2D> slimePath = null;
-    private HashMap<String, Long> slimedEnemies = null;
+    private long lastQPointTime = 0;
+    private HashMap<Point2D, Long> qPoints;
     private Point2D eLocation;
     private int eUses = 0;
     private boolean eActive = false;
@@ -50,37 +48,34 @@ public class Lich extends UserActor {
         super.update(msRan);
         if (this.skully != null) skully.update(msRan);
         if (this.qActivated) {
-            this.slimePath.add(this.location);
-            for (Point2D slime : this.slimePath) {
-                RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
-                List<Actor> nonStructureEnemies = handler.getNonStructureEnemies(this.team);
-                for (Actor a : nonStructureEnemies) {
-                    if (a.getLocation().distance(slime) <= 0.5) {
-                        JsonNode attackData = this.parentExt.getAttackData(getAvatar(), "spell1");
-                        if (slimedEnemies.containsKey(a.getId())) {
-                            if (System.currentTimeMillis() - slimedEnemies.get(a.getId()) >= 1000) {
-                                a.addToDamageQueue(
-                                        this, getSpellDamage(attackData, false), attackData, true);
-                                if (isNonStructure(a)) {
-                                    applySlow(a);
-                                }
-                                slimedEnemies.put(a.getId(), System.currentTimeMillis());
-                                break;
-                            }
-                        } else {
-                            a.addToDamageQueue(
-                                    this, getSpellDamage(attackData, false), attackData, true);
-                            if (isNonStructure(a)) {
-                                applySlow(a);
-                            }
-                            slimedEnemies.put(a.getId(), System.currentTimeMillis());
-                            break;
-                        }
+            if (!qPoints.isEmpty()) {
+                long time = System.currentTimeMillis();
+                qPoints.entrySet().removeIf(entry -> time - entry.getValue() >= 4000);
+            }
+            if (System.currentTimeMillis() - lastQPointTime >= 200) {
+                lastQPointTime = System.currentTimeMillis();
+                qPoints.put(this.location, lastQPointTime);
+            }
+            ArrayList<Actor> qVictimsThisLoop = new ArrayList<>();
+            Iterator<Map.Entry<Point2D, Long>> iterator = qPoints.entrySet().iterator();
+
+            while (iterator.hasNext()) {
+                Map.Entry<Point2D, Long> entry = iterator.next();
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                List<Actor> enemiesInRadius =
+                        Champion.getEnemyActorsInRadius(handler, team, entry.getKey(), 1.5f);
+                for (Actor a : enemiesInRadius) {
+                    if (!qVictimsThisLoop.contains(a)) {
+                        qVictimsThisLoop.add(a);
+                        JsonNode spelldata = getSpellData(1);
+                        double damage = (double) getSpellDamage(spelldata, false) / 10;
+                        a.addToDamageQueue(this, damage, spelldata, true);
+                        applySlow(a);
                     }
                 }
             }
-            if (this.slimePath.size() > 150) this.slimePath.remove(this.slimePath.size() - 1);
         }
+
         if (this.eActive && this.eLocation != null) {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             List<Actor> targets = Champion.getEnemyActorsInRadius(handler, team, eLocation, 3f);
@@ -176,8 +171,7 @@ public class Lich extends UserActor {
                     double statIncrease = this.getStat("speed") * Q_SPEED_VALUE;
                     this.addEffect("speed", statIncrease, Q_SPEED_DURATION);
                     qActivated = true;
-                    slimePath = new ArrayList<>();
-                    slimedEnemies = new HashMap<>();
+                    qPoints = new HashMap<>();
                     ExtensionCommands.createActorFX(
                             this.parentExt,
                             this.room,
@@ -194,7 +188,6 @@ public class Lich extends UserActor {
                             parentExt, room, id, "sfx_lich_trail", this.location);
                     ExtensionCommands.playSound(
                             this.parentExt, this.room, this.id, "vo/vo_lich_trail", this.location);
-
                     delay = getReducedCooldown(cooldown);
                     TrailHandler trailHandler = new TrailHandler();
                     scheduleTask(trailHandler, Q_DURATION);
@@ -348,8 +341,7 @@ public class Lich extends UserActor {
         @Override
         public void run() {
             qActivated = false;
-            slimePath = null;
-            slimedEnemies = null;
+            qPoints.clear();
         }
     }
 
