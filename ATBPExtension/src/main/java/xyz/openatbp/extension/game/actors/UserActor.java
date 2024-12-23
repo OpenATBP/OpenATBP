@@ -2426,10 +2426,10 @@ public class UserActor extends Actor {
         for (Monster.BuffType buff : this.activeMonsterBuffs) {
             switch (stat) {
                 case "attackDamage":
-                    if (buff == Monster.BuffType.GNOME) count++;
+                    if (buff == Monster.BuffType.OWL) count++;
                     break;
                 case "spellDamage":
-                    if (buff == Monster.BuffType.OWL) count++;
+                    if (buff == Monster.BuffType.GNOME) count++;
                     break;
                 case "armor":
                     if (buff == Monster.BuffType.BEAR) count++;
@@ -2439,6 +2439,7 @@ public class UserActor extends Actor {
                     break;
             }
         }
+        Console.debugLog("Monster count: " + count);
         return count;
     }
 
