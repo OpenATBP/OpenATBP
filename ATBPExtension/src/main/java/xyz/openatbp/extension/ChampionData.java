@@ -425,16 +425,210 @@ public class ChampionData {
     }
 
     public static int[] getBuildPath(String actor, String backpack) {
+        Console.debugLog(backpack);
         int[] buildPath = {1, 1, 2, 2, 1, 2, 1, 2, 5, 5};
         String avatar = actor;
         if (actor.contains("skin")) {
             avatar = actor.split("_")[0];
         }
+
+        /*
+        Assasin's starter-kit - belt_beta_assassin
+        Billy's bag - belt_beta_adc
+        Bindle of bravery - belt_beta_bruiser
+        Candy monarch regalia - belt_beta_laner
+        Champion's backpack - belt_champions
+        Choose Goose's lootbox - belt_beta_rng
+        Daredevil's duffel bag - belt_beta_risk
+        Huntress wizard's arsenal - belt_beta_jungle
+        Hybrid haversack - belt_beta_hybrid
+        Nearly ultimate wizard wear - belt_beta_power
+        Nurse Pound Cake's medkit - belt_beta_support
+        Sorcerous Satchel - belt_beta_warlock
+        Susan's shreder - belt_beta_anti_tank
+        Techno tank - belt_beta_tank
+        Vampire rocker gear - belt_beta_vamp
+         */
+
         switch (avatar) {
             case "billy":
-                if (backpack.equalsIgnoreCase("belt_ultimate_wizard")) {
-                    buildPath = new int[] {2, 2, 3, 3, 2, 3, 2, 3, 4, 4};
-                } else if (backpack.equalsIgnoreCase("belt_sorcerous_satchel")) {
+                if (backpack.equalsIgnoreCase("belt_champions")) {
+                    buildPath = new int[] {3, 3, 4, 4, 3, 4, 3, 4, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_assassin")) {
+                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_rng")) {
+                    buildPath = new int[] {2, 2, 1, 1, 2, 1, 2, 1, 4, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_support")) {
+                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_tank")) {
+                    buildPath = new int[] {3, 3, 5, 5, 3, 5, 3, 5, 4, 4};
+                }
+                break;
+            case "bmo":
+                if (backpack.equalsIgnoreCase("belt_champions")) {
+                    buildPath = new int[] {3, 3, 4, 4, 3, 4, 3, 4, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_assassin")) {
+                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_billys_bag")) {
+                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_warlock")) {
+                    buildPath = new int[] {3, 3, 4, 4, 3, 4, 3, 4, 1, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_tank")) {
+                    buildPath = new int[] {3, 3, 5, 5, 3, 5, 3, 5, 4, 4};
+                }
+            case "cinnamonbun":
+                if (backpack.equalsIgnoreCase("belt_candy_monarch")) {
+                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_assassin")) {
+                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_risk")) {
+                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 4, 4};
+                } else if (backpack.equalsIgnoreCase("belt_beta_power")) {
+                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 3, 3};
+                } /**/
+                break;
+            case "finn":
+                if (backpack.equalsIgnoreCase("belt_beta_assassin")) {
+                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_support")) {
+                    buildPath = new int[] {2, 2, 5, 5, 2, 5, 2, 5, 3, 3};
+                } else if (backpack.equalsIgnoreCase("belt_beta_adc")) {
+                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_anti_tank")) {
+                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
+                }
+                break;
+            case "fionna":
+                if (backpack.equalsIgnoreCase("belt_beta_assassin")) {
+                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_adc")) {
+                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_jungle")) {
+                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 4, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_anti_tank")) {
+                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
+                }
+                break;
+            case "flame":
+                if (backpack.equalsIgnoreCase("belt_beta_assassin")) {
+                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 3};
+                } else if (backpack.equalsIgnoreCase("belt_beta_anti_tank")) {
+                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
+                }
+                break;
+            case "gunter":
+                if (backpack.equalsIgnoreCase("belt_beta_assassin")) {
+                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_adc")) {
+                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_power")) {
+                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 3, 3};
+                } else if (backpack.equalsIgnoreCase("belt_beta_jungle")) {
+                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 4, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_anti_tank")) {
+                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
+                }
+                break;
+            case "hunson":
+                if (backpack.equalsIgnoreCase("belt_champions")) {
+                    buildPath = new int[] {3, 3, 4, 4, 3, 4, 3, 4, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_tank")) {
+                    buildPath = new int[] {3, 3, 5, 5, 3, 5, 3, 5, 4, 4};
+                }
+            case "iceking":
+                if (backpack.equalsIgnoreCase("belt_beta_assassin")) {
+                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_jungle")) {
+                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 4, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_laner")) {
+                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_risk")) {
+                    buildPath = new int[] {2, 2, 1, 1, 2, 1, 2, 1, 4, 4};
+                } else if (backpack.equalsIgnoreCase("belt_beta_power")) {
+                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 3, 3};
+                }
+                break;
+            case "jake":
+            case "lemongrab":
+                if (backpack.equalsIgnoreCase("belt_champions")) {
+                    buildPath = new int[] {3, 3, 4, 4, 3, 4, 3, 4, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_tank")) {
+                    buildPath = new int[] {3, 3, 5, 5, 3, 5, 3, 5, 4, 4};
+                } else if (backpack.equalsIgnoreCase("belt_beta_warlock")) {
+                    buildPath = new int[] {3, 3, 4, 4, 3, 4, 3, 4, 1, 5};
+                }
+                break;
+            case "lich":
+                if (backpack.equalsIgnoreCase("belt_beta_assassin")) {
+                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_laner")) {
+                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_risk")) {
+                    buildPath = new int[] {2, 2, 1, 1, 2, 1, 2, 1, 4, 4};
+                } else if (backpack.equalsIgnoreCase("belt_beta_power")) {
+                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 3, 3};
+                }
+                break;
+            case "lsp":
+                if (backpack.equalsIgnoreCase("belt_beta_assassin")) {
+                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_support")) {
+                    buildPath = new int[] {2, 2, 5, 5, 2, 5, 2, 5, 3, 3};
+                } else if (backpack.equalsIgnoreCase("belt_beta_risk")) {
+                    buildPath = new int[] {2, 2, 1, 1, 2, 1, 2, 1, 4, 4};
+                } else if (backpack.equalsIgnoreCase("belt_beta_power")) {
+                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 3, 3};
+                }
+                break;
+            case "magicman":
+            case "rattleballs":
+                if (backpack.equalsIgnoreCase("belt_beta_assassin")) {
+                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_adc")) {
+                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 5, 5};
+                }
+                break;
+            case "marceline":
+                if (backpack.equalsIgnoreCase("belt_beta_assassin")) {
+                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_jungle")) {
+                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 4, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_laner")) {
+                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_risk")) {
+                    buildPath = new int[] {2, 2, 1, 1, 2, 1, 2, 2, 4, 4};
+                } else if (backpack.equalsIgnoreCase("belt_beta_power")) {
+                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 3, 3};
+                }
+                break;
+            case "neptr":
+                if (backpack.equalsIgnoreCase("belt_beta_rng")) {
+                    buildPath = new int[] {2, 2, 1, 1, 2, 1, 2, 1, 4, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_jungle")) {
+                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 4, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_laner")) {
+                    buildPath = new int[] {1, 1, 2, 2, 1, 2, 1, 2, 3, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_risk")) {
+                    buildPath = new int[] {2, 2, 1, 1, 2, 1, 2, 1, 4, 4};
+                } else if (backpack.equalsIgnoreCase("belt_beta_power")) {
+                    buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 3, 3};
+                }
+                break;
+            case "peppermintbutler":
+                if (backpack.equalsIgnoreCase("belt_champions")) {
+                    buildPath = new int[] {3, 3, 4, 4, 3, 4, 3, 4, 5, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_tank")) {
+                    buildPath = new int[] {3, 3, 5, 5, 3, 5, 3, 5, 4, 4};
+                } else if (backpack.equalsIgnoreCase("belt_beta_jungle")) {
+                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 4, 5};
+                }
+                break;
+            case "princessbubblegum":
+                if (backpack.equalsIgnoreCase("belt_beta_jungle")) {
+                    buildPath = new int[] {1, 1, 3, 3, 1, 3, 1, 3, 4, 5};
+                } else if (backpack.equalsIgnoreCase("belt_beta_risk")) {
+                    buildPath = new int[] {2, 2, 1, 1, 2, 1, 2, 1, 4, 4};
+                } else if (backpack.equalsIgnoreCase("belt_beta_power")) {
                     buildPath = new int[] {2, 2, 4, 4, 2, 4, 2, 4, 3, 3};
                 }
                 break;
