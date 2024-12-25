@@ -3,6 +3,7 @@ package xyz.openatbp.extension.game.champions;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -65,7 +66,7 @@ public class Lich extends UserActor {
                 List<Actor> enemiesInRadius =
                         Champion.getEnemyActorsInRadius(handler, team, entry.getKey(), 1.5f);
                 for (Actor a : enemiesInRadius) {
-                    if (!qVictimsThisLoop.contains(a)) {
+                    if (!qVictimsThisLoop.contains(a) && isNonStructure(a)) {
                         qVictimsThisLoop.add(a);
                         JsonNode spelldata = getSpellData(1);
                         double damage = (double) getSpellDamage(spelldata, false) / 10;
@@ -78,7 +79,9 @@ public class Lich extends UserActor {
 
         if (this.eActive && this.eLocation != null) {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            List<Actor> targets = Champion.getEnemyActorsInRadius(handler, team, eLocation, 3f);
+            List<Actor> actorList = Champion.getActorsInRadius(handler, eLocation, 3f);
+            List<Actor> targets =
+                    actorList.stream().filter(this::isNonStructure).collect(Collectors.toList());
             if (!targets.isEmpty()
                     && System.currentTimeMillis() - lastETickTime >= E_TICK_COOLDOWN) {
                 lastETickTime = System.currentTimeMillis();
