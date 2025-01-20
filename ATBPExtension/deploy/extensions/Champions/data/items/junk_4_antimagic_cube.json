@@ -6,8 +6,8 @@
     "modDescription2": "junk_4_antimagic_cube_mod2",
     "modDescription3": "junk_4_antimagic_cube_mod3",
     "mod1Icon": "stat_shield",
-    "mod2Icon": "stat_health",
-    "mod3Icon": "stat_power_damage",
+    "mod2Icon": "stat_power_damage",
+    "mod3Icon": "stat_icon_blank",
     "category": 4,
     "mods": {
       "mod": [
@@ -19,12 +19,6 @@
         },
         {
           "point": 1,
-          "stat": "health",
-          "type": 0,
-          "value": 25
-        },
-        {
-          "point": 1,
           "stat": "spellDamage",
           "type": 0,
           "value": -10
@@ -33,13 +27,7 @@
           "point": 2,
           "stat": "spellResist",
           "type": 0,
-          "value": 25
-        },
-        {
-          "point": 2,
-          "stat": "health",
-          "type": 0,
-          "value": 50
+          "value": 20
         },
         {
           "point": 2,
@@ -51,13 +39,7 @@
           "point": 3,
           "stat": "spellResist",
           "type": 0,
-          "value": 50
-        },
-        {
-          "point": 3,
-          "stat": "health",
-          "type": 0,
-          "value": 75
+          "value": 30
         },
         {
           "point": 3,
@@ -69,13 +51,7 @@
           "point": 4,
           "stat": "spellResist",
           "type": 0,
-          "value": 100
-        },
-        {
-          "point": 4,
-          "stat": "health",
-          "type": 0,
-          "value": 100
+          "value": 45
         },
         {
           "point": 4,

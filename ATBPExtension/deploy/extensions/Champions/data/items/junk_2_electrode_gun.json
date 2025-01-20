@@ -7,7 +7,7 @@
     "modDescription3": "junk_2_electrode_gun_mod3",
     "mod1Icon": "stat_power_damage",
     "mod2Icon": "stat_cooldown",
-    "mod3Icon": "stat_crit_chance",
+    "mod3Icon": "stat_icon_blank",
     "category": 2,
     "mods": {
       "mod": [
@@ -21,13 +21,7 @@
           "point": 1,
           "stat": "coolDownReduction",
           "type": 0,
-          "value": 3
-        },
-        {
-          "point": 1,
-          "stat": "criticalChance",
-          "type": 0,
-          "value": 3
+          "value": 5
         },
         {
           "point": 2,
@@ -39,13 +33,7 @@
           "point": 2,
           "stat": "coolDownReduction",
           "type": 0,
-          "value": 5
-        },
-        {
-          "point": 2,
-          "stat": "criticalChance",
-          "type": 0,
-          "value": 5
+          "value": 10
         },
         {
           "point": 3,
@@ -57,13 +45,7 @@
           "point": 3,
           "stat": "coolDownReduction",
           "type": 0,
-          "value": 7
-        },
-        {
-          "point": 3,
-          "stat": "criticalChance",
-          "type": 0,
-          "value": 7
+          "value": 15
         },
         {
           "point": 4,
@@ -75,13 +57,7 @@
           "point": 4,
           "stat": "coolDownReduction",
           "type": 0,
-          "value": 10
-        },
-        {
-          "point": 4,
-          "stat": "criticalChance",
-          "type": 0,
-          "value": 10
+          "value": 20
         }
       ]
     },

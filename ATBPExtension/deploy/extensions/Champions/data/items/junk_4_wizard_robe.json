@@ -7,7 +7,7 @@
     "modDescription3": "junk_4_wizard_robe_mod3",
     "mod1Icon": "stat_shield",
     "mod2Icon": "stat_power_damage",
-    "mod3Icon": "stat_cooldown",
+    "mod3Icon": "stat_icon_blank",
     "category": 4,
     "mods": {
       "mod": [
@@ -15,73 +15,49 @@
           "point": 1,
           "stat": "spellResist",
           "type": 0,
-          "value": 10
-        },
-        {
-          "point": 1,
-          "stat": "spellDamage",
-          "type": 0,
-          "value": 10
-        },
-        {
-          "point": 1,
-          "stat": "coolDownReduction",
-          "type": 0,
           "value": 5
         },
         {
-          "point": 2,
-          "stat": "spellResist",
-          "type": 0,
-          "value": 20
-        },
-        {
-          "point": 2,
+          "point": 1,
           "stat": "spellDamage",
           "type": 0,
-          "value": 20
+          "value": 25
         },
         {
           "point": 2,
-          "stat": "coolDownReduction",
-          "type": 0,
-          "value": 7
-        },
-        {
-          "point": 3,
           "stat": "spellResist",
-          "type": 0,
-          "value": 40
-        },
-        {
-          "point": 3,
-          "stat": "spellDamage",
-          "type": 0,
-          "value": 30
-        },
-        {
-          "point": 3,
-          "stat": "coolDownReduction",
           "type": 0,
           "value": 10
         },
         {
-          "point": 4,
-          "stat": "spellResist",
-          "type": 0,
-          "value": 75
-        },
-        {
-          "point": 4,
+          "point": 2,
           "stat": "spellDamage",
           "type": 0,
           "value": 50
         },
         {
-          "point": 4,
-          "stat": "coolDownReduction",
+          "point": 3,
+          "stat": "spellResist",
           "type": 0,
           "value": 15
+        },
+        {
+          "point": 3,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 75
+        },
+        {
+          "point": 4,
+          "stat": "spellResist",
+          "type": 0,
+          "value": 30
+        },
+        {
+          "point": 4,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 100
         }
       ]
     },
