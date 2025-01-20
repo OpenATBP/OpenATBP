@@ -24,7 +24,7 @@ public class Fionna extends UserActor {
     private static final double ATTACKSPEED_FIERCE = 0.2d;
     private static final double SPELLRESIST_FEARLESS = 0.3d;
     private static final int W_DURATION = 3000;
-    private static final int E_DURATION = 6000;
+    private static final int E_DURATION = 5000;
 
     private enum SwordType {
         FIERCE,

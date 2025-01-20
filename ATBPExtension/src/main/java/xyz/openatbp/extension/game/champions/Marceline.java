@@ -21,9 +21,9 @@ public class Marceline extends UserActor {
     private static final int Q_ROOT_DURATION = 2000;
     private static final int Q_SLOW_DURATION = 1500;
     private static final double Q_SLOW_VALUE = 0.15d;
-    private static final int W_DURATION = 4500;
+    private static final int W_DURATION = 3000;
     private static final double W_BEAST_SPEED_VALUE = 0.4d;
-    private static final double W_VAMPIRE_SPEED_VALUE = 0.3d;
+    private static final double W_VAMPIRE_SPEED_VALUE = 0.15d;
     private static final int E_CAST_DELAY = 750;
     private static final int E_ATTACKSPEED_DURATION = 3000;
     private static final int E_IMMUNITY_DURATION = 2000;
@@ -380,14 +380,14 @@ public class Marceline extends UserActor {
         @Override
         public void run() {
             double damage = getPlayerStat("attackDamage");
-            if (form == Form.VAMPIRE && crit) damage *= 2;
+            if (form == Form.VAMPIRE && crit) damage *= 1.25;
+            if (crit
+                    && grassSwordCooldown
+                            >= ChampionData.getCustomJunkStat(Marceline.this, "junk_1_grass_sword"))
+                damage *= 1.25d;
             if (beastWActive && form == Form.BEAST) {
-                if (crit) damage *= 4;
-                else damage *= 2;
-                if (crit
-                        && grassSwordCooldown
-                                >= ChampionData.getCustomJunkStat(
-                                        Marceline.this, "junk_1_grass_sword")) damage *= 1.25d;
+                if (crit) damage *= 2.5;
+                else damage *= 1.25;
                 double lifesteal = 1d;
                 if (this.target != null
                         && isNonStructure(this.target)
