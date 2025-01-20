@@ -1,66 +1,66 @@
 {
   "junk": {
-    "name": "junk_5_glasses_of_nerdicon_name",
-    "description": "junk_5_glasses_of_nerdicon_description",
-    "modDescription1": "junk_5_glasses_of_nerdicon_mod1",
-    "modDescription2": "junk_5_glasses_of_nerdicon_mod2",
-    "modDescription3": "junk_5_glasses_of_nerdicon_mod3",
-    "mod1Icon": "stat_regen",
-    "mod2Icon": "stat_health",
+    "name": "junk_2_cosmic_gauntlet_name",
+    "description": "junk_2_cosmic_gauntlet_description",
+    "modDescription1": "junk_2_cosmic_gauntlet_mod1",
+    "modDescription2": "junk_2_cosmic_gauntlet_mod2",
+    "modDescription3": "junk_2_cosmic_gauntlet_mod3",
+    "mod1Icon": "stat_power_damage",
+    "mod2Icon": "stat_attack_damage",
     "mod3Icon": "stat_icon_blank",
-    "category": 5,
+    "category": 2,
     "mods": {
       "mod": [
         {
           "point": 1,
-          "stat": "healthRegen",
+          "stat": "spellDamage",
           "type": 0,
-          "value": 2
+          "value": 15
         },
         {
           "point": 1,
-          "stat": "health",
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 2,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 40
+        },
+        {
+          "point": 2,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 10
+        },
+        {
+          "point": 3,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 75
+        },
+        {
+          "point": 3,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 15
+        },
+        {
+          "point": 4,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 115
+        },
+        {
+          "point": 4,
+          "stat": "attackDamage",
           "type": 0,
           "value": 25
-        },
-        {
-          "point": 2,
-          "stat": "healthRegen",
-          "type": 0,
-          "value": 4
-        },
-        {
-          "point": 2,
-          "stat": "health",
-          "type": 0,
-          "value": 50
-        },
-        {
-          "point": 3,
-          "stat": "healthRegen",
-          "type": 0,
-          "value": 6
-        },
-        {
-          "point": 3,
-          "stat": "health",
-          "type": 0,
-          "value": 100
-        },
-        {
-          "point": 4,
-          "stat": "healthRegen",
-          "type": 0,
-          "value": 8
-        },
-        {
-          "point": 4,
-          "stat": "health",
-          "type": 0,
-          "value": 200
         }
       ]
     },
-    "script": "junk/glasses_of_nerdicon.lua"
+    "script": ""
   }
 }

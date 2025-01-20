@@ -408,7 +408,7 @@ public class UserActor extends Actor {
                     Console.debugLog("Setting Lich Victim");
                     ua.setLichVictim(this.id);
                 }
-                this.handleElectrodeGun(ua, a, damage, attackData);
+                // this.handleElectrodeGun(ua, a, damage, attackData);
 
                 if (this.maxHealth > ua.getMaxHealth()
                         && ChampionData.getJunkLevel(ua, "junk_3_globs_helmet") > 0) {
