@@ -6,7 +6,7 @@
     "modDescription2": "junk_4_flame_cloak_mod2",
     "modDescription3": "junk_4_flame_cloak_mod3",
     "mod1Icon": "stat_shield",
-    "mod2Icon": "stat_shield_pen",
+    "mod2Icon": "stat_health",
     "mod3Icon": "stat_icon_blank",
     "category": 4,
     "mods": {
@@ -19,45 +19,45 @@
         },
         {
           "point": 1,
-          "stat": "spellPenetration",
+          "stat": "health",
           "type": 0,
-          "value": 10
+          "value": 50
         },
         {
           "point": 2,
           "stat": "spellResist",
           "type": 0,
-          "value": 20
+          "value": 15
         },
         {
           "point": 2,
-          "stat": "spellPenetration",
+          "stat": "health",
           "type": 0,
-          "value": 20
+          "value": 100
         },
         {
           "point": 3,
           "stat": "spellResist",
           "type": 0,
-          "value": 30
+          "value": 25
         },
         {
           "point": 3,
-          "stat": "spellPenetration",
+          "stat": "health",
           "type": 0,
-          "value": 30
+          "value": 150
         },
         {
           "point": 4,
           "stat": "spellResist",
           "type": 0,
-          "value": 50
+          "value": 40
         },
         {
           "point": 4,
-          "stat": "spellPenetration",
+          "stat": "health",
           "type": 0,
-          "value": 50
+          "value": 250
         }
       ]
     },

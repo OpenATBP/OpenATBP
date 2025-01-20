@@ -91,6 +91,10 @@ public class ChampionData {
                     break;
                 case "junk_2_cosmic_gauntlet":
                     stats = new double[] {1000, 2000, 3000, 4000};
+                    break;
+                case "junk_5_glasses_of_nerdicon":
+                    stats = new double[] {0.15, 0.25, 0.35, 0.35};
+                    break;
             }
             return stats[level - 1];
         }
@@ -140,6 +144,13 @@ public class ChampionData {
                     double previousValue = 0;
                     if (previousValues.containsKey(stat.get("stat").asText())) {
                         previousValue = previousValues.get(stat.get("stat").asText());
+                    }
+                    if (inventory[cat - 1].equalsIgnoreCase("junk_5_glasses_of_nerdicon")) {
+                        if (stat.get("point").asInt() == 4 && !ua.hasGlassesPoint()) {
+                            ua.setGlassesPoint(true);
+                            spellPoints++;
+                        }
+                        Console.debugLog("Glasses! " + stat.get("point").asInt());
                     }
                     double packStat = stat.get("value").asDouble() - previousValue;
                     if (stat.get("stat")
@@ -230,6 +241,10 @@ public class ChampionData {
             }
         }
         if (spellPoints + newPoints > 1) spellPoints--;
+        if (ua.hasGlassesPoint()) {
+            spellPoints--;
+            ua.setGlassesPoint(false);
+        }
         spellPoints += newPoints;
         ua.setStat("availableSpellPoints", spellPoints);
         toUpdate.putInt("availableSpellPoints", spellPoints);
@@ -352,7 +367,7 @@ public class ChampionData {
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 10000 : 26000;
                     break;
                 case "fionna":
-                    lv10Cooldown = abilityNumber == 1 ? 7000 : abilityNumber == 2 ? 5000 : 60000;
+                    lv10Cooldown = abilityNumber == 1 ? 12000 : abilityNumber == 2 ? 5000 : 60000;
                     break;
                 case "flame":
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 15000 : 45000;

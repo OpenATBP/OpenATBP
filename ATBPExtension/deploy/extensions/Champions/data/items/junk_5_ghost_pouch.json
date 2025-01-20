@@ -6,8 +6,8 @@
     "modDescription2": "junk_5_ghost_pouch_mod2",
     "modDescription3": "junk_5_ghost_pouch_mod3",
     "mod1Icon": "stat_health",
-    "mod2Icon": "stat_power_damage",
-    "mod3Icon": "stat_power_vamp",
+    "mod2Icon": "stat_cooldown",
+    "mod3Icon": "stat_icon_blank",
     "category": 5,
     "mods": {
       "mod": [
@@ -19,15 +19,9 @@
         },
         {
           "point": 1,
-          "stat": "spellDamage",
+          "stat": "coolDownReduction",
           "type": 0,
           "value": 10
-        },
-        {
-          "point": 1,
-          "stat": "spellVamp",
-          "type": 0,
-          "value": 3
         },
         {
           "point": 2,
@@ -37,15 +31,9 @@
         },
         {
           "point": 2,
-          "stat": "spellDamage",
+          "stat": "coolDownReduction",
           "type": 0,
-          "value": 20
-        },
-        {
-          "point": 2,
-          "stat": "spellVamp",
-          "type": 0,
-          "value": 5
+          "value": 15
         },
         {
           "point": 3,
@@ -55,15 +43,9 @@
         },
         {
           "point": 3,
-          "stat": "spellDamage",
+          "stat": "coolDownReduction",
           "type": 0,
-          "value": 30
-        },
-        {
-          "point": 3,
-          "stat": "spellVamp",
-          "type": 0,
-          "value": 7
+          "value": 20
         },
         {
           "point": 4,
@@ -73,15 +55,9 @@
         },
         {
           "point": 4,
-          "stat": "spellDamage",
+          "stat": "coolDownReduction",
           "type": 0,
-          "value": 50
-        },
-        {
-          "point": 4,
-          "stat": "spellVamp",
-          "type": 0,
-          "value": 10
+          "value": 25
         }
       ]
     },

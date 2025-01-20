@@ -27,13 +27,13 @@
           "point": 3,
           "stat": "armor",
           "type": 0,
-          "value": 50
+          "value": 40
         },
         {
           "point": 4,
           "stat": "armor",
           "type": 0,
-          "value": 100
+          "value": 60
         }
       ]
     },

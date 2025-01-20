@@ -508,7 +508,7 @@ public class IceKing extends UserActor {
         public void run() {
             double damage = this.attacker.getPlayerStat("attackDamage");
             if (crit) {
-                damage *= 2;
+                damage *= 1.25;
                 damage = handleGrassSwordProc(damage);
             }
             new Champion.DelayedAttack(parentExt, attacker, target, (int) damage, "basicAttack")

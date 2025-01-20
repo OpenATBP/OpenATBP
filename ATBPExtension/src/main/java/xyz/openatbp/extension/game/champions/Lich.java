@@ -598,7 +598,7 @@ public class Lich extends UserActor {
             if (attacker.getClass() == Lich.class) {
                 double damage = this.attacker.getPlayerStat("attackDamage");
                 if (crit) {
-                    damage *= 2;
+                    damage *= 1.25;
                     damage = handleGrassSwordProc(damage);
                 }
                 new Champion.DelayedAttack(parentExt, attacker, target, (int) damage, "basicAttack")

@@ -534,7 +534,7 @@ public class FlamePrincess extends UserActor {
         public void run() {
             double damage = getPlayerStat("attackDamage");
             if (crit) {
-                damage *= 2;
+                damage *= 1.25;
                 damage = handleGrassSwordProc(damage);
             }
             new Champion.DelayedAttack(

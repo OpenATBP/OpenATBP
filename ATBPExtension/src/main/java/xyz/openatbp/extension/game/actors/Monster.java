@@ -471,13 +471,11 @@ public class Monster extends Actor {
     public String getBuffDescription() {
         switch (this.getBuffType()) {
             case OWL:
-                return "Increased AD by 15!";
             case GNOME:
-                return "Increased AP by 30!";
+                return "Increased AD by 25 and AP by 50!";
             case BEAR:
-                return "Increased armor by 5!";
             case WOLF:
-                return "Increased MR by 5!";
+                return "Increased armor by 5 and shields by 5!";
         }
         return "invalid buff";
     }

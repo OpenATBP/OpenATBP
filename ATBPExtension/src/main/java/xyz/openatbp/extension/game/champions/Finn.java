@@ -601,7 +601,7 @@ public class Finn extends UserActor {
         public void run() {
             double damage = getPlayerStat("attackDamage");
             if (this.crit) {
-                damage *= 2;
+                damage *= 1.25;
                 damage = handleGrassSwordProc(damage);
             }
             if (target.getActorType() != ActorType.TOWER && target.getActorType() != ActorType.BASE)

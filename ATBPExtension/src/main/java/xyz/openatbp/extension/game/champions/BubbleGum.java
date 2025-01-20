@@ -260,7 +260,9 @@ public class BubbleGum extends UserActor {
                                                 parentExt, room, id, "spell3c", 350, false);
                         scheduleTask(animDelay, 325);
                     } else {
-                        a.addToDamageQueue(this, getSpellDamage(spellData, true), spellData, false);
+                        double spellDamage = getSpellDamage(spellData, true);
+                        if (a.getState(ActorState.SLOWED)) spellDamage *= 1.25d;
+                        a.addToDamageQueue(this, spellDamage, spellData, false);
                     }
                     a.knockback(this.bombLocation, 3.5f);
                 }
@@ -396,7 +398,7 @@ public class BubbleGum extends UserActor {
         public void run() {
             double damage = this.attacker.getPlayerStat("attackDamage");
             if (crit) {
-                damage *= 2;
+                damage *= 1.25;
                 damage = handleGrassSwordProc(damage);
             }
             if (BubbleGum.this.passiveAmmunition > 0

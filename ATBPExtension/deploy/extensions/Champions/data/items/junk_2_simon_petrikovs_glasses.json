@@ -4,7 +4,7 @@
     "description": "junk_2_simon_petrikovs_glasses_description",
     "modDescription1": "junk_2_simon_petrikovs_glasses_mod1",
     "modDescription2": "junk_2_simon_petrikovs_glasses_mod2",
-    "modDescription3": "",
+    "modDescription3": "junk_2_simon_petrikovs_glasses_mod3",
     "mod1Icon": "stat_power_damage",
     "mod2Icon": "stat_cooldown",
     "mod3Icon": "stat_icon_blank",
@@ -27,7 +27,7 @@
           "point": 2,
           "stat": "spellDamage",
           "type": 0,
-          "value": 25
+          "value": 15
         },
         {
           "point": 2,
@@ -39,7 +39,7 @@
           "point": 3,
           "stat": "spellDamage",
           "type": 0,
-          "value": 50
+          "value": 25
         },
         {
           "point": 3,
@@ -51,7 +51,7 @@
           "point": 4,
           "stat": "spellDamage",
           "type": 0,
-          "value": 100
+          "value": 50
         },
         {
           "point": 4,

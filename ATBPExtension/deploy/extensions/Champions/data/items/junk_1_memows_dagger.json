@@ -39,7 +39,7 @@
           "point": 2,
           "stat": "criticalChance",
           "type": 0,
-          "value": 10
+          "value": 15
         },
         {
           "point": 2,
@@ -57,7 +57,7 @@
           "point": 3,
           "stat": "criticalChance",
           "type": 0,
-          "value": 15
+          "value": 30
         },
         {
           "point": 3,
@@ -75,7 +75,7 @@
           "point": 4,
           "stat": "criticalChance",
           "type": 0,
-          "value": 20
+          "value": 60
         },
         {
           "point": 4,

@@ -234,7 +234,7 @@ public class Minion extends Actor {
                         Console.debugLog("Increased damage from peppermint tank.");
                     }
                 }
-                this.handleElectrodeGun(ua, a, damage, attackData);
+                // this.handleElectrodeGun(ua, a, damage, attackData);
 
                 if (ua.lichHandDamageApplies(this)) {
                     Console.debugLog("Lich hand damage " + ua.getLichHandTimesHit());

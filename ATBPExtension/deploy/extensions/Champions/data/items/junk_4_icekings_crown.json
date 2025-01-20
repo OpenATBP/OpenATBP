@@ -27,13 +27,13 @@
           "point": 1,
           "stat": "coolDownReduction",
           "type": 0,
-          "value": 5
+          "value": 3
         },
         {
           "point": 2,
           "stat": "spellResist",
           "type": 0,
-          "value": 20
+          "value": 10
         },
         {
           "point": 2,
@@ -45,13 +45,13 @@
           "point": 2,
           "stat": "coolDownReduction",
           "type": 0,
-          "value": 10
+          "value": 7
         },
         {
           "point": 3,
           "stat": "spellResist",
           "type": 0,
-          "value": 30
+          "value": 10
         },
         {
           "point": 3,
@@ -63,13 +63,13 @@
           "point": 3,
           "stat": "coolDownReduction",
           "type": 0,
-          "value": 15
+          "value": 10
         },
         {
           "point": 4,
           "stat": "spellResist",
           "type": 0,
-          "value": 50
+          "value": 25
         },
         {
           "point": 4,
@@ -81,7 +81,7 @@
           "point": 4,
           "stat": "coolDownReduction",
           "type": 0,
-          "value": 20
+          "value": 15
         }
       ]
     },

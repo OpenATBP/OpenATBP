@@ -354,7 +354,7 @@ public class LSP extends UserActor {
         public void run() {
             double damage = LSP.this.getPlayerStat("attackDamage");
             if (crit) {
-                damage *= 2;
+                damage *= 1.25;
                 damage = handleGrassSwordProc(damage);
             }
             new Champion.DelayedAttack(

@@ -27,7 +27,7 @@
           "point": 1,
           "stat": "criticalChance",
           "type": 0,
-          "value": 3
+          "value": 5
         },
         {
           "point": 2,
@@ -45,7 +45,7 @@
           "point": 2,
           "stat": "criticalChance",
           "type": 0,
-          "value": 5
+          "value": 10
         },
         {
           "point": 3,
@@ -63,7 +63,7 @@
           "point": 3,
           "stat": "criticalChance",
           "type": 0,
-          "value": 7
+          "value": 15
         },
         {
           "point": 4,
@@ -81,7 +81,7 @@
           "point": 4,
           "stat": "criticalChance",
           "type": 0,
-          "value": 10
+          "value": 20
         }
       ]
     },
