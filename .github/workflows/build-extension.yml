@@ -36,7 +36,7 @@ jobs:
     - name: Execute Gradle build
       run: ./gradlew ATBPExtension:build
     - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v3.1.0
+      uses: actions/upload-artifact@v4
       with:
         name: ATBPExtension.jar
         path: ATBPExtension/build/libs
