@@ -108,11 +108,23 @@ public class Marceline extends UserActor {
                     this.qVictim.getId(),
                     "sfx_marceline_blood_hit",
                     this.qVictim.getLocation());
-            if (this.qVictim != null)
-                this.qVictim.addToDamageQueue(
-                        this, damage, spellData,
-                        true); // TODO This is redundant for some reason qVictim is having a null
-            // exception here
+            if (this.qVictim != null) {
+                this.qVictim.addToDamageQueue(this, damage, spellData, true);
+                if (qVictim.getHealth() > 0) {
+                    ExtensionCommands.createActorFX(
+                            parentExt,
+                            room,
+                            qVictim.getId(),
+                            "fx_hit_blksmoke",
+                            1000,
+                            String.valueOf(Math.random()),
+                            false,
+                            "",
+                            true,
+                            false,
+                            team);
+                }
+            }
             this.qHit = System.currentTimeMillis();
         }
         if (this.form == Form.BEAST
@@ -395,6 +407,7 @@ public class Marceline extends UserActor {
                     changeHealth((int) Math.round(damage * lifesteal));
             }
             if (form == Form.VAMPIRE
+                    && this.target != null
                     && isNonStructure(this.target)
                     && !getState(ActorState.BLINDED)) {
                 passiveHits++;
@@ -556,6 +569,18 @@ public class Marceline extends UserActor {
 
         @Override
         protected void hit(Actor victim) {
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    victim.getId(),
+                    "fx_hit_blksmoke",
+                    1000,
+                    this.id + "initialQHit",
+                    false,
+                    "",
+                    true,
+                    false,
+                    team);
             if (transformed) {
                 victim.addState(ActorState.ROOTED, 0d, Q_ROOT_DURATION);
             } else {
