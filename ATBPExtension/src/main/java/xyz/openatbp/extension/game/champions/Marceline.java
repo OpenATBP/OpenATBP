@@ -406,7 +406,8 @@ public class Marceline extends UserActor {
                         && !getState(ActorState.BLINDED))
                     changeHealth((int) Math.round(damage * lifesteal));
             }
-            if (form == Form.VAMPIRE && this.target != null
+            if (form == Form.VAMPIRE
+                    && this.target != null
                     && isNonStructure(this.target)
                     && !getState(ActorState.BLINDED)) {
                 passiveHits++;
