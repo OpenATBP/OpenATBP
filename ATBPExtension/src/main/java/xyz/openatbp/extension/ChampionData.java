@@ -425,7 +425,6 @@ public class ChampionData {
     }
 
     public static int[] getBuildPath(String actor, String backpack) {
-        Console.debugLog(backpack);
         int[] buildPath = {1, 1, 2, 2, 1, 2, 1, 2, 5, 5};
         String avatar = actor;
         if (actor.contains("skin")) {
