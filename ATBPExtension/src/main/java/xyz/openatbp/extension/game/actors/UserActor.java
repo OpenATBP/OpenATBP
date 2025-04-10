@@ -2439,7 +2439,7 @@ public class UserActor extends Actor {
                     break;
             }
         }
-        Console.debugLog("Monster count: " + count);
+        // Console.debugLog("Monster count: " + count);
         return count;
     }
 

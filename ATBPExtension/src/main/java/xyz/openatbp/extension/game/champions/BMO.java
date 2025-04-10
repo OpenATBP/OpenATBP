@@ -500,7 +500,7 @@ public class BMO extends UserActor {
                     double collisionRadius =
                             parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
                     if (a.getLocation().distance(location) <= hitbox + collisionRadius
-                            && !a.getAvatar().equalsIgnoreCase("neptr_mine")) {
+                            && isTargetable(a.getAvatar())) {
                         return a;
                     }
                 }

@@ -94,18 +94,18 @@ public abstract class Projectile {
             double collisionRadius =
                     parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
             if (a.getLocation().distance(location) <= hitbox + collisionRadius
-                    && !a.getAvatar().equalsIgnoreCase("neptr_mine")) {
+                    && isTargetable(a.getAvatar())) {
                 return a;
             }
         }
         return null;
     }
 
-    protected abstract void hit(Actor victim);
-
-    public Point2D getDestination() {
-        return this.destination;
+    public boolean isTargetable(String avatar) {
+        return !avatar.equals("neptr_mine") && !avatar.equals("choosegoose_chest");
     }
+
+    protected abstract void hit(Actor victim);
 
     public String getId() {
         return this.id;
@@ -113,10 +113,6 @@ public abstract class Projectile {
 
     public String getProjectileAsset() {
         return this.projectileAsset;
-    }
-
-    public double getEstimatedDuration() {
-        return estimatedDuration;
     }
 
     public void destroy() {
