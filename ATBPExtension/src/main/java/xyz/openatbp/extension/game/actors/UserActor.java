@@ -1386,9 +1386,13 @@ public class UserActor extends Actor {
         return false;
     }
 
-    public boolean cancelDashEndAttack() {
+    public boolean hasDashAttackInterruptCC() {
         ActorState[] states = {
-            ActorState.STUNNED, ActorState.CHARMED, ActorState.POLYMORPH, ActorState.FEARED,
+            ActorState.STUNNED,
+            ActorState.CHARMED,
+            ActorState.POLYMORPH,
+            ActorState.FEARED,
+            ActorState.SILENCED,
         };
         for (ActorState state : states) {
             if (this.getState(state)) return true;

@@ -67,7 +67,7 @@ public class MagicMan extends UserActor {
             Runnable resetWUses = () -> this.wUses = 0;
             scheduleTask(resetWUses, getReducedCooldown(wCooldown));
         }
-        if (this.ultStarted && this.cancelDashEndAttack()) {
+        if (this.ultStarted && this.hasDashAttackInterruptCC()) {
             this.interruptE = true;
             this.ultStarted = false;
             ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 100, false);
@@ -466,7 +466,11 @@ public class MagicMan extends UserActor {
             ExtensionCommands.playSound(
                     this.parentExt, this.room, "", "sfx_magicman_decoy", this.location);
             ExtensionCommands.playSound(
-                    this.parentExt, this.room, this.id, "vo/vo_magicman_decoy2", this.location);
+                    this.parentExt,
+                    this.room,
+                    MagicMan.this.id,
+                    "vo/vo_magicman_decoy2",
+                    MagicMan.this.location);
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor actor : Champion.getActorsInRadius(handler, this.location, 2.5f)) {

@@ -59,9 +59,11 @@ public class Marceline extends UserActor {
         if (this.vampireWActive
                 && System.currentTimeMillis() - this.vampireWStartTime >= W_DURATION) {
             this.vampireWActive = false;
+            updateStatMenu("speed");
         }
         if (this.beastWActive && System.currentTimeMillis() - this.bestWStartTime >= W_DURATION) {
             this.beastWActive = false;
+            updateStatMenu("speed");
         }
         if (this.currentHealth < this.maxHealth
                 && !this.hpRegenActive
@@ -316,6 +318,7 @@ public class Marceline extends UserActor {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
                 }
+                updateStatMenu("speed");
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,

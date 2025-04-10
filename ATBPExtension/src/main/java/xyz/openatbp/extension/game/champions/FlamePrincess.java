@@ -560,18 +560,31 @@ public class FlamePrincess extends UserActor {
                         false,
                         false,
                         team);
-                for (int i = 0; i < 3; i++) {
-                    parentExt
-                            .getTaskScheduler()
-                            .schedule(
-                                    new Champion.DelayedAttack(
-                                            parentExt,
-                                            FlamePrincess.this,
-                                            target,
-                                            getSpellDamage(getSpellData(4), true),
-                                            "spell4"),
-                                    i + 1,
-                                    TimeUnit.SECONDS);
+
+                int passiveDamage = getSpellDamage(getSpellData(4), true) / 2;
+                JsonNode attackData = parentExt.getAttackData(avatar, "spell4");
+
+                Runnable damageActor =
+                        () -> {
+                            target.addToDamageQueue(
+                                    FlamePrincess.this, passiveDamage, attackData, true);
+                            ExtensionCommands.createActorFX(
+                                    parentExt,
+                                    room,
+                                    target.getId(),
+                                    "_playerGotHitSparks",
+                                    500,
+                                    target.getId() + "_hit" + Math.random(),
+                                    true,
+                                    "",
+                                    true,
+                                    false,
+                                    target.getTeam());
+                        };
+
+                for (int i = 0; i < 6; i++) {
+                    int delay = (i * 500) + 500;
+                    scheduleTask(damageActor, delay);
                 }
             }
             if (FlamePrincess.this.passiveEnabled
