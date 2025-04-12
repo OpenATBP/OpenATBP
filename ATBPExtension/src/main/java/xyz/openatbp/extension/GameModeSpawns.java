@@ -166,9 +166,9 @@ public class GameModeSpawns {
 
         ISFSObject guardian = getGuardian(team, x, z);
 
-        ExtensionCommands.createActor(parentExt, room, guardian);
+        // ExtensionCommands.createActor(parentExt, room, guardian);
 
-        ExtensionCommands.scaleActor(parentExt, room, "gumball" + team, 0.01f);
+        // ExtensionCommands.scaleActor(parentExt, room, "gumball" + team, 0.01f);
     }
 
     private static ISFSObject getGuardian(int team, float x, float z) {

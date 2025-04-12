@@ -12,18 +12,14 @@ import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
-import xyz.openatbp.extension.game.AbilityRunnable;
-import xyz.openatbp.extension.game.ActorType;
-import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public class ChooseGoose extends UserActor {
     private static final int PASSIVE_COOLDOWN = 20000;
-    public static final int CHEST_CD = 20000;
     public static final int CHEST_DURATION = 10000;
-    public static final int Q_AS_BUFF_DURATION = 5000;
     public static final double Q_AS_BUFF_VALUE = -0.2;
     public static final int Q_DURATION = 5000;
     private static final int Q_TICK_FREQUENCY = 1000;
@@ -33,6 +29,11 @@ public class ChooseGoose extends UserActor {
     public static final double PASSIVE_SPEED_VALUE = 0.2;
     public static final double PASSIVE_ARMOR_VALUE = 0.2;
     public static final int PASSIVE_BUFF_DURATION = 6000;
+    private static final double Q_AD_BUFF_VALUE = 0.1d;
+    public static final double E_SLOW_VALUE = 0.4d;
+    public static final int E_SLOW_DURATION = 2000;
+    public static final int E_BUFF_DURATION = 2000;
+    public static final double E_ARMOR_BUFF_VALUE = 0.2;
 
     private Chest chest = null;
     private Long lastChestSpawn = 0L;
@@ -40,6 +41,7 @@ public class ChooseGoose extends UserActor {
     private Long lastQTick = System.currentTimeMillis();
     private final HashMap<Actor, Long> qDOTActors = new HashMap<>();
     private boolean jumpActive = false;
+    private boolean isCastingE = false;
 
     public ChooseGoose(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -104,6 +106,7 @@ public class ChooseGoose extends UserActor {
             case 1:
                 canCast[0] = false;
                 qActive = true;
+                qDOTActors.clear();
                 stopMoving();
 
                 if (!isAutoAttacking) {
@@ -111,7 +114,10 @@ public class ChooseGoose extends UserActor {
                 }
 
                 double asDelta = this.getStat("attackSpeed") * Q_AS_BUFF_VALUE;
-                this.addEffect("attackSpeed", asDelta, Q_AS_BUFF_DURATION);
+                double adDelta = this.getStat("attackDamage") * Q_AD_BUFF_VALUE;
+
+                this.addEffect("attackSpeed", asDelta, Q_DURATION);
+                this.addEffect("attackDamage", adDelta, Q_DURATION);
 
                 String q_sfx = "sfx_choosegoose_q_activation";
                 ExtensionCommands.playSound(parentExt, room, id, q_sfx, location);
@@ -143,7 +149,10 @@ public class ChooseGoose extends UserActor {
                 Champion.handleStatusIcon(parentExt, this, "icon_choosegoose_s1", "", Q_DURATION);
 
                 int dur = parentExt.getAttackData(avatar, "spell1").get("spellDuration").asInt();
-                scheduleTask(abilityRunnable(ability, spellData, cooldown, gCooldown, dest), dur);
+                scheduleTask(
+                        abilityRunnable(
+                                ability, spellData, getReducedCooldown(cooldown), gCooldown, dest),
+                        dur);
                 break;
             case 2:
                 canCast[1] = false;
@@ -174,17 +183,67 @@ public class ChooseGoose extends UserActor {
                 scheduleTask(abilityRunnable(ability, spellData, wTime, gCooldown, dPoint), wTime);
                 break;
             case 3:
-                /*canCast[2] = false;
+                canCast[2] = false;
+                isCastingE = true;
+                stopMoving(1050);
+                ExtensionCommands.swapActorAsset(parentExt, room, id, "choosegoose_axe");
+
+                Runnable doAnimation =
+                        () -> {
+                            ExtensionCommands.actorAnimate(
+                                    parentExt, room, id, "spell3", 1000, false);
+
+                            ExtensionCommands.createActorFX(
+                                    parentExt,
+                                    room,
+                                    id,
+                                    "tower_shoot_purple",
+                                    2000,
+                                    id + "_eVFX",
+                                    true,
+                                    "mixamorig:RightHand",
+                                    false,
+                                    false,
+                                    team);
+
+                            ExtensionCommands.playSound(
+                                    parentExt, room, id, "sfx_choosegoose_e_projectile", location);
+                        };
+
+                Runnable fireProjectile =
+                        () -> {
+                            Line2D line = Champion.getAbilityLine(location, dest, 7f);
+                            GooseProjectile projectile =
+                                    new GooseProjectile(
+                                            parentExt,
+                                            this,
+                                            line,
+                                            10f,
+                                            1f,
+                                            "projectile_choosegoose",
+                                            spellData);
+                            fireProjectile(projectile, location, dest, 7f);
+                        };
+                scheduleTask(doAnimation, 150);
+                scheduleTask(fireProjectile, 500);
                 scheduleTask(
-                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), castDelay);*/
+                        abilityRunnable(
+                                ability, spellData, getReducedCooldown(cooldown), gCooldown, dest),
+                        1050);
                 break;
         }
     }
 
     @Override
     public boolean canUseAbility(int ability) {
-        if (jumpActive) return false;
+        if (jumpActive || isCastingE) return false;
         else return super.canUseAbility(ability);
+    }
+
+    @Override
+    public boolean canAttack() {
+        if (isCastingE) return false;
+        return super.canAttack();
     }
 
     @Override
@@ -233,7 +292,7 @@ public class ChooseGoose extends UserActor {
     }
 
     private void spawnChest(UserActor enemy) {
-        if (System.currentTimeMillis() - lastChestSpawn >= CHEST_CD) {
+        if (System.currentTimeMillis() - lastChestSpawn >= PASSIVE_COOLDOWN) {
             lastChestSpawn = System.currentTimeMillis();
 
             Point2D enemyLocation = enemy.getLocation();
@@ -255,7 +314,8 @@ public class ChooseGoose extends UserActor {
             chest = new Chest(chestPoint, getOppositeTeam());
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             handler.addCompanion(chest);
-            ExtensionCommands.playSound(parentExt, room, id, "sfx_choosegoose_e_spawn", chestPoint);
+            ExtensionCommands.playSound(
+                    parentExt, room, id, "sfx_choosegoose_chest_spawn", chestPoint);
             ExtensionCommands.actorAbilityResponse(
                     parentExt, player, "passive", true, PASSIVE_COOLDOWN, 0);
         }
@@ -280,7 +340,6 @@ public class ChooseGoose extends UserActor {
             scheduleTask(enableQCasting, cd);
 
             qActive = false;
-            qDOTActors.clear();
             ExtensionCommands.actorAbilityResponse(parentExt, player, "q", true, cd, gCooldown);
         }
 
@@ -325,7 +384,7 @@ public class ChooseGoose extends UserActor {
             actors2.removeAll(actors1);
 
             double damageR2 = getSpellDamage(spellData, false);
-            double damageR1 = getSpellDamage(spellData, false) * 2;
+            double damageR1 = damageR2 + 30;
 
             for (Actor a : actors2) {
                 if (isNonStructure(a)) {
@@ -341,7 +400,17 @@ public class ChooseGoose extends UserActor {
         }
 
         @Override
-        protected void spellE() {}
+        protected void spellE() {
+            int cd = getReducedCooldown(cooldown);
+            Runnable enableECasting = () -> canCast[2] = true;
+            scheduleTask(enableECasting, cd);
+
+            ExtensionCommands.actorAbilityResponse(parentExt, player, "e", true, cd, gCooldown);
+
+            ExtensionCommands.swapActorAsset(parentExt, room, id, "choosegoose");
+            ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 1, false);
+            isCastingE = false;
+        }
 
         @Override
         protected void spellPassive() {}
@@ -472,6 +541,116 @@ public class ChooseGoose extends UserActor {
 
         @Override
         public void setTarget(Actor a) {}
+    }
+
+    private class GooseProjectile extends Projectile {
+        private final JsonNode spellData;
+
+        public GooseProjectile(
+                ATBPExtension parentExt,
+                UserActor owner,
+                Line2D path,
+                float speed,
+                float hitboxRadius,
+                String projectileAsset,
+                JsonNode spellData) {
+            super(parentExt, owner, path, speed, hitboxRadius, projectileAsset);
+            this.spellData = spellData;
+        }
+
+        @Override
+        public Actor checkPlayerCollision(RoomHandler roomHandler) {
+            List<Actor> nonStructureEnemies = roomHandler.getNonStructureEnemies(owner.getTeam());
+            for (Actor a : nonStructureEnemies) {
+                double collisionRadius =
+                        parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
+                if (a.getLocation().distance(location) <= hitbox + collisionRadius
+                        && isProperTarget(a)) {
+                    return a;
+                }
+            }
+            return null;
+        }
+
+        private boolean isProperTarget(Actor a) {
+            return a.getActorType() == ActorType.PLAYER
+                    || a.getAvatar().equals("keeoth")
+                    || a.getAvatar().equals("goomonster")
+                    || a.getAvatar().equals("ooze_monster");
+        }
+
+        @Override
+        protected void hit(Actor victim) {
+            victim.addToDamageQueue(
+                    ChooseGoose.this, getSpellDamage(spellData, true), spellData, false);
+
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    victim.getId(),
+                    "rattleballs_dash_hit",
+                    2000,
+                    victim.getId() + "goose_projectile_VFX",
+                    true,
+                    "",
+                    false,
+                    false,
+                    victim.getTeam());
+
+            ExtensionCommands.createWorldFX(
+                    this.parentExt,
+                    room,
+                    id,
+                    "hunson_projectile_explode",
+                    id + "_destroyed",
+                    1000,
+                    (float) victim.getLocation().getX(),
+                    (float) victim.getLocation().getY(),
+                    false,
+                    team,
+                    0f);
+
+            ExtensionCommands.playSound(
+                    parentExt,
+                    room,
+                    victim.getId(),
+                    "sfx_choosegoose_e_explosion",
+                    victim.getLocation());
+
+            victim.addState(ActorState.SLOWED, E_SLOW_VALUE, E_SLOW_DURATION);
+
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    ChooseGoose.this.id,
+                    "jake_shield",
+                    E_BUFF_DURATION,
+                    ChooseGoose.this.id + "_eShield",
+                    true,
+                    "mixamorig:Spine",
+                    false,
+                    false,
+                    team);
+
+            double eArmorDelta = ChooseGoose.this.getPlayerStat("armor") * E_ARMOR_BUFF_VALUE;
+
+            ChooseGoose.this.addState(ActorState.IMMUNITY, 0, E_BUFF_DURATION);
+            ChooseGoose.this.addEffect("armor", eArmorDelta, E_BUFF_DURATION);
+
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    ChooseGoose.this.id,
+                    "statusEffect_immunity",
+                    E_BUFF_DURATION,
+                    ChooseGoose.this.id + "_ultImmunity",
+                    true,
+                    "displayBar",
+                    false,
+                    false,
+                    team);
+            destroy();
+        }
     }
 
     private class BasicAttack implements Runnable {

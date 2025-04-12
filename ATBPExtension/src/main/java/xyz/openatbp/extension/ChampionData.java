@@ -345,6 +345,9 @@ public class ChampionData {
                 case "bmo":
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 11000 : 37500;
                     break;
+                case "choosegoose":
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 42000;
+                    break;
                 case "cinnamonbun":
                     lv10Cooldown = abilityNumber == 1 ? 4500 : abilityNumber == 2 ? 14000 : 42000;
                     break;
