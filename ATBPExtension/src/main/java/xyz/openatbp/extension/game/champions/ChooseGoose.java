@@ -20,16 +20,16 @@ import xyz.openatbp.extension.pathfinding.MovementManager;
 public class ChooseGoose extends UserActor {
     private static final int PASSIVE_COOLDOWN = 20000;
     public static final int CHEST_DURATION = 10000;
+    public static final int PASSIVE_BUFF_DURATION = 6000;
+    public static final double PASSIVE_SPEED_VALUE = 0.2;
+    public static final double PASSIVE_ARMOR_VALUE = 0.2;
     public static final double Q_AS_BUFF_VALUE = -0.2;
     public static final int Q_DURATION = 5000;
     private static final int Q_TICK_FREQUENCY = 1000;
     private static final int Q_TICK_DMG_DELAY = 250;
     private static final int Q_DOT_DURATION = 3000;
-    public static final double W_JUMP_SPEED = 14d;
-    public static final double PASSIVE_SPEED_VALUE = 0.2;
-    public static final double PASSIVE_ARMOR_VALUE = 0.2;
-    public static final int PASSIVE_BUFF_DURATION = 6000;
     private static final double Q_AD_BUFF_VALUE = 0.1d;
+    public static final double W_JUMP_SPEED = 14d;
     public static final double E_SLOW_VALUE = 0.4d;
     public static final int E_SLOW_DURATION = 2000;
     public static final int E_BUFF_DURATION = 2000;
@@ -41,7 +41,12 @@ public class ChooseGoose extends UserActor {
     private Long lastQTick = System.currentTimeMillis();
     private final HashMap<Actor, Long> qDOTActors = new HashMap<>();
     private boolean jumpActive = false;
-    private boolean isCastingE = false;
+    private boolean isEActive = false;
+    private Long eStartTime;
+    private boolean interruptE = false;
+    private Point2D eProjectileDestination;
+    private JsonNode eSpellData;
+    private boolean eProjectileFired = false;
 
     public ChooseGoose(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -91,6 +96,33 @@ public class ChooseGoose extends UserActor {
                     iterator.remove();
                 }
             }
+        }
+
+        if (isEActive && System.currentTimeMillis() - eStartTime <= 500 && hasInterrupingCC()
+                || isEActive && getHealth() <= 0) {
+            interruptE = true;
+            isEActive = false;
+
+            if (!this.getState(ActorState.STUNNED)
+                    && !getState(ActorState.AIRBORNE)
+                    && getHealth() > 0) {
+                canMove = true;
+            }
+            ExtensionCommands.playSound(parentExt, room, id, "sfx_skill_interrupted", location);
+            ExtensionCommands.swapActorAsset(parentExt, room, id, "choosegoose");
+
+            if (getHealth() > 0) {
+                ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 1, false);
+            }
+            ExtensionCommands.removeFx(parentExt, room, id + "_eVFX");
+        }
+
+        if (isEActive
+                && System.currentTimeMillis() - eStartTime >= 500
+                && !interruptE
+                && !eProjectileFired) {
+            eProjectileFired = true;
+            fireProjectile(eProjectileDestination, eSpellData);
         }
     }
 
@@ -146,7 +178,12 @@ public class ChooseGoose extends UserActor {
                         true,
                         false,
                         team);
-                Champion.handleStatusIcon(parentExt, this, "icon_choosegoose_s1", "", Q_DURATION);
+                Champion.handleStatusIcon(
+                        parentExt,
+                        this,
+                        "icon_choosegoose_s1",
+                        "choosegoose_spell_1_description",
+                        Q_DURATION);
 
                 int dur = parentExt.getAttackData(avatar, "spell1").get("spellDuration").asInt();
                 scheduleTask(
@@ -184,7 +221,12 @@ public class ChooseGoose extends UserActor {
                 break;
             case 3:
                 canCast[2] = false;
-                isCastingE = true;
+                eStartTime = System.currentTimeMillis();
+                isEActive = true;
+
+                eProjectileDestination = dest;
+                eSpellData = spellData;
+
                 stopMoving(1050);
                 ExtensionCommands.swapActorAsset(parentExt, room, id, "choosegoose_axe");
 
@@ -209,23 +251,7 @@ public class ChooseGoose extends UserActor {
                             ExtensionCommands.playSound(
                                     parentExt, room, id, "sfx_choosegoose_e_projectile", location);
                         };
-
-                Runnable fireProjectile =
-                        () -> {
-                            Line2D line = Champion.getAbilityLine(location, dest, 7f);
-                            GooseProjectile projectile =
-                                    new GooseProjectile(
-                                            parentExt,
-                                            this,
-                                            line,
-                                            10f,
-                                            1f,
-                                            "projectile_choosegoose",
-                                            spellData);
-                            fireProjectile(projectile, location, dest, 7f);
-                        };
                 scheduleTask(doAnimation, 150);
-                scheduleTask(fireProjectile, 500);
                 scheduleTask(
                         abilityRunnable(
                                 ability, spellData, getReducedCooldown(cooldown), gCooldown, dest),
@@ -236,13 +262,13 @@ public class ChooseGoose extends UserActor {
 
     @Override
     public boolean canUseAbility(int ability) {
-        if (jumpActive || isCastingE) return false;
+        if (jumpActive || isEActive) return false;
         else return super.canUseAbility(ability);
     }
 
     @Override
     public boolean canAttack() {
-        if (isCastingE) return false;
+        if (isEActive) return false;
         return super.canAttack();
     }
 
@@ -319,6 +345,27 @@ public class ChooseGoose extends UserActor {
             ExtensionCommands.actorAbilityResponse(
                     parentExt, player, "passive", true, PASSIVE_COOLDOWN, 0);
         }
+    }
+
+    private void fireProjectile(Point2D dest, JsonNode spellData) {
+        Line2D line = Champion.getAbilityLine(location, dest, 7f);
+        GooseProjectile projectile =
+                new GooseProjectile(
+                        parentExt, this, line, 11f, 0.5f, "projectile_choosegoose", spellData);
+        fireProjectile(projectile, location, dest, 7f);
+
+        ExtensionCommands.createActorFX(
+                parentExt,
+                room,
+                id,
+                "cb_lance_hitspark",
+                2000,
+                id + "eFiredVFX",
+                true,
+                "",
+                false,
+                false,
+                team);
     }
 
     private ChooseGooseAbilityRunnable abilityRunnable(
@@ -409,7 +456,8 @@ public class ChooseGoose extends UserActor {
 
             ExtensionCommands.swapActorAsset(parentExt, room, id, "choosegoose");
             ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 1, false);
-            isCastingE = false;
+            isEActive = false;
+            eProjectileFired = false;
         }
 
         @Override
@@ -524,7 +572,11 @@ public class ChooseGoose extends UserActor {
                 a.addEffect("armor", armorDelta, PASSIVE_BUFF_DURATION, "disconnect_buff_solo", "");
                 UserActor ua = (UserActor) a;
                 Champion.handleStatusIcon(
-                        parentExt, ua, "icon_choosegoose_passive", "", PASSIVE_BUFF_DURATION);
+                        parentExt,
+                        ua,
+                        "icon_choosegoose_passive",
+                        "choosegoose_spell_4_description",
+                        PASSIVE_BUFF_DURATION);
             }
             ExtensionCommands.destroyActor(parentExt, room, id);
             parentExt.getRoomHandler(room.getName()).removeCompanion(this);
