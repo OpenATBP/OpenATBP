@@ -150,36 +150,19 @@ public class GameModeSpawns {
             z = MapData.L2_GUARDIAN1_Z;
         }
 
-        float rotation = team == 0 ? 90f : -90f;
-        ExtensionCommands.createWorldFX(
-                parentExt,
-                room,
-                "gumball_duardian" + team,
-                "gumball_guardian",
-                "gumball_guardian_" + team + "_" + room,
-                1000 * 60 * 15,
-                x,
-                z,
-                false,
-                team,
-                rotation);
-
         ISFSObject guardian = getGuardian(team, x, z);
-
-        // ExtensionCommands.createActor(parentExt, room, guardian);
-
-        // ExtensionCommands.scaleActor(parentExt, room, "gumball" + team, 0.01f);
+        ExtensionCommands.createActor(parentExt, room, guardian);
     }
 
     private static ISFSObject getGuardian(int team, float x, float z) {
-        float xValue = team == 0 ? x + MINI_GUARDIAN_ACTOR_OFFSET : x - MINI_GUARDIAN_ACTOR_OFFSET;
+        String bundle = team == 0 ? "GG_Purple" : "GG_Blue";
 
         ISFSObject guardian = new SFSObject();
         ISFSObject guardianSpawn = new SFSObject();
         guardian.putUtfString("id", "gumball" + team);
-        guardian.putUtfString("actor", "gumball_guardian");
-        guardianSpawn.putFloat("x", xValue);
-        guardianSpawn.putFloat("y", 3);
+        guardian.putUtfString("actor", bundle);
+        guardianSpawn.putFloat("x", x);
+        guardianSpawn.putFloat("y", 0);
         guardianSpawn.putFloat("z", z);
         guardian.putSFSObject("spawn_point", guardianSpawn);
         guardian.putFloat("rotation", 0f);
