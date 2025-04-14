@@ -122,6 +122,7 @@ public class MagicMan extends UserActor {
                     unveil();
                     this.stopMoving(castDelay);
                     this.qStartTime = System.currentTimeMillis();
+                    basicAttackReset();
                     ExtensionCommands.playSound(
                             this.parentExt,
                             this.room,
@@ -308,7 +309,6 @@ public class MagicMan extends UserActor {
             Runnable enableQCasting = () -> canCast[0] = true;
             int delay = getReducedCooldown(cooldown) - Q_CAST_DELAY;
             scheduleTask(enableQCasting, delay);
-            attackCooldown = 0;
         }
 
         @Override

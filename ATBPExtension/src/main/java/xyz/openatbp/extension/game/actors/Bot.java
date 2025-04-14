@@ -14,76 +14,123 @@ import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public class Bot extends Actor {
-    protected Point2D spawnPoint;
-    protected UserActor charmer;
-    protected static boolean movementDebug = false;
-    protected static final int deathTimeSeconds = 3;
+    private static final boolean movementDebug = true;
+    private static final int RESPAWN_TIME_MS = 3000;
+    private final Point2D spawnPoint;
 
-    public Bot(
-            ATBPExtension parentExt,
-            Room room,
-            String avatar,
-            int team,
-            Point2D spawnPoint,
-            int num) {
-        this.parentExt = parentExt;
+    public Bot(ATBPExtension parentExt, Room room, String avatar, int team, Point2D spawnPoint) {
         this.room = room;
-        this.team = team;
-        this.id = avatar + team + num;
-        this.location = spawnPoint;
-        this.avatar = avatar;
+        this.parentExt = parentExt;
         this.currentHealth = 500;
         this.maxHealth = 500;
+        this.location = spawnPoint;
+        this.avatar = avatar;
+        this.id = avatar + "_" + team;
+        this.team = team;
         this.actorType = ActorType.COMPANION;
+        this.stats = initializeStats();
         this.spawnPoint = spawnPoint;
-        this.stats = this.initializeStats();
-        ExtensionCommands.createActor(
-                parentExt, room, this.id, this.avatar, this.location, 0f, this.team);
+
+        ExtensionCommands.createActor(parentExt, room, id, avatar, spawnPoint, 0f, team);
+
         if (movementDebug) {
-            ExtensionCommands.createActor(parentExt, room, "test", "creep1", location, 0f, 1);
+            ExtensionCommands.createActor(
+                    parentExt, room, id + "moveDebug", "creep1", location, 0f, 1);
         }
     }
 
     @Override
-    public void handleKill(Actor a, JsonNode attackData) {}
-
-    @Override
-    public void attack(Actor a) {}
-
-    @Override
     public void die(Actor a) {
-        if (this.dead) return;
-        this.dead = true;
-        this.currentHealth = 0;
-        this.setHealth(0, (int) this.maxHealth);
-        this.target = null;
-        this.canMove = false;
-        ExtensionCommands.knockOutActor(parentExt, room, id, a.getId(), deathTimeSeconds);
+        dead = true;
+        currentHealth = 0;
+        if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
+        ExtensionCommands.knockOutActor(parentExt, room, id, a.getId(), RESPAWN_TIME_MS);
+
+        Runnable respawn = this::respawn;
+        parentExt.getTaskScheduler().schedule(respawn, RESPAWN_TIME_MS, TimeUnit.MILLISECONDS);
+
         if (a.getActorType() == ActorType.PLAYER) {
             UserActor killer = (UserActor) a;
             killer.increaseStat("kills", 1);
             RoomHandler roomHandler = parentExt.getRoomHandler(room.getName());
             roomHandler.addScore(killer, killer.getTeam(), 25);
-            killer.addXP(150);
-        }
-        if (!room.getGroupId().equals("Tutorial")) {
-            Runnable respawn = this::respawn;
-            parentExt.getTaskScheduler().schedule(respawn, deathTimeSeconds, TimeUnit.SECONDS);
+            killer.addXP(getXPValue(killer));
         }
     }
 
-    protected void respawn() {
-        this.canMove = true;
-        this.setHealth((int) maxHealth, (int) maxHealth);
-        Point2D respawnPoint = spawnPoint;
-        this.location = respawnPoint;
-        this.movementLine = new Line2D.Float(respawnPoint, respawnPoint);
-        this.timeTraveled = 0f;
-        this.dead = false;
-        this.removeEffects();
+    @Override
+    public void update(int msRan) {
+        if (dead) return;
+        handleDamageQueue();
+        handleActiveEffects();
+
+        if (movementLine != null) {
+            location =
+                    MovementManager.getRelativePoint(
+                            movementLine, getPlayerStat("speed"), timeTraveled);
+        } else {
+            movementLine = new Line2D.Float(this.location, this.location);
+        }
+
+        if (movementLine.getP1().distance(movementLine.getP2()) > 0.01d) {
+            timeTraveled += 0.1f;
+        }
+
+        if (movementDebug) {
+            ExtensionCommands.moveActor(
+                    parentExt,
+                    room,
+                    id + "moveDebug",
+                    location,
+                    location,
+                    (float) getPlayerStat("speed"),
+                    true);
+        }
+
+        for (UserActor ua : parentExt.getRoomHandler(room.getName()).getPlayers()) {
+            if (!ua.getId().equalsIgnoreCase(id)) {
+                if (ua.getLocation().distance(location) <= 5f)
+                    ua.setGlassesBuff(
+                            ChampionData.getCustomJunkStat(ua, "junk_2_simon_petrikovs_glasses"),
+                            ua);
+                else ua.setGlassesBuff(-1d, ua);
+            }
+        }
+    }
+
+    private int getXPValue(UserActor killer) {
+        int killerLV = killer.getLevel();
+        switch (killerLV) {
+            case 1:
+                return 100;
+            case 2:
+                return 110;
+            case 3:
+                return 140;
+            case 4:
+                return 170;
+            case 5:
+                return 200;
+            case 6:
+                return 230;
+            case 7:
+                return 260;
+            case 8:
+                return 290;
+            case 9:
+                return 320;
+            default:
+                return 150;
+        }
+    }
+
+    public void respawn() {
+        dead = false;
+        setHealth((int) maxHealth, (int) maxHealth);
+        setLocation(spawnPoint);
+        removeEffects();
         ExtensionCommands.snapActor(parentExt, room, id, location, location, false);
         ExtensionCommands.playSound(parentExt, room, id, "sfx/sfx_champion_respawn", location);
-        ExtensionCommands.respawnActor(parentExt, room, id);
         ExtensionCommands.createActorFX(
                 parentExt,
                 room,
@@ -96,72 +143,15 @@ public class Bot extends Actor {
                 false,
                 false,
                 team);
+
+        ExtensionCommands.respawnActor(parentExt, room, id);
     }
 
     @Override
-    public void update(int msRan) {
-        handleDamageQueue();
-        handleActiveEffects();
-        if (dead) return;
-        if (!this.isStopped() && this.canMove()) this.timeTraveled += 0.1f;
-        this.location =
-                MovementManager.getRelativePoint(
-                        this.movementLine, this.getPlayerStat("speed"), this.timeTraveled);
-        if (movementDebug) {
-            ExtensionCommands.moveActor(
-                    parentExt,
-                    room,
-                    "test",
-                    location,
-                    location,
-                    (float) getPlayerStat("speed"),
-                    true);
-        }
-
-        for (UserActor ua : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
-            if (!ua.getId().equalsIgnoreCase(this.id)) {
-                if (ua.getLocation().distance(this.location) <= 5f)
-                    ua.setGlassesBuff(
-                            ChampionData.getCustomJunkStat(ua, "junk_2_simon_petrikovs_glasses"),
-                            ua);
-                else ua.setGlassesBuff(-1d, ua);
-            }
-        }
-
-        moveTowardsSpawnPoint();
-        moveTowardsCharmer();
-    }
-
-    protected void moveTowardsSpawnPoint() {
-        if (this.location.distance(spawnPoint) > 0.1 && canMove && !getState(ActorState.CHARMED)) {
-            moveWithCollision(spawnPoint);
-        }
-    }
-
-    protected void moveTowardsCharmer() {
-        if (this.getState(ActorState.CHARMED) && charmer != null) {
-            moveTowardsCharmer(charmer);
-        }
-    }
+    public void handleKill(Actor a, JsonNode attackData) {}
 
     @Override
-    public boolean canMove() {
-        for (ActorState s : this.states.keySet()) {
-            if (s == ActorState.ROOTED
-                    || s == ActorState.STUNNED
-                    || s == ActorState.FEARED
-                    || s == ActorState.AIRBORNE) {
-                if (this.states.get(s)) return false;
-            }
-        }
-        return this.canMove;
-    }
-
-    @Override
-    public void handleCharm(UserActor charmer, int duration) {
-        this.addState(ActorState.CHARMED, 0d, duration);
-        this.charmer = charmer;
-    }
+    public void attack(Actor a) {}
 
     @Override
     public void setTarget(Actor a) {}

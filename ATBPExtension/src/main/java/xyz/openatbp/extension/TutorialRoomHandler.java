@@ -408,7 +408,7 @@ public class TutorialRoomHandler extends RoomHandler {
                             () -> {
                                 jakeBot =
                                         new TutorialBot(
-                                                parentExt, room, 1, new Point2D.Float(48, 0), 1);
+                                                parentExt, room, 1, new Point2D.Float(48, 0));
                                 jakeBot.setLocation(new Point2D.Float(48, 0));
                                 ExtensionCommands.snapActor(
                                         parentExt,

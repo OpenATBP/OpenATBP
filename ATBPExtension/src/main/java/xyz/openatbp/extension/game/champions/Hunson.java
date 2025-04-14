@@ -159,7 +159,7 @@ public class Hunson extends UserActor {
             this.passiveActivated = true;
             this.canUsePassive = false;
             this.passiveStartTime = System.currentTimeMillis();
-            this.attackCooldown = 500;
+            basicAttackReset();
             ExtensionCommands.playSound(
                     this.parentExt,
                     this.room,

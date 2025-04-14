@@ -1703,6 +1703,10 @@ public class UserActor extends Actor {
                 this.team);
     }
 
+    protected void basicAttackReset() {
+        attackCooldown = 500;
+    }
+
     private Point2D getRespawnPoint() {
         int teamNumber =
                 parentExt.getRoomHandler(this.room.getName()).getTeamNumber(this.id, this.team);

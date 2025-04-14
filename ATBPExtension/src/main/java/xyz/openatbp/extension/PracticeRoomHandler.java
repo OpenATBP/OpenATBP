@@ -47,7 +47,7 @@ public class PracticeRoomHandler extends RoomHandler {
                     1,
                     0f);
 
-            finnBot = new Bot(parentExt, room, "finn", 1, BOT_LOCATION, 1);
+            finnBot = new Bot(parentExt, room, "bot_finn", 1, BOT_LOCATION);
         }
     }
 

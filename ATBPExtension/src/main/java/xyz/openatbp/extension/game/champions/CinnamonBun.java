@@ -224,7 +224,7 @@ public class CinnamonBun extends UserActor {
                                     this, getSpellDamage(spellData, true), spellData, false);
                         }
                     }
-                    this.attackCooldown = 0;
+                    basicAttackReset();
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
