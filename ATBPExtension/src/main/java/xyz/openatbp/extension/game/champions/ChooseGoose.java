@@ -595,7 +595,7 @@ public class ChooseGoose extends UserActor {
         public void setTarget(Actor a) {}
     }
 
-    private class GooseProjectile extends Projectile {
+    public class GooseProjectile extends Projectile {
         private final JsonNode spellData;
 
         public GooseProjectile(

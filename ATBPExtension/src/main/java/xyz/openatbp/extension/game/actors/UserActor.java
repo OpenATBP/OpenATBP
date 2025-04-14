@@ -1490,7 +1490,7 @@ public class UserActor extends Actor {
         } else this.canMove = true;
     }
 
-    public float getRotation(Point2D dest) { // have no idea how this works but it works
+    public float getRotation(Point2D dest) { // lmao
         double dx = dest.getX() - this.location.getX();
         double dy = dest.getY() - this.location.getY();
         double angleRad = Math.atan2(dy, dx);

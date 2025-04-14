@@ -56,7 +56,7 @@ public class Billy extends UserActor {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
             for (Actor a : impactedActors) {
                 double damageReduction = 1 - (0.15 * impactedActors.size());
-                if (damageReduction >= 0.7d) damageReduction = 0.7d;
+                if (damageReduction <= 0.5d) damageReduction = 0.5d;
                 a.addToDamageQueue(
                         this,
                         (this.getSpellDamage(spellData, false) / 5d) * damageReduction,

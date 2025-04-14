@@ -85,6 +85,7 @@ public class RattleBalls extends UserActor {
             for (Projectile p : parentExt.getRoomHandler(room.getName()).getActiveProjectiles()) {
                 if (p.getClass() != LSP.LSPUltProjectile.class
                         && p.getClass() != BMO.BMOUltProjectile.class
+                        && p.getClass() != ChooseGoose.GooseProjectile.class
                         && p.getTeam() != this.team
                         && p.getLocation().distance(this.location) <= 2f) {
                     p.destroy();
