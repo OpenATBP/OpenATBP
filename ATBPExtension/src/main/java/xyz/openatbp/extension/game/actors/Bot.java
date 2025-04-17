@@ -70,6 +70,8 @@ public class Bot extends Actor {
     private boolean[] wallsActivated = {false, false, false, false}; // NORTH, EAST, SOUTH, WEST
     private Long lastPolymorphTime = 0L;
     private boolean isPolymorphed = false;
+    private UserActor enemy;
+    private Long enemyDmgTime = 0L;
 
     public Bot(ATBPExtension parentExt, Room room, String avatar, int team, Point2D spawnPoint) {
         this.room = room;
@@ -92,8 +94,6 @@ public class Bot extends Actor {
             ExtensionCommands.createActor(
                     parentExt, room, id + "moveDebug", "creep1", location, 0f, 1);
         }
-        /*xp += 300;
-        checkLevelUp();*/
         levelUpStats();
     }
 
@@ -102,8 +102,10 @@ public class Bot extends Actor {
         dead = true;
         currentHealth = 0;
         canMove = false;
-        furyStacks = 0;
-        furyTarget = null;
+
+        if (isPolymorphed) {
+            ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
+        }
 
         if (qActive) {
             handleQDeath();
@@ -112,6 +114,9 @@ public class Bot extends Actor {
         if (furyTarget != null) {
             ExtensionCommands.removeFx(parentExt, room, furyTarget.getId() + "_mark" + furyStacks);
         }
+
+        furyStacks = 0;
+        furyTarget = null;
 
         if (!getState(ActorState.AIRBORNE)) stopMoving();
         ExtensionCommands.knockOutActor(parentExt, room, id, a.getId(), deathTime);
@@ -149,6 +154,10 @@ public class Bot extends Actor {
 
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
+        if (a.equals(enemy) && location.distance(a.getLocation()) <= 8) {
+            enemyDmgTime = System.currentTimeMillis();
+        }
+
         if (pickedUpHealthPack) {
             pickedUpHealthPack = false;
             setStat("healthRegen", getStat("healthRegen") - 15);
@@ -214,6 +223,10 @@ public class Bot extends Actor {
         if (dead) return;
         handleDamageQueue();
         handleActiveEffects();
+
+        if (msRan == 3000) {
+            enemy = parentExt.getRoomHandler(room.getName()).getPlayers().get(0);
+        }
 
         if (attackCooldown > 0) attackCooldown -= 100;
 
@@ -379,6 +392,14 @@ public class Bot extends Actor {
         if (getPHealth() < 0.2) {
             Console.debugLog("Return to base");
             moveWithCollision(spawnPoint);
+            return;
+        }
+
+        if (System.currentTimeMillis() - enemyDmgTime <= 5000
+                && !enemy.isDead()
+                && shouldAttackTarget(enemy)) {
+            Console.debugLog("Attack Player");
+            attemptAttack(enemy);
             return;
         }
 
