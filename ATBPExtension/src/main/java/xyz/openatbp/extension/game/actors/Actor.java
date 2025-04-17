@@ -52,6 +52,7 @@ public abstract class Actor {
     protected Map<String, EffectHandler> effectHandlers = new HashMap<>();
     protected Map<String, FxHandler> fxHandlers = new HashMap<>();
     protected UserActor charmer;
+    protected long lastHitElectrodeGun = -1;
 
     public double getPHealth() {
         return currentHealth / maxHealth;
@@ -399,7 +400,10 @@ public abstract class Actor {
                                 this.parentExt.getRoomHandler(this.room.getName()),
                                 this.location,
                                 2f)) {
-                    if (actor.getTeam() == this.team && !actor.getId().equalsIgnoreCase(this.id)) {
+                    if (actor.getTeam() == this.team
+                            && !actor.getId().equalsIgnoreCase(this.id)
+                            && actor.canHitWithElectrode()) {
+                        a.hitWithElectrode();
                         actor.addToDamageQueue(
                                 a,
                                 damage * ChampionData.getCustomJunkStat(ua, "junk_2_electrode_gun"),
@@ -411,6 +415,14 @@ public abstract class Actor {
                 }
             }
         }
+    }
+
+    public void hitWithElectrode() {
+        this.lastHitElectrodeGun = System.currentTimeMillis();
+    }
+
+    public boolean canHitWithElectrode() {
+        return System.currentTimeMillis() - this.lastHitElectrodeGun > 1000;
     }
 
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
@@ -425,7 +437,7 @@ public abstract class Actor {
                     Console.debugLog("Increased damage from peppermint tank.");
                 }
             }
-            this.handleElectrodeGun(ua, a, damage, attackData);
+            // this.handleElectrodeGun(ua, a, damage, attackData);
             if (ua.lichHandDamageApplies(this)) {
                 Console.debugLog("Lich hand damage " + ua.getLichHandTimesHit());
                 damage += ((double) damage * (0.1d * ua.getLichHandTimesHit()));
@@ -576,8 +588,8 @@ public abstract class Actor {
                     this.getPlayerStat("spellResist") - attacker.getPlayerStat("spellPenetration");
             if (armor < 0) armor = 0;
             if (spellResist < 0) spellResist = 0;
-            if (armor > 80) armor = 80;
-            if (spellResist > 70) spellResist = 70;
+            if (armor > 65) armor = 65;
+            if (spellResist > 65) spellResist = 65;
             double modifier;
             if (attackType == AttackType.PHYSICAL) {
                 modifier = (100 - armor) / 100d; // Max Armor 80

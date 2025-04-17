@@ -1,12 +1,12 @@
 {
   "junk": {
-    "name": "junk_2_gauntlet_of_the_hero_name",
-    "description": "junk_2_gauntlet_of_the_hero_description",
-    "modDescription1": "junk_2_gauntlet_of_the_hero_mod1",
-    "modDescription2": "junk_2_gauntlet_of_the_hero_mod2",
-    "modDescription3": "",
+    "name": "junk_2_peppermint_tank_name",
+    "description": "junk_2_peppermint_tank_description",
+    "modDescription1": "junk_2_peppermint_tank_mod1",
+    "modDescription2": "junk_2_peppermint_tank_mod2",
+    "modDescription3": "junk_2_peppermint_tank_mod3",
     "mod1Icon": "stat_power_damage",
-    "mod2Icon": "stat_shield_pen",
+    "mod2Icon": "stat_health",
     "mod3Icon": "stat_icon_blank",
     "category": 2,
     "mods": {
@@ -19,9 +19,9 @@
         },
         {
           "point": 1,
-          "stat": "spellPenetration",
+          "stat": "health",
           "type": 0,
-          "value": 10
+          "value": 25
         },
         {
           "point": 2,
@@ -31,9 +31,9 @@
         },
         {
           "point": 2,
-          "stat": "spellPenetration",
+          "stat": "health",
           "type": 0,
-          "value": 20
+          "value": 50
         },
         {
           "point": 3,
@@ -43,9 +43,9 @@
         },
         {
           "point": 3,
-          "stat": "spellPenetration",
+          "stat": "health",
           "type": 0,
-          "value": 30
+          "value": 100
         },
         {
           "point": 4,
@@ -55,9 +55,9 @@
         },
         {
           "point": 4,
-          "stat": "spellPenetration",
+          "stat": "health",
           "type": 0,
-          "value": 45
+          "value": 175
         }
       ]
     },

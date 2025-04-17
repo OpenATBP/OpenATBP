@@ -1,12 +1,12 @@
 {
   "junk": {
-    "name": "junk_2_gauntlet_of_the_hero_name",
-    "description": "junk_2_gauntlet_of_the_hero_description",
-    "modDescription1": "junk_2_gauntlet_of_the_hero_mod1",
-    "modDescription2": "junk_2_gauntlet_of_the_hero_mod2",
-    "modDescription3": "",
+    "name": "junk_2_cosmic_gauntlet_name",
+    "description": "junk_2_cosmic_gauntlet_description",
+    "modDescription1": "junk_2_cosmic_gauntlet_mod1",
+    "modDescription2": "junk_2_cosmic_gauntlet_mod2",
+    "modDescription3": "junk_2_cosmic_gauntlet_mod3",
     "mod1Icon": "stat_power_damage",
-    "mod2Icon": "stat_shield_pen",
+    "mod2Icon": "stat_attack_damage",
     "mod3Icon": "stat_icon_blank",
     "category": 2,
     "mods": {
@@ -15,49 +15,49 @@
           "point": 1,
           "stat": "spellDamage",
           "type": 0,
-          "value": 10
+          "value": 15
         },
         {
           "point": 1,
-          "stat": "spellPenetration",
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 2,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 40
+        },
+        {
+          "point": 2,
+          "stat": "attackDamage",
           "type": 0,
           "value": 10
         },
         {
-          "point": 2,
+          "point": 3,
           "stat": "spellDamage",
+          "type": 0,
+          "value": 75
+        },
+        {
+          "point": 3,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 15
+        },
+        {
+          "point": 4,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 115
+        },
+        {
+          "point": 4,
+          "stat": "attackDamage",
           "type": 0,
           "value": 25
-        },
-        {
-          "point": 2,
-          "stat": "spellPenetration",
-          "type": 0,
-          "value": 20
-        },
-        {
-          "point": 3,
-          "stat": "spellDamage",
-          "type": 0,
-          "value": 50
-        },
-        {
-          "point": 3,
-          "stat": "spellPenetration",
-          "type": 0,
-          "value": 30
-        },
-        {
-          "point": 4,
-          "stat": "spellDamage",
-          "type": 0,
-          "value": 100
-        },
-        {
-          "point": 4,
-          "stat": "spellPenetration",
-          "type": 0,
-          "value": 45
         }
       ]
     },

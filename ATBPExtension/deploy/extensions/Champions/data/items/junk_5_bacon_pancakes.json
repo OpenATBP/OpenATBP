@@ -15,25 +15,25 @@
           "point": 1,
           "stat": "health",
           "type": 0,
-          "value": 75
+          "value": 100
         },
         {
           "point": 2,
           "stat": "health",
           "type": 0,
-          "value": 150
+          "value": 225
         },
         {
           "point": 3,
           "stat": "health",
           "type": 0,
-          "value": 225
+          "value": 350
         },
         {
           "point": 4,
           "stat": "health",
           "type": 0,
-          "value": 325
+          "value": 500
         }
       ]
     },

@@ -1,42 +1,42 @@
 {
   "junk": {
-    "name": "junk_4_wizards_cloak_name",
-    "description": "junk_4_wizards_cloak_description",
-    "modDescription1": "junk_4_wizards_cloak_mod1",
-    "modDescription2": "",
+    "name": "junk_3_globs_helmet_name",
+    "description": "junk_3_globs_helmet_description",
+    "modDescription1": "junk_3_globs_helmet_mod1",
+    "modDescription2": "junk_3_globs_helmet_mod2",
     "modDescription3": "",
-    "mod1Icon": "stat_shield",
+    "mod1Icon": "stat_armor",
     "mod2Icon": "stat_icon_blank",
     "mod3Icon": "stat_icon_blank",
-    "category": 4,
+    "category": 3,
     "mods": {
       "mod": [
         {
           "point": 1,
-          "stat": "spellResist",
+          "stat": "armor",
           "type": 0,
           "value": 10
         },
         {
           "point": 2,
-          "stat": "spellResist",
+          "stat": "armor",
           "type": 0,
-          "value": 20
+          "value": 15
         },
         {
           "point": 3,
-          "stat": "spellResist",
+          "stat": "armor",
           "type": 0,
-          "value": 30
+          "value": 25
         },
         {
           "point": 4,
-          "stat": "spellResist",
+          "stat": "armor",
           "type": 0,
           "value": 50
         }
       ]
     },
-    "script": ""
+    "script": "junk/battle_moon_intercept.lua"
   }
 }

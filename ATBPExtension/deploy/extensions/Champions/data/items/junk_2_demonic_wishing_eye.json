@@ -24,12 +24,6 @@
           "value": 3
         },
         {
-          "point": 1,
-          "stat": "criticalChance",
-          "type": 0,
-          "value": 5
-        },
-        {
           "point": 2,
           "stat": "spellDamage",
           "type": 0,
@@ -38,12 +32,6 @@
         {
           "point": 2,
           "stat": "spellVamp",
-          "type": 0,
-          "value": 5
-        },
-        {
-          "point": 2,
-          "stat": "criticalChance",
           "type": 0,
           "value": 5
         },
@@ -60,12 +48,6 @@
           "value": 7
         },
         {
-          "point": 3,
-          "stat": "criticalChance",
-          "type": 0,
-          "value": 5
-        },
-        {
           "point": 4,
           "stat": "spellDamage",
           "type": 0,
@@ -76,12 +58,6 @@
           "stat": "spellVamp",
           "type": 0,
           "value": 10
-        },
-        {
-          "point": 4,
-          "stat": "criticalChance",
-          "type": 0,
-          "value": 5
         }
       ]
     },

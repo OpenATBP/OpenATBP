@@ -6,7 +6,7 @@
     "modDescription2": "junk_5_the_enchiridion_mod2",
     "modDescription3": "junk_5_the_enchiridion_mod3",
     "mod1Icon": "stat_health",
-    "mod2Icon": "stat_attack_speed",
+    "mod2Icon": "stat_attack_damage",
     "mod3Icon": "stat_crit_chance",
     "category": 5,
     "mods": {
@@ -15,73 +15,73 @@
           "point": 1,
           "stat": "health",
           "type": 0,
-          "value": 25
+          "value": 50
         },
         {
           "point": 1,
-          "stat": "attackSpeed",
-          "type": 0,
-          "value": -75
-        },
-        {
-          "point": 1,
-          "stat": "criticalChance",
-          "type": 0,
-          "value": 3
-        },
-        {
-          "point": 2,
-          "stat": "health",
-          "type": 0,
-          "value": 75
-        },
-        {
-          "point": 2,
-          "stat": "attackSpeed",
-          "type": 0,
-          "value": -125
-        },
-        {
-          "point": 2,
-          "stat": "criticalChance",
+          "stat": "attackDamage",
           "type": 0,
           "value": 5
         },
         {
-          "point": 3,
+          "point": 1,
+          "stat": "criticalChance",
+          "type": 0,
+          "value": 1
+        },
+        {
+          "point": 2,
           "stat": "health",
           "type": 0,
           "value": 100
         },
         {
-          "point": 3,
-          "stat": "attackSpeed",
+          "point": 2,
+          "stat": "attackDamage",
           "type": 0,
-          "value": -200
+          "value": 10
+        },
+        {
+          "point": 2,
+          "stat": "criticalChance",
+          "type": 0,
+          "value": 2
+        },
+        {
+          "point": 3,
+          "stat": "health",
+          "type": 0,
+          "value": 175
+        },
+        {
+          "point": 3,
+          "stat": "attackDamage",
+          "type": 0,
+          "value": 15
         },
         {
           "point": 3,
           "stat": "criticalChance",
           "type": 0,
-          "value": 7
+          "value": 4
         },
         {
           "point": 4,
           "stat": "health",
           "type": 0,
-          "value": 150
+          "value": 275
         },
         {
           "point": 4,
-          "stat": "attackSpeed",
+          "stat": "attackDamage",
           "type": 0,
-          "value": -275
+          "value": 25
         },
         {
           "point": 4,
           "stat": "criticalChance",
           "type": 0,
-          "value": 10
+          "value": 8
         }
       ]
     },
