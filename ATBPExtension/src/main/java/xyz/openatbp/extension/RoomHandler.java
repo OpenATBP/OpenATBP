@@ -1343,7 +1343,9 @@ public abstract class RoomHandler implements Runnable {
     }
 
     public boolean isPracticeMap() {
-        return room.getGroupId().equals("Practice") || room.getGroupId().equals("Tutorial");
+        return room.getGroupId().equals("Practice")
+                || room.getGroupId().equals("Tutorial")
+                || room.getGroupId().equals("ARAM");
     }
 
     public List<Projectile> getActiveProjectiles() {

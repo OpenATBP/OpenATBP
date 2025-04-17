@@ -754,4 +754,25 @@ public class ChampionData {
         "kill7_you_are_demon",
         "kill6_you_are_god"
     };
+
+    public static String getRandomBag() {
+        String[] belts = {
+            "belt_beta_adc",
+            "belt_beta_anti_mage",
+            "belt_beta_anti_tank",
+            "belt_beta_assassin",
+            "belt_beta_bruiser",
+            "belt_beta_hybrid",
+            "belt_beta_jungle",
+            "belt_beta_laner",
+            "belt_beta_power",
+            "belt_beta_risk",
+            "belt_beta_rng",
+            "belt_beta_support",
+            "belt_beta_tank",
+            "belt_beta_vamp",
+            "belt_beta_warlock"
+        };
+        return belts[(int) Math.round(Math.random() * belts.length - 1)];
+    }
 }

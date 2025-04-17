@@ -3,6 +3,28 @@ const config = require('./config.js');
 const matchmaking = require('./matchmaking.js');
 const dbOperations = require('./db-operations.js');
 
+const heroes = [
+  'billy',
+  'bmo',
+  'cinnamonbun',
+  'finn',
+  'fionna',
+  'flame',
+  'gunter',
+  'hunson',
+  'iceking',
+  'jake',
+  'lemongrab',
+  'lich',
+  'lsp',
+  'magicman',
+  'marceline',
+  'neptr',
+  'peppermintbutler',
+  'princessbubblegum',
+  'rattleballs',
+];
+
 var queues = [];
 var users = [];
 var teams = [];
@@ -520,9 +542,13 @@ function updateMatchmaking() {
 function startGame(players, type) {
   //Note, custom games do not use this.
   var queueSize = 1;
+  var aram = false;
   if (type.includes('p') && type != 'practice')
-    queueSize = Number(type.replace('p', ''));
-  if (queueSize == 3) queueSize = 4; //Turns bots to 2v2
+    queueSize = Number(type.replace('aram_', '').replace('p', ''));
+  if (type.includes('aram')) {
+    queueSize = 2; //Testing value for aram
+    aram = true;
+  }
   var allTeams = matchmaking.getRandomTeams(players, teams, queueSize / 2);
   console.log(allTeams);
   if (allTeams == undefined) return;
@@ -547,10 +573,9 @@ function startGame(players, type) {
     purple: [],
     ready: 0,
     max: queueSize,
-    inGame: false,
+    inGame: aram,
     endTime: Date.now() + 61 * 1000,
   };
-
   for (var bp of blue) {
     var user = users.find((u) => u.player.teg_id == bp.teg_id);
     if (user == undefined) {
@@ -561,7 +586,9 @@ function startGame(players, type) {
         name: user.player.name,
         player: user.player.player,
         teg_id: `${user.player.teg_id}`,
-        avatar: 'unassigned',
+        avatar: !aram
+          ? 'unassigned'
+          : heroes[Math.floor(Math.random() * (heroes.length - 1))],
         is_ready: false,
       };
       queueObj.blue.push(playerObj);
@@ -578,7 +605,9 @@ function startGame(players, type) {
           name: user.player.name,
           player: user.player.player,
           teg_id: `${user.player.teg_id}`,
-          avatar: 'unassigned',
+          avatar: !aram
+            ? 'unassigned'
+            : heroes[Math.floor(Math.random() * (heroes.length - 1))],
           is_ready: false,
         };
         queueObj.purple.push(playerObj);
@@ -719,8 +748,8 @@ function leaveTeam(socket, disconnected) {
 function joinQueue(sockets, type) {
   var queueSize = 1;
   if (type.includes('p') && type != 'practice')
-    queueSize = Number(type.replace('p', ''));
-  if (queueSize == 3) queueSize = 4; //Turns bots to 2v2
+    queueSize = Number(type.replace('aram_').replace('').replace('p', ''));
+  if (type.includes('aram')) queueSize = 2; //Testing number for ARAM
   for (var s of sockets) {
     if (
       s.player.queueData.queueBan == -1 ||
@@ -1099,6 +1128,7 @@ function handleRequest(jsonString, socket) {
       */
       var act = jsonObject['payload'].act.split('_');
       var type = act[act.length - 1];
+      if (act[act.length - 2] == 'aram') type = 'aram_6p';
       for (var q of queues.filter((qu) =>
         qu.players.includes(socket.player.teg_id)
       )) {
@@ -1121,6 +1151,7 @@ function handleRequest(jsonString, socket) {
       var queue = queues.find((q) => q.players.includes(socket.player.teg_id));
       if (queue != undefined) {
         if (queue.ready == queue.max) return;
+        if (queue.type == 'aram_6p') return;
         var blueMember = queue.blue.find(
           (bp) => bp.teg_id == socket.player.teg_id
         );
