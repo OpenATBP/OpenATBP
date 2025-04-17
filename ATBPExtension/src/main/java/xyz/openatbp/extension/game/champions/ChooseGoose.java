@@ -628,7 +628,8 @@ public class ChooseGoose extends UserActor {
             return a.getActorType() == ActorType.PLAYER
                     || a.getAvatar().equals("keeoth")
                     || a.getAvatar().equals("goomonster")
-                    || a.getAvatar().equals("ooze_monster");
+                    || a.getAvatar().equals("ooze_monster")
+                    || a.getId().equals("finn_1");
         }
 
         @Override

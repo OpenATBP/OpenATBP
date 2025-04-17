@@ -581,15 +581,21 @@ public abstract class RoomHandler implements Runnable {
         // increase, instant capture, status
         // increase
         Point2D altarLocation = getAltarLocation(altarIndex);
-        List<UserActor> uasInArea = Champion.getUserActorsInRadius(this, altarLocation, 2);
-        List<UserActor> purplePlayers = new ArrayList<>();
-        List<UserActor> bluePlayers = new ArrayList<>();
+        List<Actor> actorsInRadius = Champion.getActorsInRadius(this, altarLocation, 2);
 
-        for (UserActor ua : uasInArea) {
-            if (ua.getTeam() == 0 && ua.getHealth() > 0 && !ua.isDead()) {
-                purplePlayers.add(ua);
-            } else if (ua.getTeam() == 1 && ua.getHealth() > 0 && !ua.isDead()) {
-                bluePlayers.add(ua);
+        List<Actor> eligibleActors =
+                actorsInRadius.stream()
+                        .filter(a -> a instanceof UserActor || a instanceof Bot)
+                        .collect(Collectors.toList());
+
+        List<Actor> bluePlayers = new ArrayList<>();
+        List<Actor> purplePlayers = new ArrayList<>();
+
+        for (Actor eA : eligibleActors) {
+            if (eA.getTeam() == 0 && eA.getHealth() > 0 && !eA.isDead()) {
+                purplePlayers.add(eA);
+            } else if (eA.getTeam() == 1 && eA.getHealth() > 0 && !eA.isDead()) {
+                bluePlayers.add(eA);
             }
         }
 
@@ -704,6 +710,12 @@ public abstract class RoomHandler implements Runnable {
         int altarNum = getAltarNum(i);
 
         ExtensionCommands.updateAltar(this.parentExt, this.room, altarNum, team, true);
+
+        handleAltarCaptureBuff(i, team, altarId, gooUsers);
+    }
+
+    protected void handleAltarCaptureBuff(
+            int i, int team, String altarId, List<UserActor> gooUsers) {
         for (UserActor u : this.players) {
             if (u.getTeam() == team) {
                 try {
@@ -753,13 +765,18 @@ public abstract class RoomHandler implements Runnable {
         }
     }
 
-    private int getAltarNum(int i) { // TODO: probably useless for anything else
+    private int getAltarNum(int i) {
         int altarNum;
         String groupId = this.room.getGroupId();
         if (groupId.equals("PVP") || groupId.equals("PVE")) {
             altarNum = i == 0 ? 1 : i == 1 ? 0 : i;
-        } else {
-            altarNum = i == 1 ? 2 : i;
+        } else { // i0 - bot, altar
+
+            // altar num 0 - top
+            // altar num 2 - bot
+            // i 0 - bot
+            // i 1 = top
+            altarNum = i == 0 ? 2 : 0;
         }
         return altarNum;
     }
@@ -1273,6 +1290,10 @@ public abstract class RoomHandler implements Runnable {
 
     public List<Tower> getTowers() {
         return this.towers;
+    }
+
+    public List<BaseTower> getBaseTowers() {
+        return this.baseTowers;
     }
 
     protected boolean canSpawnSupers(int team) {

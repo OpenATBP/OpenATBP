@@ -17,7 +17,7 @@ public class PracticeRoomHandler extends RoomHandler {
 
     private HashMap<User, UserActor> dcPlayers = new HashMap<>();
     private List<Actor> companions = new ArrayList<>();
-    private Point2D BOT_LOCATION = new Point2D.Float(-47.5f, -4);
+    private Point2D finnBotRespawnPoint;
     private Bot finnBot;
 
     public PracticeRoomHandler(ATBPExtension parentExt, Room room) {
@@ -34,28 +34,46 @@ public class PracticeRoomHandler extends RoomHandler {
             towers.add(new Tower(parentExt, room, key, 1, towers1.get(key)));
         }
         if (this.players.size() == 1) {
-            ExtensionCommands.createWorldFX(
-                    parentExt,
-                    room,
-                    "bot_ring",
-                    "fx_aggrorange_3",
-                    "bot_ring" + room,
-                    1000 * 60 * 15,
-                    (float) BOT_LOCATION.getX(),
-                    (float) BOT_LOCATION.getY(),
-                    false,
-                    1,
-                    0f);
-
-            finnBot = new Bot(parentExt, room, "bot_finn", 1, BOT_LOCATION);
+            Point2D purpleSpawn = MapData.L1_PURPLE_SPAWNS[1];
+            float x = (float) purpleSpawn.getX();
+            float finnBotSpawnX = x * -1;
+            finnBotRespawnPoint = new Point2D.Float(finnBotSpawnX, (float) purpleSpawn.getY());
+            finnBot = new Bot(parentExt, room, "finn", 1, finnBotRespawnPoint);
         }
     }
 
     @Override
     public void run() {
         super.run();
-        if (finnBot != null) {
+        if (finnBot != null && !gameOver) {
             finnBot.update(mSecondsRan);
+        }
+    }
+
+    @Override
+    protected void handleAltarCaptureBuff(
+            int i, int team, String altarId, List<UserActor> gooUsers) {
+        super.handleAltarCaptureBuff(i, team, altarId, gooUsers);
+
+        if (room.getGroupId().equals("Practice") && team == 1) {
+            int duration = 1000 * 60;
+
+            if (i == 1) {
+                finnBot.addEffect(
+                        "attackDamage",
+                        finnBot.getStat("attackDamage") * 0.25,
+                        duration,
+                        "altar_buff_offense",
+                        "");
+                finnBot.addEffect("spellDamage", finnBot.getStat("attackDamage") * 0.25, duration);
+            } else {
+                double addArmor = finnBot.getStat("armor") * 0.25d;
+                double addMR = finnBot.getStat("spellResist") * 0.25d;
+                if (addArmor == 0) addArmor = 5d;
+                if (addMR == 0) addMR = 5d;
+                finnBot.addEffect("armor", addArmor, duration, "altar_buff_defense", "");
+                finnBot.addEffect("spellResist", addMR, duration);
+            }
         }
     }
 
@@ -123,8 +141,8 @@ public class PracticeRoomHandler extends RoomHandler {
     @Override
     public int getAltarStatus(Point2D location) {
         Point2D topAltar = new Point2D.Float(0f, MapData.L1_AALTAR_Z);
-        if (location.equals(topAltar)) return this.altarStatus[0];
-        else return this.altarStatus[1];
+        if (location.equals(topAltar)) return this.altarStatus[1];
+        else return this.altarStatus[0];
     }
 
     @Override
@@ -160,6 +178,27 @@ public class PracticeRoomHandler extends RoomHandler {
                             spawns.putInt(s, 0);
                             break;
                         }
+                    }
+                    if (insideHealth(finnBot.getLocation(), getHealthNum(s))) {
+                        Point2D healthLoc = getHealthLocation(getHealthNum(s));
+                        ExtensionCommands.removeFx(parentExt, room, s + "_fx");
+                        ExtensionCommands.createActorFX(
+                                parentExt,
+                                room,
+                                finnBot.getId(),
+                                "picked_up_health_cyclops",
+                                2000,
+                                s + "_fx2",
+                                true,
+                                "",
+                                false,
+                                false,
+                                finnBot.getTeam());
+                        ExtensionCommands.playSound(
+                                parentExt, room, "", "sfx_health_picked_up", healthLoc);
+                        finnBot.handleCyclopsHealing();
+                        spawns.putInt(s, 0);
+                        break;
                     }
                 }
             }

@@ -55,8 +55,17 @@ public class Billy extends UserActor {
                     Champion.getEnemyActorsInRadius(handler, this.team, this.ultLocation, 2.25f);
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
             for (Actor a : impactedActors) {
-                double damageReduction = 1 - (0.15 * impactedActors.size());
-                if (damageReduction <= 0.5d) damageReduction = 0.5d;
+
+                double damageReduction;
+                int numActors = impactedActors.size();
+
+                if (numActors == 1 || numActors == 0) {
+                    damageReduction = 1.0;
+                } else {
+                    double calculatedReduction = 1 - (0.15 * (numActors - 1));
+                    damageReduction = Math.max(0.4, calculatedReduction);
+                }
+
                 a.addToDamageQueue(
                         this,
                         (this.getSpellDamage(spellData, false) / 5d) * damageReduction,

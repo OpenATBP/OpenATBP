@@ -231,6 +231,9 @@ public class Tower extends Actor {
             }
             this.parentExt.getRoomHandler(this.room.getName()).addScore(earner, a.getTeam(), 50);
         }
+        if (target != null && target instanceof Bot) {
+            ExtensionCommands.removeFx(parentExt, room, id + "_target");
+        }
     }
 
     protected String getTowerDownSound(UserActor ua) {
@@ -294,19 +297,18 @@ public class Tower extends Actor {
                             }
                         } else if (!hasMinion
                                 && (a.getActorType() == ActorType.MINION
-                                        || a.getActorType()
-                                                == ActorType
-                                                        .COMPANION)) { // If minions have not been
+                                        || a.getActorType() == ActorType.COMPANION
+                                                && !(a
+                                                        instanceof
+                                                        Bot))) { // If minions have not been
                             // found yet but it just
                             // found
                             // one, sets the first target to be searched
                             hasMinion = true;
                             potentialTarget = a;
                             distance = a.getLocation().distance(this.location);
-                        } else if (!hasMinion
-                                && a.getActorType()
-                                        == ActorType
-                                                .PLAYER) { // If potential target is a player and no
+                        } else if (!hasMinion && a.getActorType() == ActorType.PLAYER
+                                || a instanceof Bot) { // If potential target is a player and no
                             // minion has been found,
                             // starts processing closest player
                             if (a.getLocation().distance(this.location) < distance) {
@@ -402,10 +404,14 @@ public class Tower extends Actor {
                     }
                     if (this.attackCooldown > 0) this.reduceAttackCooldown();
                     if (nearbyActors.isEmpty()) {
-                        if (this.target != null && this.target.getActorType() == ActorType.PLAYER) {
-                            UserActor ua = (UserActor) this.target;
-                            ExtensionCommands.removeFx(
-                                    this.parentExt, ua.getUser(), this.id + "_aggro");
+                        if (this.target != null
+                                && (this.target.getActorType() == ActorType.PLAYER
+                                        || target instanceof Bot)) {
+                            if (target.getActorType() == ActorType.PLAYER) {
+                                UserActor ua = (UserActor) this.target;
+                                ExtensionCommands.removeFx(
+                                        this.parentExt, ua.getUser(), this.id + "_aggro");
+                            }
                             ExtensionCommands.removeFx(
                                     this.parentExt, this.room, this.id + "_target");
                         }
