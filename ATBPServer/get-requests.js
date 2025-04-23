@@ -94,13 +94,15 @@ module.exports = {
   handlePlayerFriends: function (username, onlinePlayers, friendsList) {
     // /service/presence/roster/{TEGiid} RETURNS friends list from db
     return new Promise(function (resolve, reject) {
-      var friends = [];
-      for (var p of onlinePlayers) {
+      let friends = [];
+      for (let p of onlinePlayers) {
         if (p.username != username) {
+          let pfp = p.pfp || 'Default';
+          let pfpPath = `assets/pfp/${pfp}.jpg`;
           friends.push({
             user_id: p.username,
             name: p.name,
-            avatar: 'assets/pfp/default.jpg',
+            avatar: pfpPath,
             options: {
               location: p.location,
               game: 'ATBP',

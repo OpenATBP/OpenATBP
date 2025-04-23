@@ -88,7 +88,11 @@ public class Bot extends Actor {
         this.spawnPoint = spawnPoint;
         this.displayName = "FINN BOT";
 
-        ExtensionCommands.createActor(parentExt, room, id, avatar, location, 0f, team);
+        Runnable create =
+                () ->
+                        ExtensionCommands.createActor(
+                                parentExt, room, id, avatar, location, 0f, team);
+        parentExt.getTaskScheduler().schedule(create, 200, TimeUnit.MILLISECONDS);
 
         if (MOVEMENT_DEBUG) {
             ExtensionCommands.createActor(

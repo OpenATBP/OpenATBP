@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Icon Shop</title>
+    <link rel="stylesheet" href="/css/icon-shop.css">
+</head>
+
+<body>
+<div id="user-info">
+    <img src="assets/pfp/Default.jpg" id="current-user-icon" class="rarity-common" alt="Current User Icon">
+    <p id="username"><%= userInfo.user?.dname ;%></p>
+    <div id="stats-row">
+        <p id="player-level"><%= userInfo.player?.dname ;%></p>
+        <img src="assets/ranks/1-0.png" id="rank" alt="Rank">
+        <div class="coin-display">
+            <img src="assets/icon_shop/coin.png" alt="Coins" id="coins-img">
+            <p id="coins"></p>
+        </div>
+    </div>
+    <div id="user-info2">
+        <p id="stat-playsPVP"><%= userInfo.player?.playsPVP ;%></p>
+        <p id="stat-winsPVP"><%= userInfo.player?.winsPVP ;%></p>
+        <p id="stat-kills"><%= userInfo.player?.kills ;%></p>
+        <p id="stat-largestSpree"><%= userInfo.player?.largestSpree ;%></p>
+        <p id="stat-largestMulti"><%= userInfo.player?.largestMulti ;%></p>
+    </div>
+    <button id="return-to-game-button" onclick="location.href='/'">Return to Game</button>
+</div>
+
+<div id="icon-details" class="is-empty">
+    <h2 id="details-icon-heading"></h2>
+    <img id="details-icon-img" src="" alt="">
+    <h3 id="details-icon-name">Select an Icon</h3>
+    <p id="details-icon-rarity"></p>
+    <div id="details-actions"></div>
+</div>
+
+<div id="icon-grid"></div>
+
+<script>
+  let currentlySelectedIconDiv = null;
+  let userInfo = '<%- JSON.stringify(userInfo) %>';
+  let allIconsData = '<%- JSON.stringify(allIconsData) %>';
+
+  let currentUserData = JSON.parse(userInfo);
+  let runtimeIconData = JSON.parse(allIconsData);
+
+  function getRarityClass(rarityName) {
+    if (!rarityName) return 'rarity-common';
+    return `rarity-${rarityName.toLowerCase().replace(/\s+/g, '-')}`;
+  }
+
+  function populateIconGrid(iconData, gridElement) {
+    if (!gridElement) return;
+    gridElement.innerHTML = '';
+    for (const iconName in iconData) {
+      const data = iconData[iconName];
+      const iconDiv = document.createElement('div');
+      iconDiv.classList.add('icon');
+      iconDiv.dataset.iconName = iconName;
+      const img = document.createElement('img');
+      img.src = data.src;
+      img.alt = `icon ${iconName}`;
+      iconDiv.appendChild(img);
+      gridElement.appendChild(iconDiv);
+    }
+  }
+
+  function applyInitialVisualState(iconData, gridElement) {
+    if (!gridElement) return;
+    const allIconDivs = gridElement.querySelectorAll('.icon');
+    allIconDivs.forEach(iconDiv => {
+      const iconName = iconDiv.dataset.iconName;
+      if (!iconName || !iconData[iconName]) {
+        console.warn("Missing data or name for icon div:", iconDiv);
+        iconDiv.classList.add('rarity-common');
+        iconDiv.dataset.owned = "false";
+        return;
+      }
+      const data = iconData[iconName];
+      const rarityName = data.rarity || 'Common';
+      const isOwned = data.owned;
+      const rarityClass = getRarityClass(rarityName);
+
+      iconDiv.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic');
+      iconDiv.classList.add(rarityClass);
+      const existingIndicator = iconDiv.querySelector('.rarity-indicator');
+      if (existingIndicator) iconDiv.removeChild(existingIndicator);
+
+      let indicatorLetter = rarityName === 'Common' ? 'C' : rarityName === 'Blooby' ? 'B' : rarityName === 'Algebraic' ? 'A' : '?';
+      const indicatorSpan = document.createElement('span');
+      indicatorSpan.className = 'rarity-indicator';
+      indicatorSpan.textContent = indicatorLetter;
+      iconDiv.appendChild(indicatorSpan);
+      iconDiv.dataset.owned = isOwned ? "true" : "false";
+    });
+  }
+
+  function getRankImage(elo) {
+    if (elo > 439) return 'assets/ranks/4-4.png';
+    else if (elo > 379) return 'assets/ranks/4-3.png';
+    else if (elo > 319) return 'assets/ranks/4-2.png';
+    else if (elo > 259) return 'assets/ranks/4-1.png';
+    else if (elo > 198) return 'assets/ranks/4-0.png';
+    else if (elo > 167) return 'assets/ranks/3-3.png';
+    else if (elo > 136) return 'assets/ranks/3-2.png';
+    else if (elo > 105) return 'assets/ranks/3-1.png';
+    else if (elo > 72) return 'assets/ranks/3-0.png';
+    else if (elo > 56) return 'assets/ranks/2-2.png';
+    else if (elo > 40) return 'assets/ranks/2-1.png';
+    else if (elo > 23) return 'assets/ranks/2-0.png';
+    else if (elo > 11) return 'assets/ranks/1-1.png';
+    else return 'assets/ranks/1-0.png';
+  }
+
+  function updateUserInfoPanel(userData, localRuntimeIconData, elements) {
+    const {
+      usernameEl,
+      coinsEl,
+      playerLevelEl,
+      rankImgEl,
+      currentUserIcon,
+      statPlaysPVPEl,
+      statWinsPVPEl,
+      statKillsEl,
+      statLargestSpreeEl,
+      statLargestMultiEl
+    } = elements;
+    if (usernameEl) usernameEl.textContent = userData.user?.dname || 'Player';
+    if (coinsEl) coinsEl.textContent = userData.player?.coins?.toLocaleString() || '0';
+    if (playerLevelEl) playerLevelEl.textContent = userData.player?.rank || '1';
+
+    let elo = userData.player?.elo || 0;
+    let rankImage = getRankImage(elo);
+    let alt = "Unknown";
+    const slashIndex = rankImage.lastIndexOf('/');
+    const dotIndex = rankImage.lastIndexOf('.png');
+    if (slashIndex !== -1 && dotIndex !== -1 && dotIndex > slashIndex) {
+      alt = rankImage.slice(slashIndex + 1, dotIndex);
+    }
+    if (rankImgEl) {
+      rankImgEl.src = rankImage;
+      rankImgEl.alt = `Rank ${alt}`;
+    }
+
+    const currentIconName = userData.user?.pfp || 'Default';
+    const currentIconPath = `assets/pfp/${currentIconName}.jpg`;
+    let currentIconRarityName = 'Common';
+    let currentIconKey = currentIconName;
+
+    if (localRuntimeIconData[currentIconName]) {
+      currentIconRarityName = localRuntimeIconData[currentIconName].rarity || 'Common';
+    } else if (currentIconName !== 'Default') {
+      console.warn(`Could not find metadata for current PFP: ${currentIconName}`);
+    }
+
+    const currentRarityClass = getRarityClass(currentIconRarityName);
+    if (currentUserIcon) {
+      currentUserIcon.src = currentIconPath;
+      currentUserIcon.onerror = () => {
+        console.warn(`Icon image not found: ${currentIconPath}, using default.`);
+        currentUserIcon.src = 'icon_shop/user-icons/Default.jpg';
+        currentUserIcon.alt = 'Current Icon: Default';
+        currentUserIcon.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic');
+        currentUserIcon.classList.add('rarity-common');
+      };
+      currentUserIcon.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic');
+      currentUserIcon.classList.add(currentRarityClass);
+      currentUserIcon.alt = `Current Icon: ${currentIconKey}`;
+    }
+
+    if (statPlaysPVPEl) statPlaysPVPEl.textContent = `Ranked Plays: ${userData.player?.playsPVP || '0'}`;
+    if (statWinsPVPEl) statWinsPVPEl.textContent = `Ranked Wins: ${userData.player?.winsPVP || '0'}`;
+    if (statKillsEl) statKillsEl.textContent = `Total KOs: ${userData.player?.kills || '0'}`;
+    if (statLargestSpreeEl) statLargestSpreeEl.textContent = `Largest KO Spree: ${userData.player?.largestSpree || '0'}`;
+    if (statLargestMultiEl) statLargestMultiEl.textContent = `Largest Multi-KO: ${userData.player?.largestMulti || '0'}`;
+  }
+
+  function clearDetailsPanel(elements) {
+    const {
+      iconDetailsSection,
+      detailsIconImg,
+      detailsIconName,
+      detailsIconRarity,
+      detailsActionsContainer,
+      detailsHeading
+    } = elements;
+    if (!iconDetailsSection) return;
+    iconDetailsSection.classList.add('is-empty');
+    if (detailsIconImg) {
+      detailsIconImg.src = "";
+      detailsIconImg.alt = "";
+      detailsIconImg.className = '';
+      detailsIconImg.style.borderColor = '';
+    }
+    if (detailsIconName) detailsIconName.textContent = "Select an Icon";
+    if (detailsIconRarity) {
+      detailsIconRarity.textContent = "";
+      detailsIconRarity.className = '';
+      detailsIconRarity.style.display = 'none';
+    }
+    if (detailsActionsContainer) detailsActionsContainer.innerHTML = '';
+    if (detailsHeading) detailsHeading.textContent = '';
+
+  }
+
+  async function handleUseIcon(iconName, iconData, elements) {
+    const { currentUserIcon } = elements;
+
+
+    const useButton = document.getElementById('details-use-button');
+    if (useButton) useButton.disabled = true;
+
+    try {
+      const response = await fetch('/icons/use', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUserData._id, iconName: iconName })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || `Server error: ${response.status}`);
+
+      if (currentUserIcon && iconData) {
+        currentUserIcon.src = iconData.src;
+        currentUserIcon.alt = `Current Icon: ${iconName}`;
+        const currentRarityClass = getRarityClass(iconData.rarity);
+        currentUserIcon.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic');
+        currentUserIcon.classList.add(currentRarityClass);
+      }
+
+      if (currentUserData.user) currentUserData.user.pfp = iconName;
+
+
+    } catch (error) {
+      console.error('Failed to set icon:', error);
+      alert(`Failed to set icon: ${error.message}`);
+    } finally {
+      if (useButton) useButton.disabled = false;
+    }
+  }
+
+
+
+  document.addEventListener('DOMContentLoaded', async () => {
+
+
+    const elements = {
+      iconGrid: document.getElementById('icon-grid'),
+      iconDetailsSection: document.getElementById('icon-details'),
+      detailsIconImg: document.getElementById('details-icon-img'),
+      detailsHeading: document.getElementById('details-heading'),
+      detailsIconName: document.getElementById('details-icon-name'),
+      detailsIconRarity: document.getElementById('details-icon-rarity'),
+      detailsActionsContainer: document.getElementById('details-actions'),
+      currentUserIcon: document.getElementById('current-user-icon'),
+      usernameEl: document.getElementById('username'),
+      playerLevelEl: document.getElementById('player-level'),
+      rankImgEl: document.getElementById('rank'),
+      coinsEl: document.getElementById('coins'),
+      statPlaysPVPEl: document.getElementById('stat-playsPVP'),
+      statWinsPVPEl: document.getElementById('stat-winsPVP'),
+      statKillsEl: document.getElementById('stat-kills'),
+      statLargestSpreeEl: document.getElementById('stat-largestSpree'),
+      statLargestMultiEl: document.getElementById('stat-largestMulti'),
+      userInfoPanel: document.getElementById('user-info')
+    };
+
+    if (!elements.iconGrid || !elements.iconDetailsSection || !elements.usernameEl) {
+      console.error("Crucial UI elements not found! Aborting initialization.");
+      document.body.innerHTML = '<p style="color: red; text-align: center;">Error loading page components.</p>';
+      return;
+    }
+
+    try {
+
+      if (!currentUserData || !runtimeIconData) {
+        return;
+      }
+
+      populateIconGrid(runtimeIconData, elements.iconGrid);
+
+      applyInitialVisualState(runtimeIconData, elements.iconGrid);
+
+      updateUserInfoPanel(currentUserData, runtimeIconData, elements);
+
+      clearDetailsPanel(elements);
+
+      if (elements.iconGrid) {
+        elements.iconGrid.addEventListener('click', function(event) {
+          const clickedIconDiv = event.target.closest('.icon');
+          if (!clickedIconDiv) return;
+
+          const iconName = clickedIconDiv.dataset.iconName;
+          const data = runtimeIconData[iconName];
+
+          if (!data) {
+            console.warn("No runtime data found for icon name:", iconName);
+            clearDetailsPanel(elements);
+            if (currentlySelectedIconDiv) currentlySelectedIconDiv.classList.remove('icon-selected');
+            currentlySelectedIconDiv = null;
+            if (elements.detailsActionsContainer) elements.detailsActionsContainer.textContent = '';
+            return;
+          }
+
+          if (elements.detailsActionsContainer) elements.detailsActionsContainer.textContent = 'Selected Icon:';
+
+          const isOwned = data.owned;
+          const rarityName = data.rarity || 'Common';
+          const rarityClass = getRarityClass(rarityName);
+
+
+          if (currentlySelectedIconDiv) currentlySelectedIconDiv.classList.remove('icon-selected');
+          if (isOwned) {
+            clickedIconDiv.classList.add('icon-selected');
+            currentlySelectedIconDiv = clickedIconDiv;
+          } else {
+            currentlySelectedIconDiv = null;
+          }
+
+
+          let detailsBorderStyleClass = 'details-border-common-hover';
+          if (rarityName === 'Blooby') detailsBorderStyleClass = 'details-border-blooby-hover';
+          else if (rarityName === 'Algebraic') detailsBorderStyleClass = 'details-border-algebraic-hover';
+
+          if (elements.iconDetailsSection) elements.iconDetailsSection.classList.remove('is-empty');
+          if (elements.detailsIconImg) {
+            elements.detailsIconImg.src = data.src;
+            elements.detailsIconImg.alt = `Details: ${iconName}`;
+            elements.detailsIconImg.className = '';
+            elements.detailsIconImg.classList.add(detailsBorderStyleClass);
+          }
+          if (elements.detailsIconName) elements.detailsIconName.textContent = iconName;
+          if (elements.detailsIconRarity) {
+            elements.detailsIconRarity.textContent = rarityName;
+            elements.detailsIconRarity.className = '';
+            elements.detailsIconRarity.classList.add(rarityClass);
+            elements.detailsIconRarity.style.display = 'inline-block';
+          }
+
+
+          if (elements.detailsActionsContainer) {
+            elements.detailsActionsContainer.innerHTML = '';
+            if (isOwned) {
+              const useButton = document.createElement('button');
+              useButton.id = 'details-use-button';
+              useButton.textContent = 'Use Icon';
+              useButton.addEventListener('click', function() {
+                handleUseIcon(iconName, data, elements);
+              });
+              elements.detailsActionsContainer.appendChild(useButton);
+            } else {
+              if (data.cost !== undefined) {
+                const buyButton = document.createElement('button');
+                buyButton.id = 'details-buy-button';
+                buyButton.textContent = `Buy (${data.cost} Coins)`;
+                const userCoins = currentUserData.player?.coins || 0;
+                if (userCoins < data.cost) {
+                  buyButton.disabled = true;
+                  buyButton.style.opacity = 0.5;
+                  buyButton.textContent = `Need ${data.cost} Coins`;
+                  buyButton.style.cursor = 'not-allowed';
+                } else {
+                  buyButton.addEventListener('click', async function() {
+                    buyButton.disabled = true;
+                    buyButton.textContent = 'Purchasing...';
+                    try {
+                      const response = await fetch('icons/buy', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: currentUserData._id, iconName: iconName }),
+                      });
+                      const result = await response.json();
+                      if (!response.ok) throw new Error(result.message || `Server error: ${response.status}`);
+
+                      currentUserData.player.coins = result.newCoinTotal;
+                      if (!currentUserData.icons) currentUserData.icons = [];
+                      if (!currentUserData.icons.includes(iconName)) currentUserData.icons.push(iconName);
+
+
+                      if (runtimeIconData[iconName]) {
+                        runtimeIconData[iconName].owned = true;
+                        delete runtimeIconData[iconName].cost;
+                        delete runtimeIconData[iconName].unlock;
+                      }
+
+
+                      if (elements.coinsEl) elements.coinsEl.textContent = result.newCoinTotal.toLocaleString();
+                      clickedIconDiv.dataset.owned = "true";
+                      const updatedRarityClass = getRarityClass(runtimeIconData[iconName]?.rarity);
+                      clickedIconDiv.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic');
+                      if (updatedRarityClass) clickedIconDiv.classList.add(updatedRarityClass);
+
+                      if (currentlySelectedIconDiv) currentlySelectedIconDiv.classList.remove('icon-selected');
+                      clickedIconDiv.classList.add('icon-selected');
+                      currentlySelectedIconDiv = clickedIconDiv;
+
+                      elements.detailsActionsContainer.innerHTML = '';
+                      const useButton = document.createElement('button');
+                      useButton.id = 'details-use-button';
+                      useButton.textContent = 'Use Icon';
+                      useButton.addEventListener('click', function() {
+                        handleUseIcon(iconName, runtimeIconData[iconName], elements);
+                      });
+                      elements.detailsActionsContainer.appendChild(useButton);
+                      alert('Icon purchased successfully!');
+
+                    } catch (error) {
+                      console.error('Purchase failed:', error);
+                      alert(`Purchase failed: ${error.message}`);
+                      buyButton.disabled = false;
+                      buyButton.textContent = `Buy (${data.cost} Coins)`;
+                    }
+                  });
+                }
+                elements.detailsActionsContainer.appendChild(buyButton);
+              } else if (data.unlock !== undefined) {
+                const unlockText = document.createElement('p');
+                unlockText.textContent = `Unlock: ${data.unlock}`;
+                unlockText.id = 'details-unlock-text';
+                elements.detailsActionsContainer.appendChild(unlockText);
+              } else {
+                const unavailableText = document.createElement('p');
+                unavailableText.id = 'details-unlock-text';
+                unavailableText.textContent = "Currently unavailable.";
+                elements.detailsActionsContainer.appendChild(unavailableText);
+              }
+            }
+          }
+        });
+      }
+
+
+      document.addEventListener('click', function(event) {
+        if (elements.iconGrid && elements.iconDetailsSection && !elements.iconGrid.contains(event.target) && !elements.iconDetailsSection.contains(event.target)) {
+          if (currentlySelectedIconDiv) {
+            currentlySelectedIconDiv.classList.remove('icon-selected');
+            currentlySelectedIconDiv = null;
+          }
+          clearDetailsPanel(elements);
+        }
+      });
+
+    } catch (error) {
+      console.error("Failed to initialize icon selector:", error);
+      if (elements.iconGrid) elements.iconGrid.innerHTML = `<p style="color: red; text-align: center;">Error loading user data.</p>`;
+      if (elements.userInfoPanel) elements.userInfoPanel.innerHTML = '<p style="color: red;">Error loading.</p>';
+      if (elements.iconDetailsSection) clearDetailsPanel(elements);
+    }
+  });
+</script>
+</body>
+</html>
