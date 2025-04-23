@@ -1,57 +1,51 @@
 {
   "junk": {
-    "name": "junk_3_armor_of_zeldron",
-    "description": "junk_3_armor_of_zeldron_description",
-    "modDescription1": "junk_3_armor_of_zeldron_mod1",
-    "modDescription2": "junk_3_armor_of_zeldron_mod2",
-    "modDescription3": "junk_3_armor_of_zeldron_mod3",
-    "mod1Icon": "stat_armor",
+    "name": "junk_5_magic_carpet_name",
+    "description": "junk_5_magic_carpet_description",
+    "modDescription1": "junk_5_magic_carpet_mod1",
+    "modDescription2": "junk_5_magic_carpet_mod2",
+    "modDescription3": "junk_5_magic_carpet_mod3",
+    "mod1Icon": "stat_cooldown",
     "mod2Icon": "stat_speed",
-    "mod3Icon": "stat_shield_pen",
-    "category": 3,
+    "mod3Icon": "stat_power_damage",
+    "category": 5,
     "mods": {
       "mod": [
         {
           "point": 1,
-          "stat": "armor",
+          "stat": "speed",
+          "type": 0,
+          "value": 0.05
+        },
+        {
+          "point": 1,
+          "stat": "coolDownReduction",
+          "type": 0,
+          "value": 5
+        },
+        {
+          "point": 1,
+          "stat": "spellDamage",
           "type": 0,
           "value": 10
         },
         {
-          "point": 1,
+          "point": 2,
           "stat": "speed",
           "type": 0,
           "value": 0.1
         },
         {
-          "point": 1,
-          "stat": "spellPenetration",
-          "type": 0,
-          "value": 5
-        },
-        {
           "point": 2,
-          "stat": "armor",
-          "type": 0,
-          "value": 20
-        },
-        {
-          "point": 2,
-          "stat": "speed",
-          "type": 0,
-          "value": 0.15
-        },
-        {
-          "point": 2,
-          "stat": "spellPenetration",
+          "stat": "coolDownReduction",
           "type": 0,
           "value": 10
         },
         {
-          "point": 3,
-          "stat": "armor",
+          "point": 2,
+          "stat": "spellDamage",
           "type": 0,
-          "value": 30
+          "value": 15
         },
         {
           "point": 3,
@@ -61,27 +55,33 @@
         },
         {
           "point": 3,
-          "stat": "spellPenetration",
+          "stat": "coolDownReduction",
           "type": 0,
           "value": 15
         },
         {
-          "point": 4,
-          "stat": "armor",
+          "point": 3,
+          "stat": "spellDamage",
           "type": 0,
-          "value": 50
+          "value": 30
         },
         {
           "point": 4,
           "stat": "speed",
           "type": 0,
-          "value": 0.3
+          "value": 0.4
         },
         {
           "point": 4,
-          "stat": "spellPenetration",
+          "stat": "coolDownReduction",
           "type": 0,
           "value": 20
+        },
+        {
+          "point": 4,
+          "stat": "spellDamage",
+          "type": 0,
+          "value": 50
         }
       ]
     },

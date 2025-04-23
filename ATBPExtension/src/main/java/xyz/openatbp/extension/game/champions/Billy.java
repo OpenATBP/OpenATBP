@@ -163,7 +163,7 @@ public class Billy extends UserActor {
                         for (Actor a : actorsInPolygon) {
                             if (isNonStructure(a)) {
                                 a.knockback(this.location, 3.5f);
-                                if (this.passiveUses == 3) a.addState(ActorState.STUNNED, 0d, 2000);
+                                if (this.passiveUses == 3) a.addState(ActorState.STUNNED, 0d, 1500);
                             }
                             a.addToDamageQueue(
                                     this, getSpellDamage(spellData, true), spellData, false);

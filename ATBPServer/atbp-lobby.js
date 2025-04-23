@@ -1349,6 +1349,7 @@ function handleRequest(jsonString, socket) {
 
     case 'unlock_team':
       var team = teams.find((t) => t.team == jsonObject['payload'].team);
+      if (team == undefined) return; //TODO: Add error handling
       var act = team.type.split('_');
       var type = act[act.length - 1];
       /*

@@ -6,7 +6,7 @@
     "modDescription2": "junk_1_grass_sword_mod2",
     "modDescription3": "junk_1_grass_sword_mod3",
     "mod1Icon": "stat_attack_damage",
-    "mod2Icon": "stat_cooldown",
+    "mod2Icon": "stat_attack_speed",
     "mod3Icon": "stat_icon_blank",
     "category": 1,
     "mods": {
@@ -19,9 +19,9 @@
         },
         {
           "point": 1,
-          "stat": "coolDownReduction",
+          "stat": "attackSpeed",
           "type": 0,
-          "value": 5
+          "value": -75
         },
         {
           "point": 2,
@@ -31,9 +31,9 @@
         },
         {
           "point": 2,
-          "stat": "coolDownReduction",
+          "stat": "attackSpeed",
           "type": 0,
-          "value": 10
+          "value": -100
         },
         {
           "point": 3,
@@ -43,9 +43,9 @@
         },
         {
           "point": 3,
-          "stat": "coolDownReduction",
+          "stat": "attackSpeed",
           "type": 0,
-          "value": 15
+          "value": -125
         },
         {
           "point": 4,
@@ -55,9 +55,9 @@
         },
         {
           "point": 4,
-          "stat": "coolDownReduction",
+          "stat": "attackSpeed",
           "type": 0,
-          "value": 20
+          "value": -150
         }
       ]
     },

@@ -15,7 +15,7 @@
           "point": 1,
           "stat": "armor",
           "type": 0,
-          "value": 10
+          "value": 5
         },
         {
           "point": 1,
@@ -33,7 +33,7 @@
           "point": 2,
           "stat": "armor",
           "type": 0,
-          "value": 20
+          "value": 10
         },
         {
           "point": 2,
@@ -51,7 +51,7 @@
           "point": 3,
           "stat": "armor",
           "type": 0,
-          "value": 30
+          "value": 20
         },
         {
           "point": 3,
@@ -69,7 +69,7 @@
           "point": 4,
           "stat": "armor",
           "type": 0,
-          "value": 50
+          "value": 30
         },
         {
           "point": 4,

@@ -6,7 +6,7 @@
     "modDescription2": "junk_4_grob_gob_glob_grod_mod2",
     "modDescription3": "junk_4_grob_gob_glob_grod_mod3",
     "mod1Icon": "stat_shield",
-    "mod2Icon": "stat_power_vamp",
+    "mod2Icon": "stat_cooldown",
     "mod3Icon": "stat_icon_blank",
     "category": 4,
     "mods": {
@@ -19,9 +19,9 @@
         },
         {
           "point": 1,
-          "stat": "spellVamp",
+          "stat": "coolDownReduction",
           "type": 0,
-          "value": 3
+          "value": 5
         },
         {
           "point": 2,
@@ -31,9 +31,9 @@
         },
         {
           "point": 2,
-          "stat": "spellVamp",
+          "stat": "coolDownReduction",
           "type": 0,
-          "value": 5
+          "value": 10
         },
         {
           "point": 3,
@@ -43,21 +43,21 @@
         },
         {
           "point": 3,
-          "stat": "spellVamp",
+          "stat": "coolDownReduction",
           "type": 0,
-          "value": 7
+          "value": 15
         },
         {
           "point": 4,
           "stat": "spellResist",
           "type": 0,
-          "value": 50
+          "value": 40
         },
         {
           "point": 4,
-          "stat": "spellVamp",
+          "stat": "coolDownReduction",
           "type": 0,
-          "value": 10
+          "value": 20
         }
       ]
     },

@@ -221,6 +221,7 @@ public class Champion {
     }
 
     public static List<Actor> getActorsInRadius(RoomHandler room, Point2D center, float radius) {
+        if (center == null || room == null) return new ArrayList<>();
         return room.getActorsInRadius(center, radius);
     }
 

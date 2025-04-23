@@ -6,7 +6,7 @@
     "modDescription2": "junk_3_battle_moon_mod2",
     "modDescription3": "junk_3_battle_moon_mod3",
     "mod1Icon": "stat_armor",
-    "mod2Icon": "stat_attack_damage",
+    "mod2Icon": "stat_health",
     "mod3Icon": "stat_icon_blank",
     "category": 3,
     "mods": {
@@ -19,45 +19,45 @@
         },
         {
           "point": 1,
-          "stat": "attackDamage",
+          "stat": "health",
           "type": 0,
-          "value": 5
+          "value": 25
         },
         {
           "point": 2,
           "stat": "armor",
-          "type": 0,
-          "value": 20
-        },
-        {
-          "point": 2,
-          "stat": "attackDamage",
-          "type": 0,
-          "value": 10
-        },
-        {
-          "point": 3,
-          "stat": "armor",
-          "type": 0,
-          "value": 30
-        },
-        {
-          "point": 3,
-          "stat": "attackDamage",
           "type": 0,
           "value": 15
         },
         {
-          "point": 4,
+          "point": 2,
+          "stat": "health",
+          "type": 0,
+          "value": 75
+        },
+        {
+          "point": 3,
           "stat": "armor",
           "type": 0,
-          "value": 50
+          "value": 25
+        },
+        {
+          "point": 3,
+          "stat": "health",
+          "type": 0,
+          "value": 100
         },
         {
           "point": 4,
-          "stat": "attackDamage",
+          "stat": "armor",
           "type": 0,
-          "value": 20
+          "value": 35
+        },
+        {
+          "point": 4,
+          "stat": "health",
+          "type": 0,
+          "value": 150
         }
       ]
     },

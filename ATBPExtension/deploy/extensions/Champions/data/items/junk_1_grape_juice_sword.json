@@ -1,37 +1,37 @@
 {
   "junk": {
-    "name": "junk_2_lightning_sword_name",
-    "description": "junk_2_lightning_sword_description",
-    "modDescription1": "junk_2_lightning_sword_mod1",
-    "modDescription2": "junk_2_lightning_sword_mod2",
-    "modDescription3": "",
-    "mod1Icon": "stat_power_damage",
+    "name": "junk_1_grape_juice_sword_name",
+    "description": "junk_1_grape_juice_sword_description",
+    "modDescription1": "junk_1_grape_juice_sword_mod1",
+    "modDescription2": "junk_1_grape_juice_sword_mod2",
+    "modDescription3": "junk_1_grape_juice_sword_mod3",
+    "mod1Icon": "stat_attack_damage",
     "mod2Icon": "stat_icon_blank",
     "mod3Icon": "stat_icon_blank",
-    "category": 2,
+    "category": 1,
     "mods": {
       "mod": [
         {
           "point": 1,
-          "stat": "spellDamage",
+          "stat": "attackDamage",
           "type": 0,
           "value": 10
         },
         {
           "point": 2,
-          "stat": "spellDamage",
+          "stat": "attackDamage",
           "type": 0,
           "value": 25
         },
         {
           "point": 3,
-          "stat": "spellDamage",
+          "stat": "attackDamage",
           "type": 0,
           "value": 50
         },
         {
           "point": 4,
-          "stat": "spellDamage",
+          "stat": "attackDamage",
           "type": 0,
           "value": 75
         }
