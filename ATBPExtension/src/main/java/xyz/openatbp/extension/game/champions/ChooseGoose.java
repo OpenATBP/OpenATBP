@@ -14,6 +14,7 @@ import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
+import xyz.openatbp.extension.game.actors.Bot;
 import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.pathfinding.MovementManager;
 
@@ -290,7 +291,7 @@ public class ChooseGoose extends UserActor {
                 ExtensionCommands.actorAbilityResponse(parentExt, player, "w", true, 0, 0);
             }
         }
-        if (a.getActorType() == ActorType.PLAYER) spawnChest((UserActor) a);
+        if (a.getActorType() == ActorType.PLAYER || a instanceof Bot) spawnChest(a);
         super.handleKill(a, attackData);
     }
 
@@ -317,7 +318,7 @@ public class ChooseGoose extends UserActor {
         }
     }
 
-    private void spawnChest(UserActor enemy) {
+    private void spawnChest(Actor enemy) {
         if (System.currentTimeMillis() - lastChestSpawn >= PASSIVE_COOLDOWN) {
             lastChestSpawn = System.currentTimeMillis();
 

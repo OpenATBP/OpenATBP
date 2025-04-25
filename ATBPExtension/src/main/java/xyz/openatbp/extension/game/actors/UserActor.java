@@ -256,6 +256,10 @@ public class UserActor extends Actor {
         return lastKilled;
     }
 
+    public void setLastKilled(Long time) {
+        this.lastKilled = time;
+    }
+
     public List<UserActor> getKilledPlayers() {
         return killedPlayers;
     }

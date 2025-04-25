@@ -19,15 +19,17 @@ import xyz.openatbp.extension.game.actors.UserActor;
 
 public class Billy extends UserActor {
     private static final int FINAL_PASSIVE_DURATION = 6000;
+    private static final float Q_OFFSET_DISTANCE = 1.5f;
+    private static final float Q_SPELL_RANGE = 4.5f;
+    public static final int Q_STUN_DURATION = 1500;
     private static final int W_ATTACKSPEED_DURATION = 4000;
     private static final float W_ATTACKSPEED_VALUE = 0.7f;
     private static final int W_SPEED_DURATION = 6000;
     private static final float W_SPEED_VALUE = 0.5f;
-    private static final float Q_OFFSET_DISTANCE = 1.5f;
-    private static final float Q_SPELL_RANGE = 4.5f;
     private static final int W_CRATER_OFFSET = 1;
     private static final int E_CAST_DELAY = 750;
     private static final int E_EMP_DURATION = 4500;
+
     private int passiveUses = 0;
     private boolean jumpActive = false;
     private Point2D ultLocation = null;
@@ -163,7 +165,8 @@ public class Billy extends UserActor {
                         for (Actor a : actorsInPolygon) {
                             if (isNonStructure(a)) {
                                 a.knockback(this.location, 3.5f);
-                                if (this.passiveUses == 3) a.addState(ActorState.STUNNED, 0d, 1500);
+                                if (this.passiveUses == 3)
+                                    a.addState(ActorState.STUNNED, 0d, Q_STUN_DURATION);
                             }
                             a.addToDamageQueue(
                                     this, getSpellDamage(spellData, true), spellData, false);

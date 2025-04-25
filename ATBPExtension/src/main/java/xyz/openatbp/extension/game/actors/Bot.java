@@ -72,6 +72,7 @@ public class Bot extends Actor {
     private boolean isPolymorphed = false;
     private UserActor enemy;
     private Long enemyDmgTime = 0L;
+    private HashMap<Actor, Long> agressors = new HashMap<>();
 
     public Bot(ATBPExtension parentExt, Room room, String avatar, int team, Point2D spawnPoint) {
         this.room = room;
@@ -107,6 +108,19 @@ public class Bot extends Actor {
         currentHealth = 0;
         canMove = false;
 
+        Actor realKiller = a;
+
+        if (a.getActorType() != ActorType.PLAYER && !agressors.isEmpty()) {
+            for (Actor aggressor : agressors.keySet()) {
+                if (System.currentTimeMillis() - agressors.get(aggressor) <= 10000
+                        && aggressor instanceof UserActor) {
+                    realKiller = aggressor;
+                    UserActor player = (UserActor) realKiller;
+                    player.setLastKilled(System.currentTimeMillis());
+                }
+            }
+        }
+
         if (isPolymorphed) {
             ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
         }
@@ -123,13 +137,13 @@ public class Bot extends Actor {
         furyTarget = null;
 
         if (!getState(ActorState.AIRBORNE)) stopMoving();
-        ExtensionCommands.knockOutActor(parentExt, room, id, a.getId(), deathTime);
+        ExtensionCommands.knockOutActor(parentExt, room, id, realKiller.getId(), deathTime);
 
         Runnable respawn = this::respawn;
         parentExt.getTaskScheduler().schedule(respawn, deathTime, TimeUnit.SECONDS);
 
-        if (a.getActorType() == ActorType.PLAYER) {
-            UserActor killer = (UserActor) a;
+        if (realKiller.getActorType() == ActorType.PLAYER) {
+            UserActor killer = (UserActor) realKiller;
             killer.increaseStat("kills", 1);
             RoomHandler roomHandler = parentExt.getRoomHandler(room.getName());
             roomHandler.addScore(killer, killer.getTeam(), 25);
@@ -158,6 +172,7 @@ public class Bot extends Actor {
 
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
+        agressors.put(a, System.currentTimeMillis());
         if (a.equals(enemy) && location.distance(a.getLocation()) <= 8) {
             enemyDmgTime = System.currentTimeMillis();
         }
@@ -332,8 +347,6 @@ public class Bot extends Actor {
         if (msRan % 500 == 0) {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             Point2D blueFountain = handler.getFountainsCenter().get(1);
-            Console.debugLog("health: " + getHealth());
-            Console.debugLog("max health: " + getMaxHealth());
             if (location.distance(blueFountain) <= TOWER_RANGE && getHealth() != getMaxHealth()) {
                 changeHealth(FOUNTAIN_HEAL);
                 ExtensionCommands.createActorFX(
@@ -1087,6 +1100,7 @@ public class Bot extends Actor {
         setHealth((int) maxHealth, (int) maxHealth);
         setLocation(spawnPoint);
         removeEffects();
+        agressors.clear();
         ExtensionCommands.snapActor(parentExt, room, id, location, location, false);
         ExtensionCommands.playSound(parentExt, room, id, "sfx/sfx_champion_respawn", location);
         ExtensionCommands.createActorFX(
