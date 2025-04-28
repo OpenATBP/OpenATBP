@@ -19,6 +19,7 @@ import xyz.openatbp.extension.game.actors.UserActor;
 
 public class Billy extends UserActor {
     private static final int FINAL_PASSIVE_DURATION = 6000;
+    private static final int Q_SELF_CRIPPLE_DURATION = 500;
     private static final float Q_OFFSET_DISTANCE = 1.5f;
     private static final float Q_SPELL_RANGE = 4.5f;
     public static final int Q_STUN_DURATION = 1500;
@@ -154,7 +155,7 @@ public class Billy extends UserActor {
             case 1:
                 this.canCast[0] = false;
                 try {
-                    this.stopMoving();
+                    this.stopMoving(Q_SELF_CRIPPLE_DURATION);
                     Path2D quadrangle =
                             Champion.createRectangle(
                                     location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
@@ -262,17 +263,20 @@ public class Billy extends UserActor {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
                 }
+                int leapTime = (int) (time * 1000d);
+                int globalCooldown = (int) (leapTime * 1.5);
+
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
                         "w",
                         true,
                         getReducedCooldown(cooldown),
-                        gCooldown);
-                int delay1 = (int) (time * 1000d);
+                        globalCooldown);
+
                 scheduleTask(
                         abilityRunnable(ability, spellData, cooldown, gCooldown, finalDashPoint),
-                        delay1);
+                        leapTime);
                 break;
             case 3:
                 this.canCast[2] = false;

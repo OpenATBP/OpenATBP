@@ -55,6 +55,7 @@ public abstract class RoomHandler implements Runnable {
     protected List<Projectile> activeProjectiles = new ArrayList<>();
     protected ScheduledFuture<?> scriptHandler;
     protected int dcWeight = 0;
+    protected float FOUNTAIN_RADIUS = 4f;
 
     private enum PointLeadTeam {
         PURPLE,
@@ -1019,7 +1020,8 @@ public abstract class RoomHandler implements Runnable {
         HashMap<Integer, Point2D> centers = getFountainsCenter();
 
         for (Map.Entry<Integer, Point2D> entry : centers.entrySet()) {
-            for (UserActor ua : Champion.getUserActorsInRadius(this, entry.getValue(), 4f)) {
+            for (UserActor ua :
+                    Champion.getUserActorsInRadius(this, entry.getValue(), FOUNTAIN_RADIUS)) {
                 if (ua.getTeam() == entry.getKey()
                         && ua.getHealth() != ua.getMaxHealth()
                         && ua.getHealth() > 0) {

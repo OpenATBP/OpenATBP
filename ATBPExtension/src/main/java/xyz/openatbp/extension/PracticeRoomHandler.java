@@ -40,6 +40,7 @@ public class PracticeRoomHandler extends RoomHandler {
             finnBotRespawnPoint = new Point2D.Float(finnBotSpawnX, (float) purpleSpawn.getY());
             finnBot = new Bot(parentExt, room, "finn", 1, finnBotRespawnPoint);
         }
+        FOUNTAIN_RADIUS = 6f;
     }
 
     @Override

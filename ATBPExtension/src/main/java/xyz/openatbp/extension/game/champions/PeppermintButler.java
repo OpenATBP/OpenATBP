@@ -283,6 +283,7 @@ public class PeppermintButler extends UserActor {
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         this.stopPassive = true;
+        timeStopped = 0;
         return super.damaged(a, damage, attackData);
     }
 
