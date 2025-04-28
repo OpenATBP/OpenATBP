@@ -344,6 +344,10 @@ body {
     background-color: #4caf50;
 }
 
+#details-unequip-button {
+    background-color: #af4c4c;
+}
+
 #details-use-button:hover {
     background-color: #45a049;
 }

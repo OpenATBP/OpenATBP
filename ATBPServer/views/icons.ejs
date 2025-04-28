@@ -72,19 +72,19 @@
 
   function applyInitialVisualState(iconData, gridElement) {
     if (!gridElement) return;
-    var allIconDivs = gridElement.querySelectorAll('.icon'); // This returns a NodeList
+    var allIconDivs = gridElement.querySelectorAll('.icon');
 
-    // Use a traditional for loop instead of forEach
+
     for (var i = 0; i < allIconDivs.length; i++) {
-      var iconDiv = allIconDivs[i]; // Get the current element using index
+      var iconDiv = allIconDivs[i];
 
-      // --- Start of original forEach body ---
+
       var iconName = iconDiv.dataset.iconName;
       if (!iconName || !iconData[iconName]) {
-        console.warn("Missing data or name for icon div:", iconDiv); // String concatenation might be safer here too
+        console.warn("Missing data or name for icon div:", iconDiv);
         iconDiv.classList.add('rarity-common');
         iconDiv.dataset.owned = "false";
-        continue; // Use continue to skip to the next iteration, similar to 'return' in forEach
+        continue;
       }
       var data = iconData[iconName];
       var rarityName = data.rarity || 'Common';
@@ -102,7 +102,7 @@
       indicatorSpan.textContent = indicatorvarter;
       iconDiv.appendChild(indicatorSpan);
       iconDiv.dataset.owned = isOwned ? "true" : "false";
-      // --- End of original forEach body ---
+
     }
   }
 
@@ -220,71 +220,154 @@
   }
 
   function handleUseIcon(iconName, iconData, elements) {
-    // 1. Replace object destructuring
-    var currentUserIcon = elements.currentUserIcon;
 
+    var currentUserIcon = elements.currentUserIcon;
     var useButton = document.getElementById('details-use-button');
+
+
     if (useButton) {
-      useButton.disabled = true; // Disable button immediately
+      useButton.disabled = true;
+
+
     }
 
-    // 2. Start fetch, chain .then() and .catch() instead of try/await
+
     fetch('/icons/use', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: currentUserData._id, iconName: iconName })
     })
-      .then(function(response) { // Handles the response from fetch
-        // 3. Manually check if response is OK
+      .then(function(response) {
         if (!response.ok) {
-          // Attempt to parse error message from server if possible
+
           return response.json().catch(function() {
-            // If parsing the error response fails, throw a generic error
             throw new Error('Server error: ' + response.status);
           }).then(function(errorData) {
-            // If parsing error response succeeds, throw error with server message
             throw new Error(errorData.message || 'Server error: ' + response.status);
           });
         }
-        // If response is OK, parse the JSON body (returns another Promise)
         return response.json();
       })
-      .then(function(result) { // Handles the parsed JSON result (Success Path)
-        // --- SUCCESS LOGIC ---
+      .then(function(result) {
+
         if (currentUserIcon && iconData) {
+
           currentUserIcon.src = iconData.src;
-          currentUserIcon.alt = 'Current Icon: ' + iconName; // Use string concatenation
+          currentUserIcon.alt = 'Current Icon: ' + iconName;
           var currentRarityClass = getRarityClass(iconData.rarity);
           currentUserIcon.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic');
           currentUserIcon.classList.add(currentRarityClass);
         }
 
-        // Update local user data (ensure user object exists)
+
         if (currentUserData && currentUserData.user) {
           currentUserData.user.pfp = iconName;
         }
-        // --- END SUCCESS LOGIC ---
 
-        // 4. Execute "finally" logic on success
-        if (useButton) {
-          useButton.disabled = false;
+
+        var detailsActionsContainer = document.getElementById('details-actions');
+        if (detailsActionsContainer) {
+          detailsActionsContainer.innerHTML = '';
+          var unequipButton = document.createElement('button');
+          unequipButton.id = 'details-unequip-button';
+          unequipButton.textContent = 'Unequip';
+          unequipButton.addEventListener('click', function() {
+            handleUnequipIcon(iconName, elements);
+          });
+          detailsActionsContainer.appendChild(unequipButton);
         }
-      })
-      .catch(function(error) { // Handles errors from fetch, .ok check, .json(), or success logic
-        // --- ERROR LOGIC ---
-        console.error('Failed to set icon:', error);
-        alert('Failed to set icon: ' + error.message); // Use string concatenation
-        // --- END ERROR LOGIC ---
 
-        // 4. Execute "finally" logic on failure
+
+      })
+      .catch(function(error) {
+        console.error('Failed to set icon:', error);
+        alert('Failed to set icon: ' + error.message);
+
+
         if (useButton) {
           useButton.disabled = false;
+          useButton.textContent = 'Use Icon';
+        }
+      });
+  }
+
+
+  function handleUnequipIcon(iconName, elements) {
+    var unequipButton = document.getElementById('details-unequip-button');
+
+
+    if (unequipButton) {
+      unequipButton.disabled = true;
+      unequipButton.textContent = 'Unequipping...';
+    }
+
+
+    fetch('/icons/use', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUserData._id, iconName: "Default" })
+    })
+      .then(function(response) {
+        if (!response.ok) {
+          return response.json().catch(function() {
+            throw new Error('Server error: ' + response.status);
+          }).then(function(errorData) {
+            throw new Error(errorData.message || 'Server error: ' + response.status);
+          });
+        }
+        return response.json();
+      })
+      .then(function(result) {
+
+
+        if (currentUserData && currentUserData.user) {
+          currentUserData.user.pfp = "Default";
+        }
+
+
+        var defaultIconData = { src: 'assets/pfp/Default.jpg', rarity: 'Common' };
+        if (elements.currentUserIcon) {
+          elements.currentUserIcon.src = defaultIconData.src;
+          elements.currentUserIcon.alt = 'Current Icon: Default';
+          var defaultRarityClass = getRarityClass(defaultIconData.rarity);
+          elements.currentUserIcon.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic');
+          elements.currentUserIcon.classList.add(defaultRarityClass);
+        }
+
+
+        var detailsActionsContainer = document.getElementById('details-actions');
+        if (detailsActionsContainer) {
+          detailsActionsContainer.innerHTML = '';
+          var useButton = document.createElement('button');
+          useButton.id = 'details-use-button';
+          useButton.textContent = 'Use Icon';
+
+
+          var originalIconData = runtimeIconData[iconName];
+          useButton.addEventListener('click', function() {
+
+            handleUseIcon(iconName, originalIconData, elements);
+          });
+          detailsActionsContainer.appendChild(useButton);
+        }
+
+
+      })
+      .catch(function(error) {
+        console.error('Failed to unequip icon:', error);
+        alert('Failed to unequip icon: ' + error.message);
+
+
+        if (unequipButton) {
+          unequipButton.disabled = false;
+          unequipButton.textContent = 'Unequip';
         }
       });
   }
 
 
   document.addEventListener('DOMContentLoaded', function() {
+
     var elements = {
       iconGrid: document.getElementById('icon-grid'),
       iconDetailsSection: document.getElementById('icon-details'),
@@ -306,33 +389,38 @@
       userInfoPanel: document.getElementById('user-info')
     };
 
+
     if (!elements.iconGrid || !elements.iconDetailsSection || !elements.usernameEl) {
       console.error("Crucial UI elements not found! Aborting initialization.");
       document.body.innerHTML = '<p style="color: red; text-align: center;">Error loading page components.</p>';
       return;
     }
 
+
     try {
 
       if (!currentUserData || !runtimeIconData) {
+        console.error("User or Icon data not found!");
         return;
       }
 
+
       populateIconGrid(runtimeIconData, elements.iconGrid);
-
       applyInitialVisualState(runtimeIconData, elements.iconGrid);
-
       updateUserInfoPanel(currentUserData, runtimeIconData, elements);
-
       clearDetailsPanel(elements);
+
 
       if (elements.iconGrid) {
         elements.iconGrid.addEventListener('click', function(event) {
+
           var clickedIconDiv = event.target.closest('.icon');
           if (!clickedIconDiv) return;
 
+
           var iconName = clickedIconDiv.dataset.iconName;
           var data = runtimeIconData[iconName];
+
 
           if (!data) {
             console.warn("No runtime data found for icon name:", iconName);
@@ -343,15 +431,12 @@
             return;
           }
 
-          if (elements.detailsActionsContainer) elements.detailsActionsContainer.textContent = 'Selected Icon:';
 
-          var isOwned = data.owned;
-          var rarityName = data.rarity || 'Common';
-          var rarityClass = getRarityClass(rarityName);
+          if (currentlySelectedIconDiv) {
+            currentlySelectedIconDiv.classList.remove('icon-selected');
+          }
 
-
-          if (currentlySelectedIconDiv) currentlySelectedIconDiv.classList.remove('icon-selected');
-          if (isOwned) {
+          if (data.owned) {
             clickedIconDiv.classList.add('icon-selected');
             currentlySelectedIconDiv = clickedIconDiv;
           } else {
@@ -359,9 +444,15 @@
           }
 
 
+          var rarityName = data.rarity || 'Common';
+          var rarityClass = getRarityClass(rarityName);
+          var isOwned = data.owned;
+
+
           var detailsBorderStyleClass = 'details-border-common-hover';
           if (rarityName === 'Blooby') detailsBorderStyleClass = 'details-border-blooby-hover';
           else if (rarityName === 'Algebraic') detailsBorderStyleClass = 'details-border-algebraic-hover';
+
 
           if (elements.iconDetailsSection) elements.iconDetailsSection.classList.remove('is-empty');
           if (elements.detailsIconImg) {
@@ -381,52 +472,76 @@
 
           if (elements.detailsActionsContainer) {
             elements.detailsActionsContainer.innerHTML = '';
+
             if (isOwned) {
-              var useButton = document.createElement('button');
-              useButton.id = 'details-use-button';
-              useButton.textContent = 'Use Icon';
-              useButton.addEventListener('click', function() {
-                handleUseIcon(iconName, data, elements);
-              });
-              elements.detailsActionsContainer.appendChild(useButton);
+
+              var currentlyEquipped = (currentUserData.user && currentUserData.user.pfp === iconName);
+
+              if (currentlyEquipped) {
+
+                var unequipButton = document.createElement('button');
+                unequipButton.id = 'details-unequip-button';
+                unequipButton.textContent = 'Unequip';
+                unequipButton.addEventListener('click', function() {
+                  handleUnequipIcon(iconName, elements);
+                });
+                elements.detailsActionsContainer.appendChild(unequipButton);
+              } else {
+
+                var useButton = document.createElement('button');
+                useButton.id = 'details-use-button';
+                useButton.textContent = 'Use Icon';
+                useButton.addEventListener('click', function() {
+
+                  handleUseIcon(iconName, data, elements);
+                });
+                elements.detailsActionsContainer.appendChild(useButton);
+              }
             } else {
+
               if (data.cost !== undefined) {
+
                 var buyButton = document.createElement('button');
                 buyButton.id = 'details-buy-button';
-                buyButton.textContent = 'Buy ' + data.cost + ' Coins';
-                var userCoins = currentUserData.player.coins || 0;
+                buyButton.textContent = 'Buy (' + data.cost + ' Coins)';
+
+
+                var userCoins = (currentUserData.player && currentUserData.player.coins != null) ? currentUserData.player.coins : 0;
                 if (userCoins < data.cost) {
                   buyButton.disabled = true;
                   buyButton.style.opacity = 0.5;
                   buyButton.textContent = 'Need ' + data.cost + ' Coins';
                   buyButton.style.cursor = 'not-allowed';
                 } else {
+
                   buyButton.addEventListener('click', function() {
+
+                    buyButton.disabled = true;
+                    buyButton.textContent = 'Purchasing...';
+
+
                     fetch('icons/buy', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ userId: currentUserData._id, iconName: iconName })
                     })
-                      .then(function(response) { // First .then handles the Response object
+                      .then(function(response) {
                         if (!response.ok) {
-                          // Manually handle HTTP errors - Throw an error to trigger .catch()
-                          // Try to parse error message from server if possible
                           return response.json().catch(function() {
-                            // If parsing the error response fails, throw a generic error
                             throw new Error('Server error: ' + response.status);
-                          }).then(function(errorData) {
-                            // If parsing succeeds, throw error with server message
-                            throw new Error(errorData.message || 'Server error: ' + response.status);
-                          });
+                          })
+                            .then(function(errorData) {
+                              throw new Error(errorData.message || 'Server error: ' + response.status);
+                            });
                         }
-                        // If response is OK, parse the JSON body
-                        return response.json(); // This returns another Promise
+                        return response.json();
                       })
-                      .then(function(result) { // Second .then handles the parsed JSON result
-                        // --- SUCCESS HANDLING ---
+                      .then(function(result) {
+
                         currentUserData.player.coins = result.newCoinTotal;
                         if (!currentUserData.icons) currentUserData.icons = [];
                         if (!currentUserData.icons.includes(iconName)) currentUserData.icons.push(iconName);
+
 
                         if (runtimeIconData[iconName]) {
                           runtimeIconData[iconName].owned = true;
@@ -434,9 +549,12 @@
                           delete runtimeIconData[iconName].unlock;
                         }
 
+
                         if (elements.coinsEl) elements.coinsEl.textContent = result.newCoinTotal.toLocaleString();
+
                         clickedIconDiv.dataset.owned = "true";
-                        var updatedRarityClass = getRarityClass(runtimeIconData[iconName] ? runtimeIconData[iconName].rarity : null); // Added null check
+                        var purchasedIconData = runtimeIconData[iconName];
+                        var updatedRarityClass = getRarityClass(purchasedIconData ? purchasedIconData.rarity : null);
                         clickedIconDiv.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic');
                         if (updatedRarityClass) clickedIconDiv.classList.add(updatedRarityClass);
 
@@ -444,25 +562,23 @@
                         clickedIconDiv.classList.add('icon-selected');
                         currentlySelectedIconDiv = clickedIconDiv;
 
+
                         elements.detailsActionsContainer.innerHTML = '';
                         var useButton = document.createElement('button');
                         useButton.id = 'details-use-button';
                         useButton.textContent = 'Use Icon';
-                        useButton.addEventListener('click', function() { // This nested function is fine
-                          handleUseIcon(iconName, runtimeIconData[iconName], elements);
+                        useButton.addEventListener('click', function() {
+                          handleUseIcon(iconName, purchasedIconData, elements);
                         });
                         elements.detailsActionsContainer.appendChild(useButton);
-                        alert('Icon purchased successfully!');
-                        // --- END SUCCESS HANDLING ---
 
+                        alert('Icon purchased successfully!');
                       })
-                      .catch(function(error) { // .catch() handles errors from fetch, response.ok check, .json(), or the success handler
+                      .catch(function(error) {
                         console.error('Purchase failed:', error);
                         alert('Purchase failed: ' + error.message);
 
-                        // Reset the button state
                         buyButton.disabled = false;
-                        // Make sure data exists before accessing cost - it might be null/undefined
                         var costText = (data && data.cost !== undefined) ? data.cost : '???';
                         buyButton.textContent = 'Buy (' + costText + ' Coins)';
                       });
@@ -470,15 +586,17 @@
                 }
                 elements.detailsActionsContainer.appendChild(buyButton);
               } else if (data.unlock !== undefined) {
+
                 var unlockText = document.createElement('p');
                 unlockText.textContent = 'Unlock: ' + data.unlock;
                 unlockText.id = 'details-unlock-text';
                 elements.detailsActionsContainer.appendChild(unlockText);
               } else {
-                var unavailabvarext = document.createElement('p');
-                unavailabvarext.id = 'details-unlock-text';
-                unavailabvarext.textContent = "Currently unavailable.";
-                elements.detailsActionsContainer.appendChild(unavailabvarext);
+
+                var unavailableText = document.createElement('p');
+                unavailableText.id = 'details-unlock-text';
+                unavailableText.textContent = "Currently unavailable.";
+                elements.detailsActionsContainer.appendChild(unavailableText);
               }
             }
           }
@@ -487,19 +605,25 @@
 
 
       document.addEventListener('click', function(event) {
-        if (elements.iconGrid && elements.iconDetailsSection && !elements.iconGrid.contains(event.target) && !elements.iconDetailsSection.contains(event.target)) {
+
+        if (elements.iconGrid && elements.iconDetailsSection &&
+          !elements.iconGrid.contains(event.target) &&
+          !elements.iconDetailsSection.contains(event.target)) {
+
           if (currentlySelectedIconDiv) {
             currentlySelectedIconDiv.classList.remove('icon-selected');
             currentlySelectedIconDiv = null;
           }
+
           clearDetailsPanel(elements);
         }
       });
 
     } catch (error) {
+
       console.error("Failed to initialize icon selector:", error);
-      if (elements.iconGrid) elements.iconGrid.innerHTML = '<p style="color: red; text-align: center;">Error loading user data.</p>';
-      if (elements.userInfoPanel) elements.userInfoPanel.innerHTML = '<p style="color: red;">Error loading.</p>';
+      if (elements.iconGrid) elements.iconGrid.innerHTML = '<p style="color: red; text-align: center;">Error loading user data or icons.</p>';
+      if (elements.userInfoPanel) elements.userInfoPanel.innerHTML = '<p style="color: red;">Error loading user info.</p>';
       if (elements.iconDetailsSection) clearDetailsPanel(elements);
     }
   });
