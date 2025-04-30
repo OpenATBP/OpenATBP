@@ -30,8 +30,8 @@ public class ChooseGoose extends UserActor {
     private static final int Q_TICK_DMG_DELAY = 250;
     private static final int Q_DOT_DURATION = 3000;
     private static final double Q_AD_BUFF_VALUE = 0.1d;
-    private static final int Q_STUN_DURATION = 1000;
-
+    private static final float Q_ARMOR_DEBUFF_VALUE = 0.2f;
+    private static final int Q_ARMOR_DEBUFF_DURATION = 3000;
     public static final double W_JUMP_SPEED = 14d;
     public static final double E_SLOW_VALUE = 0.4d;
     public static final int E_SLOW_DURATION = 2000;
@@ -730,10 +730,7 @@ public class ChooseGoose extends UserActor {
             }
             if (qActive) {
                 String[] qHitSounds = {
-                    "sfx_choosegoose_q_hit_1",
-                    "sfx_choosegoose_q_hit_2",
-                    "sfx_choosegoose_q_hit_3",
-                    "sfx_choosegoose_q_hit_4"
+                    "sfx_choosegoose_q_hit_1", "sfx_choosegoose_q_hit_2", "sfx_choosegoose_q_hit_3"
                 };
 
                 Random random = new Random();
@@ -764,7 +761,8 @@ public class ChooseGoose extends UserActor {
                     qStacks.put(target, nextStacks);
 
                     if (currentStacks == 2) {
-                        target.addState(ActorState.STUNNED, 0d, Q_STUN_DURATION);
+                        double delta = target.getPlayerStat("armor") * -Q_ARMOR_DEBUFF_VALUE;
+                        target.addEffect("armor", delta, Q_ARMOR_DEBUFF_DURATION);
                     }
                 }
             }

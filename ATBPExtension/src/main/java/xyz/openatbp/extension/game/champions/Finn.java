@@ -149,8 +149,9 @@ public class Finn extends UserActor {
         if (a.getActorType() == ActorType.PLAYER) {
             this.canCast[1] = true;
             ExtensionCommands.actorAbilityResponse(this.parentExt, this.player, "w", true, 0, 0);
-            ExtensionCommands.playSound(
-                    this.parentExt, this.room, this.id, "vo/vo_finn_assist_1", this.location);
+            if (getHealth() > 0) {
+                ExtensionCommands.playSound(parentExt, room, id, "vo/vo_finn_assist_1", location);
+            }
         }
     }
 
@@ -160,8 +161,9 @@ public class Finn extends UserActor {
         if (key.equalsIgnoreCase("assists")) {
             this.canCast[1] = true;
             ExtensionCommands.actorAbilityResponse(this.parentExt, this.player, "w", true, 0, 0);
-            ExtensionCommands.playSound(
-                    this.parentExt, this.room, this.id, "vo/vo_finn_assist_1", this.location);
+            if (getHealth() > 0) {
+                ExtensionCommands.playSound(parentExt, room, id, "vo/vo_finn_assist_1", location);
+            }
         }
     }
 
