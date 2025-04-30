@@ -30,6 +30,8 @@ public class ChooseGoose extends UserActor {
     private static final int Q_TICK_DMG_DELAY = 250;
     private static final int Q_DOT_DURATION = 3000;
     private static final double Q_AD_BUFF_VALUE = 0.1d;
+    private static final int Q_STUN_DURATION = 1000;
+
     public static final double W_JUMP_SPEED = 14d;
     public static final double E_SLOW_VALUE = 0.4d;
     public static final int E_SLOW_DURATION = 2000;
@@ -41,6 +43,7 @@ public class ChooseGoose extends UserActor {
     private boolean qActive = false;
     private Long lastQTick = System.currentTimeMillis();
     private final HashMap<Actor, Long> qDOTActors = new HashMap<>();
+    private HashMap<Actor, Integer> qStacks = new HashMap<>();
     private boolean jumpActive = false;
     private boolean isEActive = false;
     private Long eStartTime;
@@ -62,7 +65,7 @@ public class ChooseGoose extends UserActor {
 
         if (!qDOTActors.isEmpty()) {
             JsonNode spellData = parentExt.getAttackData(avatar, "spell1");
-            int damage = getSpellDamage(spellData, false);
+            int damage = getSpellDamage(spellData, true);
 
             Iterator<Map.Entry<Actor, Long>> iterator = qDOTActors.entrySet().iterator();
 
@@ -73,10 +76,8 @@ public class ChooseGoose extends UserActor {
 
                 if (System.currentTimeMillis() - lastQTick >= Q_TICK_FREQUENCY) {
                     lastQTick = System.currentTimeMillis();
-                    Champion.DelayedAttack dA =
-                            new Champion.DelayedAttack(
-                                    parentExt, this, a, damage, "spell1"); // to sync with neptr FX
-                    scheduleTask(dA, Q_TICK_DMG_DELAY);
+                    Runnable dot = () -> a.addToDamageQueue(this, damage, spellData, true);
+                    scheduleTask(dot, Q_TICK_DMG_DELAY);
 
                     ExtensionCommands.createActorFX(
                             parentExt,
@@ -140,6 +141,7 @@ public class ChooseGoose extends UserActor {
                 canCast[0] = false;
                 qActive = true;
                 qDOTActors.clear();
+                qStacks.clear();
                 stopMoving();
 
                 if (!isAutoAttacking) {
@@ -508,7 +510,7 @@ public class ChooseGoose extends UserActor {
                                 (float) location.getX(),
                                 (float) location.getY(),
                                 true,
-                                team,
+                                getOppositeTeam(),
                                 0f);
 
                         Point2D gooseLocation = ChooseGoose.this.location;
@@ -578,6 +580,8 @@ public class ChooseGoose extends UserActor {
                         "icon_choosegoose_passive",
                         "choosegoose_spell_4_description",
                         PASSIVE_BUFF_DURATION);
+
+                ChooseGoose.this.increaseStat("attackDamage", 1);
             }
             ExtensionCommands.destroyActor(parentExt, room, id);
             parentExt.getRoomHandler(room.getName()).removeCompanion(this);
@@ -725,7 +729,18 @@ public class ChooseGoose extends UserActor {
                 damage = handleGrassSwordProc(damage);
             }
             if (qActive) {
-                ExtensionCommands.playSound(parentExt, room, id, "sfx_choosegoose_q_hit", location);
+                String[] qHitSounds = {
+                    "sfx_choosegoose_q_hit_1",
+                    "sfx_choosegoose_q_hit_2",
+                    "sfx_choosegoose_q_hit_3",
+                    "sfx_choosegoose_q_hit_4"
+                };
+
+                Random random = new Random();
+                int randomIndex = random.nextInt(qHitSounds.length);
+                String chosenSound = qHitSounds[randomIndex];
+
+                ExtensionCommands.playSound(parentExt, room, id, chosenSound, location);
                 ExtensionCommands.createActorFX(
                         parentExt,
                         room,
@@ -740,6 +755,17 @@ public class ChooseGoose extends UserActor {
                         target.getTeam());
                 if (!qDOTActors.containsKey(target) && isNonStructure(target)) {
                     qDOTActors.put(target, System.currentTimeMillis());
+                }
+
+                if (isNonStructure(target)) {
+                    int currentStacks = qStacks.getOrDefault(target, 0);
+                    int nextStacks = currentStacks + 1;
+
+                    qStacks.put(target, nextStacks);
+
+                    if (currentStacks == 2) {
+                        target.addState(ActorState.STUNNED, 0d, Q_STUN_DURATION);
+                    }
                 }
             }
             new Champion.DelayedAttack(
