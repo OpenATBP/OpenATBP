@@ -196,24 +196,26 @@ public class FlamePrincess extends UserActor {
                 basicAttackReset();
                 try {
                     stopMoving();
-                    Line2D abilityLine = Champion.getAbilityLine(location, dest, 8f);
-                    ExtensionCommands.playSound(
-                            parentExt,
-                            room,
-                            this.id,
-                            "sfx_flame_princess_cone_of_flame",
-                            this.location);
-                    fireProjectile(
-                            new FlameProjectile(
-                                    this.parentExt,
-                                    this,
-                                    abilityLine,
-                                    8f,
-                                    0.5f,
-                                    "projectile_flame_cone"),
-                            location,
-                            dest,
-                            8f);
+                    if (getHealth() > 0) {
+                        Line2D abilityLine = Champion.getAbilityLine(location, dest, 8f);
+                        ExtensionCommands.playSound(
+                                parentExt,
+                                room,
+                                this.id,
+                                "sfx_flame_princess_cone_of_flame",
+                                this.location);
+                        fireProjectile(
+                                new FlameProjectile(
+                                        this.parentExt,
+                                        this,
+                                        abilityLine,
+                                        8f,
+                                        0.5f,
+                                        "projectile_flame_cone"),
+                                location,
+                                dest,
+                                8f);
+                    }
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();

@@ -155,32 +155,33 @@ public class Billy extends UserActor {
             case 1:
                 this.canCast[0] = false;
                 try {
-                    this.stopMoving(Q_SELF_CRIPPLE_DURATION);
-                    Path2D quadrangle =
-                            Champion.createRectangle(
-                                    location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
-                    RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
-                    List<Actor> actorsInPolygon =
-                            handler.getEnemiesInPolygon(this.team, quadrangle);
-                    if (!actorsInPolygon.isEmpty()) {
-                        for (Actor a : actorsInPolygon) {
-                            if (isNonStructure(a)) {
-                                a.knockback(this.location, 3.5f);
-                                if (this.passiveUses == 3)
-                                    a.addState(ActorState.STUNNED, 0d, Q_STUN_DURATION);
+                    if (getHealth() > 0) {
+                        this.stopMoving(Q_SELF_CRIPPLE_DURATION);
+                        Path2D quadrangle =
+                                Champion.createRectangle(
+                                        location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
+                        RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
+                        List<Actor> actorsInPolygon =
+                                handler.getEnemiesInPolygon(this.team, quadrangle);
+                        if (!actorsInPolygon.isEmpty()) {
+                            for (Actor a : actorsInPolygon) {
+                                if (isNonStructure(a)) {
+                                    a.knockback(this.location, 3.5f);
+                                    if (this.passiveUses == 3)
+                                        a.addState(ActorState.STUNNED, 0d, Q_STUN_DURATION);
+                                }
+                                double damage = getSpellDamage(spellData, true);
+                                a.addToDamageQueue(this, damage, spellData, false);
                             }
-                            a.addToDamageQueue(
-                                    this, getSpellDamage(spellData, true), spellData, false);
                         }
+                        if (this.passiveUses == 3) this.usePassiveAbility();
+                        ExtensionCommands.playSound(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                "vo/vo_billy_knock_back",
+                                this.location);
                     }
-                    if (this.passiveUses == 3) this.usePassiveAbility();
-                    ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "vo/vo_billy_knock_back",
-                            this.location);
-
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();

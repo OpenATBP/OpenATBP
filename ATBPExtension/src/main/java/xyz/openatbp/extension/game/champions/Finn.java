@@ -304,7 +304,7 @@ public class Finn extends UserActor {
 
                 RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
                 List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, quadrangle);
-                if (!actorsInPolygon.isEmpty()) {
+                if (!actorsInPolygon.isEmpty() && getHealth() > 0) {
                     for (Actor a : actorsInPolygon) {
                         if (a.getActorType() == ActorType.TOWER
                                 || a.getActorType() == ActorType.BASE) {

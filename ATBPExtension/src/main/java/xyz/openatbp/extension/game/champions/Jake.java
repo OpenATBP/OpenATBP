@@ -352,59 +352,61 @@ public class Jake extends UserActor {
                 this.canCast[1] = false;
                 try {
                     this.stopMoving(gCooldown);
-                    String ballFX = SkinData.getJakeWFX(avatar);
-                    String dustUpFX = SkinData.getJakeWDustUpFX(avatar);
-                    ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            ballFX,
-                            2000,
-                            this.id + "_ball",
-                            true,
-                            "targetNode",
-                            true,
-                            false,
-                            this.team);
-                    ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            dustUpFX,
-                            1500,
-                            this.id + "_dust",
-                            false,
-                            "Bip001 Footsteps",
-                            false,
-                            false,
-                            this.team);
-                    ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "fx_target_ring_3",
-                            850,
-                            this.id + "_jake_ring_3",
-                            true,
-                            "",
-                            true,
-                            true,
-                            this.team);
-                    RoomHandler handler = parentExt.getRoomHandler(room.getName());
-                    for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
-                        if (this.isNonStructure(a)) {
-                            a.knockback(this.location, 3.5f);
-                            a.addToDamageQueue(
-                                    this, getSpellDamage(spellData, true), spellData, false);
+                    if (getHealth() > 0) {
+                        String ballFX = SkinData.getJakeWFX(avatar);
+                        String dustUpFX = SkinData.getJakeWDustUpFX(avatar);
+                        ExtensionCommands.createActorFX(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                ballFX,
+                                2000,
+                                this.id + "_ball",
+                                true,
+                                "targetNode",
+                                true,
+                                false,
+                                this.team);
+                        ExtensionCommands.createActorFX(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                dustUpFX,
+                                1500,
+                                this.id + "_dust",
+                                false,
+                                "Bip001 Footsteps",
+                                false,
+                                false,
+                                this.team);
+                        ExtensionCommands.createActorFX(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                "fx_target_ring_3",
+                                850,
+                                this.id + "_jake_ring_3",
+                                true,
+                                "",
+                                true,
+                                true,
+                                this.team);
+                        RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                        for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
+                            if (this.isNonStructure(a)) {
+                                a.knockback(this.location, 3.5f);
+                                a.addToDamageQueue(
+                                        this, getSpellDamage(spellData, true), spellData, false);
+                            }
                         }
-                    }
 
-                    String ballVO = SkinData.getJakeWVO(avatar);
-                    String ballSFX = SkinData.getJakeWSFX(avatar);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, ballVO, this.location);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, ballSFX, this.location);
+                        String ballVO = SkinData.getJakeWVO(avatar);
+                        String ballSFX = SkinData.getJakeWSFX(avatar);
+                        ExtensionCommands.playSound(
+                                this.parentExt, this.room, this.id, ballVO, this.location);
+                        ExtensionCommands.playSound(
+                                this.parentExt, this.room, this.id, ballSFX, this.location);
+                    }
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();

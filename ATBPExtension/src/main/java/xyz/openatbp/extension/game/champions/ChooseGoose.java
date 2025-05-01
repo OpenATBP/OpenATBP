@@ -399,52 +399,55 @@ public class ChooseGoose extends UserActor {
             scheduleTask(enableWCasting, getReducedCooldown(cooldown));
             jumpActive = false;
 
-            ExtensionCommands.actorAnimate(parentExt, room, id, "spell2b", 500, false);
-            ExtensionCommands.playSound(parentExt, room, id, "sfx_choosegoose_w_impact", location);
+            if (getHealth() > 0) {
+                ExtensionCommands.actorAnimate(parentExt, room, id, "spell2b", 500, false);
+                ExtensionCommands.playSound(
+                        parentExt, room, id, "sfx_choosegoose_w_impact", location);
 
-            ExtensionCommands.createWorldFX(
-                    parentExt,
-                    room,
-                    id,
-                    "finn_dash_whirlwind_fx",
-                    id + "_dashImpactFX" + Math.random(),
-                    2000,
-                    (float) location.getX(),
-                    (float) location.getY(),
-                    false,
-                    team,
-                    0f);
-            ExtensionCommands.createWorldFX(
-                    parentExt,
-                    room,
-                    id,
-                    "fx_target_ring_2",
-                    id + "_dashImpactRing" + Math.random(),
-                    500,
-                    (float) location.getX(),
-                    (float) location.getY(),
-                    true,
-                    team,
-                    0f);
+                ExtensionCommands.createWorldFX(
+                        parentExt,
+                        room,
+                        id,
+                        "finn_dash_whirlwind_fx",
+                        id + "_dashImpactFX" + Math.random(),
+                        2000,
+                        (float) location.getX(),
+                        (float) location.getY(),
+                        false,
+                        team,
+                        0f);
+                ExtensionCommands.createWorldFX(
+                        parentExt,
+                        room,
+                        id,
+                        "fx_target_ring_2",
+                        id + "_dashImpactRing" + Math.random(),
+                        500,
+                        (float) location.getX(),
+                        (float) location.getY(),
+                        true,
+                        team,
+                        0f);
 
-            RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            List<Actor> actors2 = Champion.getActorsInRadius(handler, location, 2f);
-            List<Actor> actors1 = Champion.getActorsInRadius(handler, location, 1f);
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                List<Actor> actors2 = Champion.getActorsInRadius(handler, location, 2f);
+                List<Actor> actors1 = Champion.getActorsInRadius(handler, location, 1f);
 
-            actors2.removeAll(actors1);
+                actors2.removeAll(actors1);
 
-            double damageR2 = getSpellDamage(spellData, false);
-            double damageR1 = damageR2 + 30;
+                double damageR2 = getSpellDamage(spellData, false);
+                double damageR1 = damageR2 + 30;
 
-            for (Actor a : actors2) {
-                if (isNonStructure(a)) {
-                    a.addToDamageQueue(ChooseGoose.this, damageR2, spellData, false);
+                for (Actor a : actors2) {
+                    if (isNonStructure(a)) {
+                        a.addToDamageQueue(ChooseGoose.this, damageR2, spellData, false);
+                    }
                 }
-            }
 
-            for (Actor a : actors1) {
-                if (isNonStructure(a)) {
-                    a.addToDamageQueue(ChooseGoose.this, damageR1, spellData, false);
+                for (Actor a : actors1) {
+                    if (isNonStructure(a)) {
+                        a.addToDamageQueue(ChooseGoose.this, damageR1, spellData, false);
+                    }
                 }
             }
         }

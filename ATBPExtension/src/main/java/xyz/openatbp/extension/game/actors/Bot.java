@@ -438,7 +438,7 @@ public class Bot extends Actor {
 
                 if (shouldAttackTarget(a) && a.getLocation().distance(location) < 5) {
                     if (canUseW(a)) useW(a);
-                    if (canUseE(a)) useE();
+                    if (canUseE(a) && a.getHealth() > 0) useE();
                     Console.debugLog("Attack Player");
                     attemptAttack(a);
                     return;

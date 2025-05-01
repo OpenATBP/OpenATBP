@@ -163,7 +163,7 @@ public class BMO extends UserActor {
                                     Q_OFFSET_DISTANCE_TOP);
                     RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
                     List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, trapezoid);
-                    if (!actorsInPolygon.isEmpty()) {
+                    if (!actorsInPolygon.isEmpty() && getHealth() > 0) {
                         for (Actor a : actorsInPolygon) {
                             if (isNonStructure(a)) {
                                 a.addState(ActorState.BLINDED, 0d, Q_BLIND_DURATION);

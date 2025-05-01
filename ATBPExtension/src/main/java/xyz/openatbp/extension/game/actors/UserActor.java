@@ -1468,6 +1468,7 @@ public class UserActor extends Actor {
             case "cinnamonbun":
             case "peppermintbutler":
             case "finn":
+            case "choosegoose":
                 if (ability == 2) return true;
                 break;
             case "fionna":

@@ -167,20 +167,22 @@ public class Gunter extends UserActor {
                 this.canCast[1] = false;
                 try {
                     stopMoving();
-                    Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, "", "sfx_gunter_wing_it", this.location);
-                    this.fireProjectile(
-                            new BottleProjectile(
-                                    this.parentExt,
-                                    this,
-                                    abilityLine,
-                                    11f,
-                                    0.5f,
-                                    "projectile_gunter_bottle"),
-                            this.location,
-                            dest,
-                            8f);
+                    if (getHealth() > 0) {
+                        Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
+                        ExtensionCommands.playSound(
+                                this.parentExt, this.room, "", "sfx_gunter_wing_it", this.location);
+                        this.fireProjectile(
+                                new BottleProjectile(
+                                        this.parentExt,
+                                        this,
+                                        abilityLine,
+                                        11f,
+                                        0.5f,
+                                        "projectile_gunter_bottle"),
+                                this.location,
+                                dest,
+                                8f);
+                    }
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();

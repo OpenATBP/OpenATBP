@@ -184,10 +184,12 @@ public class BubbleGum extends UserActor {
             case 2: // W
                 this.canCast[1] = false;
                 try {
-                    this.stopMoving();
-                    String turretVo = SkinData.getBubbleGumWVO(avatar);
-                    ExtensionCommands.playSound(parentExt, room, id, turretVo, this.location);
-                    this.spawnTurret(dest);
+                    if (getHealth() > 0) {
+                        this.stopMoving();
+                        String turretVo = SkinData.getBubbleGumWVO(avatar);
+                        ExtensionCommands.playSound(parentExt, room, id, turretVo, this.location);
+                        this.spawnTurret(dest);
+                    }
                     ExtensionCommands.actorAbilityResponse(
                             parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
                 } catch (Exception exception) {
@@ -236,7 +238,7 @@ public class BubbleGum extends UserActor {
                     scheduleTask(
                             abilityRunnable(ability, spellData, cooldown, gCooldown, dest),
                             E_SECOND_USE_DELAY);
-                } else if (this.eUses == 2) {
+                } else if (this.eUses == 2 && getHealth() > 0) {
                     useBomb(getReducedCooldown(cooldown), gCooldown);
                 }
                 break;
