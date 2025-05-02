@@ -107,18 +107,25 @@
   }
 
   function getRankImage(elo) {
-    if (elo > 439) return 'assets/ranks/4-4.png';
-    else if (elo > 379) return 'assets/ranks/4-3.png';
-    else if (elo > 319) return 'assets/ranks/4-2.png';
-    else if (elo > 259) return 'assets/ranks/4-1.png';
-    else if (elo > 198) return 'assets/ranks/4-0.png';
-    else if (elo > 167) return 'assets/ranks/3-3.png';
-    else if (elo > 136) return 'assets/ranks/3-2.png';
-    else if (elo > 105) return 'assets/ranks/3-1.png';
-    else if (elo > 72) return 'assets/ranks/3-0.png';
-    else if (elo > 56) return 'assets/ranks/2-2.png';
-    else if (elo > 40) return 'assets/ranks/2-1.png';
-    else if (elo > 23) return 'assets/ranks/2-0.png';
+    // Tier 4: Immortal Warrior (Starts at 200)
+    if (elo > 439) return 'assets/ranks/4-4.png'; // Purple (440+)
+    else if (elo > 379) return 'assets/ranks/4-3.png'; // Teal (380-439)
+    else if (elo > 319) return 'assets/ranks/4-2.png'; // Gold (320-379)
+    else if (elo > 259) return 'assets/ranks/4-1.png'; // Silver (260-319)
+    else if (elo > 199) return 'assets/ranks/4-0.png'; // Bronze (200-259)
+
+    // Tier 3: Master of Battle (Starts at 75)
+    else if (elo > 167) return 'assets/ranks/3-3.png'; // Tier 3d (168-199)
+    else if (elo > 136) return 'assets/ranks/3-2.png'; // Tier 3c (137-167)
+    else if (elo > 105) return 'assets/ranks/3-1.png'; // Tier 3b (106-136)
+    else if (elo > 74) return 'assets/ranks/3-0.png';  // Tier 3a (75-105)
+
+    // Tier 2: Royal Legend (Starts at 25)
+    else if (elo > 56) return 'assets/ranks/2-2.png';  // Tier 2c (57-74)
+    else if (elo > 40) return 'assets/ranks/2-1.png';  // Tier 2b (41-56)
+    else if (elo > 24) return 'assets/ranks/2-0.png';  // Tier 2a (25-40)
+
+    // Tier 1: Brave Hero (Starts at 0)
     else if (elo > 11) return 'assets/ranks/1-1.png';
     else return 'assets/ranks/1-0.png';
   }

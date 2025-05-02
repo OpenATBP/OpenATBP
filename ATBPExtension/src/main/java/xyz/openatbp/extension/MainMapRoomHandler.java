@@ -554,13 +554,6 @@ public class MainMapRoomHandler extends RoomHandler {
                 double dcPercent = disconnects / playsPVP;
                 double elo = dataObj.get("player").get("elo").asInt();
                 double newElo = elo * (1 - dcPercent);
-                switch ((int) (newElo + 1)) {
-                    case 1:
-                    case 100:
-                    case 200:
-                    case 500:
-                        newElo++;
-                }
 
                 Bson updates =
                         Updates.combine(

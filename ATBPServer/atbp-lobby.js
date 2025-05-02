@@ -256,17 +256,6 @@ function updateElo(socket) {
       .findOne({ 'user.TEGid': socket.player.teg_id })
       .then((res) => {
         if (res != null) {
-          switch (res.player.elo + 1) {
-            case 0:
-            case 25:
-            case 75:
-            case 200:
-              res.player.elo++;
-              break;
-            case 74:
-              res.player.elo += 2;
-              break;
-          }
           socket.player.elo = res.player.elo;
         } else socket.end();
       })

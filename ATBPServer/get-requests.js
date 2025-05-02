@@ -49,7 +49,7 @@ module.exports = {
     // /service/data/config/champions/ Not sure if this is what it should be returning or not.
     return JSON.stringify({
       upperELO: 500.0,
-      eloTier: ['0', '25', '75', '200'], //This changes the tiers that change your icon based on elo. 500 marks bronze and 2000 is burple
+      eloTier: ['0', '25', '75', '200'], //This changes the tiers that change your icon based on elo.
     });
   },
   handlePlayerInventory: function (token, collection) {
@@ -72,17 +72,6 @@ module.exports = {
         .findOne({ 'session.token': data })
         .then((dat) => {
           if (dat != null) {
-            switch (dat.player.elo + 1) {
-              case 0: //Should never happen
-              case 25:
-              case 75:
-              case 200:
-                dat.player.elo++;
-                break;
-              case 74:
-                dat.player.elo += 2;
-                break;
-            }
             resolve(JSON.stringify(dat.player));
           }
         })
