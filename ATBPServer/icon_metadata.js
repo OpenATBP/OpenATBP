@@ -204,8 +204,12 @@ const ALL_ICONS_METADATA = {
   'Radiant Victory': {
     src: 'assets/pfp/Radiant Victory.jpg',
     rarity: 'Legendary',
-    unlock: { stat: 'elo', threshold: 999999, text: 'Win the Community Highlight Contest' },
-  }
+    unlock: {
+      stat: 'elo',
+      threshold: 999999,
+      text: 'Win the Community Highlight Contest',
+    },
+  },
 };
 
 module.exports = {

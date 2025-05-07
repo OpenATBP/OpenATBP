@@ -131,19 +131,16 @@ body {
 }
 
 #current-user-icon.rarity-legendary {
-    border-color: #ff6b00;
-    -webkit-box-shadow:
-            0 0 10px rgba(0, 0, 0, 0.3),
-            0 0 12px 3px rgba(255, 107, 0, 0.8),
-            0 0 18px 5px rgba(255, 150, 50, 0.6);
-    box-shadow:
-            0 0 10px rgba(0, 0, 0, 0.3),
-            0 0 12px 3px rgba(255, 107, 0, 0.8),
-            0 0 18px 5px rgba(255, 150, 50, 0.6);
-
-
+  border-color: #ff6b00;
+  -webkit-box-shadow:
+    0 0 10px rgba(0, 0, 0, 0.3),
+    0 0 12px 3px rgba(255, 107, 0, 0.8),
+    0 0 18px 5px rgba(255, 150, 50, 0.6);
+  box-shadow:
+    0 0 10px rgba(0, 0, 0, 0.3),
+    0 0 12px 3px rgba(255, 107, 0, 0.8),
+    0 0 18px 5px rgba(255, 150, 50, 0.6);
 }
-
 
 #username {
   font-size: 1.8rem;
@@ -312,15 +309,14 @@ body {
 }
 
 #details-icon-img.details-border-legendary-hover {
-    border-color: #ff8c00;
-    -webkit-box-shadow:
-            0 0 8px rgba(255, 140, 0, 0.9),
-            0 0 8px rgba(255, 180, 0, 0.7);
-    box-shadow:
-            0 0 8px rgba(255, 140, 0, 0.9),
-            0 0 8px rgba(255, 180, 0, 0.7);
+  border-color: #ff8c00;
+  -webkit-box-shadow:
+    0 0 8px rgba(255, 140, 0, 0.9),
+    0 0 8px rgba(255, 180, 0, 0.7);
+  box-shadow:
+    0 0 8px rgba(255, 140, 0, 0.9),
+    0 0 8px rgba(255, 180, 0, 0.7);
 }
-
 
 #details-icon-name {
   font-size: 1.5rem;
@@ -366,12 +362,12 @@ body {
 }
 
 #details-icon-rarity.rarity-legendary {
-    color: #fff;
-    background: linear-gradient(135deg, #d32f2f, #ff6f00);
-    font-weight: bold;
-    text-transform: uppercase;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
-    box-shadow: 0 0 8px rgba(255,100,0,0.5);
+  color: #fff;
+  background: linear-gradient(135deg, #d32f2f, #ff6f00);
+  font-weight: bold;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 0 8px rgba(255, 100, 0, 0.5);
 }
 
 #details-actions {
@@ -497,12 +493,12 @@ body {
 }
 
 .icon.rarity-legendary .rarity-indicator {
-    color: #ffeb3b;
-    background-color: rgba(120, 30, 0, 0.85);
-    text-shadow:
-            0 0 5px #ffc107,
-            1px 1px 2px rgba(0, 0, 0, 0.8);
-    border: 1px solid rgba(255,193,7,0.5);
+  color: #ffeb3b;
+  background-color: rgba(120, 30, 0, 0.85);
+  text-shadow:
+    0 0 5px #ffc107,
+    1px 1px 2px rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 193, 7, 0.5);
 }
 
 .icon img {
@@ -535,7 +531,7 @@ body {
 }
 
 .icon.rarity-legendary {
-    border-color: #ff6b00;
+  border-color: #ff6b00;
 }
 
 .icon.rarity-common:hover {
@@ -553,13 +549,13 @@ body {
 }
 
 .icon.rarity-legendary:hover {
-    border-color: #ffa000;
-    -webkit-box-shadow:
-            0 0 8px rgba(255, 160, 0, 0.9),
-            0 0 8px rgba(255, 200, 50, 0.9);
-    box-shadow:
-            0 0 8px rgba(255, 160, 0, 0.9),
-            0 0 8px rgba(255, 200, 50, 0.9);
+  border-color: #ffa000;
+  -webkit-box-shadow:
+    0 0 8px rgba(255, 160, 0, 0.9),
+    0 0 8px rgba(255, 200, 50, 0.9);
+  box-shadow:
+    0 0 8px rgba(255, 160, 0, 0.9),
+    0 0 8px rgba(255, 200, 50, 0.9);
 }
 
 .icon.icon-selected {
@@ -591,10 +587,9 @@ body {
 }
 
 .icon.rarity-legendary.icon-selected {
-    border-color: #ffc107;
-    z-index: 10;
+  border-color: #ffc107;
+  z-index: 10;
 }
-
 
 .icon[data-owned='false'] img {
   -webkit-filter: grayscale(100%);
