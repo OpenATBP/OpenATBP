@@ -113,7 +113,7 @@ const ALL_ICONS_METADATA = {
     rarity: 'Blooby',
     unlock: {
       stat: 'elo',
-      threshold: 73,
+      threshold: 75,
       text: 'Reach the Master of Battle rank',
     },
   },
@@ -160,7 +160,7 @@ const ALL_ICONS_METADATA = {
     rarity: 'Algebraic',
     unlock: {
       stat: 'elo',
-      threshold: 199,
+      threshold: 200,
       text: 'Reach the Immortal Warrior rank',
     },
   },
@@ -201,6 +201,11 @@ const ALL_ICONS_METADATA = {
     rarity: 'Algebraic',
     unlock: { stat: 'largestMulti', threshold: 4, text: 'Get a Quad KO' },
   },
+  'Radiant Victory': {
+    src: 'assets/pfp/Radiant Victory.jpg',
+    rarity: 'Legendary',
+    unlock: { stat: 'elo', threshold: 999999, text: 'Win the Community Highlight Contest' },
+  }
 };
 
 module.exports = {

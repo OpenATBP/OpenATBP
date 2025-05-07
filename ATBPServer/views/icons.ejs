@@ -78,7 +78,6 @@
     for (var i = 0; i < allIconDivs.length; i++) {
       var iconDiv = allIconDivs[i];
 
-
       var iconName = iconDiv.dataset.iconName;
       if (!iconName || !iconData[iconName]) {
         console.warn("Missing data or name for icon div:", iconDiv);
@@ -91,12 +90,12 @@
       var isOwned = data.owned;
       var rarityClass = getRarityClass(rarityName);
 
-      iconDiv.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic');
+      iconDiv.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic', 'rarity-legendary');
       iconDiv.classList.add(rarityClass);
       var existingIndicator = iconDiv.querySelector('.rarity-indicator');
       if (existingIndicator) iconDiv.removeChild(existingIndicator);
 
-      var indicatorvarter = rarityName === 'Common' ? 'C' : rarityName === 'Blooby' ? 'B' : rarityName === 'Algebraic' ? 'A' : '?';
+      var indicatorvarter = rarityName === 'Common' ? 'C' : rarityName === 'Blooby' ? 'B' : rarityName === 'Algebraic' ? 'A' : rarityName === 'Legendary' ? 'L' : '?';
       var indicatorSpan = document.createElement('span');
       indicatorSpan.className = 'rarity-indicator';
       indicatorSpan.textContent = indicatorvarter;
@@ -178,10 +177,10 @@
         console.warn('Icon image not found: ' + currentIconPath + ',' + 'using default');
         currentUserIcon.src = 'icon_shop/user-icons/Default.jpg';
         currentUserIcon.alt = 'Current Icon: Default';
-        currentUserIcon.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic');
+        currentUserIcon.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic', 'rarity-legendary');
         currentUserIcon.classList.add('rarity-common');
       };
-      currentUserIcon.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic');
+      currentUserIcon.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic', 'rarity-legendary');
       currentUserIcon.classList.add(currentRarityClass);
       currentUserIcon.alt = 'Current Icon: ' + currentIconKey;
     }
@@ -234,10 +233,7 @@
 
     if (useButton) {
       useButton.disabled = true;
-
-
     }
-
 
     fetch('/icons/use', {
       method: 'POST',
@@ -262,7 +258,7 @@
           currentUserIcon.src = iconData.src;
           currentUserIcon.alt = 'Current Icon: ' + iconName;
           var currentRarityClass = getRarityClass(iconData.rarity);
-          currentUserIcon.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic');
+          currentUserIcon.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic', 'rarity-legendary');
           currentUserIcon.classList.add(currentRarityClass);
         }
 
@@ -337,7 +333,7 @@
           elements.currentUserIcon.src = defaultIconData.src;
           elements.currentUserIcon.alt = 'Current Icon: Default';
           var defaultRarityClass = getRarityClass(defaultIconData.rarity);
-          elements.currentUserIcon.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic');
+          elements.currentUserIcon.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic', 'rarity-legendary');
           elements.currentUserIcon.classList.add(defaultRarityClass);
         }
 
@@ -403,14 +399,12 @@
       return;
     }
 
-
     try {
 
       if (!currentUserData || !runtimeIconData) {
         console.error("User or Icon data not found!");
         return;
       }
-
 
       populateIconGrid(runtimeIconData, elements.iconGrid);
       applyInitialVisualState(runtimeIconData, elements.iconGrid);
@@ -459,6 +453,7 @@
           var detailsBorderStyleClass = 'details-border-common-hover';
           if (rarityName === 'Blooby') detailsBorderStyleClass = 'details-border-blooby-hover';
           else if (rarityName === 'Algebraic') detailsBorderStyleClass = 'details-border-algebraic-hover';
+          else if (rarityName === 'Legendary') detailsBorderStyleClass = 'details-border-legendary-hover';
 
 
           if (elements.iconDetailsSection) elements.iconDetailsSection.classList.remove('is-empty');
@@ -562,7 +557,7 @@
                         clickedIconDiv.dataset.owned = "true";
                         var purchasedIconData = runtimeIconData[iconName];
                         var updatedRarityClass = getRarityClass(purchasedIconData ? purchasedIconData.rarity : null);
-                        clickedIconDiv.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic');
+                        clickedIconDiv.classList.remove('rarity-common', 'rarity-blooby', 'rarity-algebraic', 'rarity-legendary');
                         if (updatedRarityClass) clickedIconDiv.classList.add(updatedRarityClass);
 
                         if (currentlySelectedIconDiv) currentlySelectedIconDiv.classList.remove('icon-selected');
