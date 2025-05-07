@@ -907,7 +907,7 @@ mongoClient.connect((err) => {
       nameCount >= 2 && // Require at least 2 valid parts for the display name
       password === confirmPassword
     ) {
-      var namesForDisplay = [name1, name2, name3].filter(n => n !== ''); // Filter out empty parts for display name construction
+      var namesForDisplay = [name1, name2, name3].filter((n) => n !== ''); // Filter out empty parts for display name construction
 
       postRequest
         .handleRegister(
@@ -922,7 +922,12 @@ mongoClient.connect((err) => {
             res.redirect('/register?usernameTaken=true');
           } else if (result === 'displayNameTaken') {
             res.redirect('/register?displayNameTaken=true');
-          } else if (typeof result === 'object' && result.user && result.session) { // Successful registration
+          } else if (
+            typeof result === 'object' &&
+            result.user &&
+            result.session
+          ) {
+            // Successful registration
             res.cookie('TEGid', result.user.TEGid);
             res.cookie('authid', result.user.authid);
             res.cookie('dname', result.user.dname);
@@ -934,12 +939,12 @@ mongoClient.connect((err) => {
             res.cookie('logged', true);
             res.redirect(config.httpserver.url);
           } else {
-            console.warn("handleRegister returned unexpected result:", result);
+            console.warn('handleRegister returned unexpected result:', result);
             res.redirect('/register?failed=true&reason=unexpected');
           }
         })
         .catch((e) => {
-          console.error("Error during registration process:", e);
+          console.error('Error during registration process:', e);
 
           res.redirect('/register?failed=true&reason=servererror');
         });
@@ -947,7 +952,8 @@ mongoClient.connect((err) => {
       // Initial validation failed (empty fields, passwords don't match, invalid display name count)
       let reason = 'validation';
       if (password !== confirmPassword) reason = 'passwordmismatch';
-      if (nameCount < 2 && nameCount > -100) reason = 'displaynameparts'; // if nameCount is -100, it's an invalid selection
+      if (nameCount < 2 && nameCount > -100)
+        reason = 'displaynameparts'; // if nameCount is -100, it's an invalid selection
       else if (nameCount === -100) reason = 'invaliddisplayname';
 
       res.redirect(`/register?failed=true&reason=${reason}`);

@@ -11,28 +11,38 @@ function escapeRegex(string) {
 }
 
 module.exports = {
-  handleRegister: function (username, password, selectedNameParts, forgot, collection) {
+  handleRegister: function (
+    username,
+    password,
+    selectedNameParts,
+    forgot,
+    collection
+  ) {
     return new Promise(function (resolve, reject) {
       bcrypt.hash(password, 10, (err, hash) => {
         if (err) {
-          console.error("Bcrypt password hashing error:", err);
-          return reject(new Error("Password hashing failed"));
+          console.error('Bcrypt password hashing error:', err);
+          return reject(new Error('Password hashing failed'));
         }
 
-        let validNameParts = selectedNameParts.filter(n => n && n.trim() !== '');
+        let validNameParts = selectedNameParts.filter(
+          (n) => n && n.trim() !== ''
+        );
         const finalDisplayNameForStorage = validNameParts.join(' ');
 
         if (validNameParts.length < 2) {
-          return reject(new Error("Insufficient display name parts selected."));
+          return reject(new Error('Insufficient display name parts selected.'));
         }
 
         let baseDisplayNameForLookup = finalDisplayNameForStorage;
 
         const prefixRegex = /^(?:\[DEV\]\s*|\[ATBPDEV\]\s*)/i;
-        baseDisplayNameForLookup = baseDisplayNameForLookup.replace(prefixRegex, '').trim();
+        baseDisplayNameForLookup = baseDisplayNameForLookup
+          .replace(prefixRegex, '')
+          .trim();
 
         if (!baseDisplayNameForLookup) {
-          return reject(new Error("A valid core display name is required."));
+          return reject(new Error('A valid core display name is required.'));
         }
 
         const escapedUsername = escapeRegex(username);
@@ -46,14 +56,19 @@ module.exports = {
         collection
           .findOne({
             $or: [
-              { 'user.TEGid': { $regex: new RegExp(`^${escapedUsername}$`, 'i') } },
+              {
+                'user.TEGid': {
+                  $regex: new RegExp(`^${escapedUsername}$`, 'i'),
+                },
+              },
               { 'user.dname': displayNameConflictRegex },
             ],
           })
           .then((existingUser) => {
             if (existingUser != null) {
-
-              if (existingUser.user.TEGid.toLowerCase() === username.toLowerCase()) {
+              if (
+                existingUser.user.TEGid.toLowerCase() === username.toLowerCase()
+              ) {
                 resolve('usernameTaken');
               } else {
                 // If the username didn't match, the displayNameConflictRegex must have.
@@ -62,24 +77,30 @@ module.exports = {
             } else {
               bcrypt.hash(forgot, 10, (er, forgotHash) => {
                 if (er) {
-                  console.error("Bcrypt secret phrase hashing error:", er);
-                  return reject(new Error("Secret phrase hashing failed"));
+                  console.error('Bcrypt secret phrase hashing error:', er);
+                  return reject(new Error('Secret phrase hashing failed'));
                 }
 
                 dbOp
-                  .createNewUser(username, finalDisplayNameForStorage, hash, forgotHash, collection)
+                  .createNewUser(
+                    username,
+                    finalDisplayNameForStorage,
+                    hash,
+                    forgotHash,
+                    collection
+                  )
                   .then((u) => {
                     resolve(u);
                   })
-                  .catch(dbErr => {
-                    console.error("Error in createNewUser:", dbErr);
+                  .catch((dbErr) => {
+                    console.error('Error in createNewUser:', dbErr);
                     reject(dbErr);
                   });
               });
             }
           })
-          .catch(queryErr => {
-            console.error("Error in findOne user check:", queryErr);
+          .catch((queryErr) => {
+            console.error('Error in findOne user check:', queryErr);
             reject(queryErr);
           });
       });
