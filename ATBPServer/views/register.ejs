@@ -197,15 +197,68 @@
 <script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
 
 <script type="text/javascript">
-  const failed = window.location.search.includes('failed');
-  const exists = window.location.search.includes('exists');
-  if (failed) window.alert("Registration failed!");
-  else if (exists) window.alert("User already exists! Please login.");
+  const params = new URLSearchParams(window.location.search);
+  const failed = params.get('failed') === 'true';
+  const usernameTaken = params.get('usernameTaken') === 'true';
+  const displayNameTaken = params.get('displayNameTaken') === 'true';
+  const reason = params.get('reason');
+
+  if (usernameTaken) {
+    window.alert("Registration failed: Username is already taken. Please choose another.");
+  } else if (displayNameTaken) {
+    window.alert("Registration failed: Display Name is already taken. Please choose another.");
+  } else if (failed) {
+    let message = "Registration failed! Please check your inputs.";
+    if (reason === 'passwordmismatch') {
+      message = "Registration failed: Passwords do not match.";
+    } else if (reason === 'displaynameparts') {
+      message = "Registration failed: Please select at least two parts for your display name.";
+    } else if (reason === 'invaliddisplayname') {
+      message = "Registration failed: An invalid display name part was selected.";
+    } else if (reason === 'servererror') {
+      message = "Registration failed: A server error occurred. Please try again later.";
+    } else if (reason === 'unexpected') {
+      message = "Registration failed: An unexpected error occurred. Please try again.";
+    }
+    window.alert(message);
+  }
 
   function blockSpecialChar(e) {
     var format = /[ `!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/;
     return e.key != undefined ? !format.test(e.key) : !format.test(String.fromCharCode(e.charCode));
   }
+
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('form');
+    const passwordInput = document.getElementById('password');
+    const confirmInput = document.getElementById('confirm');
+
+    if (form && passwordInput && confirmInput) {
+      form.addEventListener('submit', function(event) {
+        if (passwordInput.value !== confirmInput.value) {
+          alert("Passwords do not match!");
+          event.preventDefault(); // Prevent form submission
+          confirmInput.focus();
+        }
+
+        const name1 = document.getElementById('name1').value;
+        const name2 = document.getElementById('name2').value;
+        const name3 = document.getElementById('name3').value;
+        let selectedNameParts = 0;
+        if (name1) selectedNameParts++;
+        if (name2) selectedNameParts++;
+        if (name3) selectedNameParts++;
+
+        if (selectedNameParts < 2) {
+          alert("Please select at least two parts for your display name.");
+          event.preventDefault();
+
+          document.getElementById('name1').focus();
+        }
+      });
+    }
+  });
 
 </script>
 <div class="container" style="width: 32rem;">

@@ -873,61 +873,85 @@ mongoClient.connect((err) => {
 
   app.post('/auth/register', (req, res) => {
     var nameCount = 0;
-    if (
-      req.body.name1 != '' &&
-      displayNames.list1.includes(getLowerCaseName(req.body.name1))
-    )
+    const name1 = req.body.name1 ? req.body.name1.trim() : '';
+    const name2 = req.body.name2 ? req.body.name2.trim() : '';
+    const name3 = req.body.name3 ? req.body.name3.trim() : '';
+
+    if (name1 !== '' && displayNames.list1.includes(getLowerCaseName(name1))) {
       nameCount++;
-    else if (req.body.name1 != '') nameCount = -100;
-    if (
-      req.body.name2 != '' &&
-      displayNames.list2.includes(getLowerCaseName(req.body.name2))
-    )
+    } else if (name1 !== '') {
+      nameCount = -100;
+    }
+
+    if (name2 !== '' && displayNames.list2.includes(getLowerCaseName(name2))) {
       nameCount++;
-    else if (req.body.name2 != '') nameCount = -100;
-    if (
-      req.body.name3 != '' &&
-      displayNames.list3.includes(getLowerCaseName(req.body.name3))
-    )
+    } else if (name2 !== '') {
+      nameCount = -100;
+    }
+
+    if (name3 !== '' && displayNames.list3.includes(getLowerCaseName(name3))) {
       nameCount++;
-    else if (req.body.name3 != '') nameCount = -100;
+    } else if (name3 !== '') {
+      nameCount = -100;
+    }
+
+    const username = req.body.username ? req.body.username.trim() : '';
+    const password = req.body.password;
+    const confirmPassword = req.body.confirm;
+    const forgotPhrase = req.body.forgot ? req.body.forgot.trim() : '';
 
     if (
-      req.body.username != '' &&
-      req.body.password != '' &&
-      nameCount > 1 &&
-      req.body.password == req.body.confirm
+      username !== '' &&
+      password !== '' &&
+      forgotPhrase !== '' &&
+      nameCount >= 2 && // Require at least 2 valid parts for the display name
+      password === confirmPassword
     ) {
-      var names = [req.body.name1, req.body.name2, req.body.name3];
+      var namesForDisplay = [name1, name2, name3].filter(n => n !== ''); // Filter out empty parts for display name construction
+
       postRequest
         .handleRegister(
-          req.body.username,
-          req.body.password,
-          names,
-          req.body.forgot,
+          username,
+          password,
+          namesForDisplay,
+          forgotPhrase,
           playerCollection
         )
-        .then((user) => {
-          if (user == 'login') {
-            res.redirect('/login?exists=true');
-          } else {
-            res.cookie('TEGid', user.user.TEGid);
-            res.cookie('authid', user.user.authid);
-            res.cookie('dname', user.user.dname);
-            res.cookie('authpass', user.user.authpass);
-            var date = Date.parse(user.session.expires_at);
-            res.cookie('session_token', user.session.token, {
+        .then((result) => {
+          if (result === 'usernameTaken') {
+            res.redirect('/register?usernameTaken=true');
+          } else if (result === 'displayNameTaken') {
+            res.redirect('/register?displayNameTaken=true');
+          } else if (typeof result === 'object' && result.user && result.session) { // Successful registration
+            res.cookie('TEGid', result.user.TEGid);
+            res.cookie('authid', result.user.authid);
+            res.cookie('dname', result.user.dname);
+            res.cookie('authpass', result.user.authpass);
+            var date = Date.parse(result.session.expires_at);
+            res.cookie('session_token', result.session.token, {
               maxAge: date.valueOf() - Date.now(),
             });
             res.cookie('logged', true);
             res.redirect(config.httpserver.url);
+          } else {
+            console.warn("handleRegister returned unexpected result:", result);
+            res.redirect('/register?failed=true&reason=unexpected');
           }
         })
         .catch((e) => {
-          console.log(e);
-          res.redirect('/register?failed=true');
+          console.error("Error during registration process:", e);
+
+          res.redirect('/register?failed=true&reason=servererror');
         });
-    } else res.redirect('/register?failed=true');
+    } else {
+      // Initial validation failed (empty fields, passwords don't match, invalid display name count)
+      let reason = 'validation';
+      if (password !== confirmPassword) reason = 'passwordmismatch';
+      if (nameCount < 2 && nameCount > -100) reason = 'displaynameparts'; // if nameCount is -100, it's an invalid selection
+      else if (nameCount === -100) reason = 'invaliddisplayname';
+
+      res.redirect(`/register?failed=true&reason=${reason}`);
+    }
   });
 
   app.post('/auth/forgot', (req, res) => {
