@@ -961,24 +961,52 @@ mongoClient.connect((err) => {
   });
 
   app.post('/auth/forgot', (req, res) => {
-    if (req.body.password == req.body.confirm) {
-      postRequest
-        .handleForgotPassword(
-          req.body.username,
-          req.body.forgot,
-          req.body.password,
-          playerCollection
-        )
-        .then((data) => {
-          res.clearCookie('session_token');
-          res.cookie('logged', false);
-          res.redirect('/login');
-        })
-        .catch((e) => {
-          console.log(e);
+    const newPassword = req.body.password;
+    const confirmPassword = req.body.confirm;
+    const username = req.body.username; // We'll let handleForgotPassword trim it
+    const forgotPhrase = req.body.forgot;
+
+    // Basic check for presence of all fields
+    if (!username || !forgotPhrase || !newPassword || !confirmPassword) {
+      return res.redirect('/forgot?missingFields=true');
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.redirect('/forgot?passwordMismatch=true');
+    }
+
+    postRequest
+      .handleForgotPassword(
+        username,
+        forgotPhrase,
+        newPassword,
+        playerCollection
+      )
+      .then((data) => {
+        // Successfully changed password
+        res.clearCookie('session_token'); // Good practice
+        if (res.clearCookie) {
+          // Some frameworks might not have clearCookie directly on res
+          res.clearCookie('logged');
+        } else if (res.cookie) {
+          // Fallback for Express-like if clearCookie isn't there
+          res.cookie('logged', '', { expires: new Date(0) });
+        }
+        res.redirect('/login?passwordResetSuccess=true');
+      })
+      .catch((e) => {
+        console.error(
+          'Forgot password processing error:',
+          e ? e.message : 'Unknown error'
+        ); // Log specific error
+        if (e && e.message === 'invalidCredentials') {
+          res.redirect('/forgot?invalidCredentials=true');
+        } else if (e && e.message === 'serverError') {
+          res.redirect('/forgot?serverError=true');
+        } else {
           res.redirect('/forgot?failed=true');
-        });
-    } else res.redirect('/forgot?failed=true');
+        }
+      });
   });
 
   app.get('/auth/login', (req, res) => {

@@ -140,8 +140,6 @@
     </style>
 </head>
 <body>
-<script type="text/javascript" src="js/jquery.min.js"></script>
-<script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
 
 <div class="container" style="width: 24rem;">
     <div class="card text-center">
@@ -156,10 +154,49 @@
             <input type="password" id="confirm" class="form-control" name="confirm" placeholder="Confirm password"
                    required>
 
-            <button class="btn btn-lg btn-primary btn-block" type="submit">Submit</button>
+            <button class="btn btn-lg btn-primary btn-block" type="submit">Change password</button>
             <p class="mt-3 text-muted">Remembered your password? <a href="/login">Login</a></p>
         </form>
     </div>
 </div>
+
+<script type="text/javascript">
+  document.addEventListener('DOMContentLoaded', function() {
+    const params = new URLSearchParams(window.location.search);
+    const passwordMismatch = params.get('passwordMismatch') === 'true';
+    const invalidCredentials = params.get('invalidCredentials') === 'true';
+    const serverError = params.get('serverError') === 'true';
+    const missingFields = params.get('missingFields') === 'true';
+
+    const failed = params.get('failed') === 'true';
+
+    if (passwordMismatch) {
+      window.alert("Password reset failed: Your new passwords do not match. Please try again.");
+    } else if (invalidCredentials) {
+      window.alert("Password reset failed: The username or secret phrase you entered is incorrect.");
+    } else if (serverError) {
+      window.alert("Password reset failed: An unexpected error occurred on our end. Please try again in a few moments.");
+    } else if (missingFields) {
+      window.alert("Password reset failed: Please make sure to fill in all the fields.");
+    }
+    else if (failed) {
+      window.alert("Password reset failed. Please double-check your information and try again.");
+    }
+
+    const form = document.getElementById('form');
+    const passwordInput = document.getElementById('password');
+    const confirmInput = document.getElementById('confirm');
+
+    if (form && passwordInput && confirmInput) {
+      form.addEventListener('submit', function(event) {
+        if (passwordInput.value !== confirmInput.value) {
+          event.preventDefault();
+          window.alert("Your new passwords do not match. Please check them and try again.");
+          confirmInput.focus();
+        }
+      });
+    }
+  });
+</script>
 </body>
 </html>

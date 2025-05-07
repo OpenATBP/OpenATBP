@@ -190,13 +190,33 @@ module.exports = {
   },
   handleForgotPassword: function (username, forgot, password, collection) {
     return new Promise(function (resolve, reject) {
+      const trimmedUsername = username ? username.trim() : '';
+      if (!trimmedUsername) {
+        return reject(new Error('invalidCredentials'));
+      }
+      const escapedUsername = escapeRegex(trimmedUsername);
+
       collection
-        .findOne({ 'user.TEGid': { $regex: new RegExp(`^${username}$`, 'i') } })
+        .findOne({
+          'user.TEGid': { $regex: new RegExp(`^${escapedUsername}$`, 'i') },
+        })
         .then((u) => {
-          if (u != null) {
-            bcrypt.compare(forgot, u.forgot, (err, res) => {
-              if (res) {
-                bcrypt.hash(password, 10, (err, hash) => {
+          if (u != null && u.forgot) {
+            bcrypt.compare(forgot, u.forgot, (err, secretPhraseMatch) => {
+              if (err) {
+                console.error('Bcrypt compare error for secret phrase:', err);
+                return reject(new Error('serverError'));
+              }
+              if (secretPhraseMatch) {
+                // Secret phrase matches
+                bcrypt.hash(password, 10, (bcryptErr, newPasswordHash) => {
+                  if (bcryptErr) {
+                    console.error(
+                      'Bcrypt hash error for new password:',
+                      bcryptErr
+                    );
+                    return reject(new Error('serverError'));
+                  }
                   var today = new Date();
                   today.setDate(today.getDate() + 1);
                   var newSession = {
@@ -208,30 +228,51 @@ module.exports = {
                     .updateOne(
                       {
                         'user.TEGid': {
-                          $regex: new RegExp(`^${username}$`, 'i'),
+                          $regex: new RegExp(`^${escapedUsername}$`, 'i'),
                         },
                       },
                       {
                         $set: {
-                          session: newSession,
-                          'user.authpass': hash,
+                          session: newSession, // Resetting session on password change
+                          'user.authpass': newPasswordHash,
                         },
                       }
                     )
                     .then((r) => {
-                      resolve(u);
+                      if (
+                        r.modifiedCount > 0 ||
+                        (r.matchedCount > 0 && r.upsertedCount === 0)
+                      ) {
+                        resolve(u);
+                      } else {
+                        console.error(
+                          'Password reset: User found but update failed for',
+                          trimmedUsername
+                        );
+                        reject(new Error('serverError'));
+                      }
                     })
-                    .catch((e) => {
-                      reject(e);
+                    .catch((dbUpdateErr) => {
+                      console.error(
+                        'DB update error during password reset:',
+                        dbUpdateErr
+                      );
+                      reject(new Error('serverError'));
                     });
                 });
-              } else reject('No user found');
+              } else {
+                // Secret phrase does not match
+                reject(new Error('invalidCredentials'));
+              }
             });
-          } else reject('Null');
+          } else {
+            // Username isn't found or the user has no 'forgot' field (treat as invalid)
+            reject(new Error('invalidCredentials'));
+          }
         })
-        .catch((e) => {
-          console.log(e);
-          reject();
+        .catch((findErr) => {
+          console.error('DB findOne error during password reset:', findErr);
+          reject(new Error('serverError'));
         });
     });
   },
