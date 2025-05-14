@@ -15,17 +15,20 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class PeppermintButler extends UserActor {
-    public static final double PASSIVE_HP_REG_VALUE = 0.02d;
-    public static final int PASSIVE_TIME = 1750;
-    public static final int PASSIVE_IMMUNITY_DURATION = 2000;
-    public static final int Q_DURATION = 5000;
-    public static final int Q_STUN_DURATION = 1500;
-    public static final double E_ATTACKSPEED_VALUE = 0.3d;
-    public static final double E_ATTACK_DAMAGE_VALUE = 0.3d;
-    public static final double E_SPEED_VALUE = 0.4;
+    private static final double PASSIVE_HP_REG_VALUE = 0.02d;
+    private static final int PASSIVE_TIME = 1750;
+    private static final int PASSIVE_IMMUNITY_DURATION = 2000;
+    private static final int Q_DURATION = 5000;
+    private static final int Q_STUN_DURATION = 1500;
+    private static final double E_ATTACKSPEED_VALUE = 0.3d;
+    private static final double E_ATTACK_DAMAGE_VALUE = 0.3d;
+    private static final double E_SPEED_VALUE = 0.4;
     private static final int W_SPEED = 15;
     private static final int W_DASH_DELAY = 500;
     private static final int W_GLOBAL_CD = 500;
+    private static final double E_RANGE_INCREASE = 0.6d;
+    private static final int Q_BLIND_DURATION = 500;
+
     private int timeStopped = 0;
     private boolean qActive = false;
     private boolean stopPassive = false;
@@ -145,11 +148,14 @@ public class PeppermintButler extends UserActor {
         if (this.qActive) {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
-                if (this.isNonStructure(a)) {
+                if (isNeitherStructureNorAlly(a)) {
+                    a.addState(ActorState.BLINDED, 0d, Q_BLIND_DURATION);
+                }
+
+                if (isNeitherTowerNorAlly(a)) {
                     JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell1");
                     double damage = this.getSpellDamage(spellData, false) / 10d;
                     a.addToDamageQueue(this, damage, spellData, true);
-                    a.addState(ActorState.BLINDED, 0d, 500);
                 }
             }
         }
@@ -212,7 +218,7 @@ public class PeppermintButler extends UserActor {
             return super.getPlayerStat("attackDamage")
                     + (this.getStat("attackDamage") * E_ATTACK_DAMAGE_VALUE);
         else if (stat.equalsIgnoreCase("attackRange") && this.form == Form.FERAL) {
-            return super.getPlayerStat(stat) + 0.1d;
+            return super.getPlayerStat(stat) + E_RANGE_INCREASE;
         }
 
         return super.getPlayerStat(stat);
@@ -385,7 +391,9 @@ public class PeppermintButler extends UserActor {
                                 this.ultStartTime = System.currentTimeMillis();
                                 this.attackCooldown = 0;
                                 this.form = Form.FERAL;
-                                String[] statsToUpdate = {"speed", "attackSpeed", "attackDamage"};
+                                String[] statsToUpdate = {
+                                    "speed", "attackSpeed", "attackDamage", "attackRange"
+                                };
                                 this.updateStatMenu(statsToUpdate);
                                 String eVO = SkinData.getPeppermintButlerEVO(avatar);
                                 ExtensionCommands.playSound(
@@ -551,10 +559,15 @@ public class PeppermintButler extends UserActor {
         JsonNode spellData = parentExt.getAttackData(avatar, "spell2");
 
         for (Actor a : Champion.getActorsInRadius(handler, location, 2.5f)) {
-            if (isNonStructure(a)) {
-                a.addToDamageQueue(
-                        PeppermintButler.this, getSpellDamage(spellData, true), spellData, false);
+            if (isNeitherStructureNorAlly(a)) {
                 a.addState(ActorState.STUNNED, 0d, Q_STUN_DURATION);
+            }
+
+            if (isNeitherTowerNorAlly(a)) {
+                double dmg = getSpellDamage(spellData, true);
+                Actor attacker = PeppermintButler.this;
+
+                a.addToDamageQueue(attacker, dmg, spellData, false);
             }
         }
     }

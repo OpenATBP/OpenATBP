@@ -15,9 +15,10 @@ import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
-import xyz.openatbp.extension.game.champions.CinnamonBun;
 
 public class Tower extends Actor {
+    private static final float DAMAGE_REDUCTION_NO_MINIONS = 0.85f;
+    private static final int SCORE_VALUE = 100;
     private final int[] PURPLE_TOWER_NUM = {2, 1};
     private final int[] BLUE_TOWER_NUM = {5, 4};
     private long lastHit;
@@ -29,6 +30,7 @@ public class Tower extends Actor {
     private boolean isFocusingCompanion = false;
     private int numberOfAttacks = 0;
     private List<UserActor> usersTargeted;
+    private boolean reduceDamageTaken = false;
 
     public Tower(ATBPExtension parentExt, Room room, String id, int team, Point2D location) {
         this.currentHealth = 800;
@@ -124,8 +126,8 @@ public class Tower extends Actor {
             }
             return false;
         } else if (a.getActorType() == ActorType.MINION) damage *= 0.5;
-        if (a.getActorType() == ActorType.PLAYER && a.getClass() == CinnamonBun.class)
-            damage *= 0.75d;
+
+        if (reduceDamageTaken) damage *= DAMAGE_REDUCTION_NO_MINIONS;
         this.changeHealth(this.getMitigatedDamage(damage, this.getAttackType(attackData), a) * -1);
         boolean notify = System.currentTimeMillis() - this.lastHit >= 1000 * 5;
         if (notify) ExtensionCommands.towerAttacked(parentExt, this.room, this.getTowerNum());
@@ -229,7 +231,9 @@ public class Tower extends Actor {
                 earner = (UserActor) a;
                 ua.addGameStat("towers", 1);
             }
-            this.parentExt.getRoomHandler(this.room.getName()).addScore(earner, a.getTeam(), 50);
+            this.parentExt
+                    .getRoomHandler(this.room.getName())
+                    .addScore(earner, a.getTeam(), SCORE_VALUE);
         }
         if (target != null && target instanceof Bot) {
             ExtensionCommands.removeFx(parentExt, room, id + "_target");
@@ -270,12 +274,10 @@ public class Tower extends Actor {
                             minionsInRadius.add(a);
                         }
                     }
-                    if (minionsInRadius.isEmpty()) {
-                        this.setStat("armor", 80);
-                        this.setStat("spellResist", 90);
-                    } else {
-                        this.setStat("armor", 20);
-                        this.setStat("spellResist", 30);
+                    if (minionsInRadius.isEmpty() && !reduceDamageTaken) {
+                        reduceDamageTaken = true;
+                    } else if (reduceDamageTaken) {
+                        reduceDamageTaken = false;
                     }
                 }
                 if (nearbyActors.isEmpty() && this.attackCooldown != 1000) {

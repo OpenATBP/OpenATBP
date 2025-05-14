@@ -400,14 +400,14 @@ public class Bot extends Actor {
 
         if (getPHealth() < 0.6
                 && room.getVariable("spawns").getSFSObjectValue().getInt("bh1") == 91) {
-            Console.debugLog("Health pack");
+            // Console.debugLog("Health pack");
             Point2D bh1 = new Point2D.Float(MapData.L1_BLUE_HEALTH_X, MapData.L1_BLUE_HEALTH_Z);
             moveWithCollision(bh1);
             return;
         }
 
         if (getPHealth() < 0.2) {
-            Console.debugLog("Return to base");
+            // Console.debugLog("Return to base");
             moveWithCollision(spawnPoint);
             return;
         }
@@ -415,7 +415,7 @@ public class Bot extends Actor {
         if (System.currentTimeMillis() - enemyDmgTime <= 5000
                 && !enemy.isDead()
                 && shouldAttackTarget(enemy)) {
-            Console.debugLog("Attack Player");
+            // Console.debugLog("Attack Player");
             attemptAttack(enemy);
             return;
         }
@@ -439,7 +439,7 @@ public class Bot extends Actor {
                 if (shouldAttackTarget(a) && a.getLocation().distance(location) < 5) {
                     if (canUseW(a)) useW(a);
                     if (canUseE(a) && a.getHealth() > 0) useE();
-                    Console.debugLog("Attack Player");
+                    // Console.debugLog("Attack Player");
                     attemptAttack(a);
                     return;
                 } else {
@@ -449,7 +449,7 @@ public class Bot extends Actor {
         }
 
         if (topStatus == 10 && botStatus == 10) {
-            Console.debugLog("Altars captured, attack something");
+            // Console.debugLog("Altars captured, attack something");
             List<Actor> actors = handler.getActors();
             List<Actor> enemies =
                     actors.stream().filter(a -> a.getTeam() != team).collect(Collectors.toList());
@@ -464,7 +464,7 @@ public class Bot extends Actor {
             }
 
             if (!owls.isEmpty() && shouldAttackJungleCamp(true)) {
-                Console.debugLog("Attack Owls");
+                // Console.debugLog("Attack Owls");
                 attackClosestActor(owls);
                 return;
             }
@@ -479,21 +479,21 @@ public class Bot extends Actor {
             }
 
             if (!gnomes.isEmpty() && shouldAttackJungleCamp(false)) {
-                Console.debugLog("Attack Gnomes");
+                // Console.debugLog("Attack Gnomes");
                 attackClosestActor(gnomes);
                 return;
             }
 
             enemies.removeIf(a -> a instanceof Monster);
 
-            Console.debugLog("Attack closest enemy");
+            // Console.debugLog("Attack closest enemy");
             attackClosestActor(enemies);
 
         } else if (topStatus != 10) {
-            Console.debugLog("Top altar");
+            // Console.debugLog("Top altar");
             moveWithCollision(topAltarLocation);
         } else {
-            Console.debugLog("Bot altar");
+            // Console.debugLog("Bot altar");
             moveWithCollision(botAltarLocation);
         }
     }
@@ -899,7 +899,7 @@ public class Bot extends Actor {
     }
 
     private void run() {
-        Console.debugLog("Run");
+        // Console.debugLog("Run");
         Point2D runPoint = new Point2D.Float((float) location.getX() + 5, (float) location.getY());
         moveWithCollision(runPoint);
     }
@@ -1158,7 +1158,7 @@ public class Bot extends Actor {
         int level = ChampionData.getXPLevel(xp);
         if (level != this.level) {
             this.level = level;
-            Console.debugLog("level up");
+            // Console.debugLog("level up");
 
             HashMap<String, Double> updateData = new HashMap<>(3);
             updateData.put("level", (double) level);

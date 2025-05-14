@@ -45,6 +45,7 @@ public class PracticeRoomHandler extends RoomHandler {
 
     @Override
     public void run() {
+        if (gameOver) return;
         super.run();
         if (finnBot != null && !gameOver) {
             finnBot.update(mSecondsRan);

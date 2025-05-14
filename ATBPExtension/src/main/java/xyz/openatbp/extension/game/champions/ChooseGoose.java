@@ -439,13 +439,13 @@ public class ChooseGoose extends UserActor {
                 double damageR1 = damageR2 + 30;
 
                 for (Actor a : actors2) {
-                    if (isNonStructure(a)) {
+                    if (isNeitherTowerNorAlly(a)) {
                         a.addToDamageQueue(ChooseGoose.this, damageR2, spellData, false);
                     }
                 }
 
                 for (Actor a : actors1) {
-                    if (isNonStructure(a)) {
+                    if (isNeitherTowerNorAlly(a)) {
                         a.addToDamageQueue(ChooseGoose.this, damageR1, spellData, false);
                     }
                 }
@@ -620,13 +620,18 @@ public class ChooseGoose extends UserActor {
 
         @Override
         public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            List<Actor> nonStructureEnemies = roomHandler.getNonStructureEnemies(owner.getTeam());
-            for (Actor a : nonStructureEnemies) {
-                double collisionRadius =
-                        parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
-                if (a.getLocation().distance(location) <= hitbox + collisionRadius
-                        && isProperTarget(a)) {
-                    return a;
+            float searchArea = hitbox * 2;
+            List<Actor> actorsInRadius = roomHandler.getActorsInRadius(location, searchArea);
+
+            for (Actor a : actorsInRadius) {
+                if (isNeitherTowerNorAlly(a)) {
+                    JsonNode actorData = parentExt.getActorData(a.getAvatar());
+                    double collisionRadius = actorData.get("collisionRadius").asDouble();
+
+                    if (a.getLocation().distance(location) <= hitbox + collisionRadius
+                            && isProperTarget(a)) {
+                        return a;
+                    }
                 }
             }
             return null;
@@ -634,6 +639,7 @@ public class ChooseGoose extends UserActor {
 
         private boolean isProperTarget(Actor a) {
             return a.getActorType() == ActorType.PLAYER
+                    || a.getActorType() == ActorType.BASE
                     || a.getAvatar().equals("keeoth")
                     || a.getAvatar().equals("goomonster")
                     || a.getAvatar().equals("ooze_monster")
@@ -753,11 +759,11 @@ public class ChooseGoose extends UserActor {
                         true,
                         false,
                         target.getTeam());
-                if (!qDOTActors.containsKey(target) && isNonStructure(target)) {
+                if (!qDOTActors.containsKey(target) && isNeitherTowerNorAlly(target)) {
                     qDOTActors.put(target, System.currentTimeMillis());
                 }
 
-                if (isNonStructure(target)) {
+                if (isNeitherStructureNorAlly(target)) {
                     int currentStacks = qStacks.getOrDefault(target, 0);
                     int nextStacks = currentStacks + 1;
 

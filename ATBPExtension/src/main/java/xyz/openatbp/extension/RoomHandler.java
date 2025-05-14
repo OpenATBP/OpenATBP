@@ -28,6 +28,7 @@ import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.actors.*;
 
 public abstract class RoomHandler implements Runnable {
+    protected static final int ALTAR_LOCK_TIME_SEC = 90;
     protected ATBPExtension parentExt;
     protected Room room;
     protected ArrayList<Minion> minions;
@@ -695,13 +696,13 @@ public abstract class RoomHandler implements Runnable {
         }
         if (i == 1) addScore(null, team, 15 + (gooUsers.size() * 5));
         else addScore(null, team, 10 + (gooUsers.size() * 5));
-        cooldowns.put(altarId + "__" + "altar", 180);
+        cooldowns.put(altarId + "__" + "altar", ALTAR_LOCK_TIME_SEC);
         ExtensionCommands.createActorFX(
                 this.parentExt,
                 this.room,
                 altarId,
                 "fx_altar_lock",
-                1000 * 60 * 3,
+                ALTAR_LOCK_TIME_SEC * 1000,
                 "fx_altar_lock" + i,
                 false,
                 "Bip01",

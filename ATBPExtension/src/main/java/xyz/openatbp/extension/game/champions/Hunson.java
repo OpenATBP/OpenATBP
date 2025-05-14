@@ -27,14 +27,16 @@ public class Hunson extends UserActor {
     private static final double Q_SLOW_VALUE = 0.1d;
     private static final double Q_PULL_DISTANCE = 1.2;
     private static final int Q_SLOW_DURATION = 2000;
+    private static final double Q_THIRD_HIT_DMG_MULTIPLIER = 1.25d;
     private static final int W_SOUND_DELAY = 625;
     private static final int W_CAST_DELAY = 400;
-    public static final int W_FEAR_DURATION = 1500;
+    private static final int W_FEAR_DURATION = 1500;
     private static final int W_DAMAGE_DURATION = 1500;
     private static final int E_DURATION = 3500;
     private static final int E_CAST_DELAY = 750;
     private static final double E_ARMOR_VALUE = 0.5d;
     private static final int E_SPELLVAMP_VALUE = 45;
+
     private Map<Actor, Integer> qVictims;
     private boolean qActivated = false;
     private int qUses = 0;
@@ -43,10 +45,9 @@ public class Hunson extends UserActor {
     private long qStartTime = 0;
     private long ultStart = 0;
     private long wStartTime = 0;
-    private long passiveStartTime = 0;
     private Point2D wLocation;
     private boolean canUsePassive = true;
-    private HashMap<Actor, Long> fearedActors = new HashMap<>();
+    private HashMap<Actor, Long> dotActors = new HashMap<>();
 
     public Hunson(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -62,10 +63,12 @@ public class Hunson extends UserActor {
         if (wLocation != null) {
             RoomHandler rh = parentExt.getRoomHandler(room.getName());
             for (Actor a : rh.getActorsInRadius(wLocation, 2.5f)) {
-                if (a.getTeam() != this.team && !fearedActors.containsKey(a)) {
-                    fearedActors.put(a, System.currentTimeMillis());
-                    a.handleFear(wLocation, 1500);
+                if (isNeitherStructureNorAlly(a) && !dotActors.containsKey(a)) {
+                    a.handleFear(wLocation, W_FEAR_DURATION);
+                }
 
+                if (!dotActors.containsKey(a) && isNeitherTowerNorAlly(a)) {
+                    dotActors.put(a, System.currentTimeMillis());
                     ExtensionCommands.createActorFX(
                             parentExt,
                             room,
@@ -82,7 +85,7 @@ public class Hunson extends UserActor {
             }
         }
 
-        Iterator<Map.Entry<Actor, Long>> iterator = fearedActors.entrySet().iterator();
+        Iterator<Map.Entry<Actor, Long>> iterator = dotActors.entrySet().iterator();
 
         while (iterator.hasNext()) {
             Map.Entry<Actor, Long> entry = iterator.next();
@@ -91,10 +94,10 @@ public class Hunson extends UserActor {
             }
         }
 
-        if (!fearedActors.isEmpty()) {
+        if (!dotActors.isEmpty()) {
             JsonNode spellData = parentExt.getAttackData(this.getAvatar(), "spell2");
             double damage = getSpellDamage(spellData, false) / 10d;
-            for (Actor a : fearedActors.keySet()) {
+            for (Actor a : dotActors.keySet()) {
                 a.addToDamageQueue(Hunson.this, damage, spellData, true);
             }
         }
@@ -103,9 +106,9 @@ public class Hunson extends UserActor {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, this.location, 4f)) {
-                if (this.isNonStructure(a)) {
-                    a.addToDamageQueue(
-                            this, this.getSpellDamage(spellData, false) / 10d, spellData, true);
+                if (isNeitherTowerNorAlly(a)) {
+                    double dmg = getSpellDamage(spellData, false) / 10d;
+                    a.addToDamageQueue(this, dmg, spellData, true);
                 }
             }
         }
@@ -158,7 +161,6 @@ public class Hunson extends UserActor {
         if (this.hasStatusEffect(a) && !this.passiveActivated && this.canUsePassive) {
             this.passiveActivated = true;
             this.canUsePassive = false;
-            this.passiveStartTime = System.currentTimeMillis();
             basicAttackReset();
             ExtensionCommands.playSound(
                     this.parentExt,
@@ -461,19 +463,24 @@ public class Hunson extends UserActor {
         protected void hit(Actor victim) {
             JsonNode spellData = parentExt.getAttackData(avatar, "spell1");
             double damage = getSpellDamage(spellData, true);
+
             if (qVictims.containsKey(victim)) {
                 int timesHit = qVictims.get(victim);
-                if (timesHit == 2) damage *= 1.75d;
+                if (timesHit == 2) damage *= Q_THIRD_HIT_DMG_MULTIPLIER;
                 qVictims.put(victim, timesHit + 1);
             } else {
                 qVictims.put(victim, 1);
             }
-            victim.handlePull(Hunson.this.location, Q_PULL_DISTANCE);
+
+            if (isNeitherStructureNorAlly(victim)) {
+                victim.handlePull(Hunson.this.location, Q_PULL_DISTANCE);
+                victim.addState(ActorState.SLOWED, Q_SLOW_VALUE, Q_SLOW_DURATION);
+            }
+
             victim.addToDamageQueue(Hunson.this, damage, spellData, false);
-            victim.addState(ActorState.SLOWED, Q_SLOW_VALUE, Q_SLOW_DURATION);
-            ExtensionCommands.playSound(
-                    parentExt, room, "", "akubat_projectileHit1", victim.getLocation());
-            this.destroy();
+            String sound = "akubat_projectileHit1";
+            ExtensionCommands.playSound(parentExt, room, "", sound, victim.getLocation());
+            destroy();
         }
 
         @Override

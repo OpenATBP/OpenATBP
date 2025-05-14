@@ -355,7 +355,7 @@ public class ChampionData {
             int lv10Cooldown;
             switch (championName) {
                 case "billy":
-                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 45000;
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 50000;
                     break;
                 case "bmo":
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 11000 : 37500;
@@ -367,7 +367,7 @@ public class ChampionData {
                     lv10Cooldown = abilityNumber == 1 ? 4500 : abilityNumber == 2 ? 14000 : 42000;
                     break;
                 case "finn":
-                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 10000 : 26000;
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 10000 : 40000;
                     break;
                 case "fionna":
                     lv10Cooldown = abilityNumber == 1 ? 12000 : abilityNumber == 2 ? 5000 : 60000;
@@ -379,7 +379,7 @@ public class ChampionData {
                     lv10Cooldown = abilityNumber == 1 ? 9000 : abilityNumber == 2 ? 5000 : 42000;
                     break;
                 case "hunson":
-                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 35000;
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 45000;
                     break;
                 case "iceking":
                     lv10Cooldown = abilityNumber == 1 ? 7000 : abilityNumber == 2 ? 8000 : 45000;
@@ -406,7 +406,7 @@ public class ChampionData {
                     lv10Cooldown = abilityNumber == 1 ? 6000 : abilityNumber == 2 ? 5000 : 42000;
                     break;
                 case "peppermintbutler":
-                    lv10Cooldown = abilityNumber == 1 ? 13000 : abilityNumber == 2 ? 13000 : 25000;
+                    lv10Cooldown = abilityNumber == 1 ? 13000 : abilityNumber == 2 ? 13000 : 40000;
                     break;
                 case "princessbubblegum":
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 16000 : 40000;

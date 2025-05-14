@@ -3,7 +3,6 @@ package xyz.openatbp.extension.game.champions;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -19,10 +18,12 @@ public class FlamePrincess extends UserActor {
     private static final int Q_GLOBAL_COOLDOWN = 250;
     private static final int PASSIVE_COOLDOWN = 10000;
     private static final int W_POLY_DURATION = 3000;
+    private static final double Q_BURST_DMG_MULTIPLIER = 1.2;
     private final int W_CAST_DELAY = 1000;
     private static final int E_DASH_COOLDOWN = 350;
     private static final int E_DURATION = 5000;
     private static final int E_DASH_SPEED = 15;
+
     private boolean passiveEnabled = false;
     private long lastPassiveUsage = 0;
     private int ultUses = 0;
@@ -53,7 +54,7 @@ public class FlamePrincess extends UserActor {
         if (this.form == Form.ULT) {
             RoomHandler handler = parentExt.getRoomHandler(this.room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, this.location, 2)) {
-                if (a.getTeam() != this.team && isNonStructure(a)) {
+                if (a.getTeam() != this.team && isNeitherTowerNorAlly(a)) {
                     JsonNode attackData = this.parentExt.getAttackData(getAvatar(), "spell3");
                     double damage = (double) this.getSpellDamage(attackData, false) / 10;
                     a.addToDamageQueue(this, damage, attackData, true);
@@ -71,13 +72,12 @@ public class FlamePrincess extends UserActor {
                     actorsInRadius.remove(a);
 
                     for (Actor affectedActor : actorsInRadius) {
-                        if (!affectedActor.getId().equalsIgnoreCase(this.id)
-                                && affectedActor.getTeam() != this.team
-                                && isNonStructure(affectedActor)) {
+                        if (isNeitherStructureNorAlly(affectedActor)) {
                             handlePassive();
                             JsonNode spellData = this.parentExt.getAttackData("flame", "spell2");
-                            affectedActor.addToDamageQueue(
-                                    this, getSpellDamage(spellData, false) / 10d, spellData, true);
+
+                            double damage = getSpellDamage(spellData, false) / 10d;
+                            affectedActor.addToDamageQueue(this, damage, spellData, true);
                         }
                     }
                 }
@@ -418,13 +418,13 @@ public class FlamePrincess extends UserActor {
                             .collect(Collectors.toList());
 
             for (Actor a : affectedUsers) {
-                if (a.getActorType() == ActorType.PLAYER) {
+                if (a.getActorType() == ActorType.PLAYER) { // poly for bot handled elsewhere
                     UserActor userActor = (UserActor) a;
                     userActor.addState(ActorState.POLYMORPH, 0d, 3000);
                     lastPolymorphTime = System.currentTimeMillis();
                 }
                 double newDamage = getSpellDamage(spellData, true);
-                if (isNonStructure(a)) {
+                if (isNeitherTowerNorAlly(a)) {
                     JsonNode attackData = parentExt.getAttackData(getAvatar(), "spell2");
                     a.addToDamageQueue(FlamePrincess.this, newDamage, attackData, false);
                     handlePassive();
@@ -468,8 +468,9 @@ public class FlamePrincess extends UserActor {
             this.hitPlayer = true;
             handlePassive();
             JsonNode attackData = parentExt.getAttackData(getAvatar(), "spell1");
-            victim.addToDamageQueue(
-                    FlamePrincess.this, getSpellDamage(attackData, true), attackData, false);
+            double damage = getSpellDamage(attackData, true);
+            victim.addToDamageQueue(FlamePrincess.this, damage, attackData, false);
+
             ExtensionCommands.playSound(
                     parentExt, room, "", "akubat_projectileHit1", victim.getLocation());
             ExtensionCommands.createActorFX(
@@ -496,28 +497,17 @@ public class FlamePrincess extends UserActor {
                     true,
                     false,
                     team);
-            for (Actor a :
-                    Champion.getActorsAlongLine(
-                            parentExt.getRoomHandler(room.getName()),
-                            Champion.extendLine(path, 0.75f),
-                            0.75f)) {
-                if (!a.getId().equalsIgnoreCase(victim.getId()) && a.getTeam() != team) {
-                    double newDamage = (double) getSpellDamage(attackData, true) * 1.2d;
-                    a.addToDamageQueue(
-                            FlamePrincess.this, Math.round(newDamage), attackData, false);
+
+            Point2D hitPoint = victim.getLocation();
+
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            for (Actor a : Champion.getActorsInRadius(handler, hitPoint, 1f)) {
+                if (isNeitherTowerNorAlly(a) && !a.equals(victim)) {
+                    double dmg = damage *= Q_BURST_DMG_MULTIPLIER;
+                    a.addToDamageQueue(FlamePrincess.this, dmg, attackData, false);
                 }
             }
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(new DelayedProjectile(), 300, TimeUnit.MILLISECONDS);
-        }
-
-        private class DelayedProjectile implements Runnable {
-
-            @Override
-            public void run() {
-                destroy();
-            }
+            destroy();
         }
     }
 
@@ -541,9 +531,7 @@ public class FlamePrincess extends UserActor {
             new Champion.DelayedAttack(
                             parentExt, FlamePrincess.this, target, (int) damage, "basicAttack")
                     .run();
-            if (FlamePrincess.this.passiveEnabled
-                    && (target.getActorType() != ActorType.TOWER
-                            && target.getActorType() != ActorType.BASE)) {
+            if (FlamePrincess.this.passiveEnabled && (target.getActorType() != ActorType.TOWER)) {
                 FlamePrincess.this.passiveEnabled = false;
                 ExtensionCommands.removeFx(parentExt, room, id + "_flame_passive");
                 ExtensionCommands.actorAbilityResponse(

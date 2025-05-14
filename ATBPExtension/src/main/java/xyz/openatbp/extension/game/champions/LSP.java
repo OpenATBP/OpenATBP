@@ -53,9 +53,9 @@ public class LSP extends UserActor {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
-                if (this.isNonStructure(a)) {
-                    a.addToDamageQueue(
-                            this, (double) getSpellDamage(spellData, false) / 10d, spellData, true);
+                if (isNeitherTowerNorAlly(a)) {
+                    double dmg = getSpellDamage(spellData, false) / 10d;
+                    a.addToDamageQueue(this, dmg, spellData, true);
                 }
             }
         }
@@ -238,9 +238,12 @@ public class LSP extends UserActor {
                 List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(team, qRect);
                 if (!actorsInPolygon.isEmpty()) {
                     for (Actor a : actorsInPolygon) {
-                        if (isNonStructure(a)) {
-                            double damage = getSpellDamage(spellData, true);
+                        if (isNeitherStructureNorAlly(a)) {
                             a.handleFear(LSP.this.location, Q_FEAR_DURATION);
+                        }
+
+                        if (isNeitherTowerNorAlly(a)) {
+                            double damage = getSpellDamage(spellData, true);
                             a.addToDamageQueue(LSP.this, damage, spellData, false);
                             affectedActors.add(a);
                         }
@@ -337,15 +340,17 @@ public class LSP extends UserActor {
 
         @Override
         public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            int team = owner.getTeam();
-            List<Actor> actors = roomHandler.getEligibleActors(team, false, true, true, true);
-            actors.remove(LSP.this);
-            for (Actor a : actors) {
+            float searchArea = hitbox * 2;
+            List<Actor> actorsInRadius = roomHandler.getActorsInRadius(location, searchArea);
+
+            actorsInRadius.remove(LSP.this);
+            for (Actor a : actorsInRadius) {
                 if (!this.victims.contains(a)) {
-                    double collisionRadius =
-                            parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
+                    JsonNode actorData = parentExt.getActorData(a.getAvatar());
+                    double collisionRadius = actorData.get("collisionRadius").asDouble();
+
                     if (a.getLocation().distance(location) <= hitbox + collisionRadius
-                            && isTargetable(a.getAvatar())) {
+                            && isTargetable(a)) {
                         return a;
                     }
                 }

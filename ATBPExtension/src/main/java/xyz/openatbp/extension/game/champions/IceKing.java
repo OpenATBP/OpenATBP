@@ -94,10 +94,10 @@ public class IceKing extends UserActor {
                     if (a.equals(this)) {
                         this.addEffect("speed", this.getStat("speed") * 0.9, 150);
                         this.updateStatMenu("speed");
-                    } else if (a.getTeam() != this.team && a.getActorType() != ActorType.BASE) {
+                    } else if (isNeitherTowerNorAlly(a)) {
                         JsonNode spellData = this.parentExt.getAttackData("iceking", "spell3");
-                        a.addToDamageQueue(
-                                this, getSpellDamage(spellData, false) / 10d, spellData, true);
+                        double dmg = getSpellDamage(spellData, false) / 10d;
+                        a.addToDamageQueue(this, dmg, spellData, true);
                     }
                 }
             }
@@ -136,8 +136,8 @@ public class IceKing extends UserActor {
         if (this.qVictim != null) {
             if (System.currentTimeMillis() < qHitTime) {
                 JsonNode spellData = parentExt.getAttackData("iceking", "spell1");
-                this.qVictim.addToDamageQueue(
-                        this, getSpellDamage(spellData, false) / 10d, spellData, true);
+                double dmg = getSpellDamage(spellData, false) / 10d;
+                this.qVictim.addToDamageQueue(this, dmg, spellData, true);
             } else {
                 this.qVictim = null;
                 this.qHitTime = -1;
@@ -147,12 +147,12 @@ public class IceKing extends UserActor {
         if (this.wLocation != null) {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, this.wLocation, 3f)) {
-                if (this.isNonStructure(a)) {
+                if (isNeitherTowerNorAlly(a)) {
                     if (this.lastWHit != null && this.lastWHit.containsKey(a.getId())) {
                         if (System.currentTimeMillis() >= this.lastWHit.get(a.getId()) + 500) {
                             JsonNode spellData = this.parentExt.getAttackData("iceking", "spell2");
-                            a.addToDamageQueue(
-                                    this, getSpellDamage(spellData, false) / 2f, spellData, true);
+                            double dmg = getSpellDamage(spellData, false) / 2f;
+                            a.addToDamageQueue(this, dmg, spellData, true);
                             ExtensionCommands.createActorFX(
                                     this.parentExt,
                                     this.room,
@@ -412,20 +412,6 @@ public class IceKing extends UserActor {
                 float hitboxRadius,
                 String id) {
             super(parentExt, owner, path, speed, hitboxRadius, id);
-        }
-
-        public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            List<Actor> eligibleActors =
-                    roomHandler.getEligibleActors(team, true, true, false, true);
-            for (Actor a : eligibleActors) {
-                double collisionRadius =
-                        parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
-                if (a.getLocation().distance(location) <= hitbox + collisionRadius
-                        && isTargetable(a.getAvatar())) {
-                    return a;
-                }
-            }
-            return null;
         }
 
         @Override

@@ -21,9 +21,28 @@ import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.champions.Fionna;
+import xyz.openatbp.extension.game.champions.GooMonster;
+import xyz.openatbp.extension.game.champions.Keeoth;
 import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public class UserActor extends Actor {
+    protected static final int DEMON_SWORD_AD_BUFF = 15;
+    protected static final int DEMON_SWORD_SD_BUFF = 40;
+    protected static final int NAIL_STACKS_PER_CHAMP = 7;
+    protected static final int NAIL_STACKS_PER_NON_CHAMPS = 4;
+    protected static final int LIGHTNING_SWORD_STACKS_PER_CHAMP = 7;
+    protected static final int LIGHTNING_SWORD_STACKS_PER_NON_CHAMP = 4;
+    protected static final double ROBE_CD_CHAMP_OR_JG_BOSS_KO = 1;
+    protected static final double ROBE_CD_MINION_KO = 0.2;
+    protected static final int DAMAGE_PER_NAIL_POINT = 40;
+    protected static final int DAMAGE_PER_LIGHTNING_POINT = 55;
+    protected static final int CDR_PER_ROBE_POINT = 10;
+    protected static final int SAI_PROC_COOLDOWN = 3000;
+
+    protected static final int BASIC_ATTACK_DELAY = 500;
+    protected static final double DASH_SPEED = 20d;
+    protected static final int HEALTH_PACK_REGEN = 15;
+    protected static final double GRASS_CRIT_INCREASE = 1.25d;
 
     protected User player;
     protected boolean autoAttackEnabled = false;
@@ -36,9 +55,6 @@ public class UserActor extends Actor {
     protected int magicNailStacks = 0;
     protected int lightningSwordStacks = 0;
     protected double robeStacks = 0;
-    protected static final int DAMAGE_PER_NAIL_POINT = 40;
-    protected static final int DAMAGE_PER_LIGHTNING_POINT = 55;
-    protected static final int CDR_PER_ROBE_POINT = 10;
     protected Map<String, Double> endGameStats = new HashMap<>();
     protected int killingSpree = 0;
     protected int multiKill = 0;
@@ -47,9 +63,6 @@ public class UserActor extends Actor {
     protected boolean[] canCast = {true, true, true};
     protected Map<String, ScheduledFuture<?>> iconHandlers = new HashMap<>();
     protected int idleTime = 0;
-    protected static final int BASIC_ATTACK_DELAY = 500;
-    protected static final double DASH_SPEED = 20d;
-    protected static final int HEALTH_PACK_REGEN = 15;
     protected boolean changeTowerAggro = false;
     protected boolean isDashing = false;
     private long lastHit = 0;
@@ -81,7 +94,6 @@ public class UserActor extends Actor {
     protected List<UserActor> simonUsers = new ArrayList<>();
     protected int roboStacks = 0;
     protected List<Monster.BuffType> activeMonsterBuffs = new ArrayList<>();
-    protected int grassSwordCooldown = -1;
     protected String lichVictim;
     protected int lichHandTimesHit = 0;
     protected long lichLastHit = -1;
@@ -91,6 +103,8 @@ public class UserActor extends Actor {
     protected int cosmicStacks = 0;
     private boolean flameCloakEffectActivated = false;
     protected boolean hasGlassesPoint = false;
+    protected Long lastSaiProcTime = 0L;
+    protected Long lastZeldronBuff = 0L;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -180,6 +194,22 @@ public class UserActor extends Actor {
         this.canCast[0] = q;
         this.canCast[1] = w;
         this.canCast[2] = e;
+    }
+
+    public void setLastSaiProcTime(Long time) {
+        this.lastSaiProcTime = time;
+    }
+
+    public Long getLastSaiProcTime() {
+        return this.lastSaiProcTime;
+    }
+
+    public void setLastZedronBuff(Long time) {
+        this.lastZeldronBuff = time;
+    }
+
+    public Long getLastZeldronBuff() {
+        return this.lastZeldronBuff;
     }
 
     protected Point2D getRelativePoint(
@@ -331,7 +361,7 @@ public class UserActor extends Actor {
 
     public boolean lichHandDamageApplies(Actor a) {
         if (this.lichVictim == null || a == null) return false;
-        Console.debugLog("");
+        // Console.debugLog("");
         return ChampionData.getJunkLevel(this, "junk_2_lich_hand") > 0
                 && this.lichVictim.equalsIgnoreCase(a.getId());
     }
@@ -396,15 +426,14 @@ public class UserActor extends Actor {
                 if (ChampionData.getJunkLevel(ua, "junk_2_peppermint_tank") > 0
                         && type == AttackType.SPELL) {
                     if (ua.getLocation().distance(this.location) < 2d) {
-                        newDamage +=
-                                (newDamage
-                                        * ChampionData.getCustomJunkStat(
-                                                ua, "junk_2_peppermint_tank"));
+                        String item = "junk_2_peppermint_tank";
+                        double junkStat = ChampionData.getCustomJunkStat(ua, item);
+                        newDamage += (int) (newDamage * junkStat);
                     }
                 }
                 if (ua.lichHandDamageApplies(this)) {
                     Console.debugLog("Lich hand damage " + ua.getLichHandTimesHit());
-                    newDamage += ((double) newDamage * (0.1d * ua.getLichHandTimesHit()));
+                    newDamage += (int) ((double) newDamage * (0.1d * ua.getLichHandTimesHit()));
                     ua.handleLichHandHit();
                 } else if (ChampionData.getJunkLevel(ua, "junk_2_lich_hand") > 0
                         && (ua.getLichVictim() == null
@@ -416,8 +445,9 @@ public class UserActor extends Actor {
 
                 if (this.maxHealth > ua.getMaxHealth()
                         && ChampionData.getJunkLevel(ua, "junk_3_globs_helmet") > 0) {
-                    newDamage +=
-                            newDamage * ChampionData.getCustomJunkStat(ua, "junk_3_globs_helmet");
+                    String item = "junk_3_globs_helmet";
+                    double junkStat = ChampionData.getCustomJunkStat(ua, item);
+                    newDamage += (int) (newDamage * junkStat);
                 }
 
                 if (type == AttackType.SPELL
@@ -493,12 +523,7 @@ public class UserActor extends Actor {
     }
 
     public double handleGrassSwordProc(double damage) { // TODO: Add indicator or something
-        if (this.grassSwordCooldown >= ChampionData.getCustomJunkStat(this, "junk_1_grass_sword")) {
-            this.grassSwordCooldown = 0;
-            ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "grass_sword_icon");
-            return damage * 1.5d;
-        } else Console.debugLog("Grass sword CD: " + this.grassSwordCooldown);
-        return damage;
+        return damage * GRASS_CRIT_INCREASE;
     }
 
     @Override
@@ -704,8 +729,7 @@ public class UserActor extends Actor {
         this.target = null;
     }
 
-    protected boolean handleAttack(
-            Actor a) { // To be used if you're not using the standard DelayedAttack Runnable
+    protected boolean handleAttack(Actor a) {
         if (this.attackCooldown == 0) {
             double critChance = this.getPlayerStat("criticalChance") / 100d;
             double random = Math.random();
@@ -747,10 +771,14 @@ public class UserActor extends Actor {
         if (this.attackCooldown < 0) this.attackCooldown = 0;
     }
 
-    protected boolean isNonStructure(Actor a) {
+    protected boolean isNeitherStructureNorAlly(Actor a) {
         return a.getTeam() != this.team
                 && a.getActorType() != ActorType.TOWER
                 && a.getActorType() != ActorType.BASE;
+    }
+
+    protected boolean isNeitherTowerNorAlly(Actor a) {
+        return a.getActorType() != ActorType.TOWER && a.getTeam() != this.team;
     }
 
     @Deprecated
@@ -1186,7 +1214,7 @@ public class UserActor extends Actor {
                                 this.parentExt.getRoomHandler(this.room.getName()),
                                 this.location,
                                 1.5f)) {
-                    if (a.getTeam() != this.team && isNonStructure(a)) {
+                    if (a.getTeam() != this.team && isNeitherStructureNorAlly(a)) {
                         a.addToDamageQueue(
                                 this,
                                 this.maxHealth * 0.035d,
@@ -1215,21 +1243,6 @@ public class UserActor extends Actor {
                                 this.team);
                 }
             } else if (this.roboStacks > 0) this.resetRoboStacks();
-
-            if (ChampionData.getJunkLevel(this, "junk_1_grass_sword") > 0
-                    && this.grassSwordCooldown
-                            <= ChampionData.getCustomJunkStat(this, "junk_1_grass_sword")) {
-                this.grassSwordCooldown++;
-                if (this.grassSwordCooldown
-                        == ChampionData.getCustomJunkStat(this, "junk_1_grass_sword"))
-                    ExtensionCommands.addStatusIcon(
-                            this.parentExt,
-                            this.player,
-                            "grass_sword_icon",
-                            "junk_1_grass_sword_mod3",
-                            "junk_1_grass_sword",
-                            0f);
-            }
 
             if (this.fightKingStacks > 0
                     && System.currentTimeMillis() - this.lastAuto
@@ -1714,6 +1727,10 @@ public class UserActor extends Actor {
         attackCooldown = 500;
     }
 
+    public boolean enhanceCrit() {
+        return this.hasBackpackItem("junk_1_grass_sword") && this.getStat("sp_category1") > 0;
+    }
+
     private Point2D getRespawnPoint() {
         int teamNumber =
                 parentExt.getRoomHandler(this.room.getName()).getTeamNumber(this.id, this.team);
@@ -1912,7 +1929,7 @@ public class UserActor extends Actor {
         if (stat.equalsIgnoreCase("attackDamage")) {
             double attackDamage = super.getPlayerStat(stat);
             if (this.dcBuff == 2) attackDamage *= 1.2f;
-            attackDamage += (25 * this.getMonsterBuffCount(stat));
+            attackDamage += (DEMON_SWORD_AD_BUFF * this.getMonsterBuffCount(stat));
             return attackDamage + this.magicNailStacks;
         } else if (stat.equalsIgnoreCase("armor")) {
             double armor = super.getPlayerStat(stat);
@@ -1931,7 +1948,9 @@ public class UserActor extends Actor {
             double spellDamage = super.getPlayerStat(stat);
             if (this.dcBuff == 2) spellDamage *= 1.2f;
             if (this.glassesBuff != -1) spellDamage += this.glassesBuff;
-            return spellDamage + this.lightningSwordStacks + (50 * this.getMonsterBuffCount(stat));
+            return spellDamage
+                    + this.lightningSwordStacks
+                    + (DEMON_SWORD_SD_BUFF * this.getMonsterBuffCount(stat));
         } else if (stat.equalsIgnoreCase("coolDownReduction")) {
             return super.getPlayerStat(stat) + this.robeStacks;
         }
@@ -2081,7 +2100,10 @@ public class UserActor extends Actor {
 
     private void addMagicNailStacks(Actor killedActor) {
         int pointsPutIntoNail = (int) this.getStat("sp_category1");
-        int amountOfStacks = killedActor.getActorType() == ActorType.PLAYER ? 5 : 2;
+        int amountOfStacks =
+                killedActor.getActorType() == ActorType.PLAYER
+                        ? NAIL_STACKS_PER_CHAMP
+                        : NAIL_STACKS_PER_NON_CHAMPS;
         int stackCap = pointsPutIntoNail * DAMAGE_PER_NAIL_POINT;
 
         if (pointsPutIntoNail > 0) {
@@ -2093,7 +2115,10 @@ public class UserActor extends Actor {
 
     private void addLightningSwordStacks(Actor killedActor) {
         int pointsPutIntoNail = ChampionData.getJunkLevel(this, "junk_2_lightning_sword");
-        int amountOfStacks = killedActor.getActorType() == ActorType.PLAYER ? 5 : 2;
+        int amountOfStacks =
+                killedActor.getActorType() == ActorType.PLAYER
+                        ? LIGHTNING_SWORD_STACKS_PER_CHAMP
+                        : LIGHTNING_SWORD_STACKS_PER_NON_CHAMP;
         int stackCap = pointsPutIntoNail * DAMAGE_PER_LIGHTNING_POINT;
 
         if (pointsPutIntoNail > 0) {
@@ -2103,9 +2128,12 @@ public class UserActor extends Actor {
         }
     }
 
-    private void addRobeStacks(Actor killedActor) {
+    private void addRobeStacks(Actor ka) {
         int pointsPutIntoRobe = ChampionData.getJunkLevel(this, "junk_4_wizard_robe");
-        double amountOfStacks = killedActor.getActorType() == ActorType.PLAYER ? 0.5 : 0.1;
+        boolean champOrJgBoss =
+                ka instanceof UserActor || ka instanceof Keeoth || ka instanceof GooMonster;
+
+        double amountOfStacks = champOrJgBoss ? ROBE_CD_CHAMP_OR_JG_BOSS_KO : ROBE_CD_MINION_KO;
         int stackCap = pointsPutIntoRobe * CDR_PER_ROBE_POINT;
 
         if (pointsPutIntoRobe > 0) {

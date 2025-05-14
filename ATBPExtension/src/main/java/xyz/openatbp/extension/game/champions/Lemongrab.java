@@ -2,7 +2,6 @@ package xyz.openatbp.extension.game.champions;
 
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -17,6 +16,7 @@ import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
+import xyz.openatbp.extension.game.actors.Bot;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class Lemongrab extends UserActor {
@@ -29,6 +29,7 @@ public class Lemongrab extends UserActor {
     private static final int W_DELAY = 1000;
     public static final int Q_SLOW_DURATION = 2500;
     private static final double Q_SLOW_VALUE = 0.4d;
+    private static final double W_CENTER_DMG_MULTIPLIER = 1.25;
     private int unacceptableLevels = 0;
     private long lastHit = -1;
     private String lastIcon = "lemon0";
@@ -151,10 +152,14 @@ public class Lemongrab extends UserActor {
                             handler.getEnemiesInPolygon(this.team, trapezoid);
                     if (!actorsInTrapezoid.isEmpty()) {
                         for (Actor a : actorsInTrapezoid) {
-                            if (isNonStructure(a))
+                            if (isNeitherStructureNorAlly(a)) {
                                 a.addState(ActorState.SLOWED, Q_SLOW_VALUE, Q_SLOW_DURATION);
-                            a.addToDamageQueue(
-                                    this, getSpellDamage(spellData, true), spellData, false);
+                            }
+
+                            if (isNeitherTowerNorAlly(a)) {
+                                double dmg = getSpellDamage(spellData, true);
+                                a.addToDamageQueue(this, dmg, spellData, false);
+                            }
                         }
                     }
                     ExtensionCommands.playSound(
@@ -331,32 +336,36 @@ public class Lemongrab extends UserActor {
                         false,
                         team,
                         0f);
-                List<Actor> affectedActors = new ArrayList<>();
+
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 boolean hitPlayer = false;
                 boolean hitAnything = false;
-                for (Actor a : Champion.getActorsInRadius(handler, dest, 1f)) {
-                    if (isNonStructure(a)) {
-                        hitAnything = true;
-                        if (a.getActorType() == ActorType.PLAYER) hitPlayer = true;
-                        affectedActors.add(a);
-                        a.addToDamageQueue(
-                                Lemongrab.this, getSpellDamage(spellData, true), spellData, false);
-                        a.addState(ActorState.BLINDED, 0d, W_BLIND_DURATION);
+
+                for (Actor a : Champion.getActorsInRadius(handler, dest, 2f)) {
+
+                    double distance = a.getLocation().distance(dest);
+                    double damage = getSpellDamage(spellData, false);
+
+                    if (distance <= 1 && isNeitherStructureNorAlly(a)) {
                         a.addState(ActorState.SILENCED, 0d, W_SILENCE_DURATION);
                     }
-                }
-                RoomHandler handler1 = parentExt.getRoomHandler(room.getName());
-                for (Actor a : Champion.getActorsInRadius(handler1, dest, 2f)) {
-                    if (isNonStructure(a) && !affectedActors.contains(a)) {
+
+                    if (isNeitherStructureNorAlly(a)) {
+                        a.addState(ActorState.BLINDED, 0d, W_BLIND_DURATION);
+                    }
+
+                    if (distance <= 1 && isNeitherTowerNorAlly(a)) {
+                        damage *= W_CENTER_DMG_MULTIPLIER;
+                    }
+
+                    if (isNeitherTowerNorAlly(a)) {
                         hitAnything = true;
                         if (a.getActorType() == ActorType.PLAYER) hitPlayer = true;
-                        double damage = 60d + (getPlayerStat("spellDamage") * 0.4d);
-                        a.addState(ActorState.BLINDED, 0d, W_BLIND_DURATION);
                         a.addToDamageQueue(Lemongrab.this, damage, spellData, false);
                     }
                 }
                 juice = false;
+
                 if (hitAnything && !hitPlayer) {
                     ExtensionCommands.actorAbilityResponse(
                             parentExt,
@@ -394,13 +403,15 @@ public class Lemongrab extends UserActor {
                 duration *= (1d + (0.1d * unacceptableLevels));
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 for (Actor a : Champion.getActorsInRadius(handler, dest, 2.5f)) {
-                    if (isNonStructure(a)) {
+
+                    if (isNeitherTowerNorAlly(a)) {
                         a.addToDamageQueue(Lemongrab.this, damage, spellData, false);
-                        if (a.getActorType() == ActorType.PLAYER) {
-                            a.addState(ActorState.STUNNED, 0d, (int) duration);
-                        }
-                        if (a.getActorType() == ActorType.PLAYER
-                                && !a.getState(ActorState.IMMUNITY))
+                    }
+
+                    if ((a instanceof UserActor || a instanceof Bot) && a.getTeam() != team) {
+                        a.addState(ActorState.STUNNED, 0d, (int) duration);
+
+                        if (!a.getState(ActorState.IMMUNITY)) {
                             ExtensionCommands.createActorFX(
                                     parentExt,
                                     room,
@@ -413,6 +424,7 @@ public class Lemongrab extends UserActor {
                                     true,
                                     false,
                                     team);
+                        }
                     }
                 }
                 unacceptableLevels = 0;

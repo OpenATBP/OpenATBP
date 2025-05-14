@@ -13,6 +13,7 @@ import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
+import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -30,6 +31,7 @@ public class Billy extends UserActor {
     private static final int W_CRATER_OFFSET = 1;
     private static final int E_CAST_DELAY = 750;
     private static final int E_EMP_DURATION = 4500;
+    private static final float E_CENTER_DMG_MULTIPLIER = 1.1f;
 
     private int passiveUses = 0;
     private boolean jumpActive = false;
@@ -91,11 +93,10 @@ public class Billy extends UserActor {
                     damageReduction = Math.max(0.4, calculatedReduction);
                 }
 
-                a.addToDamageQueue(
-                        this,
-                        (this.getSpellDamage(spellData, false) / 5d) * damageReduction,
-                        spellData,
-                        true);
+                if (a.getActorType() != ActorType.TOWER) {
+                    double damage = (getSpellDamage(spellData, false) / 5d) * damageReduction;
+                    a.addToDamageQueue(this, damage, spellData, true);
+                }
             }
         } else if (this.ultLocation != null
                 && System.currentTimeMillis() - this.ultStartTime >= E_EMP_DURATION) {
@@ -187,13 +188,15 @@ public class Billy extends UserActor {
                                 handler.getEnemiesInPolygon(this.team, quadrangle);
                         if (!actorsInPolygon.isEmpty()) {
                             for (Actor a : actorsInPolygon) {
-                                if (isNonStructure(a)) {
+                                if (isNeitherStructureNorAlly(a)) {
                                     a.knockback(this.location, 3.5f);
                                     if (this.passiveUses == 3)
                                         a.addState(ActorState.STUNNED, 0d, Q_STUN_DURATION);
                                 }
-                                double damage = getSpellDamage(spellData, true);
-                                a.addToDamageQueue(this, damage, spellData, false);
+                                if (isNeitherTowerNorAlly(a)) {
+                                    double damage = getSpellDamage(spellData, true);
+                                    a.addToDamageQueue(this, damage, spellData, false);
+                                }
                             }
                         }
                         if (this.passiveUses == 3) this.usePassiveAbility();
@@ -249,6 +252,7 @@ public class Billy extends UserActor {
                         this.addEffect("attackSpeed", delta, W_ATTACKSPEED_DURATION);
                         this.addEffect("speed", W_SPEED_VALUE, W_SPEED_DURATION);
                         this.usePassiveAbility();
+                        basicAttackReset();
                         ExtensionCommands.addStatusIcon(
                                 this.parentExt,
                                 this.player,
@@ -387,7 +391,7 @@ public class Billy extends UserActor {
                         0f);
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 for (Actor a : Champion.getActorsInRadius(handler, dest, 2f)) {
-                    if (isNonStructure(a)) {
+                    if (isNeitherTowerNorAlly(a)) {
                         a.addToDamageQueue(
                                 Billy.this, getSpellDamage(spellData, true), spellData, false);
                     }
@@ -439,9 +443,12 @@ public class Billy extends UserActor {
                         0f);
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 for (Actor a : Champion.getActorsInRadius(handler, ultLoc, 2.25f)) {
-                    if (isNonStructure(a)) {
-                        a.addToDamageQueue(
-                                Billy.this, getSpellDamage(spellData, true), spellData, false);
+                    if (isNeitherTowerNorAlly(a)) {
+                        double distance = a.getLocation().distance(ultLoc);
+                        double damage = getSpellDamage(spellData, true);
+
+                        if (distance <= 1) damage *= E_CENTER_DMG_MULTIPLIER;
+                        a.addToDamageQueue(Billy.this, damage, spellData, false);
                     }
                 }
             }
