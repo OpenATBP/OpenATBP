@@ -4,6 +4,7 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -25,12 +26,12 @@ public class Tower extends Actor {
     private boolean destroyed = false;
     protected long lastMissSoundTime = 0;
     protected long lastSpellDeniedTime = 0;
-    protected List<Actor> nearbyActors;
+    protected List<Actor> actorsInRadius;
     private boolean isFocusingPlayer = false;
     private boolean isFocusingCompanion = false;
     private int numberOfAttacks = 0;
     private List<UserActor> usersTargeted;
-    private boolean reduceDamageTaken = false;
+    private boolean reduceDmgTaken = false;
 
     public Tower(ATBPExtension parentExt, Room room, String id, int team, Point2D location) {
         this.currentHealth = 800;
@@ -98,7 +99,7 @@ public class Tower extends Actor {
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         if (this.destroyed) return true;
-        if (this.target == null && nearbyActors.isEmpty()) {
+        if (this.target == null && actorsInRadius.isEmpty()) {
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
                 if (System.currentTimeMillis() - this.lastMissSoundTime >= 1500
@@ -127,7 +128,8 @@ public class Tower extends Actor {
             return false;
         } else if (a.getActorType() == ActorType.MINION) damage *= 0.5;
 
-        if (reduceDamageTaken) damage *= DAMAGE_REDUCTION_NO_MINIONS;
+        if (reduceDmgTaken) damage *= (1 - DAMAGE_REDUCTION_NO_MINIONS);
+
         this.changeHealth(this.getMitigatedDamage(damage, this.getAttackType(attackData), a) * -1);
         boolean notify = System.currentTimeMillis() - this.lastHit >= 1000 * 5;
         if (notify) ExtensionCommands.towerAttacked(parentExt, this.room, this.getTowerNum());
@@ -261,26 +263,16 @@ public class Tower extends Actor {
             if (!this.destroyed) {
                 this.handleDamageQueue();
                 if (this.destroyed) return;
-                nearbyActors =
-                        Champion.getEnemyActorsInRadius(
-                                this.parentExt.getRoomHandler(this.room.getName()),
-                                this.team,
-                                this.location,
-                                (float) this.getPlayerStat("attackRange"));
-                if (!nearbyActors.isEmpty()) {
-                    List<Actor> minionsInRadius = new ArrayList<>();
-                    for (Actor a : nearbyActors) {
-                        if (a.getActorType() == ActorType.MINION) {
-                            minionsInRadius.add(a);
-                        }
-                    }
-                    if (minionsInRadius.isEmpty() && !reduceDamageTaken) {
-                        reduceDamageTaken = true;
-                    } else if (reduceDamageTaken) {
-                        reduceDamageTaken = false;
-                    }
-                }
-                if (nearbyActors.isEmpty() && this.attackCooldown != 1000) {
+
+                RoomHandler rh = parentExt.getRoomHandler(room.getName());
+                float radius = (float) getPlayerStat("attackRange");
+                actorsInRadius = Champion.getEnemyActorsInRadius(rh, team, location, radius);
+
+                Predicate<Actor> isMinion = actor -> actor.getActorType() == ActorType.MINION;
+
+                reduceDmgTaken = actorsInRadius.stream().noneMatch(isMinion);
+
+                if (actorsInRadius.isEmpty() && this.attackCooldown != 1000) {
                     if (numberOfAttacks != 0) this.numberOfAttacks = 0;
                     this.attackCooldown = 1000;
                 }
@@ -288,7 +280,7 @@ public class Tower extends Actor {
                     boolean hasMinion = false;
                     double distance = 1000;
                     Actor potentialTarget = null;
-                    for (Actor a : nearbyActors) {
+                    for (Actor a : actorsInRadius) {
                         if (hasMinion && a.getActorType() == ActorType.MINION) {
                             if (a.getLocation().distance(this.location)
                                     < distance) { // If minions exist in range, it only focuses on
@@ -405,7 +397,7 @@ public class Tower extends Actor {
                         }
                     }
                     if (this.attackCooldown > 0) this.reduceAttackCooldown();
-                    if (nearbyActors.isEmpty()) {
+                    if (actorsInRadius.isEmpty()) {
                         if (this.target != null
                                 && (this.target.getActorType() == ActorType.PLAYER
                                         || target instanceof Bot)) {

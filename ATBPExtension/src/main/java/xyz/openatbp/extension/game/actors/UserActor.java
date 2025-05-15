@@ -378,6 +378,7 @@ public class UserActor extends Actor {
             if (a.getActorType() == ActorType.COMPANION) {
                 checkTowerAggroCompanion(a);
             }
+
             if (this.pickedUpHealthPack) {
                 removeHealthPackEffect();
             }

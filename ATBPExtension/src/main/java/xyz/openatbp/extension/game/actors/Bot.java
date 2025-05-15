@@ -36,6 +36,12 @@ public class Bot extends Actor {
     private static final float TOWER_RANGE = 6f;
     private static final Point2D firstPoint = new Point2D.Float(15, 0);
     private static final int Q_DURATION = 3000;
+    private static final double HP_PERCENT_HP_PACK = 0.6;
+    private static final double HP_PERCENT_BASE = 0.2;
+    private static final double HP_PERCENT_MINIONS = 0.6;
+    private static final double HP_PERCENT_OWLS_LOW_LV = 0.6;
+    private static final double HP_PERCENT_OWLS_HIGH_LV = 0.2;
+    private static final double HP_PERCENT_GNOMES = 0.4;
     private final Point2D spawnPoint;
     private static final int E_CAST_DELAY = 500;
     private static final int POLYMORPH_DURATION = 3000;
@@ -173,6 +179,11 @@ public class Bot extends Actor {
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         agressors.put(a, System.currentTimeMillis());
+        if (a instanceof UserActor) {
+            UserActor ua = (UserActor) a;
+            ua.checkTowerAggro(ua);
+        }
+
         if (a.equals(enemy) && location.distance(a.getLocation()) <= 8) {
             enemyDmgTime = System.currentTimeMillis();
         }
@@ -398,17 +409,17 @@ public class Bot extends Actor {
             ExtensionCommands.removeFx(parentExt, room, id + "healthPackFX");
         }
 
-        if (getPHealth() < 0.6
+        if (getPHealth() < HP_PERCENT_HP_PACK
                 && room.getVariable("spawns").getSFSObjectValue().getInt("bh1") == 91) {
             // Console.debugLog("Health pack");
             Point2D bh1 = new Point2D.Float(MapData.L1_BLUE_HEALTH_X, MapData.L1_BLUE_HEALTH_Z);
-            moveWithCollision(bh1);
+            handleMoving(bh1);
             return;
         }
 
-        if (getPHealth() < 0.2) {
+        if (getPHealth() < HP_PERCENT_BASE) {
             // Console.debugLog("Return to base");
-            moveWithCollision(spawnPoint);
+            handleMoving(spawnPoint);
             return;
         }
 
@@ -423,11 +434,12 @@ public class Bot extends Actor {
         if (location.distance(firstPoint) <= 0.5) wentToStartPoint = true;
 
         if (!wentToStartPoint) {
-            moveWithCollision(firstPoint);
+            handleMoving(firstPoint);
             return;
         }
 
-        if (System.currentTimeMillis() - lastAttackedByMinion <= 1000
+        if ((System.currentTimeMillis() - lastAttackedByMinion <= 1000
+                        && getPHealth() < HP_PERCENT_MINIONS)
                 || System.currentTimeMillis() - lastAttackedByTower <= 1000) {
             run();
             return;
@@ -448,8 +460,8 @@ public class Bot extends Actor {
             }
         }
 
-        if (topStatus == 10 && botStatus == 10) {
-            // Console.debugLog("Altars captured, attack something");
+        if ((topStatus == 10 && botStatus == 10) || !shouldMoveToAltar()) {
+            // Console.debugLog("Altars captured or shouldn't move there, do something else");
             List<Actor> actors = handler.getActors();
             List<Actor> enemies =
                     actors.stream().filter(a -> a.getTeam() != team).collect(Collectors.toList());
@@ -489,12 +501,12 @@ public class Bot extends Actor {
             // Console.debugLog("Attack closest enemy");
             attackClosestActor(enemies);
 
-        } else if (topStatus != 10) {
+        } else if (topStatus != 10 && shouldMoveToAltar()) {
             // Console.debugLog("Top altar");
-            moveWithCollision(topAltarLocation);
-        } else {
+            handleMoving(topAltarLocation);
+        } else if (shouldMoveToAltar()) {
             // Console.debugLog("Bot altar");
-            moveWithCollision(botAltarLocation);
+            handleMoving(botAltarLocation);
         }
     }
 
@@ -759,6 +771,25 @@ public class Bot extends Actor {
                 team);
     }
 
+    private void handleMoving(Point2D destination) {
+        if (location.distance(destination) > 0.1) {
+            moveWithCollision(destination);
+        }
+    }
+
+    private boolean shouldMoveToAltar() {
+        Tower firstBlueTower = null;
+        RoomHandler handler = parentExt.getRoomHandler(room.getName());
+        List<Tower> towers = handler.getTowers();
+        for (Tower t : towers) {
+            if (t.getTeam() == team && t.getTowerNum() == 4) {
+                firstBlueTower = t;
+            }
+        }
+        return firstBlueTower != null || enemy.isDead();
+        // move to altars if first tower is not destroyed or when enemy is dead
+    }
+
     protected double handlePassive(Actor target, double damage) {
         if (furyTarget != null) {
             if (furyTarget.getId().equalsIgnoreCase(target.getId())) {
@@ -901,17 +932,15 @@ public class Bot extends Actor {
     private void run() {
         // Console.debugLog("Run");
         Point2D runPoint = new Point2D.Float((float) location.getX() + 5, (float) location.getY());
-        moveWithCollision(runPoint);
+        handleMoving(runPoint);
     }
 
     private boolean shouldAttackJungleCamp(boolean owls) {
-        if (level > 2 && level < 6 && getPLevel() > 0.6 && owls
-                || level > 5 && getPLevel() > 0.2 && owls) {
+        if (level > 2 && level < 6 && getPHealth() > HP_PERCENT_OWLS_LOW_LV && owls
+                || level > 5 && getPHealth() > HP_PERCENT_OWLS_HIGH_LV && owls) {
             return true;
         }
-        if (level > 4 && getPLevel() > 0.4 && enemyTower.isDead() && !owls) return true;
-
-        return false;
+        return level > 4 && getPHealth() > HP_PERCENT_GNOMES && enemyTower.isDead() && !owls;
     }
 
     private boolean shouldAttackTarget(Actor a) {
@@ -981,7 +1010,7 @@ public class Bot extends Actor {
     private void attemptAttack(Actor target) {
         if (target != null) {
             if (!withinRange(target) && canMove()) {
-                moveWithCollision(target.getLocation());
+                handleMoving(target.getLocation());
             } else if (withinRange(target)) {
                 if (!isStopped()) stopMoving();
                 if (canAttack()) attack(target);

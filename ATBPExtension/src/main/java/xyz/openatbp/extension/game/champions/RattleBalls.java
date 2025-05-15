@@ -25,6 +25,7 @@ public class RattleBalls extends UserActor {
     private static final int Q_COUNTER_ATTACK_ANIM_DURATION = 1000;
     private static final float Q_SPELL_RANGE = 6f;
     private static final float Q_OFFSET_DISTANCE = 0.85f;
+    private static final int Q_SPIN_ATTACK_BONUS_BASE_DMG = 55;
     private static final int W_CAST_DELAY = 500;
     private static final int E_DURATION = 3500;
     private static final double E_SPEED_VALUE = 0.14d;
@@ -446,7 +447,7 @@ public class RattleBalls extends UserActor {
         for (Actor a : affectedActors) {
             if (isNeitherTowerNorAlly(a)) {
                 JsonNode spellData = parentExt.getAttackData(avatar, "spell1");
-                double dmg = getSpellDamage(spellData, true) + 25;
+                double dmg = getSpellDamage(spellData, true) + Q_SPIN_ATTACK_BONUS_BASE_DMG;
                 a.addToDamageQueue(this, dmg, spellData, false);
             }
         }

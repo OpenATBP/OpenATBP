@@ -23,11 +23,14 @@ public class Marceline extends UserActor {
     private static final int W_DURATION = 3000;
     private static final double W_BEAST_SPEED_VALUE = 0.4d;
     private static final double W_VAMPIRE_SPEED_VALUE = 0.15d;
+    private static final String W_BEAST_ICON = "beast_w";
+    private static final String W_VAMP_ICON = "vamp_w";
     private static final int E_CAST_DELAY = 750;
     private static final int E_ATTACKSPEED_DURATION = 3000;
     private static final int E_IMMUNITY_DURATION = 2000;
     private static final int E_CHARM_DURATION = 2000;
     private static final int E_FEAR_DURATION = 2000;
+
     private int passiveHits = 0;
     private boolean hpRegenActive = false;
     private Actor qVictim;
@@ -59,10 +62,12 @@ public class Marceline extends UserActor {
                 && System.currentTimeMillis() - this.vampireWStartTime >= W_DURATION) {
             this.vampireWActive = false;
             updateStatMenu("speed");
+            ExtensionCommands.removeStatusIcon(parentExt, player, W_VAMP_ICON);
         }
         if (this.beastWActive && System.currentTimeMillis() - this.bestWStartTime >= W_DURATION) {
             this.beastWActive = false;
             updateStatMenu("speed");
+            ExtensionCommands.removeStatusIcon(parentExt, player, W_BEAST_ICON);
         }
         if (this.currentHealth < this.maxHealth
                 && !this.hpRegenActive
@@ -223,7 +228,15 @@ public class Marceline extends UserActor {
     @Override
     public void die(Actor a) {
         super.die(a);
-        this.vampireWActive = false;
+        if (vampireWActive) {
+            vampireWActive = false;
+            ExtensionCommands.removeStatusIcon(parentExt, player, W_VAMP_ICON);
+        }
+
+        if (beastWActive) {
+            beastWActive = false;
+            ExtensionCommands.removeStatusIcon(parentExt, player, W_BEAST_ICON);
+        }
     }
 
     @Override
@@ -281,16 +294,20 @@ public class Marceline extends UserActor {
                 this.canCast[1] = false;
                 try {
                     String wVO = SkinData.getMarcelineWVO(avatar);
+                    addWStatusIcon(form);
+
                     if (this.form == Form.BEAST) {
                         this.beastWActive = true;
                         this.bestWStartTime = System.currentTimeMillis();
                         attackCooldown = 0;
+
                         ExtensionCommands.playSound(
                                 this.parentExt,
                                 this.room,
                                 this.id,
                                 "sfx_marceline_beast_crit_activate",
                                 this.location);
+
                         ExtensionCommands.createActorFX(
                                 this.parentExt,
                                 this.room,
@@ -316,6 +333,7 @@ public class Marceline extends UserActor {
                                 true,
                                 false,
                                 this.team);
+
                         // this.addEffect("speed", this.getStat("speed") * W_BEAST_SPEED_VALUE,
                         // W_DURATION);
                     } else {
@@ -416,6 +434,16 @@ public class Marceline extends UserActor {
         }
     }
 
+    private void addWStatusIcon(Form currentForm) {
+        String iconDesc = "marceline_spell_2_description";
+        String monoName = "icon_marceline_s2";
+
+        String iconName = currentForm == Form.BEAST ? W_BEAST_ICON : W_VAMP_ICON;
+
+        ExtensionCommands.addStatusIcon(
+                parentExt, player, iconName, iconDesc, monoName, W_DURATION);
+    }
+
     private void checkForDisablingUltAttack() {
         if (eUsed && !hadCCDuringECast && hasInterrupingCC()) {
             canDoUltAttack = false;
@@ -452,6 +480,8 @@ public class Marceline extends UserActor {
                         && !getState(ActorState.BLINDED)) {
                     changeHealth((int) Math.round(damage * lifesteal));
                 }
+
+                ExtensionCommands.removeStatusIcon(parentExt, player, W_BEAST_ICON);
 
             } else if (form == Form.BEAST && crit) {
                 damage *= 1.25d;

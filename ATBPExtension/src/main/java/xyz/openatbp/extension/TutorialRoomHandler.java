@@ -568,7 +568,8 @@ public class TutorialRoomHandler extends RoomHandler {
                 }
             }
             ExtensionCommands.gameOver(
-                    parentExt, this.room, dcPlayers, winningTeam, false, tutorialCoins);
+                    parentExt, room, dcPlayers, winningTeam, false, tutorialCoins);
+            parentExt.stopScript(room.getName(), false);
         } catch (Exception e) {
             e.printStackTrace();
         }

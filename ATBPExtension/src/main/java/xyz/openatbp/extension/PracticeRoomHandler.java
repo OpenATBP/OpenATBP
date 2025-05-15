@@ -230,6 +230,7 @@ public class PracticeRoomHandler extends RoomHandler {
                             parentExt, ua.getUser(), "music", "music/music_defeat");
                 }
             }
+            parentExt.stopScript(room.getName(), false);
         } catch (Exception e) {
             e.printStackTrace();
         }
