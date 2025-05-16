@@ -37,6 +37,11 @@ public class GameManager {
         "ironowls",
         "grassbear"
     };
+
+    public static final String[] L1_SPAWNS = {
+        "bh1", "ph1", "gnomes", "ironowls",
+    };
+
     private static ObjectMapper objectMapper = new ObjectMapper();
 
     public static void addPlayer(
@@ -214,7 +219,20 @@ public class GameManager {
 
     private static void setRoomVariables(Room room) throws SFSVariableException {
         ISFSObject spawnTimers = new SFSObject();
-        for (String s : L2_SPAWNS) { // Adds in spawn timers for all mobs/health. AKA time dead
+        String[] spawns;
+
+        switch (room.getGroupId()) {
+            case "Tutorial":
+            case "Practice":
+                spawns = GameManager.L1_SPAWNS;
+                break;
+
+            default:
+                spawns = GameManager.L2_SPAWNS;
+                break;
+        }
+
+        for (String s : spawns) { // Adds in spawn timers for all mobs/health. AKA time dead
             spawnTimers.putInt(s, 0);
         }
         ISFSObject teamScore = new SFSObject();

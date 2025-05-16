@@ -14,6 +14,7 @@ import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
+import xyz.openatbp.extension.game.actors.Bot;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class Finn extends UserActor {
@@ -153,7 +154,7 @@ public class Finn extends UserActor {
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
         super.handleKill(a, attackData);
-        if (a.getActorType() == ActorType.PLAYER) {
+        if (a instanceof UserActor || a instanceof Bot) {
             this.canCast[1] = true;
             ExtensionCommands.actorAbilityResponse(this.parentExt, this.player, "w", true, 0, 0);
             if (getHealth() > 0) {
