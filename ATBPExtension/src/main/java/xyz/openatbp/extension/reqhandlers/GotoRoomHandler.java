@@ -92,7 +92,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
 
             } else if (roomId.contains("aram")) {
                 settings.setGroupId("Practice");
-                settings.setMaxUsers(2); // TODO: Testing value
+                settings.setMaxUsers(6); // TODO: Testing value
 
             } else if (roomId.contains("6p")) {
                 settings.setGroupId("PVP");
