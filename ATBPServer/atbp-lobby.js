@@ -546,7 +546,7 @@ function startGame(players, type) {
   if (type.includes('p') && type != 'practice')
     queueSize = Number(type.replace('aram_', '').replace('p', ''));
   if (type.includes('aram')) {
-    queueSize = 2; //Testing value for aram
+    queueSize = 6; //Testing value for aram
     aram = true;
   }
   var allTeams = matchmaking.getRandomTeams(players, teams, queueSize / 2);
@@ -749,7 +749,7 @@ function joinQueue(sockets, type) {
   var queueSize = 1;
   if (type.includes('p') && type != 'practice')
     queueSize = Number(type.replace('aram_').replace('').replace('p', ''));
-  if (type.includes('aram')) queueSize = 2; //Testing number for ARAM
+  if (type.includes('aram')) queueSize = 6; //Testing number for ARAM
   for (var s of sockets) {
     if (
       s.player.queueData.queueBan == -1 ||

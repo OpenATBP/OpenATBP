@@ -5,6 +5,7 @@ function generateRandomToken() {
 const bcrypt = require('bcrypt');
 const dbOp = require('./db-operations.js');
 const crypto = require('crypto');
+const config = require('./config.js');
 
 module.exports = {
   handleRegister: function (username, password, names, forgot, collection) {
@@ -58,9 +59,14 @@ module.exports = {
         .then((user) => {
           if (user != null) {
             //User exists
-            resolve(
-              JSON.stringify({ authToken: { text: user.session.token } })
-            );
+            if (
+              (config.lobbyserver.earlyAccessOnly && user.earlyAccess) ||
+              !config.lobbyserver.earlyAccessOnly
+            )
+              resolve(
+                JSON.stringify({ authToken: { text: user.session.token } })
+              );
+            else reject();
           } else {
             //User does not exist
             reject();

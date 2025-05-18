@@ -17,5 +17,6 @@ config.lobbyserver.gameIp = '127.0.0.1';
 config.lobbyserver.gamePort = '9933';
 config.lobbyserver.matchmakingEnabled = false;
 config.lobbyserver.matchmakingMin = 18;
+config.lobbyserver.earlyAccessOnly = false;
 
 module.exports = config;
