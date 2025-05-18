@@ -18,7 +18,6 @@ import org.bson.types.ObjectId;
 
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
-import com.smartfoxserver.v2.entities.data.ISFSObject;
 
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
@@ -30,10 +29,10 @@ import xyz.openatbp.extension.game.champions.Keeoth;
 public class MainMapRoomHandler extends RoomHandler {
     private HashMap<User, UserActor> dcPlayers = new HashMap<>();
     private List<Actor> companions = new ArrayList<>();
-    private boolean IS_RANKED_MATCH = this.room.getGroupId().equals("PVP");
+    private final boolean IS_RANKED_MATCH = this.room.getGroupId().equals("PVP");
 
     public MainMapRoomHandler(ATBPExtension parentExt, Room room) {
-        super(parentExt, room);
+        super(parentExt, room, GameManager.L2_SPAWNS);
         baseTowers.add(new BaseTower(parentExt, room, "purple_tower3", 0));
         baseTowers.add(new BaseTower(parentExt, room, "blue_tower3", 1));
 
@@ -45,38 +44,6 @@ public class MainMapRoomHandler extends RoomHandler {
         }
         for (String key : towers1.keySet()) {
             towers.add(new Tower(parentExt, room, key, 1, towers1.get(key)));
-        }
-    }
-
-    @Override
-    public void handleSpawns() {
-        ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
-        for (String s :
-                GameManager.L2_SPAWNS) { // Check all mob/health spawns for how long it's been
-            // since dead
-            if (s.length() > 3) {
-                int spawnRate = 45; // Mob spawn rate
-                if (s.equalsIgnoreCase("keeoth")) spawnRate = 120;
-                else if (s.equalsIgnoreCase("goomonster")) spawnRate = 90;
-                if (monsterDebug) spawnRate = 10;
-                if (spawns.getInt(s)
-                        == spawnRate) { // Mob timers will be set to 0 when killed or health
-                    // when taken
-                    spawnMonster(s);
-                    spawns.putInt(s, spawns.getInt(s) + 1);
-                } else {
-                    spawns.putInt(s, spawns.getInt(s) + 1);
-                }
-            } else {
-                int time = spawns.getInt(s);
-                if ((this.secondsRan <= 91 && time == 90) || (this.secondsRan > 91 && time == 60)) {
-                    spawnHealth(s);
-                } else if ((this.secondsRan <= 91 && time < 90)
-                        || (this.secondsRan > 91 && time < 60)) {
-                    time++;
-                    spawns.putInt(s, time);
-                }
-            }
         }
     }
 
@@ -158,42 +125,6 @@ public class MainMapRoomHandler extends RoomHandler {
                 Bson updateOperation = Updates.inc("player.altars", 1);
                 UpdateOptions options = new UpdateOptions().upsert(true);
                 Console.debugLog(playerData.updateOne(filter, updateOperation, options));
-            }
-        }
-    }
-
-    @Override
-    public void handleHealth() {
-        for (String s : GameManager.L2_SPAWNS) {
-            if (s.length() == 3) {
-                ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
-                if (spawns.getInt(s) == 91) {
-                    for (UserActor u : players) {
-                        Point2D currentPoint = u.getLocation();
-                        if (insideHealth(currentPoint, getHealthNum(s)) && u.getHealth() > 0) {
-                            int team = u.getTeam();
-                            Point2D healthLoc = getHealthLocation(getHealthNum(s));
-                            ExtensionCommands.removeFx(parentExt, room, s + "_fx");
-                            ExtensionCommands.createActorFX(
-                                    parentExt,
-                                    room,
-                                    String.valueOf(u.getId()),
-                                    "picked_up_health_cyclops",
-                                    2000,
-                                    s + "_fx2",
-                                    true,
-                                    "",
-                                    false,
-                                    false,
-                                    team);
-                            ExtensionCommands.playSound(
-                                    parentExt, u.getRoom(), "", "sfx_health_picked_up", healthLoc);
-                            u.handleCyclopsHealing();
-                            spawns.putInt(s, 0);
-                            break;
-                        }
-                    }
-                }
             }
         }
     }
@@ -554,13 +485,6 @@ public class MainMapRoomHandler extends RoomHandler {
                 double dcPercent = disconnects / playsPVP;
                 double elo = dataObj.get("player").get("elo").asInt();
                 double newElo = elo * (1 - dcPercent);
-                switch ((int) (newElo + 1)) {
-                    case 1:
-                    case 100:
-                    case 200:
-                    case 500:
-                        newElo++;
-                }
 
                 Bson updates =
                         Updates.combine(

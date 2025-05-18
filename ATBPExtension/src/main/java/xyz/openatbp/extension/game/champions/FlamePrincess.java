@@ -3,7 +3,6 @@ package xyz.openatbp.extension.game.champions;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -19,10 +18,12 @@ public class FlamePrincess extends UserActor {
     private static final int Q_GLOBAL_COOLDOWN = 250;
     private static final int PASSIVE_COOLDOWN = 10000;
     private static final int W_POLY_DURATION = 3000;
+    private static final double Q_BURST_DMG_MULTIPLIER = 1.2;
     private final int W_CAST_DELAY = 1000;
     private static final int E_DASH_COOLDOWN = 350;
     private static final int E_DURATION = 5000;
     private static final int E_DASH_SPEED = 15;
+
     private boolean passiveEnabled = false;
     private long lastPassiveUsage = 0;
     private int ultUses = 0;
@@ -53,10 +54,11 @@ public class FlamePrincess extends UserActor {
         if (this.form == Form.ULT) {
             RoomHandler handler = parentExt.getRoomHandler(this.room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, this.location, 2)) {
-                if (a.getTeam() != this.team && isNonStructure(a)) {
+                if (a.getTeam() != this.team && isNeitherTowerNorAlly(a)) {
                     JsonNode attackData = this.parentExt.getAttackData(getAvatar(), "spell3");
                     double damage = (double) this.getSpellDamage(attackData, false) / 10;
                     a.addToDamageQueue(this, damage, attackData, true);
+                    handlePassive();
                 }
             }
         }
@@ -70,13 +72,12 @@ public class FlamePrincess extends UserActor {
                     actorsInRadius.remove(a);
 
                     for (Actor affectedActor : actorsInRadius) {
-                        if (!affectedActor.getId().equalsIgnoreCase(this.id)
-                                && affectedActor.getTeam() != this.team
-                                && isNonStructure(affectedActor)) {
-                            handlePassive(2);
+                        if (isNeitherStructureNorAlly(affectedActor)) {
+                            handlePassive();
                             JsonNode spellData = this.parentExt.getAttackData("flame", "spell2");
-                            affectedActor.addToDamageQueue(
-                                    this, getSpellDamage(spellData, false) / 10d, spellData, true);
+
+                            double damage = getSpellDamage(spellData, false) / 10d;
+                            affectedActor.addToDamageQueue(this, damage, spellData, true);
                         }
                     }
                 }
@@ -157,8 +158,8 @@ public class FlamePrincess extends UserActor {
         else return super.canMove();
     }
 
-    public void handlePassive(int ability) {
-        if (canTriggerPassive(ability)) {
+    public void handlePassive() {
+        if (canTriggerPassive()) {
             ExtensionCommands.createActorFX(
                     this.parentExt,
                     this.room,
@@ -192,26 +193,29 @@ public class FlamePrincess extends UserActor {
         switch (ability) {
             case 1:
                 this.canCast[0] = false;
+                basicAttackReset();
                 try {
                     stopMoving();
-                    Line2D abilityLine = Champion.getAbilityLine(location, dest, 8f);
-                    ExtensionCommands.playSound(
-                            parentExt,
-                            room,
-                            this.id,
-                            "sfx_flame_princess_cone_of_flame",
-                            this.location);
-                    fireProjectile(
-                            new FlameProjectile(
-                                    this.parentExt,
-                                    this,
-                                    abilityLine,
-                                    8f,
-                                    0.5f,
-                                    "projectile_flame_cone"),
-                            location,
-                            dest,
-                            8f);
+                    if (getHealth() > 0) {
+                        Line2D abilityLine = Champion.getAbilityLine(location, dest, 8f);
+                        ExtensionCommands.playSound(
+                                parentExt,
+                                room,
+                                this.id,
+                                "sfx_flame_princess_cone_of_flame",
+                                this.location);
+                        fireProjectile(
+                                new FlameProjectile(
+                                        this.parentExt,
+                                        this,
+                                        abilityLine,
+                                        8f,
+                                        0.5f,
+                                        "projectile_flame_cone"),
+                                location,
+                                dest,
+                                8f);
+                    }
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
@@ -356,12 +360,9 @@ public class FlamePrincess extends UserActor {
         return ChampionData.getBaseAbilityCooldown(this, 3);
     }
 
-    private boolean canTriggerPassive(int ability) {
+    private boolean canTriggerPassive() {
         long currentTime = System.currentTimeMillis();
-        boolean ready = !passiveEnabled && currentTime - lastPassiveUsage >= PASSIVE_COOLDOWN;
-
-        if (ready && ability != 3) return true;
-        return ready && ultUses == 0;
+        return !passiveEnabled && currentTime - lastPassiveUsage >= PASSIVE_COOLDOWN;
     }
 
     private void endUlt() {
@@ -399,7 +400,6 @@ public class FlamePrincess extends UserActor {
 
         @Override
         protected void spellQ() {
-            attackCooldown = 0;
             int delay = getReducedCooldown(cooldown) - Q_GLOBAL_COOLDOWN;
             Runnable enableQCasting = () -> canCast[0] = true;
             scheduleTask(enableQCasting, delay);
@@ -416,20 +416,21 @@ public class FlamePrincess extends UserActor {
                     Champion.getActorsInRadius(roomHandler, this.dest, 2).stream()
                             .filter(a -> a.getTeam() != FlamePrincess.this.team)
                             .collect(Collectors.toList());
+
             for (Actor a : affectedUsers) {
-                if (a.getActorType() == ActorType.PLAYER) {
+                if (a.getActorType() == ActorType.PLAYER) { // poly for bot handled elsewhere
                     UserActor userActor = (UserActor) a;
                     userActor.addState(ActorState.POLYMORPH, 0d, 3000);
                     lastPolymorphTime = System.currentTimeMillis();
                 }
                 double newDamage = getSpellDamage(spellData, true);
-                if (isNonStructure(a))
-                    a.addToDamageQueue(
-                            FlamePrincess.this,
-                            newDamage,
-                            parentExt.getAttackData(getAvatar(), "spell2"),
-                            false);
+                if (isNeitherTowerNorAlly(a)) {
+                    JsonNode attackData = parentExt.getAttackData(getAvatar(), "spell2");
+                    a.addToDamageQueue(FlamePrincess.this, newDamage, attackData, false);
+                    handlePassive();
+                }
             }
+
             int delay = getReducedCooldown(cooldown) - W_CAST_DELAY;
             Runnable enableWCasting = () -> canCast[1] = true;
             scheduleTask(enableWCasting, delay);
@@ -465,10 +466,11 @@ public class FlamePrincess extends UserActor {
         public void hit(Actor victim) {
             if (this.hitPlayer) return;
             this.hitPlayer = true;
-            handlePassive(1);
+            handlePassive();
             JsonNode attackData = parentExt.getAttackData(getAvatar(), "spell1");
-            victim.addToDamageQueue(
-                    FlamePrincess.this, getSpellDamage(attackData, true), attackData, false);
+            double damage = getSpellDamage(attackData, true);
+            victim.addToDamageQueue(FlamePrincess.this, damage, attackData, false);
+
             ExtensionCommands.playSound(
                     parentExt, room, "", "akubat_projectileHit1", victim.getLocation());
             ExtensionCommands.createActorFX(
@@ -495,28 +497,17 @@ public class FlamePrincess extends UserActor {
                     true,
                     false,
                     team);
-            for (Actor a :
-                    Champion.getActorsAlongLine(
-                            parentExt.getRoomHandler(room.getName()),
-                            Champion.extendLine(path, 0.75f),
-                            0.75f)) {
-                if (!a.getId().equalsIgnoreCase(victim.getId()) && a.getTeam() != team) {
-                    double newDamage = (double) getSpellDamage(attackData, true) * 1.2d;
-                    a.addToDamageQueue(
-                            FlamePrincess.this, Math.round(newDamage), attackData, false);
+
+            Point2D hitPoint = victim.getLocation();
+
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            for (Actor a : Champion.getActorsInRadius(handler, hitPoint, 1f)) {
+                if (isNeitherTowerNorAlly(a) && !a.equals(victim)) {
+                    double dmg = damage *= Q_BURST_DMG_MULTIPLIER;
+                    a.addToDamageQueue(FlamePrincess.this, dmg, attackData, false);
                 }
             }
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(new DelayedProjectile(), 300, TimeUnit.MILLISECONDS);
-        }
-
-        private class DelayedProjectile implements Runnable {
-
-            @Override
-            public void run() {
-                destroy();
-            }
+            destroy();
         }
     }
 
@@ -540,9 +531,7 @@ public class FlamePrincess extends UserActor {
             new Champion.DelayedAttack(
                             parentExt, FlamePrincess.this, target, (int) damage, "basicAttack")
                     .run();
-            if (FlamePrincess.this.passiveEnabled
-                    && (target.getActorType() != ActorType.TOWER
-                            && target.getActorType() != ActorType.BASE)) {
+            if (FlamePrincess.this.passiveEnabled && (target.getActorType() != ActorType.TOWER)) {
                 FlamePrincess.this.passiveEnabled = false;
                 ExtensionCommands.removeFx(parentExt, room, id + "_flame_passive");
                 ExtensionCommands.actorAbilityResponse(
@@ -560,18 +549,31 @@ public class FlamePrincess extends UserActor {
                         false,
                         false,
                         team);
-                for (int i = 0; i < 3; i++) {
-                    parentExt
-                            .getTaskScheduler()
-                            .schedule(
-                                    new Champion.DelayedAttack(
-                                            parentExt,
-                                            FlamePrincess.this,
-                                            target,
-                                            getSpellDamage(getSpellData(4), true),
-                                            "spell4"),
-                                    i + 1,
-                                    TimeUnit.SECONDS);
+
+                int passiveDamage = getSpellDamage(getSpellData(4), true) / 2;
+                JsonNode attackData = parentExt.getAttackData(avatar, "spell4");
+
+                Runnable damageActor =
+                        () -> {
+                            target.addToDamageQueue(
+                                    FlamePrincess.this, passiveDamage, attackData, true);
+                            ExtensionCommands.createActorFX(
+                                    parentExt,
+                                    room,
+                                    target.getId(),
+                                    "_playerGotHitSparks",
+                                    500,
+                                    target.getId() + "_hit" + Math.random(),
+                                    true,
+                                    "",
+                                    true,
+                                    false,
+                                    target.getTeam());
+                        };
+
+                for (int i = 0; i < 6; i++) {
+                    int delay = (i * 500) + 500;
+                    scheduleTask(damageActor, delay);
                 }
             }
             if (FlamePrincess.this.passiveEnabled

@@ -14,6 +14,7 @@ import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
+import xyz.openatbp.extension.game.actors.Bot;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class Finn extends UserActor {
@@ -78,42 +79,49 @@ public class Finn extends UserActor {
             for (int i = 0; i < this.wallLines.length; i++) {
                 if (this.wallsActivated[i]) {
                     RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
-                    List<Actor> nonStructureEnemies = handler.getNonStructureEnemies(this.team);
-                    for (Actor a : nonStructureEnemies) {
+                    List<Actor> aInRadius = handler.getActorsInRadius(wallLines[0].getP1(), 10f);
+                    for (Actor a : aInRadius) {
                         if (this.wallLines[i].ptSegDist(a.getLocation()) <= 0.5f) {
-                            this.wallsActivated[i] = false;
-                            JsonNode spellData = this.parentExt.getAttackData("finn", "spell3");
-                            a.addState(ActorState.ROOTED, 0d, E_ROOT_DURATION);
-                            a.addToDamageQueue(
-                                    this,
-                                    handlePassive(a, getSpellDamage(spellData, true)),
-                                    spellData,
-                                    false);
-                            passiveStart = System.currentTimeMillis();
-                            String direction = "north";
-                            if (i == 1) direction = "east";
-                            else if (i == 2) direction = "south";
-                            else if (i == 3) direction = "west";
+                            if (isNeitherStructureNorAlly(a)) {
+                                a.addState(ActorState.ROOTED, 0d, E_ROOT_DURATION);
+                            }
 
-                            String wallDestroyedFX = SkinData.getFinnEDestroyFX(avatar, direction);
-                            String wallDestroyedSFX = SkinData.getFinnEDestroySFX(avatar);
-                            ExtensionCommands.removeFx(
-                                    this.parentExt, this.room, this.id + "_" + direction + "Wall");
-                            ExtensionCommands.createWorldFX(
-                                    this.parentExt,
-                                    this.room,
-                                    this.id,
-                                    wallDestroyedFX,
-                                    this.id + "_wallDestroy_" + direction,
-                                    1000,
-                                    ultX,
-                                    ultY,
-                                    false,
-                                    this.team,
-                                    180f);
-                            ExtensionCommands.playSound(
-                                    parentExt, room, id, wallDestroyedSFX, this.location);
-                            break;
+                            if (isNeitherTowerNorAlly(a)) {
+                                this.wallsActivated[i] = false;
+                                JsonNode spellData = this.parentExt.getAttackData("finn", "spell3");
+                                double damage = handlePassive(a, getSpellDamage(spellData, true));
+
+                                a.addToDamageQueue(this, damage, spellData, false);
+
+                                passiveStart = System.currentTimeMillis();
+                                String direction = "north";
+                                if (i == 1) direction = "east";
+                                else if (i == 2) direction = "south";
+                                else if (i == 3) direction = "west";
+
+                                String wallDestroyedFX =
+                                        SkinData.getFinnEDestroyFX(avatar, direction);
+                                String wallDestroyedSFX = SkinData.getFinnEDestroySFX(avatar);
+                                ExtensionCommands.removeFx(
+                                        this.parentExt,
+                                        this.room,
+                                        this.id + "_" + direction + "Wall");
+                                ExtensionCommands.createWorldFX(
+                                        this.parentExt,
+                                        this.room,
+                                        this.id,
+                                        wallDestroyedFX,
+                                        this.id + "_wallDestroy_" + direction,
+                                        1000,
+                                        ultX,
+                                        ultY,
+                                        false,
+                                        this.team,
+                                        180f);
+                                ExtensionCommands.playSound(
+                                        parentExt, room, id, wallDestroyedSFX, this.location);
+                                break;
+                            }
                         }
                     }
                 }
@@ -146,11 +154,12 @@ public class Finn extends UserActor {
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
         super.handleKill(a, attackData);
-        if (a.getActorType() == ActorType.PLAYER) {
+        if (a instanceof UserActor || a instanceof Bot) {
             this.canCast[1] = true;
             ExtensionCommands.actorAbilityResponse(this.parentExt, this.player, "w", true, 0, 0);
-            ExtensionCommands.playSound(
-                    this.parentExt, this.room, this.id, "vo/vo_finn_assist_1", this.location);
+            if (getHealth() > 0) {
+                ExtensionCommands.playSound(parentExt, room, id, "vo/vo_finn_assist_1", location);
+            }
         }
     }
 
@@ -160,8 +169,9 @@ public class Finn extends UserActor {
         if (key.equalsIgnoreCase("assists")) {
             this.canCast[1] = true;
             ExtensionCommands.actorAbilityResponse(this.parentExt, this.player, "w", true, 0, 0);
-            ExtensionCommands.playSound(
-                    this.parentExt, this.room, this.id, "vo/vo_finn_assist_1", this.location);
+            if (getHealth() > 0) {
+                ExtensionCommands.playSound(parentExt, room, id, "vo/vo_finn_assist_1", location);
+            }
         }
     }
 
@@ -190,10 +200,10 @@ public class Finn extends UserActor {
         if (qActive) {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor actor : Champion.getActorsInRadius(handler, this.location, 2f)) {
-                if (isNonStructure(actor)) {
+                if (isNeitherTowerNorAlly(actor)) {
                     JsonNode spellData = parentExt.getAttackData("finn", "spell1");
-                    actor.addToDamageQueue(
-                            Finn.this, getSpellDamage(spellData, true), spellData, false);
+                    double damage = getSpellDamage(spellData, true);
+                    actor.addToDamageQueue(Finn.this, damage, spellData, false);
                 }
             }
             qActive = false;
@@ -302,18 +312,12 @@ public class Finn extends UserActor {
 
                 RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
                 List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, quadrangle);
-                if (!actorsInPolygon.isEmpty()) {
+                if (!actorsInPolygon.isEmpty() && getHealth() > 0) {
                     for (Actor a : actorsInPolygon) {
-                        if (a.getActorType() == ActorType.TOWER
-                                || a.getActorType() == ActorType.BASE) {
-                            a.addToDamageQueue(
-                                    this, getSpellDamage(spellData, true), spellData, false);
-                        } else {
-                            a.addToDamageQueue(
-                                    this,
-                                    handlePassive(a, getSpellDamage(spellData, true)),
-                                    spellData,
-                                    false);
+
+                        if (isNeitherTowerNorAlly(a)) {
+                            double damage = handlePassive(a, getSpellDamage(spellData, true));
+                            a.addToDamageQueue(this, damage, spellData, false);
                             passiveStart = System.currentTimeMillis();
                         }
                     }
@@ -490,13 +494,11 @@ public class Finn extends UserActor {
                     if (this.qActive) {
                         RoomHandler handler = parentExt.getRoomHandler(room.getName());
                         for (Actor actor : Champion.getActorsInRadius(handler, this.location, 2f)) {
-                            if (isNonStructure(actor)) {
+                            if (isNeitherStructureNorAlly(actor)) {
                                 JsonNode spellData = parentExt.getAttackData("finn", "spell1");
-                                actor.addToDamageQueue(
-                                        Finn.this,
-                                        getSpellDamage(spellData, true),
-                                        spellData,
-                                        false);
+
+                                double dmg = getSpellDamage(spellData, true);
+                                actor.addToDamageQueue(Finn.this, dmg, spellData, false);
                             }
                         }
                         this.qActive = false;

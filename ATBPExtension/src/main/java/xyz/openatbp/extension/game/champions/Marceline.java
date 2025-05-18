@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
@@ -24,11 +23,14 @@ public class Marceline extends UserActor {
     private static final int W_DURATION = 3000;
     private static final double W_BEAST_SPEED_VALUE = 0.4d;
     private static final double W_VAMPIRE_SPEED_VALUE = 0.15d;
+    private static final String W_BEAST_ICON = "beast_w";
+    private static final String W_VAMP_ICON = "vamp_w";
     private static final int E_CAST_DELAY = 750;
     private static final int E_ATTACKSPEED_DURATION = 3000;
     private static final int E_IMMUNITY_DURATION = 2000;
     private static final int E_CHARM_DURATION = 2000;
     private static final int E_FEAR_DURATION = 2000;
+
     private int passiveHits = 0;
     private boolean hpRegenActive = false;
     private Actor qVictim;
@@ -59,9 +61,13 @@ public class Marceline extends UserActor {
         if (this.vampireWActive
                 && System.currentTimeMillis() - this.vampireWStartTime >= W_DURATION) {
             this.vampireWActive = false;
+            updateStatMenu("speed");
+            ExtensionCommands.removeStatusIcon(parentExt, player, W_VAMP_ICON);
         }
         if (this.beastWActive && System.currentTimeMillis() - this.bestWStartTime >= W_DURATION) {
             this.beastWActive = false;
+            updateStatMenu("speed");
+            ExtensionCommands.removeStatusIcon(parentExt, player, W_BEAST_ICON);
         }
         if (this.currentHealth < this.maxHealth
                 && !this.hpRegenActive
@@ -89,9 +95,7 @@ public class Marceline extends UserActor {
         if (this.vampireWActive) {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, this.location, 2f)) {
-                if (a.getTeam() != this.team
-                        && a.getActorType() != ActorType.TOWER
-                        && a.getActorType() != ActorType.BASE) {
+                if (isNeitherTowerNorAlly(a)) {
                     JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
                     double damage = getSpellDamage(spellData, false) / 10d;
                     a.addToDamageQueue(this, damage, spellData, true);
@@ -165,6 +169,38 @@ public class Marceline extends UserActor {
     }
 
     @Override
+    protected boolean handleAttack(Actor a) {
+        if (this.attackCooldown == 0) {
+
+            boolean critAnimation;
+            if (form == Form.BEAST && beastWActive) {
+                critAnimation = true;
+            } else {
+                double critChance = this.getPlayerStat("criticalChance") / 100d;
+                double random = Math.random();
+                critAnimation = random < critChance;
+            }
+
+            ExtensionCommands.attackActor(
+                    parentExt,
+                    room,
+                    this.id,
+                    a.getId(),
+                    (float) a.getLocation().getX(),
+                    (float) a.getLocation().getY(),
+                    critAnimation,
+                    true);
+
+            this.attackCooldown = this.getPlayerStat("attackSpeed");
+            this.preventStealth();
+            this.setLastAuto();
+            if (this.attackCooldown < BASIC_ATTACK_DELAY) this.attackCooldown = BASIC_ATTACK_DELAY;
+            return critAnimation;
+        }
+        return false;
+    }
+
+    @Override
     public void handleLifeSteal() {
         double damage = this.getPlayerStat("attackDamage");
         double lifesteal = this.getPlayerStat("lifeSteal") / 100;
@@ -192,7 +228,15 @@ public class Marceline extends UserActor {
     @Override
     public void die(Actor a) {
         super.die(a);
-        this.vampireWActive = false;
+        if (vampireWActive) {
+            vampireWActive = false;
+            ExtensionCommands.removeStatusIcon(parentExt, player, W_VAMP_ICON);
+        }
+
+        if (beastWActive) {
+            beastWActive = false;
+            ExtensionCommands.removeStatusIcon(parentExt, player, W_BEAST_ICON);
+        }
     }
 
     @Override
@@ -250,28 +294,46 @@ public class Marceline extends UserActor {
                 this.canCast[1] = false;
                 try {
                     String wVO = SkinData.getMarcelineWVO(avatar);
+                    addWStatusIcon(form);
+
                     if (this.form == Form.BEAST) {
                         this.beastWActive = true;
                         this.bestWStartTime = System.currentTimeMillis();
                         attackCooldown = 0;
+
                         ExtensionCommands.playSound(
                                 this.parentExt,
                                 this.room,
                                 this.id,
                                 "sfx_marceline_beast_crit_activate",
                                 this.location);
+
                         ExtensionCommands.createActorFX(
                                 this.parentExt,
                                 this.room,
                                 this.id,
                                 "marceline_beast_crit_hand",
                                 W_DURATION,
-                                this.id + "_beastHands",
+                                this.id + "_beastRHand",
                                 true,
                                 "Bip001 R Hand",
                                 true,
                                 false,
                                 this.team);
+
+                        ExtensionCommands.createActorFX(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                "marceline_beast_crit_hand",
+                                W_DURATION,
+                                this.id + "_beastLHand",
+                                true,
+                                "Bip001 L Hand",
+                                true,
+                                false,
+                                this.team);
+
                         // this.addEffect("speed", this.getStat("speed") * W_BEAST_SPEED_VALUE,
                         // W_DURATION);
                     } else {
@@ -316,6 +378,7 @@ public class Marceline extends UserActor {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
                 }
+                updateStatMenu("speed");
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -371,6 +434,16 @@ public class Marceline extends UserActor {
         }
     }
 
+    private void addWStatusIcon(Form currentForm) {
+        String iconDesc = "marceline_spell_2_description";
+        String monoName = "icon_marceline_s2";
+
+        String iconName = currentForm == Form.BEAST ? W_BEAST_ICON : W_VAMP_ICON;
+
+        ExtensionCommands.addStatusIcon(
+                parentExt, player, iconName, iconDesc, monoName, W_DURATION);
+    }
+
     private void checkForDisablingUltAttack() {
         if (eUsed && !hadCCDuringECast && hasInterrupingCC()) {
             canDoUltAttack = false;
@@ -393,22 +466,30 @@ public class Marceline extends UserActor {
         public void run() {
             double damage = getPlayerStat("attackDamage");
             if (form == Form.VAMPIRE && crit) damage *= 1.25;
-            if (crit
-                    && grassSwordCooldown
-                            >= ChampionData.getCustomJunkStat(Marceline.this, "junk_1_grass_sword"))
+
+            if (enhanceCrit()) {
                 damage *= 1.25d;
-            if (beastWActive && form == Form.BEAST) {
-                if (crit) damage *= 2.5;
-                else damage *= 1.25;
-                double lifesteal = 1d;
-                if (this.target != null
-                        && isNonStructure(this.target)
-                        && !getState(ActorState.BLINDED))
-                    changeHealth((int) Math.round(damage * lifesteal));
             }
+
+            if (beastWActive && form == Form.BEAST) {
+                damage *= 2;
+                double lifesteal = 1d;
+
+                if (target != null
+                        && isNeitherStructureNorAlly(target)
+                        && !getState(ActorState.BLINDED)) {
+                    changeHealth((int) Math.round(damage * lifesteal));
+                }
+
+                ExtensionCommands.removeStatusIcon(parentExt, player, W_BEAST_ICON);
+
+            } else if (form == Form.BEAST && crit) {
+                damage *= 1.25d;
+            }
+
             if (form == Form.VAMPIRE
                     && this.target != null
-                    && isNonStructure(this.target)
+                    && isNeitherStructureNorAlly(this.target)
                     && !getState(ActorState.BLINDED)) {
                 passiveHits++;
             }
@@ -428,12 +509,17 @@ public class Marceline extends UserActor {
                         true,
                         false,
                         target.getTeam());
-                ExtensionCommands.removeFx(parentExt, room, id + "_beastHands");
+                removeHandsFX();
             }
             new Champion.DelayedAttack(
                             parentExt, Marceline.this, target, (int) damage, "basicAttack")
                     .run();
         }
+    }
+
+    private void removeHandsFX() {
+        ExtensionCommands.removeFx(parentExt, room, id + "_beastRHand");
+        ExtensionCommands.removeFx(parentExt, room, id + "_beastLHand");
     }
 
     private MarcelineAbilityRunnable abilityRunnable(
@@ -464,7 +550,7 @@ public class Marceline extends UserActor {
             scheduleTask(enableECasting, delay);
             if (beastWActive) {
                 beastWActive = false;
-                ExtensionCommands.removeFx(parentExt, room, id + "_beastHands");
+                removeHandsFX();
             }
 
             if (getHealth() > 0) {
@@ -524,15 +610,19 @@ public class Marceline extends UserActor {
                     }
 
                     RoomHandler handler = parentExt.getRoomHandler(room.getName());
-                    for (Actor a :
-                            Champion.getActorsInRadius(handler, Marceline.this.location, 3)) {
-                        if (isNonStructure(a)) {
+                    Point2D loc = Marceline.this.location;
+                    for (Actor a : Champion.getActorsInRadius(handler, loc, 3)) {
+                        if (isNeitherTowerNorAlly(a)) {
+
                             double damage = getSpellDamage(spellData, true);
                             a.addToDamageQueue(Marceline.this, damage, spellData, false);
-                            if (form == Form.VAMPIRE) {
-                                a.handleCharm(Marceline.this, E_CHARM_DURATION);
-                            } else {
-                                a.handleFear(Marceline.this.location, E_FEAR_DURATION);
+
+                            if (a.getActorType() != ActorType.BASE) {
+                                if (form == Form.VAMPIRE) {
+                                    a.handleCharm(Marceline.this, E_CHARM_DURATION);
+                                } else {
+                                    a.handleFear(Marceline.this.location, E_FEAR_DURATION);
+                                }
                             }
                         }
                     }
@@ -582,7 +672,9 @@ public class Marceline extends UserActor {
                     false,
                     team);
             if (transformed) {
-                victim.addState(ActorState.ROOTED, 0d, Q_ROOT_DURATION);
+                if (isNeitherStructureNorAlly(victim)) {
+                    victim.addState(ActorState.ROOTED, 0d, Q_ROOT_DURATION);
+                }
             } else {
                 qVictim = victim;
                 qHit = System.currentTimeMillis();
@@ -592,13 +684,18 @@ public class Marceline extends UserActor {
                             qHit = -1;
                         };
                 scheduleTask(endVictim, 1500);
-                victim.addState(ActorState.SLOWED, Q_SLOW_VALUE, Q_SLOW_DURATION);
+
+                if (isNeitherStructureNorAlly(victim)) {
+                    victim.addState(ActorState.SLOWED, Q_SLOW_VALUE, Q_SLOW_DURATION);
+                }
             }
             JsonNode spellData = parentExt.getAttackData(avatar, "spell1");
             victim.addToDamageQueue(this.owner, getSpellDamage(spellData, true), spellData, false);
-            ExtensionCommands.playSound(
-                    parentExt, room, "", "sfx_marceline_blood_hit", this.location);
-            this.destroy();
+
+            String sound = "sfx_marceline_blood_hit";
+
+            ExtensionCommands.playSound(parentExt, room, "", sound, this.location);
+            destroy();
         }
     }
 }

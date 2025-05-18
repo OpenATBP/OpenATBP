@@ -98,3 +98,4 @@ assemble.dependsOn copySFS2XLibs
 
 extractDefinitions.dependsOn downloadDefinitions
 copyDataFiles.dependsOn extractDefinitions
+tasks.build.dependsOn tasks.spotlessApply

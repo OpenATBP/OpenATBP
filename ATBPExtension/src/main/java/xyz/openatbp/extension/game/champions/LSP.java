@@ -18,18 +18,19 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class LSP extends UserActor {
-    public static final int W_DURATION = 3500;
     public static final int Q_CAST_DELAY = 750;
     public static final int Q_FEAR_DURATION = 2000;
-    public static final int W_CAST_DELAY = 500;
-    public static final int E_CAST_DELAY = 1250;
-    private int lumps = 0;
-    private long wTime = 0;
-    private boolean isCastingult = false;
-    private boolean interruptE = false;
-    private boolean wActive = false;
     private static final float Q_OFFSET_DISTANCE = 0.75f;
     private static final float Q_SPELL_RANGE = 7.5f;
+    public static final int W_DURATION = 3500;
+    public static final int W_CAST_DELAY = 500;
+    public static final int E_CAST_DELAY = 1250;
+
+    private int lumps = 0;
+    private long wTime = 0;
+    private boolean wActive = false;
+    private boolean isCastingult = false;
+    private boolean isCastingQ = false;
 
     public LSP(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -52,14 +53,24 @@ public class LSP extends UserActor {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
-                if (this.isNonStructure(a)) {
-                    a.addToDamageQueue(
-                            this, (double) getSpellDamage(spellData, false) / 10d, spellData, true);
+                if (isNeitherTowerNorAlly(a)) {
+                    double dmg = getSpellDamage(spellData, false) / 10d;
+                    a.addToDamageQueue(this, dmg, spellData, true);
                 }
             }
         }
-        if (this.isCastingult && this.hasInterrupingCC()) {
-            this.interruptE = true;
+        if (isCastingult && this.hasInterrupingCC()) {
+            isCastingult = false;
+            ExtensionCommands.playSound(parentExt, room, id, "sfx_skill_interrupted", location);
+            ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 1, false);
+            if (!getState(ActorState.POLYMORPH))
+                ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
+        }
+
+        if (isCastingQ && hasDashAttackInterruptCC()) {
+            isCastingQ = false;
+            ExtensionCommands.playSound(parentExt, room, id, "sfx_skill_interrupted", location);
+            ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 1, false);
         }
     }
 
@@ -79,8 +90,7 @@ public class LSP extends UserActor {
     public void die(Actor a) {
         super.die(a);
         if (isCastingult)
-            ExtensionCommands.swapActorAsset(
-                    this.parentExt, this.room, this.id, getSkinAssetBundle());
+            ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
     }
 
     @Override
@@ -94,6 +104,7 @@ public class LSP extends UserActor {
         switch (ability) {
             case 1:
                 this.canCast[0] = false;
+                isCastingQ = true;
                 try {
                     this.stopMoving(castDelay);
                     String qVO = SkinData.getLSPQVO(avatar);
@@ -172,6 +183,12 @@ public class LSP extends UserActor {
         }
     }
 
+    @Override
+    public boolean canAttack() {
+        if (isCastingQ) return false;
+        return super.canAttack();
+    }
+
     private LSPAbilityRunnable abilityRunnable(
             int ability, JsonNode spelldata, int cooldown, int gCooldown, Point2D dest) {
         return new LSPAbilityRunnable(ability, spelldata, cooldown, gCooldown, dest);
@@ -189,7 +206,7 @@ public class LSP extends UserActor {
             Runnable enableQCasting = () -> canCast[0] = true;
             int delay = getReducedCooldown(cooldown) - Q_CAST_DELAY;
             scheduleTask(enableQCasting, delay);
-            if (getHealth() > 0) {
+            if (getHealth() > 0 && isCastingQ) {
                 double healthHealed = (double) getMaxHealth() * (0.03d * lumps);
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_lsp_drama_beam", location);
                 ExtensionCommands.removeStatusIcon(parentExt, player, "p" + lumps);
@@ -221,9 +238,12 @@ public class LSP extends UserActor {
                 List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(team, qRect);
                 if (!actorsInPolygon.isEmpty()) {
                     for (Actor a : actorsInPolygon) {
-                        if (isNonStructure(a)) {
-                            double damage = getSpellDamage(spellData, true);
+                        if (isNeitherStructureNorAlly(a)) {
                             a.handleFear(LSP.this.location, Q_FEAR_DURATION);
+                        }
+
+                        if (isNeitherTowerNorAlly(a)) {
+                            double damage = getSpellDamage(spellData, true);
                             a.addToDamageQueue(LSP.this, damage, spellData, false);
                             affectedActors.add(a);
                         }
@@ -233,6 +253,7 @@ public class LSP extends UserActor {
                     changeHealth((int) healthHealed);
                 }
             }
+            isCastingQ = false;
         }
 
         @Override
@@ -262,25 +283,21 @@ public class LSP extends UserActor {
             Runnable enableECasting = () -> canCast[2] = true;
             int delay = getReducedCooldown(cooldown) - E_CAST_DELAY;
             scheduleTask(enableECasting, delay);
-            isCastingult = false;
-            if (!interruptE && getHealth() > 0) {
+
+            if (getHealth() > 0 && isCastingult) {
                 Line2D projectileLine = Champion.getAbilityLine(location, dest, 100f);
                 ExtensionCommands.actorAnimate(parentExt, room, id, "spell3b", 500, false);
                 String eProjectile = SkinData.getLSPEProjectile(avatar);
-                fireProjectile(
+
+                LSPUltProjectile projectile =
                         new LSPUltProjectile(
-                                parentExt, LSP.this, projectileLine, 8f, 2f, eProjectile),
-                        location,
-                        dest,
-                        100f);
-                ExtensionCommands.playSound(
-                        parentExt, room, "global", "sfx_lsp_cellphone_throw", location);
-            } else if (interruptE) {
-                ExtensionCommands.playSound(parentExt, room, id, "sfx_skill_interrupted", location);
-                ExtensionCommands.actorAnimate(parentExt, room, id, "run", 200, false);
-                ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
+                                parentExt, LSP.this, projectileLine, 8f, 2f, eProjectile);
+                fireProjectile(projectile, location, dest, 100f);
+
+                String sound = "sfx_lsp_cellphone_throw";
+                ExtensionCommands.playSound(parentExt, room, "global", sound, location);
             }
-            interruptE = false;
+            isCastingult = false;
         }
 
         @Override
@@ -323,15 +340,17 @@ public class LSP extends UserActor {
 
         @Override
         public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            int team = owner.getTeam();
-            List<Actor> actors = roomHandler.getEligibleActors(team, false, true, true, true);
-            actors.remove(LSP.this);
-            for (Actor a : actors) {
+            float searchArea = hitbox * 2;
+            List<Actor> actorsInRadius = roomHandler.getActorsInRadius(location, searchArea);
+
+            actorsInRadius.remove(LSP.this);
+            for (Actor a : actorsInRadius) {
                 if (!this.victims.contains(a)) {
-                    double collisionRadius =
-                            parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
+                    JsonNode actorData = parentExt.getActorData(a.getAvatar());
+                    double collisionRadius = actorData.get("collisionRadius").asDouble();
+
                     if (a.getLocation().distance(location) <= hitbox + collisionRadius
-                            && !a.getAvatar().equalsIgnoreCase("neptr_mine")) {
+                            && isTargetable(a)) {
                         return a;
                     }
                 }

@@ -21,6 +21,7 @@ import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
+import com.smartfoxserver.v2.util.TaskScheduler;
 
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
@@ -28,6 +29,14 @@ import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.actors.*;
 
 public abstract class RoomHandler implements Runnable {
+    protected static final int ALTAR_LOCK_TIME_SEC = 90;
+    protected static final int HP_SPAWN_RATE_SEC = 60;
+    protected static final int NON_JG_BOSS_SPAWN_RATE = 45;
+    protected static final int KEEOTH_SPAWN_RATE = 120;
+    protected static final int GOO_SPAWN_RATE = 90;
+    protected static final int MONSTER_DEBUG_SPAWN_RATE = 10;
+    protected final String[] SPAWNS;
+
     protected ATBPExtension parentExt;
     protected Room room;
     protected ArrayList<Minion> minions;
@@ -55,6 +64,7 @@ public abstract class RoomHandler implements Runnable {
     protected List<Projectile> activeProjectiles = new ArrayList<>();
     protected ScheduledFuture<?> scriptHandler;
     protected int dcWeight = 0;
+    protected float FOUNTAIN_RADIUS = 4f;
 
     private enum PointLeadTeam {
         PURPLE,
@@ -67,13 +77,15 @@ public abstract class RoomHandler implements Runnable {
     private static final int SINGLE_KILL_COOLDOWN = 5000;
     private long lastSingleKillAnnouncement = 0;
 
-    public RoomHandler(ATBPExtension parentExt, Room room) {
+    public RoomHandler(ATBPExtension parentExt, Room room, String[] spawns) {
         this.parentExt = parentExt;
         this.room = room;
         this.minions = new ArrayList<>();
         this.towers = new ArrayList<>();
         this.players = new ArrayList<>();
         this.campMonsters = new ArrayList<>();
+        this.SPAWNS = spawns;
+
         Properties props = parentExt.getConfigProperties();
         monsterDebug = Boolean.parseBoolean(props.getProperty("monsterDebug", "false"));
         xpDebug = Boolean.parseBoolean(props.getProperty("xpDebug", "false"));
@@ -85,13 +97,10 @@ public abstract class RoomHandler implements Runnable {
             players.add(Champion.getCharacterClass(u, parentExt));
         }
         this.campMonsters = new ArrayList<>();
-        this.scriptHandler =
-                parentExt
-                        .getTaskScheduler()
-                        .scheduleAtFixedRate(this, 100, 100, TimeUnit.MILLISECONDS);
-    }
 
-    public abstract void handleSpawns();
+        TaskScheduler scheduler = parentExt.getTaskScheduler();
+        scriptHandler = scheduler.scheduleAtFixedRate(this, 100, 100, TimeUnit.MILLISECONDS);
+    }
 
     public abstract void handleMinionSpawns();
 
@@ -102,8 +111,6 @@ public abstract class RoomHandler implements Runnable {
     public abstract int getAltarStatus(Point2D location);
 
     public abstract void handleAltarGameScore(int capturingTeam, int altarIndex);
-
-    public abstract void handleHealth();
 
     public abstract void gameOver(int winningTeam);
 
@@ -204,6 +211,93 @@ public abstract class RoomHandler implements Runnable {
         }
     }
 
+    public void handleSpawns() {
+        ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
+        for (String s : SPAWNS) {
+            // Check all mob/health spawns for how long it's been
+            // since dead
+            // spawns values need to be compared to rate - 1 because it is the old value
+            if (s.length() > 3) {
+                int spawnRate = getMonsterSpawnRate(s);
+
+                if (spawns.getInt(s) == spawnRate - 1) {
+                    // Mob timers will be set to 0 when killed or health
+                    // when taken
+                    spawnMonster(s);
+                    spawns.putInt(s, spawns.getInt(s) + 1);
+                } else {
+                    spawns.putInt(s, spawns.getInt(s) + 1);
+                }
+            } else {
+                int time = spawns.getInt(s);
+
+                if (time == HP_SPAWN_RATE_SEC - 1) {
+                    spawnHealth(s);
+                    spawns.putInt(s, time + 1);
+                } else if (time != HP_SPAWN_RATE_SEC + 1) {
+                    time += 1;
+                    spawns.putInt(s, time);
+                }
+            }
+        }
+    }
+
+    private int getMonsterSpawnRate(String s) {
+        int spawnRate;
+
+        switch (s) {
+            case "keeoth":
+                spawnRate = KEEOTH_SPAWN_RATE;
+                break;
+
+            case "goomonster":
+                spawnRate = GOO_SPAWN_RATE;
+                break;
+
+            default:
+                spawnRate = NON_JG_BOSS_SPAWN_RATE;
+                break;
+        }
+
+        if (monsterDebug) spawnRate = MONSTER_DEBUG_SPAWN_RATE;
+        return spawnRate;
+    }
+
+    public void handleHealth() {
+        for (String s : SPAWNS) {
+            if (s.length() == 3) {
+                ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
+                if (spawns.getInt(s) == HP_SPAWN_RATE_SEC + 1) {
+                    for (UserActor u : players) {
+                        Point2D currentPoint = u.getLocation();
+                        if (insideHealth(currentPoint, getHealthNum(s)) && u.getHealth() > 0) {
+                            int team = u.getTeam();
+                            Point2D healthLoc = getHealthLocation(getHealthNum(s));
+                            ExtensionCommands.removeFx(parentExt, room, s + "_fx");
+                            ExtensionCommands.createActorFX(
+                                    parentExt,
+                                    room,
+                                    String.valueOf(u.getId()),
+                                    "picked_up_health_cyclops",
+                                    2000,
+                                    s + "_fx2",
+                                    true,
+                                    "",
+                                    false,
+                                    false,
+                                    team);
+                            ExtensionCommands.playSound(
+                                    parentExt, u.getRoom(), "", "sfx_health_picked_up", healthLoc);
+                            u.handleCyclopsHealing();
+                            spawns.putInt(s, 0);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     public void createChampionsCollectionsIfNotPresent(MongoDatabase db) {
         String[] avatars = {
             "billy",
@@ -253,7 +347,9 @@ public abstract class RoomHandler implements Runnable {
             return;
         }
         if (this.scriptHandler.isCancelled()) return;
+
         mSecondsRan += 100;
+
         List<String> keysToRemove = new ArrayList<>(this.destroyedIds.size());
         Set<String> keys = this.destroyedIds.keySet();
         for (String k : keys) {
@@ -262,6 +358,7 @@ public abstract class RoomHandler implements Runnable {
         for (String k : keysToRemove) {
             this.destroyedIds.remove(k);
         }
+
         if (mSecondsRan % 1000 == 0) { // Handle every second
             try {
                 if (secondsRan % 60 == 0) {
@@ -316,17 +413,21 @@ public abstract class RoomHandler implements Runnable {
                     this.gameOver(winningTeam);
                     return;
                 }
-                if (room.getUserList().isEmpty())
-                    parentExt.stopScript(
-                            room.getName(), true); // If no one is in the room, stop running.
-                else {
+                if (room.getUserList().isEmpty()) {
+                    parentExt.stopScript(room.getName(), true);
+                    // If no one is in the room, stop running.
+                } else {
                     handleAltars();
-                    ExtensionCommands.updateTime(parentExt, this.room, mSecondsRan);
+                    int timeToSendToClient = mSecondsRan - 1000;
+                    // I have no idea why, but sending this value makes the server and client clocks
+                    // synchronized
+
+                    ExtensionCommands.updateTime(parentExt, room, timeToSendToClient);
                 }
+
                 handleSpawns();
                 handleMinionSpawns();
                 handleCooldowns();
-
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -581,15 +682,21 @@ public abstract class RoomHandler implements Runnable {
         // increase, instant capture, status
         // increase
         Point2D altarLocation = getAltarLocation(altarIndex);
-        List<UserActor> uasInArea = Champion.getUserActorsInRadius(this, altarLocation, 2);
-        List<UserActor> purplePlayers = new ArrayList<>();
-        List<UserActor> bluePlayers = new ArrayList<>();
+        List<Actor> actorsInRadius = Champion.getActorsInRadius(this, altarLocation, 2);
 
-        for (UserActor ua : uasInArea) {
-            if (ua.getTeam() == 0 && ua.getHealth() > 0 && !ua.isDead()) {
-                purplePlayers.add(ua);
-            } else if (ua.getTeam() == 1 && ua.getHealth() > 0 && !ua.isDead()) {
-                bluePlayers.add(ua);
+        List<Actor> eligibleActors =
+                actorsInRadius.stream()
+                        .filter(a -> a instanceof UserActor || a instanceof Bot)
+                        .collect(Collectors.toList());
+
+        List<Actor> bluePlayers = new ArrayList<>();
+        List<Actor> purplePlayers = new ArrayList<>();
+
+        for (Actor eA : eligibleActors) {
+            if (eA.getTeam() == 0 && eA.getHealth() > 0 && !eA.isDead()) {
+                purplePlayers.add(eA);
+            } else if (eA.getTeam() == 1 && eA.getHealth() > 0 && !eA.isDead()) {
+                bluePlayers.add(eA);
             }
         }
 
@@ -688,13 +795,13 @@ public abstract class RoomHandler implements Runnable {
         }
         if (i == 1) addScore(null, team, 15 + (gooUsers.size() * 5));
         else addScore(null, team, 10 + (gooUsers.size() * 5));
-        cooldowns.put(altarId + "__" + "altar", 180);
+        cooldowns.put(altarId + "__" + "altar", ALTAR_LOCK_TIME_SEC);
         ExtensionCommands.createActorFX(
                 this.parentExt,
                 this.room,
                 altarId,
                 "fx_altar_lock",
-                1000 * 60 * 3,
+                ALTAR_LOCK_TIME_SEC * 1000,
                 "fx_altar_lock" + i,
                 false,
                 "Bip01",
@@ -704,6 +811,12 @@ public abstract class RoomHandler implements Runnable {
         int altarNum = getAltarNum(i);
 
         ExtensionCommands.updateAltar(this.parentExt, this.room, altarNum, team, true);
+
+        handleAltarCaptureBuff(i, team, altarId, gooUsers);
+    }
+
+    protected void handleAltarCaptureBuff(
+            int i, int team, String altarId, List<UserActor> gooUsers) {
         for (UserActor u : this.players) {
             if (u.getTeam() == team) {
                 try {
@@ -753,13 +866,18 @@ public abstract class RoomHandler implements Runnable {
         }
     }
 
-    private int getAltarNum(int i) { // TODO: probably useless for anything else
+    private int getAltarNum(int i) {
         int altarNum;
         String groupId = this.room.getGroupId();
         if (groupId.equals("PVP") || groupId.equals("PVE")) {
             altarNum = i == 0 ? 1 : i == 1 ? 0 : i;
-        } else {
-            altarNum = i == 1 ? 2 : i;
+        } else { // i0 - bot, altar
+
+            // altar num 0 - top
+            // altar num 2 - bot
+            // i 0 - bot
+            // i 1 = top
+            altarNum = i == 0 ? 2 : 0;
         }
         return altarNum;
     }
@@ -1002,7 +1120,8 @@ public abstract class RoomHandler implements Runnable {
         HashMap<Integer, Point2D> centers = getFountainsCenter();
 
         for (Map.Entry<Integer, Point2D> entry : centers.entrySet()) {
-            for (UserActor ua : Champion.getUserActorsInRadius(this, entry.getValue(), 4f)) {
+            for (UserActor ua :
+                    Champion.getUserActorsInRadius(this, entry.getValue(), FOUNTAIN_RADIUS)) {
                 if (ua.getTeam() == entry.getKey()
                         && ua.getHealth() != ua.getMaxHealth()
                         && ua.getHealth() > 0) {
@@ -1039,7 +1158,7 @@ public abstract class RoomHandler implements Runnable {
         int healthNum = getHealthNum(id);
         Point2D healthLocation = getHealthLocation(healthNum);
         int effectTime = (15 * 60 - secondsRan) * 1000;
-        if (healthLocation.getX() != 0)
+        if (healthLocation.getX() != 0) {
             ExtensionCommands.createWorldFX(
                     parentExt,
                     this.room,
@@ -1052,7 +1171,7 @@ public abstract class RoomHandler implements Runnable {
                     false,
                     2,
                     0f);
-        room.getVariable("spawns").getSFSObjectValue().putInt(id, 91);
+        }
     }
 
     public void addScore(UserActor earner, int team, int points) {
@@ -1273,6 +1392,10 @@ public abstract class RoomHandler implements Runnable {
 
     public List<Tower> getTowers() {
         return this.towers;
+    }
+
+    public List<BaseTower> getBaseTowers() {
+        return this.baseTowers;
     }
 
     protected boolean canSpawnSupers(int team) {

@@ -26,24 +26,19 @@ public class CinnamonBun extends UserActor {
     private static final float W_OFFSET_DISTANCE = 0.75f;
     private static final float W_SPELL_RANGE = 7f;
     private static final int W_DURATION = 5000;
+    private static final float W_SLOW_VALUE = 0.2f;
+    private static final int W_SLOW_DURATION = 1000;
     private static final int E_DURATION = 4500;
-    private static final int ULT_TICK_DELAY = 500;
-    private static final int E_ATTACKSPEED_DURATION = 4500;
-    private static final int E_ATTACKDAMAGE_DURATION = 4500;
-    private static final float E_ATTACKSPEED_VALUE = 0.2f;
-    private static final float E_ATTACKDAMAGE_VALUE = 0.2f;
+    private static final int E_TICK_DELAY = 500;
+    private static final float E_SPEED_BUFF_VALUE = 0.1f;
+
     private Point2D ultPoint = null;
     private Point2D ultPoint2 = null;
     private int ultUses = 0;
     private long ultStart = 0;
-    private long lastUltEffect = 0;
-    private boolean canApplyUltEffects = false;
-    private boolean ultEffectsApplied = false;
     private Path2D wPolygon = null;
     private long wStartTime = 0;
     private long lastUltTick = 0;
-    private boolean testing = false;
-    private long testingTime = 0;
 
     public CinnamonBun(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -57,15 +52,19 @@ public class CinnamonBun extends UserActor {
         }
         if (this.wPolygon != null) {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
-            double percentage = 0.2d + ((double) (this.level) * 0.01d);
-            int duration = 2000 + (this.level * 100);
+
             RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
             List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, this.wPolygon);
             if (!actorsInPolygon.isEmpty()) {
                 for (Actor a : actorsInPolygon) {
-                    a.addToDamageQueue(
-                            this, getSpellDamage(spellData, false) / 10d, spellData, true);
-                    if (isNonStructure(a)) a.addState(ActorState.SLOWED, percentage, duration);
+                    if (isNeitherTowerNorAlly(a)) {
+                        int damage = (int) (getSpellDamage(spellData, false) / 10d);
+                        a.addToDamageQueue(this, damage, spellData, true);
+                    }
+
+                    if (isNeitherStructureNorAlly(a)) {
+                        a.addState(ActorState.SLOWED, W_SLOW_VALUE, W_SLOW_DURATION);
+                    }
                 }
             }
         }
@@ -74,24 +73,34 @@ public class CinnamonBun extends UserActor {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
             double tickDamage = getSpellDamage(spellData, false);
             int radius = 2;
+
             if (this.ultUses > 1 && this.ultPoint2 == null) {
                 radius = 4;
+            }
+
+            if (ultUses > 1 && ultPoint2 != null) {
                 tickDamage *= 1.5;
             }
-            if (System.currentTimeMillis() - this.lastUltTick >= ULT_TICK_DELAY) {
+
+            if (System.currentTimeMillis() - this.lastUltTick >= E_TICK_DELAY) {
                 this.lastUltTick = System.currentTimeMillis();
                 for (Actor a : this.getEnemiesInRadius(this.ultPoint, radius)) {
-                    a.addToDamageQueue(this, tickDamage / 2, spellData, true);
-                }
-                if (ultPoint2 != null && ultUses > 1) {
-                    for (Actor a : this.getEnemiesInRadius(ultPoint2, radius)) {
+                    if (isNeitherTowerNorAlly(a)) {
                         a.addToDamageQueue(this, tickDamage / 2, spellData, true);
                     }
                 }
+                if (ultPoint2 != null && ultUses > 1) {
+                    for (Actor a : this.getEnemiesInRadius(ultPoint2, radius)) {
+                        if (isNeitherTowerNorAlly(a)) {
+                            a.addToDamageQueue(this, tickDamage / 2, spellData, true);
+                        }
+                    }
+                }
             }
-            if (this.getLocation().distance(ultPoint) <= radius
-                    || ultPoint2 != null && this.getLocation().distance(ultPoint2) <= radius) {
-                handleUltBuff();
+            if (location.distance(ultPoint) <= radius
+                    || (ultPoint2 != null && location.distance(ultPoint2) <= radius)) {
+                double delta = getPlayerStat("speed") * E_SPEED_BUFF_VALUE;
+                this.addEffect("speed", delta, 150);
             }
         } else if (this.ultPoint != null
                 && System.currentTimeMillis() - this.ultStart >= E_DURATION) {
@@ -134,15 +143,15 @@ public class CinnamonBun extends UserActor {
             RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
 
             for (Actor a : Champion.getActorsInRadius(handler, this.ultPoint, radius)) {
-                if (a.getTeam() != this.team) {
+                if (isNeitherTowerNorAlly(a)) {
                     a.addToDamageQueue(this, getSpellDamage(spellData, false), spellData, false);
                 }
             }
             if (this.ultPoint2 != null) {
                 for (Actor a : Champion.getActorsInRadius(handler, this.ultPoint2, radius)) {
-                    if (a.getTeam() != this.team) {
-                        a.addToDamageQueue(
-                                this, getSpellDamage(spellData, false), spellData, false);
+                    if (isNeitherTowerNorAlly(a)) {
+                        double damage = getSpellDamage(spellData, false);
+                        a.addToDamageQueue(this, damage, spellData, false);
                     }
                 }
                 ExtensionCommands.createWorldFX(
@@ -163,25 +172,6 @@ public class CinnamonBun extends UserActor {
             this.ultUses = 0;
             this.ultStart = 0;
         }
-        if (this.ultEffectsApplied) {
-            if (System.currentTimeMillis() - lastUltEffect >= E_DURATION) {
-                ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "ultEffect");
-                this.ultEffectsApplied = false;
-            }
-        }
-        /*
-        if (testing
-                && System.currentTimeMillis() - testingTime
-                        >= E_DURATION) { // TODO: REMOVE AFTER FIXING ABILITIES
-            testing = false;
-            int baseCooldown = ChampionData.getBaseAbilityCooldown(this, 3);
-            Runnable resetCanCast = () -> this.canCast[2] = true;
-            ExtensionCommands.actorAbilityResponse(
-                    this.parentExt, this.player, "e", true, getReducedCooldown(baseCooldown), 500);
-            scheduleTask(resetCanCast, getReducedCooldown(baseCooldown));
-        }
-
-         */
     }
 
     @Override
@@ -220,11 +210,13 @@ public class CinnamonBun extends UserActor {
                     List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, qRect);
                     if (!actorsInPolygon.isEmpty()) {
                         for (Actor a : actorsInPolygon) {
-                            a.addToDamageQueue(
-                                    this, getSpellDamage(spellData, true), spellData, false);
+                            if (isNeitherTowerNorAlly(a)) {
+                                double damage = getSpellDamage(spellData, true);
+                                a.addToDamageQueue(this, damage, spellData, false);
+                            }
                         }
                     }
-                    this.attackCooldown = 0;
+                    basicAttackReset();
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
@@ -317,7 +309,6 @@ public class CinnamonBun extends UserActor {
                 try {
                     this.stopMoving();
                     if (this.ultUses == 0) {
-                        this.canApplyUltEffects = true;
                         handlePassive();
                         this.ultPoint = dest;
                         this.ultStart = System.currentTimeMillis();
@@ -462,11 +453,10 @@ public class CinnamonBun extends UserActor {
                                     0f);
                         }
                         RoomHandler handler1 = parentExt.getRoomHandler(room.getName());
-                        for (Actor a :
-                                Champion.getActorsInRadius(handler1, this.ultPoint, radius)) {
-                            if (a.getTeam() != this.team) {
-                                a.addToDamageQueue(
-                                        this, getSpellDamage(spellData, false), spellData, false);
+                        for (Actor a : Champion.getActorsInRadius(handler1, ultPoint, radius)) {
+                            if (isNeitherTowerNorAlly(a)) {
+                                double damage = getSpellDamage(spellData, false);
+                                a.addToDamageQueue(this, damage, spellData, false);
                             }
                         }
                         if (this.ultPoint2 != null) {
@@ -525,59 +515,12 @@ public class CinnamonBun extends UserActor {
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
-                    this.testing = true;
-                    this.testingTime = System.currentTimeMillis();
                 }
                 break;
         }
     }
 
-    private void handleUltBuff() {
-        if (this.canApplyUltEffects) {
-            lastUltEffect = System.currentTimeMillis();
-            this.canApplyUltEffects = false;
-            this.ultEffectsApplied = true;
-            this.addEffect(
-                    "attackSpeed",
-                    this.getStat("attackSpeed") * -E_ATTACKSPEED_VALUE,
-                    E_ATTACKSPEED_DURATION);
-            this.addEffect(
-                    "attackDamage",
-                    this.getStat("attackDamage") * E_ATTACKDAMAGE_VALUE,
-                    E_ATTACKDAMAGE_DURATION);
-            ExtensionCommands.addStatusIcon(
-                    this.parentExt,
-                    this.player,
-                    "ultEffect",
-                    "cinnamonbun_spell_3_short_description",
-                    "icon_cinnamonbun_s3",
-                    E_DURATION);
-            ExtensionCommands.createActorFX(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    "billy_crit_hands",
-                    E_DURATION,
-                    this.id + "_cbCritHandsR",
-                    true,
-                    "Bip001 R Hand",
-                    true,
-                    false,
-                    this.team);
-            ExtensionCommands.createActorFX(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    "billy_crit_hands",
-                    E_DURATION,
-                    this.id + "_cbCritHandsL",
-                    true,
-                    "Bip001 L Hand",
-                    true,
-                    false,
-                    this.team);
-        }
-    }
+    private void handleUltBuff() {}
 
     private List<Actor> getEnemiesInRadius(Point2D center, float radius) {
         RoomHandler handler = parentExt.getRoomHandler(room.getName());

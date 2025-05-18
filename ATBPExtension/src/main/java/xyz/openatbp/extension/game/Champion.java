@@ -75,6 +75,8 @@ public class Champion {
                 return new BMO(u, parentExt);
             case "cinnamonbun":
                 return new CinnamonBun(u, parentExt);
+            case "choosegoose":
+                return new ChooseGoose(u, parentExt);
         }
         return new UserActor(u, parentExt);
     }
