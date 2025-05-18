@@ -1,13 +1,14 @@
 package xyz.openatbp.extension;
 
 import java.awt.geom.Point2D;
-import java.util.concurrent.TimeUnit;
 
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 
 public class GameModeSpawns {
+
+    public static final float MINI_GUARDIAN_ACTOR_OFFSET = 2.5f;
 
     public static void spawnTowersForMode(Room room, ATBPExtension parentExt) {
         String groupId = room.getGroupId();
@@ -156,63 +157,23 @@ public class GameModeSpawns {
             z = MapData.L2_GUARDIAN1_Z;
         }
 
-        float rotation = team == 0 ? 90f : -90f;
+        ISFSObject guardian = getGuardian(team, x, z);
+        ExtensionCommands.createActor(parentExt, room, guardian);
+    }
 
-        ExtensionCommands.createWorldFX(
-                parentExt,
-                room,
-                "gumball_guardian" + team,
-                "gumball_guardian",
-                "GumballGuardian_" + team + "_" + room,
-                4500,
-                x,
-                z,
-                false,
-                team,
-                rotation);
-
-        float outsideMapX = x;
-        float moveX = x;
-        if (team == 0) {
-            outsideMapX -= 50;
-            moveX -= 40;
-        } else {
-            outsideMapX += 50;
-            moveX += 40;
-        }
-
-        Point2D outsideMapPos = new Point2D.Float(outsideMapX, z);
-        Point2D movePos = new Point2D.Float(moveX, z);
-        Point2D properPos = new Point2D.Float(x, z);
+    private static ISFSObject getGuardian(int team, float x, float z) {
+        String bundle = team == 0 ? "GG_Purple" : "GG_Blue";
 
         ISFSObject guardian = new SFSObject();
         ISFSObject guardianSpawn = new SFSObject();
         guardian.putUtfString("id", "gumball" + team);
-        guardian.putUtfString("actor", "gumball_guardian");
-        guardianSpawn.putFloat("x", outsideMapX);
-        guardianSpawn.putFloat("y", 0f);
+        guardian.putUtfString("actor", bundle);
+        guardianSpawn.putFloat("x", x);
+        guardianSpawn.putFloat("y", 0);
         guardianSpawn.putFloat("z", z);
         guardian.putSFSObject("spawn_point", guardianSpawn);
         guardian.putFloat("rotation", 0f);
         guardian.putInt("team", team);
-
-        Runnable create = () -> ExtensionCommands.createActor(parentExt, room, guardian);
-        Runnable move =
-                () ->
-                        ExtensionCommands.moveActor(
-                                parentExt,
-                                room,
-                                "gumball" + team,
-                                outsideMapPos,
-                                movePos,
-                                100,
-                                true);
-        Runnable snap =
-                () ->
-                        ExtensionCommands.snapActor(
-                                parentExt, room, "gumball" + team, outsideMapPos, properPos, true);
-        parentExt.getTaskScheduler().schedule(create, 1000, TimeUnit.MILLISECONDS);
-        parentExt.getTaskScheduler().schedule(move, 2000, TimeUnit.MILLISECONDS);
-        parentExt.getTaskScheduler().schedule(snap, 4000, TimeUnit.MILLISECONDS);
+        return guardian;
     }
 }

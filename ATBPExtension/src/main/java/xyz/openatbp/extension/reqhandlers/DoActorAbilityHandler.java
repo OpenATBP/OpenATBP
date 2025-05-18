@@ -14,6 +14,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 
 import xyz.openatbp.extension.*;
+import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 @MultiHandler
@@ -84,6 +85,31 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
         player.useAbility(spellNum, spellData, baseCooldown, gCooldown, castDelay, oldLocation);
         player.setLastSpell();
         player.preventStealth();
+
+        if (player.hasBackpackItem("junk_3_armor_of_zeldron")) {
+            int pointsPutIntoZeldron = (int) player.getStat("sp_category3");
+            int ZELDRON_BUFF_DURATION = 2000;
+
+            float[] speedPerZeldronPoints = {0.05f, 0.1f, 0.15f, 0.2f};
+
+            if (pointsPutIntoZeldron > 0 && pointsPutIntoZeldron <= speedPerZeldronPoints.length) {
+                String iconDesc = "Your movement speed is increased for 2 seconds";
+                float delta = speedPerZeldronPoints[pointsPutIntoZeldron - 1];
+                String iconName = "junk_3_armor_of_zeldron";
+
+                player.addEffect("speed", delta, ZELDRON_BUFF_DURATION);
+
+                Long lastZeldronTime = player.getLastZeldronBuff();
+
+                if (System.currentTimeMillis() - lastZeldronTime >= ZELDRON_BUFF_DURATION) {
+                    // to prevent status icon stacking
+                    player.setLastZedronBuff(System.currentTimeMillis());
+
+                    Champion.handleStatusIcon(
+                            parentExt, player, iconName, iconDesc, ZELDRON_BUFF_DURATION);
+                }
+            }
+        }
     }
 
     private JsonNode getSpellData(String avatar, int spell) {

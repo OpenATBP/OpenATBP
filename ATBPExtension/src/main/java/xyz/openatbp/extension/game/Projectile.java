@@ -4,6 +4,8 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
@@ -89,23 +91,28 @@ public abstract class Projectile {
     }
 
     public Actor checkPlayerCollision(RoomHandler roomHandler) {
-        List<Actor> nonStructureEnemies = roomHandler.getNonStructureEnemies(owner.getTeam());
-        for (Actor a : nonStructureEnemies) {
-            double collisionRadius =
-                    parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
-            if (a.getLocation().distance(location) <= hitbox + collisionRadius
-                    && !a.getAvatar().equalsIgnoreCase("neptr_mine")) {
+        float searchArea = hitbox * 2;
+        List<Actor> actorsInRadius = roomHandler.getActorsInRadius(location, searchArea);
+        for (Actor a : actorsInRadius) {
+            JsonNode actorData = parentExt.getActorData(a.getAvatar());
+            double collisionRadius = actorData.get("collisionRadius").asDouble();
+
+            if (a.getLocation().distance(location) <= hitbox + collisionRadius && isTargetable(a)) {
                 return a;
             }
         }
         return null;
     }
 
-    protected abstract void hit(Actor victim);
-
-    public Point2D getDestination() {
-        return this.destination;
+    public boolean isTargetable(Actor a) {
+        String avatar = a.getAvatar();
+        return !avatar.equals("neptr_mine")
+                && !avatar.equals("choosegoose_chest")
+                && a.getActorType() != ActorType.TOWER
+                && a.getTeam() != owner.getTeam();
     }
+
+    protected abstract void hit(Actor victim);
 
     public String getId() {
         return this.id;
@@ -113,10 +120,6 @@ public abstract class Projectile {
 
     public String getProjectileAsset() {
         return this.projectileAsset;
-    }
-
-    public double getEstimatedDuration() {
-        return estimatedDuration;
     }
 
     public void destroy() {

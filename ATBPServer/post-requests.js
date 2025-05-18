@@ -7,41 +7,103 @@ const dbOp = require('./db-operations.js');
 const crypto = require('crypto');
 const config = require('./config.js');
 
+function escapeRegex(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 module.exports = {
-  handleRegister: function (username, password, names, forgot, collection) {
+  handleRegister: function (
+    username,
+    password,
+    selectedNameParts,
+    forgot,
+    collection
+  ) {
     return new Promise(function (resolve, reject) {
       bcrypt.hash(password, 10, (err, hash) => {
-        var name = '';
-        for (var i in names) {
-          name += names[i];
-          if (i != names.length - 1 && names[i] != '') name += ' ';
+        if (err) {
+          console.error('Bcrypt password hashing error:', err);
+          return reject(new Error('Password hashing failed'));
         }
+
+        let validNameParts = selectedNameParts.filter(
+          (n) => n && n.trim() !== ''
+        );
+        const finalDisplayNameForStorage = validNameParts.join(' ');
+
+        if (validNameParts.length < 2) {
+          return reject(new Error('Insufficient display name parts selected.'));
+        }
+
+        let baseDisplayNameForLookup = finalDisplayNameForStorage;
+
+        const prefixRegex = /^(?:\[DEV\]\s*|\[ATBPDEV\]\s*)/i;
+        baseDisplayNameForLookup = baseDisplayNameForLookup
+          .replace(prefixRegex, '')
+          .trim();
+
+        if (!baseDisplayNameForLookup) {
+          return reject(new Error('A valid core display name is required.'));
+        }
+
+        const escapedUsername = escapeRegex(username);
+        const escapedBaseDisplayName = escapeRegex(baseDisplayNameForLookup);
+
+        const displayNameConflictRegex = new RegExp(
+          `^(?:${prefixRegex.source})?${escapedBaseDisplayName}$`,
+          'i'
+        );
+
         collection
           .findOne({
             $or: [
-              { 'user.TEGid': { $regex: new RegExp(`^${username}$`, 'i') } },
               {
-                'user.dname': name
-                  .replace('[DEV] ', '')
-                  .replace('[ATBPDEV] ', ''),
+                'user.TEGid': {
+                  $regex: new RegExp(`^${escapedUsername}$`, 'i'),
+                },
               },
+              { 'user.dname': displayNameConflictRegex },
             ],
           })
-          .then((user) => {
-            if (user != null) {
-              resolve('login');
+          .then((existingUser) => {
+            if (existingUser != null) {
+              if (
+                existingUser.user.TEGid.toLowerCase() === username.toLowerCase()
+              ) {
+                resolve('usernameTaken');
+              } else {
+                // If the username didn't match, the displayNameConflictRegex must have.
+                resolve('displayNameTaken');
+              }
             } else {
-              bcrypt.hash(forgot, 10, (er, has) => {
+              bcrypt.hash(forgot, 10, (er, forgotHash) => {
+                if (er) {
+                  console.error('Bcrypt secret phrase hashing error:', er);
+                  return reject(new Error('Secret phrase hashing failed'));
+                }
+
                 dbOp
-                  .createNewUser(username, name, hash, has, collection)
+                  .createNewUser(
+                    username,
+                    finalDisplayNameForStorage,
+                    hash,
+                    forgotHash,
+                    collection
+                  )
                   .then((u) => {
                     resolve(u);
                   })
-                  .catch(console.error);
+                  .catch((dbErr) => {
+                    console.error('Error in createNewUser:', dbErr);
+                    reject(dbErr);
+                  });
               });
             }
           })
-          .catch(console.error);
+          .catch((queryErr) => {
+            console.error('Error in findOne user check:', queryErr);
+            reject(queryErr);
+          });
       });
     });
   },
@@ -134,13 +196,33 @@ module.exports = {
   },
   handleForgotPassword: function (username, forgot, password, collection) {
     return new Promise(function (resolve, reject) {
+      const trimmedUsername = username ? username.trim() : '';
+      if (!trimmedUsername) {
+        return reject(new Error('invalidCredentials'));
+      }
+      const escapedUsername = escapeRegex(trimmedUsername);
+
       collection
-        .findOne({ 'user.TEGid': { $regex: new RegExp(`^${username}$`, 'i') } })
+        .findOne({
+          'user.TEGid': { $regex: new RegExp(`^${escapedUsername}$`, 'i') },
+        })
         .then((u) => {
-          if (u != null) {
-            bcrypt.compare(forgot, u.forgot, (err, res) => {
-              if (res) {
-                bcrypt.hash(password, 10, (err, hash) => {
+          if (u != null && u.forgot) {
+            bcrypt.compare(forgot, u.forgot, (err, secretPhraseMatch) => {
+              if (err) {
+                console.error('Bcrypt compare error for secret phrase:', err);
+                return reject(new Error('serverError'));
+              }
+              if (secretPhraseMatch) {
+                // Secret phrase matches
+                bcrypt.hash(password, 10, (bcryptErr, newPasswordHash) => {
+                  if (bcryptErr) {
+                    console.error(
+                      'Bcrypt hash error for new password:',
+                      bcryptErr
+                    );
+                    return reject(new Error('serverError'));
+                  }
                   var today = new Date();
                   today.setDate(today.getDate() + 1);
                   var newSession = {
@@ -152,30 +234,51 @@ module.exports = {
                     .updateOne(
                       {
                         'user.TEGid': {
-                          $regex: new RegExp(`^${username}$`, 'i'),
+                          $regex: new RegExp(`^${escapedUsername}$`, 'i'),
                         },
                       },
                       {
                         $set: {
-                          session: newSession,
-                          'user.authpass': hash,
+                          session: newSession, // Resetting session on password change
+                          'user.authpass': newPasswordHash,
                         },
                       }
                     )
                     .then((r) => {
-                      resolve(u);
+                      if (
+                        r.modifiedCount > 0 ||
+                        (r.matchedCount > 0 && r.upsertedCount === 0)
+                      ) {
+                        resolve(u);
+                      } else {
+                        console.error(
+                          'Password reset: User found but update failed for',
+                          trimmedUsername
+                        );
+                        reject(new Error('serverError'));
+                      }
                     })
-                    .catch((e) => {
-                      reject(e);
+                    .catch((dbUpdateErr) => {
+                      console.error(
+                        'DB update error during password reset:',
+                        dbUpdateErr
+                      );
+                      reject(new Error('serverError'));
                     });
                 });
-              } else reject('No user found');
+              } else {
+                // Secret phrase does not match
+                reject(new Error('invalidCredentials'));
+              }
             });
-          } else reject('Null');
+          } else {
+            // Username isn't found or the user has no 'forgot' field (treat as invalid)
+            reject(new Error('invalidCredentials'));
+          }
         })
-        .catch((e) => {
-          console.log(e);
-          reject();
+        .catch((findErr) => {
+          console.error('DB findOne error during password reset:', findErr);
+          reject(new Error('serverError'));
         });
     });
   },

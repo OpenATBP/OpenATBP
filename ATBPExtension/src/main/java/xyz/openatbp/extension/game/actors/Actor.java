@@ -450,6 +450,7 @@ public abstract class Actor {
                 ua.setLichVictim(this.id);
             }
         }
+
         this.currentHealth -= damage;
         if (this.currentHealth <= 0) this.currentHealth = 0;
         ISFSObject updateData = new SFSObject();
@@ -477,6 +478,30 @@ public abstract class Actor {
             UserActor ua = (UserActor) attacker;
             ua.addHit(dotDamage);
             ua.handleSpellVamp(this.getMitigatedDamage(damage, AttackType.SPELL, ua), dotDamage);
+        }
+
+        if (attacker instanceof UserActor && getAttackType(attackData) == AttackType.PHYSICAL) {
+
+            UserActor ua = (UserActor) attacker;
+            if (ua.hasBackpackItem("junk_1_sai")) {
+                int critChance = (int) ua.getPlayerStat("criticalChance");
+                Long lastSaiProc = ua.getLastSaiProcTime();
+
+                Random random = new Random();
+                int randomNumber = random.nextInt(100);
+                boolean proc = randomNumber < critChance;
+
+                int SAI_CD = UserActor.SAI_PROC_COOLDOWN;
+
+                if (proc && System.currentTimeMillis() - lastSaiProc >= SAI_CD) {
+                    ua.setLastSaiProcTime(System.currentTimeMillis());
+                    double delta = this.getPlayerStat("armor") * -((double) critChance / 100.0);
+
+                    Console.debugLog("armor: " + this.getPlayerStat("armor"));
+                    Console.debugLog("armor delta: " + delta);
+                    this.addEffect("armor", delta, SAI_CD);
+                }
+            }
         }
     }
 
@@ -562,6 +587,15 @@ public abstract class Actor {
         data.putInt("maxHealth", (int) this.maxHealth);
         data.putDouble("pHealth", this.getPHealth());
         ExtensionCommands.updateActorData(this.parentExt, this.room, this.id, data);
+    }
+
+    public void handleStructureRegen(
+            Long lastAction, int TIME_REQUIRED_TO_REGEN, float REGEN_VALUE) {
+        if (System.currentTimeMillis() - lastAction >= TIME_REQUIRED_TO_REGEN
+                && getHealth() != maxHealth) {
+            int delta = (int) (getMaxHealth() * REGEN_VALUE);
+            changeHealth(delta);
+        }
     }
 
     public void heal(int delta) {

@@ -72,8 +72,8 @@ public class Neptr extends UserActor {
                 && System.currentTimeMillis() - this.ultDamageStartTime < E_DAMAGE_DURATION) {
             JsonNode attackData = this.parentExt.getAttackData(this.avatar, "spell3");
             for (Actor a : impactedActors) {
-                a.addToDamageQueue(
-                        this, this.getSpellDamage(attackData, false) / 10d, attackData, true);
+                double dmg = getSpellDamage(attackData, false) / 10d;
+                a.addToDamageQueue(this, dmg, attackData, true);
             }
         }
 
@@ -333,11 +333,11 @@ public class Neptr extends UserActor {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, ultLocation, 3f)) {
                 if (a.getActorType() != ActorType.BASE) {
-                    if (isNonStructure(a)) {
+                    if (isNeitherStructureNorAlly(a)) {
                         a.knockback(Neptr.this.location, 3.5f);
                         a.addState(ActorState.SILENCED, 0d, E_SILENCE_DURATION);
                     }
-                    if (a.getActorType() != ActorType.BASE && a.getTeam() != getTeam()) {
+                    if (isNeitherTowerNorAlly(a)) {
                         ExtensionCommands.createActorFX(
                                 parentExt,
                                 room,
@@ -433,13 +433,15 @@ public class Neptr extends UserActor {
 
         @Override
         public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            List<Actor> nonStructureEnemies = roomHandler.getNonStructureEnemies(team);
-            for (Actor a : nonStructureEnemies) {
+            float searchArea = hitbox * 2;
+            List<Actor> actorsInRadius = roomHandler.getActorsInRadius(location, searchArea);
+            for (Actor a : actorsInRadius) {
                 if (!this.damagedActors.contains(a)) {
-                    double collisionRadius =
-                            parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
+                    JsonNode actorData = parentExt.getActorData(a.getAvatar());
+                    double collisionRadius = actorData.get("collisionRadius").asDouble();
+
                     if (a.getLocation().distance(location) <= hitbox + collisionRadius
-                            && !a.getAvatar().equalsIgnoreCase("neptr_mine")) {
+                            && isTargetable(a)) {
                         return a;
                     }
                 }
@@ -451,13 +453,12 @@ public class Neptr extends UserActor {
         protected void hit(Actor victim) {
             this.damagedActors.add(victim);
             JsonNode spellData = parentExt.getAttackData(Neptr.this.getAvatar(), "spell1");
-            victim.addToDamageQueue(
-                    Neptr.this,
-                    getSpellDamage(spellData, true) * (1 - damageReduction),
-                    spellData,
-                    false);
-            ExtensionCommands.playSound(
-                    parentExt, room, "", "akubat_projectileHit1", victim.getLocation());
+            double dmg = getSpellDamage(spellData, true) * (1 - damageReduction);
+            String sound = "akubat_projectileHit1";
+
+            victim.addToDamageQueue(Neptr.this, dmg, spellData, false);
+
+            ExtensionCommands.playSound(parentExt, room, "", sound, victim.getLocation());
             this.damageReduction += 0.15f;
             if (this.damageReduction > 0.75) this.damageReduction = 0.75f;
         }
@@ -566,7 +567,7 @@ public class Neptr extends UserActor {
             List<Actor> actors = Champion.getActorsInRadius(handler, this.location, 2f);
             if (!actors.isEmpty()) {
                 for (Actor a : actors) {
-                    if (isNonStructure(a) && !this.mineActivated) {
+                    if (isNeitherStructureNorAlly(a) && !this.mineActivated) {
                         this.mineActivated = true;
                         explodeMine();
                         this.die(this);
@@ -595,18 +596,17 @@ public class Neptr extends UserActor {
                                 Champion.getActorsInRadius(handler, this.location, 2f);
 
                         if (!targets.isEmpty()) {
-                            for (Actor target : targets) {
-                                if (isNonStructure(target)) {
-                                    JsonNode spellData =
-                                            this.parentExt.getAttackData(
-                                                    Neptr.this.avatar, "spell2");
-                                    target.addToDamageQueue(
-                                            Neptr.this,
-                                            getSpellDamage(spellData, true),
-                                            spellData,
-                                            false);
-                                    target.addState(
-                                            ActorState.SLOWED, W_SLOW_VALUE, W_SLOW_DURATION);
+                            for (Actor t : targets) {
+                                if (isNeitherStructureNorAlly(t)) {
+                                    t.addState(ActorState.SLOWED, W_SLOW_VALUE, W_SLOW_DURATION);
+                                }
+
+                                if (isNeitherTowerNorAlly(t)) {
+                                    String ava = Neptr.this.avatar;
+                                    JsonNode spellData = parentExt.getAttackData(ava, "spell2");
+                                    double dmg = getSpellDamage(spellData, true);
+
+                                    t.addToDamageQueue(Neptr.this, dmg, spellData, false);
                                 }
                             }
                         }

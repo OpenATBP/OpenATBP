@@ -13,7 +13,6 @@ import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.AbilityRunnable;
-import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.actors.Actor;
@@ -44,8 +43,10 @@ public class Gunter extends UserActor {
             List<Actor> actorsInTrapezoid = handler.getEnemiesInPolygon(this.team, this.eTrapezoid);
             if (!actorsInTrapezoid.isEmpty()) {
                 for (Actor a : actorsInTrapezoid) {
-                    double damage = getSpellDamage(spellData, false) / 10d;
-                    a.addToDamageQueue(this, damage, spellData, true);
+                    if (isNeitherTowerNorAlly(a)) {
+                        double damage = getSpellDamage(spellData, false) / 10d;
+                        a.addToDamageQueue(this, damage, spellData, true);
+                    }
                 }
             }
         }
@@ -167,20 +168,22 @@ public class Gunter extends UserActor {
                 this.canCast[1] = false;
                 try {
                     stopMoving();
-                    Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, "", "sfx_gunter_wing_it", this.location);
-                    this.fireProjectile(
-                            new BottleProjectile(
-                                    this.parentExt,
-                                    this,
-                                    abilityLine,
-                                    11f,
-                                    0.5f,
-                                    "projectile_gunter_bottle"),
-                            this.location,
-                            dest,
-                            8f);
+                    if (getHealth() > 0) {
+                        Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
+                        ExtensionCommands.playSound(
+                                this.parentExt, this.room, "", "sfx_gunter_wing_it", this.location);
+                        this.fireProjectile(
+                                new BottleProjectile(
+                                        this.parentExt,
+                                        this,
+                                        abilityLine,
+                                        11f,
+                                        0.5f,
+                                        "projectile_gunter_bottle"),
+                                this.location,
+                                dest,
+                                8f);
+                    }
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
@@ -263,9 +266,10 @@ public class Gunter extends UserActor {
                 Champion.getEnemyActorsInRadius(
                         handler, this.team, a.getLocation(), PASSIVE_RADIUS);
         for (Actor actor : enemyActorsInRadius) {
-            if (actor.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE) {
+            if (isNeitherTowerNorAlly(actor)) {
                 JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(), "spell4");
-                actor.addToDamageQueue(this, getSpellDamage(spellData, true), spellData, false);
+                double dmg = getSpellDamage(spellData, true);
+                actor.addToDamageQueue(this, dmg, spellData, false);
             }
         }
     }
@@ -295,7 +299,7 @@ public class Gunter extends UserActor {
             Runnable enableQCasting = () -> canCast[0] = true;
             int delay = getReducedCooldown(cooldown) - qTime;
             scheduleTask(enableQCasting, delay);
-            if (getHealth() > 0 && !cancelDashEndAttack()) {
+            if (getHealth() > 0 && !hasDashAttackInterruptCC()) {
                 ExtensionCommands.createActorFX(
                         parentExt,
                         room,
@@ -314,9 +318,9 @@ public class Gunter extends UserActor {
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 List<Actor> affectedActors = Champion.getActorsInRadius(handler, location, 2f);
                 for (Actor a : affectedActors) {
-                    if (a.getTeam() != team && isNonStructure(a)) {
-                        a.addToDamageQueue(
-                                Gunter.this, getSpellDamage(spellData, true), spellData, false);
+                    if (isNeitherTowerNorAlly(a)) {
+                        double dmg = getSpellDamage(spellData, true);
+                        a.addToDamageQueue(Gunter.this, dmg, spellData, false);
                     }
                 }
             }
@@ -351,7 +355,8 @@ public class Gunter extends UserActor {
         @Override
         protected void hit(Actor victim) {
             JsonNode spellData = parentExt.getAttackData(getAvatar(), "spell2");
-            victim.addToDamageQueue(Gunter.this, getSpellDamage(spellData, true), spellData, false);
+            double dmg = getSpellDamage(spellData, true);
+            victim.addToDamageQueue(Gunter.this, dmg, spellData, false);
             ExtensionCommands.playSound(
                     parentExt, room, "", "sfx_gunter_bottle_shatter", this.location);
             ExtensionCommands.createWorldFX(

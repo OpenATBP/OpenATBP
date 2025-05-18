@@ -2,7 +2,7 @@ package xyz.openatbp.extension.game.champions;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
+import java.util.HashMap;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -18,17 +18,21 @@ import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public class MagicMan extends UserActor {
+
     private static final int PASSIVE_DURATION = 3000;
     private static final int PASSIVE_SPEED_DURATION = 3000;
     private static final double PASSIVE_SPEED_VALUE = 0.2d;
     private static final int Q_CAST_DELAY = 500;
     private static final int Q_SILENCE_DURATION = 2000;
     private static final int W_STEALTH_DURATION = 3000;
+
     private static final double E_DASH_SPEED = 10d;
-    private static final double E_ARMOR_VALUE = 0.3d;
-    private static final int E_ARMOR_DURATION = 3000;
-    private static final double E_SLOW_VALUE = 0.3d;
-    private static final int E_SLOW_DURATION = 3000;
+    private static final double E_ARMOR_VALUE = 0.2d;
+    private static final double E_SHIELDS_VALUE = 0.2;
+    private static final double E_SLOW_VALUE = 0.2d;
+    private static final int E_SLOW_DURATION = 2500;
+    private static final int E_DEBUFF_DURATION = 3000;
+
     private double estimatedQDuration = 0;
     private long qStartTime = 0;
     private long passiveIconStarted = 0;
@@ -37,10 +41,10 @@ public class MagicMan extends UserActor {
     private Point2D wDest = null;
     private boolean ultStarted;
     private boolean interruptE = false;
-    private ArrayList<Actor> playersHitBySnake = new ArrayList<>(3);
     private int eDashTime;
     private int wUses = 0;
     private MagicManClone magicManClone;
+    private HashMap<Actor, Integer> snakedActors = new HashMap<>();
 
     public MagicMan(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -67,13 +71,11 @@ public class MagicMan extends UserActor {
             Runnable resetWUses = () -> this.wUses = 0;
             scheduleTask(resetWUses, getReducedCooldown(wCooldown));
         }
-        if (this.ultStarted && this.cancelDashEndAttack()) {
+        if (this.ultStarted && this.hasDashAttackInterruptCC()) {
             this.interruptE = true;
             this.ultStarted = false;
             ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 100, false);
         }
-        if (System.currentTimeMillis() - this.qStartTime > this.estimatedQDuration)
-            this.playersHitBySnake.clear();
     }
 
     @Override
@@ -119,9 +121,12 @@ public class MagicMan extends UserActor {
             case 1:
                 this.canCast[0] = false;
                 try {
-                    unveil();
-                    this.stopMoving(castDelay);
                     this.qStartTime = System.currentTimeMillis();
+                    snakedActors.clear();
+                    unveil();
+                    stopMoving(castDelay);
+                    basicAttackReset();
+
                     ExtensionCommands.playSound(
                             this.parentExt,
                             this.room,
@@ -308,7 +313,6 @@ public class MagicMan extends UserActor {
             Runnable enableQCasting = () -> canCast[0] = true;
             int delay = getReducedCooldown(cooldown) - Q_CAST_DELAY;
             scheduleTask(enableQCasting, delay);
-            attackCooldown = 0;
         }
 
         @Override
@@ -343,14 +347,18 @@ public class MagicMan extends UserActor {
                         0f);
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 for (Actor a : Champion.getActorsInRadius(handler, location, 4f)) {
-                    if (isNonStructure(a)) {
-                        double damage = (double) (a.getHealth()) * (0.35d);
-                        if (a.getActorType() == ActorType.MONSTER
-                                && (a.getId().contains("keeoth")
-                                        || a.getId().contains("goomonster"))) damage /= 2;
-                        a.addToDamageQueue(MagicMan.this, damage, spellData, false);
-                        a.addEffect("armor", a.getStat("armor") * -E_ARMOR_VALUE, E_ARMOR_DURATION);
+                    if (isNeitherStructureNorAlly(a)) {
+                        double delta1 = a.getStat("armor") * -E_ARMOR_VALUE;
+                        double delta2 = a.getStat("spellResist") * -E_SHIELDS_VALUE;
+
+                        a.addEffect("armor", delta1, E_DEBUFF_DURATION);
+                        a.addEffect("shields", delta2, E_DEBUFF_DURATION);
                         a.addState(ActorState.SLOWED, E_SLOW_VALUE, E_SLOW_DURATION);
+                    }
+
+                    if (isNeitherTowerNorAlly(a)) {
+                        double damage = getSpellDamage(spellData, false);
+                        a.addToDamageQueue(MagicMan.this, damage, spellData, false);
                     }
                 }
             } else if (interruptE) {
@@ -378,7 +386,10 @@ public class MagicMan extends UserActor {
 
         @Override
         protected void hit(Actor victim) {
-            victim.addState(ActorState.SILENCED, 0d, Q_SILENCE_DURATION);
+            if (isNeitherStructureNorAlly(victim)) {
+                victim.addState(ActorState.SILENCED, 0d, Q_SILENCE_DURATION);
+            }
+
             ExtensionCommands.createWorldFX(
                     this.parentExt,
                     this.owner.getRoom(),
@@ -391,13 +402,26 @@ public class MagicMan extends UserActor {
                     false,
                     owner.getTeam(),
                     0f);
-            if (!playersHitBySnake.contains(victim)) {
-                playersHitBySnake.add(victim);
-                JsonNode spellData = parentExt.getAttackData(MagicMan.this.avatar, "spell1");
-                victim.addToDamageQueue(
-                        MagicMan.this, getSpellDamage(spellData, true), spellData, false);
+
+            int snakes = snakedActors.getOrDefault(victim, 0) + 1;
+            snakedActors.put(victim, snakes);
+
+            double damageModifier = 1;
+
+            switch (snakes) {
+                case 2:
+                    damageModifier = 0.25;
+                    break;
+                case 3:
+                    damageModifier = 0.0625;
+                    break;
             }
-            this.destroy();
+
+            JsonNode spellData = parentExt.getAttackData(MagicMan.this.avatar, "spell1");
+            double damage = getSpellDamage(spellData, true) * damageModifier;
+
+            victim.addToDamageQueue(MagicMan.this, damage, spellData, false);
+            destroy();
         }
 
         @Override
@@ -466,13 +490,17 @@ public class MagicMan extends UserActor {
             ExtensionCommands.playSound(
                     this.parentExt, this.room, "", "sfx_magicman_decoy", this.location);
             ExtensionCommands.playSound(
-                    this.parentExt, this.room, this.id, "vo/vo_magicman_decoy2", this.location);
+                    this.parentExt,
+                    this.room,
+                    MagicMan.this.id,
+                    "vo/vo_magicman_decoy2",
+                    MagicMan.this.location);
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor actor : Champion.getActorsInRadius(handler, this.location, 2.5f)) {
-                if (isNonStructure(actor)) {
-                    actor.addToDamageQueue(
-                            MagicMan.this, getSpellDamage(spellData, true), spellData, false);
+                if (isNeitherTowerNorAlly(a)) {
+                    double dmg = getSpellDamage(spellData, false);
+                    actor.addToDamageQueue(MagicMan.this, dmg, spellData, false);
                 }
             }
             this.timeTraveled = 0;
