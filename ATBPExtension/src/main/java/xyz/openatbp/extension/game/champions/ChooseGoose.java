@@ -181,18 +181,18 @@ public class ChooseGoose extends UserActor {
                         true,
                         false,
                         team);
-                Champion.handleStatusIcon(
-                        parentExt,
-                        this,
-                        "icon_choosegoose_s1",
-                        "choosegoose_spell_1_description",
-                        Q_DURATION);
 
+                ExtensionCommands.addStatusIcon(
+                        parentExt,
+                        player,
+                        "spell1",
+                        "choosegoose_spell_1_description",
+                        "icon_choosegoose_s1",
+                        Q_DURATION);
                 int dur = parentExt.getAttackData(avatar, "spell1").get("spellDuration").asInt();
-                scheduleTask(
-                        abilityRunnable(
-                                ability, spellData, getReducedCooldown(cooldown), gCooldown, dest),
-                        dur);
+                int cd = getReducedCooldown(cooldown);
+
+                scheduleTask(abilityRunnable(ability, spellData, cd, gCooldown, dest), dur);
                 break;
             case 2:
                 canCast[1] = false;
@@ -218,8 +218,9 @@ public class ChooseGoose extends UserActor {
                         false,
                         team);
 
-                int cd = getReducedCooldown(cooldown);
-                ExtensionCommands.actorAbilityResponse(parentExt, player, "w", true, cd, gCooldown);
+                int cd1 = getReducedCooldown(cooldown);
+                ExtensionCommands.actorAbilityResponse(
+                        parentExt, player, "w", true, cd1, gCooldown);
                 scheduleTask(abilityRunnable(ability, spellData, wTime, gCooldown, dPoint), wTime);
                 break;
             case 3:
@@ -255,10 +256,9 @@ public class ChooseGoose extends UserActor {
                                     parentExt, room, id, "sfx_choosegoose_e_projectile", location);
                         };
                 scheduleTask(doAnimation, 150);
-                scheduleTask(
-                        abilityRunnable(
-                                ability, spellData, getReducedCooldown(cooldown), gCooldown, dest),
-                        1050);
+                int cd2 = getReducedCooldown(cooldown);
+
+                scheduleTask(abilityRunnable(ability, spellData, cd2, gCooldown, dest), 1050);
                 break;
         }
     }
@@ -317,6 +317,16 @@ public class ChooseGoose extends UserActor {
                 }
             }
             if (enemyWhoDied != null) spawnChest(enemyWhoDied);
+        }
+    }
+
+    @Override
+    public void die(Actor a) {
+        super.die(a);
+        if (qActive) {
+            ExtensionCommands.removeStatusIcon(parentExt, player, "spell1");
+            ExtensionCommands.removeFx(parentExt, room, id + "_rHand");
+            ExtensionCommands.removeFx(parentExt, room, id + "_lHand");
         }
     }
 
@@ -390,6 +400,7 @@ public class ChooseGoose extends UserActor {
             scheduleTask(enableQCasting, cd);
 
             qActive = false;
+            ExtensionCommands.removeStatusIcon(parentExt, player, "spell1");
             ExtensionCommands.actorAbilityResponse(parentExt, player, "q", true, cd, gCooldown);
         }
 
