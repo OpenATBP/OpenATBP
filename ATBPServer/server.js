@@ -80,6 +80,27 @@ async function addQueueData(collection) {
   }
 }
 
+async function addEarlyAccess(collection) {
+  try {
+    var cursor = collection.find();
+    for await (var doc of cursor) {
+      //console.log(doc.friends);
+      var q = { 'user.TEGid': doc.user.TEGid };
+      var o = { upsert: true };
+      var up = {
+        $set: {
+          earlyAccess: false,
+        },
+      };
+
+      var res = await collection.updateOne(q, up, o);
+      console.log(res);
+    }
+  } finally {
+    console.log('Done!');
+  }
+}
+
 async function addCustomBags(collection) {
   try {
     var cursor = collection.find();
@@ -124,6 +145,7 @@ function addChampData(collection) {
     'billy',
     'bmo',
     'cinnamonbun',
+    'choosegoose',
     'finn',
     'fionna',
     'flame',
@@ -292,6 +314,7 @@ mongoClient.connect((err) => {
   //addCustomBags(playerCollection);
   //addChampData(champCollection);
   //wipePlayerData(playerCollection);
+  //addEarlyAccess(playerCollection);
 
   if (
     !fs.existsSync('static/crossdomain.xml') ||

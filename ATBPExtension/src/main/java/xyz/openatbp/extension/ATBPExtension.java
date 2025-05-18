@@ -368,7 +368,9 @@ public class ATBPExtension extends SFSExtension {
                     roomHandlers.put(room.getName(), new TutorialRoomHandler(this, room));
                     break;
                 case "Practice":
-                    roomHandlers.put(room.getName(), new PracticeRoomHandler(this, room));
+                    if (room.getName().contains("aram"))
+                        roomHandlers.put(room.getName(), new AramRoomHandler(this, room));
+                    else roomHandlers.put(room.getName(), new PracticeRoomHandler(this, room));
                     break;
                 case "PVE":
                 case "PVP":

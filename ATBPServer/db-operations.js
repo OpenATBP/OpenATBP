@@ -60,6 +60,7 @@ var newUserFunction = function (
           inventory: inventoryArray,
           friends: [],
           betaTester: false, //TODO: Remove when open beta starts
+          earlyAccess: false,
           forgot: forgot,
           requests: [],
           address: 'newAccount',

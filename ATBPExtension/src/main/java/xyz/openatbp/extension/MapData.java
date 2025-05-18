@@ -398,7 +398,9 @@ public class MapData {
     public static Point2D getGuardianLocationData(int team, String roomGroup) {
         float x = 0;
         float z = 0;
-        if (roomGroup.equals("Tutorial") || roomGroup.equals("Practice")) {
+        if (roomGroup.equals("Tutorial")
+                || roomGroup.equals("Practice")
+                || roomGroup.equals("ARAM")) {
             x = L1_GUARDIAN_X;
             z = team == 1 ? L1_BLUE_GUARDIAN_AREA_Z : L1_PURPLE_GUARDIAN_AREA_Z;
         } else {

@@ -90,9 +90,9 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
                 if (roomSize > 4 || roomSize == 1) settings.setGroupId("PVE");
                 else settings.setGroupId("Practice");
 
-            } else if (roomId.contains("3p")) {
+            } else if (roomId.contains("aram")) {
                 settings.setGroupId("Practice");
-                settings.setMaxUsers(4); // TODO: Testing value
+                settings.setMaxUsers(6); // TODO: Testing value
 
             } else if (roomId.contains("6p")) {
                 settings.setGroupId("PVP");

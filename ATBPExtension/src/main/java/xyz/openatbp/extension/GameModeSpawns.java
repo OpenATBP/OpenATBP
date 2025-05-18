@@ -21,6 +21,7 @@ public class GameModeSpawns {
                 break;
 
             case "Practice":
+            case "ARAM":
                 ExtensionCommands.createActor(
                         parentExt, room, MapData.getTowerActorData(0, 1, groupId));
                 ExtensionCommands.createActor(
@@ -57,6 +58,7 @@ public class GameModeSpawns {
         switch (groupId) {
             case "Tutorial":
             case "Practice":
+            case "ARAM":
                 ExtensionCommands.createActor(
                         parentExt, room, MapData.getAltarActorData(0, room.getGroupId()));
                 ExtensionCommands.createActor(
@@ -81,6 +83,7 @@ public class GameModeSpawns {
         switch (groupId) {
             case "Tutorial":
             case "Practice":
+            case "ARAM":
                 ExtensionCommands.createActor(
                         parentExt, room, MapData.getHealthActorData(0, room.getGroupId(), -1));
                 ExtensionCommands.createActor(
@@ -112,7 +115,9 @@ public class GameModeSpawns {
         Point2D L2_PURPLE = new Point2D.Float(MapData.L2_PURPLE_BASE[0], MapData.L2_PURPLE_BASE[1]);
         Point2D L2_BLUE = new Point2D.Float(MapData.L2_BLUE_BASE[0], MapData.L2_BLUE_BASE[1]);
 
-        if (roomGroup.equals("Practice") || roomGroup.equals("Tutorial")) {
+        if (roomGroup.equals("Practice")
+                || roomGroup.equals("Tutorial")
+                || roomGroup.equals("ARAM")) {
             if (team == 0) return L1_PURPLE;
             else return L1_BLUE;
         } else {
@@ -125,7 +130,7 @@ public class GameModeSpawns {
         float towerX;
         float towerZ;
         Point2D towerLocation;
-        if (room.getGroupId().equals("Practice")) {
+        if (room.getGroupId().equals("Practice") || room.getGroupId().equals("ARAM")) {
             towerX = team == 0 ? MapData.L1_PURPLE_TOWER_0[0] : MapData.L1_BLUE_TOWER_3[0];
             towerZ = team == 0 ? MapData.L1_PURPLE_TOWER_0[1] : MapData.L1_BLUE_TOWER_3[1];
         } else {
@@ -141,7 +146,9 @@ public class GameModeSpawns {
         float x;
         float z;
 
-        if (roomGroup.equals("Tutorial") || roomGroup.equals("Practice")) {
+        if (roomGroup.equals("Tutorial")
+                || roomGroup.equals("Practice")
+                || room.getGroupId().equals("ARAM")) {
             x = team == 0 ? MapData.L1_P_GUARDIAN_MODEL_X : MapData.L1_B_GUARDIAN_MODEL_X;
             z = MapData.L1_GUARDIAN_MODEL_Z;
         } else {

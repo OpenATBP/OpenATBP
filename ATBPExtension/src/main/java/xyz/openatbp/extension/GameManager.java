@@ -72,6 +72,7 @@ public class GameManager {
             ISFSObject data = new SFSObject();
             if (groupID.equals("Practice")
                     || groupID.equals("Tutorial")
+                    || groupID.equals("ARAM")
                     || (room.getMaxUsers() <= 4
                             && !room.getName().contains("1p")
                             && !(room.getMaxUsers() == 1 && room.getName().contains("custom")))) {
@@ -129,7 +130,9 @@ public class GameManager {
             float px = 0f;
             float pz = 0f;
             if (team == 0) {
-                if (room.getGroupId().equals("Practice") || room.getGroupId().equals("Tutorial")) {
+                if (room.getGroupId().equals("Practice")
+                        || room.getGroupId().equals("Tutorial")
+                        || room.getGroupId().equals("ARAM")) {
                     px = (float) MapData.L1_PURPLE_SPAWNS[purpleNum].getX();
                     pz = (float) MapData.L1_PURPLE_SPAWNS[purpleNum].getY();
                 } else {
@@ -139,7 +142,9 @@ public class GameManager {
                 purpleNum++;
             }
             if (team == 1) {
-                if (room.getGroupId().equals("Practice") || room.getGroupId().equals("Tutorial")) {
+                if (room.getGroupId().equals("Practice")
+                        || room.getGroupId().equals("Tutorial")
+                        || room.getGroupId().equals("ARAM")) {
                     px = (float) MapData.L1_PURPLE_SPAWNS[blueNum].getX() * -1;
                     pz = (float) MapData.L1_PURPLE_SPAWNS[blueNum].getY();
                 } else {

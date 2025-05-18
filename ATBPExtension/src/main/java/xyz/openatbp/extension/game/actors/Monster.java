@@ -86,6 +86,30 @@ public class Monster extends Actor {
         this.updateMaxHealth();
     }
 
+    public Monster(
+            ATBPExtension parentExt,
+            Room room,
+            Point2D startingLocation,
+            String monsterName,
+            String id) {
+        this.startingLocation = startingLocation;
+        this.type = MonsterType.SMALL;
+        this.attackCooldown = 0;
+        this.parentExt = parentExt;
+        this.room = room;
+        this.location = this.startingLocation;
+        this.team = 2;
+        this.avatar = monsterName;
+        this.stats = this.initializeStats();
+        this.id = id;
+        this.maxHealth = this.stats.get("health");
+        this.currentHealth = this.maxHealth;
+        this.actorType = ActorType.MONSTER;
+        this.xpWorth = this.parentExt.getActorXP(this.avatar);
+        this.displayName = parentExt.getDisplayName(monsterName);
+        this.updateMaxHealth();
+    }
+
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) { // Runs when taking damage
         try {
@@ -167,7 +191,7 @@ public class Monster extends Actor {
         int averagePLevel = parentExt.getRoomHandler(this.room.getName()).getAveragePlayerLevel();
         if (averagePLevel != level) {
             int levelDiff = averagePLevel - level;
-            this.maxHealth += parentExt.getHealthScaling(this.id) * levelDiff;
+            this.maxHealth += parentExt.getHealthScaling(this.avatar) * levelDiff;
             this.level = averagePLevel;
             Champion.updateServerHealth(this.parentExt, this);
         }
@@ -286,7 +310,7 @@ public class Monster extends Actor {
             if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
             this.currentHealth = -1;
             RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getName());
-            int scoreValue = parentExt.getActorStats(this.id).get("valueScore").asInt();
+            int scoreValue = parentExt.getActorStats(this.avatar).get("valueScore").asInt();
             if (a.getActorType() == ActorType.PLAYER
                     || a.getActorType()
                             == ActorType.COMPANION) { // Adds score + party xp when killed by player
