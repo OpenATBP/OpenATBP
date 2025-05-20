@@ -9,3 +9,7 @@ static/*
 !static/fonts/*
 !static/js/
 !static/js/*
+
+config.xml
+crossdomain.xml
+*.bat
