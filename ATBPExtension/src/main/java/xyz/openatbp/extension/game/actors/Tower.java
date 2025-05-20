@@ -469,7 +469,9 @@ public class Tower extends Actor {
         if (!this.id.contains("gumball")) {
             String[] towerIdComponents = this.id.split("_");
             String roomGroup = room.getGroupId();
-            if (!roomGroup.equals("Tutorial") && !roomGroup.equals("Practice")) {
+            if (!roomGroup.equals("Tutorial")
+                    && !roomGroup.equals("Practice")
+                    && !roomGroup.equals("ARAM")) {
                 if (towerIdComponents[0].contains("blue")) {
                     return BLUE_TOWER_NUM[
                             (Integer.parseInt(towerIdComponents[1].replace("tower", ""))) - 1];
@@ -481,14 +483,6 @@ public class Tower extends Actor {
                 return Integer.parseInt(towerIdComponents[1].replace("tower", ""));
             }
         }
-        /*String[] towerIdComponents = this.id.split("_");
-        if(!room.getGroupId().equalsIgnoreCase("practice")){
-            if(towerIdComponents[0].equalsIgnoreCase("blue")){
-                return BLUE_TOWER_NUM[Integer.parseInt(towerIdComponents[1].replace("tower",""))-1];
-            }else{
-                return PURPLE_TOWER_NUM[Integer.parseInt(towerIdComponents[1].replace("tower",""))-1];
-            }
-        }*/
         return 0;
     }
 
@@ -514,7 +508,7 @@ public class Tower extends Actor {
     }
 
     public void targetPlayer(UserActor user) {
-        if (this.usersTargeted.size() > 0) {
+        if (!this.usersTargeted.isEmpty()) {
             for (UserActor t : new ArrayList<>(this.usersTargeted)) {
                 ExtensionCommands.removeFx(this.parentExt, t.getUser(), this.id + "_aggro");
                 this.usersTargeted.remove(t);

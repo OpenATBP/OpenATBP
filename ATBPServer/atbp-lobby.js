@@ -6,6 +6,7 @@ const dbOperations = require('./db-operations.js');
 const heroes = [
   'billy',
   'bmo',
+  'choosegoose',
   'cinnamonbun',
   'finn',
   'fionna',

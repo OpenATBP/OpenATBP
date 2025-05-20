@@ -43,7 +43,7 @@ public class TutorialRoomHandler extends RoomHandler {
     private TutorialBot jakeBot;
 
     public TutorialRoomHandler(ATBPExtension parentExt, Room room) {
-        super(parentExt, room, GameManager.L1_SPAWNS);
+        super(parentExt, room, GameManager.L1_SPAWNS, MapData.NORMAL_HP_SPAWN_RATE);
         HashMap<String, Point2D> towers0 = MapData.getPTowerActorData(0);
         HashMap<String, Point2D> towers1 = MapData.getPTowerActorData(1);
         for (String key : towers0.keySet()) {

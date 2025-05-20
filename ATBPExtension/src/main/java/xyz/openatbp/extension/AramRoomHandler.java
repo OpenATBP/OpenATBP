@@ -18,115 +18,121 @@ public class AramRoomHandler extends PracticeRoomHandler {
     };
 
     public AramRoomHandler(ATBPExtension parentExt, Room room) {
-        super(parentExt, room);
+        super(parentExt, room, GameManager.ARAM_SPAWNS, MapData.ARAM_HP_SPAWN_RATE);
         Console.debugLog("Aram room handler activated!");
     }
 
     @Override
     public void run() {
-        super.run();
-        if (mSecondsRan % 1000 == 0) {
-            blueMonsterTime--;
-            purpleMonsterTime--;
+        try {
+            super.run();
+            if (mSecondsRan % 1000 == 0) {
+                blueMonsterTime--;
+                purpleMonsterTime--;
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 
     @Override
     public void handleSpawns() {
-        if (blueMonsterTime <= 0 && blueMonster == null) {
-            blueMonster = summonMonster(monsters[(int) (Math.random() * monsters.length)], 1);
-            blueMonsterTime = !monsterDebug ? 120 : 20;
-        } else if (blueMonster != null
-                && blueMonsterTime <= 0
-                && blueMonster.getHealth() == blueMonster.getMaxHealth()) {
-            blueMonster.die(blueMonster);
-        }
-        if (purpleMonsterTime <= 0 && purpleMonster == null) {
-            purpleMonster = summonMonster(monsters[(int) (Math.random() * monsters.length)], 0);
-            purpleMonsterTime = !monsterDebug ? 120 : 20;
-        } else if (purpleMonster != null
-                && purpleMonsterTime <= 0
-                && purpleMonster.getHealth() == purpleMonster.getMaxHealth()) {
-            purpleMonster.die(purpleMonster);
-        }
-        ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
-        for (String s :
-                GameManager.L2_SPAWNS) { // Check all mob/health spawns for how long it's been
-            // since dead
-            if (s.length() <= 3) {
-                int time = spawns.getInt(s);
-                if ((this.secondsRan <= 46 && time == 45) || (this.secondsRan > 46 && time == 30)) {
-                    spawnHealth(s);
-                } else if ((this.secondsRan <= 46 && time < 45)
-                        || (this.secondsRan > 46 && time < 30)) {
-                    time++;
-                    spawns.putInt(s, time);
-                }
+        try {
+            if (blueMonsterTime <= 0 && blueMonster == null) {
+                blueMonster = summonMonster(monsters[(int) (Math.random() * monsters.length)], 1);
+                blueMonsterTime = !monsterDebug ? 120 : 20;
+            } else if (blueMonster != null
+                    && blueMonsterTime <= 0
+                    && blueMonster.getHealth() == blueMonster.getMaxHealth()) {
+                blueMonster.die(blueMonster);
             }
+            if (purpleMonsterTime <= 0 && purpleMonster == null) {
+                purpleMonster = summonMonster(monsters[(int) (Math.random() * monsters.length)], 0);
+                purpleMonsterTime = !monsterDebug ? 120 : 20;
+            } else if (purpleMonster != null
+                    && purpleMonsterTime <= 0
+                    && purpleMonster.getHealth() == purpleMonster.getMaxHealth()) {
+                purpleMonster.die(purpleMonster);
+            }
+            ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
+            for (String s : SPAWNS) {
+                handleHealthPackSpawns(spawns, s);
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 
     private Monster summonMonster(String s, int team) {
-        Monster m;
-        switch (s) {
-            case "keeoth":
-                m =
-                        new Keeoth(
-                                this.parentExt,
-                                this.room,
-                                team == 0 ? MapData.L1_OWLS[1] : MapData.L1_GNOMES[1],
-                                s,
-                                s + team);
-                break;
-            case "goomonster":
-                m =
-                        new GooMonster(
-                                this.parentExt,
-                                this.room,
-                                team == 0 ? MapData.L1_OWLS[1] : MapData.L1_GNOMES[1],
-                                s,
-                                s + team);
-                break;
-            default:
-                m =
-                        new Monster(
-                                this.parentExt,
-                                this.room,
-                                team == 0 ? MapData.L1_OWLS[1] : MapData.L1_GNOMES[1],
-                                s,
-                                s + team);
+        try {
+            Monster m;
+            switch (s) {
+                case "keeoth":
+                    m =
+                            new Keeoth(
+                                    this.parentExt,
+                                    this.room,
+                                    team == 0 ? MapData.L1_OWLS[1] : MapData.L1_GNOMES[1],
+                                    s,
+                                    s + team);
+                    break;
+                case "goomonster":
+                    m =
+                            new GooMonster(
+                                    this.parentExt,
+                                    this.room,
+                                    team == 0 ? MapData.L1_OWLS[1] : MapData.L1_GNOMES[1],
+                                    s,
+                                    s + team);
+                    break;
+                default:
+                    m =
+                            new Monster(
+                                    this.parentExt,
+                                    this.room,
+                                    team == 0 ? MapData.L1_OWLS[1] : MapData.L1_GNOMES[1],
+                                    s,
+                                    s + team);
+            }
+            this.campMonsters.add(m);
+            ExtensionCommands.createActor(
+                    this.parentExt,
+                    this.room,
+                    s + team,
+                    s,
+                    team == 0 ? MapData.L1_OWLS[1] : MapData.L1_GNOMES[1],
+                    0f,
+                    2);
+            ExtensionCommands.moveActor(
+                    this.parentExt,
+                    this.room,
+                    s + team,
+                    team == 0 ? MapData.L1_OWLS[1] : MapData.L1_GNOMES[1],
+                    team == 0 ? MapData.L1_OWLS[1] : MapData.L1_GNOMES[1],
+                    5f,
+                    false);
+            return m;
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
-        this.campMonsters.add(m);
-        ExtensionCommands.createActor(
-                this.parentExt,
-                this.room,
-                s + team,
-                s,
-                team == 0 ? MapData.L1_OWLS[1] : MapData.L1_GNOMES[1],
-                0f,
-                2);
-        ExtensionCommands.moveActor(
-                this.parentExt,
-                this.room,
-                s + team,
-                team == 0 ? MapData.L1_OWLS[1] : MapData.L1_GNOMES[1],
-                team == 0 ? MapData.L1_OWLS[1] : MapData.L1_GNOMES[1],
-                5f,
-                false);
-        return m;
+        return null;
     }
 
     @Override
     public void handleSpawnDeath(Actor a) {
-        int spawnTime = !monsterDebug ? 30 : 10;
-        if (a.getAvatar().equalsIgnoreCase("keeoth")) spawnTime += 30;
-        else if (a.getAvatar().equalsIgnoreCase("goomonster")) spawnTime += 15;
-        if (a == blueMonster) {
-            blueMonster = null;
-            blueMonsterTime = spawnTime;
-        } else if (a == purpleMonster) {
-            purpleMonster = null;
-            purpleMonsterTime = spawnTime;
+        try {
+            int spawnTime = !monsterDebug ? 30 : 10;
+            if (a.getAvatar().equalsIgnoreCase("keeoth")) spawnTime += 30;
+            else if (a.getAvatar().equalsIgnoreCase("goomonster")) spawnTime += 15;
+            if (a == blueMonster) {
+                blueMonster = null;
+                blueMonsterTime = spawnTime;
+            } else if (a == purpleMonster) {
+                purpleMonster = null;
+                purpleMonsterTime = spawnTime;
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 }

@@ -42,6 +42,10 @@ public class GameManager {
         "bh1", "ph1", "gnomes", "ironowls",
     };
 
+    public static final String[] ARAM_SPAWNS = {
+        "bh1", "ph1", "gnomes", "ironowls", "keeoth", "goomonster", "hugwolf", "grassbear"
+    };
+
     private static ObjectMapper objectMapper = new ObjectMapper();
 
     public static void addPlayer(
@@ -330,7 +334,11 @@ public class GameManager {
 
          */
         int coins = isRankedMatch ? 80 : tutorialCoins ? 700 : 0;
-        if (team == winningTeam) coins += 20;
+        int prestigePoints = isRankedMatch ? 10 : 0;
+        if (team == winningTeam && isRankedMatch) {
+            coins += 20;
+            prestigePoints += 5;
+        }
         ObjectNode node = objectMapper.createObjectNode();
         for (User u : room.getUserList()) {
             UserActor ua =
@@ -349,8 +357,7 @@ public class GameManager {
                 player.put("playerName", ua.getFrame());
                 player.put("myElo", (double) playerVar.getInt("elo"));
                 player.put("coins", coins);
-                player.put(
-                        "prestigePoints", 10); // Just going to have this be a flat amount for now
+                player.put("prestigePoints", prestigePoints);
                 node.set(String.valueOf(u.getId()), player);
             }
         }
