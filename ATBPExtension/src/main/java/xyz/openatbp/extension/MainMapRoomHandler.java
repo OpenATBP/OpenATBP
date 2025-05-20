@@ -27,12 +27,14 @@ import xyz.openatbp.extension.game.champions.GooMonster;
 import xyz.openatbp.extension.game.champions.Keeoth;
 
 public class MainMapRoomHandler extends RoomHandler {
+    public static final int BASE_ACCOUNT_EXP_VALUE = 10;
+    public static final int WINNER_ACCOUNT_EXP_INCREASE = 5;
     private HashMap<User, UserActor> dcPlayers = new HashMap<>();
     private List<Actor> companions = new ArrayList<>();
     private final boolean IS_RANKED_MATCH = this.room.getGroupId().equals("PVP");
 
     public MainMapRoomHandler(ATBPExtension parentExt, Room room) {
-        super(parentExt, room, GameManager.L2_SPAWNS);
+        super(parentExt, room, GameManager.L2_SPAWNS, MapData.NORMAL_HP_SPAWN_RATE);
         baseTowers.add(new BaseTower(parentExt, room, "purple_tower3", 0));
         baseTowers.add(new BaseTower(parentExt, room, "blue_tower3", 1));
 
@@ -197,7 +199,7 @@ public class MainMapRoomHandler extends RoomHandler {
             this.gameOver = true;
             this.room.setProperty("state", 3);
             ExtensionCommands.gameOver(
-                    parentExt, this.room, this.dcPlayers, winningTeam, IS_RANKED_MATCH, false);
+                    parentExt, room, dcPlayers, winningTeam, IS_RANKED_MATCH, false);
             if (IS_RANKED_MATCH) {
                 logChampionData(winningTeam);
                 logMatchHistory(winningTeam);
@@ -257,11 +259,17 @@ public class MainMapRoomHandler extends RoomHandler {
                         if (ua.getTeam() == winningTeam) wins++;
 
                         int currentRankProgress = dataObj.get("player").get("rankProgress").asInt();
+                        int accountExpGained = BASE_ACCOUNT_EXP_VALUE;
                         int rankIncrease = 0;
-                        if (currentRankProgress >= 90) {
-                            currentRankProgress = 0;
+                        if (ua.getTeam() == winningTeam)
+                            accountExpGained += WINNER_ACCOUNT_EXP_INCREASE;
+
+                        if (currentRankProgress + accountExpGained >= 100) {
                             rankIncrease++;
-                        } else currentRankProgress += 10;
+                            currentRankProgress = 0;
+                        } else {
+                            currentRankProgress += accountExpGained;
+                        }
 
                         boolean updateSpree = false;
                         boolean updateMulti = false;

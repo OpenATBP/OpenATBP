@@ -30,12 +30,12 @@ import xyz.openatbp.extension.game.actors.*;
 
 public abstract class RoomHandler implements Runnable {
     protected static final int ALTAR_LOCK_TIME_SEC = 90;
-    protected static final int HP_SPAWN_RATE_SEC = 60;
     protected static final int NON_JG_BOSS_SPAWN_RATE = 45;
     protected static final int KEEOTH_SPAWN_RATE = 120;
     protected static final int GOO_SPAWN_RATE = 90;
     protected static final int MONSTER_DEBUG_SPAWN_RATE = 10;
     protected final String[] SPAWNS;
+    protected final int HP_SPAWN_RATE_SEC;
 
     protected ATBPExtension parentExt;
     protected Room room;
@@ -77,7 +77,7 @@ public abstract class RoomHandler implements Runnable {
     private static final int SINGLE_KILL_COOLDOWN = 5000;
     private long lastSingleKillAnnouncement = 0;
 
-    public RoomHandler(ATBPExtension parentExt, Room room, String[] spawns) {
+    public RoomHandler(ATBPExtension parentExt, Room room, String[] spawns, int HP_SPAWN_RATE) {
         this.parentExt = parentExt;
         this.room = room;
         this.minions = new ArrayList<>();
@@ -85,6 +85,7 @@ public abstract class RoomHandler implements Runnable {
         this.players = new ArrayList<>();
         this.campMonsters = new ArrayList<>();
         this.SPAWNS = spawns;
+        this.HP_SPAWN_RATE_SEC = HP_SPAWN_RATE;
 
         Properties props = parentExt.getConfigProperties();
         monsterDebug = Boolean.parseBoolean(props.getProperty("monsterDebug", "false"));
@@ -214,31 +215,31 @@ public abstract class RoomHandler implements Runnable {
     public void handleSpawns() {
         ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
         for (String s : SPAWNS) {
-            // Check all mob/health spawns for how long it's been
-            // since dead
-            // spawns values need to be compared to rate - 1 because it is the old value
             if (s.length() > 3) {
                 int spawnRate = getMonsterSpawnRate(s);
 
                 if (spawns.getInt(s) == spawnRate - 1) {
-                    // Mob timers will be set to 0 when killed or health
-                    // when taken
+                    // Mob timers will be set to 0 when killed or health when taken
                     spawnMonster(s);
                     spawns.putInt(s, spawns.getInt(s) + 1);
                 } else {
                     spawns.putInt(s, spawns.getInt(s) + 1);
                 }
             } else {
-                int time = spawns.getInt(s);
-
-                if (time == HP_SPAWN_RATE_SEC - 1) {
-                    spawnHealth(s);
-                    spawns.putInt(s, time + 1);
-                } else if (time != HP_SPAWN_RATE_SEC + 1) {
-                    time += 1;
-                    spawns.putInt(s, time);
-                }
+                handleHealthPackSpawns(spawns, s);
             }
+        }
+    }
+
+    public void handleHealthPackSpawns(ISFSObject spawns, String s) {
+        int time = spawns.getInt(s);
+
+        if (time == HP_SPAWN_RATE_SEC - 1) {
+            spawnHealth(s);
+            spawns.putInt(s, time + 1);
+        } else if (time != HP_SPAWN_RATE_SEC + 1) {
+            time += 1;
+            spawns.putInt(s, time);
         }
     }
 

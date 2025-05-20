@@ -19,8 +19,9 @@ public class PracticeRoomHandler extends RoomHandler {
     private Point2D finnBotRespawnPoint;
     private Bot finnBot;
 
-    public PracticeRoomHandler(ATBPExtension parentExt, Room room) {
-        super(parentExt, room, GameManager.L1_SPAWNS);
+    public PracticeRoomHandler(
+            ATBPExtension parentExt, Room room, String[] SPAWNS, int HP_SPAWN_RATE) {
+        super(parentExt, room, SPAWNS, HP_SPAWN_RATE);
         HashMap<String, Point2D> towers0 = MapData.getPTowerActorData(0);
         HashMap<String, Point2D> towers1 = MapData.getPTowerActorData(1);
         baseTowers.add(new BaseTower(parentExt, room, "purple_tower0", 0));
@@ -125,8 +126,7 @@ public class PracticeRoomHandler extends RoomHandler {
         try {
             this.gameOver = true;
             this.room.setProperty("state", 3);
-            ExtensionCommands.gameOver(
-                    parentExt, this.room, this.dcPlayers, winningTeam, false, false);
+            ExtensionCommands.gameOver(parentExt, room, dcPlayers, winningTeam, false, false);
             // logChampionData(winningTeam);
 
             for (UserActor ua : this.players) {
@@ -142,6 +142,7 @@ public class PracticeRoomHandler extends RoomHandler {
                             parentExt, ua.getUser(), "music", "music/music_defeat");
                 }
             }
+
             parentExt.stopScript(room.getName(), false);
         } catch (Exception e) {
             e.printStackTrace();
@@ -183,7 +184,7 @@ public class PracticeRoomHandler extends RoomHandler {
         // Console.debugLog("The room has killed " + a.getId());
         String mons = a.getId().split("_")[0];
 
-        for (String s : GameManager.L2_SPAWNS) {
+        for (String s : SPAWNS) {
             if (s.contains(mons)) {
                 if (s.contains("gnomes") || s.contains("owls")) {
                     for (Monster m : campMonsters) {

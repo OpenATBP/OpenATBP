@@ -20,23 +20,30 @@ import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public class ChooseGoose extends UserActor {
     private static final int PASSIVE_COOLDOWN = 20000;
-    public static final int CHEST_DURATION = 10000;
-    public static final int PASSIVE_BUFF_DURATION = 6000;
-    public static final double PASSIVE_SPEED_VALUE = 0.2;
-    public static final double PASSIVE_ARMOR_VALUE = 0.2;
-    public static final double Q_AS_BUFF_VALUE = -0.2;
-    public static final int Q_DURATION = 5000;
+    private static final int CHEST_DURATION = 10000;
+    private static final int PASSIVE_BUFF_DURATION = 6000;
+    private static final double PASSIVE_SPEED_VALUE = 0.2;
+    private static final double PASSIVE_ARMOR_VALUE = 0.2;
+    private static final int PASSIVE_HP_INCREASE_PER_CHEST = 5;
+    private static final double PASSIVE_MAX_HP_HEAL_VALUE = 0.05;
+
+    private static final double Q_AS_BUFF_VALUE = -0.2;
+    private static final int Q_DURATION = 5000;
     private static final int Q_TICK_FREQUENCY = 1000;
     private static final int Q_TICK_DMG_DELAY = 250;
     private static final int Q_DOT_DURATION = 3000;
     private static final double Q_AD_BUFF_VALUE = 0.1d;
     private static final float Q_ARMOR_DEBUFF_VALUE = 0.2f;
     private static final int Q_ARMOR_DEBUFF_DURATION = 3000;
-    public static final double W_JUMP_SPEED = 14d;
-    public static final double E_SLOW_VALUE = 0.4d;
-    public static final int E_SLOW_DURATION = 2000;
-    public static final int E_BUFF_DURATION = 2000;
-    public static final double E_ARMOR_BUFF_VALUE = 0.2;
+
+    private static final double W_JUMP_SPEED = 14d;
+    private static final float W_IMPACT_RADIUS = 2f;
+    private static final int W_SILENCE_DURATION = 1000;
+
+    private static final double E_ARMOR_BUFF_VALUE = 0.2;
+    private static final double E_SLOW_VALUE = 0.4d;
+    private static final int E_SLOW_DURATION = 2000;
+    private static final int E_BUFF_DURATION = 2000;
 
     private Chest chest = null;
     private Long lastChestSpawn = 0L;
@@ -143,6 +150,7 @@ public class ChooseGoose extends UserActor {
                 qDOTActors.clear();
                 qStacks.clear();
                 stopMoving();
+                basicAttackReset();
 
                 if (!isAutoAttacking) {
                     ExtensionCommands.actorAnimate(parentExt, room, id, "spell1a", 400, false);
@@ -441,23 +449,15 @@ public class ChooseGoose extends UserActor {
                         0f);
 
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
-                List<Actor> actors2 = Champion.getActorsInRadius(handler, location, 2f);
-                List<Actor> actors1 = Champion.getActorsInRadius(handler, location, 1f);
+                double damage = getSpellDamage(spellData, false);
 
-                actors2.removeAll(actors1);
-
-                double damageR2 = getSpellDamage(spellData, false);
-                double damageR1 = damageR2 + 30;
-
-                for (Actor a : actors2) {
+                for (Actor a : handler.getActorsInRadius(location, W_IMPACT_RADIUS)) {
                     if (isNeitherTowerNorAlly(a)) {
-                        a.addToDamageQueue(ChooseGoose.this, damageR2, spellData, false);
+                        a.addToDamageQueue(ChooseGoose.this, damage, spellData, false);
                     }
-                }
 
-                for (Actor a : actors1) {
-                    if (isNeitherTowerNorAlly(a)) {
-                        a.addToDamageQueue(ChooseGoose.this, damageR1, spellData, false);
+                    if (isNeitherStructureNorAlly(a) && a.getLocation().distance(location) <= 1) {
+                        a.addState(ActorState.SILENCED, 0, W_SILENCE_DURATION);
                     }
                 }
             }
@@ -588,14 +588,18 @@ public class ChooseGoose extends UserActor {
                 a.addEffect("speed", speedDelta, PASSIVE_BUFF_DURATION);
                 a.addEffect("armor", armorDelta, PASSIVE_BUFF_DURATION, "disconnect_buff_solo", "");
                 UserActor ua = (UserActor) a;
-                Champion.handleStatusIcon(
-                        parentExt,
-                        ua,
-                        "icon_choosegoose_passive",
-                        "choosegoose_spell_4_description",
-                        PASSIVE_BUFF_DURATION);
 
-                ChooseGoose.this.increaseStat("attackDamage", 1);
+                String desc = "You gain 20% increased armor and movement speed for 6 seconds.";
+
+                Champion.handleStatusIcon(
+                        parentExt, ua, "icon_choosegoose_passive", desc, PASSIVE_BUFF_DURATION);
+
+                ChooseGoose.this.increaseStat("health", PASSIVE_HP_INCREASE_PER_CHEST);
+                int delta = (int) (ua.getStat("health") * PASSIVE_MAX_HP_HEAL_VALUE);
+
+                if (ua.getHealth() != ua.getMaxHealth() && !ua.isDead()) {
+                    ua.changeHealth(delta);
+                }
             }
             ExtensionCommands.destroyActor(parentExt, room, id);
             parentExt.getRoomHandler(room.getName()).removeCompanion(this);
