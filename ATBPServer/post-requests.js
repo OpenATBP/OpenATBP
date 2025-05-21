@@ -150,26 +150,24 @@ module.exports = {
       try {
         const foundItem = shopData.find((item) => item.id === itemToPurchase);
         if (foundItem) {
-          //TODO: This could be simplified
           collection
             .updateOne(
-              { 'session.token': token },
-              { $inc: { 'player.coins': foundItem.cost * -1 } }
+              {
+                'session.token': token,
+                'player.coins': { $gte: Number(foundItem.cost) },
+                inventory: { $ne: itemToPurchase },
+              },
+              {
+                $inc: { 'player.coins': foundItem.cost * -1 },
+                $push: { inventory: itemToPurchase },
+              }
             )
-            .then(() => {
-              //Subtracts the coins from the player
-              collection
-                .updateOne(
-                  { 'session.token': token },
-                  { $push: { inventory: itemToPurchase } }
-                )
-                .then((r) => {
-                  if (r.modifiedCount == 0) {
-                    resolve(JSON.stringify({ success: 'false' }));
-                  } else {
-                    resolve(JSON.stringify({ success: 'true' }));
-                  }
-                });
+            .then((r) => {
+              if (r.modifiedCount == 0) {
+                resolve(JSON.stringify({ success: 'false' }));
+              } else {
+                resolve(JSON.stringify({ success: 'true' }));
+              }
             });
         } else {
           reject(new Error('Item not found'));
