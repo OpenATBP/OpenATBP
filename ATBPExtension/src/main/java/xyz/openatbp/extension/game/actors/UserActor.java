@@ -38,11 +38,21 @@ public class UserActor extends Actor {
     protected static final int DAMAGE_PER_LIGHTNING_POINT = 55;
     protected static final int CDR_PER_ROBE_POINT = 10;
     protected static final int SAI_PROC_COOLDOWN = 3000;
+    protected static final double GRASS_CRIT_INCREASE = 1.25d;
+    protected static final double SPEED_BOOST_PER_ROBO_STACK = 0.05;
+    protected static final double ROBO_SLOW_VALUE = 0.2;
+    protected static final int ROBO_SLOW_DURATION = 2000;
+    protected static final int ROBO_SLOW_CD = 10000;
+    protected static final int SIMON_GLASSES_RANGE = 5;
 
     protected static final int BASIC_ATTACK_DELAY = 500;
     protected static final double DASH_SPEED = 20d;
     protected static final int HEALTH_PACK_REGEN = 15;
-    protected static final double GRASS_CRIT_INCREASE = 1.25d;
+    protected static final float DC_AD_BUFF = 1.2f;
+    protected static final float DC_ARMOR_BUFF = 1.2f;
+    protected static final float DC_SPELL_RESIST_BUFF = 1.2f;
+    protected static final float DC_SPEED_BUFF = 1.15f;
+    protected static final float DC_PD_BUFF = 1.2f;
 
     protected User player;
     protected boolean autoAttackEnabled = false;
@@ -85,18 +95,17 @@ public class UserActor extends Actor {
     protected long lastAutoTargetTime = 0;
     protected long stealthEmbargo = -1;
     private boolean moonVfxActivated = false;
-    protected double glassesBuff = -1;
+    protected double glassesBuff = 0;
     protected long spellShieldCooldown = -1;
     protected boolean spellShieldActive = false;
     protected long iFrame = -1;
     protected String numbChuckVictim;
     protected boolean numbSlow = false;
-    protected List<UserActor> simonUsers = new ArrayList<>();
     protected int roboStacks = 0;
     protected List<Monster.BuffType> activeMonsterBuffs = new ArrayList<>();
-    protected String lichVictim;
-    protected int lichHandTimesHit = 0;
-    protected long lichLastHit = -1;
+    protected Actor lichHandTarget;
+    protected long lastLichHandStack = 0L;
+    protected int lichHandStacks = 0;
     protected long lastAuto = -1;
     protected long lastSpell = -1;
     protected int fightKingStacks = 0;
@@ -105,6 +114,8 @@ public class UserActor extends Actor {
     protected boolean hasGlassesPoint = false;
     protected Long lastSaiProcTime = 0L;
     protected Long lastZeldronBuff = 0L;
+    protected Long lastRoboSlow = 0L;
+    protected HashMap<UserActor, Integer> simonGlassesBuffProviders = new HashMap<>(2);
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -194,6 +205,30 @@ public class UserActor extends Actor {
         this.canCast[0] = q;
         this.canCast[1] = w;
         this.canCast[2] = e;
+    }
+
+    public void setLichHandTarget(Actor target) {
+        this.lichHandTarget = target;
+    }
+
+    public Actor getLichHandTarget() {
+        return this.lichHandTarget;
+    }
+
+    public void setLichHandStacks(int stacks) {
+        this.lichHandStacks = stacks;
+    }
+
+    public int getLichHandStacks() {
+        return this.lichHandStacks;
+    }
+
+    public void setLastLichHandStack(Long time) {
+        this.lastLichHandStack = time;
+    }
+
+    public Long getLastLichHandStack() {
+        return this.lastLichHandStack;
     }
 
     public void setLastSaiProcTime(Long time) {
@@ -359,17 +394,6 @@ public class UserActor extends Actor {
         ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "fight_king_icon");
     }
 
-    public boolean lichHandDamageApplies(Actor a) {
-        if (this.lichVictim == null || a == null) return false;
-        // Console.debugLog("");
-        return ChampionData.getJunkLevel(this, "junk_2_lich_hand") > 0
-                && this.lichVictim.equalsIgnoreCase(a.getId());
-    }
-
-    public double getLichHandTimesHit() {
-        return this.lichHandTimesHit;
-    }
-
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         try {
             if (invincibleDebug) return false;
@@ -391,6 +415,16 @@ public class UserActor extends Actor {
                         "sfx_turret_shot_hits_you",
                         this.location);
             }
+
+            if (roboStacks == 3) {
+                resetRoboStacks();
+                if (isNeitherStructureNorAlly(a)
+                        && System.currentTimeMillis() - lastRoboSlow >= ROBO_SLOW_CD) {
+                    lastRoboSlow = System.currentTimeMillis();
+                    a.addState(ActorState.SLOWED, ROBO_SLOW_VALUE, ROBO_SLOW_DURATION);
+                }
+            }
+
             AttackType type = this.getAttackType(attackData);
             this.preventStealth();
             double moonChance = ChampionData.getCustomJunkStat(this, "junk_3_battle_moon");
@@ -431,16 +465,6 @@ public class UserActor extends Actor {
                         double junkStat = ChampionData.getCustomJunkStat(ua, item);
                         newDamage += (int) (newDamage * junkStat);
                     }
-                }
-                if (ua.lichHandDamageApplies(this)) {
-                    Console.debugLog("Lich hand damage " + ua.getLichHandTimesHit());
-                    newDamage += (int) ((double) newDamage * (0.1d * ua.getLichHandTimesHit()));
-                    ua.handleLichHandHit();
-                } else if (ChampionData.getJunkLevel(ua, "junk_2_lich_hand") > 0
-                        && (ua.getLichVictim() == null
-                                || !ua.getLichVictim().equalsIgnoreCase(this.id))) {
-                    Console.debugLog("Setting Lich Victim");
-                    ua.setLichVictim(this.id);
                 }
                 // this.handleElectrodeGun(ua, a, damage, attackData);
 
@@ -499,24 +523,6 @@ public class UserActor extends Actor {
         ExtensionCommands.removeStatusIcon(
                 this.parentExt, this.getUser(), "junk_4_grob_gob_glob_grod_name");
         this.iFrame = System.currentTimeMillis() + 500;
-    }
-
-    public String getLichVictim() {
-        return this.lichVictim;
-    }
-
-    public void setLichVictim(String id) {
-        this.lichVictim = id;
-        this.lichHandTimesHit = 0;
-        this.lichLastHit = System.currentTimeMillis();
-    }
-
-    public void handleLichHandHit() {
-        if (System.currentTimeMillis() > this.lichLastHit + 1000) {
-            Console.debugLog("Registered");
-            this.lichHandTimesHit++;
-            this.lichLastHit = System.currentTimeMillis();
-        }
     }
 
     public double getAttackCooldown() {
@@ -1029,6 +1035,59 @@ public class UserActor extends Actor {
                 this.respawn();
             else return;
         }
+
+        RoomHandler rh = parentExt.getRoomHandler(room.getName());
+        String itemName = "junk_2_simon_petrikovs_glasses";
+
+        for (UserActor ua : rh.getPlayers()) {
+            boolean contains = simonGlassesBuffProviders.containsKey(ua);
+            boolean isInRange =
+                    ua.getLocation() != null
+                            && location.distance(ua.getLocation()) <= SIMON_GLASSES_RANGE;
+
+            boolean leveledGlasses = ChampionData.getJunkLevel(ua, itemName) > 0;
+
+            if (ua.getTeam() == team
+                    && leveledGlasses
+                    && isInRange
+                    && !contains
+                    && !ua.equals(this)) {
+                int pdValue = (int) ChampionData.getCustomJunkStat(ua, itemName);
+                simonGlassesBuffProviders.put(ua, pdValue);
+                glassesBuff += pdValue;
+
+                String iconName = ua + "simon_glasses_buff";
+                String desc = "Your Power Damage is increased by " + pdValue;
+
+                ExtensionCommands.addStatusIcon(parentExt, getUser(), iconName, desc, itemName, 0f);
+                updateStatMenu("spellDamage");
+            }
+        }
+
+        Iterator<Map.Entry<UserActor, Integer>> iterator =
+                simonGlassesBuffProviders.entrySet().iterator();
+
+        while (iterator.hasNext()) {
+            Map.Entry<UserActor, Integer> entry = iterator.next();
+            UserActor userActor = entry.getKey();
+            int pdValue = entry.getValue();
+            int junkLevel = ChampionData.getJunkLevel(userActor, itemName);
+
+            boolean isLocNull = userActor.getLocation() == null;
+
+            if (isLocNull
+                    || userActor.getLocation().distance(location) > SIMON_GLASSES_RANGE
+                    || junkLevel < 1) {
+                String iconName = userActor + "simon_glasses_buff";
+                glassesBuff -= pdValue;
+
+                updateStatMenu("spellDamage");
+
+                ExtensionCommands.removeStatusIcon(parentExt, getUser(), iconName);
+                iterator.remove();
+            }
+        }
+
         if (!this.moonVfxActivated
                 && this.hasBackpackItem("junk_3_battle_moon")
                 && ChampionData.getJunkLevel(this, "junk_3_battle_moon") > 0) {
@@ -1073,19 +1132,6 @@ public class UserActor extends Actor {
                     "junk_4_grob_gob_glob_grod_mod3",
                     "junk_4_grob_gob_glob_grod",
                     0f);
-        }
-        if (ChampionData.getJunkLevel(this, "junk_2_simon_petrikovs_glasses") > 0) {
-
-            for (UserActor ua : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
-                if (ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) {
-                    if (ua.getLocation().distance(this.location) <= 5f)
-                        ua.setGlassesBuff(
-                                ChampionData.getCustomJunkStat(
-                                        this, "junk_2_simon_petrikovs_glasses"),
-                                this);
-                    else ua.setGlassesBuff(-1d, this);
-                }
-            }
         }
 
         if (this.canMove()
@@ -1243,7 +1289,7 @@ public class UserActor extends Actor {
                                 false,
                                 this.team);
                 }
-            } else if (this.roboStacks > 0) this.resetRoboStacks();
+            }
 
             if (this.fightKingStacks > 0
                     && System.currentTimeMillis() - this.lastAuto
@@ -1626,33 +1672,6 @@ public class UserActor extends Actor {
         ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bundle);
     }
 
-    public void setGlassesBuff(double buff, UserActor holder) {
-        if (buff != -1 && !this.simonUsers.contains(holder)) this.simonUsers.add(holder);
-        if (this.glassesBuff != buff) {
-            if (this.glassesBuff == -1) {
-                ExtensionCommands.addStatusIcon(
-                        this.parentExt,
-                        this.getUser(),
-                        "junk_2_simon_petrikovs_glasses_name",
-                        "junk_2_simon_petrikovs_glasses_mod3",
-                        "junk_2_simon_petrikovs_glasses",
-                        0f);
-            } else if (buff == -1) {
-                this.simonUsers.remove(holder);
-                if (this.simonUsers.size() == 0) {
-                    ExtensionCommands.removeStatusIcon(
-                            this.parentExt, this.getUser(), "junk_2_simon_petrikovs_glasses_name");
-                    this.glassesBuff = -1d;
-                    this.updateStatMenu("spellDamage");
-                    return;
-                }
-            }
-            this.glassesBuff = buff;
-            Console.debugLog("Setting glasses buff to " + buff);
-            this.updateStatMenu("spellDamage");
-        }
-    }
-
     @Override
     public void handleCharm(UserActor charmer, int duration) {
         if (this.spellShieldActive || System.currentTimeMillis() < iFrame) {
@@ -1929,43 +1948,44 @@ public class UserActor extends Actor {
         }
         if (stat.equalsIgnoreCase("attackDamage")) {
             double attackDamage = super.getPlayerStat(stat);
-            if (this.dcBuff == 2) attackDamage *= 1.2f;
+            if (this.dcBuff == 2) attackDamage *= DC_AD_BUFF;
             attackDamage += (DEMON_SWORD_AD_BUFF * this.getMonsterBuffCount(stat));
             return attackDamage + this.magicNailStacks;
+
         } else if (stat.equalsIgnoreCase("armor")) {
             double armor = super.getPlayerStat(stat);
-            if (this.dcBuff >= 1) armor *= 1.2f;
+            if (this.dcBuff >= 1) armor *= DC_ARMOR_BUFF;
             return armor + (5 * this.getMonsterBuffCount(stat));
+
         } else if (stat.equalsIgnoreCase("spellResist")) {
             double mr = super.getPlayerStat(stat);
-            if (this.dcBuff >= 1) mr *= 1.2f;
+            if (this.dcBuff >= 1) mr *= DC_SPELL_RESIST_BUFF;
             return mr + (5 * this.getMonsterBuffCount(stat));
+
         } else if (stat.equalsIgnoreCase("speed")) {
-            double speedBoost = 0.05 * this.roboStacks; // TODO: Make scalable
+            double speedBoost = SPEED_BOOST_PER_ROBO_STACK * this.roboStacks; // TODO: Make scalable
             if (speedBoost < 0) speedBoost = 0;
-            if (this.dcBuff >= 1) return super.getPlayerStat(stat) * 1.15f + speedBoost;
+            if (this.dcBuff >= 1) return super.getPlayerStat(stat) * DC_SPEED_BUFF + speedBoost;
             return super.getPlayerStat(stat) + speedBoost;
+
         } else if (stat.equalsIgnoreCase("spellDamage")) {
             double spellDamage = super.getPlayerStat(stat);
-            if (this.dcBuff == 2) spellDamage *= 1.2f;
-            if (this.glassesBuff != -1) spellDamage += this.glassesBuff;
+            if (this.dcBuff == 2) spellDamage *= DC_PD_BUFF;
+            if (glassesBuff != 0) spellDamage += glassesBuff;
             return spellDamage
-                    + this.lightningSwordStacks
-                    + (DEMON_SWORD_SD_BUFF * this.getMonsterBuffCount(stat));
+                    + lightningSwordStacks
+                    + (DEMON_SWORD_SD_BUFF * getMonsterBuffCount(stat));
+
         } else if (stat.equalsIgnoreCase("coolDownReduction")) {
             return super.getPlayerStat(stat) + this.robeStacks;
         }
         return super.getPlayerStat(stat);
     }
 
-    public int getRoboStacks() {
-        return this.roboStacks;
-    }
-
     public void resetRoboStacks() {
-        this.roboStacks = -10;
-        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_roboSpeed");
-        this.updateStatMenu("speed");
+        roboStacks = 0;
+        ExtensionCommands.removeFx(parentExt, room, id + "_roboSpeed");
+        updateStatMenu("speed");
     }
 
     public void useGhostPouch() {
