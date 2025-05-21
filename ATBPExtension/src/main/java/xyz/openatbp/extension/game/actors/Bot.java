@@ -375,16 +375,6 @@ public class Bot extends Actor {
             }
         }
 
-        for (UserActor ua : parentExt.getRoomHandler(room.getName()).getPlayers()) {
-            if (!ua.getId().equalsIgnoreCase(id)) {
-                if (ua.getLocation().distance(location) <= 5f)
-                    ua.setGlassesBuff(
-                            ChampionData.getCustomJunkStat(ua, "junk_2_simon_petrikovs_glasses"),
-                            ua);
-                else ua.setGlassesBuff(-1d, ua);
-            }
-        }
-
         if (msRan % 5000 == 0) {
             handlePassiveXP();
         }
