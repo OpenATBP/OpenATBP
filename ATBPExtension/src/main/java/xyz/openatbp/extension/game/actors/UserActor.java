@@ -103,9 +103,9 @@ public class UserActor extends Actor {
     protected List<UserActor> simonUsers = new ArrayList<>();
     protected int roboStacks = 0;
     protected List<Monster.BuffType> activeMonsterBuffs = new ArrayList<>();
-    protected String lichVictim;
-    protected int lichHandTimesHit = 0;
-    protected long lichLastHit = -1;
+    protected Actor lichHandTarget;
+    protected long lastLichHandStack = 0L;
+    protected int lichHandStacks = 0;
     protected long lastAuto = -1;
     protected long lastSpell = -1;
     protected int fightKingStacks = 0;
@@ -204,6 +204,30 @@ public class UserActor extends Actor {
         this.canCast[0] = q;
         this.canCast[1] = w;
         this.canCast[2] = e;
+    }
+
+    public void setLichHandTarget(Actor target) {
+        this.lichHandTarget = target;
+    }
+
+    public Actor getLichHandTarget() {
+        return this.lichHandTarget;
+    }
+
+    public void setLichHandStacks(int stacks) {
+        this.lichHandStacks = stacks;
+    }
+
+    public int getLichHandStacks() {
+        return this.lichHandStacks;
+    }
+
+    public void setLastLichHandStack(Long time) {
+        this.lastLichHandStack = time;
+    }
+
+    public Long getLastLichHandStack() {
+        return this.lastLichHandStack;
     }
 
     public void setLastSaiProcTime(Long time) {
@@ -369,17 +393,6 @@ public class UserActor extends Actor {
         ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "fight_king_icon");
     }
 
-    public boolean lichHandDamageApplies(Actor a) {
-        if (this.lichVictim == null || a == null) return false;
-        // Console.debugLog("");
-        return ChampionData.getJunkLevel(this, "junk_2_lich_hand") > 0
-                && this.lichVictim.equalsIgnoreCase(a.getId());
-    }
-
-    public double getLichHandTimesHit() {
-        return this.lichHandTimesHit;
-    }
-
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         try {
             if (invincibleDebug) return false;
@@ -452,16 +465,6 @@ public class UserActor extends Actor {
                         newDamage += (int) (newDamage * junkStat);
                     }
                 }
-                if (ua.lichHandDamageApplies(this)) {
-                    Console.debugLog("Lich hand damage " + ua.getLichHandTimesHit());
-                    newDamage += (int) ((double) newDamage * (0.1d * ua.getLichHandTimesHit()));
-                    ua.handleLichHandHit();
-                } else if (ChampionData.getJunkLevel(ua, "junk_2_lich_hand") > 0
-                        && (ua.getLichVictim() == null
-                                || !ua.getLichVictim().equalsIgnoreCase(this.id))) {
-                    Console.debugLog("Setting Lich Victim");
-                    ua.setLichVictim(this.id);
-                }
                 // this.handleElectrodeGun(ua, a, damage, attackData);
 
                 if (this.maxHealth > ua.getMaxHealth()
@@ -519,24 +522,6 @@ public class UserActor extends Actor {
         ExtensionCommands.removeStatusIcon(
                 this.parentExt, this.getUser(), "junk_4_grob_gob_glob_grod_name");
         this.iFrame = System.currentTimeMillis() + 500;
-    }
-
-    public String getLichVictim() {
-        return this.lichVictim;
-    }
-
-    public void setLichVictim(String id) {
-        this.lichVictim = id;
-        this.lichHandTimesHit = 0;
-        this.lichLastHit = System.currentTimeMillis();
-    }
-
-    public void handleLichHandHit() {
-        if (System.currentTimeMillis() > this.lichLastHit + 1000) {
-            Console.debugLog("Registered");
-            this.lichHandTimesHit++;
-            this.lichLastHit = System.currentTimeMillis();
-        }
     }
 
     public double getAttackCooldown() {

@@ -113,30 +113,17 @@ public class Monster extends Actor {
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) { // Runs when taking damage
         try {
-            if (this.dead)
-                return true; // Prevents bugs that take place when taking damage (somehow from FP
-            // passive)
-            // after dying
+            if (this.dead) return true;
             if (Champion.getUserActorsInRadius(
-                                    this.parentExt.getRoomHandler(this.room.getName()),
-                                    this.location,
-                                    10f)
+                                    parentExt.getRoomHandler(room.getName()), location, 10f)
                             .isEmpty()
-                    && this.state == AggroState.PASSIVE) return false;
+                    && state == AggroState.PASSIVE) return false;
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
                 if (ChampionData.getJunkLevel(ua, "junk_1_demon_blood_sword") > 0) {
-                    damage *= (1 + ChampionData.getCustomJunkStat(ua, "junk_1_demon_blood_sword"));
-                }
-                if (ua.lichHandDamageApplies(this)) {
-                    Console.debugLog("Lich hand damage " + ua.getLichHandTimesHit());
-                    damage += ((double) damage * (0.1d * ua.getLichHandTimesHit()));
-                    ua.handleLichHandHit();
-                } else if (ChampionData.getJunkLevel(ua, "junk_2_lich_hand") > 0
-                        && (ua.getLichVictim() == null
-                                || !ua.getLichVictim().equalsIgnoreCase(this.id))) {
-                    Console.debugLog("Setting Lich Victim");
-                    ua.setLichVictim(this.id);
+                    double junkData =
+                            ChampionData.getCustomJunkStat(ua, "junk_1_demon_blood_sword");
+                    damage *= (int) (1 + junkData);
                 }
             }
             AttackType attackType = this.getAttackType(attackData);
