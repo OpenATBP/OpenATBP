@@ -454,11 +454,6 @@ public class Champion {
                     }
                 }
 
-                if (ua.getRoboStacks() > 0) {
-                    ua.resetRoboStacks();
-                    target.addState(ActorState.SLOWED, 0.2, 3000); // TODO: Make scalable
-                }
-
                 if (canLifeSteal()) ua.handleLifeSteal();
             }
             if (attacker.getActorType() == ActorType.MONSTER && !attacker.getId().contains("gnome"))

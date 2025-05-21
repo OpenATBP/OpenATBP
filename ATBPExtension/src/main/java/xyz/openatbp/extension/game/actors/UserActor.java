@@ -38,11 +38,20 @@ public class UserActor extends Actor {
     protected static final int DAMAGE_PER_LIGHTNING_POINT = 55;
     protected static final int CDR_PER_ROBE_POINT = 10;
     protected static final int SAI_PROC_COOLDOWN = 3000;
+    protected static final double GRASS_CRIT_INCREASE = 1.25d;
+    protected static final double SPEED_BOOST_PER_ROBO_STACK = 0.05;
+    protected static final double ROBO_SLOW_VALUE = 0.2;
+    protected static final int ROBO_SLOW_DURATION = 2000;
+    protected static final int ROBO_SLOW_CD = 10000;
 
     protected static final int BASIC_ATTACK_DELAY = 500;
     protected static final double DASH_SPEED = 20d;
     protected static final int HEALTH_PACK_REGEN = 15;
-    protected static final double GRASS_CRIT_INCREASE = 1.25d;
+    protected static final float DC_AD_BUFF = 1.2f;
+    protected static final float DC_ARMOR_BUFF = 1.2f;
+    protected static final float DC_SPELL_RESIST_BUFF = 1.2f;
+    protected static final float DC_SPEED_BUFF = 1.15f;
+    protected static final float DC_PD_BUFF = 1.2f;
 
     protected User player;
     protected boolean autoAttackEnabled = false;
@@ -105,6 +114,7 @@ public class UserActor extends Actor {
     protected boolean hasGlassesPoint = false;
     protected Long lastSaiProcTime = 0L;
     protected Long lastZeldronBuff = 0L;
+    protected Long lastRoboSlow = 0L;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -391,6 +401,16 @@ public class UserActor extends Actor {
                         "sfx_turret_shot_hits_you",
                         this.location);
             }
+
+            if (roboStacks == 3) {
+                resetRoboStacks();
+                if (isNeitherStructureNorAlly(a)
+                        && System.currentTimeMillis() - lastRoboSlow >= ROBO_SLOW_CD) {
+                    lastRoboSlow = System.currentTimeMillis();
+                    a.addState(ActorState.SLOWED, ROBO_SLOW_VALUE, ROBO_SLOW_DURATION);
+                }
+            }
+
             AttackType type = this.getAttackType(attackData);
             this.preventStealth();
             double moonChance = ChampionData.getCustomJunkStat(this, "junk_3_battle_moon");
@@ -1243,7 +1263,7 @@ public class UserActor extends Actor {
                                 false,
                                 this.team);
                 }
-            } else if (this.roboStacks > 0) this.resetRoboStacks();
+            }
 
             if (this.fightKingStacks > 0
                     && System.currentTimeMillis() - this.lastAuto
@@ -1929,43 +1949,44 @@ public class UserActor extends Actor {
         }
         if (stat.equalsIgnoreCase("attackDamage")) {
             double attackDamage = super.getPlayerStat(stat);
-            if (this.dcBuff == 2) attackDamage *= 1.2f;
+            if (this.dcBuff == 2) attackDamage *= DC_AD_BUFF;
             attackDamage += (DEMON_SWORD_AD_BUFF * this.getMonsterBuffCount(stat));
             return attackDamage + this.magicNailStacks;
+
         } else if (stat.equalsIgnoreCase("armor")) {
             double armor = super.getPlayerStat(stat);
-            if (this.dcBuff >= 1) armor *= 1.2f;
+            if (this.dcBuff >= 1) armor *= DC_ARMOR_BUFF;
             return armor + (5 * this.getMonsterBuffCount(stat));
+
         } else if (stat.equalsIgnoreCase("spellResist")) {
             double mr = super.getPlayerStat(stat);
-            if (this.dcBuff >= 1) mr *= 1.2f;
+            if (this.dcBuff >= 1) mr *= DC_SPELL_RESIST_BUFF;
             return mr + (5 * this.getMonsterBuffCount(stat));
+
         } else if (stat.equalsIgnoreCase("speed")) {
-            double speedBoost = 0.05 * this.roboStacks; // TODO: Make scalable
+            double speedBoost = SPEED_BOOST_PER_ROBO_STACK * this.roboStacks; // TODO: Make scalable
             if (speedBoost < 0) speedBoost = 0;
-            if (this.dcBuff >= 1) return super.getPlayerStat(stat) * 1.15f + speedBoost;
+            if (this.dcBuff >= 1) return super.getPlayerStat(stat) * DC_SPEED_BUFF + speedBoost;
             return super.getPlayerStat(stat) + speedBoost;
+
         } else if (stat.equalsIgnoreCase("spellDamage")) {
             double spellDamage = super.getPlayerStat(stat);
-            if (this.dcBuff == 2) spellDamage *= 1.2f;
+            if (this.dcBuff == 2) spellDamage *= DC_PD_BUFF;
             if (this.glassesBuff != -1) spellDamage += this.glassesBuff;
             return spellDamage
-                    + this.lightningSwordStacks
-                    + (DEMON_SWORD_SD_BUFF * this.getMonsterBuffCount(stat));
+                    + lightningSwordStacks
+                    + (DEMON_SWORD_SD_BUFF * getMonsterBuffCount(stat));
+
         } else if (stat.equalsIgnoreCase("coolDownReduction")) {
             return super.getPlayerStat(stat) + this.robeStacks;
         }
         return super.getPlayerStat(stat);
     }
 
-    public int getRoboStacks() {
-        return this.roboStacks;
-    }
-
     public void resetRoboStacks() {
-        this.roboStacks = -10;
-        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_roboSpeed");
-        this.updateStatMenu("speed");
+        roboStacks = 0;
+        ExtensionCommands.removeFx(parentExt, room, id + "_roboSpeed");
+        updateStatMenu("speed");
     }
 
     public void useGhostPouch() {
