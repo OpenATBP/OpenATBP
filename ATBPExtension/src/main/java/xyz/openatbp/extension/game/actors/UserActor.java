@@ -1185,9 +1185,10 @@ public class UserActor extends Actor {
             this.idleTime += 100;
         }
         boolean insideBrush = false;
-        for (Path2D brush :
-                this.parentExt.getBrushPaths(
-                        this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap())) {
+        boolean isPracticeMap = rh.isPracticeMap();
+        ArrayList<Path2D> brushPaths = parentExt.getBrushPaths(isPracticeMap);
+
+        for (Path2D brush : brushPaths) {
             if (brush.contains(this.location)) {
                 insideBrush = true;
                 break;
@@ -1195,8 +1196,10 @@ public class UserActor extends Actor {
         }
         if (insideBrush) {
             if (!this.states.get(ActorState.BRUSH)) {
+                Console.debugLog("BRUSH STATE ENABLED");
+
                 ExtensionCommands.changeBrush(
-                        parentExt, room, this.id, parentExt.getBrushNum(this.location));
+                        parentExt, room, this.id, parentExt.getBrushNum(location, brushPaths));
                 this.setState(ActorState.BRUSH, true);
                 if (this.stealthEmbargo <= System.currentTimeMillis())
                     this.setState(ActorState.REVEALED, false);
@@ -1207,6 +1210,8 @@ public class UserActor extends Actor {
             }
         } else {
             if (this.states.get(ActorState.BRUSH)) {
+                Console.debugLog("BRUSH STATE DISABLED");
+
                 this.setState(ActorState.BRUSH, false);
                 if (!this.getState(ActorState.INVISIBLE)) this.setState(ActorState.REVEALED, true);
                 ExtensionCommands.changeBrush(parentExt, room, this.id, -1);
@@ -1239,9 +1244,8 @@ public class UserActor extends Actor {
                     && idleTime > 500) {
                 Actor closestTarget = null;
                 double closestDistance = 1000;
-                RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 int aggroRange = parentExt.getActorStats(avatar).get("aggroRange").asInt();
-                for (Actor a : Champion.getActorsInRadius(handler, this.location, aggroRange)) {
+                for (Actor a : Champion.getActorsInRadius(rh, this.location, aggroRange)) {
                     if (a.getTeam() != this.team
                             && a.getLocation().distance(this.location) < closestDistance) {
                         closestDistance = a.getLocation().distance(this.location);
@@ -1256,11 +1260,7 @@ public class UserActor extends Actor {
         if (msRan % 1000 == 0) {
 
             if (ChampionData.getJunkLevel(this, "junk_4_flame_cloak") > 0) {
-                for (Actor a :
-                        Champion.getActorsInRadius(
-                                this.parentExt.getRoomHandler(this.room.getName()),
-                                this.location,
-                                1.5f)) {
+                for (Actor a : Champion.getActorsInRadius(rh, location, 1.5f)) {
                     if (a.getTeam() != this.team && isNeitherStructureNorAlly(a)) {
                         a.addToDamageQueue(
                                 this,
