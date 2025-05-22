@@ -476,13 +476,13 @@ public class ATBPExtension extends SFSExtension {
         else return this.practiceBrushPaths;
     }
 
-    public Path2D getBrush(int num) {
-        return this.brushPaths.get(num);
+    public Path2D getBrush(int num, ArrayList<Path2D> brushPaths) {
+        return brushPaths.get(num);
     }
 
-    public int getBrushNum(Point2D loc) {
-        for (int i = 0; i < this.brushPaths.size(); i++) {
-            Path2D p = this.brushPaths.get(i);
+    public int getBrushNum(Point2D loc, ArrayList<Path2D> brushPaths) {
+        for (int i = 0; i < brushPaths.size(); i++) {
+            Path2D p = brushPaths.get(i);
             if (p.contains(loc)) return i;
         }
         return -1;
@@ -499,11 +499,11 @@ public class ATBPExtension extends SFSExtension {
          */
     }
 
-    public boolean isBrushOccupied(RoomHandler room, UserActor a) {
+    public boolean isBrushOccupied(RoomHandler room, UserActor a, ArrayList<Path2D> brushPaths) {
         try {
-            int brushNum = this.getBrushNum(a.getLocation());
+            int brushNum = this.getBrushNum(a.getLocation(), brushPaths);
             if (brushNum == -1) return false;
-            Path2D brush = this.brushPaths.get(brushNum);
+            Path2D brush = brushPaths.get(brushNum);
             for (UserActor ua : room.getPlayers()) {
                 if (ua.getTeam() != a.getTeam() && brush.contains(ua.getLocation())) return true;
             }
