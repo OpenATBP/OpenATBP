@@ -197,18 +197,18 @@
 <script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
 
 <script type="text/javascript">
-  const params = new URLSearchParams(window.location.search);
-  const failed = params.get('failed') === 'true';
-  const usernameTaken = params.get('usernameTaken') === 'true';
-  const displayNameTaken = params.get('displayNameTaken') === 'true';
-  const reason = params.get('reason');
+  var params = new URLSearchParams(window.location.search);
+  var failed = params.get('failed') === 'true';
+  var usernameTaken = params.get('usernameTaken') === 'true';
+  var displayNameTaken = params.get('displayNameTaken') === 'true';
+  var reason = params.get('reason');
 
   if (usernameTaken) {
     window.alert("Registration failed: Username is already taken. Please choose another.");
   } else if (displayNameTaken) {
     window.alert("Registration failed: Display Name is already taken. Please choose another.");
   } else if (failed) {
-    let message = "Registration failed! Please check your inputs.";
+    var message = "Registration failed! Please check your inputs.";
     if (reason === 'passwordmismatch') {
       message = "Registration failed: Passwords do not match.";
     } else if (reason === 'displaynameparts') {
@@ -230,9 +230,9 @@
 
 
   document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('form');
-    const passwordInput = document.getElementById('password');
-    const confirmInput = document.getElementById('confirm');
+    var form = document.getElementById('form');
+    var passwordInput = document.getElementById('password');
+    var confirmInput = document.getElementById('confirm');
 
     if (form && passwordInput && confirmInput) {
       form.addEventListener('submit', function(event) {
@@ -242,10 +242,10 @@
           confirmInput.focus();
         }
 
-        const name1 = document.getElementById('name1').value;
-        const name2 = document.getElementById('name2').value;
-        const name3 = document.getElementById('name3').value;
-        let selectedNameParts = 0;
+        var name1 = document.getElementById('name1').value;
+        var name2 = document.getElementById('name2').value;
+        var name3 = document.getElementById('name3').value;
+        var selectedNameParts = 0;
         if (name1) selectedNameParts++;
         if (name2) selectedNameParts++;
         if (name3) selectedNameParts++;

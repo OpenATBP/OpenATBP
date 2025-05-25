@@ -143,7 +143,7 @@ function Fireteam_AspenInit(name, callback) {
 var Fireteam_AspenSend = function (name, callback) {
   console.log('Fireteam!');
   console.log(name);
-  console.log(callback);
+  // console.log(callback);
   /*
   var cookies = document.cookie.split(';');
   var displayName = null;
@@ -175,6 +175,10 @@ var AchievementUnityComm = {
     // stubbed
   },
   doUnityGameStarted: function () {
+    // stubbed
+  },
+
+  doSendStat: function () {
     // stubbed
   },
 };

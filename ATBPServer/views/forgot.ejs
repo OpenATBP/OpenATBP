@@ -102,7 +102,7 @@
             font-size: 1.1rem;
             border-radius: 8px;
             transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
-            letter-spacing: 0.75px;
+            letter-spacing: 1px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
@@ -162,13 +162,13 @@
 
 <script type="text/javascript">
   document.addEventListener('DOMContentLoaded', function() {
-    const params = new URLSearchParams(window.location.search);
-    const passwordMismatch = params.get('passwordMismatch') === 'true';
-    const invalidCredentials = params.get('invalidCredentials') === 'true';
-    const serverError = params.get('serverError') === 'true';
-    const missingFields = params.get('missingFields') === 'true';
+    var params = new URLSearchParams(window.location.search);
+    var passwordMismatch = params.get('passwordMismatch') === 'true';
+    var invalidCredentials = params.get('invalidCredentials') === 'true';
+    var serverError = params.get('serverError') === 'true';
+    var missingFields = params.get('missingFields') === 'true';
 
-    const failed = params.get('failed') === 'true';
+    var failed = params.get('failed') === 'true';
 
     if (passwordMismatch) {
       window.alert("Password reset failed: Your new passwords do not match. Please try again.");
@@ -183,9 +183,9 @@
       window.alert("Password reset failed. Please double-check your information and try again.");
     }
 
-    const form = document.getElementById('form');
-    const passwordInput = document.getElementById('password');
-    const confirmInput = document.getElementById('confirm');
+    var form = document.getElementById('form');
+    var passwordInput = document.getElementById('password');
+    var confirmInput = document.getElementById('confirm');
 
     if (form && passwordInput && confirmInput) {
       form.addEventListener('submit', function(event) {
