@@ -542,7 +542,7 @@
 
                         currentUserData.player.coins = result.newCoinTotal;
                         if (!currentUserData.icons) currentUserData.icons = [];
-                        if (!currentUserData.icons.includes(iconName)) currentUserData.icons.push(iconName);
+                        if (currentUserData.icons.indexOf(iconName) === -1) currentUserData.icons.push(iconName);
 
 
                         if (runtimeIconData[iconName]) {
