@@ -2,9 +2,8 @@
 <html>
 <head>
     <title>OpenATBP - Forgotten Password</title>
-
-    <script type="text/javascript" src="js/jquery.min.js"></script>
     <link rel="stylesheet" href="css/bootstrap.min.css">
+    <script type="text/javascript" src="js/jquery.min.js"></script>
     <script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
 
     <style>
@@ -140,7 +139,8 @@
     </style>
 </head>
 <body>
-
+<script type="text/javascript" src="js/jquery.min.js"></script>
+<script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
 <div class="container" style="width: 24rem;">
     <div class="card text-center">
         <form class="form-login" id="form" action="/auth/forgot" method="post">
@@ -161,39 +161,117 @@
 </div>
 
 <script type="text/javascript">
-  document.addEventListener('DOMContentLoaded', function() {
-    var params = new URLSearchParams(window.location.search);
-    var passwordMismatch = params.get('passwordMismatch') === 'true';
-    var invalidCredentials = params.get('invalidCredentials') === 'true';
-    var serverError = params.get('serverError') === 'true';
-    var missingFields = params.get('missingFields') === 'true';
 
-    var failed = params.get('failed') === 'true';
+  function getQueryParam(paramName, urlString) {
+    var search;
+
+    var currentUrl = urlString || window.location.href;
+
+    if (currentUrl) {
+      try {
+
+        search = (new URL(currentUrl, window.location.origin)).search;
+      } catch (e) {
+
+        var qIndex = currentUrl.indexOf('?');
+        search = (qIndex !== -1) ? currentUrl.substring(qIndex) : "";
+      }
+    } else {
+
+      search = window.location.search;
+    }
+
+    search = search.substring(1);
+    if (!search) return null;
+
+    var paramsArray = search.split('&');
+    for (var i = 0; i < paramsArray.length; i++) {
+      var pair = paramsArray[i].split('=');
+
+      var key = decodeURIComponent(pair[0]);
+      if (key === paramName) {
+        if (pair.length === 1 || (pair.length > 1 && pair[1] === 'true')) {
+          return 'true';
+        }
+        return decodeURIComponent(pair[1]);
+      }
+    }
+    return null;
+  }
+
+
+  document.addEventListener('DOMContentLoaded', function() {
+
+    var passwordMismatch = getQueryParam('passwordMismatch') === 'true';
+    var invalidCredentials = getQueryParam('invalidCredentials') === 'true';
+    var serverError = getQueryParam('serverError') === 'true';
+    var missingFields = getQueryParam('missingFields') === 'true';
+    var failed = getQueryParam('failed') === 'true';
+
+    var alertMessageText = null;
+
 
     if (passwordMismatch) {
-      window.alert("Password reset failed: Your new passwords do not match. Please try again.");
+      alertMessageText = "Password reset failed: Your new passwords do not match. Please try again.";
     } else if (invalidCredentials) {
-      window.alert("Password reset failed: The username or secret phrase you entered is incorrect.");
+      alertMessageText = "Password reset failed: The username or secret phrase you entered is incorrect.";
     } else if (serverError) {
-      window.alert("Password reset failed: An unexpected error occurred on our end. Please try again in a few moments.");
+      alertMessageText = "Password reset failed: An unexpected error occurred on our end. Please try again in a few moments.";
     } else if (missingFields) {
-      window.alert("Password reset failed: Please make sure to fill in all the fields.");
+      alertMessageText = "Password reset failed: Please make sure to fill in all the fields.";
+    } else if (failed) {
+      alertMessageText = "Password reset failed. Please double-check your information and try again.";
     }
-    else if (failed) {
-      window.alert("Password reset failed. Please double-check your information and try again.");
+
+
+    if (alertMessageText) {
+      window.alert(alertMessageText);
+
+      if (passwordMismatch) {
+        document.getElementById('password').value = '';
+        document.getElementById('confirm').value = '';
+        document.getElementById('password').focus();
+      } else if (invalidCredentials) {
+        document.getElementById('username').value = '';
+        document.getElementById('forgot').value = '';
+        document.getElementById('username').focus();
+      } else if (missingFields) {
+
+      } else {
+        document.getElementById('username').value = '';
+        document.getElementById('forgot').value = '';
+        document.getElementById('password').value = '';
+        document.getElementById('confirm').value = '';
+        document.getElementById('username').focus();
+      }
     }
 
     var form = document.getElementById('form');
     var passwordInput = document.getElementById('password');
     var confirmInput = document.getElementById('confirm');
+    var usernameInput = document.getElementById('username');
+    var forgotInput = document.getElementById('forgot');
+    var submitButton = form ? form.querySelector('button[type="submit"]') : null;
+
 
     if (form && passwordInput && confirmInput) {
       form.addEventListener('submit', function(event) {
+
         if (passwordInput.value !== confirmInput.value) {
-          event.preventDefault();
+          event.preventDefault(); // Stop form submission
           window.alert("Your new passwords do not match. Please check them and try again.");
-          confirmInput.focus();
+          passwordInput.value = "";
+          confirmInput.value = "";
+          passwordInput.focus();
+          return; // Stop further processing
         }
+
+
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.textContent = 'Processing...';
+        }
+
       });
     }
   });

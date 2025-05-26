@@ -2,11 +2,224 @@
 <html>
 <head>
     <title>OpenATBP - Registration</title>
-
-    <script type="text/javascript" src="js/jquery.min.js"></script>
     <link rel="stylesheet" href="css/bootstrap.min.css">
+    <script type="text/javascript" src="js/jquery.min.js"></script>
     <script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript">
+      function getQueryParam(paramName, urlString) {
+        var search;
+        if (urlString) {
+          try {
+            search = (new URL(urlString, window.location.origin)).search;
+          } catch (e) {
+            var qIndex = urlString.indexOf('?');
+            search = (qIndex !== -1) ? urlString.substring(qIndex) : "";
+          }
+        } else {
+          search = window.location.search;
+        }
+        search = search.substring(1);
+        if (!search) return null;
+        var paramsArray = search.split('&');
+        for (var i = 0; i < paramsArray.length; i++) {
+          var pair = paramsArray[i].split('=');
+          if (decodeURIComponent(pair[0]) === paramName) {
+            if (pair.length === 1 || (pair.length > 1 && decodeURIComponent(pair[1]) === 'true')) {
+              return 'true';
+            }
+            return decodeURIComponent(pair[1]);
+          }
+        }
+        return null;
+      }
 
+      function displayAlertsFromUrl(urlString) {
+        var currentFailed = getQueryParam('failed', urlString) === 'true';
+        var currentUsernameTaken = getQueryParam('usernameTaken', urlString) === 'true';
+        var currentDisplayNameTaken = getQueryParam('displayNameTaken', urlString) === 'true';
+        var currentReason = getQueryParam('reason', urlString);
+        var alertMessageText = null;
+
+        if (currentUsernameTaken) {
+          alertMessageText = "Registration failed: Username is already taken. Please choose another.";
+        } else if (currentDisplayNameTaken) {
+          alertMessageText = "Registration failed: Display Name is already taken. Please choose another.";
+        } else if (currentFailed) {
+          alertMessageText = "Registration failed! Please check your inputs."; // Default for failed=true
+          if (currentReason === 'passwordmismatch') {
+            alertMessageText = "Registration failed: Passwords do not match.";
+          } else if (currentReason === 'displaynameparts') {
+            alertMessageText = "Registration failed: Please select at least two parts for your display name.";
+          } else if (currentReason === 'invaliddisplayname') {
+            alertMessageText = "Registration failed: An invalid display name part was selected.";
+          } else if (currentReason === 'servererror') {
+            alertMessageText = "Registration failed: A server error occurred. Please try again later.";
+          } else if (currentReason === 'unexpected') {
+            alertMessageText = "Registration failed: An unexpected error occurred. Please try again.";
+          }
+
+        }
+
+        if (alertMessageText) {
+          window.alert(alertMessageText);
+          return true;
+        }
+        return false;
+      }
+
+
+
+      var anErrorWasAlertedOnPageLoad = displayAlertsFromUrl(window.location.href);
+
+      function blockSpecialChar(e) {
+        var format = /[ `!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/;
+
+        var charCode = e.which || e.keyCode || e.charCode;
+        var charStr = String.fromCharCode(charCode);
+
+        if (e.key !== undefined) {
+          if (format.test(e.key)) return false;
+        } else {
+          if (format.test(charStr)) return false;
+        }
+        return true;
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        var form = document.getElementById('form');
+        var usernameInput = document.getElementById('username');
+        var passwordInput = document.getElementById('password');
+        var confirmInput = document.getElementById('confirm');
+        var name1Select = document.getElementById('name1');
+        var name2Select = document.getElementById('name2');
+        var name3Select = document.getElementById('name3');
+        var forgotInput = document.getElementById('forgot');
+        var submitButton = form ? form.querySelector('button[type="submit"]') : null;
+
+
+
+        try {
+          var namesDataString = '<%- displayNames; %>';
+          var nameObj = JSON.parse(namesDataString);
+
+          if (name1Select && nameObj.list1) {
+            var text1 = "<option value=\"\"></option>";
+            for (var i = 0; i < nameObj.list1.length; i++) {
+              var name = nameObj.list1[i];
+              text1 += '<option value="' + name.toUpperCase() + '">' + name.toUpperCase() + '</option>';
+            }
+            name1Select.innerHTML = text1;
+          }
+
+          if (name2Select && nameObj.list2) {
+            var text2 = "<option value=\"\"></option>";
+            for (var i = 0; i < nameObj.list2.length; i++) {
+              var name = nameObj.list2[i];
+              text2 += '<option value="' + name.toUpperCase() + '">' + name.toUpperCase() + '</option>';
+            }
+            name2Select.innerHTML = text2;
+          }
+
+          if (name3Select && nameObj.list3) {
+            var text3 = "<option value=\"\"></option>";
+            for (var i = 0; i < nameObj.list3.length; i++) {
+              var name = nameObj.list3[i];
+              text3 += '<option value="' + name.toUpperCase() + '">' + name.toUpperCase() + '</option>';
+            }
+            name3Select.innerHTML = text3;
+          }
+        } catch (e) {
+          console.error("Error populating display name dropdowns:", e);
+
+        }
+
+
+
+        if (anErrorWasAlertedOnPageLoad) {
+          var reason = getQueryParam('reason', window.location.href);
+          var usernameTaken = getQueryParam('usernameTaken', window.location.href) === 'true';
+          var displayNameTaken = getQueryParam('displayNameTaken', window.location.href) === 'true';
+          var failedGeneric = getQueryParam('failed', window.location.href) === 'true';
+
+          if (usernameTaken) {
+            if (usernameInput) usernameInput.value = '';
+            if (passwordInput) passwordInput.value = '';
+            if (confirmInput) confirmInput.value = '';
+            if (usernameInput) usernameInput.focus();
+          } else if (displayNameTaken) {
+            if (name1Select) name1Select.selectedIndex = 0;
+            if (name2Select) name2Select.selectedIndex = 0;
+            if (name3Select) name3Select.selectedIndex = 0;
+            if (passwordInput) passwordInput.value = '';
+            if (confirmInput) confirmInput.value = '';
+            if (name1Select) name1Select.focus();
+          } else if (failedGeneric) {
+            if (reason === 'passwordmismatch') {
+              if (passwordInput) passwordInput.value = '';
+              if (confirmInput) confirmInput.value = '';
+              if (passwordInput) passwordInput.focus();
+            } else if (reason === 'displaynameparts' || reason === 'invaliddisplayname') {
+
+              if (passwordInput) passwordInput.value = '';
+              if (confirmInput) confirmInput.value = '';
+
+              if (name1Select) name1Select.focus();
+            } else {
+
+              if (usernameInput) usernameInput.value = '';
+              if (passwordInput) passwordInput.value = '';
+              if (confirmInput) confirmInput.value = '';
+              if (forgotInput) forgotInput.value = '';
+              if (name1Select) name1Select.selectedIndex = 0;
+              if (name2Select) name2Select.selectedIndex = 0;
+              if (name3Select) name3Select.selectedIndex = 0;
+              if (usernameInput) usernameInput.focus();
+            }
+          }
+
+        }
+
+
+
+        if (form) {
+          form.addEventListener('submit', function(event) {
+
+            if (passwordInput && confirmInput && passwordInput.value !== confirmInput.value) {
+              event.preventDefault(); // Prevent form submission
+              alert("Passwords do not match!");
+              passwordInput.value = "";
+              confirmInput.value = "";
+              passwordInput.focus();
+              return;
+            }
+
+
+            var name1Value = name1Select ? name1Select.value : "";
+            var name2Value = name2Select ? name2Select.value : "";
+            var name3Value = name3Select ? name3Select.value : "";
+            var selectedNameParts = 0;
+            if (name1Value && name1Value.trim() !== '') selectedNameParts++;
+            if (name2Value && name2Value.trim() !== '') selectedNameParts++;
+            if (name3Value && name3Value.trim() !== '') selectedNameParts++;
+
+            if (selectedNameParts < 2) {
+              event.preventDefault(); // Prevent form submission
+              alert("Please select at least two parts for your display name.");
+              if (name1Select) name1Select.focus();
+              return;
+            }
+
+
+
+            if (submitButton) {
+              submitButton.disabled = true;
+              submitButton.textContent = 'Registering...';
+            }
+
+          });
+        }
+      });
+    </script>
     <style>
         body {
             display: -ms-flexbox;
@@ -189,78 +402,12 @@
             color: #385920;
             text-decoration: underline;
         }
-
     </style>
 </head>
 <body>
 <script type="text/javascript" src="js/jquery.min.js"></script>
 <script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
 
-<script type="text/javascript">
-  var params = new URLSearchParams(window.location.search);
-  var failed = params.get('failed') === 'true';
-  var usernameTaken = params.get('usernameTaken') === 'true';
-  var displayNameTaken = params.get('displayNameTaken') === 'true';
-  var reason = params.get('reason');
-
-  if (usernameTaken) {
-    window.alert("Registration failed: Username is already taken. Please choose another.");
-  } else if (displayNameTaken) {
-    window.alert("Registration failed: Display Name is already taken. Please choose another.");
-  } else if (failed) {
-    var message = "Registration failed! Please check your inputs.";
-    if (reason === 'passwordmismatch') {
-      message = "Registration failed: Passwords do not match.";
-    } else if (reason === 'displaynameparts') {
-      message = "Registration failed: Please select at least two parts for your display name.";
-    } else if (reason === 'invaliddisplayname') {
-      message = "Registration failed: An invalid display name part was selected.";
-    } else if (reason === 'servererror') {
-      message = "Registration failed: A server error occurred. Please try again later.";
-    } else if (reason === 'unexpected') {
-      message = "Registration failed: An unexpected error occurred. Please try again.";
-    }
-    window.alert(message);
-  }
-
-  function blockSpecialChar(e) {
-    var format = /[ `!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/;
-    return e.key != undefined ? !format.test(e.key) : !format.test(String.fromCharCode(e.charCode));
-  }
-
-
-  document.addEventListener('DOMContentLoaded', function() {
-    var form = document.getElementById('form');
-    var passwordInput = document.getElementById('password');
-    var confirmInput = document.getElementById('confirm');
-
-    if (form && passwordInput && confirmInput) {
-      form.addEventListener('submit', function(event) {
-        if (passwordInput.value !== confirmInput.value) {
-          alert("Passwords do not match!");
-          event.preventDefault(); // Prevent form submission
-          confirmInput.focus();
-        }
-
-        var name1 = document.getElementById('name1').value;
-        var name2 = document.getElementById('name2').value;
-        var name3 = document.getElementById('name3').value;
-        var selectedNameParts = 0;
-        if (name1) selectedNameParts++;
-        if (name2) selectedNameParts++;
-        if (name3) selectedNameParts++;
-
-        if (selectedNameParts < 2) {
-          alert("Please select at least two parts for your display name.");
-          event.preventDefault();
-
-          document.getElementById('name1').focus();
-        }
-      });
-    }
-  });
-
-</script>
 <div class="container" style="width: 32rem;">
     <div class="card text-center">
         <form class="form-login" id="form" action="/auth/register" method="post">
@@ -287,27 +434,5 @@
         </form>
     </div>
 </div>
-<script type="text/javascript">
-  var names = '<%- displayNames; %>';
-  var nameObj = JSON.parse(names);
-
-  var text1 = "<option></option>"
-  for (var name of nameObj.list1) {
-    text1 += `<option>${name.toUpperCase()}</option>`;
-  }
-  document.getElementById("name1").innerHTML = text1;
-
-  var text2 = "<option></option>"
-  for (var name of nameObj.list2) {
-    text2 += `<option>${name.toUpperCase()}</option>`;
-  }
-  document.getElementById("name2").innerHTML = text2;
-
-  var text3 = "<option></option>"
-  for (var name of nameObj.list3) {
-    text3 += `<option>${name.toUpperCase()}</option>`;
-  }
-  document.getElementById("name3").innerHTML = text3;
-</script>
 </body>
 </html>
