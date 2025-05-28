@@ -8,10 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import com.smartfoxserver.v2.entities.User;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ChampionData;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -71,10 +68,16 @@ public class MagicMan extends UserActor {
             Runnable resetWUses = () -> this.wUses = 0;
             scheduleTask(resetWUses, getReducedCooldown(wCooldown));
         }
-        if (this.ultStarted && this.hasDashAttackInterruptCC()) {
-            this.interruptE = true;
-            this.ultStarted = false;
-            ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 100, false);
+
+        try {
+            if (this.ultStarted && this.hasDashAttackInterruptCC()) {
+                this.interruptE = true;
+                this.ultStarted = false;
+                ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 100, false);
+                ExtensionCommands.playSound(parentExt, room, id, "sfx_skill_interrupted", location);
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 
@@ -248,36 +251,35 @@ public class MagicMan extends UserActor {
                         abilityDelay);
                 break;
             case 3:
-                this.canCast[2] = false;
-                Point2D dashPoint = this.location;
+                canCast[2] = false;
+                Point2D dashPoint = location;
+
                 try {
                     unveil();
-                    this.canMove = false;
-                    this.ultStarted = true;
-                    Point2D firstLocation =
-                            new Point2D.Double(this.location.getX(), this.location.getY());
-                    dashPoint = this.dash(dest, true, E_DASH_SPEED);
+                    stopMoving();
+                    ultStarted = true;
+                    Point2D firstLocation = new Point2D.Double(location.getX(), location.getY());
+
+                    dashPoint = dash(dest, true, E_DASH_SPEED);
                     double dashTime = dashPoint.distance(firstLocation) / E_DASH_SPEED;
-                    this.eDashTime = (int) (dashTime * 1000d);
-                    ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "sfx_magicman_explode_roll",
-                            this.location);
-                    ExtensionCommands.actorAnimate(
-                            this.parentExt, this.room, this.id, "spell3", eDashTime, true);
+
+                    eDashTime = (int) (dashTime * 1000);
+
+                    String sound = "sfx_magicman_explode_roll";
+
+                    ExtensionCommands.playSound(parentExt, room, id, sound, location);
+                    ExtensionCommands.actorAnimate(parentExt, room, id, "spell3", eDashTime, true);
+
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
                 }
-                ExtensionCommands.actorAbilityResponse(
-                        this.parentExt,
-                        this.player,
-                        "e",
-                        true,
-                        getReducedCooldown(cooldown),
-                        (int) (eDashTime * 0.8) + gCooldown);
+
+                int gCd = (int) (eDashTime * 0.8) + gCooldown;
+                int cd = getReducedCooldown(cooldown);
+
+                ExtensionCommands.actorAbilityResponse(parentExt, player, "e", true, cd, gCd);
+
                 scheduleTask(
                         abilityRunnable(ability, spellData, cooldown, gCooldown, dashPoint),
                         eDashTime);
@@ -326,13 +328,16 @@ public class MagicMan extends UserActor {
             Runnable enableECasting = () -> canCast[2] = true;
             int delay = getReducedCooldown(cooldown) - eDashTime;
             scheduleTask(enableECasting, delay);
-            canMove = true;
             ultStarted = false;
+
             if (!interruptE && getHealth() > 0) {
                 ExtensionCommands.actorAnimate(parentExt, room, id, "spell3b", 500, false);
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_magicman_explode", location);
-                ExtensionCommands.playSound(
-                        parentExt, room, id, "vo/vo_magicman_explosion", location);
+
+                String vo = "vo/vo_magicman_explosion";
+
+                ExtensionCommands.playSound(parentExt, room, id, vo, location);
+
                 ExtensionCommands.createWorldFX(
                         parentExt,
                         room,
@@ -345,14 +350,19 @@ public class MagicMan extends UserActor {
                         false,
                         team,
                         0f);
+
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
+
                 for (Actor a : Champion.getActorsInRadius(handler, location, 4f)) {
                     if (isNeitherStructureNorAlly(a)) {
-                        double delta1 = a.getStat("armor") * -E_ARMOR_VALUE;
-                        double delta2 = a.getStat("spellResist") * -E_SHIELDS_VALUE;
+                        String stat1 = "armor";
+                        String stat2 = "spellResist";
 
-                        a.addEffect("armor", delta1, E_DEBUFF_DURATION);
-                        a.addEffect("shields", delta2, E_DEBUFF_DURATION);
+                        double delta1 = a.getStat(stat1) * -E_ARMOR_VALUE;
+                        double delta2 = a.getStat(stat2) * -E_SHIELDS_VALUE;
+
+                        a.addEffect(stat1, delta1, E_DEBUFF_DURATION);
+                        a.addEffect(stat2, delta2, E_DEBUFF_DURATION);
                         a.addState(ActorState.SLOWED, E_SLOW_VALUE, E_SLOW_DURATION);
                     }
 
@@ -361,8 +371,6 @@ public class MagicMan extends UserActor {
                         a.addToDamageQueue(MagicMan.this, damage, spellData, false);
                     }
                 }
-            } else if (interruptE) {
-                ExtensionCommands.playSound(parentExt, room, id, "sfx_skill_interrupted", location);
             }
             interruptE = false;
             ultStarted = false;
@@ -495,10 +503,13 @@ public class MagicMan extends UserActor {
                     MagicMan.this.id,
                     "vo/vo_magicman_decoy2",
                     MagicMan.this.location);
-            JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
+
+            String AVATAR = "magicman";
+
+            JsonNode spellData = parentExt.getAttackData(AVATAR, "spell2");
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            for (Actor actor : Champion.getActorsInRadius(handler, this.location, 2.5f)) {
-                if (isNeitherTowerNorAlly(a)) {
+            for (Actor actor : Champion.getActorsInRadius(handler, location, 2.5f)) {
+                if (isNeitherTowerNorAlly(actor)) {
                     double dmg = getSpellDamage(spellData, false);
                     actor.addToDamageQueue(MagicMan.this, dmg, spellData, false);
                 }

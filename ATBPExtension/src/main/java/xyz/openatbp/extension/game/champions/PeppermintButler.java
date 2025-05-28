@@ -316,6 +316,12 @@ public class PeppermintButler extends UserActor {
     }
 
     @Override
+    public boolean canUseAbility(int ability) {
+        if (ultActive) return false;
+        return super.canUseAbility(ability);
+    }
+
+    @Override
     public void useAbility(
             int ability,
             JsonNode spellData,
@@ -475,7 +481,7 @@ public class PeppermintButler extends UserActor {
         if (!this.getState(ActorState.POLYMORPH)) { // poly asset swap handled elsewhere
             swapAsset(false);
         }
-        String[] statsToUpdate = {"speed", "attackSpeed", "attackDamage"};
+        String[] statsToUpdate = {"speed", "attackSpeed", "attackDamage", "attackRange"};
         updateStatMenu(statsToUpdate);
     }
 
@@ -483,7 +489,7 @@ public class PeppermintButler extends UserActor {
         Point2D currentAltar = null;
         Point2D[] altarLocations;
 
-        if (!this.room.getGroupId().equalsIgnoreCase("practice")) {
+        if (room.getGroupId().equals("Practice") || room.getGroupId().equals("ARAM")) {
             altarLocations = new Point2D[3];
             altarLocations[0] = new Point2D.Float(MapData.L2_TOP_ALTAR[0], MapData.L2_TOP_ALTAR[1]);
             altarLocations[1] = new Point2D.Float(0f, 0f);

@@ -173,11 +173,11 @@ const ALL_ICONS_METADATA = {
       text: 'Score 1000 Total KOs in Ranked matches',
     },
   },
-  'Ice Queen': {
-    src: 'assets/pfp/Ice Queen.jpg',
+  'Mr Death': {
+    src: 'assets/pfp/Mr Death.jpg',
     rarity: 'Algebraic',
     unlock: {
-      stat: 'largestMulti',
+      stat: 'largestSpree',
       threshold: 15,
       text: 'Achieve a 15-KO spree in a single Ranked match',
     },

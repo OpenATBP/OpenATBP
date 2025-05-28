@@ -42,7 +42,7 @@ public class UserActor extends Actor {
     protected static final double SPEED_BOOST_PER_ROBO_STACK = 0.05;
     protected static final double ROBO_SLOW_VALUE = 0.2;
     protected static final int ROBO_SLOW_DURATION = 2000;
-    protected static final int ROBO_SLOW_CD = 10000;
+    protected static final int ROBO_CD = 10000;
     protected static final int SIMON_GLASSES_RANGE = 5;
 
     protected static final int BASIC_ATTACK_DELAY = 500;
@@ -114,7 +114,7 @@ public class UserActor extends Actor {
     protected boolean hasGlassesPoint = false;
     protected Long lastSaiProcTime = 0L;
     protected Long lastZeldronBuff = 0L;
-    protected Long lastRoboSlow = 0L;
+    protected Long lastRoboEffect = 0L;
     protected HashMap<UserActor, Integer> simonGlassesBuffProviders = new HashMap<>(2);
 
     // TODO: Add all stats into UserActor object instead of User Variables
@@ -418,10 +418,9 @@ public class UserActor extends Actor {
 
             if (roboStacks == 3) {
                 resetRoboStacks();
-                if (isNeitherStructureNorAlly(a)
-                        && System.currentTimeMillis() - lastRoboSlow >= ROBO_SLOW_CD) {
-                    lastRoboSlow = System.currentTimeMillis();
-                    a.addState(ActorState.SLOWED, ROBO_SLOW_VALUE, ROBO_SLOW_DURATION);
+                if (isNeitherStructureNorAlly(a)) {
+                    lastRoboEffect = System.currentTimeMillis();
+                    this.addState(ActorState.SLOWED, ROBO_SLOW_VALUE, ROBO_SLOW_DURATION);
                 }
             }
 
@@ -1272,22 +1271,25 @@ public class UserActor extends Actor {
             }
 
             if (ChampionData.getJunkLevel(this, "junk_3_robo_suit") > 0) {
-                if (this.roboStacks < 3) {
+                boolean ready = System.currentTimeMillis() - lastRoboEffect >= ROBO_CD;
+
+                if (this.roboStacks < 3 && ready) {
                     this.roboStacks++;
                     this.updateStatMenu("speed");
+
                     if (this.roboStacks == 3)
                         ExtensionCommands.createActorFX(
-                                this.parentExt,
-                                this.room,
-                                this.id,
+                                parentExt,
+                                room,
+                                id,
                                 "statusEffect_speed",
                                 1000 * 60 * 5,
-                                this.id + "_roboSpeed",
+                                id + "_roboSpeed",
                                 true,
                                 "",
                                 true,
                                 false,
-                                this.team);
+                                team);
                 }
             }
 
@@ -2163,10 +2165,6 @@ public class UserActor extends Actor {
             Console.debugLog("Robe stacks: " + this.robeStacks);
             this.updateStatMenu("coolDownReduction");
         }
-    }
-
-    public boolean getState(ActorState state) {
-        return this.states.get(state);
     }
 
     public void addGameStat(String stat, double value) {

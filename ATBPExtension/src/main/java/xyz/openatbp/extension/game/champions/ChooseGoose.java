@@ -24,8 +24,8 @@ public class ChooseGoose extends UserActor {
     private static final int PASSIVE_BUFF_DURATION = 6000;
     private static final double PASSIVE_SPEED_VALUE = 0.2;
     private static final double PASSIVE_ARMOR_VALUE = 0.2;
-    private static final int PASSIVE_HP_INCREASE_PER_CHEST = 5;
-    private static final double PASSIVE_MAX_HP_HEAL_VALUE = 0.05;
+    private static final int PASSIVE_HP_INCREASE_PER_CHEST = 10;
+    private static final double PASSIVE_MAX_HP_HEAL_VALUE = 0.25;
 
     private static final double Q_AS_BUFF_VALUE = -0.2;
     private static final int Q_DURATION = 5000;
@@ -36,14 +36,13 @@ public class ChooseGoose extends UserActor {
     private static final float Q_ARMOR_DEBUFF_VALUE = 0.2f;
     private static final int Q_ARMOR_DEBUFF_DURATION = 3000;
 
-    private static final double W_JUMP_SPEED = 14d;
+    private static final double W_JUMP_SPEED = 16d;
     private static final float W_IMPACT_RADIUS = 2f;
     private static final int W_SILENCE_DURATION = 1000;
+    private static final double W_ARMOR_BUFF_VALUE = 0.3;
+    private static final int W_BUFF_DURATION = 2500;
 
-    private static final double E_ARMOR_BUFF_VALUE = 0.2;
-    private static final double E_SLOW_VALUE = 0.4d;
-    private static final int E_SLOW_DURATION = 2000;
-    private static final int E_BUFF_DURATION = 2000;
+    private static final int E_ROOT_DURATION = 2000;
 
     private Chest chest = null;
     private Long lastChestSpawn = 0L;
@@ -206,13 +205,16 @@ public class ChooseGoose extends UserActor {
                 canCast[1] = false;
                 jumpActive = true;
 
+                String sound = "sfx_choosegoose_w_jump";
+
                 Point2D ogLocation = location;
                 Point2D dPoint = dash(dest, true, W_JUMP_SPEED);
                 double time = ogLocation.distance(dPoint) / W_JUMP_SPEED;
                 int wTime = (int) (time * 1000);
+
                 ExtensionCommands.actorAnimate(parentExt, room, id, "spell2a", wTime, false);
-                ExtensionCommands.playSound(
-                        parentExt, room, id, "sfx_choosegoose_w_jump", location);
+                ExtensionCommands.playSound(parentExt, room, id, sound, location);
+
                 ExtensionCommands.createActorFX(
                         parentExt,
                         room,
@@ -294,13 +296,6 @@ public class ChooseGoose extends UserActor {
 
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
-        if (attackData.has("spellName")) {
-            String sn = attackData.get("spellName").asText();
-            if (sn.contains("spell_2")) {
-                canCast[1] = true;
-                ExtensionCommands.actorAbilityResponse(parentExt, player, "w", true, 0, 0);
-            }
-        }
         if (a.getActorType() == ActorType.PLAYER || a instanceof Bot) spawnChest(a);
         super.handleKill(a, attackData);
     }
@@ -369,11 +364,14 @@ public class ChooseGoose extends UserActor {
     }
 
     private void fireProjectile(Point2D dest, JsonNode spellData) {
-        Line2D line = Champion.getAbilityLine(location, dest, 7f);
+        float range = 7f;
+        Line2D line = Champion.getAbilityLine(location, dest, range);
+        String asset = "projectile_choosegoose";
+
         GooseProjectile projectile =
-                new GooseProjectile(
-                        parentExt, this, line, 11f, 0.5f, "projectile_choosegoose", spellData);
-        fireProjectile(projectile, location, dest, 7f);
+                new GooseProjectile(parentExt, this, line, 11f, 0.5f, asset, spellData);
+
+        fireProjectile(projectile, location, dest, range);
 
         ExtensionCommands.createActorFX(
                 parentExt,
@@ -420,8 +418,9 @@ public class ChooseGoose extends UserActor {
 
             if (getHealth() > 0) {
                 ExtensionCommands.actorAnimate(parentExt, room, id, "spell2b", 500, false);
-                ExtensionCommands.playSound(
-                        parentExt, room, id, "sfx_choosegoose_w_impact", location);
+                String sound = "sfx_choosegoose_w_impact";
+
+                ExtensionCommands.playSound(parentExt, room, id, sound, location);
 
                 ExtensionCommands.createWorldFX(
                         parentExt,
@@ -460,6 +459,37 @@ public class ChooseGoose extends UserActor {
                         a.addState(ActorState.SILENCED, 0, W_SILENCE_DURATION);
                     }
                 }
+
+                ExtensionCommands.createActorFX(
+                        parentExt,
+                        room,
+                        id,
+                        "jake_shield",
+                        W_BUFF_DURATION,
+                        id + "_wShield",
+                        true,
+                        "mixamorig:Spine",
+                        false,
+                        false,
+                        team);
+
+                double wArmorDelta = getPlayerStat("armor") * W_ARMOR_BUFF_VALUE;
+
+                addState(ActorState.IMMUNITY, 0, W_BUFF_DURATION);
+                addEffect("armor", wArmorDelta, W_BUFF_DURATION);
+
+                ExtensionCommands.createActorFX(
+                        parentExt,
+                        room,
+                        id,
+                        "statusEffect_immunity",
+                        W_BUFF_DURATION,
+                        id + "_wImmunity",
+                        true,
+                        "displayBar",
+                        false,
+                        false,
+                        team);
             }
         }
 
@@ -474,6 +504,7 @@ public class ChooseGoose extends UserActor {
             ExtensionCommands.swapActorAsset(parentExt, room, id, "choosegoose");
             ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 1, false);
             isEActive = false;
+            interruptE = false;
             eProjectileFired = false;
         }
 
@@ -594,11 +625,15 @@ public class ChooseGoose extends UserActor {
                 Champion.handleStatusIcon(
                         parentExt, ua, "icon_choosegoose_passive", desc, PASSIVE_BUFF_DURATION);
 
-                ChooseGoose.this.increaseStat("health", PASSIVE_HP_INCREASE_PER_CHEST);
-                int delta = (int) (ua.getStat("health") * PASSIVE_MAX_HP_HEAL_VALUE);
+                int delta = (int) (a.getStat("health") * PASSIVE_MAX_HP_HEAL_VALUE);
 
-                if (ua.getHealth() != ua.getMaxHealth() && !ua.isDead()) {
-                    ua.changeHealth(delta);
+                int maxHealth = ChooseGoose.this.getMaxHealth();
+                int currentHealth = ChooseGoose.this.getHealth();
+
+                a.setHealth(currentHealth, maxHealth + PASSIVE_HP_INCREASE_PER_CHEST);
+
+                if (a.getHealth() != a.getMaxHealth() && !a.isDead()) {
+                    a.heal(delta);
                 }
             }
             ExtensionCommands.destroyActor(parentExt, room, id);
@@ -699,38 +734,7 @@ public class ChooseGoose extends UserActor {
                     "sfx_choosegoose_e_explosion",
                     victim.getLocation());
 
-            victim.addState(ActorState.SLOWED, E_SLOW_VALUE, E_SLOW_DURATION);
-
-            ExtensionCommands.createActorFX(
-                    parentExt,
-                    room,
-                    ChooseGoose.this.id,
-                    "jake_shield",
-                    E_BUFF_DURATION,
-                    ChooseGoose.this.id + "_eShield",
-                    true,
-                    "mixamorig:Spine",
-                    false,
-                    false,
-                    team);
-
-            double eArmorDelta = ChooseGoose.this.getPlayerStat("armor") * E_ARMOR_BUFF_VALUE;
-
-            ChooseGoose.this.addState(ActorState.IMMUNITY, 0, E_BUFF_DURATION);
-            ChooseGoose.this.addEffect("armor", eArmorDelta, E_BUFF_DURATION);
-
-            ExtensionCommands.createActorFX(
-                    parentExt,
-                    room,
-                    ChooseGoose.this.id,
-                    "statusEffect_immunity",
-                    E_BUFF_DURATION,
-                    ChooseGoose.this.id + "_ultImmunity",
-                    true,
-                    "displayBar",
-                    false,
-                    false,
-                    team);
+            victim.addState(ActorState.ROOTED, 0, E_ROOT_DURATION);
             destroy();
         }
     }

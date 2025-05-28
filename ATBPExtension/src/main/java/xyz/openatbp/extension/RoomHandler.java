@@ -34,6 +34,10 @@ public abstract class RoomHandler implements Runnable {
     protected static final int KEEOTH_SPAWN_RATE = 120;
     protected static final int GOO_SPAWN_RATE = 90;
     protected static final int MONSTER_DEBUG_SPAWN_RATE = 10;
+    public static final double ALTAR_BUFF = 0.25;
+    public static final double GOO_ALTAR_BUFF = 1.5;
+    public static final int ALTAR_BUFF_DURATION = 60000;
+    public static final int GOO_ALTAR_CAPTURE_EXP = 25;
     protected final String[] SPAWNS;
     protected final int HP_SPAWN_RATE_SEC;
 
@@ -365,7 +369,9 @@ public abstract class RoomHandler implements Runnable {
                 if (secondsRan % 60 == 0) {
                     this.printActors();
                 }
+
                 secondsRan++;
+
                 if (secondsRan % 5 == 0) {
                     this.handlePassiveXP();
                     if (!isAnnouncingKill) {
@@ -373,7 +379,7 @@ public abstract class RoomHandler implements Runnable {
                     }
                 }
                 if (secondsRan == 1
-                        || this.playMainMusic && secondsRan < (60 * 13) && !this.gameOver) {
+                        || this.playMainMusic && secondsRan < (60 * 13 + 1) && !this.gameOver) {
                     playMainMusic(parentExt, room);
                     this.playMainMusic = false;
                 }
@@ -381,14 +387,14 @@ public abstract class RoomHandler implements Runnable {
                     playTowerMusic();
                     this.playTowerMusic = false;
                 }
-                if (secondsRan == (60 * 7) + 30) {
+                if (secondsRan == (60 * 7) + 31) {
                     ExtensionCommands.playSound(
                             parentExt,
                             room,
                             "global",
                             "announcer/time_half",
                             new Point2D.Float(0f, 0f));
-                } else if (secondsRan == (60 * 13)) {
+                } else if (secondsRan == (60 * 13 + 1)) {
                     ExtensionCommands.playSound(
                             parentExt,
                             room,
@@ -401,7 +407,8 @@ public abstract class RoomHandler implements Runnable {
                             "music",
                             "music/music_time_low",
                             new Point2D.Float(0f, 0f));
-                } else if (secondsRan == 15 * 60) {
+                }
+                if (secondsRan == 15 * 60 + 1) {
                     ISFSObject scoreObject = room.getVariable("score").getSFSObjectValue();
                     int blueScore = scoreObject.getInt("blue");
                     int purpleScore = scoreObject.getInt("purple");
@@ -420,8 +427,6 @@ public abstract class RoomHandler implements Runnable {
                 } else {
                     handleAltars();
                     int timeToSendToClient = mSecondsRan - 1000;
-                    // I have no idea why, but sending this value makes the server and client clocks
-                    // synchronized
 
                     ExtensionCommands.updateTime(parentExt, room, timeToSendToClient);
                 }
@@ -796,7 +801,7 @@ public abstract class RoomHandler implements Runnable {
         }
         if (i == 1) addScore(null, team, 15 + (gooUsers.size() * 5));
         else addScore(null, team, 10 + (gooUsers.size() * 5));
-        cooldowns.put(altarId + "__" + "altar", ALTAR_LOCK_TIME_SEC);
+        cooldowns.put(i + "__" + "altar", ALTAR_LOCK_TIME_SEC);
         ExtensionCommands.createActorFX(
                 this.parentExt,
                 this.room,
@@ -818,52 +823,71 @@ public abstract class RoomHandler implements Runnable {
 
     protected void handleAltarCaptureBuff(
             int i, int team, String altarId, List<UserActor> gooUsers) {
-        for (UserActor u : this.players) {
-            if (u.getTeam() == team) {
-                try {
-                    if (i == 1) {
-                        u.addEffect(
-                                "attackDamage",
-                                (u.getStat("attackDamage") * 0.25d)
-                                        * (gooUsers.contains(u) ? 1.5 : 1),
-                                1000 * 60,
-                                "altar_buff_offense",
-                                "");
-                        u.addEffect(
-                                "spellDamage",
-                                (u.getStat("spellDamage") * 0.25d)
-                                        * (gooUsers.contains(u) ? 1.5 : 1),
-                                1000 * 60);
-                        Champion.handleStatusIcon(
-                                parentExt, u, "icon_altar_attack", "altar2_description", 1000 * 60);
+
+        try {
+            String killerId = null;
+
+            for (Actor a : getActors()) {
+                if ((a instanceof UserActor || a instanceof Bot) && a.getTeam() == team) {
+
+                    int DAMAGE_ALTAR = 1;
+                    boolean hasGooBuff = a instanceof UserActor && gooUsers.contains(a);
+
+                    if (killerId == null) killerId = a.getId();
+
+                    double delta1;
+                    double delta2;
+
+                    String stat1;
+                    String stat2;
+
+                    String fxId;
+                    String icon;
+                    String desc;
+
+                    if (i == DAMAGE_ALTAR) {
+                        stat1 = "attackDamage";
+                        stat2 = "spellDamage";
+
+                        fxId = "altar_buff_offense";
+                        icon = "icon_altar_attack";
+                        desc = "altar2_description";
+
                     } else {
-                        double addArmor = u.getStat("armor") * 0.25d;
-                        double addMR = u.getStat("spellResist") * 0.25d;
-                        if (addArmor == 0) addArmor = 5d;
-                        if (addMR == 0) addMR = 5d;
-                        u.addEffect(
-                                "armor",
-                                (addArmor) * (gooUsers.contains(u) ? 1.5 : 1),
-                                1000 * 60,
-                                "altar_buff_defense",
-                                "");
-                        u.addEffect(
-                                "spellResist",
-                                (addMR) * (gooUsers.contains(u) ? 1.5 : 1),
-                                1000 * 60);
-                        Champion.handleStatusIcon(
-                                parentExt, u, "icon_altar_armor", "altar1_description", 1000 * 60);
+                        stat1 = "armor";
+                        stat2 = "spellResist";
+
+                        fxId = "altar_buff_defense";
+                        icon = "icon_altar_armor";
+                        desc = "altar1_description";
                     }
-                    if (gooUsers.contains(u)) {
-                        u.addXP(25);
+                    delta1 = a.getStat(stat1) * ALTAR_BUFF;
+                    delta2 = a.getStat(stat2) * ALTAR_BUFF;
+
+                    if (hasGooBuff) {
+                        delta1 *= GOO_ALTAR_BUFF;
+                        delta2 *= GOO_ALTAR_BUFF;
                     }
-                    // cooldowns.put(u.getId()+"__buff__"+buffName,60);
-                    ExtensionCommands.knockOutActor(
-                            parentExt, u.getUser(), altarId, u.getId(), 180);
-                } catch (Exception e) {
-                    e.printStackTrace();
+
+                    a.addEffect(stat1, delta1, ALTAR_BUFF_DURATION, fxId, "");
+                    a.addEffect(stat2, delta2, ALTAR_BUFF_DURATION);
+
+                    if (a instanceof UserActor) {
+                        UserActor ua = (UserActor) a;
+
+                        Champion.handleStatusIcon(parentExt, ua, icon, desc, ALTAR_BUFF_DURATION);
+
+                        if (hasGooBuff) {
+                            ua.addXP(GOO_ALTAR_CAPTURE_EXP);
+                        }
+                    }
                 }
             }
+            ExtensionCommands.knockOutActor(
+                    parentExt, room, altarId, killerId, ALTAR_LOCK_TIME_SEC);
+
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 
@@ -872,8 +896,7 @@ public abstract class RoomHandler implements Runnable {
         String groupId = this.room.getGroupId();
         if (groupId.equals("PVP") || groupId.equals("PVE")) {
             altarNum = i == 0 ? 1 : i == 1 ? 0 : i;
-        } else { // i0 - bot, altar
-
+        } else {
             // altar num 0 - top
             // altar num 2 - bot
             // i 0 - bot
@@ -991,7 +1014,7 @@ public abstract class RoomHandler implements Runnable {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            Console.logWarning("ANNOUNCER EXCEPTION OCCURED");
+            Console.logWarning("ANNOUNCER EXCEPTION OCCURRED");
         }
     }
 
@@ -1233,19 +1256,16 @@ public abstract class RoomHandler implements Runnable {
             String[] keyVal = key.split("__");
             String id = keyVal[0];
             String cooldown = keyVal[1];
-            String value = "";
-            if (keyVal.length > 2) value = keyVal[2];
             int time = cooldowns.get(key) - 1;
             if (time <= 0) {
                 switch (cooldown) {
                     case "altar":
                         for (User u : room.getUserList()) {
-                            int altarIndex = Integer.parseInt(id.split("_")[1]);
                             ISFSObject data = new SFSObject();
-                            int altarNum = -1;
-                            if (id.equalsIgnoreCase("altar_0")) altarNum = 1;
-                            else if (id.equalsIgnoreCase("altar_1")) altarNum = 0;
-                            else if (id.equalsIgnoreCase("altar_2")) altarNum = 2;
+
+                            int altarIndex = Integer.parseInt(id);
+                            int altarNum = getAltarNum(altarIndex);
+
                             data.putInt("altar", altarNum);
                             data.putInt("team", 2);
                             data.putBool("locked", false);

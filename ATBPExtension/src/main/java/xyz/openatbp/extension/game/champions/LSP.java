@@ -309,6 +309,7 @@ public class LSP extends UserActor {
         private List<Actor> victims;
         private double damageReduction = 0d;
         private double healReduction = 0d;
+        ArrayList<Actor> affectedActors = new ArrayList<>();
 
         public LSPUltProjectile(
                 ATBPExtension parentExt,
@@ -325,37 +326,33 @@ public class LSP extends UserActor {
         protected void hit(Actor victim) {
             this.victims.add(victim);
             JsonNode spellData = this.parentExt.getAttackData(LSP.this.avatar, "spell3");
-            if (victim.getTeam() == LSP.this.team) {
-                int healValue = (int) (getSpellDamage(spellData, false) * (1 - this.healReduction));
+            if (victim.getTeam() == LSP.this.team && !affectedActors.contains(victim)) {
+
+                int healValue = (int) (getSpellDamage(spellData, false) * (1 - healReduction));
                 victim.changeHealth(healValue);
-                this.healReduction += 0.3d;
-                if (this.healReduction > 0.7d) this.healReduction = 0.7d;
-            } else {
-                double damage = getSpellDamage(spellData, true) * (1 - this.damageReduction);
+                healReduction += 0.3d;
+                if (healReduction > 0.7d) healReduction = 0.7d;
+
+            } else if (!affectedActors.contains(victim)) {
+
+                double damage = getSpellDamage(spellData, true) * (1 - damageReduction);
                 victim.addToDamageQueue(LSP.this, damage, spellData, false);
-                this.damageReduction += 0.3d;
-                if (this.damageReduction > 0.7d) this.damageReduction = 0.7d;
+                damageReduction += 0.3d;
+                if (damageReduction > 0.7d) damageReduction = 0.7d;
+            }
+
+            if (!affectedActors.contains(victim)) {
+                affectedActors.add(victim);
             }
         }
 
         @Override
-        public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            float searchArea = hitbox * 2;
-            List<Actor> actorsInRadius = roomHandler.getActorsInRadius(location, searchArea);
-
-            actorsInRadius.remove(LSP.this);
-            for (Actor a : actorsInRadius) {
-                if (!this.victims.contains(a)) {
-                    JsonNode actorData = parentExt.getActorData(a.getAvatar());
-                    double collisionRadius = actorData.get("collisionRadius").asDouble();
-
-                    if (a.getLocation().distance(location) <= hitbox + collisionRadius
-                            && isTargetable(a)) {
-                        return a;
-                    }
-                }
-            }
-            return null;
+        public boolean isTargetable(Actor a) {
+            String avatar = a.getAvatar();
+            return !avatar.equals("neptr_mine")
+                    && !avatar.equals("choosegoose_chest")
+                    && a.getActorType() != ActorType.TOWER
+                    && !a.equals(LSP.this);
         }
     }
 

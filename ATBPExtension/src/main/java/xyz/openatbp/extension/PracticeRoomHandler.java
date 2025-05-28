@@ -53,33 +53,6 @@ public class PracticeRoomHandler extends RoomHandler {
     }
 
     @Override
-    protected void handleAltarCaptureBuff(
-            int i, int team, String altarId, List<UserActor> gooUsers) {
-        super.handleAltarCaptureBuff(i, team, altarId, gooUsers);
-
-        if (room.getGroupId().equals("Practice") && team == 1) {
-            int duration = 1000 * 60;
-
-            if (i == 1) {
-                finnBot.addEffect(
-                        "attackDamage",
-                        finnBot.getStat("attackDamage") * 0.25,
-                        duration,
-                        "altar_buff_offense",
-                        "");
-                finnBot.addEffect("spellDamage", finnBot.getStat("attackDamage") * 0.25, duration);
-            } else {
-                double addArmor = finnBot.getStat("armor") * 0.25d;
-                double addMR = finnBot.getStat("spellResist") * 0.25d;
-                if (addArmor == 0) addArmor = 5d;
-                if (addMR == 0) addMR = 5d;
-                finnBot.addEffect("armor", addArmor, duration, "altar_buff_defense", "");
-                finnBot.addEffect("spellResist", addMR, duration);
-            }
-        }
-    }
-
-    @Override
     public void handleMinionSpawns() {
         int minionWave = secondsRan / 30;
         if (minionWave != this.currentMinionWave) {

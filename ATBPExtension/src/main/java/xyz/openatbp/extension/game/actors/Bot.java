@@ -47,7 +47,9 @@ public class Bot extends Actor {
     private static final int POLYMORPH_DURATION = 3000;
     private static final int FOUNTAIN_HEAL = 250;
 
-    private int deathTime = 10;
+    private final boolean testing = false;
+
+    private int deathTime = testing ? 1 : 10;
     private int level = 1;
     private int xp = 0;
     private boolean isAutoAttacking = false;
@@ -350,9 +352,11 @@ public class Bot extends Actor {
         }
 
         if (msRan % 1000 == 0) {
-            int newDeath = 10 + ((msRan / 1000) / 60);
-            if (newDeath != deathTime) deathTime = newDeath;
-            if (currentHealth < maxHealth) regenHealth();
+            if (!testing) {
+                int newDeath = 10 + ((msRan / 1000) / 60);
+                if (newDeath != deathTime) deathTime = newDeath;
+                if (currentHealth < maxHealth) regenHealth();
+            }
         }
 
         if (msRan % 500 == 0) {
