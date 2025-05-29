@@ -173,8 +173,8 @@ const ALL_ICONS_METADATA = {
       text: 'Score 1000 Total KOs in Ranked matches',
     },
   },
-  'Mr Death': {
-    src: 'assets/pfp/Mr Death.jpg',
+  'Mr. Death': {
+    src: 'assets/pfp/Mr. Death.jpg',
     rarity: 'Algebraic',
     unlock: {
       stat: 'largestSpree',
