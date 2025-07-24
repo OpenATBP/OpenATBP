@@ -4,6 +4,7 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -15,20 +16,22 @@ import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
-import xyz.openatbp.extension.game.champions.CinnamonBun;
 
 public class Tower extends Actor {
+    private static final float DAMAGE_REDUCTION_NO_MINIONS = 0.85f;
+    private static final int SCORE_VALUE = 100;
     private final int[] PURPLE_TOWER_NUM = {2, 1};
     private final int[] BLUE_TOWER_NUM = {5, 4};
     private long lastHit;
     private boolean destroyed = false;
     protected long lastMissSoundTime = 0;
     protected long lastSpellDeniedTime = 0;
-    protected List<Actor> nearbyActors;
+    protected List<Actor> actorsInRadius;
     private boolean isFocusingPlayer = false;
     private boolean isFocusingCompanion = false;
     private int numberOfAttacks = 0;
     private List<UserActor> usersTargeted;
+    private boolean reduceDmgTaken = false;
 
     public Tower(ATBPExtension parentExt, Room room, String id, int team, Point2D location) {
         this.currentHealth = 800;
@@ -96,7 +99,7 @@ public class Tower extends Actor {
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         if (this.destroyed) return true;
-        if (this.target == null && nearbyActors.isEmpty()) {
+        if (this.target == null && actorsInRadius.isEmpty()) {
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
                 if (System.currentTimeMillis() - this.lastMissSoundTime >= 1500
@@ -124,8 +127,9 @@ public class Tower extends Actor {
             }
             return false;
         } else if (a.getActorType() == ActorType.MINION) damage *= 0.5;
-        if (a.getActorType() == ActorType.PLAYER && a.getClass() == CinnamonBun.class)
-            damage *= 0.75d;
+
+        if (reduceDmgTaken) damage *= (1 - DAMAGE_REDUCTION_NO_MINIONS);
+
         this.changeHealth(this.getMitigatedDamage(damage, this.getAttackType(attackData), a) * -1);
         boolean notify = System.currentTimeMillis() - this.lastHit >= 1000 * 5;
         if (notify) ExtensionCommands.towerAttacked(parentExt, this.room, this.getTowerNum());
@@ -229,7 +233,12 @@ public class Tower extends Actor {
                 earner = (UserActor) a;
                 ua.addGameStat("towers", 1);
             }
-            this.parentExt.getRoomHandler(this.room.getName()).addScore(earner, a.getTeam(), 50);
+            this.parentExt
+                    .getRoomHandler(this.room.getName())
+                    .addScore(earner, a.getTeam(), SCORE_VALUE);
+        }
+        if (target != null && target instanceof Bot) {
+            ExtensionCommands.removeFx(parentExt, room, id + "_target");
         }
     }
 
@@ -254,28 +263,16 @@ public class Tower extends Actor {
             if (!this.destroyed) {
                 this.handleDamageQueue();
                 if (this.destroyed) return;
-                nearbyActors =
-                        Champion.getEnemyActorsInRadius(
-                                this.parentExt.getRoomHandler(this.room.getName()),
-                                this.team,
-                                this.location,
-                                (float) this.getPlayerStat("attackRange"));
-                if (!nearbyActors.isEmpty()) {
-                    List<Actor> minionsInRadius = new ArrayList<>();
-                    for (Actor a : nearbyActors) {
-                        if (a.getActorType() == ActorType.MINION) {
-                            minionsInRadius.add(a);
-                        }
-                    }
-                    if (minionsInRadius.isEmpty()) {
-                        this.setStat("armor", 80);
-                        this.setStat("spellResist", 90);
-                    } else {
-                        this.setStat("armor", 20);
-                        this.setStat("spellResist", 30);
-                    }
-                }
-                if (nearbyActors.isEmpty() && this.attackCooldown != 1000) {
+
+                RoomHandler rh = parentExt.getRoomHandler(room.getName());
+                float radius = (float) getPlayerStat("attackRange");
+                actorsInRadius = Champion.getEnemyActorsInRadius(rh, team, location, radius);
+
+                Predicate<Actor> isMinion = actor -> actor.getActorType() == ActorType.MINION;
+
+                reduceDmgTaken = actorsInRadius.stream().noneMatch(isMinion);
+
+                if (actorsInRadius.isEmpty() && this.attackCooldown != 1000) {
                     if (numberOfAttacks != 0) this.numberOfAttacks = 0;
                     this.attackCooldown = 1000;
                 }
@@ -283,7 +280,7 @@ public class Tower extends Actor {
                     boolean hasMinion = false;
                     double distance = 1000;
                     Actor potentialTarget = null;
-                    for (Actor a : nearbyActors) {
+                    for (Actor a : actorsInRadius) {
                         if (hasMinion && a.getActorType() == ActorType.MINION) {
                             if (a.getLocation().distance(this.location)
                                     < distance) { // If minions exist in range, it only focuses on
@@ -294,19 +291,18 @@ public class Tower extends Actor {
                             }
                         } else if (!hasMinion
                                 && (a.getActorType() == ActorType.MINION
-                                        || a.getActorType()
-                                                == ActorType
-                                                        .COMPANION)) { // If minions have not been
+                                        || a.getActorType() == ActorType.COMPANION
+                                                && !(a
+                                                        instanceof
+                                                        Bot))) { // If minions have not been
                             // found yet but it just
                             // found
                             // one, sets the first target to be searched
                             hasMinion = true;
                             potentialTarget = a;
                             distance = a.getLocation().distance(this.location);
-                        } else if (!hasMinion
-                                && a.getActorType()
-                                        == ActorType
-                                                .PLAYER) { // If potential target is a player and no
+                        } else if (!hasMinion && a.getActorType() == ActorType.PLAYER
+                                || a instanceof Bot) { // If potential target is a player and no
                             // minion has been found,
                             // starts processing closest player
                             if (a.getLocation().distance(this.location) < distance) {
@@ -401,11 +397,15 @@ public class Tower extends Actor {
                         }
                     }
                     if (this.attackCooldown > 0) this.reduceAttackCooldown();
-                    if (nearbyActors.isEmpty()) {
-                        if (this.target != null && this.target.getActorType() == ActorType.PLAYER) {
-                            UserActor ua = (UserActor) this.target;
-                            ExtensionCommands.removeFx(
-                                    this.parentExt, ua.getUser(), this.id + "_aggro");
+                    if (actorsInRadius.isEmpty()) {
+                        if (this.target != null
+                                && (this.target.getActorType() == ActorType.PLAYER
+                                        || target instanceof Bot)) {
+                            if (target.getActorType() == ActorType.PLAYER) {
+                                UserActor ua = (UserActor) this.target;
+                                ExtensionCommands.removeFx(
+                                        this.parentExt, ua.getUser(), this.id + "_aggro");
+                            }
                             ExtensionCommands.removeFx(
                                     this.parentExt, this.room, this.id + "_target");
                         }
@@ -469,7 +469,9 @@ public class Tower extends Actor {
         if (!this.id.contains("gumball")) {
             String[] towerIdComponents = this.id.split("_");
             String roomGroup = room.getGroupId();
-            if (!roomGroup.equals("Tutorial") && !roomGroup.equals("Practice")) {
+            if (!roomGroup.equals("Tutorial")
+                    && !roomGroup.equals("Practice")
+                    && !roomGroup.equals("ARAM")) {
                 if (towerIdComponents[0].contains("blue")) {
                     return BLUE_TOWER_NUM[
                             (Integer.parseInt(towerIdComponents[1].replace("tower", ""))) - 1];
@@ -481,14 +483,6 @@ public class Tower extends Actor {
                 return Integer.parseInt(towerIdComponents[1].replace("tower", ""));
             }
         }
-        /*String[] towerIdComponents = this.id.split("_");
-        if(!room.getGroupId().equalsIgnoreCase("practice")){
-            if(towerIdComponents[0].equalsIgnoreCase("blue")){
-                return BLUE_TOWER_NUM[Integer.parseInt(towerIdComponents[1].replace("tower",""))-1];
-            }else{
-                return PURPLE_TOWER_NUM[Integer.parseInt(towerIdComponents[1].replace("tower",""))-1];
-            }
-        }*/
         return 0;
     }
 
@@ -514,7 +508,7 @@ public class Tower extends Actor {
     }
 
     public void targetPlayer(UserActor user) {
-        if (this.usersTargeted.size() > 0) {
+        if (!this.usersTargeted.isEmpty()) {
             for (UserActor t : new ArrayList<>(this.usersTargeted)) {
                 ExtensionCommands.removeFx(this.parentExt, t.getUser(), this.id + "_aggro");
                 this.usersTargeted.remove(t);

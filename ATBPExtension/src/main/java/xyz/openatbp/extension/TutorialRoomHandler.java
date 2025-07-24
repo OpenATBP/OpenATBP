@@ -43,7 +43,7 @@ public class TutorialRoomHandler extends RoomHandler {
     private TutorialBot jakeBot;
 
     public TutorialRoomHandler(ATBPExtension parentExt, Room room) {
-        super(parentExt, room);
+        super(parentExt, room, GameManager.L1_SPAWNS, MapData.NORMAL_HP_SPAWN_RATE);
         HashMap<String, Point2D> towers0 = MapData.getPTowerActorData(0);
         HashMap<String, Point2D> towers1 = MapData.getPTowerActorData(1);
         for (String key : towers0.keySet()) {
@@ -72,36 +72,6 @@ public class TutorialRoomHandler extends RoomHandler {
                     tutorialPlayer.getTeam());
             tutorialPlayer.setCanMove(false);
             tutorialPlayer.setCanCast(false, false, false);
-        }
-    }
-
-    @Override
-    public void handleSpawns() {
-        ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
-        for (String s :
-                GameManager.L2_SPAWNS) { // Check all mob/health spawns for how long it's been
-            // since dead
-            if (s.length() > 3) {
-                int spawnRate = 45; // Mob spawn rate
-                if (monsterDebug) spawnRate = 10;
-                if (spawns.getInt(s)
-                        == spawnRate) { // Mob timers will be set to 0 when killed or health
-                    // when taken
-                    spawnMonster(s);
-                    spawns.putInt(s, spawns.getInt(s) + 1);
-                } else {
-                    spawns.putInt(s, spawns.getInt(s) + 1);
-                }
-            } else {
-                int time = spawns.getInt(s);
-                if ((this.secondsRan <= 91 && time == 90) || (this.secondsRan > 91 && time == 60)) {
-                    spawnHealth(s);
-                } else if ((this.secondsRan <= 91 && time < 90)
-                        || (this.secondsRan > 91 && time < 60)) {
-                    time++;
-                    spawns.putInt(s, time);
-                }
-            }
         }
     }
 
@@ -182,26 +152,12 @@ public class TutorialRoomHandler extends RoomHandler {
                     else this.gameOver(-1);
                     return;
                 }
-                if (room.getUserList().isEmpty())
+                if (room.getUserList().isEmpty()) {
                     parentExt.stopScript(
                             room.getName(), true); // If no one is in the room, stop running.
-                else {
+                } else {
                     handleAltars();
-                    ExtensionCommands.updateTime(parentExt, this.room, mSecondsRan);
-                }
-                ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
-                for (String s : GameManager.L2_SPAWNS) {
-                    if (s.length() == 3) {
-                        int time = spawns.getInt(s);
-                        if ((this.secondsRan <= 91 && time == 90)
-                                || (this.secondsRan > 91 && time == 60)) {
-                            spawnHealth(s);
-                        } else if ((this.secondsRan <= 91 && time < 90)
-                                || (this.secondsRan > 91 && time < 60)) {
-                            time++;
-                            spawns.putInt(s, time);
-                        }
-                    }
+                    handleSpawns();
                 }
                 if (currentMinionWave == 1) {
                     handleMinionSpawns();
@@ -408,7 +364,7 @@ public class TutorialRoomHandler extends RoomHandler {
                             () -> {
                                 jakeBot =
                                         new TutorialBot(
-                                                parentExt, room, 1, new Point2D.Float(48, 0), 1);
+                                                parentExt, room, 1, new Point2D.Float(48, 0));
                                 jakeBot.setLocation(new Point2D.Float(48, 0));
                                 ExtensionCommands.snapActor(
                                         parentExt,
@@ -496,42 +452,6 @@ public class TutorialRoomHandler extends RoomHandler {
     public void handleAltarGameScore(int capturingTeam, int altarIndex) {}
 
     @Override
-    public void handleHealth() {
-        for (String s : GameManager.L2_SPAWNS) {
-            if (s.length() == 3) {
-                ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
-                if (spawns.getInt(s) == 91) {
-                    for (UserActor u : players) {
-                        Point2D currentPoint = u.getLocation();
-                        if (insideHealth(currentPoint, getHealthNum(s)) && u.getHealth() > 0) {
-                            int team = u.getTeam();
-                            Point2D healthLoc = getHealthLocation(getHealthNum(s));
-                            ExtensionCommands.removeFx(parentExt, room, s + "_fx");
-                            ExtensionCommands.createActorFX(
-                                    parentExt,
-                                    room,
-                                    String.valueOf(u.getId()),
-                                    "picked_up_health_cyclops",
-                                    2000,
-                                    s + "_fx2",
-                                    true,
-                                    "",
-                                    false,
-                                    false,
-                                    team);
-                            ExtensionCommands.playSound(
-                                    parentExt, u.getRoom(), "", "sfx_health_picked_up", healthLoc);
-                            u.handleCyclopsHealing();
-                            spawns.putInt(s, 0);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    @Override
     public void gameOver(int winningTeam) {
         if (this.gameOver) return;
         try {
@@ -568,7 +488,8 @@ public class TutorialRoomHandler extends RoomHandler {
                 }
             }
             ExtensionCommands.gameOver(
-                    parentExt, this.room, dcPlayers, winningTeam, false, tutorialCoins);
+                    parentExt, room, dcPlayers, winningTeam, false, tutorialCoins);
+            parentExt.stopScript(room.getName(), false);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -614,7 +535,7 @@ public class TutorialRoomHandler extends RoomHandler {
         if (num == 0) {
             x = MapData.L1_BLUE_HEALTH_X;
             z = MapData.L1_BLUE_HEALTH_Z;
-        } else if (num == 1) {
+        } else if (num == 3) {
             x = MapData.L1_BLUE_HEALTH_X * -1;
             z = MapData.L1_BLUE_HEALTH_Z * -1;
         } else {

@@ -1,5 +1,7 @@
 package xyz.openatbp.extension.game.actors;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import com.smartfoxserver.v2.entities.Room;
 
 import xyz.openatbp.extension.*;
@@ -7,6 +9,9 @@ import xyz.openatbp.extension.game.ActorState;
 
 public class BaseTower extends Tower {
     private boolean isUnlocked = false;
+    private Long lastAction = 0L;
+    protected static final int TIME_REQUIRED_TO_REGEN = 8000;
+    protected static final float REGEN_VALUE = 0.002f;
 
     public BaseTower(ATBPExtension parentExt, Room room, String id, int team) {
         super(parentExt, room, id, team);
@@ -25,6 +30,24 @@ public class BaseTower extends Tower {
                 true,
                 this.team,
                 0f);
+    }
+
+    @Override
+    public boolean damaged(Actor a, int damage, JsonNode attackData) {
+        lastAction = System.currentTimeMillis();
+        return super.damaged(a, damage, attackData);
+    }
+
+    @Override
+    public void attack(Actor a) {
+        lastAction = System.currentTimeMillis();
+        super.attack(a);
+    }
+
+    @Override
+    public void update(int msRan) {
+        handleStructureRegen(lastAction, TIME_REQUIRED_TO_REGEN, REGEN_VALUE);
+        super.update(msRan);
     }
 
     @Override

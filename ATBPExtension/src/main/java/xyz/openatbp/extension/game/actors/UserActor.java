@@ -21,9 +21,38 @@ import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.champions.Fionna;
+import xyz.openatbp.extension.game.champions.GooMonster;
+import xyz.openatbp.extension.game.champions.Keeoth;
 import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public class UserActor extends Actor {
+    protected static final int DEMON_SWORD_AD_BUFF = 15;
+    protected static final int DEMON_SWORD_SD_BUFF = 40;
+    protected static final int NAIL_STACKS_PER_CHAMP = 7;
+    protected static final int NAIL_STACKS_PER_NON_CHAMPS = 4;
+    protected static final int LIGHTNING_SWORD_STACKS_PER_CHAMP = 7;
+    protected static final int LIGHTNING_SWORD_STACKS_PER_NON_CHAMP = 4;
+    protected static final double ROBE_CD_CHAMP_OR_JG_BOSS_KO = 1;
+    protected static final double ROBE_CD_MINION_KO = 0.2;
+    protected static final int DAMAGE_PER_NAIL_POINT = 40;
+    protected static final int DAMAGE_PER_LIGHTNING_POINT = 55;
+    protected static final int CDR_PER_ROBE_POINT = 10;
+    protected static final int SAI_PROC_COOLDOWN = 3000;
+    protected static final double GRASS_CRIT_INCREASE = 1.25d;
+    protected static final double SPEED_BOOST_PER_ROBO_STACK = 0.05;
+    protected static final double ROBO_SLOW_VALUE = 0.2;
+    protected static final int ROBO_SLOW_DURATION = 2000;
+    protected static final int ROBO_CD = 10000;
+    protected static final int SIMON_GLASSES_RANGE = 5;
+
+    protected static final int BASIC_ATTACK_DELAY = 500;
+    protected static final double DASH_SPEED = 20d;
+    protected static final int HEALTH_PACK_REGEN = 15;
+    protected static final float DC_AD_BUFF = 1.2f;
+    protected static final float DC_ARMOR_BUFF = 1.2f;
+    protected static final float DC_SPELL_RESIST_BUFF = 1.2f;
+    protected static final float DC_SPEED_BUFF = 1.15f;
+    protected static final float DC_PD_BUFF = 1.2f;
 
     protected User player;
     protected boolean autoAttackEnabled = false;
@@ -36,9 +65,6 @@ public class UserActor extends Actor {
     protected int magicNailStacks = 0;
     protected int lightningSwordStacks = 0;
     protected double robeStacks = 0;
-    protected static final int DAMAGE_PER_NAIL_POINT = 40;
-    protected static final int DAMAGE_PER_LIGHTNING_POINT = 55;
-    protected static final int CDR_PER_ROBE_POINT = 10;
     protected Map<String, Double> endGameStats = new HashMap<>();
     protected int killingSpree = 0;
     protected int multiKill = 0;
@@ -47,9 +73,6 @@ public class UserActor extends Actor {
     protected boolean[] canCast = {true, true, true};
     protected Map<String, ScheduledFuture<?>> iconHandlers = new HashMap<>();
     protected int idleTime = 0;
-    protected static final int BASIC_ATTACK_DELAY = 500;
-    protected static final double DASH_SPEED = 20d;
-    protected static final int HEALTH_PACK_REGEN = 15;
     protected boolean changeTowerAggro = false;
     protected boolean isDashing = false;
     private long lastHit = 0;
@@ -72,25 +95,27 @@ public class UserActor extends Actor {
     protected long lastAutoTargetTime = 0;
     protected long stealthEmbargo = -1;
     private boolean moonVfxActivated = false;
-    protected double glassesBuff = -1;
+    protected double glassesBuff = 0;
     protected long spellShieldCooldown = -1;
     protected boolean spellShieldActive = false;
     protected long iFrame = -1;
     protected String numbChuckVictim;
     protected boolean numbSlow = false;
-    protected List<UserActor> simonUsers = new ArrayList<>();
     protected int roboStacks = 0;
     protected List<Monster.BuffType> activeMonsterBuffs = new ArrayList<>();
-    protected int grassSwordCooldown = -1;
-    protected String lichVictim;
-    protected int lichHandTimesHit = 0;
-    protected long lichLastHit = -1;
+    protected Actor lichHandTarget;
+    protected long lastLichHandStack = 0L;
+    protected int lichHandStacks = 0;
     protected long lastAuto = -1;
     protected long lastSpell = -1;
     protected int fightKingStacks = 0;
     protected int cosmicStacks = 0;
     private boolean flameCloakEffectActivated = false;
     protected boolean hasGlassesPoint = false;
+    protected Long lastSaiProcTime = 0L;
+    protected Long lastZeldronBuff = 0L;
+    protected Long lastRoboEffect = 0L;
+    protected HashMap<UserActor, Integer> simonGlassesBuffProviders = new HashMap<>(2);
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -182,6 +207,46 @@ public class UserActor extends Actor {
         this.canCast[2] = e;
     }
 
+    public void setLichHandTarget(Actor target) {
+        this.lichHandTarget = target;
+    }
+
+    public Actor getLichHandTarget() {
+        return this.lichHandTarget;
+    }
+
+    public void setLichHandStacks(int stacks) {
+        this.lichHandStacks = stacks;
+    }
+
+    public int getLichHandStacks() {
+        return this.lichHandStacks;
+    }
+
+    public void setLastLichHandStack(Long time) {
+        this.lastLichHandStack = time;
+    }
+
+    public Long getLastLichHandStack() {
+        return this.lastLichHandStack;
+    }
+
+    public void setLastSaiProcTime(Long time) {
+        this.lastSaiProcTime = time;
+    }
+
+    public Long getLastSaiProcTime() {
+        return this.lastSaiProcTime;
+    }
+
+    public void setLastZedronBuff(Long time) {
+        this.lastZeldronBuff = time;
+    }
+
+    public Long getLastZeldronBuff() {
+        return this.lastZeldronBuff;
+    }
+
     protected Point2D getRelativePoint(
             boolean external) { // Gets player's current location based on time
         double currentTime;
@@ -256,6 +321,10 @@ public class UserActor extends Actor {
         return lastKilled;
     }
 
+    public void setLastKilled(Long time) {
+        this.lastKilled = time;
+    }
+
     public List<UserActor> getKilledPlayers() {
         return killedPlayers;
     }
@@ -325,17 +394,6 @@ public class UserActor extends Actor {
         ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "fight_king_icon");
     }
 
-    public boolean lichHandDamageApplies(Actor a) {
-        if (this.lichVictim == null || a == null) return false;
-        Console.debugLog("");
-        return ChampionData.getJunkLevel(this, "junk_2_lich_hand") > 0
-                && this.lichVictim.equalsIgnoreCase(a.getId());
-    }
-
-    public double getLichHandTimesHit() {
-        return this.lichHandTimesHit;
-    }
-
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         try {
             if (invincibleDebug) return false;
@@ -344,6 +402,7 @@ public class UserActor extends Actor {
             if (a.getActorType() == ActorType.COMPANION) {
                 checkTowerAggroCompanion(a);
             }
+
             if (this.pickedUpHealthPack) {
                 removeHealthPackEffect();
             }
@@ -356,6 +415,15 @@ public class UserActor extends Actor {
                         "sfx_turret_shot_hits_you",
                         this.location);
             }
+
+            if (roboStacks == 3) {
+                resetRoboStacks();
+                if (isNeitherStructureNorAlly(a)) {
+                    lastRoboEffect = System.currentTimeMillis();
+                    this.addState(ActorState.SLOWED, ROBO_SLOW_VALUE, ROBO_SLOW_DURATION);
+                }
+            }
+
             AttackType type = this.getAttackType(attackData);
             this.preventStealth();
             double moonChance = ChampionData.getCustomJunkStat(this, "junk_3_battle_moon");
@@ -392,28 +460,18 @@ public class UserActor extends Actor {
                 if (ChampionData.getJunkLevel(ua, "junk_2_peppermint_tank") > 0
                         && type == AttackType.SPELL) {
                     if (ua.getLocation().distance(this.location) < 2d) {
-                        newDamage +=
-                                (newDamage
-                                        * ChampionData.getCustomJunkStat(
-                                                ua, "junk_2_peppermint_tank"));
+                        String item = "junk_2_peppermint_tank";
+                        double junkStat = ChampionData.getCustomJunkStat(ua, item);
+                        newDamage += (int) (newDamage * junkStat);
                     }
-                }
-                if (ua.lichHandDamageApplies(this)) {
-                    Console.debugLog("Lich hand damage " + ua.getLichHandTimesHit());
-                    newDamage += ((double) newDamage * (0.1d * ua.getLichHandTimesHit()));
-                    ua.handleLichHandHit();
-                } else if (ChampionData.getJunkLevel(ua, "junk_2_lich_hand") > 0
-                        && (ua.getLichVictim() == null
-                                || !ua.getLichVictim().equalsIgnoreCase(this.id))) {
-                    Console.debugLog("Setting Lich Victim");
-                    ua.setLichVictim(this.id);
                 }
                 // this.handleElectrodeGun(ua, a, damage, attackData);
 
                 if (this.maxHealth > ua.getMaxHealth()
                         && ChampionData.getJunkLevel(ua, "junk_3_globs_helmet") > 0) {
-                    newDamage +=
-                            newDamage * ChampionData.getCustomJunkStat(ua, "junk_3_globs_helmet");
+                    String item = "junk_3_globs_helmet";
+                    double junkStat = ChampionData.getCustomJunkStat(ua, item);
+                    newDamage += (int) (newDamage * junkStat);
                 }
 
                 if (type == AttackType.SPELL
@@ -466,35 +524,12 @@ public class UserActor extends Actor {
         this.iFrame = System.currentTimeMillis() + 500;
     }
 
-    public String getLichVictim() {
-        return this.lichVictim;
-    }
-
-    public void setLichVictim(String id) {
-        this.lichVictim = id;
-        this.lichHandTimesHit = 0;
-        this.lichLastHit = System.currentTimeMillis();
-    }
-
-    public void handleLichHandHit() {
-        if (System.currentTimeMillis() > this.lichLastHit + 1000) {
-            Console.debugLog("Registered");
-            this.lichHandTimesHit++;
-            this.lichLastHit = System.currentTimeMillis();
-        }
-    }
-
     public double getAttackCooldown() {
         return this.attackCooldown;
     }
 
     public double handleGrassSwordProc(double damage) { // TODO: Add indicator or something
-        if (this.grassSwordCooldown >= ChampionData.getCustomJunkStat(this, "junk_1_grass_sword")) {
-            this.grassSwordCooldown = 0;
-            ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "grass_sword_icon");
-            return damage * 1.5d;
-        } else Console.debugLog("Grass sword CD: " + this.grassSwordCooldown);
-        return damage;
+        return damage * GRASS_CRIT_INCREASE;
     }
 
     @Override
@@ -700,8 +735,7 @@ public class UserActor extends Actor {
         this.target = null;
     }
 
-    protected boolean handleAttack(
-            Actor a) { // To be used if you're not using the standard DelayedAttack Runnable
+    protected boolean handleAttack(Actor a) {
         if (this.attackCooldown == 0) {
             double critChance = this.getPlayerStat("criticalChance") / 100d;
             double random = Math.random();
@@ -743,10 +777,14 @@ public class UserActor extends Actor {
         if (this.attackCooldown < 0) this.attackCooldown = 0;
     }
 
-    protected boolean isNonStructure(Actor a) {
+    protected boolean isNeitherStructureNorAlly(Actor a) {
         return a.getTeam() != this.team
                 && a.getActorType() != ActorType.TOWER
                 && a.getActorType() != ActorType.BASE;
+    }
+
+    protected boolean isNeitherTowerNorAlly(Actor a) {
+        return a.getActorType() != ActorType.TOWER && a.getTeam() != this.team;
     }
 
     @Deprecated
@@ -996,6 +1034,59 @@ public class UserActor extends Actor {
                 this.respawn();
             else return;
         }
+
+        RoomHandler rh = parentExt.getRoomHandler(room.getName());
+        String itemName = "junk_2_simon_petrikovs_glasses";
+
+        for (UserActor ua : rh.getPlayers()) {
+            boolean contains = simonGlassesBuffProviders.containsKey(ua);
+            boolean isInRange =
+                    ua.getLocation() != null
+                            && location.distance(ua.getLocation()) <= SIMON_GLASSES_RANGE;
+
+            boolean leveledGlasses = ChampionData.getJunkLevel(ua, itemName) > 0;
+
+            if (ua.getTeam() == team
+                    && leveledGlasses
+                    && isInRange
+                    && !contains
+                    && !ua.equals(this)) {
+                int pdValue = (int) ChampionData.getCustomJunkStat(ua, itemName);
+                simonGlassesBuffProviders.put(ua, pdValue);
+                glassesBuff += pdValue;
+
+                String iconName = ua + "simon_glasses_buff";
+                String desc = "Your Power Damage is increased by " + pdValue;
+
+                ExtensionCommands.addStatusIcon(parentExt, getUser(), iconName, desc, itemName, 0f);
+                updateStatMenu("spellDamage");
+            }
+        }
+
+        Iterator<Map.Entry<UserActor, Integer>> iterator =
+                simonGlassesBuffProviders.entrySet().iterator();
+
+        while (iterator.hasNext()) {
+            Map.Entry<UserActor, Integer> entry = iterator.next();
+            UserActor userActor = entry.getKey();
+            int pdValue = entry.getValue();
+            int junkLevel = ChampionData.getJunkLevel(userActor, itemName);
+
+            boolean isLocNull = userActor.getLocation() == null;
+
+            if (isLocNull
+                    || userActor.getLocation().distance(location) > SIMON_GLASSES_RANGE
+                    || junkLevel < 1) {
+                String iconName = userActor + "simon_glasses_buff";
+                glassesBuff -= pdValue;
+
+                updateStatMenu("spellDamage");
+
+                ExtensionCommands.removeStatusIcon(parentExt, getUser(), iconName);
+                iterator.remove();
+            }
+        }
+
         if (!this.moonVfxActivated
                 && this.hasBackpackItem("junk_3_battle_moon")
                 && ChampionData.getJunkLevel(this, "junk_3_battle_moon") > 0) {
@@ -1040,19 +1131,6 @@ public class UserActor extends Actor {
                     "junk_4_grob_gob_glob_grod_mod3",
                     "junk_4_grob_gob_glob_grod",
                     0f);
-        }
-        if (ChampionData.getJunkLevel(this, "junk_2_simon_petrikovs_glasses") > 0) {
-
-            for (UserActor ua : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
-                if (ua.getTeam() == this.team && !ua.getId().equalsIgnoreCase(this.id)) {
-                    if (ua.getLocation().distance(this.location) <= 5f)
-                        ua.setGlassesBuff(
-                                ChampionData.getCustomJunkStat(
-                                        this, "junk_2_simon_petrikovs_glasses"),
-                                this);
-                    else ua.setGlassesBuff(-1d, this);
-                }
-            }
         }
 
         if (this.canMove()
@@ -1106,9 +1184,10 @@ public class UserActor extends Actor {
             this.idleTime += 100;
         }
         boolean insideBrush = false;
-        for (Path2D brush :
-                this.parentExt.getBrushPaths(
-                        this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap())) {
+        boolean isPracticeMap = rh.isPracticeMap();
+        ArrayList<Path2D> brushPaths = parentExt.getBrushPaths(isPracticeMap);
+
+        for (Path2D brush : brushPaths) {
             if (brush.contains(this.location)) {
                 insideBrush = true;
                 break;
@@ -1116,8 +1195,10 @@ public class UserActor extends Actor {
         }
         if (insideBrush) {
             if (!this.states.get(ActorState.BRUSH)) {
+                Console.debugLog("BRUSH STATE ENABLED");
+
                 ExtensionCommands.changeBrush(
-                        parentExt, room, this.id, parentExt.getBrushNum(this.location));
+                        parentExt, room, this.id, parentExt.getBrushNum(location, brushPaths));
                 this.setState(ActorState.BRUSH, true);
                 if (this.stealthEmbargo <= System.currentTimeMillis())
                     this.setState(ActorState.REVEALED, false);
@@ -1128,6 +1209,8 @@ public class UserActor extends Actor {
             }
         } else {
             if (this.states.get(ActorState.BRUSH)) {
+                Console.debugLog("BRUSH STATE DISABLED");
+
                 this.setState(ActorState.BRUSH, false);
                 if (!this.getState(ActorState.INVISIBLE)) this.setState(ActorState.REVEALED, true);
                 ExtensionCommands.changeBrush(parentExt, room, this.id, -1);
@@ -1160,9 +1243,8 @@ public class UserActor extends Actor {
                     && idleTime > 500) {
                 Actor closestTarget = null;
                 double closestDistance = 1000;
-                RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 int aggroRange = parentExt.getActorStats(avatar).get("aggroRange").asInt();
-                for (Actor a : Champion.getActorsInRadius(handler, this.location, aggroRange)) {
+                for (Actor a : Champion.getActorsInRadius(rh, this.location, aggroRange)) {
                     if (a.getTeam() != this.team
                             && a.getLocation().distance(this.location) < closestDistance) {
                         closestDistance = a.getLocation().distance(this.location);
@@ -1177,12 +1259,8 @@ public class UserActor extends Actor {
         if (msRan % 1000 == 0) {
 
             if (ChampionData.getJunkLevel(this, "junk_4_flame_cloak") > 0) {
-                for (Actor a :
-                        Champion.getActorsInRadius(
-                                this.parentExt.getRoomHandler(this.room.getName()),
-                                this.location,
-                                1.5f)) {
-                    if (a.getTeam() != this.team && isNonStructure(a)) {
+                for (Actor a : Champion.getActorsInRadius(rh, location, 1.5f)) {
+                    if (a.getTeam() != this.team && isNeitherStructureNorAlly(a)) {
                         a.addToDamageQueue(
                                 this,
                                 this.maxHealth * 0.035d,
@@ -1193,38 +1271,26 @@ public class UserActor extends Actor {
             }
 
             if (ChampionData.getJunkLevel(this, "junk_3_robo_suit") > 0) {
-                if (this.roboStacks < 3) {
+                boolean ready = System.currentTimeMillis() - lastRoboEffect >= ROBO_CD;
+
+                if (this.roboStacks < 3 && ready) {
                     this.roboStacks++;
                     this.updateStatMenu("speed");
+
                     if (this.roboStacks == 3)
                         ExtensionCommands.createActorFX(
-                                this.parentExt,
-                                this.room,
-                                this.id,
+                                parentExt,
+                                room,
+                                id,
                                 "statusEffect_speed",
                                 1000 * 60 * 5,
-                                this.id + "_roboSpeed",
+                                id + "_roboSpeed",
                                 true,
                                 "",
                                 true,
                                 false,
-                                this.team);
+                                team);
                 }
-            } else if (this.roboStacks > 0) this.resetRoboStacks();
-
-            if (ChampionData.getJunkLevel(this, "junk_1_grass_sword") > 0
-                    && this.grassSwordCooldown
-                            <= ChampionData.getCustomJunkStat(this, "junk_1_grass_sword")) {
-                this.grassSwordCooldown++;
-                if (this.grassSwordCooldown
-                        == ChampionData.getCustomJunkStat(this, "junk_1_grass_sword"))
-                    ExtensionCommands.addStatusIcon(
-                            this.parentExt,
-                            this.player,
-                            "grass_sword_icon",
-                            "junk_1_grass_sword_mod3",
-                            "junk_1_grass_sword",
-                            0f);
             }
 
             if (this.fightKingStacks > 0
@@ -1388,9 +1454,13 @@ public class UserActor extends Actor {
         return false;
     }
 
-    public boolean cancelDashEndAttack() {
+    public boolean hasDashAttackInterruptCC() {
         ActorState[] states = {
-            ActorState.STUNNED, ActorState.CHARMED, ActorState.POLYMORPH, ActorState.FEARED,
+            ActorState.STUNNED,
+            ActorState.CHARMED,
+            ActorState.POLYMORPH,
+            ActorState.FEARED,
+            ActorState.SILENCED,
         };
         for (ActorState state : states) {
             if (this.getState(state)) return true;
@@ -1460,6 +1530,7 @@ public class UserActor extends Actor {
             case "cinnamonbun":
             case "peppermintbutler":
             case "finn":
+            case "choosegoose":
                 if (ability == 2) return true;
                 break;
             case "fionna":
@@ -1488,7 +1559,7 @@ public class UserActor extends Actor {
         } else this.canMove = true;
     }
 
-    public float getRotation(Point2D dest) { // have no idea how this works but it works
+    public float getRotation(Point2D dest) { // lmao
         double dx = dest.getX() - this.location.getX();
         double dy = dest.getY() - this.location.getY();
         double angleRad = Math.atan2(dy, dx);
@@ -1603,33 +1674,6 @@ public class UserActor extends Actor {
         ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bundle);
     }
 
-    public void setGlassesBuff(double buff, UserActor holder) {
-        if (buff != -1 && !this.simonUsers.contains(holder)) this.simonUsers.add(holder);
-        if (this.glassesBuff != buff) {
-            if (this.glassesBuff == -1) {
-                ExtensionCommands.addStatusIcon(
-                        this.parentExt,
-                        this.getUser(),
-                        "junk_2_simon_petrikovs_glasses_name",
-                        "junk_2_simon_petrikovs_glasses_mod3",
-                        "junk_2_simon_petrikovs_glasses",
-                        0f);
-            } else if (buff == -1) {
-                this.simonUsers.remove(holder);
-                if (this.simonUsers.size() == 0) {
-                    ExtensionCommands.removeStatusIcon(
-                            this.parentExt, this.getUser(), "junk_2_simon_petrikovs_glasses_name");
-                    this.glassesBuff = -1d;
-                    this.updateStatMenu("spellDamage");
-                    return;
-                }
-            }
-            this.glassesBuff = buff;
-            Console.debugLog("Setting glasses buff to " + buff);
-            this.updateStatMenu("spellDamage");
-        }
-    }
-
     @Override
     public void handleCharm(UserActor charmer, int duration) {
         if (this.spellShieldActive || System.currentTimeMillis() < iFrame) {
@@ -1699,6 +1743,14 @@ public class UserActor extends Actor {
                 false,
                 false,
                 this.team);
+    }
+
+    protected void basicAttackReset() {
+        attackCooldown = 500;
+    }
+
+    public boolean enhanceCrit() {
+        return this.hasBackpackItem("junk_1_grass_sword") && this.getStat("sp_category1") > 0;
     }
 
     private Point2D getRespawnPoint() {
@@ -1898,41 +1950,44 @@ public class UserActor extends Actor {
         }
         if (stat.equalsIgnoreCase("attackDamage")) {
             double attackDamage = super.getPlayerStat(stat);
-            if (this.dcBuff == 2) attackDamage *= 1.2f;
-            attackDamage += (25 * this.getMonsterBuffCount(stat));
+            if (this.dcBuff == 2) attackDamage *= DC_AD_BUFF;
+            attackDamage += (DEMON_SWORD_AD_BUFF * this.getMonsterBuffCount(stat));
             return attackDamage + this.magicNailStacks;
+
         } else if (stat.equalsIgnoreCase("armor")) {
             double armor = super.getPlayerStat(stat);
-            if (this.dcBuff >= 1) armor *= 1.2f;
+            if (this.dcBuff >= 1) armor *= DC_ARMOR_BUFF;
             return armor + (5 * this.getMonsterBuffCount(stat));
+
         } else if (stat.equalsIgnoreCase("spellResist")) {
             double mr = super.getPlayerStat(stat);
-            if (this.dcBuff >= 1) mr *= 1.2f;
+            if (this.dcBuff >= 1) mr *= DC_SPELL_RESIST_BUFF;
             return mr + (5 * this.getMonsterBuffCount(stat));
+
         } else if (stat.equalsIgnoreCase("speed")) {
-            double speedBoost = 0.05 * this.roboStacks; // TODO: Make scalable
+            double speedBoost = SPEED_BOOST_PER_ROBO_STACK * this.roboStacks; // TODO: Make scalable
             if (speedBoost < 0) speedBoost = 0;
-            if (this.dcBuff >= 1) return super.getPlayerStat(stat) * 1.15f + speedBoost;
+            if (this.dcBuff >= 1) return super.getPlayerStat(stat) * DC_SPEED_BUFF + speedBoost;
             return super.getPlayerStat(stat) + speedBoost;
+
         } else if (stat.equalsIgnoreCase("spellDamage")) {
             double spellDamage = super.getPlayerStat(stat);
-            if (this.dcBuff == 2) spellDamage *= 1.2f;
-            if (this.glassesBuff != -1) spellDamage += this.glassesBuff;
-            return spellDamage + this.lightningSwordStacks + (50 * this.getMonsterBuffCount(stat));
+            if (this.dcBuff == 2) spellDamage *= DC_PD_BUFF;
+            if (glassesBuff != 0) spellDamage += glassesBuff;
+            return spellDamage
+                    + lightningSwordStacks
+                    + (DEMON_SWORD_SD_BUFF * getMonsterBuffCount(stat));
+
         } else if (stat.equalsIgnoreCase("coolDownReduction")) {
             return super.getPlayerStat(stat) + this.robeStacks;
         }
         return super.getPlayerStat(stat);
     }
 
-    public int getRoboStacks() {
-        return this.roboStacks;
-    }
-
     public void resetRoboStacks() {
-        this.roboStacks = -10;
-        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_roboSpeed");
-        this.updateStatMenu("speed");
+        roboStacks = 0;
+        ExtensionCommands.removeFx(parentExt, room, id + "_roboSpeed");
+        updateStatMenu("speed");
     }
 
     public void useGhostPouch() {
@@ -2068,7 +2123,10 @@ public class UserActor extends Actor {
 
     private void addMagicNailStacks(Actor killedActor) {
         int pointsPutIntoNail = (int) this.getStat("sp_category1");
-        int amountOfStacks = killedActor.getActorType() == ActorType.PLAYER ? 5 : 2;
+        int amountOfStacks =
+                killedActor.getActorType() == ActorType.PLAYER
+                        ? NAIL_STACKS_PER_CHAMP
+                        : NAIL_STACKS_PER_NON_CHAMPS;
         int stackCap = pointsPutIntoNail * DAMAGE_PER_NAIL_POINT;
 
         if (pointsPutIntoNail > 0) {
@@ -2080,7 +2138,10 @@ public class UserActor extends Actor {
 
     private void addLightningSwordStacks(Actor killedActor) {
         int pointsPutIntoNail = ChampionData.getJunkLevel(this, "junk_2_lightning_sword");
-        int amountOfStacks = killedActor.getActorType() == ActorType.PLAYER ? 5 : 2;
+        int amountOfStacks =
+                killedActor.getActorType() == ActorType.PLAYER
+                        ? LIGHTNING_SWORD_STACKS_PER_CHAMP
+                        : LIGHTNING_SWORD_STACKS_PER_NON_CHAMP;
         int stackCap = pointsPutIntoNail * DAMAGE_PER_LIGHTNING_POINT;
 
         if (pointsPutIntoNail > 0) {
@@ -2090,9 +2151,12 @@ public class UserActor extends Actor {
         }
     }
 
-    private void addRobeStacks(Actor killedActor) {
+    private void addRobeStacks(Actor ka) {
         int pointsPutIntoRobe = ChampionData.getJunkLevel(this, "junk_4_wizard_robe");
-        double amountOfStacks = killedActor.getActorType() == ActorType.PLAYER ? 0.5 : 0.1;
+        boolean champOrJgBoss =
+                ka instanceof UserActor || ka instanceof Keeoth || ka instanceof GooMonster;
+
+        double amountOfStacks = champOrJgBoss ? ROBE_CD_CHAMP_OR_JG_BOSS_KO : ROBE_CD_MINION_KO;
         int stackCap = pointsPutIntoRobe * CDR_PER_ROBE_POINT;
 
         if (pointsPutIntoRobe > 0) {
@@ -2101,10 +2165,6 @@ public class UserActor extends Actor {
             Console.debugLog("Robe stacks: " + this.robeStacks);
             this.updateStatMenu("coolDownReduction");
         }
-    }
-
-    public boolean getState(ActorState state) {
-        return this.states.get(state);
     }
 
     public void addGameStat(String stat, double value) {
@@ -2447,7 +2507,7 @@ public class UserActor extends Actor {
                     break;
             }
         }
-        Console.debugLog("Monster count: " + count);
+        // Console.debugLog("Monster count: " + count);
         return count;
     }
 

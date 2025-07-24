@@ -74,12 +74,12 @@ public class BubbleGum extends UserActor {
                 List<Actor> affectedActors =
                         Champion.getActorsInRadius(handler, potionLocation, 2f);
                 for (Actor a : affectedActors) {
-                    if (a.getTeam() != this.team) {
+                    if (isNeitherTowerNorAlly(a)) {
                         JsonNode spellData =
                                 this.parentExt.getAttackData("princessbubblegum", "spell1");
                         double damage = this.getSpellDamage(spellData, false) / 10f;
                         a.addToDamageQueue(this, damage, spellData, true);
-                        if (isNonStructure(a)) {
+                        if (isNeitherStructureNorAlly(a)) {
                             a.addState(ActorState.SLOWED, Q_SLOW_VALUE, Q_SLOW_DURATION);
                         }
 
@@ -184,10 +184,12 @@ public class BubbleGum extends UserActor {
             case 2: // W
                 this.canCast[1] = false;
                 try {
-                    this.stopMoving();
-                    String turretVo = SkinData.getBubbleGumWVO(avatar);
-                    ExtensionCommands.playSound(parentExt, room, id, turretVo, this.location);
-                    this.spawnTurret(dest);
+                    if (getHealth() > 0) {
+                        this.stopMoving();
+                        String turretVo = SkinData.getBubbleGumWVO(avatar);
+                        ExtensionCommands.playSound(parentExt, room, id, turretVo, this.location);
+                        this.spawnTurret(dest);
+                    }
                     ExtensionCommands.actorAbilityResponse(
                             parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
                 } catch (Exception exception) {
@@ -236,7 +238,7 @@ public class BubbleGum extends UserActor {
                     scheduleTask(
                             abilityRunnable(ability, spellData, cooldown, gCooldown, dest),
                             E_SECOND_USE_DELAY);
-                } else if (this.eUses == 2) {
+                } else if (this.eUses == 2 && getHealth() > 0) {
                     useBomb(getReducedCooldown(cooldown), gCooldown);
                 }
                 break;
@@ -251,7 +253,11 @@ public class BubbleGum extends UserActor {
             if (this.location.distance(bombLocation) <= 3) actors.add(this);
 
             for (Actor a : actors) {
-                if (a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE) {
+                double spellDamage = getSpellDamage(spellData, true);
+                if (a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER) {
+                    a.knockback(bombLocation, 3.5f);
+                    if (a.getState(ActorState.SLOWED) && !a.equals(this)) spellDamage *= 1.25d;
+
                     if (a.equals(this)) {
                         ExtensionCommands.actorAnimate(parentExt, room, id, "spell3b", 325, false);
                         Runnable animDelay =
@@ -259,12 +265,11 @@ public class BubbleGum extends UserActor {
                                         ExtensionCommands.actorAnimate(
                                                 parentExt, room, id, "spell3c", 350, false);
                         scheduleTask(animDelay, 325);
-                    } else {
-                        double spellDamage = getSpellDamage(spellData, true);
-                        if (a.getState(ActorState.SLOWED)) spellDamage *= 1.25d;
-                        a.addToDamageQueue(this, spellDamage, spellData, false);
                     }
-                    a.knockback(this.bombLocation, 3.5f);
+                }
+
+                if (isNeitherTowerNorAlly(a)) {
+                    a.addToDamageQueue(this, spellDamage, spellData, false);
                 }
             }
             String useBombVo = SkinData.getBubbleGumEGruntVO(avatar);
@@ -548,7 +553,7 @@ public class BubbleGum extends UserActor {
             if (this.target != null && this.target.getHealth() > 0) {
                 if (this.withinRange(this.target)
                         && this.canAttack()
-                        && isNonStructure(this.target)) this.attack(this.target);
+                        && isNeitherStructureNorAlly(this.target)) this.attack(this.target);
                 else if (!this.withinRange(this.target)) {
                     this.target = null;
                     this.findTarget();
