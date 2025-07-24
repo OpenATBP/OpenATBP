@@ -748,7 +748,7 @@ function leaveTeam(socket, disconnected) {
 function joinQueue(sockets, type) {
   var queueSize = 1;
   if (type.includes('p') && type != 'practice')
-    queueSize = Number(type.replace('aram_').replace('').replace('p', ''));
+    queueSize = Number(type.replace('aram_','').replace('p', ''));
   if (type.includes('aram')) queueSize = 6; //Testing number for ARAM
   for (var s of sockets) {
     if (

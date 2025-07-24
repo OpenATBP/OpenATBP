@@ -198,6 +198,12 @@
     "cost": 1250
   },
   {
+    "type": "CUSTOM_SKIN",
+    "id": "finn_skin_shadow",
+    "default": false,
+    "cost": 500
+  },
+  {
     "type": "DEFAULT_SKIN",
     "id": "fionna",
     "default": true,
