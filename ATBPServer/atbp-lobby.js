@@ -738,7 +738,7 @@ function leaveTeam(socket, disconnected) {
 function joinQueue(sockets, type) {
   var queueSize = 1;
   if (type.includes('p') && type != 'practice')
-    queueSize = Number(type.replace('aram_','').replace('p', ''));
+    queueSize = Number(type.replace('aram_', '').replace('p', ''));
 
   if (type.includes('aram')) queueSize = 6; //Testing number for ARAM
   for (var s of sockets) {
@@ -1550,8 +1550,8 @@ function handleRequest(jsonString, socket) {
       var existingUser = users.find(
         (u) => u.player.name == response['payload'].name
       );
-      if (existingUser != undefined){
-        leaveQueue(existingUser,true);
+      if (existingUser != undefined) {
+        leaveQueue(existingUser, true);
         users = users.filter((u) => u != existingUser);
       }
 
@@ -1584,8 +1584,16 @@ function handleRequest(jsonString, socket) {
                 timesOffended: 0,
               };
             }
-            if (existingUser != undefined && existingUser.player != undefined && existingUser.player.queueData != undefined){
-              if (existingUser.player.queueData.dodgeCount >= socket.player.queueData.dodgeCount) socket.player.queueData = existingUser.player.queueData;
+            if (
+              existingUser != undefined &&
+              existingUser.player != undefined &&
+              existingUser.player.queueData != undefined
+            ) {
+              if (
+                existingUser.player.queueData.dodgeCount >=
+                socket.player.queueData.dodgeCount
+              )
+                socket.player.queueData = existingUser.player.queueData;
             }
             playerCollection
               .updateOne(

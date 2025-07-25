@@ -444,6 +444,13 @@ public class BubbleGum extends UserActor {
                     100
                             + (BubbleGum.this.getPlayerStat("healthPerLevel")
                                     * (BubbleGum.this.level - 1));
+            this.currentHealth +=
+                    (BubbleGum.this.maxHealth
+                                    - this.parentExt
+                                            .getActorStats("princessbubblegum")
+                                            .get("health")
+                                            .asInt())
+                            * 0.2d;
             this.maxHealth = this.currentHealth;
             this.location = location;
             this.avatar = "princessbubblegum_turret";

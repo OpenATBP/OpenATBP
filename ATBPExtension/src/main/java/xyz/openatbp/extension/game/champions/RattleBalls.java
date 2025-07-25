@@ -459,7 +459,7 @@ public class RattleBalls extends UserActor {
         finishQAbility(true);
         JsonNode counterAttackData = counterAttackData();
 
-        double ad = getPlayerStat("attackDamage") * 0.5;
+        double ad = getPlayerStat("attackDamage");
         double sd = getPlayerStat("spellDamage") * 0.5;
         double damage = ad + sd;
 
