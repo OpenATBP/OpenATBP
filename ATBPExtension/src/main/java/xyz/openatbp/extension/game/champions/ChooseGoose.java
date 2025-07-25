@@ -630,7 +630,8 @@ public class ChooseGoose extends UserActor {
                 int maxHealth = ChooseGoose.this.getMaxHealth();
                 int currentHealth = ChooseGoose.this.getHealth();
 
-                a.setHealth(currentHealth, maxHealth + PASSIVE_HP_INCREASE_PER_CHEST);
+                ChooseGoose.this.setHealth(
+                        currentHealth, maxHealth + PASSIVE_HP_INCREASE_PER_CHEST);
 
                 if (a.getHealth() != a.getMaxHealth() && !a.isDead()) {
                     a.heal(delta);
