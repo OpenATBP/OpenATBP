@@ -1374,6 +1374,16 @@ function handleRequest(jsonString, socket) {
       if (team == undefined) return; //TODO: Add error handling
       var act = team.type.split('_');
       var type = act[act.length - 1];
+      if (!act.includes('aram')) {
+        console.log(act);
+        var teamMembers = users.filter((u) =>
+          team.players.includes(u.player.teg_id)
+        );
+        safeSendAll(teamMembers, 'team_disband', {
+          reason: 'error_premade_disabled',
+        });
+        return; //TODO: Remove when renabling queue;
+      }
       /*
       var fakeUser1 = matchmaking.createFakeUser(true);
       var fakeUser2 = matchmaking.createFakeUser(true);
