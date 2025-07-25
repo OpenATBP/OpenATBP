@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
@@ -325,7 +324,6 @@ public class LSP extends UserActor {
 
         @Override
         protected void hit(Actor victim) {
-            Console.debugLog("LSP Proj hit!, " + victim.getId());
             this.victims.add(victim);
             JsonNode spellData = this.parentExt.getAttackData(LSP.this.avatar, "spell3");
             if (victim.getTeam() == LSP.this.team && !affectedActors.contains(victim)) {
@@ -340,7 +338,6 @@ public class LSP extends UserActor {
             } else if (!affectedActors.contains(victim)) {
 
                 double damage = (double) getSpellDamage(spellData, true) * (1d - damageReduction);
-                Console.debugLog("LSP ult damage: " + damage);
                 victim.addToDamageQueue(LSP.this, damage, spellData, false);
                 damageReduction += 0.3d;
                 if (damageReduction > 0.7d) damageReduction = 0.7d;

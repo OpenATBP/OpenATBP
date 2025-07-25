@@ -649,9 +649,12 @@ public abstract class Actor {
 
     public int getMitigatedDamage(double rawDamage, AttackType attackType, Actor attacker) {
         try {
-            double armor = this.getPlayerStat("armor") - attacker.getPlayerStat("armorPenetration");
+            double armor =
+                    this.getPlayerStat("armor")
+                            * (1 - (attacker.getPlayerStat("armorPenetration") / 100));
             double spellResist =
-                    this.getPlayerStat("spellResist") - attacker.getPlayerStat("spellPenetration");
+                    this.getPlayerStat("spellResist")
+                            * (1 - (attacker.getPlayerStat("spellPenetration") / 100));
             if (armor < 0) armor = 0;
             if (spellResist < 0) spellResist = 0;
             if (armor > 65) armor = 65;
