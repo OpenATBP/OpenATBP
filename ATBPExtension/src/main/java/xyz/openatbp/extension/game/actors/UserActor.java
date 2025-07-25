@@ -34,7 +34,7 @@ public class UserActor extends Actor {
     protected static final int LIGHTNING_SWORD_STACKS_PER_NON_CHAMP = 4;
     protected static final double ROBE_CD_CHAMP_OR_JG_BOSS_KO = 1;
     protected static final double ROBE_CD_MINION_KO = 0.2;
-    protected static final int DAMAGE_PER_NAIL_POINT = 40;
+    protected static final int DAMAGE_PER_NAIL_POINT = 30;
     protected static final int DAMAGE_PER_LIGHTNING_POINT = 55;
     protected static final int CDR_PER_ROBE_POINT = 10;
     protected static final int SAI_PROC_COOLDOWN = 3000;

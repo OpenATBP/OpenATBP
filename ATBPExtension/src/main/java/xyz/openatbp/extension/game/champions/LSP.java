@@ -328,20 +328,19 @@ public class LSP extends UserActor {
             JsonNode spellData = this.parentExt.getAttackData(LSP.this.avatar, "spell3");
             if (victim.getTeam() == LSP.this.team && !affectedActors.contains(victim)) {
 
-                int healValue = (int) (getSpellDamage(spellData, false) * (1 - healReduction));
+                int healValue =
+                        (int) ((double) (getSpellDamage(spellData, false)) * (1d - healReduction));
                 victim.changeHealth(healValue);
                 healReduction += 0.3d;
                 if (healReduction > 0.7d) healReduction = 0.7d;
+                affectedActors.add(victim);
 
             } else if (!affectedActors.contains(victim)) {
 
-                double damage = getSpellDamage(spellData, true) * (1 - damageReduction);
+                double damage = (double) getSpellDamage(spellData, true) * (1d - damageReduction);
                 victim.addToDamageQueue(LSP.this, damage, spellData, false);
                 damageReduction += 0.3d;
                 if (damageReduction > 0.7d) damageReduction = 0.7d;
-            }
-
-            if (!affectedActors.contains(victim)) {
                 affectedActors.add(victim);
             }
         }

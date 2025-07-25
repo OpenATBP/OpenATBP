@@ -364,7 +364,7 @@ public class ChampionData {
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 42000;
                     break;
                 case "cinnamonbun":
-                    lv10Cooldown = abilityNumber == 1 ? 4500 : abilityNumber == 2 ? 14000 : 42000;
+                    lv10Cooldown = abilityNumber == 1 ? 4500 : abilityNumber == 2 ? 12000 : 47000;
                     break;
                 case "finn":
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 10000 : 40000;
@@ -373,7 +373,7 @@ public class ChampionData {
                     lv10Cooldown = abilityNumber == 1 ? 12000 : abilityNumber == 2 ? 5000 : 60000;
                     break;
                 case "flame":
-                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 15000 : 45000;
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 15000 : 60000;
                     break;
                 case "gunter":
                     lv10Cooldown = abilityNumber == 1 ? 9000 : abilityNumber == 2 ? 5000 : 42000;
@@ -382,7 +382,7 @@ public class ChampionData {
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 45000;
                     break;
                 case "iceking":
-                    lv10Cooldown = abilityNumber == 1 ? 7000 : abilityNumber == 2 ? 8000 : 45000;
+                    lv10Cooldown = abilityNumber == 1 ? 7000 : abilityNumber == 2 ? 8000 : 60000;
                     break;
                 case "jake":
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 45000;
@@ -409,7 +409,7 @@ public class ChampionData {
                     lv10Cooldown = abilityNumber == 1 ? 13000 : abilityNumber == 2 ? 13000 : 40000;
                     break;
                 case "princessbubblegum":
-                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 16000 : 40000;
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 16000 : 60000;
                     break;
                 case "rattleballs":
                     lv10Cooldown = abilityNumber == 1 ? 10000 : abilityNumber == 2 ? 14000 : 50000;

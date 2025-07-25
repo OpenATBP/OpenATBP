@@ -81,7 +81,6 @@ public abstract class Projectile {
         Actor hitActor = this.checkPlayerCollision(roomHandler);
         if (hitActor != null) {
             this.hit(hitActor);
-            return;
         }
         if (this.destination.distance(this.getLocation()) <= 0.01
                 || System.currentTimeMillis() - this.startTime > this.estimatedDuration) {

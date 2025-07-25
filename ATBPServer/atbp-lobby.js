@@ -299,7 +299,7 @@ function handleSkilledMatchmaking() {
       u.player.queueData.dodgeCount != 0
     ) {
       var dodgesToRemove = Math.floor(
-        (Date.now() - u.player.queueData.lastDodge) / (1000 * 60 * 30)
+        (Date.now() - u.player.queueData.lastDodge) / (1000 * 60 * 60)
       );
       if (dodgesToRemove > 0) {
         u.player.queueData.dodgeCount -= dodgesToRemove;
@@ -737,9 +737,9 @@ function leaveTeam(socket, disconnected) {
 
 function joinQueue(sockets, type) {
   var queueSize = 1;
-  if (type.includes('p') && type != 'practice') {
+  if (type.includes('p') && type != 'practice')
     queueSize = Number(type.replace('aram_', '').replace('p', ''));
-  }
+
   if (type.includes('aram')) queueSize = 6; //Testing number for ARAM
   for (var s of sockets) {
     if (
@@ -1374,6 +1374,16 @@ function handleRequest(jsonString, socket) {
       if (team == undefined) return; //TODO: Add error handling
       var act = team.type.split('_');
       var type = act[act.length - 1];
+      if (!act.includes('aram')) {
+        console.log(act);
+        var teamMembers = users.filter((u) =>
+          team.players.includes(u.player.teg_id)
+        );
+        safeSendAll(teamMembers, 'team_disband', {
+          reason: 'error_premade_disabled',
+        });
+        return; //TODO: Remove when renabling queue;
+      }
       /*
       var fakeUser1 = matchmaking.createFakeUser(true);
       var fakeUser2 = matchmaking.createFakeUser(true);
@@ -1550,8 +1560,11 @@ function handleRequest(jsonString, socket) {
       var existingUser = users.find(
         (u) => u.player.name == response['payload'].name
       );
-      if (existingUser != undefined)
+      if (existingUser != undefined) {
+        leaveQueue(existingUser, true);
         users = users.filter((u) => u != existingUser);
+      }
+
       socket.player = {
         name: response['payload'].name,
         teg_id: response['payload'].teg_id,
@@ -1580,6 +1593,17 @@ function handleRequest(jsonString, socket) {
                 dodgeCount: 0,
                 timesOffended: 0,
               };
+            }
+            if (
+              existingUser != undefined &&
+              existingUser.player != undefined &&
+              existingUser.player.queueData != undefined
+            ) {
+              if (
+                existingUser.player.queueData.dodgeCount >=
+                socket.player.queueData.dodgeCount
+              )
+                socket.player.queueData = existingUser.player.queueData;
             }
             playerCollection
               .updateOne(
