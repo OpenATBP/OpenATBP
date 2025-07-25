@@ -1212,7 +1212,7 @@ function handleRequest(jsonString, socket) {
           var trashGame = () => {
             for (var qp of queue.players) {
               var queueUser = users.find((u) => u.player.teg_id == qp);
-              if (queuePlayer != undefined) {
+              if (queueUser != undefined) {
                 queuePlayer.player.queue = {
                   type: null,
                   started: -1,
