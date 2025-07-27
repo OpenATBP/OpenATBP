@@ -285,11 +285,11 @@ function updateElo(socket) {
       .then((res) => {
         if (res != null) {
           socket.player.elo = res.player.elo;
-        } else socket.end();
+        } else socket.close();
       })
       .catch((e) => {
         console.log(e);
-        socket.end();
+        socket.close();
       });
   } else console.log('Player collection is not initialized!');
 }
@@ -1614,12 +1614,13 @@ function handleRequest(jsonString, socket) {
             playerCollection
               .updateOne(
                 { 'user.TEGid': data.user.TEGid },
-                { $set: { address: socket.remoteAddress } },
+                { $set: { address: socket._socket.address().address } },
                 { upsert: true }
               )
               .then(() => {
+                console.log(socket._socket.address());
                 console.log(
-                  `${socket.player.name} logged in with the address: ${socket.remoteAddress}`
+                  `${socket.player.name} logged in with the address: ${socket._socket.address().address}`
                 );
               })
               .catch(console.error);
