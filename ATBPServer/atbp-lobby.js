@@ -3,6 +3,11 @@ const config = require('./config.js');
 const matchmaking = require('./matchmaking.js');
 const dbOperations = require('./db-operations.js');
 
+const express = require('express');
+const wsApp = express();
+
+const wsExpress = require('express-ws')(wsApp);
+
 const heroes = [
   'billy',
   'bmo',
@@ -1068,6 +1073,7 @@ setInterval(() => {
 
 // TODO: move out to separate file
 function handleRequest(jsonString, socket) {
+  console.log(jsonString);
   let jsonObject = tryParseJSONObject(jsonString);
   if (!jsonObject) {
     return;
@@ -1643,6 +1649,17 @@ module.exports = class ATBPLobbyServer {
         process.exit(1);
       }
       playerCollection = mongoClient.db('openatbp').collection('users');
+      this.server = wsApp.ws('',(ws,req,next) => {
+        ws.on('message',(data) => {
+          let response = handleRequest(data,ws);
+          if (response != null) ws.send(response);
+        });
+      });
+
+      wsApp.listen(this.port, () => {
+        callback();
+      });
+      /*
       this.server = net.createServer((socket) => {
         socket.setEncoding('utf8');
 
@@ -1717,10 +1734,7 @@ module.exports = class ATBPLobbyServer {
           );
         });
       });
-
-      this.server.listen(this.port, () => {
-        callback();
-      });
+*/
     });
   }
   stop(callback) {
