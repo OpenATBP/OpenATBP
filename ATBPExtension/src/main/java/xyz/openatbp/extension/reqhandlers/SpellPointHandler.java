@@ -22,10 +22,9 @@ public class SpellPointHandler extends BaseClientRequestHandler {
             if (data != null) {
                 ExtensionCommands.updateActorData(parentExt, sender.getLastJoinedRoom(), data);
             }
-        } else
-            parentExt.send(
-                    "cmd_update_actor_data",
-                    ChampionData.resetSpellPoints(sender, parentExt),
-                    sender);
+        } else {
+            ISFSObject resetData = ChampionData.resetSpellPoints(sender, parentExt);
+            ExtensionCommands.updateActorData(parentExt, sender.getLastJoinedRoom(), resetData);
+        }
     }
 }
