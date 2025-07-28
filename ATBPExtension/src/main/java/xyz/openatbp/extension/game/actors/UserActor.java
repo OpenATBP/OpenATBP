@@ -2088,7 +2088,7 @@ public class UserActor extends Actor {
             if (levelDiff > 0) additionalXP = 15 * levelDiff;
         } else if (a.getActorType() == ActorType.MONSTER) {
             if (ChampionData.getJunkLevel(this, "junk_1_demon_blood_sword") > 0) {
-                additionalXP += ((double) a.getXPWorth() * 0.15d);
+                additionalXP += ((double) a.getXPWorth() * 0.1d);
                 Monster m = (Monster) a;
                 this.handleMonsterBuff(m);
             }
