@@ -33,7 +33,7 @@ public abstract class RoomHandler implements Runnable {
     protected static final int NON_JG_BOSS_SPAWN_RATE = 45;
     protected static final int KEEOTH_SPAWN_RATE = 120;
     protected static final int GOO_SPAWN_RATE = 90;
-    protected static final int MONSTER_DEBUG_SPAWN_RATE = 10;
+    protected static final int MONSTER_DEBUG_SPAWN_RATE = 3;
     public static final double ALTAR_BUFF = 0.25;
     public static final double GOO_ALTAR_BUFF = 1.5;
     public static final int ALTAR_BUFF_DURATION = 60000;
