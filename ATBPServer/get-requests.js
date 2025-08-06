@@ -31,8 +31,8 @@ module.exports = {
         .findOne({ 'session.token': authToken })
         .then((res) => {
           if (res != null && res.betaTester != undefined) {
-            resolve(JSON.stringify({ eligible: res.betaTester }));
-          } else if (res != null) resolve(JSON.stringify({ eligible: false }));
+            resolve({ eligible: res.betaTester });
+          } else if (res != null) resolve({ eligible: false });
           else reject();
         })
         .catch((e) => {
@@ -72,7 +72,7 @@ module.exports = {
         .findOne({ 'session.token': data })
         .then((dat) => {
           if (dat != null) {
-            resolve(JSON.stringify(dat.player));
+            resolve(dat.player);
           }
         })
         .catch((err) => {

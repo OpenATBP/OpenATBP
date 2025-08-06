@@ -1047,6 +1047,8 @@ mongoClient.connect((err) => {
         }
       }
     }
+    console.log(req.query);
+    console.log(req);
     if (req.query.username != '' && req.query.password != '') {
       getRequest
         .handleLogin(
@@ -1056,6 +1058,7 @@ mongoClient.connect((err) => {
           playerCollection
         )
         .then((user) => {
+
           var date = Date.parse(user.session.expires_at);
           res.cookie('TEGid', user.user.TEGid, {
             maxAge: date.valueOf() - Date.now(),
@@ -1075,7 +1078,8 @@ mongoClient.connect((err) => {
           res.cookie('logged', true, {
             maxAge: date.valueOf() - Date.now(),
           });
-          res.redirect(config.httpserver.url);
+          res.send({"TEGid":user.user.TEGid,"authid":user.user.authid,"dname":user.user.dname, "authpass":user.user.authpass, "session_token":user.session});
+
         })
         .catch((e) => {
           console.log(e);
@@ -1188,7 +1192,7 @@ mongoClient.connect((err) => {
   app.post('/service/presence/present', async (req, res) => {
     try {
       let playerFound = false;
-      const options = JSON.parse(req.body.options);
+      const options = req.body.options;
       const username = req.body.username;
 
       for (let p of onlinePlayers) {

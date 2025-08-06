@@ -1655,6 +1655,23 @@ module.exports = class ATBPLobbyServer {
           let response = handleRequest(data,ws);
           if (response != null) ws.send(response);
         });
+
+        ws.on('close',() => {
+          var userExists = false;
+          for (var user of users) {
+            if (
+              user == ws
+            ) {
+              userExists = true;
+              if (user.player.onTeam) leaveTeam(user, true);
+              else leaveQueue(user, true);
+              dbOperations.handleQueueData(user.player, playerCollection);
+            }
+          }
+          users = users.filter(
+            (user) => user != ws
+          );
+        });
       });
 
       wsApp.listen(this.port, () => {
