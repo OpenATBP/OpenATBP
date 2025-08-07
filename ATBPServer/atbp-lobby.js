@@ -1,12 +1,13 @@
-const net = require('net');
-const config = require('./config.js');
-const matchmaking = require('./matchmaking.js');
-const dbOperations = require('./db-operations.js');
+import net from 'net';
+import config from './config.js';
+import matchmaking from './matchmaking.js';
+import dbOperations from './db-operations.js';
 
-const express = require('express');
+import express from 'express';
 const wsApp = express();
 
-const wsExpress = require('express-ws')(wsApp);
+import express_ws from 'express-ws';
+const wsExpress = express_ws(wsApp);
 
 const heroes = [
   'billy',
@@ -38,7 +39,7 @@ var pendingInvites = [];
 var queueNum = 0;
 var playerCollection = null;
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+import { MongoClient, ServerApiVersion } from 'mongodb';
 const mongoClient = new MongoClient(config.httpserver.mongouri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -90,15 +91,15 @@ function sendCommand(socket, command, response) {
   return new Promise(function (resolve, reject) {
     if (socket != undefined && socket.player.fake == undefined) {
       if (command == undefined && response == undefined) reject();
-      var package = {
+      var pack = {
         cmd: command,
         payload: response,
       };
-      package = JSON.stringify(package);
+      pack = JSON.stringify(pack);
       let lengthBytes = Buffer.alloc(2);
-      lengthBytes.writeInt16BE(Buffer.byteLength(package, 'utf8'));
+      lengthBytes.writeInt16BE(Buffer.byteLength(pack, 'utf8'));
       socket.write(lengthBytes);
-      socket.write(package, () => {
+      socket.write(pack, () => {
         //  console.log('Finished sending package to ', socket.player.name);
         resolve();
       });
@@ -1638,7 +1639,7 @@ function handleRequest(jsonString, socket) {
   return JSON.stringify(response);
 }
 
-module.exports = class ATBPLobbyServer {
+export default class ATBPLobbyServer {
   constructor(port) {
     this.port = port;
     this.server = null;
@@ -1649,7 +1650,7 @@ module.exports = class ATBPLobbyServer {
         console.error('FATAL: MongoDB connect failed: ' + mongoError);
         process.exit(1);
       }
-      playerCollection = mongoClient.db('openatbp').collection('users');
+      playerCollection = mongoClient.db('openatbp').collection('users2');
       this.server = wsApp.ws('',(ws,req,next) => {
         ws.on('message',(data) => {
           let response = handleRequest(data,ws);

@@ -1,5 +1,7 @@
-const crypto = require('crypto');
-const fs = require('node:fs');
+import crypto from 'crypto';
+import fs from 'node:fs';
+import got from 'got';
+import config from './config.js';
 
 var newUserFunction = function (
   username,
@@ -100,7 +102,36 @@ var handleQueueData = function (player, playerDatabase) {
   }
 };
 
-module.exports = {
+var handleRefreshToken = function(user,token, playerDatabase){
+  return new Promise(async function(resolve, reject) {
+    var options = {
+      "headers": ["Content-Type: application/x-www-form-urlencoded"],
+      "form": {
+        "grant_type": "refresh_token",
+        "refresh_token": token,
+        "client_id": config.discord.client_id,
+        "client_secret": config.discord.client_secret
+      }
+    };
+    try{
+      const data = await got.post('https://discord.com/api/oauth2/token',options).json();
+      data.expires_at = Date.now() + data.expires_in;
+      if(user == null){
+        resolve(data);
+      }else{
+        playerDatabase.updateOne({"user.authid":user.authid},{$set: {"session":data}}).then(() => {
+          console.log("Updated data!");
+          resolve(data);
+        }).catch(console.error);
+      }
+    }catch(e){
+      reject(e);
+    }
+  });
+}
+
+export default {
   createNewUser: newUserFunction,
   handleQueueData: handleQueueData,
+  handleRefreshToken: handleRefreshToken
 };

@@ -12,7 +12,7 @@ module.exports = {
       var authTokenSplit = data.split('=');
       var authToken = data;
       collection
-        .findOne({ 'session.token': authToken })
+        .findOne({ 'session.access_token': authToken })
         .then((res) => {
           if (res != null)
             resolve(JSON.stringify({ displayName: res.user.dname }));
@@ -28,7 +28,7 @@ module.exports = {
     return new Promise(function (resolve, reject) {
       var authToken = data;
       collection
-        .findOne({ 'session.token': authToken })
+        .findOne({ 'session.access_token': authToken })
         .then((res) => {
           if (res != null && res.betaTester != undefined) {
             resolve({ eligible: res.betaTester });
@@ -56,7 +56,7 @@ module.exports = {
     // /service/shop/player?authToken={data.token} RETURNS player inventory from db
     return new Promise(function (resolve, reject) {
       collection
-        .findOne({ 'session.token': token })
+        .findOne({ 'session.access_token': token })
         .then((data) => {
           if (data != null) resolve(JSON.stringify(data.inventory));
         })
@@ -69,7 +69,7 @@ module.exports = {
     // /service/data/user/champions/profile?authToken={data} RETURNS player info from db
     return new Promise(function (resolve, reject) {
       collection
-        .findOne({ 'session.token': data })
+        .findOne({ 'session.access_token': data })
         .then((dat) => {
           if (dat != null) {
             resolve(dat.player);
@@ -150,7 +150,7 @@ module.exports = {
               if (res) {
                 var expireDate = Date.parse(user.session.expires_at);
                 if (token != '' && Date.now() < expireDate.valueOf()) {
-                  if (user.session.token == token) {
+                  if (user.session.access_token == token) {
                     resolve(user);
                   } else reject();
                 } else {
@@ -192,7 +192,7 @@ module.exports = {
   handleFriendRequest: function (token, collection) {
     return new Promise(function (resolve, reject) {
       collection
-        .findOne({ 'session.token': token })
+        .findOne({ 'session.access_token': token })
         .then((u) => {
           if (u != null) {
             var openRequests = u.requests;

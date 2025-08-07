@@ -1,21 +1,32 @@
-const fs = require('fs');
-const express = require('express');
-const bodyParser = require('body-parser');
+import fs from 'fs';
+import express from 'express';
+import bodyParser from 'body-parser';
 const app = express();
-const cors = require('cors');
-const cookieParser = require('cookie-parser');
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import got from 'got';
+import config from './config.js';
 
-const database = require('./db-operations.js');
-const getRequest = require('./get-requests.js');
-const postRequest = require('./post-requests.js');
+import database from './db-operations.js';
+import getRequest from './get-requests.js';
+import postRequest from './post-requests.js';
 
-const ATBPLobbyServer = require('./atbp-lobby.js');
-const SocketPolicyServer = require('./socket-policy.js');
+import ATBPLobbyServer from './atbp-lobby.js';
+import SocketPolicyServer from './socket-policy.js';
 var lobbyServer;
 
-const displayNames = require('./data/names.json');
-const shopData = require('./data/shop.json');
-const path = require('path');
+const loadJSON = (path) => JSON.parse(fs.readFileSync(new URL(path, import.meta.url)));
+
+const displayNames = loadJSON('./data/names.json');
+const shopData = loadJSON('./data/shop.json');
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+import iconMetaData from './icon_metadata.js';
 
 //Added to remove duplicate friends if needed...
 async function removeDuplicateFriends(collection) {
@@ -263,9 +274,8 @@ async function getGlobalChampionStats(champions) {
   }
 }
 
-let config;
 try {
-  config = require('./config.js');
+
 } catch (err) {
   if (err instanceof Error && err.code === 'MODULE_NOT_FOUND') {
     console.error(
@@ -281,9 +291,9 @@ try {
   process.exit(1);
 }
 
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const { join, parse, extname } = require('node:path');
-const { COMMON_ICON_COST } = require('./icon_metadata');
+import { MongoClient, ServerApiVersion, ObjectId } from 'mongodb';
+import { join, parse, extname } from 'node:path';
+import { COMMON_ICON_COST } from './icon_metadata.js';
 const mongoClient = new MongoClient(config.httpserver.mongouri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -291,6 +301,7 @@ const mongoClient = new MongoClient(config.httpserver.mongouri, {
 });
 
 var onlinePlayers = [];
+var authenticatingPlayers = [];
 
 let ICONS = [];
 
@@ -318,7 +329,7 @@ mongoClient.connect((err) => {
 
   loadIcons();
 
-  const playerCollection = mongoClient.db('openatbp').collection('users');
+  const playerCollection = mongoClient.db('openatbp').collection('users2');
   const champCollection = mongoClient.db('openatbp').collection('champions');
   //TODO: Put all the testing commands into a separate file
 
@@ -350,8 +361,6 @@ mongoClient.connect((err) => {
     );
   }
 
-  const { ALL_ICONS_METADATA } = require('./icon_metadata');
-
   app.set('view engine', 'ejs');
   app.use(express.static('static'));
   app.use(bodyParser.urlencoded({ extended: false }));
@@ -371,7 +380,7 @@ mongoClient.connect((err) => {
 
     try {
       const userProfile = await playerCollection.findOne({
-        'session.token': session_token,
+        'session.access_token': session_token,
       });
 
       if (!userProfile) {
@@ -869,7 +878,7 @@ mongoClient.connect((err) => {
       }
     }
     playerCollection
-      .findOne({ 'session.token': session_token })
+      .findOne({ 'session.access_token': session_token })
       .then((u) => {
         if (u != null && u.user.TEGid != req.body.username) {
           playerCollection
@@ -1032,7 +1041,46 @@ mongoClient.connect((err) => {
       });
   });
 
-  app.get('/auth/login', (req, res) => {
+  app.get('/auth/',(req,res) => {
+    console.log(req.query);
+    for(var u of authenticatingPlayers){
+      if(u.socket.address().address == res.socket.address().address){
+        res.send("<script>window.close();</script>");
+        u.send({"code":req.query.code});
+        return;
+      }
+    }
+  });
+
+  app.get('/service/discord',(req,res) => {
+    console.log(res.socket.address());
+    authenticatingPlayers.push(res);
+  });
+
+  app.post('/auth/login', async(req,res) => {
+    console.log(req.body);
+    if(req.body.expires_at != undefined && req.body.expires_at > Date.now()){
+      console.log("Current token works!");
+      const userData = await got('https://discord.com/api/users/@me', {
+        headers: {'authorization': `${req.body.token_type} ${req.body.access_token}`}
+      }).json();
+      postRequest.handleLogin(userData.id,req.body,playerCollection).then((data) => {
+        res.send(data);
+      }).catch(console.error);
+    }else{
+      console.log("Current token is expired!");
+      database.handleRefreshToken(null,req.body.refresh_token,playerCollection).then(async (tok) => {
+        const userData = await got('https://discord.com/api/users/@me', {
+          headers: {'authorization': `${tok.token_type} ${tok.access_token}`}
+        }).json();
+        postRequest.handleLogin(userData.id,tok,playerCollection).then((data) => {
+          res.send(data);
+        }).catch(console.error);
+      }).catch(console.error);
+    }
+  });
+
+  app.get('/auth/login', async (req, res) => {
     var session_token = '';
     for (var h of req.rawHeaders) {
       if (h.includes('session_token')) {
@@ -1284,7 +1332,7 @@ mongoClient.connect((err) => {
 
   app.post('/service/friend/request', (req, res) => {
     playerCollection
-      .findOne({ 'session.token': req.query.authToken })
+      .findOne({ 'session.access_token': req.query.authToken })
       .then((u) => {
         if (u != null) {
           postRequest

@@ -111,32 +111,13 @@ module.exports = {
   handleLogin: function (data, token, collection) {
     // /service/authenticate/login PROVIDES authToken [pid,TEGid,authid,authpass] RETURNS authToken.text={authToken}
     return new Promise(function (resolve, reject) {
-      collection
-        .findOne({
-          'user.authid': `${data.authToken.authid}`,
-          'user.authpass': `${decodeURIComponent(data.authToken.authpass)}`,
-          'user.TEGid': `${data.authToken.TEGid}`,
-          'session.token': token,
-        })
-        .then((user) => {
-          if (user != null) {
-            //User exists
-            if (
-              (config.lobbyserver.earlyAccessOnly && user.earlyAccess) ||
-              !config.lobbyserver.earlyAccessOnly
-            )
-              resolve(
-                JSON.stringify({ authToken: { text: user.session.token } })
-              );
-            else reject();
-          } else {
-            //User does not exist
-            reject();
-          }
-        })
-        .catch((err) => {
-          reject(err);
-        });
+      collection.findOne({"user.authid":data}).then((d) => {
+        if(d != null){
+          collection.updateOne({"user.authid":data},{$set:{"session":token}}).then(() => {
+            resolve({"TEGid":d.user.TEGid, "dname": d.user.dname, "authid": d.user.authid, "authpass": d.user.authpass, "session_token": token});
+          }).catch(console.error);
+        }
+      }).catch(console.error);
     });
   },
   handlePresent: function (data) {
