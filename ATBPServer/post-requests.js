@@ -134,7 +134,7 @@ module.exports = {
           collection
             .updateOne(
               {
-                'session.token': token,
+                'session.access_token': token,
                 'player.coins': { $gte: Number(foundItem.cost) },
                 inventory: { $ne: itemToPurchase },
               },
