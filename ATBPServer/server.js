@@ -1076,7 +1076,9 @@ mongoClient.connect((err) => {
         postRequest.handleLogin(userData.id,tok,playerCollection).then((data) => {
           res.send(data);
         }).catch(console.error);
-      }).catch(console.error);
+      }).catch(() => {
+        res.send({"error":"Invalid refresh token!"});
+      });
     }
   });
 

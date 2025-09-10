@@ -64,11 +64,7 @@ function tryParseJSONObject(jsonString) {
 function sendAll(sockets, response) {
   response = JSON.stringify(response);
   for (var socket of sockets) {
-    //    console.log('Sending to ' + socket.player.name + '->', response);
-    let lengthBytes = Buffer.alloc(2);
-    lengthBytes.writeInt16BE(Buffer.byteLength(response, 'utf8'));
-    socket.write(lengthBytes);
-    socket.write(response);
+    socket.send(response);
   }
 }
 
@@ -76,7 +72,8 @@ function safeSendAll(sockets, command, response) {
   return new Promise(function (resolve, reject) {
     if (sockets.length == 0) resolve(true);
     else {
-      //console.log(`Sending ${command} to ${sockets[0].player.name}`);
+      console.log(`Sending ${command} to ${sockets[0].player.name}`);
+      console.log(response);
       sendCommand(sockets[0], command, response)
         .then(() => {
           sockets.shift();
@@ -96,13 +93,8 @@ function sendCommand(socket, command, response) {
         payload: response,
       };
       pack = JSON.stringify(pack);
-      let lengthBytes = Buffer.alloc(2);
-      lengthBytes.writeInt16BE(Buffer.byteLength(pack, 'utf8'));
-      socket.write(lengthBytes);
-      socket.write(pack, () => {
-        //  console.log('Finished sending package to ', socket.player.name);
-        resolve();
-      });
+      socket.send(pack)
+      resolve();
     } else reject();
   });
 }
