@@ -768,6 +768,7 @@ public class ExtensionCommands {
     }
 
     public static void updateTime(ATBPExtension parentExt, Room room, int msRan) {
+        // is command is super weird
         ISFSObject data = new SFSObject();
         data.putLong("time", msRan);
         for (User u : room.getUserList()) {

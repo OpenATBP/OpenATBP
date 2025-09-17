@@ -363,16 +363,26 @@ public class ATBPExtension extends SFSExtension {
     public void startScripts(Room room) { // Creates a new task scheduler for a room
         if (!this.roomHandlers.containsKey(room.getName())) {
             String groupId = room.getGroupId();
+            int HP_RATE = MapData.NORMAL_HP_SPAWN_RATE;
+            String[] pSpawns = GameManager.L1_SPAWNS;
+            String rName = room.getName();
+
             switch (groupId) {
                 case "Tutorial":
-                    roomHandlers.put(room.getName(), new TutorialRoomHandler(this, room));
+                    roomHandlers.put(rName, new TutorialRoomHandler(this, room));
                     break;
+
                 case "Practice":
-                    roomHandlers.put(room.getName(), new PracticeRoomHandler(this, room));
+                    roomHandlers.put(rName, new PracticeRoomHandler(this, room, pSpawns, HP_RATE));
                     break;
+
+                case "ARAM":
+                    roomHandlers.put(rName, new AramRoomHandler(this, room));
+                    break;
+
                 case "PVE":
                 case "PVP":
-                    roomHandlers.put(room.getName(), new MainMapRoomHandler(this, room));
+                    roomHandlers.put(rName, new MainMapRoomHandler(this, room));
                     break;
             }
             Console.debugLog("Starting script for room " + room.getName());
@@ -466,13 +476,13 @@ public class ATBPExtension extends SFSExtension {
         else return this.practiceBrushPaths;
     }
 
-    public Path2D getBrush(int num) {
-        return this.brushPaths.get(num);
+    public Path2D getBrush(int num, ArrayList<Path2D> brushPaths) {
+        return brushPaths.get(num);
     }
 
-    public int getBrushNum(Point2D loc) {
-        for (int i = 0; i < this.brushPaths.size(); i++) {
-            Path2D p = this.brushPaths.get(i);
+    public int getBrushNum(Point2D loc, ArrayList<Path2D> brushPaths) {
+        for (int i = 0; i < brushPaths.size(); i++) {
+            Path2D p = brushPaths.get(i);
             if (p.contains(loc)) return i;
         }
         return -1;
@@ -489,11 +499,11 @@ public class ATBPExtension extends SFSExtension {
          */
     }
 
-    public boolean isBrushOccupied(RoomHandler room, UserActor a) {
+    public boolean isBrushOccupied(RoomHandler room, UserActor a, ArrayList<Path2D> brushPaths) {
         try {
-            int brushNum = this.getBrushNum(a.getLocation());
+            int brushNum = this.getBrushNum(a.getLocation(), brushPaths);
             if (brushNum == -1) return false;
-            Path2D brush = this.brushPaths.get(brushNum);
+            Path2D brush = brushPaths.get(brushNum);
             for (UserActor ua : room.getPlayers()) {
                 if (ua.getTeam() != a.getTeam() && brush.contains(ua.getLocation())) return true;
             }
@@ -522,16 +532,7 @@ public class ATBPExtension extends SFSExtension {
             if (playerData != null) {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode data = mapper.readTree(playerData.toJson());
-                int elo = data.get("player").get("elo").asInt();
-                switch (elo + 1) {
-                    case 1:
-                    case 100:
-                    case 200:
-                    case 500:
-                        elo++;
-                        break;
-                }
-                return elo;
+                return data.get("player").get("elo").asInt();
             } else return -1;
         } catch (Exception e) {
             e.printStackTrace();

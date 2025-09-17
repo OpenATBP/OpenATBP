@@ -1,13 +1,14 @@
 package xyz.openatbp.extension;
 
 import java.awt.geom.Point2D;
-import java.util.concurrent.TimeUnit;
 
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 
 public class GameModeSpawns {
+
+    public static final float MINI_GUARDIAN_ACTOR_OFFSET = 2.5f;
 
     public static void spawnTowersForMode(Room room, ATBPExtension parentExt) {
         String groupId = room.getGroupId();
@@ -21,6 +22,7 @@ public class GameModeSpawns {
                 break;
 
             case "Practice":
+            case "ARAM":
                 ExtensionCommands.createActor(
                         parentExt, room, MapData.getTowerActorData(0, 1, groupId));
                 ExtensionCommands.createActor(
@@ -57,6 +59,7 @@ public class GameModeSpawns {
         switch (groupId) {
             case "Tutorial":
             case "Practice":
+            case "ARAM":
                 ExtensionCommands.createActor(
                         parentExt, room, MapData.getAltarActorData(0, room.getGroupId()));
                 ExtensionCommands.createActor(
@@ -81,6 +84,7 @@ public class GameModeSpawns {
         switch (groupId) {
             case "Tutorial":
             case "Practice":
+            case "ARAM":
                 ExtensionCommands.createActor(
                         parentExt, room, MapData.getHealthActorData(0, room.getGroupId(), -1));
                 ExtensionCommands.createActor(
@@ -112,7 +116,9 @@ public class GameModeSpawns {
         Point2D L2_PURPLE = new Point2D.Float(MapData.L2_PURPLE_BASE[0], MapData.L2_PURPLE_BASE[1]);
         Point2D L2_BLUE = new Point2D.Float(MapData.L2_BLUE_BASE[0], MapData.L2_BLUE_BASE[1]);
 
-        if (roomGroup.equals("Practice") || roomGroup.equals("Tutorial")) {
+        if (roomGroup.equals("Practice")
+                || roomGroup.equals("Tutorial")
+                || roomGroup.equals("ARAM")) {
             if (team == 0) return L1_PURPLE;
             else return L1_BLUE;
         } else {
@@ -125,7 +131,7 @@ public class GameModeSpawns {
         float towerX;
         float towerZ;
         Point2D towerLocation;
-        if (room.getGroupId().equals("Practice")) {
+        if (room.getGroupId().equals("Practice") || room.getGroupId().equals("ARAM")) {
             towerX = team == 0 ? MapData.L1_PURPLE_TOWER_0[0] : MapData.L1_BLUE_TOWER_3[0];
             towerZ = team == 0 ? MapData.L1_PURPLE_TOWER_0[1] : MapData.L1_BLUE_TOWER_3[1];
         } else {
@@ -141,7 +147,9 @@ public class GameModeSpawns {
         float x;
         float z;
 
-        if (roomGroup.equals("Tutorial") || roomGroup.equals("Practice")) {
+        if (roomGroup.equals("Tutorial")
+                || roomGroup.equals("Practice")
+                || room.getGroupId().equals("ARAM")) {
             x = team == 0 ? MapData.L1_P_GUARDIAN_MODEL_X : MapData.L1_B_GUARDIAN_MODEL_X;
             z = MapData.L1_GUARDIAN_MODEL_Z;
         } else {
@@ -149,63 +157,23 @@ public class GameModeSpawns {
             z = MapData.L2_GUARDIAN1_Z;
         }
 
-        float rotation = team == 0 ? 90f : -90f;
+        ISFSObject guardian = getGuardian(team, x, z);
+        ExtensionCommands.createActor(parentExt, room, guardian);
+    }
 
-        ExtensionCommands.createWorldFX(
-                parentExt,
-                room,
-                "gumball_guardian" + team,
-                "gumball_guardian",
-                "GumballGuardian_" + team + "_" + room,
-                4500,
-                x,
-                z,
-                false,
-                team,
-                rotation);
-
-        float outsideMapX = x;
-        float moveX = x;
-        if (team == 0) {
-            outsideMapX -= 50;
-            moveX -= 40;
-        } else {
-            outsideMapX += 50;
-            moveX += 40;
-        }
-
-        Point2D outsideMapPos = new Point2D.Float(outsideMapX, z);
-        Point2D movePos = new Point2D.Float(moveX, z);
-        Point2D properPos = new Point2D.Float(x, z);
+    private static ISFSObject getGuardian(int team, float x, float z) {
+        String bundle = team == 0 ? "GG_Purple" : "GG_Blue";
 
         ISFSObject guardian = new SFSObject();
         ISFSObject guardianSpawn = new SFSObject();
         guardian.putUtfString("id", "gumball" + team);
-        guardian.putUtfString("actor", "gumball_guardian");
-        guardianSpawn.putFloat("x", outsideMapX);
-        guardianSpawn.putFloat("y", 0f);
+        guardian.putUtfString("actor", bundle);
+        guardianSpawn.putFloat("x", x);
+        guardianSpawn.putFloat("y", 0);
         guardianSpawn.putFloat("z", z);
         guardian.putSFSObject("spawn_point", guardianSpawn);
         guardian.putFloat("rotation", 0f);
         guardian.putInt("team", team);
-
-        Runnable create = () -> ExtensionCommands.createActor(parentExt, room, guardian);
-        Runnable move =
-                () ->
-                        ExtensionCommands.moveActor(
-                                parentExt,
-                                room,
-                                "gumball" + team,
-                                outsideMapPos,
-                                movePos,
-                                100,
-                                true);
-        Runnable snap =
-                () ->
-                        ExtensionCommands.snapActor(
-                                parentExt, room, "gumball" + team, outsideMapPos, properPos, true);
-        parentExt.getTaskScheduler().schedule(create, 1000, TimeUnit.MILLISECONDS);
-        parentExt.getTaskScheduler().schedule(move, 2000, TimeUnit.MILLISECONDS);
-        parentExt.getTaskScheduler().schedule(snap, 4000, TimeUnit.MILLISECONDS);
+        return guardian;
     }
 }

@@ -438,18 +438,8 @@ public abstract class Actor {
                 }
             }
             // this.handleElectrodeGun(ua, a, damage, attackData);
-            if (ua.lichHandDamageApplies(this)) {
-                Console.debugLog("Lich hand damage " + ua.getLichHandTimesHit());
-                damage += ((double) damage * (0.1d * ua.getLichHandTimesHit()));
-                Console.debugLog("New damage from Lich Hand: " + damage);
-                ua.handleLichHandHit();
-            } else if (ChampionData.getJunkLevel(ua, "junk_2_lich_hand") > 0
-                    && (ua.getLichVictim() == null
-                            || !ua.getLichVictim().equalsIgnoreCase(this.id))) {
-                Console.debugLog("Setting Lich Victim");
-                ua.setLichVictim(this.id);
-            }
         }
+
         this.currentHealth -= damage;
         if (this.currentHealth <= 0) this.currentHealth = 0;
         ISFSObject updateData = new SFSObject();
@@ -464,19 +454,86 @@ public abstract class Actor {
     public void addToDamageQueue(
             Actor attacker, double damage, JsonNode attackData, boolean dotDamage) {
         if (this.currentHealth <= 0) return;
+
+        damage = handleLichHand(attacker, attackData, damage);
+
         ISFSObject data = new SFSObject();
         data.putClass("attacker", attacker);
         data.putDouble("damage", damage);
         data.putClass("attackData", attackData);
         this.damageQueue.add(data);
-        if (attacker.getActorType() == ActorType.PLAYER
-                && this.getAttackType(attackData) == AttackType.SPELL
-                && this.getActorType() != ActorType.TOWER
-                && this.getActorType() != ActorType.BASE
+        if (attacker instanceof UserActor
+                && getAttackType(attackData) == AttackType.SPELL
+                && getActorType() != ActorType.TOWER
+                && getActorType() != ActorType.BASE
                 && !attackData.get("spellName").asText().equalsIgnoreCase("flame cloak")) {
             UserActor ua = (UserActor) attacker;
             ua.addHit(dotDamage);
             ua.handleSpellVamp(this.getMitigatedDamage(damage, AttackType.SPELL, ua), dotDamage);
+        }
+
+        handleSai(attacker, attackData);
+    }
+
+    public double handleLichHand(Actor attacker, JsonNode attackData, double damage) {
+        if (attacker instanceof UserActor) {
+            UserActor ua = (UserActor) attacker;
+            boolean leveledHand = ChampionData.getJunkLevel(ua, "junk_2_lich_hand") > 0;
+
+            if (leveledHand && getAttackType(attackData) == AttackType.SPELL) {
+                int lichHandStacks = ua.getLichHandStacks();
+                Actor lichHandTarget = ua.getLichHandTarget();
+                Long lastStackTime = ua.getLastLichHandStack();
+
+                int MAX_STACKS = 3;
+                int STACK_COOLDOWN = 1000;
+
+                boolean cdEnded = System.currentTimeMillis() - lastStackTime >= STACK_COOLDOWN;
+                double damageMultiplier = 0;
+
+                if (lichHandTarget != null && lichHandTarget.equals(this)) {
+                    damageMultiplier = lichHandStacks * 0.1;
+
+                    if (lichHandStacks < MAX_STACKS && cdEnded) {
+                        ua.setLichHandStacks(lichHandStacks + 1);
+                        ua.setLastLichHandStack(System.currentTimeMillis());
+                    }
+
+                } else {
+                    ua.setLichHandStacks(1);
+                    ua.setLastLichHandStack(System.currentTimeMillis());
+                }
+
+                Console.debugLog("damage multi: " + damageMultiplier);
+
+                damage = damage * (1 + damageMultiplier);
+                ua.setLichHandTarget(this);
+            }
+        }
+        return damage;
+    }
+
+    public void handleSai(Actor attacker, JsonNode attackData) {
+        if (attacker instanceof UserActor && getAttackType(attackData) == AttackType.PHYSICAL) {
+
+            UserActor ua = (UserActor) attacker;
+            if (ua.hasBackpackItem("junk_1_sai")) {
+                int critChance = (int) ua.getPlayerStat("criticalChance");
+                Long lastSaiProc = ua.getLastSaiProcTime();
+
+                Random random = new Random();
+                int randomNumber = random.nextInt(100);
+                boolean proc = randomNumber < critChance;
+
+                int SAI_CD = UserActor.SAI_PROC_COOLDOWN;
+
+                if (proc && System.currentTimeMillis() - lastSaiProc >= SAI_CD) {
+                    ua.setLastSaiProcTime(System.currentTimeMillis());
+                    double delta = this.getPlayerStat("armor") * -((double) critChance / 100.0);
+
+                    this.addEffect("armor", delta, SAI_CD);
+                }
+            }
         }
     }
 
@@ -564,6 +621,15 @@ public abstract class Actor {
         ExtensionCommands.updateActorData(this.parentExt, this.room, this.id, data);
     }
 
+    public void handleStructureRegen(
+            Long lastAction, int TIME_REQUIRED_TO_REGEN, float REGEN_VALUE) {
+        if (System.currentTimeMillis() - lastAction >= TIME_REQUIRED_TO_REGEN
+                && getHealth() != maxHealth) {
+            int delta = (int) (getMaxHealth() * REGEN_VALUE);
+            changeHealth(delta);
+        }
+    }
+
     public void heal(int delta) {
         this.changeHealth(delta);
     }
@@ -583,9 +649,12 @@ public abstract class Actor {
 
     public int getMitigatedDamage(double rawDamage, AttackType attackType, Actor attacker) {
         try {
-            double armor = this.getPlayerStat("armor") - attacker.getPlayerStat("armorPenetration");
+            double armor =
+                    this.getPlayerStat("armor")
+                            * (1 - (attacker.getPlayerStat("armorPenetration") / 100));
             double spellResist =
-                    this.getPlayerStat("spellResist") - attacker.getPlayerStat("spellPenetration");
+                    this.getPlayerStat("spellResist")
+                            * (1 - (attacker.getPlayerStat("spellPenetration") / 100));
             if (armor < 0) armor = 0;
             if (spellResist < 0) spellResist = 0;
             if (armor > 65) armor = 65;

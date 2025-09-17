@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
-import com.smartfoxserver.v2.entities.data.ISFSObject;
 
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Projectile;
@@ -17,11 +16,12 @@ public class PracticeRoomHandler extends RoomHandler {
 
     private HashMap<User, UserActor> dcPlayers = new HashMap<>();
     private List<Actor> companions = new ArrayList<>();
-    private Point2D BOT_LOCATION = new Point2D.Float(-47.5f, -4);
+    private Point2D finnBotRespawnPoint;
     private Bot finnBot;
 
-    public PracticeRoomHandler(ATBPExtension parentExt, Room room) {
-        super(parentExt, room);
+    public PracticeRoomHandler(
+            ATBPExtension parentExt, Room room, String[] SPAWNS, int HP_SPAWN_RATE) {
+        super(parentExt, room, SPAWNS, HP_SPAWN_RATE);
         HashMap<String, Point2D> towers0 = MapData.getPTowerActorData(0);
         HashMap<String, Point2D> towers1 = MapData.getPTowerActorData(1);
         baseTowers.add(new BaseTower(parentExt, room, "purple_tower0", 0));
@@ -34,58 +34,21 @@ public class PracticeRoomHandler extends RoomHandler {
             towers.add(new Tower(parentExt, room, key, 1, towers1.get(key)));
         }
         if (this.players.size() == 1) {
-            ExtensionCommands.createWorldFX(
-                    parentExt,
-                    room,
-                    "bot_ring",
-                    "fx_aggrorange_3",
-                    "bot_ring" + room,
-                    1000 * 60 * 15,
-                    (float) BOT_LOCATION.getX(),
-                    (float) BOT_LOCATION.getY(),
-                    false,
-                    1,
-                    0f);
-
-            finnBot = new Bot(parentExt, room, "finn", 1, BOT_LOCATION, 1);
+            Point2D purpleSpawn = MapData.L1_PURPLE_SPAWNS[1];
+            float x = (float) purpleSpawn.getX();
+            float finnBotSpawnX = x * -1;
+            finnBotRespawnPoint = new Point2D.Float(finnBotSpawnX, (float) purpleSpawn.getY());
+            finnBot = new Bot(parentExt, room, "finn", 1, finnBotRespawnPoint);
         }
+        FOUNTAIN_RADIUS = 6f;
     }
 
     @Override
     public void run() {
+        if (gameOver) return;
         super.run();
-        if (finnBot != null) {
+        if (finnBot != null && !gameOver) {
             finnBot.update(mSecondsRan);
-        }
-    }
-
-    @Override
-    public void handleSpawns() {
-        ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
-        for (String s :
-                GameManager.L2_SPAWNS) { // Check all mob/health spawns for how long it's been
-            // since dead
-            if (s.length() > 3) {
-                int spawnRate = 45; // Mob spawn rate
-                if (monsterDebug) spawnRate = 10;
-                if (spawns.getInt(s)
-                        == spawnRate) { // Mob timers will be set to 0 when killed or health
-                    // when taken
-                    spawnMonster(s);
-                    spawns.putInt(s, spawns.getInt(s) + 1);
-                } else {
-                    spawns.putInt(s, spawns.getInt(s) + 1);
-                }
-            } else {
-                int time = spawns.getInt(s);
-                if ((this.secondsRan <= 91 && time == 90) || (this.secondsRan > 91 && time == 60)) {
-                    spawnHealth(s);
-                } else if ((this.secondsRan <= 91 && time < 90)
-                        || (this.secondsRan > 91 && time < 60)) {
-                    time++;
-                    spawns.putInt(s, time);
-                }
-            }
         }
     }
 
@@ -123,48 +86,12 @@ public class PracticeRoomHandler extends RoomHandler {
     @Override
     public int getAltarStatus(Point2D location) {
         Point2D topAltar = new Point2D.Float(0f, MapData.L1_AALTAR_Z);
-        if (location.equals(topAltar)) return this.altarStatus[0];
-        else return this.altarStatus[1];
+        if (location.equals(topAltar)) return this.altarStatus[1];
+        else return this.altarStatus[0];
     }
 
     @Override
     public void handleAltarGameScore(int capturingTeam, int altarIndex) {}
-
-    @Override
-    public void handleHealth() {
-        for (String s : GameManager.L2_SPAWNS) {
-            if (s.length() == 3) {
-                ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
-                if (spawns.getInt(s) == 91) {
-                    for (UserActor u : players) {
-                        Point2D currentPoint = u.getLocation();
-                        if (insideHealth(currentPoint, getHealthNum(s)) && u.getHealth() > 0) {
-                            int team = u.getTeam();
-                            Point2D healthLoc = getHealthLocation(getHealthNum(s));
-                            ExtensionCommands.removeFx(parentExt, room, s + "_fx");
-                            ExtensionCommands.createActorFX(
-                                    parentExt,
-                                    room,
-                                    String.valueOf(u.getId()),
-                                    "picked_up_health_cyclops",
-                                    2000,
-                                    s + "_fx2",
-                                    true,
-                                    "",
-                                    false,
-                                    false,
-                                    team);
-                            ExtensionCommands.playSound(
-                                    parentExt, u.getRoom(), "", "sfx_health_picked_up", healthLoc);
-                            u.handleCyclopsHealing();
-                            spawns.putInt(s, 0);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     @Override
     public void gameOver(int winningTeam) {
@@ -172,8 +99,7 @@ public class PracticeRoomHandler extends RoomHandler {
         try {
             this.gameOver = true;
             this.room.setProperty("state", 3);
-            ExtensionCommands.gameOver(
-                    parentExt, this.room, this.dcPlayers, winningTeam, false, false);
+            ExtensionCommands.gameOver(parentExt, room, dcPlayers, winningTeam, false, false);
             // logChampionData(winningTeam);
 
             for (UserActor ua : this.players) {
@@ -189,6 +115,8 @@ public class PracticeRoomHandler extends RoomHandler {
                             parentExt, ua.getUser(), "music", "music/music_defeat");
                 }
             }
+
+            parentExt.stopScript(room.getName(), false);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -229,7 +157,7 @@ public class PracticeRoomHandler extends RoomHandler {
         // Console.debugLog("The room has killed " + a.getId());
         String mons = a.getId().split("_")[0];
 
-        for (String s : GameManager.L2_SPAWNS) {
+        for (String s : SPAWNS) {
             if (s.contains(mons)) {
                 if (s.contains("gnomes") || s.contains("owls")) {
                     for (Monster m : campMonsters) {
@@ -253,7 +181,7 @@ public class PracticeRoomHandler extends RoomHandler {
         if (num == 0) {
             x = MapData.L1_BLUE_HEALTH_X;
             z = MapData.L1_BLUE_HEALTH_Z;
-        } else if (num == 1) {
+        } else if (num == 3) {
             x = MapData.L1_BLUE_HEALTH_X * -1;
             z = MapData.L1_BLUE_HEALTH_Z * -1;
         } else {

@@ -355,31 +355,34 @@ public class ChampionData {
             int lv10Cooldown;
             switch (championName) {
                 case "billy":
-                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 45000;
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 50000;
                     break;
                 case "bmo":
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 11000 : 37500;
                     break;
+                case "choosegoose":
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 42000;
+                    break;
                 case "cinnamonbun":
-                    lv10Cooldown = abilityNumber == 1 ? 4500 : abilityNumber == 2 ? 14000 : 42000;
+                    lv10Cooldown = abilityNumber == 1 ? 4500 : abilityNumber == 2 ? 12000 : 47000;
                     break;
                 case "finn":
-                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 10000 : 26000;
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 10000 : 40000;
                     break;
                 case "fionna":
                     lv10Cooldown = abilityNumber == 1 ? 12000 : abilityNumber == 2 ? 5000 : 60000;
                     break;
                 case "flame":
-                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 15000 : 45000;
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 15000 : 60000;
                     break;
                 case "gunter":
                     lv10Cooldown = abilityNumber == 1 ? 9000 : abilityNumber == 2 ? 5000 : 42000;
                     break;
                 case "hunson":
-                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 35000;
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 45000;
                     break;
                 case "iceking":
-                    lv10Cooldown = abilityNumber == 1 ? 7000 : abilityNumber == 2 ? 8000 : 45000;
+                    lv10Cooldown = abilityNumber == 1 ? 7000 : abilityNumber == 2 ? 8000 : 60000;
                     break;
                 case "jake":
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 45000;
@@ -403,10 +406,10 @@ public class ChampionData {
                     lv10Cooldown = abilityNumber == 1 ? 6000 : abilityNumber == 2 ? 5000 : 42000;
                     break;
                 case "peppermintbutler":
-                    lv10Cooldown = abilityNumber == 1 ? 13000 : abilityNumber == 2 ? 13000 : 25000;
+                    lv10Cooldown = abilityNumber == 1 ? 13000 : abilityNumber == 2 ? 13000 : 40000;
                     break;
                 case "princessbubblegum":
-                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 16000 : 40000;
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 16000 : 60000;
                     break;
                 case "rattleballs":
                     lv10Cooldown = abilityNumber == 1 ? 10000 : abilityNumber == 2 ? 14000 : 50000;
@@ -440,7 +443,6 @@ public class ChampionData {
     }
 
     public static int[] getBuildPath(String actor, String backpack) {
-        Console.debugLog(backpack);
         int[] buildPath = {1, 1, 2, 2, 1, 2, 1, 2, 5, 5};
         String avatar = actor;
         if (actor.contains("skin")) {
@@ -754,4 +756,25 @@ public class ChampionData {
         "kill7_you_are_demon",
         "kill6_you_are_god"
     };
+
+    public static String getRandomBag() {
+        String[] belts = {
+            "belt_beta_adc",
+            "belt_beta_anti_mage",
+            "belt_beta_anti_tank",
+            "belt_beta_assassin",
+            "belt_beta_bruiser",
+            "belt_beta_hybrid",
+            "belt_beta_jungle",
+            "belt_beta_laner",
+            "belt_beta_power",
+            "belt_beta_risk",
+            "belt_beta_rng",
+            "belt_beta_support",
+            "belt_beta_tank",
+            "belt_beta_vamp",
+            "belt_beta_warlock"
+        };
+        return belts[(int) Math.round(Math.random() * belts.length - 1)];
+    }
 }

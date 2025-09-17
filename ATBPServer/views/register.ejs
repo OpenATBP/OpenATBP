@@ -1,120 +1,438 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>OpenATBP - Registration</title>
-
-    <script type="text/javascript" src="js/jquery.min.js"></script>
+<head>
+    <title>OpenATBP - Registration</title>
     <link rel="stylesheet" href="css/bootstrap.min.css">
+    <script type="text/javascript" src="js/jquery.min.js"></script>
     <script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript">
+      function getQueryParam(paramName, urlString) {
+        var search;
+        if (urlString) {
+          try {
+            search = (new URL(urlString, window.location.origin)).search;
+          } catch (e) {
+            var qIndex = urlString.indexOf('?');
+            search = (qIndex !== -1) ? urlString.substring(qIndex) : "";
+          }
+        } else {
+          search = window.location.search;
+        }
+        search = search.substring(1);
+        if (!search) return null;
+        var paramsArray = search.split('&');
+        for (var i = 0; i < paramsArray.length; i++) {
+          var pair = paramsArray[i].split('=');
+          if (decodeURIComponent(pair[0]) === paramName) {
+            if (pair.length === 1 || (pair.length > 1 && decodeURIComponent(pair[1]) === 'true')) {
+              return 'true';
+            }
+            return decodeURIComponent(pair[1]);
+          }
+        }
+        return null;
+      }
 
+      function displayAlertsFromUrl(urlString) {
+        var currentFailed = getQueryParam('failed', urlString) === 'true';
+        var currentUsernameTaken = getQueryParam('usernameTaken', urlString) === 'true';
+        var currentDisplayNameTaken = getQueryParam('displayNameTaken', urlString) === 'true';
+        var currentReason = getQueryParam('reason', urlString);
+        var alertMessageText = null;
+
+        if (currentUsernameTaken) {
+          alertMessageText = "Registration failed: Username is already taken. Please choose another.";
+        } else if (currentDisplayNameTaken) {
+          alertMessageText = "Registration failed: Display Name is already taken. Please choose another.";
+        } else if (currentFailed) {
+          alertMessageText = "Registration failed! Please check your inputs."; // Default for failed=true
+          if (currentReason === 'passwordmismatch') {
+            alertMessageText = "Registration failed: Passwords do not match.";
+          } else if (currentReason === 'displaynameparts') {
+            alertMessageText = "Registration failed: Please select at least two parts for your display name.";
+          } else if (currentReason === 'invaliddisplayname') {
+            alertMessageText = "Registration failed: An invalid display name part was selected.";
+          } else if (currentReason === 'servererror') {
+            alertMessageText = "Registration failed: A server error occurred. Please try again later.";
+          } else if (currentReason === 'unexpected') {
+            alertMessageText = "Registration failed: An unexpected error occurred. Please try again.";
+          }
+
+        }
+
+        if (alertMessageText) {
+          window.alert(alertMessageText);
+          return true;
+        }
+        return false;
+      }
+
+
+
+      var anErrorWasAlertedOnPageLoad = displayAlertsFromUrl(window.location.href);
+
+      function blockSpecialChar(e) {
+        var format = /[ `!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/;
+
+        var charCode = e.which || e.keyCode || e.charCode;
+        var charStr = String.fromCharCode(charCode);
+
+        if (e.key !== undefined) {
+          if (format.test(e.key)) return false;
+        } else {
+          if (format.test(charStr)) return false;
+        }
+        return true;
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        var form = document.getElementById('form');
+        var usernameInput = document.getElementById('username');
+        var passwordInput = document.getElementById('password');
+        var confirmInput = document.getElementById('confirm');
+        var name1Select = document.getElementById('name1');
+        var name2Select = document.getElementById('name2');
+        var name3Select = document.getElementById('name3');
+        var forgotInput = document.getElementById('forgot');
+        var submitButton = form ? form.querySelector('button[type="submit"]') : null;
+
+
+
+        try {
+          var namesDataString = '<%- displayNames; %>';
+          var nameObj = JSON.parse(namesDataString);
+
+          if (name1Select && nameObj.list1) {
+            var text1 = "<option value=\"\"></option>";
+            for (var i = 0; i < nameObj.list1.length; i++) {
+              var name = nameObj.list1[i];
+              text1 += '<option value="' + name.toUpperCase() + '">' + name.toUpperCase() + '</option>';
+            }
+            name1Select.innerHTML = text1;
+          }
+
+          if (name2Select && nameObj.list2) {
+            var text2 = "<option value=\"\"></option>";
+            for (var i = 0; i < nameObj.list2.length; i++) {
+              var name = nameObj.list2[i];
+              text2 += '<option value="' + name.toUpperCase() + '">' + name.toUpperCase() + '</option>';
+            }
+            name2Select.innerHTML = text2;
+          }
+
+          if (name3Select && nameObj.list3) {
+            var text3 = "<option value=\"\"></option>";
+            for (var i = 0; i < nameObj.list3.length; i++) {
+              var name = nameObj.list3[i];
+              text3 += '<option value="' + name.toUpperCase() + '">' + name.toUpperCase() + '</option>';
+            }
+            name3Select.innerHTML = text3;
+          }
+        } catch (e) {
+          console.error("Error populating display name dropdowns:", e);
+
+        }
+
+
+
+        if (anErrorWasAlertedOnPageLoad) {
+          var reason = getQueryParam('reason', window.location.href);
+          var usernameTaken = getQueryParam('usernameTaken', window.location.href) === 'true';
+          var displayNameTaken = getQueryParam('displayNameTaken', window.location.href) === 'true';
+          var failedGeneric = getQueryParam('failed', window.location.href) === 'true';
+
+          if (usernameTaken) {
+            if (usernameInput) usernameInput.value = '';
+            if (passwordInput) passwordInput.value = '';
+            if (confirmInput) confirmInput.value = '';
+            if (usernameInput) usernameInput.focus();
+          } else if (displayNameTaken) {
+            if (name1Select) name1Select.selectedIndex = 0;
+            if (name2Select) name2Select.selectedIndex = 0;
+            if (name3Select) name3Select.selectedIndex = 0;
+            if (passwordInput) passwordInput.value = '';
+            if (confirmInput) confirmInput.value = '';
+            if (name1Select) name1Select.focus();
+          } else if (failedGeneric) {
+            if (reason === 'passwordmismatch') {
+              if (passwordInput) passwordInput.value = '';
+              if (confirmInput) confirmInput.value = '';
+              if (passwordInput) passwordInput.focus();
+            } else if (reason === 'displaynameparts' || reason === 'invaliddisplayname') {
+
+              if (passwordInput) passwordInput.value = '';
+              if (confirmInput) confirmInput.value = '';
+
+              if (name1Select) name1Select.focus();
+            } else {
+
+              if (usernameInput) usernameInput.value = '';
+              if (passwordInput) passwordInput.value = '';
+              if (confirmInput) confirmInput.value = '';
+              if (forgotInput) forgotInput.value = '';
+              if (name1Select) name1Select.selectedIndex = 0;
+              if (name2Select) name2Select.selectedIndex = 0;
+              if (name3Select) name3Select.selectedIndex = 0;
+              if (usernameInput) usernameInput.focus();
+            }
+          }
+
+        }
+
+
+
+        if (form) {
+          form.addEventListener('submit', function(event) {
+
+            if (passwordInput && confirmInput && passwordInput.value !== confirmInput.value) {
+              event.preventDefault(); // Prevent form submission
+              alert("Passwords do not match!");
+              passwordInput.value = "";
+              confirmInput.value = "";
+              passwordInput.focus();
+              return;
+            }
+
+
+            var name1Value = name1Select ? name1Select.value : "";
+            var name2Value = name2Select ? name2Select.value : "";
+            var name3Value = name3Select ? name3Select.value : "";
+            var selectedNameParts = 0;
+            if (name1Value && name1Value.trim() !== '') selectedNameParts++;
+            if (name2Value && name2Value.trim() !== '') selectedNameParts++;
+            if (name3Value && name3Value.trim() !== '') selectedNameParts++;
+
+            if (selectedNameParts < 2) {
+              event.preventDefault(); // Prevent form submission
+              alert("Please select at least two parts for your display name.");
+              if (name1Select) name1Select.focus();
+              return;
+            }
+
+
+
+            if (submitButton) {
+              submitButton.disabled = true;
+              submitButton.textContent = 'Registering...';
+            }
+
+          });
+        }
+      });
+    </script>
     <style>
         body {
-          display: -ms-flexbox;
-          display: flex;
-          -ms-flex-align: center;
-          align-items: center;
-          padding-top: 40px;
-          padding-bottom: 40px;
-          background-image: url('bg3.png');
-          height:100vh;
-          background-size: cover;
+            display: -ms-flexbox;
+            display: flex;
+            -ms-flex-align: center;
+            align-items: center;
+            padding-top: 40px;
+            padding-bottom: 40px;
+            background-image: url('bg3.png');
+            height: 100vh;
+            background-size: cover;
+            font-family: "Roboto", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            color: #333;
         }
+
+        .card {
+            background-color: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            padding: 30px 35px;
+            border: none;
+        }
+
         .form-login {
-          width: 100%;
-          max-width: 480px;
-          padding: 15px;
-          margin: auto;
+            width: 100%;
+            max-width: 440px;
+            margin: auto;
         }
-        .form-login .checkbox {
-          font-weight: 400;
+
+        .card img.mb-4 {
+            margin-bottom: 1.75rem !important;
         }
-        .form-login .form-control {
-          position: relative;
-          box-sizing: border-box;
-          height: auto;
-          padding: 10px;
-          font-size: 16px;
+
+        .card h1 {
+            font-size: 2.4rem;
+            color: #4a7729;
+            font-weight: bold;
+            margin-bottom: 1.75rem !important;
+            text-shadow: 0px 1px 2px rgba(0,0,0,0.2);
         }
-        .form-login .form-control:focus {
-          z-index: 2;
+
+        .form-control {
+            position: relative;
+            background-color: #fdfdfd;
+            border: 1px solid #d8dde0;
+            border-radius: 8px;
+            padding: 14px 18px;
+            font-size: 1.025rem;
+            color: #495057;
+            transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+            box-sizing: border-box;
+            height: auto;
         }
-        #password {
-          margin-bottom: -1px;
-          border-bottom-right-radius: 0;
-          border-bottom-left-radius: 0;
+
+        .form-control::placeholder {
+            color: #888;
+            opacity: 1;
         }
-        #confirm {
-          margin-bottom: 10px;
-          border-top-left-radius: 0;
-          border-top-right-radius: 0;
+
+        .form-control:focus {
+            border-color: #79b956;
+            box-shadow: 0 0 0 0.2rem rgba(121, 185, 86, 0.35);
+            background-color: #fff;
+            z-index: 2;
         }
-      </style>
-  </head>
-	<body>
-		<script type="text/javascript" src="js/jquery.min.js"></script>
-		<script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
 
-    <script type="text/javascript">
-    const failed = window.location.search.includes('failed');
-    const exists = window.location.search.includes('exists');
-    if(failed) window.alert("Registration failed!");
-    else if(exists) window.alert("User already exists! Please login.");
+        #username.form-control {
+            margin-bottom: 1rem;
+        }
 
-		function blockSpecialChar(e){
-			var format = /[ `!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/;
-			return e.key != undefined ? !format.test(e.key) : !format.test(String.fromCharCode(e.charCode));
-		}
+        #password.form-control {
 
-    </script>
+            margin-bottom: -1px;
+            border-bottom-right-radius: 0;
+            border-bottom-left-radius: 0;
+        }
 
-    <div class="container" style="width: 32rem;">
-		<div class="card text-center">
-			<form class="form-login" id="form" action="/auth/register" method="post">
-          <img class="mb-4" src="favicon.ico" alt="" width="128" height="128">
-          <h1 class="h3 mb-3 font-weight-normal">Register</h1>
+        #confirm.form-control {
+            margin-bottom: 1rem;
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+        }
 
-          <input type="text" id="username" class="form-control" placeholder="Username" name="username" required autofocus onkeypress="return blockSpecialChar(event)">
+        label[for="name1"] {
+            display: block;
+            text-align: left;
+            font-weight: normal;
+            color: #555;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
 
-          <input type="password" id="password" class="form-control mt-3 mb-0" placeholder="Password" name="password" required>
-          <input type="password" id="confirm" class="form-control mt-0 mb-3" placeholder="Confirm Password" name="confirm" required>
+        .custom-select {
+            position: relative;
+            border: 1px solid #d8dde0;
+            border-radius: 8px;
+            padding: 14px 1.75rem 14px 18px;
+            font-size: 1.025rem;
+            color: #495057;
+            line-height: 1.5;
+            transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+            box-sizing: border-box;
+            height: auto;
+            vertical-align: middle;
+            background: #fdfdfd url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='4' height='5' viewBox='0 0 4 5'%3e%3cpath fill='%23555' d='M2 0L0 2h4zm0 5L0 3h4z'/%3e%3c/svg%3e") no-repeat right .75rem center;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
 
-          <label for="name1">Display Name:</label>
-          <div class="input-group mb-3">
+        .input-group > .custom-select {
+            position: relative;
+            flex: 1 1 0%;
+            min-width: 0;
+        }
 
-        <select class="custom-select" id="name1" name="name1" ></select>
-        <select class="custom-select" id="name2" name="name2"></select>
-        <select class="custom-select" id="name3" name="name3"></select>
-      </div>
+        .input-group > .custom-select:not(:last-child) {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        .input-group > .custom-select:not(:first-child) {
+            margin-left: -1px;
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
 
-        <input type="text" id="forgot" class="form-control mb-3" placeholder="Secret Phrase for resetting password" name="forgot" required>
-        <button class="btn btn-lg btn-primary btn-block" type="submit">Submit</button>
-        <p class="mt-3 text-muted">Already have an account? <a href="/login">Login</a></p>
-      </form>
+        .custom-select:focus {
+            border-color: #79b956;
+            box-shadow: 0 0 0 0.2rem rgba(121, 185, 86, 0.35);
+            background-color: #fff;
+            z-index: 2;
+        }
+
+        #forgot.form-control {
+
+            margin-bottom: 20px;
+        }
+
+        .btn-primary.btn-block {
+            background-color: #5cb85c;
+            border-color: #5cb85c;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 14px 20px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            letter-spacing: 0.75px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary.btn-block:hover {
+            background-color: #4cae4c;
+            border-color: #47a447;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary.btn-block:active, .btn-primary.btn-block:focus {
+            background-color: #449d44 !important;
+            border-color: #419641 !important;
+            transform: translateY(0px);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15), 0 0 0 0.2rem rgba(121, 185, 86, 0.35) !important;
+        }
+
+        p.mt-3.text-muted {
+            color: #555 !important;
+            font-size: 0.95rem;
+            margin-top: 1.25rem !important;
+        }
+
+        p.mt-3.text-muted a {
+            color: #4a7729;
+            font-weight: bold;
+            text-decoration: none;
+            transition: color 0.15s ease-in-out;
+        }
+
+        p.mt-3.text-muted a:hover {
+            color: #385920;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<script type="text/javascript" src="js/jquery.min.js"></script>
+<script defer type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
+
+<div class="container" style="width: 32rem;">
+    <div class="card text-center">
+        <form class="form-login" id="form" action="/auth/register" method="post">
+            <img class="mb-4" src="favicon.ico" alt="" width="128" height="128">
+            <h1 class="h3 mb-3 font-weight-normal">Join the Party</h1>
+
+            <input type="text" id="username" class="form-control" placeholder="Username" name="username" required
+                   autofocus onkeypress="return blockSpecialChar(event)">
+
+            <input type="password" id="password" class="form-control" placeholder="Password" name="password" required>
+            <input type="password" id="confirm" class="form-control" placeholder="Confirm Password" name="confirm" required>
+
+            <label for="name1">Display Name:</label>
+            <div class="input-group mb-3">
+                <select class="custom-select" id="name1" name="name1"></select>
+                <select class="custom-select" id="name2" name="name2"></select>
+                <select class="custom-select" id="name3" name="name3"></select>
+            </div>
+
+            <input type="text" id="forgot" class="form-control" placeholder="Secret Phrase for resetting password"
+                   name="forgot" required>
+            <button class="btn btn-lg btn-primary btn-block" type="submit">Register</button>
+            <p class="mt-3 text-muted">Already have an account? <a href="/login">Login</a></p>
+        </form>
     </div>
-  </div>
-      <script type="text/javascript">
-            var names = '<%- displayNames %>';
-            var nameObj = JSON.parse(names);
-
-            //TODO: Could make this look cleaner but that is a future refactor project :P
-            var text1 = "<option></option>"
-            for(var name of nameObj.list1){
-              text1+=`<option>${name.toUpperCase()}</option>`;
-            }
-            document.getElementById("name1").innerHTML=text1;
-            //document.getElementById("list1").innerHTML=text1;
-
-            var text2 = "<option></option>"
-            for(var name of nameObj.list2){
-              text2+=`<option>${name.toUpperCase()}</option>`;
-            }
-            document.getElementById("name2").innerHTML=text2;
-
-            var text3 = "<option></option>"
-            for(var name of nameObj.list3){
-              text3+=`<option>${name.toUpperCase()}</option>`;
-            }
-            document.getElementById("name3").innerHTML=text3;
-      </script>
-	</body>
+</div>
+</body>
 </html>

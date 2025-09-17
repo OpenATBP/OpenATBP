@@ -3,7 +3,6 @@ package xyz.openatbp.extension.game.champions;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -66,12 +65,17 @@ public class Lich extends UserActor {
                 List<Actor> enemiesInRadius =
                         Champion.getEnemyActorsInRadius(handler, team, entry.getKey(), 1.5f);
                 for (Actor a : enemiesInRadius) {
-                    if (!qVictimsThisLoop.contains(a) && isNonStructure(a)) {
-                        qVictimsThisLoop.add(a);
-                        JsonNode spelldata = getSpellData(1);
-                        double damage = (double) getSpellDamage(spelldata, false) / 10;
-                        a.addToDamageQueue(this, damage, spelldata, true);
-                        applySlow(a);
+                    if (!qVictimsThisLoop.contains(a)) {
+                        if (isNeitherTowerNorAlly(a)) {
+                            qVictimsThisLoop.add(a);
+                            JsonNode spelldata = getSpellData(1);
+                            double damage = (double) getSpellDamage(spelldata, false) / 10;
+                            a.addToDamageQueue(this, damage, spelldata, true);
+                        }
+
+                        if (isNeitherStructureNorAlly(a)) {
+                            applySlow(a);
+                        }
                     }
                 }
             }
@@ -79,18 +83,26 @@ public class Lich extends UserActor {
 
         if (this.eActive && this.eLocation != null) {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            List<Actor> actorList = Champion.getActorsInRadius(handler, eLocation, 3f);
-            List<Actor> targets =
-                    actorList.stream().filter(this::isNonStructure).collect(Collectors.toList());
-            if (!targets.isEmpty()
+            List<Actor> actors = Champion.getActorsInRadius(handler, eLocation, 3f);
+            if (!actors.isEmpty()
                     && System.currentTimeMillis() - lastETickTime >= E_TICK_COOLDOWN) {
+
                 lastETickTime = System.currentTimeMillis();
+
                 JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(), "spell3");
                 double damage = getSpellDamage(spellData, false);
-                String eTickSound = "sfx_lich_charm_shot_hit";
-                ExtensionCommands.playSound(parentExt, room, "", eTickSound, eLocation);
-                for (Actor a : targets) {
-                    a.addToDamageQueue(this, damage / 2, spellData, true);
+                boolean hit = false;
+
+                for (Actor a : actors) {
+                    if (isNeitherTowerNorAlly(a)) {
+                        hit = true;
+                        a.addToDamageQueue(this, damage / 2, spellData, true);
+                    }
+                }
+
+                if (hit) {
+                    String eTickSound = "sfx_lich_charm_shot_hit";
+                    ExtensionCommands.playSound(parentExt, room, "", eTickSound, eLocation);
                 }
             }
         }
@@ -613,7 +625,7 @@ public class Lich extends UserActor {
                 new Champion.DelayedAttack(
                                 parentExt, attacker, target, (int) damage, "skullyAttack")
                         .run();
-                if (isNonStructure(target)) Lich.this.handleLifeSteal();
+                if (isNeitherStructureNorAlly(target)) Lich.this.handleLifeSteal();
             }
         }
     }
@@ -647,7 +659,10 @@ public class Lich extends UserActor {
                     false,
                     team,
                     0f);
-            victim.addToDamageQueue(Lich.this, getSpellDamage(spellData, true), spellData, false);
+
+            double dmg = getSpellDamage(spellData, true);
+
+            victim.addToDamageQueue(Lich.this, dmg, spellData, false);
             victim.handleCharm(Lich.this, W_CHARM_DURATION);
             destroy();
         }

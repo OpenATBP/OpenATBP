@@ -31,6 +31,7 @@ public class Jake extends UserActor {
     private static final double E_SPEED_VALUE = 0.8;
     private static final int E_DURATION = 5000;
     private static final int E_STOMP_CD = 500;
+    private static final int Q_DASH_SPEED = 13;
     private boolean grabActive = false;
     private Point2D grabPoint;
     private float grabStatus = 0;
@@ -61,28 +62,31 @@ public class Jake extends UserActor {
         if (grabActive) {
             if (grabStatus == 5) offsetDistance = 1.75f;
             Path2D rectangle = Champion.createRectangle(grabPoint, qDestination, 1, offsetDistance);
-            List<Actor> victims =
-                    parentExt.getRoomHandler(room.getName()).getEnemiesInPolygon(team, rectangle);
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+            List<Actor> foes = handler.getEnemiesInPolygon(team, rectangle);
+            foes.removeIf(f -> f.getActorType() == ActorType.TOWER);
 
-            if (!victims.isEmpty()) {
+            if (!foes.isEmpty()) {
                 resetGrab();
-                Actor victim = victims.get(0);
+                Actor victim = foes.get(0);
                 JsonNode spellData = parentExt.getAttackData(getChampionName(avatar), "spell1");
 
                 Point2D origLocation = this.location;
 
                 float distance = (float) origLocation.distance(victim.getLocation());
-                float modifier = ((130 / 9f) * distance) / 100;
-                double damage =
-                        35
-                                + Math.round(
-                                        modifier
-                                                * getPlayerStat(
-                                                        "spellDamage")); // TODO tie to xml file
+                JsonNode qData = parentExt.getAttackData(avatar, "spell1");
+                float dmgPerUnitOfDistance = (float) qData.get("damageRatio").asDouble();
+                int baseDmg = qData.get("damage").asInt();
+
+                float modifier = dmgPerUnitOfDistance * distance;
+                double damage = baseDmg + (modifier * getPlayerStat("spellDamage"));
 
                 victim.addToDamageQueue(this, damage, spellData, false);
-                if (isNonStructure(victim))
+
+                if (isNeitherStructureNorAlly(victim)) {
                     victim.addState(ActorState.STUNNED, 0d, Q_STUN_DURATION);
+                }
+
                 if (distance > 5) {
                     ExtensionCommands.playSound(
                             parentExt,
@@ -104,12 +108,12 @@ public class Jake extends UserActor {
                             false,
                             team);
                 }
-                Point2D initialDashLocation =
+                Point2D initLoc =
                         Champion.getAbilityLine(origLocation, victim.getLocation(), distance - 1)
                                 .getP2();
 
-                Point2D dashPoint = this.dash(initialDashLocation, true, 13);
-                double time = origLocation.distance(dashPoint) / 13;
+                Point2D dashPoint = this.dash(initLoc, true, Q_DASH_SPEED);
+                double time = origLocation.distance(dashPoint) / Q_DASH_SPEED;
                 int dashTimeMs = (int) (time * 1000);
 
                 ExtensionCommands.createActorFX(
@@ -155,7 +159,7 @@ public class Jake extends UserActor {
                 this.lastStomped = System.currentTimeMillis();
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 for (Actor a : Champion.getActorsInRadius(handler, this.location, 2f)) {
-                    if (this.isNonStructure(a)) {
+                    if (isNeitherTowerNorAlly(a)) {
                         JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
                         double damage = (double) (getSpellDamage(spellData, false)) / 2d;
                         a.addToDamageQueue(this, (int) damage, spellData, true);
@@ -296,7 +300,7 @@ public class Jake extends UserActor {
     @Override
     public void attack(Actor a) {
         super.attack(a);
-        if (isNonStructure(a)) {
+        if (isNeitherStructureNorAlly(a)) {
             if (!lastPassiveTime.isEmpty()) {
                 if (lastPassiveTime.containsKey(a.getId())) {
                     if (System.currentTimeMillis() - lastPassiveTime.get(a.getId())
@@ -352,59 +356,64 @@ public class Jake extends UserActor {
                 this.canCast[1] = false;
                 try {
                     this.stopMoving(gCooldown);
-                    String ballFX = SkinData.getJakeWFX(avatar);
-                    String dustUpFX = SkinData.getJakeWDustUpFX(avatar);
-                    ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            ballFX,
-                            2000,
-                            this.id + "_ball",
-                            true,
-                            "targetNode",
-                            true,
-                            false,
-                            this.team);
-                    ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            dustUpFX,
-                            1500,
-                            this.id + "_dust",
-                            false,
-                            "Bip001 Footsteps",
-                            false,
-                            false,
-                            this.team);
-                    ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "fx_target_ring_3",
-                            850,
-                            this.id + "_jake_ring_3",
-                            true,
-                            "",
-                            true,
-                            true,
-                            this.team);
-                    RoomHandler handler = parentExt.getRoomHandler(room.getName());
-                    for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
-                        if (this.isNonStructure(a)) {
-                            a.knockback(this.location, 3.5f);
-                            a.addToDamageQueue(
-                                    this, getSpellDamage(spellData, true), spellData, false);
-                        }
-                    }
+                    if (getHealth() > 0) {
+                        String ballFX = SkinData.getJakeWFX(avatar);
+                        String dustUpFX = SkinData.getJakeWDustUpFX(avatar);
+                        ExtensionCommands.createActorFX(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                ballFX,
+                                2000,
+                                this.id + "_ball",
+                                true,
+                                "targetNode",
+                                true,
+                                false,
+                                this.team);
+                        ExtensionCommands.createActorFX(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                dustUpFX,
+                                1500,
+                                this.id + "_dust",
+                                false,
+                                "Bip001 Footsteps",
+                                false,
+                                false,
+                                this.team);
+                        ExtensionCommands.createActorFX(
+                                this.parentExt,
+                                this.room,
+                                this.id,
+                                "fx_target_ring_3",
+                                850,
+                                this.id + "_jake_ring_3",
+                                true,
+                                "",
+                                true,
+                                true,
+                                this.team);
+                        RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                        for (Actor a : Champion.getActorsInRadius(handler, location, 3f)) {
+                            if (isNeitherStructureNorAlly(a)) {
+                                a.knockback(location, 3.5f);
+                            }
 
-                    String ballVO = SkinData.getJakeWVO(avatar);
-                    String ballSFX = SkinData.getJakeWSFX(avatar);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, ballVO, this.location);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, ballSFX, this.location);
+                            if (isNeitherTowerNorAlly(a)) {
+                                double dmg = getSpellDamage(spellData, false);
+                                a.addToDamageQueue(this, dmg, spellData, false);
+                            }
+                        }
+
+                        String ballVO = SkinData.getJakeWVO(avatar);
+                        String ballSFX = SkinData.getJakeWSFX(avatar);
+                        ExtensionCommands.playSound(
+                                this.parentExt, this.room, this.id, ballVO, this.location);
+                        ExtensionCommands.playSound(
+                                this.parentExt, this.room, this.id, ballSFX, this.location);
+                    }
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();

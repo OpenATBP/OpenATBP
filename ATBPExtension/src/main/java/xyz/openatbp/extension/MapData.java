@@ -31,6 +31,9 @@ public class MapData {
     public static final float[] HUGWOLF = {(float) 7.50, (float) 8.50};
     public static final float[] GRASSBEAR = {(float) -9.20, (float) -8.60};
 
+    public static final int NORMAL_HP_SPAWN_RATE = 60;
+    public static final int ARAM_HP_SPAWN_RATE = 30;
+
     public static final Point2D[] L2_OWLS = {
         new Point2D.Double(8.3, -8.6), // 10 points owl
         new Point2D.Double(8.1, -7.6), // 5 points owl
@@ -80,7 +83,9 @@ public class MapData {
     public static ISFSObject getBaseActorData(int team, String roomGroup) {
         float x;
         float z;
-        if (roomGroup.equals("Practice") || roomGroup.equals("Tutorial")) {
+        if (roomGroup.equals("Practice")
+                || roomGroup.equals("Tutorial")
+                || roomGroup.equals("ARAM")) {
             if (team == 0) {
                 x = L1_PURPLE_BASE[0];
                 z = L1_PURPLE_BASE[1];
@@ -125,7 +130,9 @@ public class MapData {
         float z;
         String id;
         String towerID = "tower" + (1 + team);
-        if (roomGroup.equals("Tutorial") || roomGroup.equals("Practice")) {
+        if (roomGroup.equals("Tutorial")
+                || roomGroup.equals("Practice")
+                || roomGroup.equals("ARAM")) {
             if (team == 0) {
                 x = L1_PURPLE_TOWER_0[0];
                 id = "purple_tower0";
@@ -163,7 +170,7 @@ public class MapData {
         String id;
         float x;
         float z;
-        if (room.equalsIgnoreCase("practice")) {
+        if (room.equalsIgnoreCase("practice") || room.equalsIgnoreCase("ARAM")) {
             if (team == 0) {
                 x = L1_PURPLE_TOWER_0[0];
                 id = "purple_tower0";
@@ -192,7 +199,7 @@ public class MapData {
         float z = 0;
         String id;
         String towerID = "tower" + (1 + team);
-        if (roomId.equals("Practice") || roomId.equals("Tutorial")) {
+        if (roomId.equals("Practice") || roomId.equals("Tutorial") || roomId.equals("ARAM")) {
             switch (tower) {
                 case 1:
                     x = L1_PURPLE_TOWER_1[0]; //
@@ -295,7 +302,9 @@ public class MapData {
         float x = (float) 0.0;
         float z = (float) 0.0;
         String actorID = "altar_" + type;
-        if (roomGroup.equals("Tutorial") || roomGroup.equals("Practice")) {
+        if (roomGroup.equals("Tutorial")
+                || roomGroup.equals("Practice")
+                || roomGroup.equals("ARAM")) {
             if (type == 0) {
                 z = L1_DALTAR_Z;
                 actorID = "altar_1";
@@ -334,7 +343,9 @@ public class MapData {
     public static ISFSObject getHealthActorData(int team, String roomGroup, int type) {
         float x = 0;
         float z = 0;
-        if (roomGroup.equals("Tutorial") || roomGroup.equals("Practice")) {
+        if (roomGroup.equals("Tutorial")
+                || roomGroup.equals("Practice")
+                || roomGroup.equals("ARAM")) {
             x = L1_BLUE_HEALTH_X;
             z = L1_BLUE_HEALTH_Z;
             if (team == 0) {
@@ -398,7 +409,9 @@ public class MapData {
     public static Point2D getGuardianLocationData(int team, String roomGroup) {
         float x = 0;
         float z = 0;
-        if (roomGroup.equals("Tutorial") || roomGroup.equals("Practice")) {
+        if (roomGroup.equals("Tutorial")
+                || roomGroup.equals("Practice")
+                || roomGroup.equals("ARAM")) {
             x = L1_GUARDIAN_X;
             z = team == 1 ? L1_BLUE_GUARDIAN_AREA_Z : L1_PURPLE_GUARDIAN_AREA_Z;
         } else {

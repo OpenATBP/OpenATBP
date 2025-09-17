@@ -25,6 +25,7 @@ public class Fionna extends UserActor {
     private static final double SPELLRESIST_FEARLESS = 0.3d;
     private static final int W_DURATION = 3000;
     private static final int E_DURATION = 5000;
+    public static final double PASSIVE_MAX_DMG_MULTIPLIER = 0.6d;
 
     private enum SwordType {
         FIERCE,
@@ -281,7 +282,7 @@ public class Fionna extends UserActor {
 
     private double getPassiveAttackDamage(String stat) {
         double missingPHealth = 1d - this.getPHealth();
-        double modifier = (0.8d * missingPHealth);
+        double modifier = (PASSIVE_MAX_DMG_MULTIPLIER * missingPHealth);
         return this.getStat(stat) * modifier;
     }
 
@@ -415,13 +416,14 @@ public class Fionna extends UserActor {
                 }
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 for (Actor a : Champion.getActorsInRadius(handler, dest, range)) {
-                    if (a.getTeam() != team
-                            && a.getActorType() != ActorType.BASE
-                            && a.getActorType() != ActorType.TOWER) {
+                    if (isNeitherTowerNorAlly(a)) {
                         actorsHitWithQ.add(a);
                         double damage = getSpellDamage(spellData, true);
                         a.addToDamageQueue(Fionna.this, damage, spellData, false);
-                        if (dashInt == 1) a.addState(ActorState.SLOWED, 0.5d, 1000);
+                    }
+
+                    if (isNeitherStructureNorAlly(a) && dashInt == 1) {
+                        a.addState(ActorState.SLOWED, 0.5d, 1000);
                     }
                 }
             }

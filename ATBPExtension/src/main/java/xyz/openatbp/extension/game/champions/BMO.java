@@ -69,9 +69,12 @@ public class BMO extends UserActor {
             JsonNode spellData = parentExt.getAttackData("bmo", "spell2");
             double damage = (double) getSpellDamage(spellData, false) / 10d;
             for (Actor a : targets) {
-                if (a.getActorType() != ActorType.TOWER && a.getActorType() != ActorType.BASE) {
+                if (isNeitherStructureNorAlly(a) && passiveStacks == 3) {
+                    applySlow(a);
+                }
+
+                if (isNeitherTowerNorAlly(a)) {
                     a.addToDamageQueue(this, damage, spellData, true);
-                    if (this.passiveStacks == 3) applySlow(a);
                 }
             }
             if (System.currentTimeMillis() - lastWSound >= 500) {
@@ -163,14 +166,17 @@ public class BMO extends UserActor {
                                     Q_OFFSET_DISTANCE_TOP);
                     RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
                     List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, trapezoid);
-                    if (!actorsInPolygon.isEmpty()) {
+                    if (!actorsInPolygon.isEmpty() && getHealth() > 0) {
                         for (Actor a : actorsInPolygon) {
-                            if (isNonStructure(a)) {
+                            if (isNeitherStructureNorAlly(a)) {
                                 a.addState(ActorState.BLINDED, 0d, Q_BLIND_DURATION);
                                 if (this.passiveStacks == 3) applySlow(a);
                             }
-                            a.addToDamageQueue(
-                                    this, getSpellDamage(spellData, false), spellData, false);
+
+                            if (isNeitherTowerNorAlly(a)) {
+                                double damage = getSpellDamage(spellData, false);
+                                a.addToDamageQueue(this, damage, spellData, false);
+                            }
                         }
                     }
                     if (this.passiveStacks == 3) usePassiveStacks();
@@ -379,16 +385,17 @@ public class BMO extends UserActor {
         canMove = true;
         RoomHandler handler = parentExt.getRoomHandler(room.getName());
         for (Actor a : Champion.getActorsInRadius(handler, this.location, 4f)) {
-            if (a.getTeam() != this.team && isNonStructure(a)) {
+            if (isNeitherStructureNorAlly(a)) {
+                a.addState(ActorState.STUNNED, 0d, 1000);
+            }
+
+            if (isNeitherTowerNorAlly(a)) {
                 JsonNode spellData = parentExt.getAttackData("bmo", "spell2");
                 long wDuration = System.currentTimeMillis() - wStartTime;
                 double damageMultiplier = 1 + (wDuration / 10000d);
-                a.addToDamageQueue(
-                        this,
-                        (this.getSpellDamage(spellData, false)) * damageMultiplier,
-                        spellData,
-                        false);
-                a.addState(ActorState.STUNNED, 0d, 1000);
+                double damage = getSpellDamage(spellData, false) * damageMultiplier;
+
+                a.addToDamageQueue(this, damage, spellData, false);
             }
         }
         if (this.passiveStacks == 3) usePassiveStacks();
@@ -480,13 +487,13 @@ public class BMO extends UserActor {
         protected void hit(Actor victim) {
             this.victims.add(victim);
             JsonNode spellData = this.parentExt.getAttackData(BMO.this.avatar, "spell3");
-            victim.addToDamageQueue(
-                    BMO.this,
-                    getSpellDamage(spellData, true) * (1 - damageReduction),
-                    spellData,
-                    false);
-            ExtensionCommands.playSound(
-                    parentExt, room, "", "akubat_projectileHit1", victim.getLocation());
+            double damage = getSpellDamage(spellData, true) * (1 - damageReduction);
+
+            victim.addToDamageQueue(BMO.this, damage, spellData, false);
+
+            String soundName = "akubat_projectileHit1";
+            ExtensionCommands.playSound(parentExt, room, "", soundName, victim.getLocation());
+
             if (ultSlowActive) applySlow(victim);
             this.damageReduction += 0.15d;
             if (this.damageReduction > 0.7d) this.damageReduction = 0.7d;
@@ -494,13 +501,16 @@ public class BMO extends UserActor {
 
         @Override
         public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            List<Actor> nonStructureEnemies = roomHandler.getNonStructureEnemies(team);
-            for (Actor a : nonStructureEnemies) {
-                if (!this.victims.contains(a)) {
-                    double collisionRadius =
-                            parentExt.getActorData(a.getAvatar()).get("collisionRadius").asDouble();
+            float searchArea = hitbox * 2;
+            List<Actor> actorsInRadius = roomHandler.getActorsInRadius(location, searchArea);
+
+            for (Actor a : actorsInRadius) {
+                if (!this.victims.contains(a) && isNeitherTowerNorAlly(a)) {
+                    JsonNode actorData = parentExt.getActorData(a.getAvatar());
+                    double collisionRadius = actorData.get("collisionRadius").asDouble();
+
                     if (a.getLocation().distance(location) <= hitbox + collisionRadius
-                            && !a.getAvatar().equalsIgnoreCase("neptr_mine")) {
+                            && isTargetable(a)) {
                         return a;
                     }
                 }

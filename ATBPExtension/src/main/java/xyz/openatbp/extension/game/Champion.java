@@ -75,6 +75,8 @@ public class Champion {
                 return new BMO(u, parentExt);
             case "cinnamonbun":
                 return new CinnamonBun(u, parentExt);
+            case "choosegoose":
+                return new ChooseGoose(u, parentExt);
         }
         return new UserActor(u, parentExt);
     }
@@ -450,11 +452,6 @@ public class Champion {
                         int decrease = (pointsPutIntoDevice * POWER_DAMAGE_PER_POINT) * -1;
                         this.target.addEffect("spellDamage", decrease, 5000);
                     }
-                }
-
-                if (ua.getRoboStacks() > 0) {
-                    ua.resetRoboStacks();
-                    target.addState(ActorState.SLOWED, 0.2, 3000); // TODO: Make scalable
                 }
 
                 if (canLifeSteal()) ua.handleLifeSteal();

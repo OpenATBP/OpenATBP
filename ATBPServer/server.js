@@ -3,6 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 
 const database = require('./db-operations.js');
 const getRequest = require('./get-requests.js');
@@ -14,6 +15,7 @@ var lobbyServer;
 
 const displayNames = require('./data/names.json');
 const shopData = require('./data/shop.json');
+const path = require('path');
 
 //Added to remove duplicate friends if needed...
 async function removeDuplicateFriends(collection) {
@@ -80,6 +82,27 @@ async function addQueueData(collection) {
   }
 }
 
+async function addEarlyAccess(collection) {
+  try {
+    var cursor = collection.find();
+    for await (var doc of cursor) {
+      //console.log(doc.friends);
+      var q = { 'user.TEGid': doc.user.TEGid };
+      var o = { upsert: true };
+      var up = {
+        $set: {
+          earlyAccess: false,
+        },
+      };
+
+      var res = await collection.updateOne(q, up, o);
+      console.log(res);
+    }
+  } finally {
+    console.log('Done!');
+  }
+}
+
 async function addCustomBags(collection) {
   try {
     var cursor = collection.find();
@@ -124,6 +147,7 @@ function addChampData(collection) {
     'billy',
     'bmo',
     'cinnamonbun',
+    'choosegoose',
     'finn',
     'fionna',
     'flame',
@@ -209,19 +233,24 @@ function getLowerCaseName(name) {
 }
 
 async function getTopPlayers(players) {
+  const TOP_PLAYER_LIMIT = 500;
   try {
     const projection = {
       'user.dname': 1,
+      'user.pfp': 1,
       'player.elo': 1,
     };
 
-    const topPlayers = await players
-      .find({}, { projection })
+    const query = { 'player.elo': { $exists: true } };
+
+    return await players
+      .find(query, { projection })
       .sort({ 'player.elo': -1 })
+      .limit(TOP_PLAYER_LIMIT)
       .toArray();
-    return topPlayers.filter((p) => p.player != undefined);
   } catch (err) {
     console.log(err);
+    return [];
   }
 }
 
@@ -252,7 +281,9 @@ try {
   process.exit(1);
 }
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { join, parse, extname } = require('node:path');
+const { COMMON_ICON_COST } = require('./icon_metadata');
 const mongoClient = new MongoClient(config.httpserver.mongouri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -260,6 +291,8 @@ const mongoClient = new MongoClient(config.httpserver.mongouri, {
 });
 
 var onlinePlayers = [];
+
+let ICONS = [];
 
 var onlineChecker = setInterval(() => {
   for (var p of onlinePlayers) {
@@ -283,6 +316,8 @@ mongoClient.connect((err) => {
     process.exit(1);
   }
 
+  loadIcons();
+
   const playerCollection = mongoClient.db('openatbp').collection('users');
   const champCollection = mongoClient.db('openatbp').collection('champions');
   //TODO: Put all the testing commands into a separate file
@@ -292,6 +327,7 @@ mongoClient.connect((err) => {
   //addCustomBags(playerCollection);
   //addChampData(champCollection);
   //wipePlayerData(playerCollection);
+  //addEarlyAccess(playerCollection);
 
   if (
     !fs.existsSync('static/crossdomain.xml') ||
@@ -314,12 +350,346 @@ mongoClient.connect((err) => {
     );
   }
 
+  const { ALL_ICONS_METADATA } = require('./icon_metadata');
+
   app.set('view engine', 'ejs');
   app.use(express.static('static'));
   app.use(bodyParser.urlencoded({ extended: false }));
   app.use(bodyParser.json());
   app.use(cors());
+  app.use(cookieParser());
   app.use(express.json());
+  // app.use('/icon_shop', express.static(path.join(__dirname, 'icon_shop')));
+
+  app.get('/icons', async (req, res) => {
+    const session_token = req.cookies?.session_token || req.query.session_token;
+
+    if (!session_token) {
+      console.log('No session token found, redirecting to login page');
+      return res.redirect('/login');
+    }
+
+    try {
+      const userProfile = await playerCollection.findOne({
+        'session.token': session_token,
+      });
+
+      if (!userProfile) {
+        console.log(
+          'No user profile found for session token, redirecting to login page'
+        );
+        return res.redirect('/login');
+      }
+
+      const userId = userProfile._id;
+
+      let defaultsToSet = {};
+      let needsDBUpdateForDefaults = false;
+
+      if (!userProfile.user) userProfile.user = {};
+      if (!userProfile.player) userProfile.player = {};
+      if (!userProfile.icons) userProfile.icons = [];
+
+      if (!userProfile.user?.pfp) {
+        defaultsToSet['user.pfp'] = 'Default';
+        userProfile.user.pfp = 'Default';
+        needsDBUpdateForDefaults = true;
+      }
+
+      if (needsDBUpdateForDefaults) {
+        console.log(
+          `Applying default fields for user ${userId}:`,
+          defaultsToSet
+        );
+        try {
+          await playerCollection.updateOne(
+            { _id: userId },
+            { $set: defaultsToSet }
+          );
+        } catch (err) {
+          console.error(
+            `Database error setting default fields for user ${userId}:`,
+            err
+          );
+        }
+      }
+
+      const ownedIcons = userProfile.icons;
+      const playerStats = userProfile.player;
+      const newlyUnlockedIcons = [];
+
+      for (const iconName in ALL_ICONS_METADATA) {
+        const meta = ALL_ICONS_METADATA[iconName];
+        let isOwned = ownedIcons.includes(iconName);
+
+        if (!isOwned && meta.unlock) {
+          const condition = meta.unlock;
+          const userStat = playerStats[condition.stat] || 0;
+
+          if (userStat >= condition.threshold) {
+            newlyUnlockedIcons.push(iconName);
+            userProfile.icons.push(iconName);
+          }
+        }
+      }
+
+      if (newlyUnlockedIcons.length > 0) {
+        try {
+          const updateResult = await playerCollection.updateOne(
+            { _id: userId },
+            { $addToSet: { icons: { $each: newlyUnlockedIcons } } }
+          );
+        } catch (err) {
+          console.error(
+            `Database error updating unlocked icons for user ${userId}:`,
+            err
+          );
+        }
+      }
+
+      const finalUserInfo = {
+        _id: userId.toString(),
+        user: {
+          dname: userProfile.user?.dname,
+          pfp: userProfile.user?.pfp,
+        },
+        player: {
+          playsPVP: userProfile.player?.playsPVP,
+          tier: userProfile.player?.tier,
+          elo: userProfile.player?.elo,
+          rank: userProfile.player?.rank,
+          coins: userProfile.player?.coins,
+          kills: userProfile.player?.kills,
+          largestSpree: userProfile.player?.largestSpree,
+          largestMulti: userProfile.player?.largestMulti,
+        },
+        icons: userProfile.icons,
+      };
+
+      const finalAllIconsData = {};
+      const finalOwnedIcons = finalUserInfo.icons;
+
+      for (const iconName in ALL_ICONS_METADATA) {
+        const meta = ALL_ICONS_METADATA[iconName];
+        const isOwned = finalOwnedIcons.includes(iconName);
+
+        finalAllIconsData[iconName] = {
+          src: meta.src,
+          rarity: meta.rarity,
+          owned: isOwned,
+          cost: !isOwned && meta.cost !== undefined ? meta.cost : undefined,
+          unlock:
+            !isOwned && meta.unlock !== undefined
+              ? meta.unlock?.text
+              : undefined,
+        };
+      }
+
+      res.render('icons', {
+        userInfo: finalUserInfo,
+        allIconsData: finalAllIconsData,
+      });
+    } catch (err) {
+      console.log(`Error processing /icons route: ${err}`);
+      res.status(500).send('Server error');
+    }
+  });
+
+  function loadIcons() {
+    const iconsPath = path.join(
+      __dirname,
+      '..',
+      'ATBPServer',
+      'static',
+      'assets',
+      'pfp'
+    );
+
+    try {
+      const files = fs.readdirSync(iconsPath);
+      files.forEach((file) => {
+        const iconName = path.parse(file).name;
+        if (
+          path.extname(file).toLowerCase() === '.jpg' &&
+          !ICONS.includes(iconName)
+        ) {
+          ICONS.push(iconName);
+        }
+      });
+      console.log(`Loaded ${ICONS.length} icons from ${iconsPath}`);
+    } catch (error) {
+      console.error('Error loading icons:', error);
+    }
+  }
+
+  app.post('/icons/buy', async (req, res) => {
+    if (!playerCollection) {
+      return res.status(503).json({ message: 'Database not connected' });
+    }
+
+    try {
+      const { userId, iconName } = req.body;
+
+      if (!userId || !iconName) {
+        return res
+          .status(400)
+          .json({ message: 'Missing userId or iconName in request body' });
+      }
+      if (!ObjectId.isValid(userId)) {
+        return res.status(400).json({ message: 'Invalid User ID format' });
+      }
+
+      const iconDataFromServer = ALL_ICONS_METADATA[iconName];
+
+      if (!iconDataFromServer) {
+        return res
+          .status(404)
+          .json({ message: `Icon '${iconName}' is not a valid icon name.` });
+      }
+
+      if (!iconDataFromServer.cost === undefined) {
+        return res
+          .status(400)
+          .json({ message: `Icon '${iconName}' does not have a cost.` });
+      }
+
+      const query = { _id: new ObjectId(userId) };
+
+      const projection = { projection: { 'player.coins': 1, icons: 1 } };
+      const user = await playerCollection.findOne(query, projection);
+
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const currentCoins = user.player?.coins || 0;
+      const ownedIcons = user.icons || [];
+
+      if (ownedIcons.includes(iconName)) {
+        return res.status(400).json({ message: 'You already own this icon' });
+      }
+
+      if (currentCoins < COMMON_ICON_COST) {
+        return res.status(400).json({
+          message: `Not enough coins. Need ${COMMON_ICON_COST}, have ${currentCoins}`,
+        });
+      }
+
+      const newCoinTotal = currentCoins - COMMON_ICON_COST;
+
+      const updateOperation = {
+        $set: {
+          'player.coins': newCoinTotal,
+        },
+        $push: {
+          icons: iconName,
+        },
+      };
+
+      const updateResult = await playerCollection.updateOne(
+        query,
+        updateOperation
+      );
+
+      if (updateResult.modifiedCount === 1) {
+        res.status(200).json({
+          message: 'Purchase successful!',
+          iconName: iconName,
+          newCoinTotal: newCoinTotal,
+        });
+      } else {
+        console.error(
+          `Failed to update database for user ${userId} buying ${iconName}. Result:`,
+          updateResult
+        );
+        return res
+          .status(500)
+          .json({ message: 'Database update failed after checks' });
+      }
+    } catch (error) {
+      console.error('Error buying icon:', error);
+      res.status(500).json({
+        message: 'Server error during purchase',
+        error: error.message,
+      });
+    }
+  });
+
+  app.post('/icons/use', async (req, res) => {
+    if (!playerCollection) {
+      return res.status(503).json({ message: 'Database not connected' });
+    }
+
+    try {
+      const { userId, iconName } = req.body;
+
+      if (!userId || !iconName) {
+        return res.status(400).json({ message: 'Missing userId or iconName' });
+      }
+      if (!ObjectId.isValid(userId)) {
+        return res.status(400).json({ message: 'Invalid User ID format' });
+      }
+
+      if (!ALL_ICONS_METADATA[iconName] && iconName !== 'Default') {
+        return res
+          .status(404)
+          .json({ message: `Icon '${iconName}' is not a valid icon.` });
+      }
+
+      const query = { _id: new ObjectId(userId) };
+
+      const projection = { projection: { icons: 1 } };
+      const user = await playerCollection.findOne(query, projection);
+
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const ownedIcons = user.icons || [];
+      if (!ownedIcons.includes(iconName) && iconName !== 'Default') {
+        return res
+          .status(403)
+          .json({ message: `You do not own the icon '${iconName}'` });
+      }
+
+      const updateOperation = {
+        $set: {
+          'user.pfp': iconName,
+        },
+      };
+
+      const updateResult = await playerCollection.updateOne(
+        query,
+        updateOperation
+      );
+
+      if (updateResult.matchedCount === 0) {
+        return res
+          .status(404)
+          .json({ message: 'User not found during update.' });
+      }
+
+      if (updateResult.modifiedCount === 1 || updateResult.matchedCount === 1) {
+        res
+          .status(200)
+          .json({ message: 'Icon set successfully!', newPfp: iconName });
+      } else {
+        console.error(
+          `Failed to set pfp for user ${userId} to ${iconName}. Result:`,
+          updateResult
+        );
+        return res
+          .status(500)
+          .json({ message: 'Database update failed unexpectedly' });
+      }
+    } catch (error) {
+      console.error('Error using icon:', error);
+      res.status(500).json({
+        message: 'Server error during icon use',
+        error: error.message,
+      });
+    }
+  });
 
   app.get('/', (req, res) => {
     res.render('index');
@@ -404,6 +774,7 @@ mongoClient.connect((err) => {
       const projection = {
         projection: {
           'user.dname': 1,
+          'user.pfp': 1,
           'player.playsPVP': 1,
           'player.winsPVP': 1,
           'player.elo': 1,
@@ -525,82 +896,140 @@ mongoClient.connect((err) => {
 
   app.post('/auth/register', (req, res) => {
     var nameCount = 0;
-    if (
-      req.body.name1 != '' &&
-      displayNames.list1.includes(getLowerCaseName(req.body.name1))
-    )
+    const name1 = req.body.name1 ? req.body.name1.trim() : '';
+    const name2 = req.body.name2 ? req.body.name2.trim() : '';
+    const name3 = req.body.name3 ? req.body.name3.trim() : '';
+
+    if (name1 !== '' && displayNames.list1.includes(getLowerCaseName(name1))) {
       nameCount++;
-    else if (req.body.name1 != '') nameCount = -100;
-    if (
-      req.body.name2 != '' &&
-      displayNames.list2.includes(getLowerCaseName(req.body.name2))
-    )
+    } else if (name1 !== '') {
+      nameCount = -100;
+    }
+
+    if (name2 !== '' && displayNames.list2.includes(getLowerCaseName(name2))) {
       nameCount++;
-    else if (req.body.name2 != '') nameCount = -100;
-    if (
-      req.body.name3 != '' &&
-      displayNames.list3.includes(getLowerCaseName(req.body.name3))
-    )
+    } else if (name2 !== '') {
+      nameCount = -100;
+    }
+
+    if (name3 !== '' && displayNames.list3.includes(getLowerCaseName(name3))) {
       nameCount++;
-    else if (req.body.name3 != '') nameCount = -100;
+    } else if (name3 !== '') {
+      nameCount = -100;
+    }
+
+    const username = req.body.username ? req.body.username.trim() : '';
+    const password = req.body.password;
+    const confirmPassword = req.body.confirm;
+    const forgotPhrase = req.body.forgot ? req.body.forgot.trim() : '';
 
     if (
-      req.body.username != '' &&
-      req.body.password != '' &&
-      nameCount > 1 &&
-      req.body.password == req.body.confirm
+      username !== '' &&
+      password !== '' &&
+      forgotPhrase !== '' &&
+      nameCount >= 2 && // Require at least 2 valid parts for the display name
+      password === confirmPassword
     ) {
-      var names = [req.body.name1, req.body.name2, req.body.name3];
+      var namesForDisplay = [name1, name2, name3].filter((n) => n !== ''); // Filter out empty parts for display name construction
+
       postRequest
         .handleRegister(
-          req.body.username,
-          req.body.password,
-          names,
-          req.body.forgot,
+          username,
+          password,
+          namesForDisplay,
+          forgotPhrase,
           playerCollection
         )
-        .then((user) => {
-          if (user == 'login') {
-            res.redirect('/login?exists=true');
-          } else {
-            res.cookie('TEGid', user.user.TEGid);
-            res.cookie('authid', user.user.authid);
-            res.cookie('dname', user.user.dname);
-            res.cookie('authpass', user.user.authpass);
-            var date = Date.parse(user.session.expires_at);
-            res.cookie('session_token', user.session.token, {
+        .then((result) => {
+          if (result === 'usernameTaken') {
+            res.redirect('/register?usernameTaken=true');
+          } else if (result === 'displayNameTaken') {
+            res.redirect('/register?displayNameTaken=true');
+          } else if (
+            typeof result === 'object' &&
+            result.user &&
+            result.session
+          ) {
+            // Successful registration
+            res.cookie('TEGid', result.user.TEGid);
+            res.cookie('authid', result.user.authid);
+            res.cookie('dname', result.user.dname);
+            res.cookie('authpass', result.user.authpass);
+            var date = Date.parse(result.session.expires_at);
+            res.cookie('session_token', result.session.token, {
               maxAge: date.valueOf() - Date.now(),
             });
             res.cookie('logged', true);
             res.redirect(config.httpserver.url);
+          } else {
+            console.warn('handleRegister returned unexpected result:', result);
+            res.redirect('/register?failed=true&reason=unexpected');
           }
         })
         .catch((e) => {
-          console.log(e);
-          res.redirect('/register?failed=true');
+          console.error('Error during registration process:', e);
+
+          res.redirect('/register?failed=true&reason=servererror');
         });
-    } else res.redirect('/register?failed=true');
+    } else {
+      // Initial validation failed (empty fields, passwords don't match, invalid display name count)
+      let reason = 'validation';
+      if (password !== confirmPassword) reason = 'passwordmismatch';
+      if (nameCount < 2 && nameCount > -100)
+        reason = 'displaynameparts'; // if nameCount is -100, it's an invalid selection
+      else if (nameCount === -100) reason = 'invaliddisplayname';
+
+      res.redirect(`/register?failed=true&reason=${reason}`);
+    }
   });
 
   app.post('/auth/forgot', (req, res) => {
-    if (req.body.password == req.body.confirm) {
-      postRequest
-        .handleForgotPassword(
-          req.body.username,
-          req.body.forgot,
-          req.body.password,
-          playerCollection
-        )
-        .then((data) => {
-          res.clearCookie('session_token');
-          res.cookie('logged', false);
-          res.redirect('/login');
-        })
-        .catch((e) => {
-          console.log(e);
+    const newPassword = req.body.password;
+    const confirmPassword = req.body.confirm;
+    const username = req.body.username; // We'll let handleForgotPassword trim it
+    const forgotPhrase = req.body.forgot;
+
+    // Basic check for presence of all fields
+    if (!username || !forgotPhrase || !newPassword || !confirmPassword) {
+      return res.redirect('/forgot?missingFields=true');
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.redirect('/forgot?passwordMismatch=true');
+    }
+
+    postRequest
+      .handleForgotPassword(
+        username,
+        forgotPhrase,
+        newPassword,
+        playerCollection
+      )
+      .then((data) => {
+        // Successfully changed password
+        res.clearCookie('session_token'); // Good practice
+        if (res.clearCookie) {
+          // Some frameworks might not have clearCookie directly on res
+          res.clearCookie('logged');
+        } else if (res.cookie) {
+          // Fallback for Express-like if clearCookie isn't there
+          res.cookie('logged', '', { expires: new Date(0) });
+        }
+        res.redirect('/login?passwordResetSuccess=true');
+      })
+      .catch((e) => {
+        console.error(
+          'Forgot password processing error:',
+          e ? e.message : 'Unknown error'
+        ); // Log specific error
+        if (e && e.message === 'invalidCredentials') {
+          res.redirect('/forgot?invalidCredentials=true');
+        } else if (e && e.message === 'serverError') {
+          res.redirect('/forgot?serverError=true');
+        } else {
           res.redirect('/forgot?failed=true');
-        });
-    } else res.redirect('/forgot?failed=true');
+        }
+      });
   });
 
   app.get('/auth/login', (req, res) => {
@@ -756,45 +1185,69 @@ mongoClient.connect((err) => {
       });
   });
 
-  app.post('/service/presence/present', (req, res) => {
-    var test = 0;
-    var options = JSON.parse(req.body.options);
-    for (var p of onlinePlayers) {
-      if (p.username != req.body.username) {
-        test++;
-      } else {
-        p.lastChecked = Date.now();
-        p.username = req.body.username;
-        p.level = options.level;
-        p.elo = options.elo;
-        p.location = options.location;
-        p.name = options.name;
-        p.tier = options.tier;
-        break;
-      }
-    }
-    if (test == onlinePlayers.length) {
-      var playerObj = {
-        username: req.body.username,
-        level: options.level,
-        elo: options.elo,
-        location: options.location,
-        name: options.name,
-        tier: options.tier,
-        lastChecked: Date.now(),
-        friends: [],
-      };
-      playerCollection
-        .findOne({ 'user.TEGid': req.body.username })
-        .then((data) => {
-          if (data != null) {
-            playerObj.friends = data.friends;
-            onlinePlayers.push(playerObj);
-            res.send(postRequest.handlePresent(req.body));
+  app.post('/service/presence/present', async (req, res) => {
+    try {
+      let playerFound = false;
+      const options = JSON.parse(req.body.options);
+      const username = req.body.username;
+
+      for (let p of onlinePlayers) {
+        if (p.username === username) {
+          playerFound = true;
+          p.lastChecked = Date.now();
+          p.level = options.level;
+          p.elo = options.elo;
+          p.location = options.location;
+          p.name = options.name;
+          p.tier = options.tier;
+
+          try {
+            const data = await playerCollection.findOne({
+              'user.TEGid': username,
+            });
+            if (data) {
+              p.pfp = data.user?.pfp;
+              p.friends = data.friends;
+            } else {
+              console.log(
+                `Player ${username} found online but does not exist in DB during update`
+              );
+            }
+          } catch (dbError) {
+            console.error(
+              'Error fetching player data during presence update: ' + dbError
+            );
           }
-        })
-        .catch(console.error);
-    } else res.send(postRequest.handlePresent(req.body));
+          break;
+        }
+      }
+
+      if (!playerFound) {
+        const data = await playerCollection.findOne({ 'user.TEGid': username });
+
+        if (data != null) {
+          const playerObj = {
+            username: username,
+            level: options.level,
+            elo: options.elo,
+            location: options.location,
+            name: options.name,
+            tier: options.tier,
+            lastChecked: Date.now(),
+            friends: data.friends || [],
+            pfp: data.user?.pfp,
+          };
+          onlinePlayers.push(playerObj);
+        } else {
+          console.log(
+            `New player ${username} not found in DB. Not adding to online list`
+          );
+        }
+      }
+      res.send(postRequest.handlePresent(req.body));
+    } catch (e) {
+      console.log('Error performing presence ' + e);
+    }
   });
 
   app.post('/service/shop/purchase', (req, res) => {

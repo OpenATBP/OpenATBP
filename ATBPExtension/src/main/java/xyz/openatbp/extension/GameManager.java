@@ -37,6 +37,15 @@ public class GameManager {
         "ironowls",
         "grassbear"
     };
+
+    public static final String[] L1_SPAWNS = {
+        "bh1", "ph1", "gnomes", "ironowls",
+    };
+
+    public static final String[] ARAM_SPAWNS = {
+        "bh1", "ph1", "gnomes", "ironowls", "keeoth", "goomonster", "hugwolf", "grassbear"
+    };
+
     private static ObjectMapper objectMapper = new ObjectMapper();
 
     public static void addPlayer(
@@ -72,6 +81,7 @@ public class GameManager {
             ISFSObject data = new SFSObject();
             if (groupID.equals("Practice")
                     || groupID.equals("Tutorial")
+                    || groupID.equals("ARAM")
                     || (room.getMaxUsers() <= 4
                             && !room.getName().contains("1p")
                             && !(room.getMaxUsers() == 1 && room.getName().contains("custom")))) {
@@ -129,7 +139,9 @@ public class GameManager {
             float px = 0f;
             float pz = 0f;
             if (team == 0) {
-                if (room.getGroupId().equals("Practice") || room.getGroupId().equals("Tutorial")) {
+                if (room.getGroupId().equals("Practice")
+                        || room.getGroupId().equals("Tutorial")
+                        || room.getGroupId().equals("ARAM")) {
                     px = (float) MapData.L1_PURPLE_SPAWNS[purpleNum].getX();
                     pz = (float) MapData.L1_PURPLE_SPAWNS[purpleNum].getY();
                 } else {
@@ -139,7 +151,9 @@ public class GameManager {
                 purpleNum++;
             }
             if (team == 1) {
-                if (room.getGroupId().equals("Practice") || room.getGroupId().equals("Tutorial")) {
+                if (room.getGroupId().equals("Practice")
+                        || room.getGroupId().equals("Tutorial")
+                        || room.getGroupId().equals("ARAM")) {
                     px = (float) MapData.L1_PURPLE_SPAWNS[blueNum].getX() * -1;
                     pz = (float) MapData.L1_PURPLE_SPAWNS[blueNum].getY();
                 } else {
@@ -214,7 +228,20 @@ public class GameManager {
 
     private static void setRoomVariables(Room room) throws SFSVariableException {
         ISFSObject spawnTimers = new SFSObject();
-        for (String s : L2_SPAWNS) { // Adds in spawn timers for all mobs/health. AKA time dead
+        String[] spawns;
+
+        switch (room.getGroupId()) {
+            case "Tutorial":
+            case "Practice":
+                spawns = GameManager.L1_SPAWNS;
+                break;
+
+            default:
+                spawns = GameManager.L2_SPAWNS;
+                break;
+        }
+
+        for (String s : spawns) { // Adds in spawn timers for all mobs/health. AKA time dead
             spawnTimers.putInt(s, 0);
         }
         ISFSObject teamScore = new SFSObject();
@@ -307,7 +334,11 @@ public class GameManager {
 
          */
         int coins = isRankedMatch ? 80 : tutorialCoins ? 700 : 0;
-        if (team == winningTeam) coins += 20;
+        int prestigePoints = isRankedMatch ? 10 : 0;
+        if (team == winningTeam && isRankedMatch) {
+            coins += 20;
+            prestigePoints += 5;
+        }
         ObjectNode node = objectMapper.createObjectNode();
         for (User u : room.getUserList()) {
             UserActor ua =
@@ -326,8 +357,7 @@ public class GameManager {
                 player.put("playerName", ua.getFrame());
                 player.put("myElo", (double) playerVar.getInt("elo"));
                 player.put("coins", coins);
-                player.put(
-                        "prestigePoints", 10); // Just going to have this be a flat amount for now
+                player.put("prestigePoints", prestigePoints);
                 node.set(String.valueOf(u.getId()), player);
             }
         }

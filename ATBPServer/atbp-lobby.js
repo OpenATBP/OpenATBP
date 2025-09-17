@@ -3,6 +3,29 @@ const config = require('./config.js');
 const matchmaking = require('./matchmaking.js');
 const dbOperations = require('./db-operations.js');
 
+const heroes = [
+  'billy',
+  'bmo',
+  'choosegoose',
+  'cinnamonbun',
+  'finn',
+  'fionna',
+  'flame',
+  'gunter',
+  'hunson',
+  'iceking',
+  'jake',
+  'lemongrab',
+  'lich',
+  'lsp',
+  'magicman',
+  'marceline',
+  'neptr',
+  'peppermintbutler',
+  'princessbubblegum',
+  'rattleballs',
+];
+
 var queues = [];
 var users = [];
 var teams = [];
@@ -256,17 +279,6 @@ function updateElo(socket) {
       .findOne({ 'user.TEGid': socket.player.teg_id })
       .then((res) => {
         if (res != null) {
-          switch (res.player.elo + 1) {
-            case 0:
-            case 25:
-            case 75:
-            case 200:
-              res.player.elo++;
-              break;
-            case 74:
-              res.player.elo += 2;
-              break;
-          }
           socket.player.elo = res.player.elo;
         } else socket.end();
       })
@@ -287,7 +299,7 @@ function handleSkilledMatchmaking() {
       u.player.queueData.dodgeCount != 0
     ) {
       var dodgesToRemove = Math.floor(
-        (Date.now() - u.player.queueData.lastDodge) / (1000 * 60 * 30)
+        (Date.now() - u.player.queueData.lastDodge) / (1000 * 60 * 60)
       );
       if (dodgesToRemove > 0) {
         u.player.queueData.dodgeCount -= dodgesToRemove;
@@ -520,9 +532,13 @@ function updateMatchmaking() {
 function startGame(players, type) {
   //Note, custom games do not use this.
   var queueSize = 1;
+  var aram = false;
   if (type.includes('p') && type != 'practice')
-    queueSize = Number(type.replace('p', ''));
-  if (queueSize == 3) queueSize = 4; //Turns bots to 2v2
+    queueSize = Number(type.replace('aram_', '').replace('p', ''));
+  if (type.includes('aram')) {
+    queueSize = 6; //Testing value for aram
+    aram = true;
+  }
   var allTeams = matchmaking.getRandomTeams(players, teams, queueSize / 2);
   console.log(allTeams);
   if (allTeams == undefined) return;
@@ -547,10 +563,9 @@ function startGame(players, type) {
     purple: [],
     ready: 0,
     max: queueSize,
-    inGame: false,
+    inGame: aram,
     endTime: Date.now() + 61 * 1000,
   };
-
   for (var bp of blue) {
     var user = users.find((u) => u.player.teg_id == bp.teg_id);
     if (user == undefined) {
@@ -561,7 +576,9 @@ function startGame(players, type) {
         name: user.player.name,
         player: user.player.player,
         teg_id: `${user.player.teg_id}`,
-        avatar: 'unassigned',
+        avatar: !aram
+          ? 'unassigned'
+          : heroes[Math.floor(Math.random() * (heroes.length - 1))],
         is_ready: false,
       };
       queueObj.blue.push(playerObj);
@@ -578,7 +595,9 @@ function startGame(players, type) {
           name: user.player.name,
           player: user.player.player,
           teg_id: `${user.player.teg_id}`,
-          avatar: 'unassigned',
+          avatar: !aram
+            ? 'unassigned'
+            : heroes[Math.floor(Math.random() * (heroes.length - 1))],
           is_ready: false,
         };
         queueObj.purple.push(playerObj);
@@ -719,8 +738,9 @@ function leaveTeam(socket, disconnected) {
 function joinQueue(sockets, type) {
   var queueSize = 1;
   if (type.includes('p') && type != 'practice')
-    queueSize = Number(type.replace('p', ''));
-  if (queueSize == 3) queueSize = 4; //Turns bots to 2v2
+    queueSize = Number(type.replace('aram_', '').replace('p', ''));
+
+  if (type.includes('aram')) queueSize = 6; //Testing number for ARAM
   for (var s of sockets) {
     if (
       s.player.queueData.queueBan == -1 ||
@@ -1099,6 +1119,7 @@ function handleRequest(jsonString, socket) {
       */
       var act = jsonObject['payload'].act.split('_');
       var type = act[act.length - 1];
+      if (act[act.length - 2] == 'aram') type = 'aram_6p';
       for (var q of queues.filter((qu) =>
         qu.players.includes(socket.player.teg_id)
       )) {
@@ -1121,6 +1142,7 @@ function handleRequest(jsonString, socket) {
       var queue = queues.find((q) => q.players.includes(socket.player.teg_id));
       if (queue != undefined) {
         if (queue.ready == queue.max) return;
+        if (queue.type == 'aram_6p') return;
         var blueMember = queue.blue.find(
           (bp) => bp.teg_id == socket.player.teg_id
         );
@@ -1190,7 +1212,7 @@ function handleRequest(jsonString, socket) {
           var trashGame = () => {
             for (var qp of queue.players) {
               var queueUser = users.find((u) => u.player.teg_id == qp);
-              if (queuePlayer != undefined) {
+              if (queueUser != undefined) {
                 queuePlayer.player.queue = {
                   type: null,
                   started: -1,
@@ -1352,6 +1374,16 @@ function handleRequest(jsonString, socket) {
       if (team == undefined) return; //TODO: Add error handling
       var act = team.type.split('_');
       var type = act[act.length - 1];
+      if (!act.includes('aram')) {
+        console.log(act);
+        var teamMembers = users.filter((u) =>
+          team.players.includes(u.player.teg_id)
+        );
+        safeSendAll(teamMembers, 'team_disband', {
+          reason: 'error_premade_disabled',
+        });
+        return; //TODO: Remove when renabling queue;
+      }
       /*
       var fakeUser1 = matchmaking.createFakeUser(true);
       var fakeUser2 = matchmaking.createFakeUser(true);
@@ -1528,8 +1560,11 @@ function handleRequest(jsonString, socket) {
       var existingUser = users.find(
         (u) => u.player.name == response['payload'].name
       );
-      if (existingUser != undefined)
+      if (existingUser != undefined) {
+        leaveQueue(existingUser, true);
         users = users.filter((u) => u != existingUser);
+      }
+
       socket.player = {
         name: response['payload'].name,
         teg_id: response['payload'].teg_id,
@@ -1558,6 +1593,17 @@ function handleRequest(jsonString, socket) {
                 dodgeCount: 0,
                 timesOffended: 0,
               };
+            }
+            if (
+              existingUser != undefined &&
+              existingUser.player != undefined &&
+              existingUser.player.queueData != undefined
+            ) {
+              if (
+                existingUser.player.queueData.dodgeCount >=
+                socket.player.queueData.dodgeCount
+              )
+                socket.player.queueData = existingUser.player.queueData;
             }
             playerCollection
               .updateOne(

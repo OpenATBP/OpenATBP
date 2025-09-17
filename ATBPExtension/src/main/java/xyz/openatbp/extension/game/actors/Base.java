@@ -15,6 +15,7 @@ import xyz.openatbp.extension.game.ActorType;
 public class Base extends Actor {
     private boolean unlocked = false;
     private long lastHit = -1;
+    private Long lastAction = 0L;
 
     public Base(ATBPExtension parentExt, Room room, int team) {
         this.currentHealth = 3500;
@@ -47,13 +48,13 @@ public class Base extends Actor {
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         if (!this.unlocked) return false;
+        lastAction = System.currentTimeMillis();
         this.currentHealth -= getMitigatedDamage(damage, AttackType.PHYSICAL, a);
         if (System.currentTimeMillis() - this.lastHit >= 15000) {
             this.lastHit = System.currentTimeMillis();
-            for (UserActor ua :
-                    parentExt
-                            .getRoomHandler(room.getName())
-                            .getPlayers()) { // TODO: Playing for enemy team?
+            RoomHandler handler = parentExt.getRoomHandler(room.getName());
+
+            for (UserActor ua : handler.getPlayers()) {
                 if (ua.getTeam() == this.team)
                     ExtensionCommands.playSound(
                             parentExt,
@@ -93,6 +94,7 @@ public class Base extends Actor {
     @Override
     public void update(int msRan) {
         this.handleDamageQueue();
+        handleStructureRegen(lastAction, BaseTower.TIME_REQUIRED_TO_REGEN, BaseTower.REGEN_VALUE);
     }
 
     @Override

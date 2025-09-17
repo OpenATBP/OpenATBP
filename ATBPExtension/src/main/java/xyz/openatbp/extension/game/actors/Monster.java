@@ -86,33 +86,44 @@ public class Monster extends Actor {
         this.updateMaxHealth();
     }
 
+    public Monster(
+            ATBPExtension parentExt,
+            Room room,
+            Point2D startingLocation,
+            String monsterName,
+            String id) {
+        this.startingLocation = startingLocation;
+        this.type = MonsterType.SMALL;
+        this.attackCooldown = 0;
+        this.parentExt = parentExt;
+        this.room = room;
+        this.location = this.startingLocation;
+        this.team = 2;
+        this.avatar = monsterName;
+        this.stats = this.initializeStats();
+        this.id = id;
+        this.maxHealth = this.stats.get("health");
+        this.currentHealth = this.maxHealth;
+        this.actorType = ActorType.MONSTER;
+        this.xpWorth = this.parentExt.getActorXP(this.avatar);
+        this.displayName = parentExt.getDisplayName(monsterName);
+        this.updateMaxHealth();
+    }
+
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) { // Runs when taking damage
         try {
-            if (this.dead)
-                return true; // Prevents bugs that take place when taking damage (somehow from FP
-            // passive)
-            // after dying
+            if (this.dead) return true;
             if (Champion.getUserActorsInRadius(
-                                    this.parentExt.getRoomHandler(this.room.getName()),
-                                    this.location,
-                                    10f)
+                                    parentExt.getRoomHandler(room.getName()), location, 10f)
                             .isEmpty()
-                    && this.state == AggroState.PASSIVE) return false;
+                    && state == AggroState.PASSIVE) return false;
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
                 if (ChampionData.getJunkLevel(ua, "junk_1_demon_blood_sword") > 0) {
-                    damage *= (1 + ChampionData.getCustomJunkStat(ua, "junk_1_demon_blood_sword"));
-                }
-                if (ua.lichHandDamageApplies(this)) {
-                    Console.debugLog("Lich hand damage " + ua.getLichHandTimesHit());
-                    damage += ((double) damage * (0.1d * ua.getLichHandTimesHit()));
-                    ua.handleLichHandHit();
-                } else if (ChampionData.getJunkLevel(ua, "junk_2_lich_hand") > 0
-                        && (ua.getLichVictim() == null
-                                || !ua.getLichVictim().equalsIgnoreCase(this.id))) {
-                    Console.debugLog("Setting Lich Victim");
-                    ua.setLichVictim(this.id);
+                    double junkData =
+                            ChampionData.getCustomJunkStat(ua, "junk_1_demon_blood_sword");
+                    damage *= (int) (1 + junkData);
                 }
             }
             AttackType attackType = this.getAttackType(attackData);
@@ -167,7 +178,7 @@ public class Monster extends Actor {
         int averagePLevel = parentExt.getRoomHandler(this.room.getName()).getAveragePlayerLevel();
         if (averagePLevel != level) {
             int levelDiff = averagePLevel - level;
-            this.maxHealth += parentExt.getHealthScaling(this.id) * levelDiff;
+            this.maxHealth += parentExt.getHealthScaling(this.avatar) * levelDiff;
             this.level = averagePLevel;
             Champion.updateServerHealth(this.parentExt, this);
         }
@@ -286,7 +297,7 @@ public class Monster extends Actor {
             if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
             this.currentHealth = -1;
             RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getName());
-            int scoreValue = parentExt.getActorStats(this.id).get("valueScore").asInt();
+            int scoreValue = parentExt.getActorStats(this.avatar).get("valueScore").asInt();
             if (a.getActorType() == ActorType.PLAYER
                     || a.getActorType()
                             == ActorType.COMPANION) { // Adds score + party xp when killed by player

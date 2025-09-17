@@ -235,17 +235,6 @@ public class Minion extends Actor {
                     }
                 }
                 // this.handleElectrodeGun(ua, a, damage, attackData);
-
-                if (ua.lichHandDamageApplies(this)) {
-                    Console.debugLog("Lich hand damage " + ua.getLichHandTimesHit());
-                    damage += ((double) damage * (0.1d * ua.getLichHandTimesHit()));
-                    ua.handleLichHandHit();
-                } else if (ChampionData.getJunkLevel(ua, "junk_2_lich_hand") > 0
-                        && (ua.getLichVictim() == null
-                                || !ua.getLichVictim().equalsIgnoreCase(this.id))) {
-                    Console.debugLog("Setting Lich Victim");
-                    ua.setLichVictim(this.id);
-                }
             }
             if (a.getActorType() == ActorType.TOWER) {
                 if (this.type == MinionType.SUPER) damage = (int) Math.round(damage * 0.25);
@@ -666,6 +655,12 @@ public class Minion extends Actor {
         this.state = State.MOVING;
     }
 
+    private boolean actorsToIgnore(String avatar, String id) {
+        return avatar.equals("neptr_mine")
+                || avatar.equals("choosegoose_chest")
+                || id.contains("decoy");
+    }
+
     private Actor searchForTarget() {
         Actor closestActor = null;
         Actor closestNonUser = null;
@@ -675,8 +670,7 @@ public class Minion extends Actor {
         List<Actor> filteredActors = handler.getEligibleActors(this.team, true, true, false, false);
         for (Actor a : filteredActors) {
             if (isNotAMonster(a)
-                    && !a.getAvatar().equalsIgnoreCase("neptr_mine")
-                    && !a.getId().contains("decoy")
+                    && !actorsToIgnore(a.getAvatar(), a.getId())
                     && !isInvisOrInBrush(a)
                     && this.withinAggroRange(a.getLocation())) {
                 if (a.getActorType() == ActorType.PLAYER && this.facingEntity(a.getLocation())) {

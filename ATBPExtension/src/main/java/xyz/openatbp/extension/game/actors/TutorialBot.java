@@ -21,8 +21,8 @@ public class TutorialBot extends Bot {
     private boolean isAutoAttacking = false;
     private long lastBallon = 0;
 
-    public TutorialBot(ATBPExtension parentExt, Room room, int team, Point2D spawnPoint, int num) {
-        super(parentExt, room, "jake", team, spawnPoint, num);
+    public TutorialBot(ATBPExtension parentExt, Room room, int team, Point2D spawnPoint) {
+        super(parentExt, room, "bot_jake", team, spawnPoint);
     }
 
     @Override
