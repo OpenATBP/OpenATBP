@@ -1,4 +1,4 @@
-mongoURI=mongodb://admin:password@127.0.0.1:27017
+mongoURI=mongodb+srv://ezekokonkwo_db_user:QIqSPKEQJq9y80A6@atbpserver.e42gp5i.mongodb.net/?appName=ATBPServer
 movementDebug=false
 invincibleDebug=false
 abilityDebug=false
