@@ -21,7 +21,7 @@
           "point": 1,
           "stat": "armorPenetration",
           "type": 0,
-          "value": 5
+          "value": 10
         },
         {
           "point": 1,
@@ -39,7 +39,7 @@
           "point": 2,
           "stat": "armorPenetration",
           "type": 0,
-          "value": 10
+          "value": 15
         },
         {
           "point": 2,
@@ -51,13 +51,13 @@
           "point": 3,
           "stat": "attackDamage",
           "type": 0,
-          "value": 30
+          "value": 45
         },
         {
           "point": 3,
           "stat": "armorPenetration",
           "type": 0,
-          "value": 15
+          "value": 20
         },
         {
           "point": 3,
@@ -69,13 +69,13 @@
           "point": 4,
           "stat": "attackDamage",
           "type": 0,
-          "value": 50
+          "value": 70
         },
         {
           "point": 4,
           "stat": "armorPenetration",
           "type": 0,
-          "value": 25
+          "value": 35
         },
         {
           "point": 4,
