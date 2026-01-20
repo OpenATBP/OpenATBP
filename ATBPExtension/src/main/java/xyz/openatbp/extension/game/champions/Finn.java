@@ -458,7 +458,7 @@ public class Finn extends UserActor {
     protected double handlePassive(Actor target, double damage) {
         if (furyTarget != null) {
             if (furyTarget.getId().equalsIgnoreCase(target.getId())) {
-                damage *= (1 + (0.2 * furyStacks));
+                damage *= (1 + (0.15 * furyStacks));
                 if (furyStacks < 3) {
                     if (furyStacks > 0)
                         ExtensionCommands.removeFx(
