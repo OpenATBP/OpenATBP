@@ -4,7 +4,7 @@ config.lobbyserver = {};
 config.sockpol = {};
 
 config.httpserver.port = 8000;
-config.httpserver.mongouri = YOUR_MONGODB_URL_HERE
+config.httpserver.mongouri = "mongodb+srv://USER:PASSWORD@cluster.mongodb.net/?appName=ATBPServer";
 config.httpserver.url = 'http://127.0.0.1:8000';
 
 config.sockpol.enable = true;
