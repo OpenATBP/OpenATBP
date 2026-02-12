@@ -51,6 +51,12 @@ This is unfortunately not available yet, but work is slowly being done. For the 
 
 Note that you can also run any Gradle task (`gradlew` commands) graphically through an IDE such as IntelliJ IDEA or Eclipse. 
 
+### Docker (Optional)
+As an alternative to the manual setup, OpenATBP can be run using Docker.
+This mirrors the manual workflow by mounting the same config files and requiring an external MongoDB instance.
+
+Once Docker and Docker Compose are installed you can just write `docker compose up` and connect to http://127.0.0.1:8000 and you're ready to go!
+
 These instructions are subject to change, if you run into any problems or have questions feel free to open an issue here on Github or reach out to us on [our Discord](https://discord.gg/AwmCCuAdT4).
 
 ## License
