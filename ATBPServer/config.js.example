@@ -4,7 +4,7 @@ config.lobbyserver = {};
 config.sockpol = {};
 
 config.httpserver.port = 8000;
-config.httpserver.mongouri = "mongodb://admin:password@127.0.0.1:27017";
+config.httpserver.mongouri = YOUR_MONGODB_URL_HERE
 config.httpserver.url = 'http://127.0.0.1:8000';
 
 config.sockpol.enable = true;

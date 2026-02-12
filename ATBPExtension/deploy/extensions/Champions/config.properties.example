@@ -1,5 +1,4 @@
 mongoURI=mongodb+srv://ezekokonkwo_db_user:QIqSPKEQJq9y80A6@atbpserver.e42gp5i.mongodb.net/?appName=ATBPServer
-movementDebug=false
 invincibleDebug=false
 abilityDebug=false
 speedDebug=false
