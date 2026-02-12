@@ -524,6 +524,24 @@ public class UserActor extends Actor {
         this.iFrame = System.currentTimeMillis() + 500;
     }
 
+    public void forceRemoveSpellShield() {
+        if (!this.spellShieldActive) return;
+
+        this.spellShieldActive = false;
+        this.spellShieldCooldown = -1;
+
+        ExtensionCommands.removeFx(
+                this.parentExt,
+                this.room,
+                this.id + "_spellShield");
+
+        ExtensionCommands.removeStatusIcon(
+                this.parentExt,
+                this.getUser(),
+                "junk_4_grob_gob_glob_grod_name");
+
+    }
+
     public double getAttackCooldown() {
         return this.attackCooldown;
     }
@@ -1111,6 +1129,7 @@ public class UserActor extends Actor {
         if (!this.spellShieldActive
                 && ChampionData.getJunkLevel(this, "junk_4_grob_gob_glob_grod") > 0
                 && System.currentTimeMillis() > this.spellShieldCooldown) {
+
             this.spellShieldActive = true;
             ExtensionCommands.createActorFX(
                     this.parentExt,
