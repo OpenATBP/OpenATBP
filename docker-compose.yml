@@ -1,0 +1,27 @@
+services:
+  atbpextension:
+    build:
+      context: .
+      dockerfile: .docker/ATBPExtension/Dockerfile
+    container_name: atbpextension
+    ports:
+      - "8080:8080" # HTTP
+      - "8443:8443" # HTTPS
+      - "9933:9933" # TCP
+    volumes:
+      - ./ATBPExtension/deploy/extensions/Champions/config.properties.example:/opt/SmartFoxServer_2X/SFS2X/extensions/Champions/config.properties
+    restart: unless-stopped
+  atbpserver:
+    build:
+      context: .
+      dockerfile: .docker/ATBPServer/Dockerfile
+    container_name: atbpserver
+    ports:
+      - "8000:8000" # httpserver
+      - "6778:6778" # lobbyserver
+      - "843:843" # sockpol
+    volumes:
+      - ./ATBPServer/config.js.example:/app/config.js
+      - ./ATBPServer/config.xml.example:/app/static/config.xml
+      - ./ATBPServer/crossdomain.xml.example:/app/static/crossdomain.xml
+    restart: unless-stopped
