@@ -530,16 +530,10 @@ public class UserActor extends Actor {
         this.spellShieldActive = false;
         this.spellShieldCooldown = -1;
 
-        ExtensionCommands.removeFx(
-                this.parentExt,
-                this.room,
-                this.id + "_spellShield");
+        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_spellShield");
 
         ExtensionCommands.removeStatusIcon(
-                this.parentExt,
-                this.getUser(),
-                "junk_4_grob_gob_glob_grod_name");
-
+                this.parentExt, this.getUser(), "junk_4_grob_gob_glob_grod_name");
     }
 
     public double getAttackCooldown() {
