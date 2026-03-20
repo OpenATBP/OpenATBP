@@ -36,6 +36,7 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
         playerInfo.putInt(
                 "elo", parentExt.getElo((String) sender.getSession().getProperty("tegid")));
         playerInfo.putBool("isTournamentEligible", params.getBool("isTournamentEligible"));
+        playerInfo.putUtfString("id", String.valueOf(sender.getId()));
         SFSUserVariable playerVar = new SFSUserVariable("player", playerInfo);
         ISFSObject location =
                 new SFSObject(); // Will need to be changed when we get actual spawn points made
