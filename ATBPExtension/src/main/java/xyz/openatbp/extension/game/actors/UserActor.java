@@ -22,6 +22,7 @@ import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.champions.Fionna;
 import xyz.openatbp.extension.game.champions.GooMonster;
+import xyz.openatbp.extension.game.champions.Gunter;
 import xyz.openatbp.extension.game.champions.Keeoth;
 import xyz.openatbp.extension.pathfinding.MovementManager;
 
@@ -116,6 +117,8 @@ public class UserActor extends Actor {
     protected Long lastZeldronBuff = 0L;
     protected Long lastRoboEffect = 0L;
     protected HashMap<UserActor, Integer> simonGlassesBuffProviders = new HashMap<>(2);
+    protected int gender = 2; // 0 male, 1 female, 2 non-binary
+    protected int estimatedCrimes = 0;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -2487,6 +2490,14 @@ public class UserActor extends Actor {
         this.hasGlassesPoint = val;
     }
 
+    public int getGender() {
+        return this.gender;
+    }
+
+    public int getEstimatedCrimes() {
+        return this.estimatedCrimes;
+    }
+
     @Override
     public void heal(int delta) {
         if (ChampionData.getJunkLevel(this, "junk_1_ax_bass") > 0) return;
@@ -2551,8 +2562,33 @@ public class UserActor extends Actor {
             String emit = "Bip01";
             if (this.emitNode != null) emit = this.emitNode;
             float time = (float) (target.getLocation().distance(location) / 10f);
+            String[] randomAvatars = {
+                "bmo_projectile_ultimate",
+                "bubblegum_bomb_trap",
+                "flambit",
+                "gnome_a",
+                "fx_hunson_head1",
+                "gunter_bottle_projectile",
+                "gunter",
+                "skully",
+                "lich_charm_projectile",
+                "lsp_cellphone_projectile",
+                "lsp_microphone_projectile",
+                "magicman_snake",
+                "neptr",
+                "pb_turret",
+                "tut_arrow1"
+            };
+            int randomNum = (int) (Math.random() * randomAvatars.length);
             ExtensionCommands.createProjectileFX(
-                    parentExt, room, projectile, id, target.getId(), emit, "targetNode", time);
+                    parentExt,
+                    room,
+                    UserActor.this instanceof Gunter ? randomAvatars[randomNum] : projectile,
+                    id,
+                    target.getId(),
+                    emit,
+                    "targetNode",
+                    time);
             parentExt
                     .getTaskScheduler()
                     .schedule(attackRunnable, (int) (time * 1000), TimeUnit.MILLISECONDS);

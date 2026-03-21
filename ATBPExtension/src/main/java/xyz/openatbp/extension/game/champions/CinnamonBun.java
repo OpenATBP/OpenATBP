@@ -42,6 +42,7 @@ public class CinnamonBun extends UserActor {
 
     public CinnamonBun(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = 0;
     }
 
     @Override

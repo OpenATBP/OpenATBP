@@ -45,6 +45,8 @@ public class MagicMan extends UserActor {
 
     public MagicMan(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = 0;
+        this.estimatedCrimes = 50;
     }
 
     @Override

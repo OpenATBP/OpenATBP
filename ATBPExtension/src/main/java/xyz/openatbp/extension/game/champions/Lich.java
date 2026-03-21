@@ -40,6 +40,8 @@ public class Lich extends UserActor {
 
     public Lich(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = 0;
+        this.estimatedCrimes = 100;
         lastSkullySpawn = 0;
     }
 

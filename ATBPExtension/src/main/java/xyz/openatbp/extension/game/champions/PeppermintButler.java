@@ -54,6 +54,8 @@ public class PeppermintButler extends UserActor {
 
     public PeppermintButler(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = 0;
+        this.estimatedCrimes = 50;
     }
 
     @Override

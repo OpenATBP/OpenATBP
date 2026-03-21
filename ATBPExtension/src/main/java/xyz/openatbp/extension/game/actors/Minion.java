@@ -116,8 +116,28 @@ public class Minion extends Actor {
         this.movementLine = new Line2D.Float(this.location, this.location);
         aggressors = new HashMap<>(3);
         this.stats = this.initializeStats();
+        String[] randomAvatars = {
+            "hugwolf",
+            "keeoth",
+            "gnome_a",
+            "neptr",
+            "finn_skin_shadow",
+            "ironowl_a",
+            "ironowl_c",
+            "gnome_c",
+            "skully",
+            "grassbear",
+            "princessbubblegum_turret"
+        };
+        int randomNum = (int) (Math.random() * randomAvatars.length);
         ExtensionCommands.createActor(
-                parentExt, room, this.id, this.getAvatar(), this.location, 0f, this.team);
+                parentExt,
+                room,
+                this.id,
+                Math.random() <= 0.15 ? randomAvatars[randomNum] : this.getAvatar(),
+                this.location,
+                0f,
+                this.team);
         Properties props = parentExt.getConfigProperties();
         movementDebug = Boolean.parseBoolean(props.getProperty("movementDebug", "false"));
         if (movementDebug)

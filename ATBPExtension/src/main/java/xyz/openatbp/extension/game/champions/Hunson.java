@@ -51,6 +51,8 @@ public class Hunson extends UserActor {
 
     public Hunson(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = 0;
+        this.estimatedCrimes = 75;
     }
 
     @Override

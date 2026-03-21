@@ -53,6 +53,8 @@ public class Marceline extends UserActor {
 
     public Marceline(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = 1;
+        this.estimatedCrimes = 25;
     }
 
     @Override

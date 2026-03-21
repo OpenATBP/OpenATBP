@@ -26,6 +26,8 @@ public class Keeoth extends Monster {
 
     private int abilityCooldown;
     private boolean usingAbility;
+    private boolean secondPhase = false;
+    private boolean secondPhaseTransforming = false;
     private static final int KEEOTH_BUFF_DURATION = 90000;
 
     public Keeoth(
@@ -55,12 +57,36 @@ public class Keeoth extends Monster {
 
     @Override
     public void update(int msRan) {
+        if (this.secondPhaseTransforming && msRan % 1000 == 0) {
+            this.changeHealth((int) Math.round(this.maxHealth / 5));
+            ExtensionCommands.scaleActor(parentExt, room, id, 1.2f);
+            if (this.currentHealth >= this.maxHealth) {
+                this.secondPhaseTransforming = false;
+                this.abilityCooldown = 0;
+                this.setStat("speed", getSpeed() * 1.5f);
+            } else return;
+        }
         super.update(msRan);
         if (!this.usingAbility && this.abilityCooldown > 0) this.abilityCooldown -= 100;
     }
 
     @Override
+    public boolean damaged(Actor a, int damage, JsonNode attackData) {
+        if (!this.secondPhase && this.currentHealth - damage <= 0) {
+            this.die(a);
+            return false;
+        }
+        if (this.secondPhaseTransforming) return false;
+        return super.damaged(a, damage, attackData);
+    }
+
+    @Override
     public void die(Actor a) {
+        if (!this.secondPhase) {
+            this.secondPhase = true;
+            this.secondPhaseTransforming = true;
+            return;
+        }
         if (isProperKiller(a)) {
             List<UserActor> players = parentExt.getRoomHandler(room.getName()).getPlayers();
             int killerTeam = a.getTeam();
@@ -190,9 +216,14 @@ public class Keeoth extends Monster {
                                 };
                         parentExt
                                 .getTaskScheduler()
-                                .schedule(specialDamage, 1000, TimeUnit.MILLISECONDS);
+                                .schedule(
+                                        specialDamage,
+                                        this.secondPhase ? 500 : 1000,
+                                        TimeUnit.MILLISECONDS);
                     };
-            parentExt.getTaskScheduler().schedule(keeothSpecial, 1250, TimeUnit.MILLISECONDS);
+            parentExt
+                    .getTaskScheduler()
+                    .schedule(keeothSpecial, this.secondPhase ? 750 : 1250, TimeUnit.MILLISECONDS);
         } else if (!this.usingAbility) {
             super.attack(a);
         }

@@ -42,6 +42,8 @@ public class Lemongrab extends UserActor {
 
     public Lemongrab(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = 0;
+        this.estimatedCrimes = 75;
         ExtensionCommands.addStatusIcon(
                 parentExt, player, "lemon0", "UNACCEPTABLE!!!!!", "icon_lemongrab_passive", 0f);
     }
@@ -398,17 +400,21 @@ public class Lemongrab extends UserActor {
                         team,
                         0f);
                 double damage = getSpellDamage(spellData, true);
-                double duration = 2000d;
+
                 damage *= (1d + (0.1d * unacceptableLevels));
-                duration *= (1d + (0.1d * unacceptableLevels));
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 for (Actor a : Champion.getActorsInRadius(handler, dest, 2.5f)) {
-
+                    double duration = 2000d;
+                    duration *= (1d + (0.1d * unacceptableLevels));
                     if (isNeitherTowerNorAlly(a)) {
                         a.addToDamageQueue(Lemongrab.this, damage, spellData, false);
                     }
 
                     if ((a instanceof UserActor || a instanceof Bot) && a.getTeam() != team) {
+                        if (a instanceof UserActor) {
+                            UserActor ua = (UserActor) a;
+                            duration += (100 * ua.getEstimatedCrimes());
+                        }
                         a.addState(ActorState.STUNNED, 0d, (int) duration);
 
                         if (!a.getState(ActorState.IMMUNITY)) {

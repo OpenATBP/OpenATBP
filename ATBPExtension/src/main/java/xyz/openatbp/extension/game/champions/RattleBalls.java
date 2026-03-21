@@ -51,6 +51,7 @@ public class RattleBalls extends UserActor {
 
     public RattleBalls(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.estimatedCrimes = 75;
     }
 
     @Override

@@ -46,6 +46,8 @@ public class Jake extends UserActor {
 
     public Jake(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = this.avatar.contains("cake") ? 1 : 0;
+        this.estimatedCrimes = 100;
     }
 
     @Override

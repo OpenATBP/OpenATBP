@@ -44,6 +44,7 @@ public class Neptr extends UserActor {
         super(u, parentExt);
         this.mines = new ArrayList<>(3);
         this.ultImpactedActors = new ArrayList<>();
+        this.estimatedCrimes = 1;
     }
 
     @Override

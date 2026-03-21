@@ -34,6 +34,8 @@ public class LSP extends UserActor {
 
     public LSP(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = 1;
+        this.estimatedCrimes = 10;
         ExtensionCommands.addStatusIcon(
                 parentExt, player, "p0", "lsp_spell_4_short_description", "icon_lsp_passive", 0f);
     }

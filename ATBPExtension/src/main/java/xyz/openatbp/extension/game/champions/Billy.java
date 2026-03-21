@@ -46,6 +46,7 @@ public class Billy extends UserActor {
 
     public Billy(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = 0;
         /*ArrayList<Vector<Float>>[] mainColliders = parentExt.getColliders("main");
         for (ArrayList<Vector<Float>> currentColliderList : mainColliders) {
             for (Vector<Float> currentVertex : currentColliderList) {

@@ -51,6 +51,8 @@ public class IceKing extends UserActor {
     public IceKing(User u, ATBPExtension parentExt) {
         super(u, parentExt);
         this.lastAbilityUsed = System.currentTimeMillis();
+        this.gender = this.avatar.contains("queen") ? 1 : 0;
+        this.estimatedCrimes = 75;
     }
 
     @Override
@@ -496,6 +498,11 @@ public class IceKing extends UserActor {
             if (crit) {
                 damage *= 1.25;
                 damage = handleGrassSwordProc(damage);
+            }
+            if (!IceKing.this.avatar.contains("young")
+                    && target.getActorType() == ActorType.PLAYER) {
+                UserActor ua = (UserActor) target;
+                if (ua.getGender() != IceKing.this.gender && ua.getGender() != 2) damage *= 0.9;
             }
             new Champion.DelayedAttack(parentExt, attacker, target, (int) damage, "basicAttack")
                     .run();

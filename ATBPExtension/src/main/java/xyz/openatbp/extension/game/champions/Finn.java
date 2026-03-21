@@ -46,6 +46,8 @@ public class Finn extends UserActor {
 
     public Finn(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = 0;
+        this.estimatedCrimes = 5;
     }
 
     @Override

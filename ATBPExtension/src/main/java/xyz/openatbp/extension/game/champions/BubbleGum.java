@@ -45,6 +45,8 @@ public class BubbleGum extends UserActor {
 
     public BubbleGum(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.estimatedCrimes = 100;
+        this.gender = this.avatar.contains("gumball") ? 0 : 1;
         this.turrets = new ArrayList<>(2);
         ExtensionCommands.addStatusIcon(
                 parentExt,

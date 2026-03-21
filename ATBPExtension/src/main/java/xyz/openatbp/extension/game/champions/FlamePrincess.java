@@ -42,6 +42,8 @@ public class FlamePrincess extends UserActor {
 
     public FlamePrincess(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = 1;
+        this.estimatedCrimes = 2;
     }
 
     @Override
