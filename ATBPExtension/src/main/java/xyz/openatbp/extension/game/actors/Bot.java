@@ -514,7 +514,7 @@ public class Bot extends Actor {
 
     private void useQ() {
         lastQUse = System.currentTimeMillis();
-        attackCooldown = 0;
+        attackCooldown = 500;
         qActive = true;
 
         addEffect("attackSpeed", getStat("attackSpeed") * -0.2, Q_DURATION);

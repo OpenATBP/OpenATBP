@@ -52,7 +52,6 @@ public abstract class Actor {
     protected Map<String, EffectHandler> effectHandlers = new HashMap<>();
     protected Map<String, FxHandler> fxHandlers = new HashMap<>();
     protected UserActor charmer;
-    protected long lastHitElectrodeGun = -1;
 
     public double getPHealth() {
         return currentHealth / maxHealth;
@@ -391,39 +390,6 @@ public abstract class Actor {
     }
 
     public abstract void handleKill(Actor a, JsonNode attackData);
-
-    public void handleElectrodeGun(UserActor ua, Actor a, int damage, JsonNode attackData) {
-        if (ChampionData.getJunkLevel(ua, "junk_2_electrode_gun") > 0) {
-            if (Math.random() <= 0.25d) {
-                for (Actor actor :
-                        Champion.getActorsInRadius(
-                                this.parentExt.getRoomHandler(this.room.getName()),
-                                this.location,
-                                2f)) {
-                    if (actor.getTeam() == this.team
-                            && !actor.getId().equalsIgnoreCase(this.id)
-                            && actor.canHitWithElectrode()) {
-                        a.hitWithElectrode();
-                        actor.addToDamageQueue(
-                                a,
-                                damage * ChampionData.getCustomJunkStat(ua, "junk_2_electrode_gun"),
-                                attackData,
-                                false);
-                        // TODO: Set different attack data for electrode gun damage
-                        Console.debugLog("Damage from electrode gun!");
-                    }
-                }
-            }
-        }
-    }
-
-    public void hitWithElectrode() {
-        this.lastHitElectrodeGun = System.currentTimeMillis();
-    }
-
-    public boolean canHitWithElectrode() {
-        return System.currentTimeMillis() - this.lastHitElectrodeGun > 1000;
-    }
 
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         if (a.getClass() == IceKing.class && this.hasMovementCC()) damage *= 1.1;

@@ -30,6 +30,7 @@ public class BMO extends UserActor {
     private static final float W_SHIELDS_VALUE = 1.5f;
     private static final int E_CAST_DELAY = 250;
     private static final int E_RANGE = 16;
+
     private int passiveStacks = 0;
     private boolean wActive = false;
     private long wStartTime = 0;
@@ -143,8 +144,7 @@ public class BMO extends UserActor {
 
     @Override
     public boolean canAttack() {
-        if (wActive) return false;
-        return super.canAttack();
+        return wActive ? false : super.canAttack();
     }
 
     @Override
