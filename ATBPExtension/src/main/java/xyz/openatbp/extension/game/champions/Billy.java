@@ -190,7 +190,7 @@ public class Billy extends UserActor {
                         if (!actorsInPolygon.isEmpty()) {
                             for (Actor a : actorsInPolygon) {
                                 if (isNeitherStructureNorAlly(a)) {
-                                    a.knockback(this.location, 3.5f);
+                                    a.knockback(this.location, this.passiveUses == 3 ? 100f : 3.5f);
                                     if (this.passiveUses == 3)
                                         a.addState(ActorState.STUNNED, 0d, Q_STUN_DURATION);
                                 }

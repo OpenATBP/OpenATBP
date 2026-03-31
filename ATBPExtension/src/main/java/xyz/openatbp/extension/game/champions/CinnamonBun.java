@@ -15,6 +15,7 @@ import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
+import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -58,8 +59,10 @@ public class CinnamonBun extends UserActor {
             List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, this.wPolygon);
             if (!actorsInPolygon.isEmpty()) {
                 for (Actor a : actorsInPolygon) {
-                    if (isNeitherTowerNorAlly(a)) {
+                    if (a.getTeam() != this.team) {
                         int damage = (int) (getSpellDamage(spellData, false) / 10d);
+                        if (a.getActorType() == ActorType.TOWER) damage *= 2d;
+                        else if (a.getActorType() != ActorType.BASE) damage /= 2d;
                         a.addToDamageQueue(this, damage, spellData, true);
                     }
 
@@ -86,13 +89,17 @@ public class CinnamonBun extends UserActor {
             if (System.currentTimeMillis() - this.lastUltTick >= E_TICK_DELAY) {
                 this.lastUltTick = System.currentTimeMillis();
                 for (Actor a : this.getEnemiesInRadius(this.ultPoint, radius)) {
-                    if (isNeitherTowerNorAlly(a)) {
+                    if (a.getTeam() != this.team) {
+                        if (a.getActorType() == ActorType.TOWER) tickDamage *= 2d;
+                        else if (a.getActorType() != ActorType.BASE) tickDamage /= 2d;
                         a.addToDamageQueue(this, tickDamage / 2, spellData, true);
                     }
                 }
                 if (ultPoint2 != null && ultUses > 1) {
                     for (Actor a : this.getEnemiesInRadius(ultPoint2, radius)) {
-                        if (isNeitherTowerNorAlly(a)) {
+                        if (a.getTeam() == this.team) {
+                            if (a.getActorType() == ActorType.TOWER) tickDamage *= 2d;
+                            else if (a.getActorType() != ActorType.BASE) tickDamage /= 2d;
                             a.addToDamageQueue(this, tickDamage / 2, spellData, true);
                         }
                     }
@@ -144,14 +151,19 @@ public class CinnamonBun extends UserActor {
             RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
 
             for (Actor a : Champion.getActorsInRadius(handler, this.ultPoint, radius)) {
-                if (isNeitherTowerNorAlly(a)) {
-                    a.addToDamageQueue(this, getSpellDamage(spellData, false), spellData, false);
+                if (a.getTeam() != this.team) {
+                    double damage = getSpellDamage(spellData, false);
+                    if (a.getActorType() == ActorType.TOWER) damage *= 2d;
+                    else if (a.getActorType() != ActorType.BASE) damage /= 2d;
+                    a.addToDamageQueue(this, damage, spellData, false);
                 }
             }
             if (this.ultPoint2 != null) {
                 for (Actor a : Champion.getActorsInRadius(handler, this.ultPoint2, radius)) {
-                    if (isNeitherTowerNorAlly(a)) {
+                    if (a.getTeam() != this.team) {
                         double damage = getSpellDamage(spellData, false);
+                        if (a.getActorType() == ActorType.TOWER) damage *= 2d;
+                        else if (a.getActorType() != ActorType.BASE) damage /= 2d;
                         a.addToDamageQueue(this, damage, spellData, false);
                     }
                 }
@@ -211,8 +223,10 @@ public class CinnamonBun extends UserActor {
                     List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, qRect);
                     if (!actorsInPolygon.isEmpty()) {
                         for (Actor a : actorsInPolygon) {
-                            if (isNeitherTowerNorAlly(a)) {
+                            if (a.getTeam() != this.team) {
                                 double damage = getSpellDamage(spellData, true);
+                                if (a.getActorType() == ActorType.TOWER) damage *= 2d;
+                                else if (a.getActorType() != ActorType.BASE) damage /= 2d;
                                 a.addToDamageQueue(this, damage, spellData, false);
                             }
                         }
@@ -455,8 +469,10 @@ public class CinnamonBun extends UserActor {
                         }
                         RoomHandler handler1 = parentExt.getRoomHandler(room.getName());
                         for (Actor a : Champion.getActorsInRadius(handler1, ultPoint, radius)) {
-                            if (isNeitherTowerNorAlly(a)) {
+                            if (a.getTeam() != team) {
                                 double damage = getSpellDamage(spellData, false);
+                                if (a.getActorType() == ActorType.TOWER) damage *= 2d;
+                                else if (a.getActorType() != ActorType.BASE) damage /= 2d;
                                 a.addToDamageQueue(this, damage, spellData, false);
                             }
                         }
@@ -481,11 +497,10 @@ public class CinnamonBun extends UserActor {
                             for (Actor a :
                                     Champion.getActorsInRadius(handler2, this.ultPoint2, radius)) {
                                 if (a.getTeam() != this.team) {
-                                    a.addToDamageQueue(
-                                            this,
-                                            getSpellDamage(spellData, false),
-                                            spellData,
-                                            false);
+                                    double damage = getSpellDamage(spellData, false);
+                                    if (a.getActorType() == ActorType.TOWER) damage *= 2d;
+                                    else if (a.getActorType() != ActorType.BASE) damage /= 2d;
+                                    a.addToDamageQueue(this, damage, spellData, false);
                                 }
                             }
                         }

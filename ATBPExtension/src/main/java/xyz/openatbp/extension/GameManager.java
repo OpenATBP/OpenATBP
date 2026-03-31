@@ -214,7 +214,7 @@ public class GameManager {
         if (room.getGroupId().equals("Tutorial")) {
             sound = "announcer/tut_intro";
         } else {
-            sound = "announcer/welcome";
+            sound = Math.random() < 0.7 ? "announcer/welcome" : "announcer/welcome_dubi";
         }
         ExtensionCommands.playSound(parentExt, room, "global", sound, new Point2D.Float(0, 0));
         ExtensionCommands.playSound(

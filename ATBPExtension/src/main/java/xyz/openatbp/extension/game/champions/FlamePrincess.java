@@ -573,8 +573,8 @@ public class FlamePrincess extends UserActor {
                         room,
                         target.getId(),
                         "flame_princess_dot",
-                        3000,
-                        "flame_passive_burn",
+                        target.getActorType() == ActorType.PLAYER ? 1000 * 60 * 15 : 3000,
+                        "flame_passive_burn" + target.getId(),
                         true,
                         "",
                         false,
@@ -583,28 +583,32 @@ public class FlamePrincess extends UserActor {
 
                 int passiveDamage = getSpellDamage(getSpellData(4), true) / 2;
                 JsonNode attackData = parentExt.getAttackData(avatar, "spell4");
+                if (target.getActorType() == ActorType.PLAYER) {
+                    UserActor ua = (UserActor) target;
+                    ua.setFlamingFP(FlamePrincess.this);
+                } else {
+                    Runnable damageActor =
+                            () -> {
+                                target.addToDamageQueue(
+                                        FlamePrincess.this, passiveDamage, attackData, true);
+                                ExtensionCommands.createActorFX(
+                                        parentExt,
+                                        room,
+                                        target.getId(),
+                                        "_playerGotHitSparks",
+                                        500,
+                                        target.getId() + "_hit" + Math.random(),
+                                        true,
+                                        "",
+                                        true,
+                                        false,
+                                        target.getTeam());
+                            };
 
-                Runnable damageActor =
-                        () -> {
-                            target.addToDamageQueue(
-                                    FlamePrincess.this, passiveDamage, attackData, true);
-                            ExtensionCommands.createActorFX(
-                                    parentExt,
-                                    room,
-                                    target.getId(),
-                                    "_playerGotHitSparks",
-                                    500,
-                                    target.getId() + "_hit" + Math.random(),
-                                    true,
-                                    "",
-                                    true,
-                                    false,
-                                    target.getTeam());
-                        };
-
-                for (int i = 0; i < 6; i++) {
-                    int delay = (i * 500) + 500;
-                    scheduleTask(damageActor, delay);
+                    for (int i = 0; i < 6; i++) {
+                        int delay = (i * 500) + 500;
+                        scheduleTask(damageActor, delay);
+                    }
                 }
             }
             if (FlamePrincess.this.passiveEnabled
