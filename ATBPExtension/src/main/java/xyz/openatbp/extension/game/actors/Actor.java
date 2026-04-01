@@ -763,6 +763,29 @@ public abstract class Actor {
         this.setLocation(finalLine.getP2());
     }
 
+    public void knockback(Point2D destination) {
+        this.stopMoving();
+        boolean isPracticeMap = this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap();
+        Line2D originalLine = new Line2D.Double(this.location, destination);
+        Point2D finalPoint =
+                MovementManager.getPathIntersectionPoint(
+                        this.parentExt, isPracticeMap, originalLine);
+        if (finalPoint == null) finalPoint = originalLine.getP2();
+        Line2D finalLine = new Line2D.Double(this.location, finalPoint);
+        double time = this.location.distance(finalLine.getP2()) / KNOCKBACK_SPEED;
+        int durationMs = (int) (time * 1000);
+        this.addState(ActorState.AIRBORNE, 0d, durationMs);
+        ExtensionCommands.knockBackActor(
+                this.parentExt,
+                this.room,
+                this.id,
+                this.location,
+                finalLine.getP2(),
+                KNOCKBACK_SPEED,
+                false);
+        this.setLocation(finalLine.getP2());
+    }
+
     public void handlePathing() {
         if (this.path != null && this.location.distance(this.movementLine.getP2()) <= 0.9d) {
             if (this.pathIndex + 1 < this.path.size()) {

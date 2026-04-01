@@ -156,7 +156,8 @@ public class Marceline extends UserActor {
         } else if (stat.equalsIgnoreCase("speed")) {
             if (this.beastWActive) return super.getPlayerStat(stat) * (1 + W_BEAST_SPEED_VALUE);
             else if (this.vampireWActive)
-                return super.getPlayerStat(stat) * (2 + W_VAMPIRE_SPEED_VALUE);
+                return super.getPlayerStat(stat)
+                        * ((Math.random() <= 0.3 ? 2 : 1) + W_VAMPIRE_SPEED_VALUE);
         }
         return super.getPlayerStat(stat);
     }

@@ -1109,6 +1109,9 @@ public class UserActor extends Actor {
     public void update(int msRan) {
         this.handleDamageQueue();
         this.handleActiveEffects();
+        if (Math.abs(this.getLocation().getX()) >= 50 && this.getHealth() > 0) {
+            this.changeHealth(-100);
+        }
         if (this.burningFP != null && System.currentTimeMillis() >= this.burningStart + 500) {
             int passiveDamage = burningFP.getSpellDamage(getSpellData(4), true) / 8;
             JsonNode attackData = parentExt.getAttackData(this.burningFP.getAvatar(), "spell4");

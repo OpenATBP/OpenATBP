@@ -507,7 +507,7 @@ public class BMO extends UserActor {
             Map<Actor, Integer> actorPrioList = new HashMap<>(actorsInRadius.size());
             Actor toHit = null;
             for (Actor a : actorsInRadius) {
-                if (isNeitherStructureNorAlly(a) && a != victim) {
+                if (isNeitherStructureNorAlly(a) && a != victim && !this.victims.contains(a)) {
                     int value = (int) Math.round(a.getLocation().distance(victim.getLocation()));
                     if (a.getActorType() != ActorType.PLAYER) value += 100;
                     actorPrioList.put(a, value);
