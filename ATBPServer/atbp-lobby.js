@@ -1338,10 +1338,6 @@ function handleRequest(jsonString, socket) {
       sendInvite(socket.player.teg_id, jsonObject['payload'].player, false);
       break;
 
-    case 'join_team':
-      acceptInvite(jsonObject['payload'].name, socket.player.teg_id, false);
-      break;
-
     case 'decline_invite':
       var partyLeader = jsonObject['payload'].party_leader;
       if (partyLeader != undefined) {

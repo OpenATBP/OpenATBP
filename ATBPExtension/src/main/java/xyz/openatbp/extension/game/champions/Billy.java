@@ -7,9 +7,11 @@ import java.util.List;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import com.smartfoxserver.v2.entities.User;
+import com.smartfoxserver.v2.entities.data.ISFSObject;
 
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.MapData;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.AbilityRunnable;
 import xyz.openatbp.extension.game.ActorState;
@@ -190,7 +192,16 @@ public class Billy extends UserActor {
                         if (!actorsInPolygon.isEmpty()) {
                             for (Actor a : actorsInPolygon) {
                                 if (isNeitherStructureNorAlly(a)) {
-                                    a.knockback(this.location, this.passiveUses == 3 ? 100f : 3.5f);
+                                    if (this.passiveUses == 3) {
+                                        ISFSObject baseData =
+                                                MapData.getBaseActorData(
+                                                                a.getTeam(), room.getGroupId())
+                                                        .getSFSObject("spawn_point");
+                                        a.knockback(
+                                                new Point2D.Float(
+                                                        baseData.getFloat("x"),
+                                                        baseData.getFloat("z")));
+                                    } else a.knockback(this.location, 3.5f);
                                     if (this.passiveUses == 3)
                                         a.addState(ActorState.STUNNED, 0d, Q_STUN_DURATION);
                                 }

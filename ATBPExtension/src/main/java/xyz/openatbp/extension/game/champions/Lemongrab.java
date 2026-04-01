@@ -410,10 +410,11 @@ public class Lemongrab extends UserActor {
                         a.addToDamageQueue(Lemongrab.this, damage, spellData, false);
                     }
 
-                    if ((a instanceof UserActor || a instanceof Bot) && a.getTeam() != team) {
+                    if ((a instanceof UserActor || a instanceof Bot)) {
+                        double fxDuration = duration;
                         if (a instanceof UserActor) {
                             UserActor ua = (UserActor) a;
-                            duration += (100 * ua.getEstimatedCrimes());
+                            fxDuration += (100 * ua.getEstimatedCrimes());
                         }
                         a.addState(ActorState.STUNNED, 0d, (int) duration);
 
@@ -423,7 +424,7 @@ public class Lemongrab extends UserActor {
                                     room,
                                     a.getId(),
                                     "lemongrab_lemon_jail",
-                                    (int) duration,
+                                    (int) fxDuration,
                                     a.getId() + "_jailed",
                                     true,
                                     "",
