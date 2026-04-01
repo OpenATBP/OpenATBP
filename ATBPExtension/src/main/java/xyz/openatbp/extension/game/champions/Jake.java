@@ -88,7 +88,9 @@ public class Jake extends UserActor {
                 if (isNeitherStructureNorAlly(victim)) {
                     victim.addState(ActorState.STUNNED, 0d, Q_STUN_DURATION);
                 }
-
+                victim.handlePull(this.location, this.location.distance(victim.getLocation()));
+                this.blockAbilities = false;
+                /*
                 if (distance > 5) {
                     ExtensionCommands.playSound(
                             parentExt,
@@ -140,6 +142,8 @@ public class Jake extends UserActor {
                                     parentExt, room, id, "spell1c", 500, false);
                         };
                 scheduleTask(nextAnimation, dashTimeMs);
+
+                 */
             } else if (grabStatus < 8) {
                 grabPoint = Champion.getAbilityLine(grabPoint, qDestination, 1).getP2();
                 grabStatus++;

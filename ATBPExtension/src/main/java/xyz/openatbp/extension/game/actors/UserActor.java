@@ -2605,6 +2605,10 @@ public class UserActor extends Actor {
         }
     }
 
+    public boolean isBurning() {
+        return this.burningFP != null;
+    }
+
     @Override
     public void heal(int delta) {
         if (ChampionData.getJunkLevel(this, "junk_1_ax_bass") > 0) return;

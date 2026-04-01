@@ -1150,6 +1150,7 @@ public abstract class RoomHandler implements Runnable {
                         && ua.getHealth() != ua.getMaxHealth()
                         && ua.getHealth() > 0) {
                     ua.changeHealth(FOUNTAIN_HEAL);
+                    if (ua.isBurning()) ua.setFlamingFP(null);
                     ExtensionCommands.createActorFX(
                             this.parentExt,
                             this.room,
