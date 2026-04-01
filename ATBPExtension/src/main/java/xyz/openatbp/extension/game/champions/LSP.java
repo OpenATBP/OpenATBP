@@ -34,6 +34,8 @@ public class LSP extends UserActor {
 
     public LSP(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = 1;
+        this.estimatedCrimes = 10;
         ExtensionCommands.addStatusIcon(
                 parentExt, player, "p0", "lsp_spell_4_short_description", "icon_lsp_passive", 0f);
     }
@@ -326,17 +328,7 @@ public class LSP extends UserActor {
         protected void hit(Actor victim) {
             this.victims.add(victim);
             JsonNode spellData = this.parentExt.getAttackData(LSP.this.avatar, "spell3");
-            if (victim.getTeam() == LSP.this.team && !affectedActors.contains(victim)) {
-
-                int healValue =
-                        (int) ((double) (getSpellDamage(spellData, false)) * (1d - healReduction));
-                victim.changeHealth(healValue);
-                healReduction += 0.3d;
-                if (healReduction > 0.7d) healReduction = 0.7d;
-                affectedActors.add(victim);
-
-            } else if (!affectedActors.contains(victim)) {
-
+            if (!victim.getId().equalsIgnoreCase(this.id) && !affectedActors.contains(victim)) {
                 double damage = (double) getSpellDamage(spellData, true) * (1d - damageReduction);
                 victim.addToDamageQueue(LSP.this, damage, spellData, false);
                 damageReduction += 0.3d;

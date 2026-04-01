@@ -20,9 +20,7 @@ import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.Projectile;
-import xyz.openatbp.extension.game.champions.Fionna;
-import xyz.openatbp.extension.game.champions.GooMonster;
-import xyz.openatbp.extension.game.champions.Keeoth;
+import xyz.openatbp.extension.game.champions.*;
 import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public class UserActor extends Actor {
@@ -116,9 +114,13 @@ public class UserActor extends Actor {
     protected Long lastZeldronBuff = 0L;
     protected Long lastRoboEffect = 0L;
     protected HashMap<UserActor, Integer> simonGlassesBuffProviders = new HashMap<>(2);
+    protected int gender = 2; // 0 male, 1 female, 2 non-binary
+    protected int estimatedCrimes = 0;
     protected int eGunStacks = 0;
     protected Long lastEGunStack = 0L;
     private static final int E_GUN_STACK_CD = 3000;
+    protected FlamePrincess burningFP = null;
+    protected long burningStart;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -128,6 +130,7 @@ public class UserActor extends Actor {
         player = u;
         this.avatar = u.getVariable("player").getSFSObjectValue().getUtfString("avatar");
         this.displayName = u.getVariable("player").getSFSObjectValue().getUtfString("name");
+        this.actorType = ActorType.PLAYER;
         ISFSObject playerLoc = player.getVariable("location").getSFSObjectValue();
         float x = playerLoc.getSFSObject("p1").getFloat("x");
         float z = playerLoc.getSFSObject("p1").getFloat("z");
@@ -378,7 +381,7 @@ public class UserActor extends Actor {
         else this.hits += 0.2d;
     }
 
-    protected JsonNode getSpellData(int spell) {
+    public JsonNode getSpellData(int spell) {
         JsonNode actorDef = parentExt.getDefinition(this.avatar);
         return actorDef.get("MonoBehaviours").get("ActorData").get("spell" + spell);
     }
@@ -994,7 +997,7 @@ public class UserActor extends Actor {
                     ua.increaseStat("kills", 1);
                     this.parentExt
                             .getRoomHandler(this.room.getName())
-                            .addScore(ua, ua.getTeam(), 25);
+                            .addScore(ua, ua.getTeam(), this instanceof CinnamonBun ? 75 : 25);
                 }
                 for (Actor actor : this.aggressors.keySet()) {
                     if (actor.getActorType() == ActorType.PLAYER
@@ -1106,6 +1109,24 @@ public class UserActor extends Actor {
     public void update(int msRan) {
         this.handleDamageQueue();
         this.handleActiveEffects();
+        if (this.burningFP != null && System.currentTimeMillis() >= this.burningStart + 500) {
+            int passiveDamage = burningFP.getSpellDamage(getSpellData(4), true) / 8;
+            JsonNode attackData = parentExt.getAttackData(this.burningFP.getAvatar(), "spell4");
+            this.addToDamageQueue(burningFP, passiveDamage, attackData, true);
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    this.id,
+                    "_playerGotHitSparks",
+                    500,
+                    this.id + "_hit" + Math.random(),
+                    true,
+                    "",
+                    true,
+                    false,
+                    this.team);
+            this.burningStart = System.currentTimeMillis();
+        }
         if (this.dead) {
             if (this.currentHealth > 0
                     && System.currentTimeMillis() > this.timeKilled + (deathTime * 1500L))
@@ -1765,6 +1786,10 @@ public class UserActor extends Actor {
     }
 
     public void handleCyclopsHealing() {
+        if (this.burningFP != null) {
+            this.burningFP = null;
+            ExtensionCommands.removeFx(parentExt, room, "flame_passive_burn" + this.id);
+        }
         if (this.getHealth() != this.maxHealth && !this.pickedUpHealthPack) {
             this.heal((int) (this.getMaxHealth() * 0.15d));
         }
@@ -2565,6 +2590,25 @@ public class UserActor extends Actor {
         this.hasGlassesPoint = val;
     }
 
+    public int getGender() {
+        return this.gender;
+    }
+
+    public int getEstimatedCrimes() {
+        return this.estimatedCrimes;
+    }
+
+    public void setFlamingFP(FlamePrincess fp) {
+        this.burningFP = fp;
+        if (fp != null) {
+            this.burningStart = System.currentTimeMillis();
+        }
+    }
+
+    public boolean isBurning() {
+        return this.burningFP != null;
+    }
+
     @Override
     public void heal(int delta) {
         if (ChampionData.getJunkLevel(this, "junk_1_ax_bass") > 0) return;
@@ -2629,8 +2673,33 @@ public class UserActor extends Actor {
             String emit = "Bip01";
             if (this.emitNode != null) emit = this.emitNode;
             float time = (float) (target.getLocation().distance(location) / 10f);
+            String[] randomAvatars = {
+                "bmo_projectile_ultimate",
+                "bubblegum_bomb_trap",
+                "flambit",
+                "gnome_a",
+                "fx_hunson_head1",
+                "gunter_bottle_projectile",
+                "gunter",
+                "skully",
+                "lich_charm_projectile",
+                "lsp_cellphone_projectile",
+                "lsp_microphone_projectile",
+                "magicman_snake",
+                "neptr",
+                "pb_turret",
+                "tut_arrow1"
+            };
+            int randomNum = (int) (Math.random() * randomAvatars.length);
             ExtensionCommands.createProjectileFX(
-                    parentExt, room, projectile, id, target.getId(), emit, "targetNode", time);
+                    parentExt,
+                    room,
+                    UserActor.this instanceof Gunter ? randomAvatars[randomNum] : projectile,
+                    id,
+                    target.getId(),
+                    emit,
+                    "targetNode",
+                    time);
             parentExt
                     .getTaskScheduler()
                     .schedule(attackRunnable, (int) (time * 1000), TimeUnit.MILLISECONDS);

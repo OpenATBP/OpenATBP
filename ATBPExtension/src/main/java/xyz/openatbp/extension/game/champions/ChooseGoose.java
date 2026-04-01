@@ -60,6 +60,8 @@ public class ChooseGoose extends UserActor {
 
     public ChooseGoose(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = 0;
+        this.estimatedCrimes = 2;
     }
 
     @Override

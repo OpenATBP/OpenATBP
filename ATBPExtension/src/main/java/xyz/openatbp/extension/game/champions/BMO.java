@@ -4,7 +4,9 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -38,6 +40,7 @@ public class BMO extends UserActor {
 
     public BMO(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.estimatedCrimes = 5;
     }
 
     @Override
@@ -497,6 +500,36 @@ public class BMO extends UserActor {
             if (ultSlowActive) applySlow(victim);
             this.damageReduction += 0.15d;
             if (this.damageReduction > 0.7d) this.damageReduction = 0.7d;
+            List<Actor> actorsInRadius =
+                    parentExt
+                            .getRoomHandler(room.getName())
+                            .getActorsInRadius(victim.getLocation(), 10f);
+            Map<Actor, Integer> actorPrioList = new HashMap<>(actorsInRadius.size());
+            Actor toHit = null;
+            for (Actor a : actorsInRadius) {
+                if (isNeitherStructureNorAlly(a) && a != victim) {
+                    int value = (int) Math.round(a.getLocation().distance(victim.getLocation()));
+                    if (a.getActorType() != ActorType.PLAYER) value += 100;
+                    actorPrioList.put(a, value);
+                }
+            }
+            int lowestValue = 200;
+            for (Actor k : actorPrioList.keySet()) {
+                if (actorPrioList.get(k) < lowestValue) {
+                    lowestValue = actorPrioList.get(k);
+                    toHit = k;
+                }
+            }
+            if (toHit != null) {
+                this.path = Champion.getAbilityLine(getLocation(), toHit.getLocation(), E_RANGE);
+                this.startingLocation = this.path.getP1();
+                this.destination = this.path.getP2();
+                this.startTime = System.currentTimeMillis();
+                this.timeTraveled = 0f;
+                ExtensionCommands.moveActor(
+                        parentExt, room, id, startingLocation, destination, speed, true);
+                if (this.victims.size() > 1) this.victims.remove(0);
+            }
         }
 
         @Override

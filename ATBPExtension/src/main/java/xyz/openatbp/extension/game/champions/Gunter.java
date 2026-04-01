@@ -32,6 +32,8 @@ public class Gunter extends UserActor {
 
     public Gunter(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = this.avatar.contains("lady") ? 1 : 0;
+        this.estimatedCrimes = 25;
     }
 
     @Override

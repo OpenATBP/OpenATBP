@@ -53,6 +53,8 @@ public class Marceline extends UserActor {
 
     public Marceline(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = 1;
+        this.estimatedCrimes = 25;
     }
 
     @Override
@@ -154,7 +156,7 @@ public class Marceline extends UserActor {
         } else if (stat.equalsIgnoreCase("speed")) {
             if (this.beastWActive) return super.getPlayerStat(stat) * (1 + W_BEAST_SPEED_VALUE);
             else if (this.vampireWActive)
-                return super.getPlayerStat(stat) * (1 + W_VAMPIRE_SPEED_VALUE);
+                return super.getPlayerStat(stat) * (2 + W_VAMPIRE_SPEED_VALUE);
         }
         return super.getPlayerStat(stat);
     }

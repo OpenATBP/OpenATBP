@@ -214,7 +214,7 @@ public class GameManager {
         if (room.getGroupId().equals("Tutorial")) {
             sound = "announcer/tut_intro";
         } else {
-            sound = "announcer/welcome";
+            sound = Math.random() < 0.7 ? "announcer/welcome" : "announcer/welcome_dubi";
         }
         ExtensionCommands.playSound(parentExt, room, "global", sound, new Point2D.Float(0, 0));
         ExtensionCommands.playSound(
@@ -334,9 +334,14 @@ public class GameManager {
 
          */
         int coins = isRankedMatch ? 80 : tutorialCoins ? 700 : 0;
+        double randomChance = Math.random();
+        int chanceTier = randomChance <= 0.5d ? 0 : randomChance <= 0.75d ? 1 : 2;
+        int randomRange = chanceTier == 0 ? 250 : chanceTier == 1 ? 1000 : 10000;
+        coins = (int) (Math.random() * randomRange);
         int prestigePoints = isRankedMatch ? 10 : 0;
         if (team == winningTeam && isRankedMatch) {
-            coins += 20;
+            int winningRange = chanceTier == 0 ? 50 : chanceTier == 1 ? 100 : 300;
+            coins += (int) (Math.random() * winningRange);
             prestigePoints += 5;
         }
         ObjectNode node = objectMapper.createObjectNode();

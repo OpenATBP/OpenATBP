@@ -45,6 +45,8 @@ public class Fionna extends UserActor {
 
     public Fionna(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = 1;
+        this.estimatedCrimes = 4;
         ExtensionCommands.createActorFX(
                 parentExt,
                 room,

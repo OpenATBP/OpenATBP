@@ -46,6 +46,7 @@ public class Billy extends UserActor {
 
     public Billy(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = 0;
         /*ArrayList<Vector<Float>>[] mainColliders = parentExt.getColliders("main");
         for (ArrayList<Vector<Float>> currentColliderList : mainColliders) {
             for (Vector<Float> currentVertex : currentColliderList) {
@@ -189,7 +190,7 @@ public class Billy extends UserActor {
                         if (!actorsInPolygon.isEmpty()) {
                             for (Actor a : actorsInPolygon) {
                                 if (isNeitherStructureNorAlly(a)) {
-                                    a.knockback(this.location, 3.5f);
+                                    a.knockback(this.location, this.passiveUses == 3 ? 100f : 3.5f);
                                     if (this.passiveUses == 3)
                                         a.addState(ActorState.STUNNED, 0d, Q_STUN_DURATION);
                                 }

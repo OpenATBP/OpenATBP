@@ -255,7 +255,13 @@ public class Monster extends Actor {
                         .getTaskScheduler()
                         .schedule(
                                 new Champion.DelayedAttack(
-                                        this.parentExt, this, a, attackDamage, "basicAttack"),
+                                        this.parentExt,
+                                        this,
+                                        a,
+                                        this.getId().contains("hugwolf")
+                                                ? attackDamage * -1
+                                                : attackDamage,
+                                        "basicAttack"),
                                 500,
                                 TimeUnit.MILLISECONDS); // Melee damage
         }

@@ -10,10 +10,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.*;
-import xyz.openatbp.extension.game.AbilityRunnable;
-import xyz.openatbp.extension.game.Champion;
-import xyz.openatbp.extension.game.Projectile;
-import xyz.openatbp.extension.game.SkinData;
+import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
@@ -51,6 +48,7 @@ public class RattleBalls extends UserActor {
 
     public RattleBalls(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.estimatedCrimes = 75;
     }
 
     @Override
@@ -84,10 +82,10 @@ public class RattleBalls extends UserActor {
             }
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, location, 2f)) {
-                if (isNeitherTowerNorAlly(a)) {
+                if (isAllyAndNotStructure(a)) {
                     JsonNode spellData = parentExt.getAttackData(avatar, "spell3");
                     double dmg = getSpellDamage(spellData, false) / 10d;
-                    a.addToDamageQueue(this, dmg, spellData, true);
+                    a.addToDamageQueue(this, dmg * -0.5, spellData, true);
                 }
             }
             for (Projectile p : parentExt.getRoomHandler(room.getName()).getActiveProjectiles()) {
@@ -445,12 +443,19 @@ public class RattleBalls extends UserActor {
         RoomHandler handler = parentExt.getRoomHandler(room.getName());
         List<Actor> affectedActors = Champion.getActorsInRadius(handler, location, 2f);
         for (Actor a : affectedActors) {
-            if (isNeitherTowerNorAlly(a)) {
+            if (isAllyAndNotStructure(a)) {
                 JsonNode spellData = parentExt.getAttackData(avatar, "spell1");
                 double dmg = getSpellDamage(spellData, true) + Q_SPIN_ATTACK_BONUS_BASE_DMG;
-                a.addToDamageQueue(this, dmg, spellData, false);
+                a.addToDamageQueue(this, dmg * -0.5, spellData, false);
             }
         }
+    }
+
+    private boolean isAllyAndNotStructure(Actor a) {
+        return a.getTeam() == this.team
+                && a.getActorType() != ActorType.BASE
+                && a.getActorType() != ActorType.TOWER
+                && !a.getId().equalsIgnoreCase(this.id);
     }
 
     private void performQCounterAttack(Actor a) {
@@ -462,6 +467,7 @@ public class RattleBalls extends UserActor {
         double ad = getPlayerStat("attackDamage");
         double sd = getPlayerStat("spellDamage") * 0.5;
         double damage = ad + sd;
+        damage *= 2;
 
         a.addToDamageQueue(this, damage, counterAttackData, false);
 
@@ -505,6 +511,15 @@ public class RattleBalls extends UserActor {
         }
     }
 
+    @Override
+    public void attack(Actor a) {
+        if (this.attackCooldown == 0) {
+            this.applyStopMovingDuringAttack();
+            FoolsAttack passiveAttack = new FoolsAttack(a, this.handleAttack(a));
+            scheduleTask(passiveAttack, BASIC_ATTACK_DELAY);
+        }
+    }
+
     private JsonNode counterAttackData() {
         JsonNode attackData = parentExt.getAttackData(avatar, "spell1");
         ObjectNode counterAttackData = attackData.deepCopy();
@@ -517,6 +532,33 @@ public class RattleBalls extends UserActor {
     private RattleAbilityRunnable abilityRunnable(
             int ability, JsonNode spelldata, int cooldown, int gCooldown, Point2D dest) {
         return new RattleAbilityRunnable(ability, spelldata, cooldown, gCooldown, dest);
+    }
+
+    private class FoolsAttack implements Runnable {
+
+        Actor target;
+        boolean crit;
+
+        public FoolsAttack(Actor a, boolean crit) {
+            this.target = a;
+            this.crit = crit;
+        }
+
+        @Override
+        public void run() {
+            double damage = getPlayerStat("attackDamage") / 2d;
+            if (this.crit) {
+                damage *= 1.25;
+                damage = handleGrassSwordProc(damage);
+            }
+            for (Actor a :
+                    Champion.getActorsInRadius(
+                            parentExt.getRoomHandler(room.getName()), target.getLocation(), 3f)) {
+                if (isAllyAndNotStructure(a)) {
+                    a.heal((int) damage);
+                }
+            }
+        }
     }
 
     private class RattleAbilityRunnable extends AbilityRunnable {
@@ -591,11 +633,11 @@ public class RattleBalls extends UserActor {
                         a.handlePull(location, W_PULL_DISTANCE);
                     }
 
-                    if (isNeitherTowerNorAlly(a)) {
+                    if (isAllyAndNotStructure(a)) {
                         double dmg = getSpellDamage(spellData, true);
                         Actor attacker = RattleBalls.this;
 
-                        a.addToDamageQueue(attacker, dmg, spellData, false);
+                        a.addToDamageQueue(attacker, dmg * -0.5, spellData, false);
                     }
                 }
             }

@@ -44,6 +44,7 @@ public class Neptr extends UserActor {
         super(u, parentExt);
         this.mines = new ArrayList<>(3);
         this.ultImpactedActors = new ArrayList<>();
+        this.estimatedCrimes = 1;
     }
 
     @Override
@@ -109,7 +110,12 @@ public class Neptr extends UserActor {
                         this.parentExt, this.room, this.id, "vo/vo_neptr_passive", this.location);
             }
             this.addEffect(
-                    "speed", this.getStat("speed") * PASSIVE_SPEED_VALUE, PASSIVE_SPEED_DURATION);
+                    "speed",
+                    (this.avatar.contains("racing")
+                                    ? this.getPlayerStat("speed")
+                                    : this.getStat("speed"))
+                            * PASSIVE_SPEED_VALUE,
+                    PASSIVE_SPEED_DURATION);
             this.addEffect(
                     "attackSpeed",
                     this.getStat("attackSpeed") * -PASSIVE_ATTACKSPEED_VALUE,

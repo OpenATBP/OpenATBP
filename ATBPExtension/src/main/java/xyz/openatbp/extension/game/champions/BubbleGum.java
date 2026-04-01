@@ -45,6 +45,8 @@ public class BubbleGum extends UserActor {
 
     public BubbleGum(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.estimatedCrimes = 100;
+        this.gender = this.avatar.contains("gumball") ? 0 : 1;
         this.turrets = new ArrayList<>(2);
         ExtensionCommands.addStatusIcon(
                 parentExt,
@@ -436,10 +438,12 @@ public class BubbleGum extends UserActor {
         private boolean dead = false;
         private String iconName;
         private final int TURRET_LIFETIME = 60000;
+        private boolean isGumballGuardian = false;
 
         Turret(Point2D location, int turretNum) {
             this.room = BubbleGum.this.room;
             this.parentExt = BubbleGum.this.parentExt;
+            this.isGumballGuardian = Math.random() <= 0.15d;
             this.currentHealth =
                     100
                             + (BubbleGum.this.getPlayerStat("healthPerLevel")
@@ -451,6 +455,7 @@ public class BubbleGum extends UserActor {
                                             .get("health")
                                             .asInt())
                             * 0.2d;
+            if (this.isGumballGuardian) this.currentHealth *= 2;
             this.maxHealth = this.currentHealth;
             this.location = location;
             this.avatar = "princessbubblegum_turret";
@@ -461,11 +466,21 @@ public class BubbleGum extends UserActor {
             this.stats = this.initializeStats();
             this.attackCooldown = this.getPlayerStat("attackSpeed");
             this.setStat("attackDamage", 10 + BubbleGum.this.getPlayerStat("spellDamage") * 0.4);
+            if (this.isGumballGuardian) {
+                this.setStat("attackRange", 5.5f);
+                this.setStat("attackDamage", this.getStat("attackDamage") * 2);
+            }
             this.iconName = "Turret #" + turretNum;
             ExtensionCommands.addStatusIcon(
                     parentExt, player, iconName, "Turret placed!", "icon_pb_s2", TURRET_LIFETIME);
             ExtensionCommands.createActor(
-                    parentExt, room, this.id, this.avatar, this.location, 0f, this.team);
+                    parentExt,
+                    room,
+                    this.id,
+                    !this.isGumballGuardian ? this.avatar : "gumball_guardian",
+                    this.location,
+                    0f,
+                    this.team);
             Runnable creationDelay =
                     () -> {
                         ExtensionCommands.playSound(
@@ -478,7 +493,7 @@ public class BubbleGum extends UserActor {
                                 this.parentExt,
                                 this.room,
                                 this.id,
-                                "fx_target_ring_3",
+                                !this.isGumballGuardian ? "fx_target_ring_3" : "fx_target_ring_5.5",
                                 TURRET_LIFETIME,
                                 this.id + "_ring",
                                 true,
@@ -506,7 +521,9 @@ public class BubbleGum extends UserActor {
             ExtensionCommands.createProjectileFX(
                     parentExt,
                     room,
-                    "bubblegum_turret_projectile",
+                    !this.isGumballGuardian
+                            ? "bubblegum_turret_projectile"
+                            : "gumballGuardian_projectile",
                     this.id,
                     a.getId(),
                     "Bip01",

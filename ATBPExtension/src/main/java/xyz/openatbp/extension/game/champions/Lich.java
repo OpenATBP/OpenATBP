@@ -40,6 +40,8 @@ public class Lich extends UserActor {
 
     public Lich(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.gender = 0;
+        this.estimatedCrimes = 100;
         lastSkullySpawn = 0;
     }
 
@@ -438,7 +440,7 @@ public class Lich extends UserActor {
             this.actorType = ActorType.COMPANION;
             this.stats = this.initializeStats();
             ExtensionCommands.createActor(
-                    parentExt, room, this.id, this.avatar, this.location, 0f, this.team);
+                    parentExt, room, this.id, "lich_skin_skeleton", this.location, 0f, this.team);
             if (movementDebug)
                 ExtensionCommands.createActor(
                         parentExt,
