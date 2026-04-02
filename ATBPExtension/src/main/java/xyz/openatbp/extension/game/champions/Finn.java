@@ -15,6 +15,7 @@ import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.Bot;
+import xyz.openatbp.extension.game.actors.FoolsBot;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class Finn extends UserActor {
@@ -43,6 +44,7 @@ public class Finn extends UserActor {
     private boolean isCastingUlt = false;
     private Path2D finnUltRing;
     private boolean ringBoostApplied = false;
+    private FoolsBot duelBot;
 
     public Finn(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -53,6 +55,7 @@ public class Finn extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
+        if (this.duelBot != null) this.duelBot.update(msRan);
         if (this.isCastingUlt) this.canCast[1] = false;
         if (ultActivated) {
             if (finnUltRing != null
@@ -72,6 +75,8 @@ public class Finn extends UserActor {
             this.wallsActivated = new boolean[] {false, false, false, false};
             this.ultActivated = false;
             this.finnUltRing = null;
+            if (!this.duelBot.isDead()) this.duelBot.die(this);
+            this.duelBot = null;
             this.updateStatMenu("attackSpeed");
         }
         if (this.qActive && this.qStartTime + 3000 <= System.currentTimeMillis()) {
@@ -342,6 +347,10 @@ public class Finn extends UserActor {
                 try {
                     this.isCastingUlt = true;
                     this.stopMoving(E_SELF_CRIPPLE_DURATION);
+                    this.duelBot =
+                            new FoolsBot(
+                                    parentExt, room, "finn_skin_davey", this.team, this.location);
+                    this.duelBot.setLevel(this.level);
                     Runnable enableDashCasting =
                             () -> {
                                 this.isCastingUlt = false;

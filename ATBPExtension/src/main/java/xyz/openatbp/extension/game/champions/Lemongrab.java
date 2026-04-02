@@ -415,8 +415,10 @@ public class Lemongrab extends UserActor {
                         if (a instanceof UserActor) {
                             UserActor ua = (UserActor) a;
                             fxDuration += (100 * ua.getEstimatedCrimes());
+                            if (!ua.getState(ActorState.IMMUNITY))
+                                ua.getDungeoned((int) duration, (int) fxDuration);
                         }
-                        a.addState(ActorState.STUNNED, 0d, (int) duration);
+                        a.addState(ActorState.STUNNED, 0d, (int) fxDuration);
 
                         if (!a.getState(ActorState.IMMUNITY)) {
                             ExtensionCommands.createActorFX(

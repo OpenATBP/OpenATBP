@@ -55,7 +55,7 @@ public class TutorialBot extends Bot {
         this.attackCooldown = getPlayerStat("attackSpeed");
     }
 
-    private void applyStopMovingDuringAttack() {
+    protected void applyStopMovingDuringAttack() {
         this.stopMoving();
         this.isAutoAttacking = true;
         Runnable resetIsAttacking = () -> this.isAutoAttacking = false;
