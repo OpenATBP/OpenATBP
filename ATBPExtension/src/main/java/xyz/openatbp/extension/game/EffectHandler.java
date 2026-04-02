@@ -178,8 +178,17 @@ public class EffectHandler {
     public boolean update() {
         List<Long> badKeys = new ArrayList<>();
         Set<Long> currentKeys = new HashSet<>(this.statLog.keySet());
+        boolean isDungeon = false;
+        UserActor ua = this.parent.getActorType() == ActorType.PLAYER ? (UserActor) parent : null;
+        if (ua != null) {
+            isDungeon = ua.canTryToEscape();
+        }
         for (long key : currentKeys) {
-            if (System.currentTimeMillis() >= key) {
+            if (System.currentTimeMillis()
+                            + (isDungeon && state == ActorState.STUNNED
+                                    ? ua.getEscapeAttempts()
+                                    : 0)
+                    >= key) {
                 if (this.stat == null) this.handleStateEnd(key);
                 else this.handleEffectEnd(key);
                 badKeys.add(key);
@@ -189,8 +198,12 @@ public class EffectHandler {
             this.statLog.remove(k);
         }
         if (badKeys.size() > 0 && this.statLog.size() == 0) {
-            if (this.state != null) return this.finalStateEnd();
-            else return true;
+            if (this.state != null) {
+                if (this.state == ActorState.STUNNED && isDungeon) {
+                    ua.removeLemonDungeon("Effect handler");
+                }
+                return this.finalStateEnd();
+            } else return true;
         }
         return false;
     }

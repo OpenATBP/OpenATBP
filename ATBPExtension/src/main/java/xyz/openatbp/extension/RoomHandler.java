@@ -308,6 +308,7 @@ public abstract class RoomHandler implements Runnable {
             "billy",
             "bmo",
             "cinnamonbun",
+            "choosegoose",
             "finn",
             "fionna",
             "flameprincess",

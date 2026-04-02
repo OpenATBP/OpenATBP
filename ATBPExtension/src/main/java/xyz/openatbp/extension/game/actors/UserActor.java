@@ -121,6 +121,10 @@ public class UserActor extends Actor {
     private static final int E_GUN_STACK_CD = 3000;
     protected FlamePrincess burningFP = null;
     protected long burningStart;
+    private boolean isInDungeon = false;
+    private int dungeonClicks = 0;
+    private int dungeonTime = 0;
+    private boolean canTryToEscape = false;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -400,6 +404,24 @@ public class UserActor extends Actor {
         ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "fight_king_icon");
     }
 
+    public boolean canTryToEscape() {
+        return this.isInDungeon && this.canTryToEscape;
+    }
+
+    public void removeLemonDungeon(String source) {
+        this.cleanseEffects();
+        this.isInDungeon = false;
+        this.canTryToEscape = false;
+        this.dungeonClicks = 0;
+        ExtensionCommands.removeFx(parentExt, room, this.getId() + "_jailed");
+        Console.debugLog("Freed from: " + source);
+    }
+
+    public void escapeAttempt() {
+        this.dungeonClicks += 10;
+        if (this.dungeonClicks >= this.dungeonTime) this.removeLemonDungeon("Clicks");
+    }
+
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         try {
             if (invincibleDebug) return false;
@@ -407,6 +429,9 @@ public class UserActor extends Actor {
             if (a.getActorType() == ActorType.PLAYER) checkTowerAggro((UserActor) a);
             if (a.getActorType() == ActorType.COMPANION) {
                 checkTowerAggroCompanion(a);
+            }
+            if (this.canTryToEscape()) {
+                this.removeLemonDungeon("Damage");
             }
 
             if (this.pickedUpHealthPack) {
@@ -1109,11 +1134,8 @@ public class UserActor extends Actor {
     public void update(int msRan) {
         this.handleDamageQueue();
         this.handleActiveEffects();
-        if (Math.abs(this.getLocation().getX()) >= 50 && this.getHealth() > 0) {
-            this.changeHealth(-100);
-        }
         if (this.burningFP != null && System.currentTimeMillis() >= this.burningStart + 500) {
-            int passiveDamage = burningFP.getSpellDamage(getSpellData(4), true) / 8;
+            int passiveDamage = burningFP.getSpellDamage(getSpellData(4), true) / 10;
             JsonNode attackData = parentExt.getAttackData(this.burningFP.getAvatar(), "spell4");
             this.addToDamageQueue(burningFP, passiveDamage, attackData, true);
             ExtensionCommands.createActorFX(
@@ -2605,6 +2627,8 @@ public class UserActor extends Actor {
         this.burningFP = fp;
         if (fp != null) {
             this.burningStart = System.currentTimeMillis();
+        } else {
+            ExtensionCommands.removeFx(parentExt, room, "flame_passive_burn" + this.id);
         }
     }
 
@@ -2616,6 +2640,21 @@ public class UserActor extends Actor {
     public void heal(int delta) {
         if (ChampionData.getJunkLevel(this, "junk_1_ax_bass") > 0) return;
         super.heal(delta);
+    }
+
+    public void getDungeoned(int stunDuration, int totalDuration) {
+        this.dungeonClicks = 0;
+        this.isInDungeon = true;
+        this.dungeonTime = totalDuration - stunDuration;
+        Runnable delayToClick =
+                () -> {
+                    canTryToEscape = true;
+                };
+        parentExt.getTaskScheduler().schedule(delayToClick, stunDuration, TimeUnit.MILLISECONDS);
+    }
+
+    public int getEscapeAttempts() {
+        return this.dungeonClicks;
     }
 
     public int getMonsterBuffCount(String stat) {

@@ -24,7 +24,7 @@ import xyz.openatbp.extension.game.SkinData;
 import xyz.openatbp.extension.pathfinding.MovementManager;
 
 public class Bot extends Actor {
-    private static final boolean MOVEMENT_DEBUG = false;
+    protected static final boolean MOVEMENT_DEBUG = false;
     public static final int CYCLOPS_DURATION = 60000;
     public static final double PASSIVE_DURATION = 5000;
     public static final float W_OFFSET_DISTANCE = 1.25f;
@@ -33,54 +33,54 @@ public class Bot extends Actor {
     public static final int E_DURATION = 5000;
     public static final int E_ROOT_DURATION = 2000;
     public static final double POLYMORPH_SLOW_VALUE = 0.3d;
-    private static final float TOWER_RANGE = 6f;
-    private static final Point2D firstPoint = new Point2D.Float(15, 0);
-    private static final int Q_DURATION = 3000;
-    private static final double HP_PERCENT_HP_PACK = 0.6;
-    private static final double HP_PERCENT_BASE = 0.2;
-    private static final double HP_PERCENT_MINIONS = 0.6;
-    private static final double HP_PERCENT_OWLS_LOW_LV = 0.6;
-    private static final double HP_PERCENT_OWLS_HIGH_LV = 0.2;
-    private static final double HP_PERCENT_GNOMES = 0.4;
-    private final Point2D spawnPoint;
-    private static final int E_CAST_DELAY = 500;
-    private static final int POLYMORPH_DURATION = 3000;
-    private static final int FOUNTAIN_HEAL = 250;
+    protected static final float TOWER_RANGE = 6f;
+    protected static final Point2D firstPoint = new Point2D.Float(15, 0);
+    protected static final int Q_DURATION = 3000;
+    protected static final double HP_PERCENT_HP_PACK = 0.6;
+    protected static final double HP_PERCENT_BASE = 0.2;
+    protected static final double HP_PERCENT_MINIONS = 0.6;
+    protected static final double HP_PERCENT_OWLS_LOW_LV = 0.6;
+    protected static final double HP_PERCENT_OWLS_HIGH_LV = 0.2;
+    protected static final double HP_PERCENT_GNOMES = 0.4;
+    protected final Point2D spawnPoint;
+    protected static final int E_CAST_DELAY = 500;
+    protected static final int POLYMORPH_DURATION = 3000;
+    protected static final int FOUNTAIN_HEAL = 250;
 
-    private final boolean testing = false;
+    protected final boolean testing = false;
 
-    private int deathTime = testing ? 1 : 10;
-    private int level = 1;
-    private int xp = 0;
-    private boolean isAutoAttacking = false;
-    private boolean isDashing = false;
-    private Long lastAttackedByMinion = 0L;
-    private Long lastAttackedByTower = 0L;
-    private Actor enemyTower = null;
-    private Actor enemyBaseTower = null;
-    private boolean wentToStartPoint = false;
-    private boolean pickedUpHealthPack = false;
-    private Long healthPackTime = 0L;
-    private Long lastQUse = 0L;
-    private Long lastWUse = 0L;
-    private Long lastEUse = 0L;
-    private boolean qActive = false;
-    private int furyStacks = 0;
-    private Actor furyTarget = null;
-    private Long passiveStart = 0L;
-    private boolean isCastingUlt = false;
-    private boolean ultActivated = false;
-    private Long eStartTime = 0L;
-    private float ultX;
-    private float ultY;
-    private Path2D finnUltRing = null;
-    private Line2D[] wallLines;
-    private boolean[] wallsActivated = {false, false, false, false}; // NORTH, EAST, SOUTH, WEST
-    private Long lastPolymorphTime = 0L;
-    private boolean isPolymorphed = false;
-    private UserActor enemy;
-    private Long enemyDmgTime = 0L;
-    private HashMap<Actor, Long> agressors = new HashMap<>();
+    protected int deathTime = testing ? 1 : 10;
+    protected int level = 1;
+    protected int xp = 0;
+    protected boolean isAutoAttacking = false;
+    protected boolean isDashing = false;
+    protected Long lastAttackedByMinion = 0L;
+    protected Long lastAttackedByTower = 0L;
+    protected Actor enemyTower = null;
+    protected Actor enemyBaseTower = null;
+    protected boolean wentToStartPoint = false;
+    protected boolean pickedUpHealthPack = false;
+    protected Long healthPackTime = 0L;
+    protected Long lastQUse = 0L;
+    protected Long lastWUse = 0L;
+    protected Long lastEUse = 0L;
+    protected boolean qActive = false;
+    protected int furyStacks = 0;
+    protected Actor furyTarget = null;
+    protected Long passiveStart = 0L;
+    protected boolean isCastingUlt = false;
+    protected boolean ultActivated = false;
+    protected Long eStartTime = 0L;
+    protected float ultX;
+    protected float ultY;
+    protected Path2D finnUltRing = null;
+    protected Line2D[] wallLines;
+    protected boolean[] wallsActivated = {false, false, false, false}; // NORTH, EAST, SOUTH, WEST
+    protected Long lastPolymorphTime = 0L;
+    protected boolean isPolymorphed = false;
+    protected UserActor enemy;
+    protected Long enemyDmgTime = 0L;
+    protected HashMap<Actor, Long> agressors = new HashMap<>();
 
     public Bot(ATBPExtension parentExt, Room room, String avatar, int team, Point2D spawnPoint) {
         this.room = room;
@@ -159,7 +159,7 @@ public class Bot extends Actor {
         }
     }
 
-    private int getSpellDamage(JsonNode attackData) {
+    protected int getSpellDamage(JsonNode attackData) {
         try {
             double dmg = attackData.get("damage").asDouble();
             double spellDMG = getPlayerStat("spellDamage");
@@ -172,7 +172,7 @@ public class Bot extends Actor {
         }
     }
 
-    private boolean isNonStructure(Actor a) {
+    protected boolean isNonStructure(Actor a) {
         return (a.getTeam() != team
                 && a.getActorType() != ActorType.BASE
                 && a.getActorType() != ActorType.TOWER);
@@ -504,7 +504,7 @@ public class Bot extends Actor {
         }
     }
 
-    private boolean canUseQ() {
+    protected boolean canUseQ() {
         int cd = 10000; // constant value for now
         return System.currentTimeMillis() - lastQUse >= cd
                 && !isDashing
@@ -512,7 +512,7 @@ public class Bot extends Actor {
                 && !isPolymorphed;
     }
 
-    private void useQ() {
+    protected void useQ() {
         lastQUse = System.currentTimeMillis();
         attackCooldown = 500;
         qActive = true;
@@ -535,7 +535,7 @@ public class Bot extends Actor {
         ExtensionCommands.playSound(parentExt, room, id, "sfx_finn_shield", location);
     }
 
-    private boolean canUseW(Actor target) {
+    protected boolean canUseW(Actor target) {
         if (target == null) return false;
         int cd = 12000;
         Point2D tLocation = target.getLocation();
@@ -547,7 +547,7 @@ public class Bot extends Actor {
                 && !isPolymorphed;
     }
 
-    private void useW(Actor target) {
+    protected void useW(Actor target) {
         if (target == null) return;
         Point2D targetLocation = target.getLocation();
         Line2D abilityLine = Champion.getAbilityLine(location, targetLocation, 5f);
@@ -611,7 +611,7 @@ public class Bot extends Actor {
         }
     }
 
-    private boolean canUseE(Actor a) {
+    protected boolean canUseE(Actor a) {
         if (a == null) return false;
         Point2D tLocation = a.getLocation();
         int cd = 30000;
@@ -622,7 +622,7 @@ public class Bot extends Actor {
                 && !isPolymorphed;
     }
 
-    private void useE() {
+    protected void useE() {
         isCastingUlt = true;
         lastEUse = System.currentTimeMillis();
         stopMoving();
@@ -733,11 +733,11 @@ public class Bot extends Actor {
         return super.canAttack();
     }
 
-    private boolean isStructure(Actor a) {
+    protected boolean isStructure(Actor a) {
         return a.getActorType() == ActorType.TOWER || a.getActorType() == ActorType.BASE;
     }
 
-    private void handleQDeath() {
+    protected void handleQDeath() {
         qActive = false;
         RoomHandler handler = parentExt.getRoomHandler(room.getName());
         for (Actor actor : Champion.getActorsInRadius(handler, this.location, 2f)) {
@@ -765,13 +765,13 @@ public class Bot extends Actor {
                 team);
     }
 
-    private void handleMoving(Point2D destination) {
+    protected void handleMoving(Point2D destination) {
         if (location.distance(destination) > 0.1) {
             moveWithCollision(destination);
         }
     }
 
-    private boolean shouldMoveToAltar() {
+    protected boolean shouldMoveToAltar() {
         Tower firstBlueTower = null;
         RoomHandler handler = parentExt.getRoomHandler(room.getName());
         List<Tower> towers = handler.getTowers();
@@ -886,7 +886,7 @@ public class Bot extends Actor {
         return damage;
     }
 
-    private void attackClosestActor(List<Actor> targets) {
+    protected void attackClosestActor(List<Actor> targets) {
         double distance = 10000;
         Actor target = null;
         for (Actor a : targets) {
@@ -898,7 +898,7 @@ public class Bot extends Actor {
         attemptAttack(target);
     }
 
-    private void regenHealth() {
+    protected void regenHealth() {
         double healthRegen = getPlayerStat("healthRegen");
         if (currentHealth + healthRegen <= 0) healthRegen = (currentHealth - 1) * -1;
         changeHealth((int) healthRegen);
@@ -923,13 +923,13 @@ public class Bot extends Actor {
         setStat("healthRegen", getStat("healthRegen") + 15);
     }
 
-    private void run() {
+    protected void run() {
         // Console.debugLog("Run");
         Point2D runPoint = new Point2D.Float((float) location.getX() + 5, (float) location.getY());
         handleMoving(runPoint);
     }
 
-    private boolean shouldAttackJungleCamp(boolean owls) {
+    protected boolean shouldAttackJungleCamp(boolean owls) {
         if (level > 2 && level < 6 && getPHealth() > HP_PERCENT_OWLS_LOW_LV && owls
                 || level > 5 && getPHealth() > HP_PERCENT_OWLS_HIGH_LV && owls) {
             return true;
@@ -937,7 +937,7 @@ public class Bot extends Actor {
         return level > 4 && getPHealth() > HP_PERCENT_GNOMES && enemyTower.isDead() && !owls;
     }
 
-    private boolean shouldAttackTarget(Actor a) {
+    protected boolean shouldAttackTarget(Actor a) {
         float towerY = MapData.L1_TOWER_Z;
         float purpleTower0X = MapData.L1_PURPLE_TOWER_0[0];
         float purpleTower1X = MapData.L1_PURPLE_TOWER_1[0];
@@ -1001,7 +1001,7 @@ public class Bot extends Actor {
         return true;
     }
 
-    private void attemptAttack(Actor target) {
+    protected void attemptAttack(Actor target) {
         if (target != null) {
             if (!withinRange(target) && canMove()) {
                 handleMoving(target.getLocation());
@@ -1012,7 +1012,7 @@ public class Bot extends Actor {
         }
     }
 
-    private void levelUpStats() {
+    protected void levelUpStats() {
         switch (level) {
             case 1:
                 setStat("attackDamage", 70);
@@ -1158,7 +1158,7 @@ public class Bot extends Actor {
         return (xp - lastLevelXP) / delta;
     }
 
-    private void handlePassiveXP() {
+    protected void handlePassiveXP() {
         RoomHandler handler = parentExt.getRoomHandler(room.getName());
         UserActor player = handler.getPlayers().get(0);
 
@@ -1177,7 +1177,7 @@ public class Bot extends Actor {
         }
     }
 
-    private void checkLevelUp() {
+    protected void checkLevelUp() {
         int level = ChampionData.getXPLevel(xp);
         if (level != this.level) {
             this.level = level;
@@ -1220,7 +1220,7 @@ public class Bot extends Actor {
         }
     }
 
-    private class PassiveAttack implements Runnable {
+    protected class PassiveAttack implements Runnable {
 
         Actor target;
         boolean crit;
@@ -1265,7 +1265,7 @@ public class Bot extends Actor {
         return false;
     }
 
-    private void applyStopMovingDuringAttack() {
+    protected void applyStopMovingDuringAttack() {
         stopMoving();
         isAutoAttacking = true;
         Runnable resetIsAttacking = () -> isAutoAttacking = false;

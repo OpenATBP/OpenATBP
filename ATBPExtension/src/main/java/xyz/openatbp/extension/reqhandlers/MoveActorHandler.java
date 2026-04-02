@@ -25,7 +25,10 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             return;
         }
         UserActor user = roomHandler.getPlayer(String.valueOf(sender.getId()));
-        if (user != null) user.resetTarget();
+        if (user != null) {
+            user.resetTarget();
+            if (user.canTryToEscape()) user.escapeAttempt();
+        }
         if (user != null
                 && user.canMove()
                 && !user.getIsDashing()

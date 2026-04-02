@@ -458,7 +458,13 @@ public class MagicMan extends UserActor {
             this.stats = initializeStats();
             this.movementLine = new Line2D.Float(this.location, MagicMan.this.wDest);
             ExtensionCommands.createActor(
-                    this.parentExt, this.room, this.id, this.avatar, this.location, 0f, team);
+                    this.parentExt,
+                    this.room,
+                    this.id,
+                    ChampionData.getRandomAvatar(),
+                    this.location,
+                    0f,
+                    team);
             ExtensionCommands.moveActor(
                     this.parentExt,
                     this.room,

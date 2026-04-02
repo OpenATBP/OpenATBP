@@ -85,7 +85,7 @@ public class RattleBalls extends UserActor {
                 if (isAllyAndNotStructure(a)) {
                     JsonNode spellData = parentExt.getAttackData(avatar, "spell3");
                     double dmg = getSpellDamage(spellData, false) / 10d;
-                    a.addToDamageQueue(this, dmg * -0.5, spellData, true);
+                    a.addToDamageQueue(this, dmg * -1, spellData, true);
                 }
             }
             for (Projectile p : parentExt.getRoomHandler(room.getName()).getActiveProjectiles()) {
@@ -123,7 +123,7 @@ public class RattleBalls extends UserActor {
             performQCounterAttack(a);
             return false;
         }
-        return super.damaged(a, damage, attackData);
+        return super.damaged(a, (int) Math.round((double) damage / 2d), attackData);
     }
 
     @Override
@@ -446,7 +446,7 @@ public class RattleBalls extends UserActor {
             if (isAllyAndNotStructure(a)) {
                 JsonNode spellData = parentExt.getAttackData(avatar, "spell1");
                 double dmg = getSpellDamage(spellData, true) + Q_SPIN_ATTACK_BONUS_BASE_DMG;
-                a.addToDamageQueue(this, dmg * -0.5, spellData, false);
+                a.addToDamageQueue(this, dmg * -1, spellData, false);
             }
         }
     }
@@ -454,8 +454,7 @@ public class RattleBalls extends UserActor {
     private boolean isAllyAndNotStructure(Actor a) {
         return a.getTeam() == this.team
                 && a.getActorType() != ActorType.BASE
-                && a.getActorType() != ActorType.TOWER
-                && !a.getId().equalsIgnoreCase(this.id);
+                && a.getActorType() != ActorType.TOWER;
     }
 
     private void performQCounterAttack(Actor a) {
@@ -637,7 +636,7 @@ public class RattleBalls extends UserActor {
                         double dmg = getSpellDamage(spellData, true);
                         Actor attacker = RattleBalls.this;
 
-                        a.addToDamageQueue(attacker, dmg * -0.5, spellData, false);
+                        a.addToDamageQueue(attacker, dmg * -1, spellData, false);
                     }
                 }
             }
