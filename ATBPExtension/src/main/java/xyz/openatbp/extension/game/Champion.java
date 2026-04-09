@@ -6,7 +6,6 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -434,7 +433,6 @@ public class Champion {
             }
             if (this.attacker.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) this.attacker;
-                boolean hasGrobDevice = ua.hasBackpackItem("junk_4_grob_gob_glob_grod");
 
                 if (ua.hasBackpackItem("junk_1_numb_chucks") && ua.getStat("sp_category1") > 0) {
                     ua.handleNumbChuckStacks(target);
@@ -442,17 +440,6 @@ public class Champion {
 
                 this.damage += (20 * ua.getCosmicStacks());
                 ua.resetCosmicStacks();
-
-                if (hasGrobDevice && ua.getStat("sp_category4") > 0) {
-                    Random random = new Random();
-                    int num = random.nextInt(4);
-                    if (num == 0) {
-                        int pointsPutIntoDevice = (int) ua.getStat("sp_category4");
-                        int POWER_DAMAGE_PER_POINT = 25;
-                        int decrease = (pointsPutIntoDevice * POWER_DAMAGE_PER_POINT) * -1;
-                        this.target.addEffect("spellDamage", decrease, 5000);
-                    }
-                }
 
                 if (canLifeSteal()) ua.handleLifeSteal();
             }

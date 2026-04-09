@@ -18,16 +18,20 @@ public class PeppermintButler extends UserActor {
     private static final double PASSIVE_HP_REG_VALUE = 0.02d;
     private static final int PASSIVE_TIME = 1750;
     private static final int PASSIVE_IMMUNITY_DURATION = 2000;
+
     private static final int Q_DURATION = 5000;
     private static final int Q_STUN_DURATION = 1500;
-    private static final double E_ATTACKSPEED_VALUE = 0.3d;
-    private static final double E_ATTACK_DAMAGE_VALUE = 0.3d;
-    private static final double E_SPEED_VALUE = 0.4;
+    private static final int Q_STUN_DURATION_FERAL = 2000;
+    private static final int Q_BLIND_DURATION = 500;
+
     private static final int W_SPEED = 15;
     private static final int W_DASH_DELAY = 500;
     private static final int W_GLOBAL_CD = 500;
-    private static final double E_RANGE_INCREASE = 0.6d;
-    private static final int Q_BLIND_DURATION = 500;
+
+    private static final double E_ATTACKSPEED_VALUE = 0.3d;
+    private static final double E_ATTACK_DAMAGE_VALUE = 0.3d;
+    private static final double E_SPEED_VALUE = 0.25;
+    private static final double E_RANGE_INCREASE = 0.5d;
 
     private int timeStopped = 0;
     private boolean qActive = false;
@@ -164,6 +168,7 @@ public class PeppermintButler extends UserActor {
             ExtensionCommands.playSound(parentExt, room, id, "sfx_skill_interrupted", location);
             ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 1, false);
             endW();
+            removeWRing();
 
             if (dashStarted) {
                 ExtensionCommands.removeFx(parentExt, room, "pepbut_dig_rocks");
@@ -201,6 +206,14 @@ public class PeppermintButler extends UserActor {
                 && System.currentTimeMillis() - dashStartTime >= dashDurationMs) {
             performWAttack();
             endW();
+        }
+
+        if (dashStarted
+                && dashDestination != null
+                && !location.equals(dashDestination)
+                && !isDead()) {
+            removeWRing();
+            createWRing(location);
         }
     }
 
@@ -317,7 +330,7 @@ public class PeppermintButler extends UserActor {
 
     @Override
     public boolean canUseAbility(int ability) {
-        if (ultActive) return false;
+        if (ultActive && (ability != 2)) return false;
         return super.canUseAbility(ability);
     }
 
@@ -381,9 +394,13 @@ public class PeppermintButler extends UserActor {
                 wActivated = true;
                 wStartTime = System.currentTimeMillis();
                 dashDestination = dest;
-                stopMoving();
+                stopMoving(W_DASH_DELAY);
+                createWRing(dashDestination);
 
-                String wHohoVO = SkinData.getPeppermintButlerWHohoVO(avatar);
+                String feralHohoVo = "vo/vo_pepbut_zombie_hoho";
+                String defaultVo = SkinData.getPeppermintButlerWHohoVO(avatar);
+                String wHohoVO = form == Form.FERAL ? feralHohoVo : defaultVo;
+
                 ExtensionCommands.playSound(parentExt, room, id, wHohoVO, location);
                 break;
             case 3:
@@ -441,7 +458,6 @@ public class PeppermintButler extends UserActor {
                                         false,
                                         false,
                                         this.team);
-                                this.addState(ActorState.SILENCED, 0d, E_DURATION);
                                 if (this.qActive) {
                                     this.qActive = false;
                                     ExtensionCommands.removeFx(
@@ -483,6 +499,25 @@ public class PeppermintButler extends UserActor {
         }
         String[] statsToUpdate = {"speed", "attackSpeed", "attackDamage", "attackRange"};
         updateStatMenu(statsToUpdate);
+    }
+
+    private void createWRing(Point2D p) {
+        ExtensionCommands.createWorldFX(
+                parentExt,
+                room,
+                id,
+                "fx_target_ring_2.5",
+                id + "_wRing",
+                1500,
+                (float) p.getX(),
+                (float) p.getY(),
+                true,
+                team,
+                0f);
+    }
+
+    private void removeWRing() {
+        ExtensionCommands.removeFx(parentExt, room, id + "_wRing");
     }
 
     private boolean isCapturingAltar() {
@@ -527,9 +562,11 @@ public class PeppermintButler extends UserActor {
     }
 
     private void performWAttack() {
-        String wBeholdVO = SkinData.getPeppermintButlerWBeholdVO(avatar);
+        String defaultBeholdVO = SkinData.getPeppermintButlerWBeholdVO(avatar);
+        String feralBeholdVo = "vo/vo_pepbut_zombie_behold";
+        String beholdVO = form == Form.FERAL ? feralBeholdVo : defaultBeholdVO;
 
-        ExtensionCommands.playSound(parentExt, room, id, wBeholdVO, location);
+        ExtensionCommands.playSound(parentExt, room, id, beholdVO, location);
         ExtensionCommands.playSound(parentExt, room, id, "sfx_pepbut_dig_emerge", location);
 
         ExtensionCommands.actorAnimate(parentExt, room, id, "spell2c", 500, false);
@@ -547,18 +584,20 @@ public class PeppermintButler extends UserActor {
                 team,
                 0f);
 
-        ExtensionCommands.createWorldFX(
-                parentExt,
-                room,
-                id,
-                "fx_target_ring_2.5",
-                id + "_wRing",
-                1500,
-                (float) location.getX(),
-                (float) location.getY(),
-                true,
-                team,
-                0f);
+        if (form == Form.FERAL) {
+            ExtensionCommands.createWorldFX(
+                    parentExt,
+                    room,
+                    id,
+                    "pepbut_feral_explosion",
+                    id + "_wferalExplode",
+                    2000,
+                    (float) location.getX(),
+                    (float) location.getY(),
+                    false,
+                    team,
+                    0f);
+        }
 
         RoomHandler handler = parentExt.getRoomHandler(room.getName());
 
@@ -566,7 +605,8 @@ public class PeppermintButler extends UserActor {
 
         for (Actor a : Champion.getActorsInRadius(handler, location, 2.5f)) {
             if (isNeitherStructureNorAlly(a)) {
-                a.addState(ActorState.STUNNED, 0d, Q_STUN_DURATION);
+                int STUN_DUR = form == Form.FERAL ? Q_STUN_DURATION_FERAL : Q_STUN_DURATION;
+                a.addState(ActorState.STUNNED, 0d, STUN_DUR);
             }
 
             if (isNeitherTowerNorAlly(a)) {

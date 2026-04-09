@@ -483,7 +483,7 @@ public class Monster extends Actor {
         switch (this.getBuffType()) {
             case OWL:
             case GNOME:
-                return "Increased AD by 25 and AP by 50!";
+                return "Increased AD by 15 and AP by 40!";
             case BEAR:
             case WOLF:
                 return "Increased armor by 5 and shields by 5!";

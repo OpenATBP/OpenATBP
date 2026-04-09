@@ -1,6 +1,7 @@
 package xyz.openatbp.extension.game.champions;
 
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,11 +16,17 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class FlamePrincess extends UserActor {
-    private static final int Q_GLOBAL_COOLDOWN = 250;
+
     private static final int PASSIVE_COOLDOWN = 10000;
+
+    private static final int Q_GLOBAL_COOLDOWN = 250;
+    private static final double Q_BURST_DMG_RATIO = 0.5;
+    private static final int Q_BURST_RECTANGLE_LENGTH = 4;
+    private static final int Q_BURST_RECTANGLE_WIDTH = 1;
+
     private static final int W_POLY_DURATION = 3000;
-    private static final double Q_BURST_DMG_MULTIPLIER = 1.2;
-    private final int W_CAST_DELAY = 1000;
+    private static final int W_CAST_DELAY = 1000;
+
     private static final int E_DASH_COOLDOWN = 350;
     private static final int E_DURATION = 5000;
     private static final int E_DASH_SPEED = 15;
@@ -473,6 +480,7 @@ public class FlamePrincess extends UserActor {
 
             ExtensionCommands.playSound(
                     parentExt, room, "", "akubat_projectileHit1", victim.getLocation());
+
             ExtensionCommands.createActorFX(
                     parentExt,
                     room,
@@ -498,16 +506,37 @@ public class FlamePrincess extends UserActor {
                     false,
                     team);
 
-            Point2D hitPoint = victim.getLocation();
-
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            for (Actor a : Champion.getActorsInRadius(handler, hitPoint, 1f)) {
-                if (isNeitherTowerNorAlly(a) && !a.equals(victim)) {
-                    double dmg = damage *= Q_BURST_DMG_MULTIPLIER;
-                    a.addToDamageQueue(FlamePrincess.this, dmg, attackData, false);
+
+            Point2D hitPoint = victim.getLocation();
+            Point2D endPoint = getBurstEndPoint(hitPoint);
+
+            Path2D rect =
+                    Champion.createRectangle(
+                            hitPoint, endPoint, Q_BURST_RECTANGLE_LENGTH, Q_BURST_RECTANGLE_WIDTH);
+
+            double burstDamage = damage * Q_BURST_DMG_RATIO;
+
+            for (Actor actor : handler.getEnemiesInPolygon(team, rect)) {
+                if (isNeitherTowerNorAlly(actor) && !actor.equals(victim)) {
+                    actor.addToDamageQueue(FlamePrincess.this, burstDamage, attackData, false);
                 }
             }
             destroy();
+        }
+
+        private Point2D getBurstEndPoint(Point2D hitPoint) {
+            Point2D origin = startingLocation;
+
+            double dx = hitPoint.getX() - origin.getX();
+            double dy = hitPoint.getY() - origin.getY();
+            double length = Math.sqrt(dx * dx + dy * dy);
+            double unitX = dx / length;
+            double unitY = dy / length;
+            double extendedX = hitPoint.getX() + Q_BURST_RECTANGLE_LENGTH * unitX;
+            double extendedY = hitPoint.getY() + Q_BURST_RECTANGLE_LENGTH * unitY;
+
+            return new Point2D.Double(extendedX, extendedY);
         }
     }
 

@@ -239,7 +239,7 @@ public class Finn extends UserActor {
             case 1:
                 this.canCast[0] = false;
                 try {
-                    this.attackCooldown = 0;
+                    basicAttackReset();
                     this.qStartTime = System.currentTimeMillis();
                     this.qActive = true;
                     this.updateStatMenu("speed");
