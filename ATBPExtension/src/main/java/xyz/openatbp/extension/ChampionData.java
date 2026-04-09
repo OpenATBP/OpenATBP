@@ -245,6 +245,9 @@ public class ChampionData {
             spellPoints--;
             ua.setGlassesPoint(false);
         }
+        if (ChampionData.getJunkLevel(ua, "junk_4_grob_gob_glob_grod") <= 0) {
+            ua.forceRemoveSpellShield();
+        }
         spellPoints += newPoints;
         ua.setStat("availableSpellPoints", spellPoints);
         toUpdate.putInt("availableSpellPoints", spellPoints);

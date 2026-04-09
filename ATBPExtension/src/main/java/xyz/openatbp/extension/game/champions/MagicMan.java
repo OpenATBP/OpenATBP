@@ -550,7 +550,7 @@ public class MagicMan extends UserActor {
         public void run() {
             double damage = getPlayerStat("attackDamage");
             if (crit) {
-                damage *= 1.25;
+                damage *= 1.40;
                 damage = handleGrassSwordProc(damage);
             }
             new Champion.DelayedAttack(
