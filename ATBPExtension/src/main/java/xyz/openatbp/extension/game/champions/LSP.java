@@ -330,9 +330,9 @@ public class LSP extends UserActor {
                 UserActor owner,
                 Line2D path,
                 float speed,
-                float hitboxRadius,
+                float offsetDitance,
                 String id) {
-            super(parentExt, owner, path, speed, hitboxRadius, id);
+            super(parentExt, owner, path, speed, offsetDitance, offsetDitance, id);
             this.victims = new ArrayList<>();
         }
 

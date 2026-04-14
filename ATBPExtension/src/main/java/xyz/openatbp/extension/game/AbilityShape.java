@@ -15,8 +15,7 @@ public class AbilityShape {
     public final Path2D path;
     public final Point2D[] vertices;
     private static final int PERPENDICULAR_ANGLE = 90;
-    private boolean displayVertices = false;
-    private static final int TEST_DISPLAY_DURATION = 5000;
+    private static final int TEST_DISPLAY_DURATION = 3000;
 
     public AbilityShape(Path2D path, Point2D[] vertices) {
         this.path = path;

@@ -2,9 +2,9 @@ package xyz.openatbp.extension.game;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.util.ArrayList;
 import java.util.List;
-
-import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Properties;
 
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.Console;
@@ -14,7 +14,7 @@ import xyz.openatbp.extension.game.actors.Actor;
 
 public abstract class Projectile {
 
-    protected float timeTraveled = 0;
+    protected float travelTimeMs = 0;
     protected Point2D destination;
     protected Point2D location;
     protected Point2D startingLocation;
@@ -22,84 +22,118 @@ public abstract class Projectile {
     protected Actor owner;
     protected String id;
     protected String projectileAsset;
-    protected float hitbox;
+    protected float offsetDistance;
+    protected float rectangeHeight;
     protected ATBPExtension parentExt;
     protected boolean destroyed = false;
     protected Line2D path;
     protected long startTime;
-    protected double estimatedDuration;
+    protected double maxTravelTimeMs;
+    private final boolean projectileDebug;
 
     public Projectile(
             ATBPExtension parentExt,
             Actor owner,
             Line2D path,
             float speed,
-            float hitboxRadius,
+            float offsetDistance,
+            float rectangeHeight,
             String projectileAsset) {
         this.parentExt = parentExt;
         this.owner = owner;
         this.startingLocation = path.getP1();
         this.destination = path.getP2();
         this.speed = speed;
-        this.hitbox = hitboxRadius;
+        this.offsetDistance = offsetDistance;
+        this.rectangeHeight = rectangeHeight;
         this.location = path.getP1();
         this.projectileAsset = projectileAsset;
         this.id = owner.getId() + "_" + projectileAsset + (Math.floor(Math.random() * 100));
         this.path = path;
         this.startTime = System.currentTimeMillis();
-        this.estimatedDuration = (path.getP1().distance(path.getP2()) / speed) * 1000f;
+        this.maxTravelTimeMs =
+                Math.max(1, (startingLocation.distance(destination) / speed) * 1000.0);
+        Properties prop = parentExt.getConfigProperties();
+        this.projectileDebug = Boolean.parseBoolean(prop.getProperty("projectileDebug", "false"));
     }
 
-    public Point2D getLocation() { // Gets projectile's current location based on time
-        double currentTime = this.timeTraveled;
-        Point2D rPoint = new Point2D.Float();
-        float x2 = (float) this.destination.getX();
-        float y2 = (float) this.destination.getY();
-        float x1 = (float) this.startingLocation.getX();
-        float y1 = (float) this.startingLocation.getY();
-        Line2D movementLine = new Line2D.Double(x1, y1, x2, y2);
-        double dist = movementLine.getP1().distance(movementLine.getP2());
-        if (dist == 0) return this.startingLocation;
-        double time = dist / speed;
-        if (currentTime > time) currentTime = time;
-        double currentDist = speed * currentTime;
-        float x = (float) (x1 + (currentDist / dist) * (x2 - x1));
-        float y = (float) (y1 + (currentDist / dist) * (y2 - y1));
-        rPoint.setLocation(x, y);
-        this.location = rPoint;
-        return rPoint;
+    public Point2D getLocation() {
+        return location;
     }
 
-    public void updateTimeTraveled() {
-        this.timeTraveled += 0.1f;
+    public float getOffsetDistance() {
+        return offsetDistance;
+    }
+
+    public void setOffsetDistance(float offsetDistance) {
+        this.offsetDistance = offsetDistance;
+    }
+
+    public void updateLocation() {
+        travelTimeMs += 100;
+
+        double progress = Math.min(travelTimeMs / maxTravelTimeMs, 1.0);
+        double x =
+                startingLocation.getX() + (destination.getX() - startingLocation.getX()) * progress;
+        double y =
+                startingLocation.getY() + (destination.getY() - startingLocation.getY()) * progress;
+
+        location = new Point2D.Float((float) x, (float) y);
     }
 
     public void update(RoomHandler roomHandler) {
         if (destroyed) return;
-        this.updateTimeTraveled();
-        Actor hitActor = this.checkPlayerCollision(roomHandler);
-        if (hitActor != null) {
-            this.hit(hitActor);
+        updateLocation();
+
+        boolean atDestination =
+                destination.distance(location) <= 0.01
+                        || System.currentTimeMillis() - startTime > maxTravelTimeMs;
+
+        if (!atDestination) { // to prevent atan2 undefined angle bug when projectile is at
+            // destination
+            Actor hitActor = checkPlayerCollision(roomHandler);
+            if (hitActor != null) hit(hitActor);
         }
-        if (this.destination.distance(this.getLocation()) <= 0.01
-                || System.currentTimeMillis() - this.startTime > this.estimatedDuration) {
+
+        if (atDestination) {
             Console.debugLog("Projectile being destroyed in update!");
-            this.destroy();
+            destroy();
         }
     }
 
     public Actor checkPlayerCollision(RoomHandler roomHandler) {
-        float searchArea = hitbox * 2;
+        float searchArea = offsetDistance * 2;
         List<Actor> actorsInRadius = roomHandler.getActorsInRadius(location, searchArea);
-        for (Actor a : actorsInRadius) {
-            JsonNode actorData = parentExt.getActorData(a.getAvatar());
-            double collisionRadius = actorData.get("collisionRadius").asDouble();
 
-            if (a.getLocation().distance(location) <= hitbox + collisionRadius && isTargetable(a)) {
-                return a;
+        float rectangleHeight = (speed * 0.1f) * 1.1f; // 10% overlap buffer
+
+        AbilityShape projectileRectangle =
+                AbilityShape.createRectangle(
+                        location, destination, rectangleHeight, offsetDistance);
+
+        if (projectileDebug) {
+            projectileRectangle.displayVertices(
+                    parentExt, owner.getRoom(), owner.getId(), owner.getTeam());
+        }
+
+        List<Actor> affectedActors = new ArrayList<>();
+        for (Actor a : actorsInRadius) {
+            if (projectileRectangle.contains(a.getLocation(), a.getCollisionRadius())
+                    && isTargetable(a)) {
+                affectedActors.add(a);
             }
         }
-        return null;
+
+        float minDistance = Float.MAX_VALUE;
+        Actor closestActor = null;
+        for (Actor a : affectedActors) {
+            float distance = (float) a.getLocation().distance(location);
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestActor = a;
+            }
+        }
+        return closestActor;
     }
 
     public boolean isTargetable(Actor a) {
@@ -107,8 +141,7 @@ public abstract class Projectile {
         return !avatar.equals("neptr_mine")
                 && !avatar.equals("choosegoose_chest")
                 && a.getActorType() != ActorType.TOWER
-                && a.getTeam() != owner.getTeam()
-                && a.isNotLeaping();
+                && a.getTeam() != owner.getTeam();
     }
 
     protected abstract void hit(Actor victim);
@@ -124,9 +157,9 @@ public abstract class Projectile {
     public void destroy() {
         Console.debugLog("Projectile: " + id + " is being destroyed! " + this.destroyed);
         if (!destroyed) {
-            ExtensionCommands.destroyActor(this.parentExt, owner.getRoom(), this.id);
+            ExtensionCommands.destroyActor(parentExt, owner.getRoom(), id);
         }
-        this.destroyed = true;
+        destroyed = true;
     }
 
     public boolean isDestroyed() {

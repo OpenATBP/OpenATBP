@@ -491,7 +491,7 @@ public class BMO extends UserActor {
     }
 
     public class BMOUltProjectile extends Projectile {
-        private List<Actor> victims;
+        private final List<Actor> eVictims;
         private double damageReduction = 0d;
 
         public BMOUltProjectile(
@@ -499,15 +499,15 @@ public class BMO extends UserActor {
                 UserActor owner,
                 Line2D path,
                 float speed,
-                float hitboxRadius,
+                float offsetDistance,
                 String id) {
-            super(parentExt, owner, path, speed, hitboxRadius, id);
-            this.victims = new ArrayList<>();
+            super(parentExt, owner, path, speed, offsetDistance, offsetDistance, id);
+            this.eVictims = new ArrayList<>();
         }
 
         @Override
         protected void hit(Actor victim) {
-            this.victims.add(victim);
+            this.eVictims.add(victim);
             JsonNode spellData = this.parentExt.getAttackData(BMO.this.avatar, "spell3");
             double damage = getSpellDamage(spellData, true) * (1 - damageReduction);
 
@@ -522,22 +522,8 @@ public class BMO extends UserActor {
         }
 
         @Override
-        public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            float searchArea = hitbox * 2;
-            List<Actor> actorsInRadius = roomHandler.getActorsInRadius(location, searchArea);
-
-            for (Actor a : actorsInRadius) {
-                if (!this.victims.contains(a) && isNeitherTowerNorAlly(a)) {
-                    JsonNode actorData = parentExt.getActorData(a.getAvatar());
-                    double collisionRadius = actorData.get("collisionRadius").asDouble();
-
-                    if (a.getLocation().distance(location) <= hitbox + collisionRadius
-                            && isTargetable(a)) {
-                        return a;
-                    }
-                }
-            }
-            return null;
+        public boolean isTargetable(Actor a) {
+            return super.isTargetable(a) && !eVictims.contains(a);
         }
 
         public void destroy() {

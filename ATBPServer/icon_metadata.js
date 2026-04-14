@@ -201,14 +201,19 @@ const ALL_ICONS_METADATA = {
     rarity: 'Algebraic',
     unlock: { stat: 'largestMulti', threshold: 4, text: 'Get a Quad KO' },
   },
-  'Radiant Victory': {
-    src: 'assets/pfp/Radiant Victory.jpg',
-    rarity: 'Legendary',
+  Reaper: {
+    src: 'assets/pfp/Reaper.jpg',
+    rarity: 'Algebraic',
     unlock: {
-      stat: 'elo',
-      threshold: 999999,
-      text: 'Win the Community Highlight Contest',
+      stat: 'largestSpree',
+      threshold: 25,
+      text: 'Achieve a 25-KO spree in a single Ranked match',
     },
+  },
+  'Huntress Wizard': {
+    src: 'assets/pfp/Huntress Wizard.jpg',
+    rarity: 'Algebraic',
+    unlock: { stat: 'rank', threshold: 99, text: 'Reach level 99' },
   },
 };
 

@@ -390,22 +390,22 @@ public class Neptr extends UserActor {
                 UserActor owner,
                 Line2D path,
                 float speed,
-                float hitboxRadius,
+                float offsetDistance,
                 String projectileAsset) {
-            super(parentExt, owner, path, speed, hitboxRadius, projectileAsset);
+            super(parentExt, owner, path, speed, offsetDistance, offsetDistance, projectileAsset);
             this.damagedActors = new ArrayList<>();
         }
 
         @Override
         public void update(RoomHandler roomHandler) {
             if (destroyed) return;
-            this.updateTimeTraveled();
+            this.updateLocation();
             Actor hitActor = this.checkPlayerCollision(roomHandler);
             if (hitActor != null) {
                 this.hit(hitActor);
             }
             if (this.doPieReversing) {
-                this.estimatedDuration =
+                this.maxTravelTimeMs =
                         (this.startingLocation.distance(Neptr.this.getLocation()) / 8) * 1000;
                 this.destination = Neptr.this.getLocation();
                 ExtensionCommands.moveActor(
@@ -418,7 +418,7 @@ public class Neptr extends UserActor {
                         true);
             }
             if (this.destination.distance(this.getLocation()) <= getDistance()
-                    || System.currentTimeMillis() - this.startTime > this.estimatedDuration) {
+                    || System.currentTimeMillis() - this.startTime > this.maxTravelTimeMs) {
                 if (this.isReversed) {
                     Console.debugLog("Projectile being destroyed in update!");
                     this.destroy();
@@ -428,7 +428,7 @@ public class Neptr extends UserActor {
                     Runnable enableReversing =
                             () -> {
                                 this.startTime = System.currentTimeMillis();
-                                this.timeTraveled = 0;
+                                this.travelTimeMs = 0;
                                 this.doPieReversing = true;
                                 this.isReversed = true;
                                 this.damageReduction = 0;
@@ -448,21 +448,8 @@ public class Neptr extends UserActor {
         }
 
         @Override
-        public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            float searchArea = hitbox * 2;
-            List<Actor> actorsInRadius = roomHandler.getActorsInRadius(location, searchArea);
-            for (Actor a : actorsInRadius) {
-                if (!this.damagedActors.contains(a)) {
-                    JsonNode actorData = parentExt.getActorData(a.getAvatar());
-                    double collisionRadius = actorData.get("collisionRadius").asDouble();
-
-                    if (a.getLocation().distance(location) <= hitbox + collisionRadius
-                            && isTargetable(a)) {
-                        return a;
-                    }
-                }
-            }
-            return null;
+        public boolean isTargetable(Actor a) {
+            return super.isTargetable(a) && !this.damagedActors.contains(a);
         }
 
         @Override

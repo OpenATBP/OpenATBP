@@ -367,11 +367,11 @@ public class GameManager {
         // ACCOUNT XP
         switch (roomGroup) {
             case RANKED:
-                return team == winningTeam ? 20 : 10;
+                return team == winningTeam ? 40 : 20;
             case PVB:
-                return team == winningTeam ? 10 : 5;
+                return team == winningTeam ? 20 : 10;
             case PRACTICE:
-                return team == winningTeam ? 5 : 2;
+                return team == winningTeam ? 10 : 5;
         }
         return 0;
     }

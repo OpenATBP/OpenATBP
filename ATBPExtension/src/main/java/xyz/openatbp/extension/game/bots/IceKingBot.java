@@ -385,9 +385,9 @@ public class IceKingBot extends Bot {
                 Actor caster,
                 Line2D path,
                 float speed,
-                float hitboxRadius,
+                float offsetDistance,
                 String id) {
-            super(parentExt, caster, path, speed, hitboxRadius, id);
+            super(parentExt, caster, path, speed, offsetDistance, offsetDistance, id);
             this.caster = caster;
         }
 

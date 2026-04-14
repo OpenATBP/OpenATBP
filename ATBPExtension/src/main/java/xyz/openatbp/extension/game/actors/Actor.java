@@ -640,7 +640,8 @@ public abstract class Actor {
 
         float speed = getEffectiveMoveSpeed();
         double distance = location.distance(moveDestination);
-        totalMoveTimeMs = Math.max(1, (long) ((distance / speed) * 1000.0));
+        totalMoveTimeMs = (long) (Math.max(1, (distance / speed) * 1000.0));
+
         isMoving = true;
 
         // tell the client to go to roughly collinear point

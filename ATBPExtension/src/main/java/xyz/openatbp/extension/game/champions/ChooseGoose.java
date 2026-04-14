@@ -714,16 +714,16 @@ public class ChooseGoose extends UserActor {
                 UserActor owner,
                 Line2D path,
                 float speed,
-                float hitboxRadius,
+                float offsetDistance,
                 String projectileAsset,
                 JsonNode spellData) {
-            super(parentExt, owner, path, speed, hitboxRadius, projectileAsset);
+            super(parentExt, owner, path, speed, offsetDistance, offsetDistance, projectileAsset);
             this.spellData = spellData;
         }
 
         @Override
         public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            float searchArea = hitbox * 2;
+            float searchArea = offsetDistance * 2;
             List<Actor> actorsInRadius = roomHandler.getActorsInRadius(location, searchArea);
 
             for (Actor a : actorsInRadius) {
@@ -731,7 +731,7 @@ public class ChooseGoose extends UserActor {
                     JsonNode actorData = parentExt.getActorData(a.getAvatar());
                     double collisionRadius = actorData.get("collisionRadius").asDouble();
 
-                    if (a.getLocation().distance(location) <= hitbox + collisionRadius
+                    if (a.getLocation().distance(location) <= offsetDistance + collisionRadius
                             && isProperTarget(a)) {
                         return a;
                     }
