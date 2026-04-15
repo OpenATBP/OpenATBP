@@ -475,26 +475,22 @@ public class FinnBot extends Bot {
 
     @Override
     public boolean canUseQ() {
-        return timeOk(1) && (!isCastingUlt && movementState != MovementState.DASHING);
+        return defaultAbilityCheck(1) && !isCastingUlt;
     }
 
     @Override
     public boolean canUseW() {
         if (target != null
                 && target.getLocation().distance(location) <= 5
-                && !(target instanceof Tower)
-                && !isAutoAttacking) {
-            return timeOk(2) && !isCastingUlt;
+                && !(target instanceof Tower)) {
+            return defaultAbilityCheck(2) && !isCastingUlt;
         }
         return false;
     }
 
     @Override
     public boolean canUseE() {
-        if (timeOk(3)
-                && target != null
-                && movementState != MovementState.DASHING
-                && !(target instanceof Tower)) {
+        if (defaultAbilityCheck(3) && target != null && !(target instanceof Tower)) {
 
             // DEFENSIVE ULT
             if (lastPlayerAttacker != null) {

@@ -152,7 +152,7 @@ public class LemongrabBot extends Bot {
     @Override
     public boolean canUseQ() {
         if (target != null
-                && timeOk(1)
+                && defaultAbilityCheck(1)
                 && target.getLocation().distance(location) <= Q_MAX_CAST_RANGE) {
             if (target instanceof UserActor) return true;
             RoomHandler rh = parentExt.getRoomHandler(room.getName());
@@ -163,7 +163,7 @@ public class LemongrabBot extends Bot {
 
     @Override
     public boolean canUseW() {
-        if (timeOk(2)) {
+        if (defaultAbilityCheck(2)) {
             double distance = location.distance(target.getLocation());
             if (distance <= W_MAX_CAST_RANGE) {
                 if (target instanceof UserActor) return true;
@@ -179,7 +179,7 @@ public class LemongrabBot extends Bot {
 
     @Override
     public boolean canUseE() {
-        return (timeOk(3))
+        return (defaultAbilityCheck(3))
                 && (target.hasMovementCC()
                         || (target != null && target.getEffectManager().hasState(ActorState.SLOWED))
                                 && target.getLocation().distance(location) <= E_MAX_CAST_RANGE);
@@ -446,7 +446,7 @@ public class LemongrabBot extends Bot {
                                         0d,
                                         (int) duration);
 
-                        if (!effectManager.hasState(ActorState.IMMUNITY)) {
+                        if (!a.getEffectManager().hasState(ActorState.IMMUNITY)) {
                             ExtensionCommands.createActorFX(
                                     parentExt,
                                     room,

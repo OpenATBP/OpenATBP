@@ -37,18 +37,12 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             float dz = params.getFloat("dest_z");
 
             user.startMoveTo(new Point2D.Float(dx, dz));
-            // user.startMoveTo(new Point2D.Float(dx, dz));
 
-            // user.moveWithCollision(new Point2D.Float(dx, dz));
-            // Console.debugLog("dx: " + dx + " dz: " + dz);
         } else if (user != null && user.getIsAutoAttacking()) {
             float dx = params.getFloat("dest_x");
             float dz = params.getFloat("dest_z");
-            // user.queueMovement(new Point2D.Float(dx, dz));
 
-            user.startMoveTo(new Point2D.Float(dx, dz));
-
-            // user.startMoveTo(new Point2D.Float(dx, dz));
+            user.setQueuedDest(new Point2D.Float(dx, dz));
         }
     }
 }

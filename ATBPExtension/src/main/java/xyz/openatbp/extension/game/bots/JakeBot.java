@@ -1,8 +1,9 @@
 package xyz.openatbp.extension.game.bots;
 
 import static xyz.openatbp.extension.game.champions.Jake.*;
-import static xyz.openatbp.extension.game.effects.EffectManager.KNOCKBACK_SPEED;
+import static xyz.openatbp.extension.game.effects.EffectManager.DEFAULT_KNOCKBACK_SPEED;
 
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.HashMap;
 import java.util.List;
@@ -15,6 +16,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.Room;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
@@ -22,22 +24,21 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.Bot;
 import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.game.effects.ActorState;
+import xyz.openatbp.extension.game.effects.ModifierIntent;
+import xyz.openatbp.extension.game.effects.ModifierType;
 import xyz.openatbp.extension.pathfinding.PathFinder;
 
 public class JakeBot extends Bot {
-    private Map<String, Long> lastPassiveTime = new HashMap<>();
-
-    private float offsetDistance = 1;
-    private boolean grabActive = false;
-    private Point2D grabPoint;
-    private float grabStatus = 0;
-    private Point2D qDestination;
-    private boolean blockAbilities = false;
-
+    private boolean blockSkillsAndWalking = false;
     private boolean ultActivated = false;
     private long lastStomped = 0;
     private boolean stompSoundChange = false;
+    private Map<String, Long> lastPassiveTime = new HashMap<>();
     private long ultStartTime = 0;
+    private long lastSpell1cAnimTime = 0L;
+    private boolean qAnimResetNeeded = false;
+
+    private JakeQProjectile qProjectile;
 
     public JakeBot(
             ATBPExtension parentExt,
@@ -66,111 +67,20 @@ public class JakeBot extends Bot {
     public void update(int msRan) {
         super.update(msRan);
 
-        if (grabActive && (hasInterrupingCC() || this.dead)) {
-            blockAbilities = false;
-            resetGrab();
-            if (!hasMovementCC()) canMove = true;
-            ExtensionCommands.playSound(
-                    this.parentExt, this.room, this.id, "sfx_skill_interrupted", this.location);
-            ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 10, false);
+        if (qAnimResetNeeded && isMoving && canMove()) {
+            // Console.debugLog("changing to run anim!");
+            qAnimResetNeeded = false;
+            ExtensionCommands.actorAnimate(parentExt, room, id, "run", 100, false);
         }
-        if (grabActive) {
-            if (grabStatus == 5) offsetDistance = 1.75f;
 
-            AbilityShape qRect =
-                    AbilityShape.createRectangle(grabPoint, qDestination, 1, offsetDistance);
+        if (qAnimResetNeeded && System.currentTimeMillis() - lastSpell1cAnimTime >= 1000) {
+            // Console.debugLog("QAnim reset no longer needed!");
+            qAnimResetNeeded = false;
+        }
 
-            qRect.displayVertices(parentExt, room, id, team);
-
-            RoomHandler handler = parentExt.getRoomHandler(room.getName());
-
-            List<Actor> foes =
-                    Champion.getEnemyActorsInRadius(handler, team, location, MAX_Q_RANGE);
-            foes.removeIf(f -> f.getActorType() == ActorType.TOWER);
-            foes.removeIf(f -> !(qRect.contains(f.getLocation(), f.getCollisionRadius())));
-            foes.removeIf(f -> f.getMovementState() == MovementState.LEAPING);
-
-            if (!foes.isEmpty()) {
-                resetGrab();
-                Actor victim = foes.get(0);
-                JsonNode spellData = parentExt.getAttackData(getChampionName(avatar), "spell1");
-
-                Point2D origLocation = this.location;
-
-                float distance = (float) origLocation.distance(victim.getLocation());
-                JsonNode qData = parentExt.getAttackData(avatar, "spell1");
-                float dmgPerUnitOfDistance = (float) qData.get("damageRatio").asDouble();
-                int baseDmg = qData.get("damage").asInt();
-
-                float modifier = dmgPerUnitOfDistance * distance;
-                double damage = baseDmg + (modifier * getPlayerStat("spellDamage"));
-
-                victim.addToDamageQueue(this, damage, spellData, false);
-
-                if (isNonStructureEnemy(victim)) {
-                    victim.getEffectManager()
-                            .addState(ActorState.STUNNED, id + "_jake_q_stun", 0d, Q_STUN_DURATION);
-                }
-
-                if (distance > 5) {
-                    ExtensionCommands.playSound(
-                            parentExt,
-                            room,
-                            victim.getId(),
-                            "sfx_oildrum_dead",
-                            victim.getLocation());
-
-                    ExtensionCommands.createActorFX(
-                            parentExt,
-                            room,
-                            victim.getId(),
-                            "jake_stomp_fx",
-                            500,
-                            this.id + "_jake_q_fx",
-                            false,
-                            "",
-                            false,
-                            false,
-                            team);
-                }
-
-                PathFinder pf = handler.getPathFinder();
-                if (!pf.lineIntersectsObstacle(location, victim.getLocation())) {
-                    float pullDist =
-                            Math.max(
-                                    0,
-                                    (float) location.distance(victim.getLocation())
-                                            - Q_VICTIM_SEPARATION);
-
-                    victim.handlePull(location, pullDist);
-
-                    int timeMS = (int) ((pullDist / KNOCKBACK_SPEED) * 1000);
-
-                    ExtensionCommands.createActorFX(
-                            parentExt,
-                            room,
-                            victim.getId(),
-                            "jake_trail",
-                            timeMS,
-                            victim.getId() + "qTrail",
-                            true,
-                            "",
-                            false,
-                            false,
-                            team);
-                }
-
-                unlockAbilitiesAfterDelay();
-                ExtensionCommands.actorAnimate(parentExt, room, id, "spell1c", 500, false);
-
-            } else if (grabStatus < 8) {
-                grabPoint = Champion.getAbilityLine(grabPoint, qDestination, 1).getP2();
-                grabStatus++;
-            } else {
-                resetGrab();
-                unlockAbilitiesAfterDelay();
-                ExtensionCommands.actorAnimate(parentExt, room, id, "spell1c", 500, false);
-            }
+        if (blockSkillsAndWalking && qProjectile != null && hasInterrupingCC()) {
+            qProjectile.destroy();
+            playInterruptSoundAndIdle();
         }
 
         if (ultActivated && target != null && evaluateBotState() == BotState.FIGHTING) {
@@ -238,19 +148,18 @@ public class JakeBot extends Bot {
     }
 
     @Override
+    public boolean defaultAbilityCheck(int abilityNum) {
+        return super.defaultAbilityCheck(abilityNum) && !blockSkillsAndWalking;
+    }
+
+    @Override
     public boolean canMove() {
-        if (grabActive || blockAbilities) return false;
+        if (blockSkillsAndWalking) return false;
         return super.canMove();
     }
 
-    private void resetGrab() {
-        grabActive = false;
-        grabStatus = 0;
-        offsetDistance = 1;
-    }
-
-    private void unlockAbilitiesAfterDelay() {
-        Runnable unlock = () -> blockAbilities = false;
+    private void unlockSkillsAndWalking() {
+        Runnable unlock = () -> blockSkillsAndWalking = false;
         scheduleTask(unlock, Q_UNLOCK_SKILLS_DELAY);
     }
 
@@ -323,19 +232,31 @@ public class JakeBot extends Bot {
 
     @Override
     public boolean canAttack() {
-        if (ultActivated || grabActive || globalCooldown != 0) return false;
+        if (this.ultActivated) return false;
         return super.canAttack();
     }
 
     @Override
+    public void die(Actor a) {
+        super.die(a);
+        if (this.ultActivated) {
+            this.ultActivated = false;
+            ExtensionCommands.swapActorAsset(
+                    this.parentExt, this.room, this.id, this.getSkinAssetBundle());
+            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_jake_ring_2");
+        }
+        if (blockSkillsAndWalking) blockSkillsAndWalking = false;
+    }
+
+    @Override
     public boolean canUseQ() {
-        if (timeOk(1) && !ultActivated) {
+        if (defaultAbilityCheck(1) && !ultActivated && !blockSkillsAndWalking) {
             AbilityShape qRect =
                     AbilityShape.createRectangle(
-                            location, target.getLocation(), MAX_Q_RANGE, 1.75f);
+                            location, target.getLocation(), Q_MAX_RANGE, 1.75f);
             RoomHandler rh = parentExt.getRoomHandler(room.getName());
 
-            List<Actor> enemies = Champion.getEnemyActorsInRadius(rh, team, location, MAX_Q_RANGE);
+            List<Actor> enemies = Champion.getEnemyActorsInRadius(rh, team, location, Q_MAX_RANGE);
             enemies.remove(target);
 
             for (Actor a : enemies) {
@@ -349,17 +270,16 @@ public class JakeBot extends Bot {
 
     @Override
     public boolean canUseW() {
+        if (!defaultAbilityCheck(2) || blockSkillsAndWalking || ultActivated) return false;
         RoomHandler rh = parentExt.getRoomHandler(room.getName());
         List<Actor> enemiesNearby = Champion.getEnemyActorsInRadius(rh, team, location, W_RADIUS);
-        if (enemiesNearby.stream().anyMatch(a -> a instanceof UserActor)
-                && timeOk(2)
-                && !ultActivated
-                && !blockAbilities) return true;
-        else return enemiesNearby.size() > 1 && timeOk(2) && !ultActivated && !blockAbilities;
+
+        return enemiesNearby.size() > 1;
     }
 
     @Override
     public boolean canUseE() {
+        if (!defaultAbilityCheck(3) || blockSkillsAndWalking) return false;
         boolean distance = target.getLocation().distance(location) <= 2;
         boolean tPlayerMoveCC =
                 target != null && target instanceof UserActor && target.hasMovementCC();
@@ -368,29 +288,29 @@ public class JakeBot extends Bot {
                         && target instanceof UserActor
                         && target.getEffectManager().hasState(ActorState.SLOWED);
 
-        return (timeOk(3) && distance) && (tPlayerMoveCC || tSlowedPlayer);
+        return distance && (tPlayerMoveCC || tSlowedPlayer);
     }
 
     @Override
     public void useQ(Point2D destination) {
         globalCooldown += qGCooldownMs;
         lastQUse = System.currentTimeMillis();
-        blockAbilities = true;
-
         faceTarget(target);
-        stopMoving(Q_RESTRAINT_TIME);
 
         ExtensionCommands.actorAnimate(parentExt, room, id, "spell1", 1500, false);
 
+        stopMoving();
+        blockSkillsAndWalking = true;
         Runnable activateHitbox =
                 () -> {
-                    grabPoint = location;
-                    qDestination =
-                            Champion.getAbilityLine(location, target.getLocation(), 9).getP2();
-                    grabActive = true;
+                    Line2D qLine =
+                            Champion.getAbilityLine(location, target.getLocation(), Q_MAX_RANGE);
+                    qProjectile =
+                            new JakeQProjectile(
+                                    parentExt, this, qLine, Q_PROJECTILE_SPEED, 1f, 1f, "");
+                    fireProjectile(qProjectile, location, qLine.getP2(), Q_MAX_RANGE);
                 };
-
-        scheduleTask(activateHitbox, 500);
+        scheduleTask(activateHitbox, Q_PROJECTILE_DELAY);
         String stretchSFX = SkinData.getJakeQSFX(avatar);
         String stretchVO = SkinData.getJakeQVO(avatar);
         ExtensionCommands.playSound(parentExt, room, id, stretchSFX, location);
@@ -447,7 +367,7 @@ public class JakeBot extends Bot {
         RoomHandler handler = parentExt.getRoomHandler(room.getName());
         for (Actor a : Champion.getActorsInRadius(handler, location, W_RADIUS)) {
             if (isNonStructureEnemy(a)) {
-                a.handleKnockback(location, W_KNOCKBACK_DIST);
+                a.handleKnockback(location, W_KNOCKBACK_DIST, DEFAULT_KNOCKBACK_SPEED);
             }
 
             if (a.getActorType() != ActorType.TOWER && a.isNotLeaping()) {
@@ -471,9 +391,18 @@ public class JakeBot extends Bot {
         this.stopMoving();
         String bigFX = SkinData.getJakeEFX(avatar);
         ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bigFX);
-        ultActivated = true;
-        ultStartTime = System.currentTimeMillis();
+        this.ultActivated = true;
+        this.ultStartTime = System.currentTimeMillis();
+
         effectManager.cleanseDebuffs();
+        effectManager.addEffect(
+                id + "_jake_e_speed",
+                "speed",
+                E_SPEED_PERCENT,
+                ModifierType.MULTIPLICATIVE,
+                ModifierIntent.DEBUFF,
+                E_DURATION);
+        effectManager.addState(ActorState.IMMUNITY, id + "_jake_e_immunity", 0d, E_DURATION);
 
         ExtensionCommands.createActorFX(
                 parentExt,
@@ -488,27 +417,118 @@ public class JakeBot extends Bot {
                 false,
                 team);
         ExtensionCommands.createActorFX(
-                parentExt,
-                room,
-                id,
+                this.parentExt,
+                this.room,
+                this.id,
                 "fx_target_ring_2",
                 E_DURATION,
-                id + "_jake_ring_2",
+                this.id + "_jake_ring_2",
                 true,
                 "",
                 true,
                 true,
-                team);
-
-        effectManager.addState(ActorState.CLEANSED, id + "_jake_e_cleanse", 0d, E_DURATION);
-
-        effectManager.addState(ActorState.IMMUNITY, id + "_jake_e_immunity", 0d, E_DURATION);
+                this.team);
 
         String growVO = SkinData.getJakeEVO(avatar);
         String growSFX = SkinData.getJakeESFX(avatar);
-
         ExtensionCommands.playSound(parentExt, room, id, growSFX, location);
         ExtensionCommands.playSound(parentExt, room, id, growVO, location);
+    }
+
+    private class JakeQProjectile extends Projectile {
+        public JakeQProjectile(
+                ATBPExtension parentExt,
+                Actor owner,
+                Line2D path,
+                float speed,
+                float offsetDistance,
+                float rectangleHeight,
+                String projectileAsset) {
+            super(parentExt, owner, path, speed, offsetDistance, rectangleHeight, projectileAsset);
+        }
+
+        @Override
+        protected void hit(Actor victim) {
+            JsonNode spellData = parentExt.getAttackData(getChampionName(avatar), "spell1");
+
+            Point2D jakeBotLoc = JakeBot.this.location;
+            float distance = (float) jakeBotLoc.distance(victim.getLocation());
+            JsonNode qData = parentExt.getAttackData(avatar, "spell1");
+            float dmgPerUnitOfDistance = (float) qData.get("damageRatio").asDouble();
+            int baseDmg = qData.get("damage").asInt();
+
+            float modifier = dmgPerUnitOfDistance * distance;
+            double damage = baseDmg + (modifier * getPlayerStat("spellDamage"));
+
+            victim.addToDamageQueue(JakeBot.this, damage, spellData, false);
+
+            if (distance > 5) {
+                ExtensionCommands.playSound(
+                        parentExt, room, victim.getId(), "sfx_oildrum_dead", victim.getLocation());
+
+                ExtensionCommands.createActorFX(
+                        parentExt,
+                        room,
+                        victim.getId(),
+                        "jake_stomp_fx",
+                        500,
+                        this.id + "_jake_q_fx",
+                        false,
+                        "",
+                        false,
+                        false,
+                        team);
+            }
+
+            RoomHandler rh = parentExt.getRoomHandler(room.getName());
+            PathFinder pf = rh.getPathFinder();
+
+            Point2D initialPullPoint = pf.getIntersectionPoint(victim.getLocation(), jakeBotLoc);
+            Point2D finalPullPoint =
+                    pf.getStoppingPoint(
+                            victim.getLocation(), initialPullPoint, Q_VICTIM_SEPARATION);
+
+            Console.debugLog("Pull distance: " + victim.getLocation().distance(finalPullPoint));
+
+            float finalDistance = (float) victim.getLocation().distance(finalPullPoint);
+
+            victim.handlePull(jakeBotLoc, finalDistance, Q_PULL_SPEED);
+
+            if (isNonStructureEnemy(victim)) {
+                victim.getEffectManager()
+                        .addState(
+                                ActorState.STUNNED,
+                                JakeBot.this.id + "_jake_q_stun",
+                                0d,
+                                Q_STUN_DURATION);
+            }
+
+            int victimTravelTimeMs = (int) ((finalDistance / Q_PULL_SPEED) * 1000.0);
+
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    victim.getId(),
+                    "jake_trail",
+                    victimTravelTimeMs,
+                    victim.getId() + "qTrail",
+                    true,
+                    "",
+                    false,
+                    false,
+                    team);
+
+            destroy();
+        }
+
+        @Override
+        public void destroy() {
+            super.destroy();
+            unlockSkillsAndWalking();
+            qAnimResetNeeded = true;
+            lastSpell1cAnimTime = System.currentTimeMillis();
+            ExtensionCommands.actorAnimate(parentExt, room, JakeBot.this.id, "spell1c", -1, false);
+        }
     }
 
     @Override

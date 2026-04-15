@@ -23,9 +23,18 @@ public class StatModifier {
         this.durationMs = durationMs;
         this.startTime = System.currentTimeMillis();
 
-        if (intent == ModifierIntent.BUFF && !statName.equals("attackSpeed"))
-            this.modifier = 1 + modifier;
-        else this.modifier = 1 - modifier;
+        if (type == ModifierType.MULTIPLICATIVE) {
+            if (intent == ModifierIntent.DEBUFF && statName.equals("attackSpeed")) {
+                this.modifier = 1 + modifier;
+            } else if (intent == ModifierIntent.BUFF && !statName.equals("attackSpeed")) {
+                this.modifier = 1 + modifier;
+            } else {
+                this.modifier = 1 - modifier;
+            }
+        } else {
+            if (intent == ModifierIntent.DEBUFF) modifier *= -1;
+            this.modifier = modifier;
+        }
     }
 
     public String getEffectId() {

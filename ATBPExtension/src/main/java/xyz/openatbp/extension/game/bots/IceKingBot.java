@@ -187,48 +187,49 @@ public class IceKingBot extends Bot {
 
     @Override
     public boolean canUseQ() {
+        if (!defaultAbilityCheck(1) || target == null) return false;
+
         RoomHandler rh = parentExt.getRoomHandler(room.getName());
         List<Actor> enemies = Champion.getEnemyActorsInRadius(rh, team, location, Q_RANGE);
         enemies.removeIf(a -> a instanceof Tower);
-        if (timeOk(1) && target != null) {
 
-            AbilityShape qShape =
-                    AbilityShape.createRectangle(location, target.getLocation(), Q_RANGE, 0.5f);
+        AbilityShape qShape =
+                AbilityShape.createRectangle(location, target.getLocation(), Q_RANGE, 0.5f);
 
-            boolean isTargetOnlyActorInQ = true;
-            for (Actor a : enemies) {
-                JsonNode actorData = parentExt.getActorData(a.getAvatar());
-                if (actorData != null && actorData.has("collisionRadius")) {
-                    double radius = actorData.get("collisionRadius").asDouble();
-                    if (qShape.contains(a.getLocation(), radius) && a != target)
-                        isTargetOnlyActorInQ = false;
-                }
+        boolean isTargetOnlyActorInQ = true;
+        for (Actor a : enemies) {
+            JsonNode actorData = parentExt.getActorData(a.getAvatar());
+            if (actorData != null && actorData.has("collisionRadius")) {
+                double radius = actorData.get("collisionRadius").asDouble();
+                if (qShape.contains(a.getLocation(), radius) && a != target)
+                    isTargetOnlyActorInQ = false;
             }
-            return isTargetOnlyActorInQ;
         }
-        return false;
+        return isTargetOnlyActorInQ;
     }
 
     @Override
     public boolean canUseW() {
-        return timeOk(2);
+        return defaultAbilityCheck(2);
     }
 
     @Override
     public boolean canUseE() {
+        if (!defaultAbilityCheck(3)) return false;
+
         RoomHandler rh = parentExt.getRoomHandler(room.getName());
         List<Actor> enemies = Champion.getEnemyActorsInRadius(rh, team, location, E_RADIUS);
         enemies.removeIf(a -> a instanceof Tower);
-        if (timeOk(3)) {
-            if (getPHealth() <= 0.15) {
-                return true;
-            }
-            for (Actor a : enemies) {
-                if (a instanceof UserActor && a.getHealth() > 0) {
-                    return a.hasMovementCC();
-                }
+
+        if (getPHealth() <= 0.15) {
+            return true;
+        }
+        for (Actor a : enemies) {
+            if (a instanceof UserActor && a.getHealth() > 0) {
+                return a.hasMovementCC();
             }
         }
+
         return false;
     }
 
@@ -590,9 +591,9 @@ public class IceKingBot extends Bot {
 
             if (!actorsInUlt.isEmpty()) {
                 for (Actor a : actorsInUlt) {
-                    if (a.equals(this)) {
+                    if (a.equals(this) && !effectManager.hasEffect(id + "_iceking_e_speed")) {
                         effectManager.addEffect(
-                                this.id + "_iceking_e_speed",
+                                id + "_iceking_e_speed",
                                 "speed",
                                 E_SPEED_PERCENT,
                                 ModifierType.MULTIPLICATIVE,

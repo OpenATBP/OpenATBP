@@ -507,7 +507,11 @@ public class Lich extends UserActor {
         public void die(Actor a) {
             this.dead = true;
             this.currentHealth = 0;
-            if (!effectManager.hasState(ActorState.AIRBORNE)) this.stopMoving();
+
+            if (movementState != MovementState.KNOCKBACK && movementState != MovementState.PULLED) {
+                stopMoving();
+            }
+
             ExtensionCommands.destroyActor(parentExt, room, this.id);
             this.parentExt.getRoomHandler(this.room.getName()).removeCompanion(this);
             Lich.this.handleSkullyDeath();
@@ -515,9 +519,10 @@ public class Lich extends UserActor {
 
         @Override
         public void update(int msRan) {
+            effectManager.handleEffectsUpdate();
             this.handleDamageQueue();
             if (this.dead) return;
-            effectManager.handleEffectsUpdate();
+
             handleMovementUpdate();
 
             if (System.currentTimeMillis() - spawnTimeStamp >= SKULLY_LIFE_SPAN) {
@@ -564,7 +569,6 @@ public class Lich extends UserActor {
             if (this.target == a) return;
             this.target = a;
             startMoveTo(a.getLocation());
-            this.timeTraveled = 0f;
         }
 
         public void resetTarget() {

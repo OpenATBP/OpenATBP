@@ -9,8 +9,11 @@ import com.smartfoxserver.v2.entities.Room;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.MapData;
+import xyz.openatbp.extension.pathfinding.PathFinder;
 
 public class BotMapConfig {
+    public static final float MIN_DIFFERENCE = 0.1f;
+    public static final float MAX_DIFFERENCE = 1f;
     public final Point2D respawnPoint;
     public final Point2D offenseAltar;
     public final Point2D defenseAltar;
@@ -150,8 +153,14 @@ public class BotMapConfig {
             allyNexus = blueNexus;
         }
 
-        Point2D[] topLanePath = getMainMapTopPath(team);
-        Point2D[] botLanePath = getMainMapTopPath(team);
+        Point2D[] initialTopPath = getMainMapTopPath(team);
+        Point2D[] initialBotLanePath = getMainMapBotLanePath(team);
+
+        Point2D[] topLanePath =
+                PathFinder.getRandomPointsFromList(initialTopPath, MIN_DIFFERENCE, MAX_DIFFERENCE);
+        Point2D[] botLanePath =
+                PathFinder.getRandomPointsFromList(
+                        initialBotLanePath, MIN_DIFFERENCE, MAX_DIFFERENCE);
 
         return new BotMapConfig(
                 roomGroup,
@@ -251,7 +260,9 @@ public class BotMapConfig {
             allyNexus = blueNexus;
         }
 
-        Point2D[] midLanePath = getPracticeMidLanePath(team);
+        Point2D[] initialMidPath = getPracticeMidLanePath(team);
+        Point2D[] midLanePath =
+                PathFinder.getRandomPointsFromList(initialMidPath, MIN_DIFFERENCE, MAX_DIFFERENCE);
 
         return new BotMapConfig(
                 roomGroup,

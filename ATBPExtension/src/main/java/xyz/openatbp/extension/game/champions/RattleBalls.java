@@ -1,5 +1,7 @@
 package xyz.openatbp.extension.game.champions;
 
+import static xyz.openatbp.extension.game.effects.EffectManager.DEFAULT_KNOCKBACK_SPEED;
+
 import java.awt.geom.Point2D;
 import java.util.List;
 
@@ -209,7 +211,7 @@ public class RattleBalls extends UserActor {
                                     .canBeRedirected(true)
                                     .isLeap(false)
                                     .onEnd(this::onQDashEnd)
-                                    .onInterrupt(this::playIdleAndInterruptSound)
+                                    .onInterrupt(this::playInterruptSoundAndIdle)
                                     .build();
 
                     qThrustRectangle =
@@ -625,7 +627,7 @@ public class RattleBalls extends UserActor {
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 for (Actor a : Champion.getActorsInRadius(handler, location, 5f)) {
                     if (isNeitherStructureNorAlly(a)) {
-                        a.handlePull(location, (float) W_PULL_DISTANCE);
+                        a.handlePull(location, (float) W_PULL_DISTANCE, DEFAULT_KNOCKBACK_SPEED);
                     }
 
                     if (isNeitherTowerNorAlly(a) && a.isNotLeaping()) {

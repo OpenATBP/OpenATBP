@@ -115,11 +115,6 @@ public class ChooseGoose extends UserActor {
             interruptE = true;
             isEActive = false;
 
-            if (!effectManager.hasState(ActorState.STUNNED)
-                    && !effectManager.hasState(ActorState.AIRBORNE)
-                    && getHealth() > 0) {
-                canMove = true;
-            }
             ExtensionCommands.playSound(parentExt, room, id, "sfx_skill_interrupted", location);
             ExtensionCommands.swapActorAsset(parentExt, room, id, "choosegoose");
 
@@ -136,6 +131,12 @@ public class ChooseGoose extends UserActor {
             eProjectileFired = true;
             fireProjectile(eProjectileDestination, eSpellData);
         }
+    }
+
+    @Override
+    public boolean canMove() {
+        if (isEActive) return false;
+        return super.canMove();
     }
 
     @Override
@@ -263,7 +264,6 @@ public class ChooseGoose extends UserActor {
                 eProjectileDestination = dest;
                 eSpellData = spellData;
 
-                stopMoving(1050);
                 ExtensionCommands.swapActorAsset(parentExt, room, id, "choosegoose_axe");
 
                 Runnable doAnimation =

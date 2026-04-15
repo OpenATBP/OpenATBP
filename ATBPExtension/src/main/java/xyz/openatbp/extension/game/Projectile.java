@@ -61,6 +61,10 @@ public abstract class Projectile {
         return location;
     }
 
+    public float getSpeed() {
+        return this.speed;
+    }
+
     public float getOffsetDistance() {
         return offsetDistance;
     }

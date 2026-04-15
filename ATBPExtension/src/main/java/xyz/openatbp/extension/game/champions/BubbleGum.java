@@ -1,6 +1,6 @@
 package xyz.openatbp.extension.game.champions;
 
-import static xyz.openatbp.extension.game.effects.EffectManager.KNOCKBACK_SPEED;
+import static xyz.openatbp.extension.game.effects.EffectManager.DEFAULT_KNOCKBACK_SPEED;
 
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
@@ -326,7 +326,7 @@ public class BubbleGum extends UserActor {
                 if (a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER) {
 
                     if (!a.equals(this)) {
-                        a.handleKnockback(bombLocation, E_KNOCKBACK_DIST);
+                        a.handleKnockback(bombLocation, E_KNOCKBACK_DIST, DEFAULT_KNOCKBACK_SPEED);
                     }
 
                     if (effectManager.hasState(ActorState.SLOWED) && !a.equals(this)) {
@@ -351,7 +351,7 @@ public class BubbleGum extends UserActor {
                         Point2D leapLoc = pf.getNonObstaclePointOrIntersection(location, initLeap);
 
                         DashContext ctx =
-                                new DashContext.Builder(location, leapLoc, KNOCKBACK_SPEED)
+                                new DashContext.Builder(location, leapLoc, DEFAULT_KNOCKBACK_SPEED)
                                         .isLeap(true)
                                         .canBeRedirected(false)
                                         .onEnd(animDelay)

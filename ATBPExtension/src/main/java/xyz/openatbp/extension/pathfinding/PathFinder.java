@@ -158,6 +158,29 @@ public class PathFinder {
         return start;
     }
 
+    public static Point2D[] getRandomPointsFromList(
+            Point2D[] points, double minDifference, double maxDifference) {
+
+        Random random = new Random();
+        Point2D[] result = new Point2D[points.length];
+
+        for (int i = 0; i < points.length; i++) {
+            double range = maxDifference - minDifference;
+
+            double xVariation = minDifference + (random.nextDouble() * range);
+            double yVariation = minDifference + (random.nextDouble() * range);
+
+            if (random.nextBoolean()) xVariation = -xVariation;
+            if (random.nextBoolean()) yVariation = -yVariation;
+
+            result[i] =
+                    new Point2D.Double(
+                            points[i].getX() + xVariation, points[i].getY() + yVariation);
+        }
+
+        return result;
+    }
+
     public List<Point2D> getMovePointsToDest(Point2D start, Point2D end) {
         // end point outside an obstacle but line intersects an obstacle = pathfinding needed
         // end point inside an obstacle = move to obstacle edge

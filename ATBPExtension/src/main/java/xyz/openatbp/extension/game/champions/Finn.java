@@ -340,7 +340,7 @@ public class Finn extends UserActor {
                         () -> {
                             doWEndAnim();
                             handleWCD();
-                            playIdleAndInterruptSound();
+                            playInterruptSoundAndIdle();
                         };
 
                 DashContext ctx =

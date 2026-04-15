@@ -165,7 +165,7 @@ public class Gunter extends UserActor {
                         new DashContext.Builder(location, dest, (float) DEFAULT_DASH_SPEED)
                                 .canBeRedirected(true)
                                 .triggerEndEffectOnRoot(true)
-                                .onInterrupt(this::playIdleAndInterruptSound)
+                                .onInterrupt(this::playInterruptSoundAndIdle)
                                 .onEnd(onEnd)
                                 .build();
                 startDash(ctx);

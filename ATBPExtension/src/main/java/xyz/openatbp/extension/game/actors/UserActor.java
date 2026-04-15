@@ -108,6 +108,7 @@ public class UserActor extends Actor {
     protected int eGunStacks = 0;
     protected Long lastEGunStack = 0L;
     protected Map<Actor, Long> lastMagicCubeProc = new HashMap<>();
+    protected Point2D queuedDest = null;
 
     private static final String DC_BUFF_TIER1_ID = "dc_buff_tier1";
     private static final String DC_BUFF_TIER2_ID = "dc_buff_tier2";
@@ -188,6 +189,10 @@ public class UserActor extends Actor {
         this.canCast[0] = q;
         this.canCast[1] = w;
         this.canCast[2] = e;
+    }
+
+    public void setQueuedDest(Point2D dest) {
+        this.queuedDest = dest;
     }
 
     public void setLichHandTarget(Actor target) {
@@ -666,7 +671,9 @@ public class UserActor extends Actor {
             this.timeKilled = System.currentTimeMillis();
             this.canMove = false;
             setInsideBrush(false);
-            if (!effectManager.hasState(ActorState.AIRBORNE)) this.stopMoving();
+            if (movementState != MovementState.KNOCKBACK && movementState != MovementState.PULLED) {
+                stopMoving();
+            }
 
             if (this.hasKeeothBuff) disableKeeothBuff();
             if (this.hasGooBuff) disableGooBuff();
@@ -821,13 +828,14 @@ public class UserActor extends Actor {
 
     @Override
     public void update(int msRan) {
-        this.handleDamageQueue();
         effectManager.handleEffectsUpdate();
+        this.handleDamageQueue();
 
         handleMovementUpdate();
         handleCharmMovement();
         handleGrobDevice();
         handleBrush();
+        handleQueuedDest();
 
         if (this.dead) {
             if (this.currentHealth > 0
@@ -946,46 +954,7 @@ public class UserActor extends Actor {
         if (!isMoving && movePointsToDest != null && movePointsToDest.isEmpty()) {
             this.idleTime += 100;
         }
-        /*boolean insideBrush = false;
-        boolean isPracticeMap = rh.isPracticeMap();
-        ArrayList<Path2D> brushPaths = parentExt.getBrushPaths(isPracticeMap);
 
-        for (Path2D brush : brushPaths) {
-            if (brush.contains(this.location)) {
-                insideBrush = true;
-                break;
-            }
-        }
-        if (insideBrush) {
-            if (!effectManager.hasState(ActorState.BRUSH)) {
-                Console.debugLog("BRUSH STATE ENABLED");
-
-                ExtensionCommands.changeBrush(
-                        parentExt, room, this.id, parentExt.getBrushNum(location, brushPaths));
-                effectManager.setState(ActorState.BRUSH, true);
-                if (this.stealthEmbargo <= System.currentTimeMillis()) {
-                    effectManager.setState(ActorState.REVEALED, true);
-                }
-
-            } else if (this.stealthEmbargo != -1
-                    && this.stealthEmbargo <= System.currentTimeMillis()) {
-                effectManager.setState(ActorState.REVEALED, false);
-                this.stealthEmbargo = -1;
-            }
-        } else {
-            if (effectManager.hasState(ActorState.BRUSH)) {
-                Console.debugLog("BRUSH STATE DISABLED");
-                effectManager.setState(ActorState.BRUSH, false);
-                ;
-                if (!effectManager.hasState(ActorState.INVISIBLE)) {
-                    effectManager.setState(ActorState.REVEALED, true);
-                }
-                ExtensionCommands.changeBrush(parentExt, room, this.id, -1);
-            } else if (!effectManager.hasState(ActorState.REVEALED)
-                    && !effectManager.hasState(ActorState.INVISIBLE)) {
-                effectManager.setState(ActorState.REVEALED, true);
-            }
-        }*/
         if (attackCooldown > 0) reduceAttackCooldown();
         if (target != null && target.isInvisible()) target = null;
         if (target != null && target.getHealth() > 0) {
@@ -1106,6 +1075,13 @@ public class UserActor extends Actor {
         if (this.changeTowerAggro && !isInTowerRadius(this, false)) this.changeTowerAggro = false;
     }
 
+    private void handleQueuedDest() {
+        if (queuedDest != null && canMove() && !isMoving) {
+            startMoveTo(queuedDest);
+            queuedDest = null;
+        }
+    }
+
     private void regenHealth() {
         double healthRegen = this.getPlayerStat("healthRegen");
         if (this.currentHealth + healthRegen <= 0) healthRegen = (this.currentHealth - 1) * -1;
@@ -1172,7 +1148,6 @@ public class UserActor extends Actor {
     public boolean canUseAbility(int ability) {
         ActorState[] hinderingStates = {
             ActorState.POLYMORPH,
-            ActorState.AIRBORNE,
             ActorState.CHARMED,
             ActorState.FEARED,
             ActorState.SILENCED,
@@ -1225,7 +1200,6 @@ public class UserActor extends Actor {
                         + this.team);
         this.location = respawnPoint;
         this.futureCrystalActive = true;
-        this.timeTraveled = 0f;
         this.canMove = true;
         this.setHealth((int) this.maxHealth, (int) this.maxHealth);
         this.dead = false;

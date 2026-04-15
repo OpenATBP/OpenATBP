@@ -1,5 +1,7 @@
 package xyz.openatbp.extension.game.champions;
 
+import static xyz.openatbp.extension.game.effects.EffectManager.DEFAULT_KNOCKBACK_SPEED;
+
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -345,7 +347,8 @@ public class Neptr extends UserActor {
             for (Actor a : Champion.getActorsInRadius(handler, ultLocation, 3f)) {
                 if (a.getActorType() != ActorType.BASE && a.isNotLeaping()) {
                     if (isNeitherStructureNorAlly(a) && a.isNotLeaping()) {
-                        a.handleKnockback(Neptr.this.location, E_KNOCKBACK_DIST);
+                        a.handleKnockback(
+                                Neptr.this.location, E_KNOCKBACK_DIST, DEFAULT_KNOCKBACK_SPEED);
                         a.getEffectManager()
                                 .addState(
                                         ActorState.SILENCED,

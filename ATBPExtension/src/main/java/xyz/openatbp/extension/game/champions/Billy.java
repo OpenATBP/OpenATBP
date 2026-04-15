@@ -1,5 +1,7 @@
 package xyz.openatbp.extension.game.champions;
 
+import static xyz.openatbp.extension.game.effects.EffectManager.DEFAULT_KNOCKBACK_SPEED;
+
 import java.awt.geom.Point2D;
 import java.util.List;
 
@@ -181,7 +183,10 @@ public class Billy extends UserActor {
                                                             0d,
                                                             Q_STUN_DURATION);
                                         }
-                                        a.handleKnockback(location, Q_KNOCKBACK_DIST);
+                                        a.handleKnockback(
+                                                location,
+                                                Q_KNOCKBACK_DIST,
+                                                DEFAULT_KNOCKBACK_SPEED);
                                     }
                                     if (isNeitherTowerNorAlly(a) && a.isNotLeaping()) {
                                         double damage = getSpellDamage(spellData, true);

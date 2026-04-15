@@ -187,6 +187,7 @@ public class Minion extends Actor {
                 (float) a.getLocation().getY(),
                 false,
                 true);
+
         if (this.type == MinionType.RANGED) {
             Champion.DelayedRangedAttack at = new Champion.DelayedRangedAttack(this, a);
             scheduleTask(at, BASIC_ATTACK_DELAY);
@@ -204,7 +205,11 @@ public class Minion extends Actor {
     public void die(Actor a) {
         this.currentHealth = 0;
         if (this.dead) return;
-        if (!effectManager.hasState(ActorState.AIRBORNE)) this.stopMoving();
+
+        if (movementState != MovementState.KNOCKBACK && movementState != MovementState.PULLED) {
+            stopMoving();
+        }
+
         this.dead = true;
         if (a.getActorType() == ActorType.PLAYER || a.getActorType() == ActorType.COMPANION) {
             UserActor ua = null;
@@ -477,9 +482,8 @@ public class Minion extends Actor {
 
     @Override
     public void update(int msRan) {
-        this.handleDamageQueue();
         effectManager.handleEffectsUpdate();
-
+        this.handleDamageQueue();
         handleMovementUpdate();
         handleCharmMovement();
 
@@ -507,6 +511,7 @@ public class Minion extends Actor {
 
     @Override
     public void setTarget(Actor a) {
+        if (a == null) return;
         this.target = a;
         if (a.getActorType() == ActorType.PLAYER) {
             UserActor ua = (UserActor) a;
@@ -523,8 +528,9 @@ public class Minion extends Actor {
         ExtensionCommands.createProjectileFX(
                 this.parentExt, this.room, fxId, this.id, a.getId(), "emitNode", "", (float) time);
         int ad = (int) getPlayerStat("attackDamage");
+
         Champion.DelayedAttack at =
-                new Champion.DelayedAttack(parentExt, this, a, ad, "BasicAttack");
+                new Champion.DelayedAttack(parentExt, this, a, ad, "basicAttack");
         int timeMS = (int) (time * 1000);
         scheduleTask(at, timeMS);
     }

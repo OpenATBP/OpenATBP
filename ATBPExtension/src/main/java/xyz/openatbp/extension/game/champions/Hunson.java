@@ -1,10 +1,10 @@
 package xyz.openatbp.extension.game.champions;
 
+import static xyz.openatbp.extension.game.effects.EffectManager.DEFAULT_KNOCKBACK_SPEED;
+
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -13,12 +13,14 @@ import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
+import xyz.openatbp.extension.game.actors.Tower;
 import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.game.effects.ActorState;
 import xyz.openatbp.extension.game.effects.ModifierIntent;
 import xyz.openatbp.extension.game.effects.ModifierType;
 
 public class Hunson extends UserActor {
+    public static final int W = 1100;
     private static final int PASSIVE_DURATION = 3500;
     private static final int PASSIVE_ATTACK_SPEED_DURATION = 3500;
     private static final int PASSIVE_SPEED_DURATION = 3500;
@@ -36,6 +38,8 @@ public class Hunson extends UserActor {
     private static final int E_CAST_DELAY = 750;
     private static final double E_ARMOR_PERCENT = 0.5d;
     private static final int E_SPELLVAMP_VALUE = 45;
+    public static final int W_DURATION = 1200;
+    public static final float W_RADIUS = 2.5f;
 
     private Map<Actor, Integer> qVictims;
     private boolean qActivated = false;
@@ -45,6 +49,7 @@ public class Hunson extends UserActor {
     private long qStartTime = 0;
     private long ultStart = 0;
     private long wStartTime = 0;
+    private boolean wActive = false;
     private Point2D wLocation;
     private boolean canUsePassive = true;
     private HashMap<Actor, Long> dotActors = new HashMap<>();
@@ -56,33 +61,34 @@ public class Hunson extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if (wLocation != null && System.currentTimeMillis() - wStartTime >= 1100) {
+        if (wLocation != null && System.currentTimeMillis() - wStartTime >= W_DURATION) {
             wLocation = null;
         }
 
         if (wLocation != null) {
             RoomHandler rh = parentExt.getRoomHandler(room.getName());
-            for (Actor a : rh.getActorsInRadius(wLocation, 2.5f)) {
-                if (isNeitherStructureNorAlly(a) && !dotActors.containsKey(a) && a.isNotLeaping()) {
+            List<Actor> enemies = Champion.getEnemyActorsInRadius(rh, team, wLocation, W_RADIUS);
+            enemies.removeIf(a -> a instanceof Tower || dotActors.containsKey(a));
+
+            for (Actor a : enemies) {
+                dotActors.put(a, System.currentTimeMillis());
+                ExtensionCommands.createActorFX(
+                        parentExt,
+                        room,
+                        a.getId(),
+                        "neptr_dot_poison",
+                        1500,
+                        id + "hunsonW" + Math.random(),
+                        true,
+                        "",
+                        false,
+                        false,
+                        a.getTeam());
+
+                if (a.getActorType() != ActorType.BASE) {
                     a.setFearer(this);
                     a.getEffectManager()
                             .addState(ActorState.FEARED, id + "_hunson_w_fear", 0, W_FEAR_DURATION);
-                }
-
-                if (!dotActors.containsKey(a) && isNeitherTowerNorAlly(a)) {
-                    dotActors.put(a, System.currentTimeMillis());
-                    ExtensionCommands.createActorFX(
-                            parentExt,
-                            room,
-                            a.getId(),
-                            "neptr_dot_poison",
-                            W_DAMAGE_DURATION,
-                            id + "hunsonW" + Math.random(),
-                            true,
-                            "",
-                            false,
-                            false,
-                            a.getTeam());
                 }
             }
         }
@@ -91,7 +97,7 @@ public class Hunson extends UserActor {
 
         while (iterator.hasNext()) {
             Map.Entry<Actor, Long> entry = iterator.next();
-            if (System.currentTimeMillis() - entry.getValue() >= 1500) {
+            if (System.currentTimeMillis() - entry.getValue() >= W_DURATION) {
                 iterator.remove();
             }
         }
@@ -146,6 +152,7 @@ public class Hunson extends UserActor {
     public void die(Actor a) {
         super.die(a);
         if (this.ultActivated) this.endUlt();
+        if (wActive) wActive = false;
     }
 
     @Override
@@ -271,14 +278,17 @@ public class Hunson extends UserActor {
             case 2:
                 this.canCast[1] = false;
                 try {
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, "hunson_power2a", this.location);
+                    dotActors.clear();
+                    wLocation = location;
+                    wStartTime = System.currentTimeMillis();
+
+                    ExtensionCommands.playSound(parentExt, room, id, "hunson_power2a", location);
                     ExtensionCommands.createActorFX(
                             parentExt,
                             room,
                             id,
                             "hunson_fear",
-                            1500,
+                            W_DURATION,
                             id + "_fear",
                             false,
                             "",
@@ -290,7 +300,7 @@ public class Hunson extends UserActor {
                             room,
                             id,
                             "fx_target_ring_2.5",
-                            1500,
+                            W_DURATION,
                             id + "_fearRing",
                             false,
                             "",
@@ -409,7 +419,6 @@ public class Hunson extends UserActor {
         @Override
         protected void spellW() {
             if (getHealth() > 0) {
-                wLocation = location;
                 wStartTime = System.currentTimeMillis();
 
             } else {
@@ -493,7 +502,7 @@ public class Hunson extends UserActor {
             }
 
             if (isNeitherStructureNorAlly(victim)) {
-                victim.handlePull(location, (float) Q_PULL_DISTANCE);
+                victim.handlePull(location, (float) Q_PULL_DISTANCE, DEFAULT_KNOCKBACK_SPEED);
                 victim.getEffectManager()
                         .addState(
                                 ActorState.SLOWED,

@@ -348,7 +348,7 @@ public class FlamePrincess extends UserActor {
                     DashContext ctx =
                             new DashContext.Builder(location, dashPoint, E_DASH_SPEED)
                                     .canBeRedirected(true)
-                                    .onInterrupt(this::playIdleAndInterruptSound)
+                                    .onInterrupt(this::playInterruptSoundAndIdle)
                                     .build();
                     startDash(ctx);
 

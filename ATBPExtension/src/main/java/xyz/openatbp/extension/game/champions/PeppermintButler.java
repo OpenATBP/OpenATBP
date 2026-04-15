@@ -83,8 +83,6 @@ public class PeppermintButler extends UserActor {
             qActive = false;
         }
 
-        Console.debugLog(isStopped());
-
         if (isStopped()
                 && !qActive
                 && !stopPassive

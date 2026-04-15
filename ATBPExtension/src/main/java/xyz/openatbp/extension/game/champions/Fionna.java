@@ -75,8 +75,6 @@ public class Fionna extends UserActor {
                 parentExt, player, "fionna_fearless", "FEARLESS", "icon_fionna_s2b", 0f);
         this.previousAttackDamage = this.getPlayerStat("attackDamage");
         this.previousSpellDamage = this.getPlayerStat("spellDamage");
-        setStat("speed", 20);
-        setStat("attackDamage", 1000000);
     }
 
     @Override
@@ -147,7 +145,7 @@ public class Fionna extends UserActor {
     }
 
     private void onQInterrupt() {
-        playIdleAndInterruptSound();
+        playInterruptSoundAndIdle();
         if (dashesRemaining == 0) {
             Runnable enableQCasting = () -> canCast[0] = true;
             int delay = getReducedCooldown(qCooldown) - qTime;

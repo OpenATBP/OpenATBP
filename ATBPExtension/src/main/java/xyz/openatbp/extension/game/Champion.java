@@ -373,6 +373,7 @@ public class Champion {
 
                 if (canLifeSteal()) ua.handleLifeSteal();
             }
+
             if (attacker.getActorType() == ActorType.MONSTER && !attacker.getId().contains("gnome"))
                 attacker.setCanMove(true);
             this.target.addToDamageQueue(this.attacker, this.damage, attackData, false);

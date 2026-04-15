@@ -303,7 +303,7 @@ public class Marceline extends UserActor {
                     if (this.form == Form.BEAST) {
                         this.beastWActive = true;
                         this.bestWStartTime = System.currentTimeMillis();
-                        attackCooldown = 0;
+                        basicAttackReset();
 
                         ExtensionCommands.playSound(
                                 this.parentExt,
@@ -561,7 +561,6 @@ public class Marceline extends UserActor {
 
                 if (form == Form.BEAST) {
                     form = Form.VAMPIRE;
-                    attackCooldown = 0d;
                     if (canSwapAsset) {
                         ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
                     }

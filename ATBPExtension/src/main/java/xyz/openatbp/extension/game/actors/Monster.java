@@ -11,6 +11,7 @@ import com.smartfoxserver.v2.entities.Room;
 import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.MovementState;
 import xyz.openatbp.extension.game.effects.ActorState;
 
 public class Monster extends Actor {
@@ -209,8 +210,8 @@ public class Monster extends Actor {
     public void handleKill(Actor a, JsonNode attackData) {}
 
     @Override
-    public void handleKnockback(Point2D source, float distance) {
-        super.handleKnockback(source, distance);
+    public void handleKnockback(Point2D source, float distance, float speed) {
+        super.handleKnockback(source, distance, speed);
         this.attackRangeOverride = true;
     }
 
@@ -280,7 +281,11 @@ public class Monster extends Actor {
         Console.debugLog(this.id + " has died! " + this.dead);
         if (!this.dead) { // No double deaths
             this.dead = true;
-            if (!effectManager.hasState(ActorState.AIRBORNE)) this.stopMoving();
+
+            if (movementState != MovementState.KNOCKBACK && movementState != MovementState.PULLED) {
+                stopMoving();
+            }
+
             this.currentHealth = -1;
             RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getName());
             int scoreValue = parentExt.getActorStats(this.avatar).get("valueScore").asInt();
@@ -328,10 +333,9 @@ public class Monster extends Actor {
     @Override
     public void update(int msRan) {
         this.handleDamageQueue();
-        // this.handleActiveEffects();
+        effectManager.handleEffectsUpdate();
         if (this.dead) return;
 
-        effectManager.handleEffectsUpdate();
         handleMovementUpdate();
         handleCharmMovement();
 
@@ -393,10 +397,7 @@ public class Monster extends Actor {
     @Override
     public boolean canMove() {
         for (ActorState s : effectManager.getStates().keySet()) {
-            if (s == ActorState.ROOTED
-                    || s == ActorState.STUNNED
-                    || s == ActorState.FEARED
-                    || s == ActorState.AIRBORNE) {
+            if (s == ActorState.ROOTED || s == ActorState.STUNNED || s == ActorState.FEARED) {
                 if (effectManager.hasState(s)) return false;
             }
         }

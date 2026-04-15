@@ -6,6 +6,7 @@ import java.util.*;
 
 import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
+import xyz.openatbp.extension.game.MovementState;
 import xyz.openatbp.extension.game.actors.*;
 import xyz.openatbp.extension.game.champions.BubbleGum;
 
@@ -22,7 +23,7 @@ public class EffectManager {
     private static final List<Class<? extends Actor>> ignoreList =
             List.of(Base.class, Tower.class, BaseTower.class, BubbleGum.Turret.class);
 
-    public static final float KNOCKBACK_SPEED = 11;
+    public static final float DEFAULT_KNOCKBACK_SPEED = 11;
     public static final int FEAR_MOVING_DISTANCE = 3;
 
     public EffectManager(Actor a) {
@@ -80,10 +81,10 @@ public class EffectManager {
     }
 
     private boolean canMoveDuringCharmOrFear(ActorState stateToApply) {
+        // if actor has charm and fear at the same time, don't move
         boolean canMove =
-                !(hasState(ActorState.ROOTED)
-                        || hasState(ActorState.STUNNED)
-                        || hasState(ActorState.AIRBORNE));
+                !(hasState(ActorState.ROOTED) || hasState(ActorState.STUNNED))
+                        && actor.getMovementState() == MovementState.IDLE;
         if (stateToApply == ActorState.CHARMED) {
             return canMove && !hasState(ActorState.FEARED);
         }

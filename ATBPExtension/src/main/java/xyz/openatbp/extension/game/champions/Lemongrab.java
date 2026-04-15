@@ -442,7 +442,7 @@ public class Lemongrab extends UserActor {
                                         0d,
                                         (int) duration);
 
-                        if (!effectManager.hasState(ActorState.IMMUNITY)) {
+                        if (!a.getEffectManager().hasState(ActorState.IMMUNITY)) {
                             ExtensionCommands.createActorFX(
                                     parentExt,
                                     room,

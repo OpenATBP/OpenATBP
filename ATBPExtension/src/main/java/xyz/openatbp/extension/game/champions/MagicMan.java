@@ -239,7 +239,7 @@ public class MagicMan extends UserActor {
                 Runnable onInterrupt =
                         () -> {
                             handleECD();
-                            playIdleAndInterruptSound();
+                            playInterruptSoundAndIdle();
                         };
 
                 DashContext ctx =
