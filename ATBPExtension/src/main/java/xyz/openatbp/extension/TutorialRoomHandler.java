@@ -56,6 +56,7 @@ public class TutorialRoomHandler extends RoomHandler {
                 MapData.NORMAL_HP_SPAWN_RATE,
                 mapBoundary,
                 obstacles);
+
         HashMap<String, Point2D> towers0 = MapData.getPTowerActorData(0);
         HashMap<String, Point2D> towers1 = MapData.getPTowerActorData(1);
         for (String key : towers0.keySet()) {
@@ -89,6 +90,8 @@ public class TutorialRoomHandler extends RoomHandler {
                     tutorialPlayer.getTeam());
             tutorialPlayer.setCanMove(false);
             tutorialPlayer.setCanCast(false, false, false);
+
+            endGameChampions.put(tutorialPlayer.getUser().getId(), tutorialPlayer);
         }
     }
 
@@ -382,12 +385,27 @@ public class TutorialRoomHandler extends RoomHandler {
                             new Point2D.Float(0, 0));
 
                     BotMapConfig config = BotMapConfig.createPractice(1);
-                    jakeBot = new JakeBot(parentExt, room, "jake", "JAKE BOT", 1, config);
+
+                    ExtensionCommands.addUser(
+                            parentExt,
+                            room,
+                            10010,
+                            "JAKE BOT",
+                            "jake",
+                            1,
+                            "bot_jake_10010",
+                            "belt_champions",
+                            0,
+                            false);
+
+                    jakeBot = new JakeBot(parentExt, room, 10010, "jake", "JAKE BOT", 1, config);
 
                     jakeBot.setStat("attackDamage", TUTORIAL_JAKE_DAMAGE);
                     jakeBot.setStat("spellDamage", TUTORIAL_JAKE_DAMAGE);
                     jakeBot.setHealth(TUTORIAL_JAKE_HP, TUTORIAL_JAKE_HP);
                     companions.add(jakeBot);
+
+                    endGameChampions.put(10010, jakeBot);
                 }
             }
         } catch (Exception e) {
@@ -465,45 +483,35 @@ public class TutorialRoomHandler extends RoomHandler {
 
     @Override
     public void gameOver(int winningTeam) {
-        if (this.gameOver) return;
-        try {
-            this.gameOver = true;
-            this.room.setProperty("state", 3);
-            HashMap<User, UserActor> dcPlayers = new HashMap<>();
-            boolean tutorialCoins = false;
-            if (winningTeam == 0) {
-                ExtensionCommands.playSound(
-                        parentExt, tutorialPlayer.getUser(), "global", "announcer/tut_congrats");
-                MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
-                String tegID = (String) tutorialPlayer.getUser().getSession().getProperty("tegid");
-                Bson filter = eq("user.TEGid", tegID);
-                Document playerDoc = playerData.find(filter).first();
+        if (winningTeam == 0) {
+            ExtensionCommands.playSound(
+                    parentExt, tutorialPlayer.getUser(), "global", "announcer/tut_congrats");
+            MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
+            String tegID = (String) tutorialPlayer.getUser().getSession().getProperty("tegid");
+            Bson filter = eq("user.TEGid", tegID);
+            Document playerDoc = playerData.find(filter).first();
 
-                if (playerDoc != null) {
-                    Document playerObject = playerDoc.get("player", Document.class);
+            if (playerDoc != null) {
+                Document playerObject = playerDoc.get("player", Document.class);
+                if (playerObject != null) {
+                    Integer winsBots = playerObject.getInteger("winsBots");
+                    if (winsBots != null && winsBots == 0) {
+                        this.tutorialCoins = true;
 
-                    if (playerObject != null) {
-                        Integer winsBots = playerObject.getInteger("winsBots");
-                        if (winsBots != null && winsBots == 0) {
-                            tutorialCoins = true;
-                            List<Bson> updateList = new ArrayList<>();
-                            updateList.add(Updates.inc("player.winsBots", 1));
-                            updateList.add(Updates.inc("player.coins", TUTORIAL_COINS));
+                        List<Bson> updateList = new ArrayList<>();
+                        updateList.add(Updates.inc("player.winsBots", 1));
+                        updateList.add(Updates.inc("player.coins", TUTORIAL_COINS));
 
-                            Bson updates = Updates.combine(updateList);
-                            UpdateOptions options = new UpdateOptions().upsert(false);
-                            UpdateResult result = playerData.updateOne(filter, updates, options);
+                        Bson updates = Updates.combine(updateList);
+                        UpdateOptions options = new UpdateOptions().upsert(false);
+                        UpdateResult result = playerData.updateOne(filter, updates, options);
 
-                            Console.debugLog(result);
-                        }
+                        Console.debugLog(result);
                     }
                 }
             }
-            ExtensionCommands.gameOver(parentExt, room, dcPlayers, winningTeam, tutorialCoins);
-            parentExt.stopScript(room.getName(), false);
-        } catch (Exception e) {
-            e.printStackTrace();
         }
+        super.gameOver(winningTeam);
     }
 
     @Override

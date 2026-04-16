@@ -13,7 +13,6 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 
 import xyz.openatbp.extension.game.actors.Actor;
-import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.game.effects.ActorState;
 
 public class ExtensionCommands {
@@ -461,34 +460,33 @@ public class ExtensionCommands {
     public static void gameOver(
             ATBPExtension parentExt,
             Room room,
-            HashMap<User, UserActor> dcPlayers,
+            HashMap<Integer, Actor> endGameChampions,
             double winningTeam,
             boolean tutorialCoins)
             throws JsonProcessingException {
 
-        Console.debugLog("TUTORIAL COINS: " + tutorialCoins);
+        Console.log("Calling game over! Bulding summary data...");
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode node = objectMapper.createObjectNode();
+
+        node.set(
+                "teamA",
+                GameManager.getTeamData(
+                        endGameChampions, 0, room, tutorialCoins, (int) winningTeam));
+        node.set(
+                "teamB",
+                GameManager.getTeamData(
+                        endGameChampions, 1, room, tutorialCoins, (int) winningTeam));
+
+        node.set("globalTeamData", GameManager.getGlobalTeamData(room, endGameChampions));
+        node.put("winner", winningTeam);
+
+        ISFSObject data = new SFSObject();
+        String objectAsText;
+        objectAsText = objectMapper.writeValueAsString(node);
+        data.putUtfString("game_results", objectAsText);
 
         for (User u : room.getUserList()) {
-            Room lastRoom = u.getLastJoinedRoom();
-            System.out.println("Calling game over!");
-            ObjectMapper objectMapper = new ObjectMapper();
-            ObjectNode node = objectMapper.createObjectNode();
-            node.set(
-                    "teamA",
-                    GameManager.getTeamData(
-                            parentExt, dcPlayers, 0, lastRoom, tutorialCoins, (int) winningTeam));
-            node.set(
-                    "teamB",
-                    GameManager.getTeamData(
-                            parentExt, dcPlayers, 1, lastRoom, tutorialCoins, (int) winningTeam));
-            node.set(
-                    "globalTeamData",
-                    GameManager.getGlobalTeamData(parentExt, dcPlayers, lastRoom));
-            node.put("winner", winningTeam);
-            ISFSObject data = new SFSObject();
-            String objectAsText;
-            objectAsText = objectMapper.writeValueAsString(node);
-            data.putUtfString("game_results", objectAsText);
             parentExt.send("cmd_game_over", data, u);
         }
     }

@@ -34,7 +34,6 @@ import xyz.openatbp.extension.reqhandlers.*;
 public class ATBPExtension extends SFSExtension {
     HashMap<String, JsonNode> actorDefinitions =
             new HashMap<>(); // Contains all xml definitions for the characters
-    // TODO: Change Vectors to Point2D
     HashMap<String, JsonNode> itemDefinitions = new HashMap<>();
 
     Point2D[] mainMapBoundaries;
@@ -323,7 +322,7 @@ public class ATBPExtension extends SFSExtension {
                     break;
 
                 case PVB:
-                    rh = new PvERoomHandler(this, room, mainMapBoundaries, mainMapObstacles);
+                    rh = new PVBRoomHandler(this, room, mainMapBoundaries, mainMapObstacles);
                     roomHandlers.put(rName, rh);
                     rh.initPlayers();
                     break;

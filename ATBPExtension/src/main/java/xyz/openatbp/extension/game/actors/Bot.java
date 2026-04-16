@@ -14,6 +14,8 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import com.smartfoxserver.v2.entities.Room;
+import com.smartfoxserver.v2.entities.data.ISFSObject;
+import com.smartfoxserver.v2.entities.data.SFSObject;
 
 import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.*;
@@ -24,10 +26,8 @@ import xyz.openatbp.extension.game.effects.ModifierType;
 
 public abstract class Bot extends Actor {
     private static final boolean MOVEMENT_DEBUG = false;
-    public static final int CYCLOPS_DURATION = 60000;
     private static final float TOWER_RANGE = 6f;
     public static final int INT = 15;
-    public static final int HP_PACK_REGEN = INT;
     public static final double LOW_HP_PERCENTAGE_ACTION = 0.3;
     private static final int FOUNTAIN_HEAL = 250;
 
@@ -39,9 +39,7 @@ public abstract class Bot extends Actor {
 
     protected UserActor enemy;
     protected Long enemyDmgTime = 0L;
-    protected HashMap<Actor, Long> agressors = new HashMap<>();
 
-    protected static final int BASIC_ATTACK_DELAY = 500;
     protected int qCooldownMs;
     protected int wCooldownMs;
     protected int eCooldownMs;
@@ -84,6 +82,12 @@ public abstract class Bot extends Actor {
     protected Point2D[] lanePath;
     protected BotMapConfig mapConfig;
 
+    private int killingSpree = 0;
+    private int multikill = 0;
+    private long lastChampionKill = 0L;
+    private int[] spCategoryPoints = {0, 0, 0, 0, 0};
+    private final String backpack = "belt_champions";
+
     protected boolean isForcedMoving() {
         return movementState == MovementState.KNOCKBACK || movementState == MovementState.PULLED;
     }
@@ -91,6 +95,7 @@ public abstract class Bot extends Actor {
     public Bot(
             ATBPExtension parentExt,
             Room room,
+            int botId,
             String avatar,
             String displayName,
             int team,
@@ -101,10 +106,10 @@ public abstract class Bot extends Actor {
         this.location = mapConfig.respawnPoint;
         this.avatar = avatar;
         this.displayName = displayName;
-        this.id = "bot_" + avatar + "_" + team + "_" + Math.random();
+        this.id = String.valueOf(botId); // same convention as User and UserActor
         this.team = team;
         this.actorType = ActorType.COMPANION;
-        this.stats = initializeStats();
+        this.stats = initializeChampStats();
         this.displayName = avatar.toUpperCase() + " BOT";
         this.xpWorth = 25;
 
@@ -119,7 +124,7 @@ public abstract class Bot extends Actor {
                     parentExt, room, id + "moveDebug", "creep1", location, 0f, 1);
         }
         levelUpStats();
-        simulateBackpackLevelUp("belt_champions");
+        simulateBackpackLevelUp();
     }
 
     protected BotRole getBotRole() {
@@ -134,18 +139,16 @@ public abstract class Bot extends Actor {
         setCanMove(false);
         setInsideBrush(false);
         setHealth(0, getMaxHealth());
+        increaseStat("deaths", 1);
 
-        Actor realKiller = a;
+        multikill = 0;
+        killingSpree = 0;
 
-        if (a.getActorType() != ActorType.PLAYER && !agressors.isEmpty()) {
-            for (Actor aggressor : agressors.keySet()) {
-                if (System.currentTimeMillis() - agressors.get(aggressor) <= 10000
-                        && aggressor instanceof UserActor) {
-                    realKiller = aggressor;
-                    UserActor player = (UserActor) realKiller;
-                    player.setLastKilled(System.currentTimeMillis());
-                }
-            }
+        Actor realKiller = getRealKiller(a);
+
+        if (realKiller instanceof UserActor) {
+            UserActor player = (UserActor) realKiller;
+            player.setLastKilled(System.currentTimeMillis());
         }
 
         if (movementState != MovementState.KNOCKBACK && movementState != MovementState.PULLED) {
@@ -157,12 +160,33 @@ public abstract class Bot extends Actor {
         Runnable respawn = this::respawn;
         parentExt.getTaskScheduler().schedule(respawn, deathTime, TimeUnit.SECONDS);
 
-        if (realKiller.getActorType() == ActorType.PLAYER) {
-            UserActor killer = (UserActor) realKiller;
-            killer.increaseStat("kills", 1);
+        if (realKiller instanceof UserActor || realKiller instanceof Bot) {
+            realKiller.increaseStat("kills", 1);
             RoomHandler roomHandler = parentExt.getRoomHandler(room.getName());
-            roomHandler.addScore(killer, killer.getTeam(), 25);
-            killer.addXP(this.getXPWorth());
+            roomHandler.addScore(realKiller, realKiller.getTeam(), 25);
+
+            if (realKiller instanceof UserActor) {
+                UserActor player = (UserActor) realKiller;
+                player.addXP(getXPWorth());
+            } else {
+                Bot bot = (Bot) realKiller;
+                bot.addBotExp(getXPWorth());
+            }
+        }
+
+        double timeDead = this.deathTime * 1000; // needs to be converted to ms for the client
+        this.addGameStat("timeDead", timeDead);
+    }
+
+    public void addBotExp(int xpWorth) {
+        int level = this.level;
+        xp += xpWorth;
+        checkLevelUp();
+
+        if (level != this.level) {
+            HashMap<String, Double> updateData = new HashMap<>(1);
+            updateData.put("level", (double) this.level);
+            ExtensionCommands.updateActorData(parentExt, room, id, updateData);
         }
     }
 
@@ -179,48 +203,10 @@ public abstract class Bot extends Actor {
         }
     }
 
-    protected void increaseXp(int xpValue) {
-        xp += xpValue;
-    }
-
     protected boolean isNonStructureEnemy(Actor a) {
         return (a.getTeam() != team
                 && a.getActorType() != ActorType.BASE
                 && a.getActorType() != ActorType.TOWER);
-    }
-
-    private void setBackpackStat(int itemNum, int value) {
-        String stat = "";
-        switch (itemNum) {
-            case 0:
-                stat = "attackDamage";
-                break;
-            case 1:
-                stat = "spellDamage";
-                break;
-            case 2:
-                stat = "armor";
-                break;
-            case 3:
-                stat = "spellResist";
-                break;
-            case 4:
-                stat = "health";
-                break;
-        }
-
-        try {
-            if (!stat.equals("health")) {
-                double valueToSet = getStat(stat) + value;
-                setStat(stat, valueToSet);
-            } else {
-                int newMaxHealth = getMaxHealth() + value;
-                setHealth(getHealth(), newMaxHealth);
-            }
-
-        } catch (NullPointerException e) {
-            e.printStackTrace();
-        }
     }
 
     public void levelUpCooldowns() {
@@ -292,9 +278,8 @@ public abstract class Bot extends Actor {
                 && movementState == MovementState.IDLE;
     }
 
-    public void simulateBackpackLevelUp(String bag) {
-        // TODO: REMOVE THIS IF TAB VIEW AND END GAME SUMMARY ARE IMPLEMENTED - USE USER BAG LEVEL
-        // UP METHODS
+    public void simulateBackpackLevelUp() {
+
         int focusItem = -1;
         int secondaryItem = -1;
         int lastItem = -1;
@@ -325,62 +310,96 @@ public abstract class Bot extends Actor {
         }
 
         HashMap<Integer, Integer[]> beltChampions = new HashMap<>();
-        beltChampions.put(1, new Integer[] {15, 20, 10, 10, 100});
-        beltChampions.put(2, new Integer[] {15, 30, 15, 10, 125});
-        beltChampions.put(3, new Integer[] {30, 50, 15, 10, 125});
-        beltChampions.put(4, new Integer[] {40, 100, 20, 20, 150});
+        beltChampions.put(1, new Integer[] {15, 20, 10, 10, 100}); // first upgrades
+        beltChampions.put(2, new Integer[] {15, 30, 15, 10, 125}); // second upgrades
+        beltChampions.put(3, new Integer[] {30, 50, 15, 10, 125}); // third upgrades
+        beltChampions.put(4, new Integer[] {40, 100, 20, 20, 150}); // fourth upgrades
 
-        switch (bag) {
-            case "belt_champions":
-            default:
-                switch (level) {
-                    case 1:
-                    case 2:
-                        setBackpackStat(focusItem, beltChampions.get(level)[focusItem]);
-                        break;
+        int bagCategoryUpgraded = 0;
 
-                    case 5:
-                        setBackpackStat(focusItem, beltChampions.get(3)[focusItem]);
-                        break;
-                    case 7:
-                        setBackpackStat(focusItem, beltChampions.get(4)[focusItem]);
-                        break;
-
-                    case 3:
-                        setBackpackStat(secondaryItem, beltChampions.get(1)[focusItem]);
-                        break;
-
-                    case 4:
-                        setBackpackStat(secondaryItem, beltChampions.get(2)[focusItem]);
-                        break;
-                    case 6:
-                        setBackpackStat(secondaryItem, beltChampions.get(3)[focusItem]);
-                        break;
-                    case 8:
-                        setBackpackStat(secondaryItem, beltChampions.get(4)[focusItem]);
-                        break;
-
-                    case 9:
-                        setBackpackStat(lastItem, beltChampions.get(1)[focusItem]);
-                        break;
-                    case 10:
-                        setBackpackStat(lastItem, beltChampions.get(2)[focusItem]);
-                        break;
-                }
+        switch (level) {
+            case 1:
+            case 2:
+            case 5:
+            case 7:
+                bagCategoryUpgraded = focusItem;
+                spCategoryPoints[focusItem] += 1;
+                break;
+            case 3:
+            case 4:
+            case 6:
+            case 8:
+                bagCategoryUpgraded = secondaryItem;
+                spCategoryPoints[secondaryItem] += 1;
+                break;
+            case 9:
+            case 10:
+                bagCategoryUpgraded = lastItem;
+                spCategoryPoints[lastItem] += 1;
+                break;
         }
+
+        String stat = getUpgradedStatString(bagCategoryUpgraded);
+
+        int upgradeValue =
+                beltChampions.get(spCategoryPoints[bagCategoryUpgraded])[bagCategoryUpgraded];
+
+        if (stat.equals("health")) {
+            setHealth(getHealth(), getMaxHealth() + upgradeValue);
+        } else {
+            setStat(stat, getStat(stat) + upgradeValue);
+        }
+
+        ISFSObject bagUpdateData = new SFSObject();
+        bagUpdateData.putInt(
+                "sp_category" + (bagCategoryUpgraded + 1), spCategoryPoints[bagCategoryUpgraded]);
+        bagUpdateData.putInt("availableSpellPoints", 0);
+        bagUpdateData.putUtfString("id", id);
+
+        Console.log("Bot bag update data: " + bagUpdateData.getDump());
+        ExtensionCommands.updateActorData(parentExt, room, bagUpdateData);
+    }
+
+    private String getUpgradedStatString(int bagCategoryUpgraded) {
+        String stat = "";
+        switch (bagCategoryUpgraded) {
+            case 0:
+                stat = "attackDamage";
+                break;
+            case 1:
+                stat = "spellDamage";
+                break;
+            case 2:
+                stat = "armor";
+                break;
+            case 3:
+                stat = "spellResist";
+                break;
+            case 4:
+                stat = "health";
+                break;
+        }
+        return stat;
     }
 
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
-        agressors.put(a, System.currentTimeMillis());
-
         handleElectrodeGun(a, attackData);
+
+        AttackType type = getAttackType(attackData);
+        handleDamageTakenStat(type, damage);
+
+        if (a instanceof UserActor || a instanceof Bot) {
+            a.addDamageGameStat(damage, type);
+            a.addGameStat("damageDealtChamps", damage);
+        }
+
         if (a instanceof UserActor) {
             UserActor ua = (UserActor) a;
             ua.preventStealth();
         }
 
-        if (a.getActorType() == ActorType.PLAYER && getAttackType(attackData) == AttackType.SPELL) {
+        if (a instanceof UserActor && type == AttackType.SPELL) {
             handleMagicCube((UserActor) a);
         }
 
@@ -838,6 +857,15 @@ public abstract class Bot extends Actor {
         effectManager.handleEffectsUpdate();
         if (dead) return;
 
+        if (msRan == 2000) { // updates first upgraded item for the tab view
+            for (int i = 0; i < spCategoryPoints.length; i++) {
+                SFSObject bagData = new SFSObject();
+                bagData.putInt("sp_category" + (i + 1), spCategoryPoints[i]);
+                bagData.putUtfString("id", id);
+                ExtensionCommands.updateActorData(parentExt, room, bagData);
+            }
+        }
+
         if (globalCooldown > 0) globalCooldown -= 100;
         if (globalCooldown <= 0) globalCooldown = 0;
         if (attackCooldown > 0) attackCooldown -= 100;
@@ -958,7 +986,6 @@ public abstract class Bot extends Actor {
         dead = false;
         isAutoAttacking = false;
         effectManager.removeEffects();
-        agressors.clear();
 
         Console.debugLog("Respawning " + id + " at " + location);
 
@@ -994,8 +1021,28 @@ public abstract class Bot extends Actor {
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
         if (level != 10) {
-            xp += a.getXPWorth();
+            addBotExp(a.getXPWorth());
             checkLevelUp();
+        }
+
+        if (a instanceof Bot || a instanceof UserActor) {
+
+            increaseStat("kills", 1);
+            killingSpree++;
+
+            if (hasGameStat("spree")) {
+                double spree = getGameStat("spree");
+                if (killingSpree > spree) setGameStat("spree", killingSpree);
+            }
+
+            if (System.currentTimeMillis() - lastChampionKill <= 10000) {
+                multikill++;
+                if (hasGameStat("largestMulti")) {
+                    double largestMulti = getGameStat("largestMulti");
+                    if (multikill > largestMulti) setGameStat("largestMulti", multikill);
+                }
+            }
+            lastChampionKill = System.currentTimeMillis();
         }
     }
 
@@ -1025,7 +1072,7 @@ public abstract class Bot extends Actor {
             extraXp = (int) (2 * (averageLevel - this.level));
         }
         if (extraXp < 0) extraXp = 0;
-        this.xp += 2 + extraXp;
+        addBotExp(2 + extraXp);
     }
 
     private void checkLevelUp() {
@@ -1042,7 +1089,7 @@ public abstract class Bot extends Actor {
             ExtensionCommands.updateActorData(parentExt, room, id, updateData);
 
             levelUpStats();
-            simulateBackpackLevelUp("belt_champions");
+            simulateBackpackLevelUp();
             levelUpCooldowns();
             // logCooldowns();
 

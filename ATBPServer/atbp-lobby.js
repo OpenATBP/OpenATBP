@@ -536,12 +536,12 @@ function startGame(players, type) {
   if (type.includes('p') && type != 'practice')
     queueSize = Number(type.replace('p', ''));
 
-  var isPvE = queueSize == 3;
+  var isPvB = queueSize == 3;
 
   var blue = [];
   var purple = [];
 
-  if (isPvE) {
+  if (isPvB) {
     for (var p of players) {
       purple.push(p);
     }
@@ -571,7 +571,7 @@ function startGame(players, type) {
     blue: [],
     purple: [],
     ready: 0,
-    max: isPvE ? 3 : queueSize, // if PvE only 3 players need to ready up
+    max: isPvB ? 3 : queueSize, // if PvE only 3 players need to ready up
     inGame: false,
     endTime: Date.now() + 61 * 1000,
   };
@@ -650,7 +650,7 @@ function startGame(players, type) {
       .catch(console.error);
 
     // send blue data only if not PvE
-    if (!isPvE) {
+    if (!isPvB) {
       var gameDataBlue = {
         countdown: 60,
         ip: config.lobbyserver.gameIp,

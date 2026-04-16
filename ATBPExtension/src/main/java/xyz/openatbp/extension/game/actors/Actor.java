@@ -55,6 +55,8 @@ public abstract class Actor {
     protected int xpWorth;
     protected String bundle;
     protected boolean towerAggroCompanion = false;
+    protected Map<Actor, ISFSObject> aggressors = new HashMap<>();
+    protected Map<String, Double> endGameStats = new HashMap<>();
     protected Actor charmer;
     protected Point2D fearMovePoint = null;
     protected Actor fearer;
@@ -77,7 +79,7 @@ public abstract class Actor {
     protected boolean hasKeeothBuff = false;
     protected boolean hasGooBuff = false;
 
-    protected static final int BASIC_ATTACK_DELAY = 500;
+    public static final int BASIC_ATTACK_DELAY = 500;
 
     protected EffectManager effectManager = new EffectManager(this);
 
@@ -99,6 +101,23 @@ public abstract class Actor {
     protected boolean isInsideBrush = false;
 
     protected float lastSyncedMoveSpeed = -1;
+
+    public double getGameStat(String stat) {
+        return this.endGameStats.get(stat);
+    }
+
+    public boolean hasGameStat(String stat) {
+        return this.endGameStats.containsKey(stat);
+    }
+
+    public void addGameStat(String stat, double value) {
+        if (endGameStats.containsKey(stat)) endGameStats.put(stat, endGameStats.get(stat) + value);
+        else setGameStat(stat, value);
+    }
+
+    public void setGameStat(String stat, double value) {
+        this.endGameStats.put(stat, value);
+    }
 
     public boolean isInsideBrush() {
         return isInsideBrush;
@@ -209,6 +228,43 @@ public abstract class Actor {
         this.attackCooldown -= 100;
     }
 
+    public void handleDamageTakenStat(AttackType type, double value) {
+        addGameStat("damageReceivedTotal", value);
+        if (type == AttackType.PHYSICAL) addGameStat("damageReceivedPhysical", value);
+        else addGameStat("damageReceivedSpell", value);
+    }
+
+    public void addDamageGameStat(double value, AttackType type) {
+        addGameStat("damageDealtTotal", value);
+        if (type == AttackType.PHYSICAL) addGameStat("damageDealtPhysical", value);
+        else addGameStat("damageDealtSpell", value);
+    }
+
+    public void increaseStat(String key, double num) {
+        // Console.debugLog("Increasing " + key + " by " + num);
+        stats.put(key, stats.get(key) + num);
+        ExtensionCommands.updateActorData(parentExt, room, id, key, getPlayerStat(key));
+    }
+
+    public Actor getRealKiller(Actor a) {
+        if (!(a instanceof UserActor || a instanceof Bot)) {
+            long lastAttacked = -1;
+            Actor playerOrBot = null;
+            for (int i = 0; i < aggressors.size(); i++) {
+                Actor attacker = (Actor) aggressors.keySet().toArray()[i];
+                if (attacker instanceof UserActor || attacker instanceof Bot) {
+                    long attacked = aggressors.get(attacker).getLong("lastAttacked");
+                    if (lastAttacked == -1 || lastAttacked < attacked) {
+                        lastAttacked = attacked;
+                        playerOrBot = attacker;
+                    }
+                }
+            }
+            if (playerOrBot != null) return playerOrBot;
+        }
+        return a;
+    }
+
     // EFFECTS AND STATS
     public void onStateChange(ActorState state, boolean enabled) {}
 
@@ -242,6 +298,9 @@ public abstract class Actor {
 
     public double getPlayerStat(String stat) {
         double currentStat = this.stats.get(stat);
+        if (stat.equals("kills") || stat.equals("deaths") || stat.equals("assists"))
+            return currentStat;
+
         if (effectManager.isActorIgnored(this)) return currentStat;
 
         if (effectManager.getTempStat(stat) < 0) {
@@ -272,10 +331,21 @@ public abstract class Actor {
         return stats;
     }
 
-    public void addDamageGameStat(UserActor ua, double value, AttackType type) {
-        ua.addGameStat("damageDealtTotal", value);
-        if (type == AttackType.PHYSICAL) ua.addGameStat("damageDealtPhysical", value);
-        else ua.addGameStat("damageDealtSpell", value);
+    protected HashMap<String, Double> initializeChampStats() {
+        HashMap<String, Double> stats = new HashMap<>();
+        stats.put("availableSpellPoints", 1d);
+        for (int i = 1; i < 6; i++) {
+            stats.put("sp_category" + i, 0d);
+        }
+        stats.put("kills", 0d);
+        stats.put("deaths", 0d);
+        stats.put("assists", 0d);
+        JsonNode actorStats = this.parentExt.getActorStats(this.getAvatar());
+        for (Iterator<String> it = actorStats.fieldNames(); it.hasNext(); ) {
+            String k = it.next();
+            stats.put(k, actorStats.get(k).asDouble());
+        }
+        return stats;
     }
 
     public boolean canAttack() {

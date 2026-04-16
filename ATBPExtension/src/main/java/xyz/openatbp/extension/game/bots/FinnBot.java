@@ -44,11 +44,12 @@ public class FinnBot extends Bot {
     public FinnBot(
             ATBPExtension parentExt,
             Room room,
+            int botId,
             String avatar,
             String displayName,
             int team,
             BotMapConfig mapConfig) {
-        super(parentExt, room, avatar, displayName, team, mapConfig);
+        super(parentExt, room, botId, avatar, displayName, team, mapConfig);
         qCooldownMs = 10000;
         wCooldownMs = 12000;
         eCooldownMs = 40000;

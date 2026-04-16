@@ -23,6 +23,7 @@ public class StatModifier {
         this.durationMs = durationMs;
         this.startTime = System.currentTimeMillis();
 
+        // ALL EFFECTS SHOULD PASS A POSITIVE MODIFIER TO THIS!
         if (type == ModifierType.MULTIPLICATIVE) {
             if (intent == ModifierIntent.DEBUFF && statName.equals("attackSpeed")) {
                 this.modifier = 1 + modifier;
@@ -31,8 +32,12 @@ public class StatModifier {
             } else {
                 this.modifier = 1 - modifier;
             }
-        } else {
-            if (intent == ModifierIntent.DEBUFF) modifier *= -1;
+        } else { // ADDITIVE
+            if (statName.equals("attackSpeed")) {
+                if (intent == ModifierIntent.BUFF) modifier *= -1;
+            } else {
+                if (intent == ModifierIntent.DEBUFF) modifier *= -1;
+            }
             this.modifier = modifier;
         }
     }

@@ -63,13 +63,11 @@ public class UserActor extends Actor {
     protected int xp = 0;
     private int deathTime = 10;
     private long timeKilled;
-    protected Map<Actor, ISFSObject> aggressors = new HashMap<>();
     protected String backpack;
     private boolean futureCrystalActive = true;
     protected int magicNailStacks = 0;
     protected int lightningSwordStacks = 0;
     protected double robeStacks = 0;
-    protected Map<String, Double> endGameStats = new HashMap<>();
     protected int killingSpree = 0;
     protected int multiKill = 0;
     protected long lastKilled = System.currentTimeMillis();
@@ -110,6 +108,8 @@ public class UserActor extends Actor {
     protected Map<Actor, Long> lastMagicCubeProc = new HashMap<>();
     protected Point2D queuedDest = null;
 
+    private final int elo;
+
     private static final String DC_BUFF_TIER1_ID = "dc_buff_tier1";
     private static final String DC_BUFF_TIER2_ID = "dc_buff_tier2";
     private static final int DC_BUFF_DURATION = 1000 * 15 * 60;
@@ -123,10 +123,13 @@ public class UserActor extends Actor {
         this.avatar = u.getVariable("player").getSFSObjectValue().getUtfString("avatar");
         this.displayName = u.getVariable("player").getSFSObjectValue().getUtfString("name");
         ISFSObject playerLoc = player.getVariable("location").getSFSObjectValue();
+
+        this.elo = u.getVariable("player").getSFSObjectValue().getInt("elo");
+
         float x = playerLoc.getSFSObject("p1").getFloat("x");
         float z = playerLoc.getSFSObject("p1").getFloat("z");
         this.location = new Point2D.Float(x, z);
-        this.stats = this.initializeStats();
+        this.stats = initializeChampStats();
         this.attackCooldown = this.stats.get("attackSpeed");
         this.currentHealth = this.stats.get("health");
         this.maxHealth = this.currentHealth;
@@ -189,6 +192,10 @@ public class UserActor extends Actor {
         this.canCast[0] = q;
         this.canCast[1] = w;
         this.canCast[2] = e;
+    }
+
+    public int getElo() {
+        return this.elo;
     }
 
     public void setQueuedDest(Point2D dest) {
@@ -367,9 +374,15 @@ public class UserActor extends Actor {
                 }
             }
             int newDamage = damage;
-            if (a.getActorType() == ActorType.PLAYER) {
+
+            if (a instanceof UserActor || a instanceof Bot) {
+                a.addDamageGameStat(newDamage, type);
+                a.addGameStat("damageDealtChamps", newDamage);
+            }
+
+            if (a instanceof UserActor) {
                 UserActor ua = (UserActor) a;
-                this.addDamageGameStat(ua, newDamage, type);
+
                 if (type == AttackType.SPELL
                         && ChampionData.getJunkLevel(ua, "junk_1_fight_king_sword") > 0) {
                     newDamage += 15 * fightKingStacks;
@@ -690,22 +703,8 @@ public class UserActor extends Actor {
             this.setHealth(0, (int) this.maxHealth);
             this.target = null;
             this.killingSpree = 0;
-            Actor realKiller = a;
-            if (a.getActorType() != ActorType.PLAYER) {
-                long lastAttacked = -1;
-                UserActor lastAttacker = null;
-                for (int i = 0; i < aggressors.size(); i++) {
-                    Actor attacker = (Actor) aggressors.keySet().toArray()[i];
-                    if (attacker.getActorType() == ActorType.PLAYER) {
-                        long attacked = aggressors.get(attacker).getLong("lastAttacked");
-                        if (lastAttacked == -1 || lastAttacked < attacked) {
-                            lastAttacked = attacked;
-                            lastAttacker = (UserActor) attacker;
-                        }
-                    }
-                }
-                if (lastAttacker != null) realKiller = lastAttacker;
-            }
+            Actor realKiller = getRealKiller(a);
+
             ExtensionCommands.knockOutActor(
                     parentExt,
                     room,
@@ -732,23 +731,28 @@ public class UserActor extends Actor {
                         realKiller.getId(),
                         (HashMap<Actor, ISFSObject>) this.aggressors);
                 this.increaseStat("deaths", 1);
-                if (realKiller.getActorType() == ActorType.PLAYER) {
-                    UserActor ua = (UserActor) realKiller;
-                    ua.increaseStat("kills", 1);
-                    this.parentExt
-                            .getRoomHandler(this.room.getName())
-                            .addScore(ua, ua.getTeam(), 25);
+
+                if (realKiller instanceof UserActor || realKiller instanceof Bot) {
+                    a.increaseStat("kills", 1);
+                    parentExt.getRoomHandler(this.room.getName()).addScore(a, a.getTeam(), 25);
                 }
                 for (Actor actor : this.aggressors.keySet()) {
                     if (actor.getActorType() == ActorType.PLAYER
                             && !actor.getId().equalsIgnoreCase(realKiller.getId())) {
                         UserActor ua = (UserActor) actor;
                         // ua.updateXPWorth("assist");
-                        ua.addXP(this.getXPWorth());
+                        ua.addXP(getXPWorth());
                         if (ChampionData.getJunkLevel(ua, "junk_5_ghost_pouch") > 0) {
                             ua.useGhostPouch();
                         }
                         ua.increaseStat("assists", 1);
+                    }
+
+                    if (actor instanceof Bot
+                            && !actor.getId().equalsIgnoreCase(realKiller.getId())) {
+                        Bot b = (Bot) actor;
+                        b.increaseStat("assists", 1);
+                        b.addBotExp(getXPWorth());
                     }
                 }
                 // Set<String> buffKeys = this.activeBuffs.keySet();
@@ -807,13 +811,6 @@ public class UserActor extends Actor {
 
     public void updateStat(String key, double value) {
         this.stats.put(key, value);
-        ExtensionCommands.updateActorData(
-                this.parentExt, this.room, this.id, key, this.getPlayerStat(key));
-    }
-
-    public void increaseStat(String key, double num) {
-        // Console.debugLog("Increasing " + key + " by " + num);
-        this.stats.put(key, this.stats.get(key) + num);
         ExtensionCommands.updateActorData(
                 this.parentExt, this.room, this.id, key, this.getPlayerStat(key));
     }
@@ -1058,21 +1055,26 @@ public class UserActor extends Actor {
             for (Actor a : actorsToRemove) {
                 this.aggressors.remove(a);
             }
-            if (System.currentTimeMillis() - this.lastKilled >= 10000) {
-                if (this.multiKill != 0) {
-                    if (this.hasGameStat("largestMulti")) {
-                        double largestMulti = this.getGameStat("largestMulti");
-                        if (this.multiKill > largestMulti)
-                            this.setGameStat("largestMulti", this.multiKill);
-                    } else this.setGameStat("largestMulti", this.multiKill);
-                    this.multiKill = 0;
-                }
-            }
+
+            handleLargestMulti();
+
             if (effectManager.hasTempStat("healthRegen") && currentHealth >= maxHealth) {
                 effectManager.removeAllStatEffects("healthRegen");
             }
         }
         if (this.changeTowerAggro && !isInTowerRadius(this, false)) this.changeTowerAggro = false;
+    }
+
+    protected void handleLargestMulti() {
+        if (System.currentTimeMillis() - this.lastKilled >= 10000) {
+            if (multiKill != 0) {
+                if (hasGameStat("largestMulti")) {
+                    double largestMulti = this.getGameStat("largestMulti");
+                    if (multiKill > largestMulti) setGameStat("largestMulti", this.multiKill);
+                } else setGameStat("largestMulti", this.multiKill);
+                multiKill = 0;
+            }
+        }
     }
 
     private void handleQueuedDest() {
@@ -1374,23 +1376,6 @@ public class UserActor extends Actor {
         return true;
     }
 
-    protected HashMap<String, Double> initializeStats() {
-        HashMap<String, Double> stats = new HashMap<>();
-        stats.put("availableSpellPoints", 1d);
-        for (int i = 1; i < 6; i++) {
-            stats.put("sp_category" + i, 0d);
-        }
-        stats.put("kills", 0d);
-        stats.put("deaths", 0d);
-        stats.put("assists", 0d);
-        JsonNode actorStats = this.parentExt.getActorStats(this.getAvatar());
-        for (Iterator<String> it = actorStats.fieldNames(); it.hasNext(); ) {
-            String k = it.next();
-            stats.put(k, actorStats.get(k).asDouble());
-        }
-        return stats;
-    }
-
     public String getBackpack() {
         return this.backpack;
     }
@@ -1627,35 +1612,6 @@ public class UserActor extends Actor {
             Console.debugLog("Robe stacks: " + this.robeStacks);
             updateStatMenu("coolDownReduction");
         }
-    }
-
-    public void addGameStat(String stat, double value) {
-        if (this.endGameStats.containsKey(stat))
-            this.endGameStats.put(stat, this.endGameStats.get(stat) + value);
-        else this.setGameStat(stat, value);
-    }
-
-    public void setGameStat(String stat, double value) {
-        this.endGameStats.put(stat, value);
-    }
-
-    public void addDamageGameStat(UserActor ua, double value, AttackType type) {
-        super.addDamageGameStat(ua, value, type);
-        ua.addGameStat("damageDealtChamps", value);
-    }
-
-    public void handleDamageTakenStat(AttackType type, double value) {
-        this.addGameStat("damageReceivedTotal", value);
-        if (type == AttackType.PHYSICAL) this.addGameStat("damageReceivedPhysical", value);
-        else this.addGameStat("damageReceivedSpell", value);
-    }
-
-    public double getGameStat(String stat) {
-        return this.endGameStats.get(stat);
-    }
-
-    public boolean hasGameStat(String stat) {
-        return this.endGameStats.containsKey(stat);
     }
 
     public int getSpellDamage(JsonNode attackData, boolean singleTarget) {

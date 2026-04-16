@@ -5,6 +5,7 @@ import java.util.*;
 
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
+import com.smartfoxserver.v2.entities.data.ISFSObject;
 
 import xyz.openatbp.extension.game.GameMap;
 import xyz.openatbp.extension.game.Projectile;
@@ -30,6 +31,8 @@ public class PracticeRoomHandler extends RoomHandler {
         baseTowers.add(new BaseTower(parentExt, room, "purple_tower0", 0));
         baseTowers.add(new BaseTower(parentExt, room, "blue_tower3", 1));
 
+        this.FOUNTAIN_RADIUS = 6f;
+
         for (String key : towers0.keySet()) {
             towers.add(new Tower(parentExt, room, key, 0, towers0.get(key)));
         }
@@ -38,21 +41,37 @@ public class PracticeRoomHandler extends RoomHandler {
         }
 
         if (room.getGroupId().equals(RoomGroup.PRACTICE.name())) {
-            List<String> bots = new ArrayList<>();
-            bot =
-                    GameModeSpawns.createRandomBot(
-                            bots, false, parentExt, room, 1, GameMap.CANDY_STREETS);
-            companions.add(bot);
+            List<ISFSObject> botProfiles = (List<ISFSObject>) room.getProperty("botProfiles");
+            if (botProfiles != null) {
+                ISFSObject botProfile = botProfiles.get(0);
+
+                int botId = botProfile.getInt("botId");
+
+                Bot b =
+                        GameModeSpawns.createSpecificBot(
+                                parentExt,
+                                room,
+                                botId,
+                                botProfile.getUtfString("name"),
+                                botProfile.getUtfString("avatar"),
+                                botProfile.getInt("team"),
+                                botProfile.getUtfString("backpack"),
+                                GameMap.CANDY_STREETS);
+
+                if (b != null) {
+                    bot = b;
+                    companions.add(bot);
+                    endGameChampions.put(botId, bot);
+                }
+            }
         }
-        FOUNTAIN_RADIUS = 6f;
     }
 
     @Override
     public void run() {
-        if (gameOver) return;
         super.run();
         try {
-            if (bot != null && !gameOver) {
+            if (bot != null) {
                 bot.update(mSecondsRan);
             }
         } catch (NullPointerException e) {
@@ -100,36 +119,6 @@ public class PracticeRoomHandler extends RoomHandler {
 
     @Override
     public void handleAltarGameScore(int capturingTeam, int altarIndex) {}
-
-    @Override
-    public void gameOver(int winningTeam) {
-        if (this.gameOver) return;
-        try {
-            this.gameOver = true;
-            this.room.setProperty("state", 3);
-            ExtensionCommands.gameOver(parentExt, room, dcPlayers, winningTeam, false);
-            updateDBCoinsAndAccountXp(winningTeam);
-            // logChampionData(winningTeam);
-
-            for (UserActor ua : this.players) {
-                if (ua.getTeam() == winningTeam) {
-                    ExtensionCommands.playSound(
-                            parentExt, ua.getUser(), "global", "announcer/victory");
-                    ExtensionCommands.playSound(
-                            parentExt, ua.getUser(), "music", "music/music_victory");
-                } else {
-                    ExtensionCommands.playSound(
-                            parentExt, ua.getUser(), "global", "announcer/defeat");
-                    ExtensionCommands.playSound(
-                            parentExt, ua.getUser(), "music", "music/music_defeat");
-                }
-            }
-
-            parentExt.stopScript(room.getName(), false);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     @Override
     public void spawnMonster(String monster) {

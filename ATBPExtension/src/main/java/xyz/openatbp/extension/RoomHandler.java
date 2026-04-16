@@ -18,6 +18,7 @@ import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
 
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
@@ -73,6 +74,8 @@ public abstract class RoomHandler implements Runnable {
     protected int dcWeight = 0;
     protected float FOUNTAIN_RADIUS = 4f;
     protected List<Actor> companions = new ArrayList<>();
+    protected HashMap<Integer, Actor> endGameChampions = new HashMap<>();
+    protected boolean tutorialCoins = false;
 
     protected PathFinder pathFinder;
 
@@ -120,7 +123,9 @@ public abstract class RoomHandler implements Runnable {
 
     public void initPlayers() {
         for (User u : room.getUserList()) {
-            players.add(Champion.getCharacterClass(u, parentExt));
+            UserActor ua = Champion.getCharacterClass(u, parentExt);
+            players.add(ua);
+            endGameChampions.put(u.getId(), ua);
         }
     }
 
@@ -134,7 +139,216 @@ public abstract class RoomHandler implements Runnable {
 
     public abstract void handleAltarGameScore(int capturingTeam, int altarIndex);
 
-    public abstract void gameOver(int winningTeam);
+    public void gameOver(int winningTeam) {
+        if (this.gameOver) return;
+        try {
+            this.gameOver = true;
+            this.room.setProperty("state", 3);
+            ExtensionCommands.gameOver(
+                    parentExt, room, endGameChampions, winningTeam, tutorialCoins);
+            updateDBCoinsAndAccountXp(winningTeam);
+
+            RoomGroup roomGroup = GameManager.getRoomGroupEnum(room.getGroupId());
+
+            if (roomGroup.equals(RoomGroup.RANKED)) {
+                logChampionData(winningTeam);
+                logMatchHistory(winningTeam);
+            }
+            for (UserActor ua : players) {
+                if (ua.getTeam() == winningTeam) {
+                    if (!GameManager.getRoomGroupEnum(room.getGroupId())
+                            .equals(RoomGroup.TUTORIAL)) {
+                        ExtensionCommands.playSound(
+                                parentExt, ua.getUser(), "global", "announcer/victory");
+                    }
+                    ExtensionCommands.playSound(
+                            parentExt, ua.getUser(), "music", "music/music_victory");
+                } else {
+                    ExtensionCommands.playSound(
+                            parentExt, ua.getUser(), "global", "announcer/defeat");
+                    ExtensionCommands.playSound(
+                            parentExt, ua.getUser(), "music", "music/music_defeat");
+                }
+
+                if (roomGroup.equals(RoomGroup.RANKED)) {
+                    MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
+                    String tegID = (String) ua.getUser().getSession().getProperty("tegid");
+                    Document data = playerData.find(eq("user.TEGid", tegID)).first();
+                    if (data != null) {
+                        ObjectMapper mapper = new ObjectMapper();
+                        JsonNode dataObj = mapper.readTree(data.toJson());
+                        int wins = 0;
+                        int points = 0;
+                        int kills = (int) ua.getStat("kills");
+                        int deaths = (int) ua.getStat("deaths");
+                        int assists = (int) ua.getStat("assists");
+                        int towers = 0;
+                        int minions = 0;
+                        int jungleMobs = 0;
+                        int altars = 0;
+                        int largestSpree = 0;
+                        int largestMulti = 0;
+                        int score = 0;
+
+                        double win;
+                        if (winningTeam == -1) win = 0.5d;
+                        else if (ua.getTeam() == winningTeam) win = 1d;
+                        else win = 0d;
+                        int eloGain = win > 0 ? 1 : 0;
+                        int currentElo = dataObj.get("player").get("elo").asInt();
+                        int currentTier = ChampionData.getTier(currentElo);
+                        if (ChampionData.getTier(currentElo + eloGain) < currentTier
+                                && currentElo != ChampionData.ELO_TIERS[currentTier] + 1) {
+                            eloGain =
+                                    (int) ((ChampionData.ELO_TIERS[currentTier] + 1) - currentElo);
+                        }
+                        for (double tierElo : ChampionData.ELO_TIERS) {
+                            if (currentElo + eloGain + 1 == (int) tierElo) {
+                                eloGain++;
+                                break;
+                            }
+                        }
+                        if (currentElo + eloGain < 0) eloGain = currentElo * -1;
+                        if (ua.getTeam() == winningTeam) wins++;
+
+                        boolean updateSpree = false;
+                        boolean updateMulti = false;
+                        boolean updateHighestScore = false;
+
+                        if (ua.hasGameStat("score")) {
+                            score += ua.getGameStat("score");
+                            int currentHighestScore =
+                                    dataObj.get("player").get("scoreHighest").asInt();
+                            if (score > currentHighestScore) {
+                                updateHighestScore = true;
+                            }
+                        }
+                        if (ua.hasGameStat("towers")) towers += ua.getGameStat("towers");
+                        if (ua.hasGameStat("minions")) minions += ua.getGameStat("minions");
+                        if (ua.hasGameStat("jungleMobs"))
+                            jungleMobs += ua.getGameStat("jungleMobs");
+
+                        if (ua.hasGameStat("spree")) {
+                            int currentSpree = dataObj.get("player").get("largestSpree").asInt();
+                            double gameSpree = ua.getGameStat("spree");
+                            if (gameSpree > currentSpree) {
+                                updateSpree = true;
+                                largestSpree = (int) gameSpree;
+                            }
+                        }
+
+                        if (ua.hasGameStat("largestMulti")) {
+                            int currentMulti = dataObj.get("player").get("largestMulti").asInt();
+                            double gameMulti = ua.getGameStat("largestMulti");
+                            if (gameMulti > currentMulti) {
+                                updateMulti = true;
+                                largestMulti = (int) gameMulti;
+                            }
+                        }
+                        List<Bson> updateList = new ArrayList<>();
+
+                        updateList.add(Updates.inc("player.playsPVP", 1));
+                        updateList.add(
+                                Updates.set(
+                                        "player.tier", ChampionData.getTier(currentElo + eloGain)));
+                        updateList.add(Updates.inc("player.elo", eloGain));
+                        updateList.add(Updates.inc("player.winsPVP", wins));
+                        updateList.add(
+                                Updates.inc(
+                                        "player.points",
+                                        points)); // Always zero I have no idea what this is
+                        // for?;
+                        updateList.add(Updates.inc("player.kills", kills));
+                        updateList.add(Updates.inc("player.deaths", deaths));
+                        updateList.add(Updates.inc("player.assists", assists));
+                        updateList.add(Updates.inc("player.towers", towers));
+                        updateList.add(Updates.inc("player.minions", minions));
+                        updateList.add(Updates.inc("player.jungleMobs", jungleMobs));
+                        updateList.add(Updates.inc("player.altars", altars));
+                        updateList.add(Updates.inc("player.scoreTotal", score));
+
+                        if (updateSpree) {
+                            updateList.add(Updates.set("player.largestSpree", largestSpree));
+                        }
+                        if (updateMulti) {
+                            updateList.add(Updates.set("player.largestMulti", largestMulti));
+                        }
+                        if (updateHighestScore) {
+                            updateList.add(Updates.set("player.scoreHighest", score));
+                        }
+
+                        Bson updates = Updates.combine(updateList);
+                        UpdateOptions options = new UpdateOptions().upsert(true);
+                        Console.debugLog(playerData.updateOne(data, updates, options));
+                    }
+                }
+            }
+            parentExt.stopScript(room.getName(), false);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void logMatchHistory(int winningTeam) {
+        final String[] STATS = {
+            "damageDealtChamps",
+            "damageReceivedPhysical",
+            "damageReceivedSpell",
+            "spree",
+            "damageReceivedTotal",
+            "damageDealtSpell",
+            "score",
+            "timeDead",
+            "damageDealtTotal",
+            "damageDealtPhysical"
+        };
+        Console.debugLog("Started to log...");
+        MongoCollection<Document> collection = this.parentExt.getMatchHistoryDatabase();
+        ObjectId objId = new ObjectId();
+        Document newDoc = new Document().append("_id", objId).append("winner", winningTeam);
+        ArrayList<Bson> updateList = new ArrayList<>();
+        Document teamA = new Document();
+        Document teamB = new Document();
+        for (UserActor ua : this.players) {
+            Document pDoc = new Document();
+            double win;
+            if (winningTeam == -1) win = 0.5d;
+            else if (ua.getTeam() == winningTeam) win = 1d;
+            else win = 0d;
+            pDoc.append("kills", ua.getStat("kills"));
+            pDoc.append("deaths", ua.getStat("deaths"));
+            pDoc.append("assists", ua.getStat("assists"));
+            pDoc.append("champion", ua.getAvatar().split("_")[0]);
+            for (String s : STATS) {
+                if (ua.hasGameStat(s)) pDoc.append(s, ua.getGameStat(s));
+            }
+            pDoc.append(
+                    "elo", ua.getUser().getVariable("player").getSFSObjectValue().getInt("elo"));
+            pDoc.append("eloGain", win > 0 ? 1 : 0);
+            if (ua.getTeam() == 0) teamA.append(ua.getDisplayName(), pDoc);
+            else teamB.append(ua.getDisplayName(), pDoc);
+        }
+        updateList.add(Updates.set("0", teamA));
+        updateList.add(Updates.set("1", teamB));
+        Bson updates = Updates.combine(updateList);
+        Console.debugLog(collection.updateOne(newDoc, updates, new UpdateOptions().upsert(true)));
+        for (UserActor ua : this.players) {
+            String tegID = (String) ua.getUser().getSession().getProperty("tegid");
+            MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
+            Document data = playerData.find(eq("user.TEGid", tegID)).first();
+            if (data != null) {
+                try {
+                    List<Bson> updateList2 = new ArrayList<>();
+                    updateList2.add(Updates.addToSet("history", objId));
+                    Bson updates2 = Updates.combine(updateList2);
+                    UpdateOptions options = new UpdateOptions().upsert(true);
+                    Console.debugLog(playerData.updateOne(data, updates2, options));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 
     public abstract void spawnMonster(String monster);
 
@@ -189,6 +403,10 @@ public abstract class RoomHandler implements Runnable {
                 .filter(a -> !towerFilter || a.getActorType() != ActorType.TOWER)
                 .filter(a -> !baseFilter || a.getActorType() != ActorType.BASE)
                 .collect(Collectors.toList());
+    }
+
+    public Map<Integer, Actor> getEndGameChampions() {
+        return endGameChampions;
     }
 
     public ScheduledFuture<?> getScriptHandler() {
@@ -1297,7 +1515,7 @@ public abstract class RoomHandler implements Runnable {
         }
     }
 
-    public void addScore(UserActor earner, int team, int points) {
+    public void addScore(Actor earner, int team, int points) {
         ISFSObject scoreObject = room.getVariable("score").getSFSObjectValue();
         int blueScore = scoreObject.getInt("blue");
         int purpleScore = scoreObject.getInt("purple");

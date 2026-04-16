@@ -14,7 +14,6 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
@@ -363,6 +362,11 @@ public class Jake extends UserActor {
         }
 
         @Override
+        public boolean isTargetable(Actor a) {
+            return super.isTargetable(a) && a.isNotLeaping();
+        }
+
+        @Override
         protected void hit(Actor victim) {
             JsonNode spellData = parentExt.getAttackData(getChampionName(avatar), "spell1");
 
@@ -402,8 +406,6 @@ public class Jake extends UserActor {
             Point2D finalPullPoint =
                     pf.getStoppingPoint(
                             victim.getLocation(), initialPullPoint, Q_VICTIM_SEPARATION);
-
-            Console.debugLog("Pull distance: " + victim.getLocation().distance(finalPullPoint));
 
             float finalDistance = (float) victim.getLocation().distance(finalPullPoint);
 

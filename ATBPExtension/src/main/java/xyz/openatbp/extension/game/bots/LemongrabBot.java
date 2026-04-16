@@ -32,11 +32,12 @@ public class LemongrabBot extends Bot {
     public LemongrabBot(
             ATBPExtension parentExt,
             Room room,
+            int botId,
             String avatar,
             String displayName,
             int team,
             BotMapConfig mapConfig) {
-        super(parentExt, room, avatar, displayName, team, mapConfig);
+        super(parentExt, room, botId, avatar, displayName, team, mapConfig);
 
         this.qCooldownMs = 10000;
         this.wCooldownMs = 12000;

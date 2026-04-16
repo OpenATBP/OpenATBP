@@ -249,7 +249,7 @@ public class Minion extends Actor {
                     ua.addXP(xpWorth);
                 } else if (actor instanceof Bot) {
                     Bot b = (Bot) actor;
-                    b.increaseXp(xpValue);
+                    b.addBotExp(xpWorth);
                 }
             }
         }
@@ -289,8 +289,7 @@ public class Minion extends Actor {
             }
             AttackType type = this.getAttackType(attackData);
             int newDamage = this.getMitigatedDamage(damage, type, a);
-            if (a.getActorType() == ActorType.PLAYER)
-                this.addDamageGameStat((UserActor) a, newDamage, type);
+            if (a instanceof UserActor || a instanceof Bot) a.addDamageGameStat(newDamage, type);
             this.changeHealth(newDamage * -1);
             // Minion dies
             return currentHealth <= 0;

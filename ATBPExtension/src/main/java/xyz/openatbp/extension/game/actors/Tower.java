@@ -230,13 +230,15 @@ public class Tower extends Actor {
                 String s = getTowerDownSound(ua);
                 ExtensionCommands.playSound(parentExt, ua.getUser(), "global", "announcer/" + s);
             }
-            UserActor earner = null;
-            if (a.getActorType() == ActorType.PLAYER) {
-                UserActor ua = (UserActor) a;
-                earner = (UserActor) a;
-                ua.addGameStat("towers", 1);
+
+            Actor earner = null;
+
+            if (a instanceof UserActor || a instanceof Bot) {
+                earner = a;
+                a.addGameStat("towers", 1);
             }
-            this.parentExt
+
+            parentExt
                     .getRoomHandler(this.room.getName())
                     .addScore(earner, a.getTeam(), SCORE_VALUE);
         }

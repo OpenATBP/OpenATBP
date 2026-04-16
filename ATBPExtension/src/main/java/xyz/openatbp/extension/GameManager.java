@@ -18,6 +18,7 @@ import com.smartfoxserver.v2.exceptions.SFSVariableException;
 
 import xyz.openatbp.extension.game.GameMap;
 import xyz.openatbp.extension.game.RoomGroup;
+import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class GameManager {
@@ -377,8 +378,7 @@ public class GameManager {
     }
 
     public static JsonNode getTeamData(
-            ATBPExtension parentExt,
-            HashMap<User, UserActor> dcPlayers,
+            HashMap<Integer, Actor> endGameChampions,
             int team,
             Room room,
             boolean tutorialCoins,
@@ -424,54 +424,38 @@ public class GameManager {
         if (tutorialCoins) coins = TUTORIAL_COINS;
 
         ObjectNode node = objectMapper.createObjectNode();
-        for (User u : room.getUserList()) {
-            UserActor ua =
-                    parentExt.getRoomHandler(room.getName()).getPlayer(String.valueOf(u.getId()));
-            if (ua.getTeam() == team) {
-                ObjectNode player = objectMapper.createObjectNode();
-                ISFSObject playerVar = u.getVariable("player").getSFSObjectValue();
-                player.put("id", u.getId());
+
+        for (Actor a : endGameChampions.values()) {
+
+            if (a.getTeam() == team) {
+                ObjectNode endGameChampion = objectMapper.createObjectNode();
+
+                endGameChampion.put("id", Integer.parseInt(a.getId()));
+
                 for (String s : STATS) {
-                    if (ua.hasGameStat(s)) player.put(s, ua.getGameStat(s));
+                    if (a.hasGameStat(s)) endGameChampion.put(s, a.getGameStat(s));
                 }
-                player.put("name", playerVar.getUtfString("name"));
-                player.put("kills", ua.getStat("kills"));
-                player.put("deaths", ua.getStat("deaths"));
-                player.put("assists", ua.getStat("assists"));
-                player.put("playerName", ua.getFrame());
-                player.put("myElo", (double) playerVar.getInt("elo"));
-                player.put("coins", coins);
-                player.put("prestigePoints", prestigePoints);
-                node.set(String.valueOf(u.getId()), player);
-            }
-        }
-        if (!dcPlayers.isEmpty()) {
-            for (Map.Entry<User, UserActor> entry : dcPlayers.entrySet()) {
-                UserActor ua = entry.getValue();
-                if (ua.getTeam() == team) {
-                    ObjectNode player = objectMapper.createObjectNode();
-                    User u = entry.getKey();
-                    ISFSObject playerVar = u.getVariable("player").getSFSObjectValue();
-                    for (String s : STATS) {
-                        if (ua.hasGameStat(s)) player.put(s, ua.getGameStat(s));
-                    }
-                    player.put("name", playerVar.getUtfString("name"));
-                    player.put("kills", ua.getStat("kills"));
-                    player.put("deaths", ua.getStat("deaths"));
-                    player.put("assists", ua.getStat("assists"));
-                    player.put("playerName", ua.getFrame());
-                    player.put("myElo", (double) playerVar.getInt("elo"));
-                    player.put("coins", coins);
-                    player.put("prestigePoints", prestigePoints);
-                    node.set(String.valueOf(u.getId()), player);
+
+                int elo = 0;
+                if (a instanceof UserActor) {
+                    elo = ((UserActor) a).getElo();
                 }
+
+                endGameChampion.put("name", a.getDisplayName());
+                endGameChampion.put("kills", a.getStat("kills"));
+                endGameChampion.put("deaths", a.getStat("deaths"));
+                endGameChampion.put("assists", a.getStat("assists"));
+                endGameChampion.put("playerName", a.getFrame());
+                endGameChampion.put("myElo", elo);
+                endGameChampion.put("coins", coins);
+                endGameChampion.put("prestigePoints", prestigePoints);
+                node.set(a.getId(), endGameChampion);
             }
         }
         return node;
     }
 
-    public static JsonNode getGlobalTeamData(
-            ATBPExtension parentExt, HashMap<User, UserActor> dcPlayers, Room room) {
+    public static JsonNode getGlobalTeamData(Room room, Map<Integer, Actor> endGameChampions) {
         double killsA = 0;
         double killsB = 0;
         double deathsA = 0;
@@ -481,29 +465,15 @@ public class GameManager {
         double scoreA = 0;
         double scoreB = 0;
 
-        for (UserActor ua : parentExt.getRoomHandler(room.getName()).getPlayers()) {
-            if (ua.getTeam() == 0) {
-                killsA += ua.getStat("kills");
-                deathsA += ua.getStat("deaths");
-                assistsA += ua.getStat("assists");
+        for (Actor a : endGameChampions.values()) {
+            if (a.getTeam() == 0) {
+                killsA += a.getStat("kills");
+                deathsA += a.getStat("deaths");
+                assistsA += a.getStat("assists");
             } else {
-                killsB += ua.getStat("kills");
-                deathsB += ua.getStat("deaths");
-                assistsB += ua.getStat("assists");
-            }
-        }
-        if (!dcPlayers.isEmpty()) {
-            for (Map.Entry<User, UserActor> entry : dcPlayers.entrySet()) {
-                UserActor ua = entry.getValue();
-                if (ua.getTeam() == 0) {
-                    killsA += ua.getStat("kills");
-                    deathsA += ua.getStat("deaths");
-                    assistsA += ua.getStat("assists");
-                } else {
-                    killsB += ua.getStat("kills");
-                    deathsB += ua.getStat("deaths");
-                    assistsB += ua.getStat("assists");
-                }
+                killsB += a.getStat("kills");
+                deathsB += a.getStat("deaths");
+                assistsB += a.getStat("assists");
             }
         }
         ISFSObject scoreObject = room.getVariable("score").getSFSObjectValue();

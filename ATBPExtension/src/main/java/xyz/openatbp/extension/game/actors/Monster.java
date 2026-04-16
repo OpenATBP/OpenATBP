@@ -132,8 +132,9 @@ public class Monster extends Actor {
             }
             AttackType attackType = this.getAttackType(attackData);
             int newDamage = this.getMitigatedDamage(damage, attackType, a);
-            if (a.getActorType() == ActorType.PLAYER)
-                this.addDamageGameStat((UserActor) a, newDamage, attackType);
+            if (a instanceof UserActor || a instanceof Bot) {
+                a.addDamageGameStat(newDamage, attackType);
+            }
             boolean returnVal = super.damaged(a, newDamage, attackData);
             if (!this.headingBack && isProperActor(a)) { // attacks the nearest attacker
                 state = AggroState.ATTACKED;

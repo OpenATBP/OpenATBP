@@ -1,5 +1,6 @@
 package xyz.openatbp.extension.game.effects;
 
+import static xyz.openatbp.extension.game.actors.Actor.BASIC_ATTACK_DELAY;
 import static xyz.openatbp.extension.game.champions.FlamePrincess.W_POLY_DURATION;
 
 import java.util.*;
@@ -292,8 +293,14 @@ public class EffectManager {
     }
 
     public double getTempStat(String stat) {
-        if (tempStats == null) return actor.getStats().get(stat);
-        return tempStats.getOrDefault(stat, actor.getStats().get(stat));
+        double val;
+        if (tempStats == null) val = actor.getStats().get(stat);
+        else val = tempStats.getOrDefault(stat, actor.getStats().get(stat));
+
+        if (stat.equals("attackSpeed")) {
+            return Math.max(val, BASIC_ATTACK_DELAY);
+        }
+        return Math.max(val, 0);
     }
 
     public boolean hasTempStat(String stat) {

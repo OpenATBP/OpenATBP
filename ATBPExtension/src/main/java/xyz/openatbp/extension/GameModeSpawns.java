@@ -1,8 +1,6 @@
 package xyz.openatbp.extension;
 
 import java.awt.geom.Point2D;
-import java.util.List;
-import java.util.Random;
 
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -194,13 +192,18 @@ public class GameModeSpawns {
         return guardian;
     }
 
-    public static Bot createRandomBot(
-            List<String> botAvatars,
-            boolean duplicatesAllowed,
+    public static Bot createSpecificBot(
             ATBPExtension parentExt,
             Room room,
+            int botId,
+            String displayName,
+            String avatar,
             int team,
+            String backpack,
             GameMap gameMap) {
+        // NOTE: TAB VIEW WORKS ONLY IF 'addUser' AND 'createActor' USED
+        // WITH THE SAME ID
+
         BotMapConfig mapConfig = null;
 
         switch (gameMap) {
@@ -212,38 +215,17 @@ public class GameModeSpawns {
                 break;
         }
 
-        String[] avatars = {"finn", "iceking", "jake", "lemongrab"};
-        String[] names = {"FINN BOT", "ICE KING BOT", "JAKE BOT", "LEMONGRAB BOT"};
-
-        Random rand = new Random();
-
-        int randomIndex;
-        String avatar;
-        String displayName;
-
-        if (!duplicatesAllowed) {
-            do {
-                randomIndex = rand.nextInt(avatars.length);
-                avatar = avatars[randomIndex];
-                displayName = names[randomIndex];
-            } while (botAvatars.contains(avatar));
-        } else {
-            randomIndex = rand.nextInt(avatars.length);
-            avatar = avatars[randomIndex];
-            displayName = names[randomIndex];
-        }
-
         switch (avatar) {
             case "finn":
-                return new FinnBot(parentExt, room, avatar, displayName, team, mapConfig);
+                return new FinnBot(parentExt, room, botId, avatar, displayName, team, mapConfig);
             case "iceking":
-                return new IceKingBot(parentExt, room, avatar, displayName, team, mapConfig);
+                return new IceKingBot(parentExt, room, botId, avatar, displayName, team, mapConfig);
             case "jake":
-                return new JakeBot(parentExt, room, avatar, displayName, team, mapConfig);
+                return new JakeBot(parentExt, room, botId, avatar, displayName, team, mapConfig);
             case "lemongrab":
-                return new LemongrabBot(parentExt, room, avatar, displayName, team, mapConfig);
+                return new LemongrabBot(
+                        parentExt, room, botId, avatar, displayName, team, mapConfig);
         }
-
         return null;
     }
 }

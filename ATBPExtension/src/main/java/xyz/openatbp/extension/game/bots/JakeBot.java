@@ -43,11 +43,12 @@ public class JakeBot extends Bot {
     public JakeBot(
             ATBPExtension parentExt,
             Room room,
+            int botId,
             String avatar,
             String displayName,
             int team,
             BotMapConfig mapConfig) {
-        super(parentExt, room, avatar, displayName, team, mapConfig);
+        super(parentExt, room, botId, avatar, displayName, team, mapConfig);
 
         qCooldownMs = 12000;
         wCooldownMs = 14000;
@@ -445,6 +446,11 @@ public class JakeBot extends Bot {
                 float rectangleHeight,
                 String projectileAsset) {
             super(parentExt, owner, path, speed, offsetDistance, rectangleHeight, projectileAsset);
+        }
+
+        @Override
+        public boolean isTargetable(Actor a) {
+            return super.isTargetable(a) && a.isNotLeaping();
         }
 
         @Override
