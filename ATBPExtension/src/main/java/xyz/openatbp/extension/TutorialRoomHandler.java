@@ -15,7 +15,6 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import com.smartfoxserver.v2.entities.Room;
-import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 
 import xyz.openatbp.extension.game.BotMapConfig;
@@ -562,13 +561,6 @@ public class TutorialRoomHandler extends RoomHandler {
             z = 0;
         }
         return new Point2D.Float(x, z);
-    }
-
-    @Override
-    public void handlePlayerDC(User user) {
-        UserActor player = this.getPlayer(String.valueOf(user.getId()));
-        player.destroy();
-        this.players.removeIf(p -> p.getId().equalsIgnoreCase(String.valueOf(user.getId())));
     }
 
     @Override

@@ -482,7 +482,7 @@ public class ChooseGoose extends UserActor {
 
     private void fireProjectile(Point2D dest, JsonNode spellData) {
         float range = 7f;
-        Line2D line = Champion.getAbilityLine(location, dest, range);
+        Line2D line = Champion.createLineTowards(location, dest, range);
         String asset = "projectile_choosegoose";
 
         GooseProjectile projectile =

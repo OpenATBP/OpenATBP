@@ -126,7 +126,7 @@ public class MagicMan extends UserActor {
                             "vo/vo_magicman_snakes",
                             this.location);
 
-                    Point2D endPoint = Champion.getAbilityLine(location, dest, 9.5f).getP2();
+                    Point2D endPoint = Champion.createLineTowards(location, dest, 9.5f).getP2();
                     Line2D pathSP = new Line2D.Float(location, endPoint);
 
                     Line2D pathSP2 = Champion.getRotatedLine(location, endPoint, Q_ANGLE);
@@ -189,7 +189,7 @@ public class MagicMan extends UserActor {
 
                         wLocation = new Point2D.Double(this.location.getX(), this.location.getY());
                         Point2D endLocation =
-                                Champion.getAbilityLine(this.wLocation, dest, 100f).getP2();
+                                Champion.createLineTowards(this.wLocation, dest, 100f).getP2();
 
                         this.wDest = pf.getIntersectionPoint(location, endLocation);
 
@@ -450,7 +450,7 @@ public class MagicMan extends UserActor {
             this.stats = initializeStats();
             ExtensionCommands.createActor(parentExt, room, id, avatar, location, 0f, team);
 
-            startMoveTo(MagicMan.this.wDest);
+            startMoveTo(MagicMan.this.wDest, false);
         }
 
         @Override

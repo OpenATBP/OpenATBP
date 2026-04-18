@@ -62,6 +62,7 @@ public class PracticeRoomHandler extends RoomHandler {
                     bot = b;
                     companions.add(bot);
                     endGameChampions.put(botId, bot);
+                    champions.add(bot);
                 }
             }
         }
@@ -187,72 +188,6 @@ public class PracticeRoomHandler extends RoomHandler {
             z = 0;
         }
         return new Point2D.Float(x, z);
-    }
-
-    @Override
-    public void handlePlayerDC(User user) {
-        if (this.players.size() == 1) return;
-        UserActor player = this.getPlayer(String.valueOf(user.getId()));
-        this.dcPlayers.put(user, player);
-        player.destroy();
-        this.players.removeIf(p -> p.getId().equalsIgnoreCase(String.valueOf(user.getId())));
-
-        int team = player.getTeam();
-        int teamMembersLeft = 0;
-        for (UserActor p : players) {
-            if (p.getTeam() == team) {
-                teamMembersLeft++;
-                break;
-            }
-        }
-        int purpleTeamSize = 0;
-        int blueTeamSize = 0;
-        for (UserActor p : players) {
-            if (p.getTeam() == 0) {
-                purpleTeamSize++;
-            } else if (p.getTeam() == 1) {
-                blueTeamSize++;
-            }
-        }
-        int teamSizeDiff = blueTeamSize - purpleTeamSize;
-        int oppositeTeam = 0;
-        if (team == 0) oppositeTeam = 1;
-        if (teamMembersLeft == 0) this.gameOver(oppositeTeam);
-        else {
-            for (UserActor p : this.players) {
-                if (purpleTeamSize == 3 && blueTeamSize == 2) {
-                    if (p.getTeam() == team) {
-                        p.handleDCBuff(teamSizeDiff, false);
-                    }
-                } else if (purpleTeamSize == 3 && blueTeamSize == 1) {
-                    if (p.getTeam() == team) {
-                        p.handleDCBuff(teamSizeDiff, false);
-                    }
-                } else if (purpleTeamSize == 2 && blueTeamSize == 1) {
-                    if (p.getTeam() != team) {
-                        p.handleDCBuff(teamSizeDiff, true);
-                    } else if (p.getTeam() == 1) {
-                        p.handleDCBuff(teamSizeDiff, false);
-                    }
-                } else if (purpleTeamSize == 2 && blueTeamSize == 3) {
-                    if (p.getTeam() == team) {
-                        p.handleDCBuff(teamSizeDiff, false);
-                    }
-                } else if (purpleTeamSize == 1 && blueTeamSize == 3) {
-                    if (p.getTeam() == team) {
-                        p.handleDCBuff(teamSizeDiff, false);
-                    }
-                } else if (purpleTeamSize == 1 && blueTeamSize == 2) {
-                    if (p.getTeam() != team) {
-                        p.handleDCBuff(teamSizeDiff, true);
-                    } else if (p.getTeam() == 0) {
-                        p.handleDCBuff(teamSizeDiff, false);
-                    }
-                } else if (purpleTeamSize == blueTeamSize) {
-                    p.handleDCBuff(teamSizeDiff, false);
-                }
-            }
-        }
     }
 
     @Override

@@ -210,6 +210,11 @@ public class Minion extends Actor {
             stopMoving();
         }
 
+        if (a instanceof Bot) {
+            RoomHandler rh = parentExt.getRoomHandler(room.getName());
+            rh.addScore(a, a.getTeam(), 1);
+        }
+
         this.dead = true;
         if (a.getActorType() == ActorType.PLAYER || a.getActorType() == ActorType.COMPANION) {
             UserActor ua = null;
@@ -241,7 +246,6 @@ public class Minion extends Actor {
             List<Actor> enemies = Champion.getEnemyActorsInRadius(rh, team, location, XP_RADIUS);
             enemies.removeIf(e -> !(e instanceof UserActor || e instanceof Bot));
 
-            int xpValue = (int) (xpWorth / 2.0);
             for (Actor actor : enemies) {
 
                 if (actor instanceof UserActor) {
@@ -328,6 +332,7 @@ public class Minion extends Actor {
                                 || a instanceof Tower
                                 || a instanceof Base
                                 || a instanceof Minion));
+        enemiesInAggro.removeIf(Actor::isDead);
 
         // if enemies are in aggro range, attack best target
         if (!enemiesInAggro.isEmpty()) {
@@ -383,7 +388,7 @@ public class Minion extends Actor {
                         attack(target);
 
                     } else if (dist > attackRange && canMove()) {
-                        startMoveTo(target.getLocation());
+                        startMoveTo(target.getLocation(), false);
                     }
                 }
                 break;
@@ -396,7 +401,7 @@ public class Minion extends Actor {
                     // movement command that it's still executing?
                     Point2D laneDestination = getLaneDestination();
                     if (laneDestination != null && canMove()) {
-                        startMoveTo(laneDestination);
+                        startMoveTo(laneDestination, false);
                     }
                 }
                 break;
@@ -449,13 +454,18 @@ public class Minion extends Actor {
             }
         }
         if (canMove()) {
-            startMoveTo(new Point2D.Float(newX, newY));
+            startMoveTo(new Point2D.Float(newX, newY), false);
         }
     }
 
     private Actor getBestTarget(List<Actor> enemiesInAggro) {
         double distanceNonChampion = 1000, distanceChampion = 10000;
         Actor nonChampionTarget = null, championTarget = null;
+
+        enemiesInAggro.removeIf(
+                a ->
+                        a.getAvatar().equals("neptr_mine")
+                                || a.getAvatar().equals("choosegoose_chest"));
 
         for (Actor e : enemiesInAggro) {
             if (e instanceof UserActor || e instanceof Bot) {
@@ -466,9 +476,7 @@ public class Minion extends Actor {
                         championTarget = e;
                     }
                 }
-            } else if (e instanceof Minion
-                    || e instanceof Tower
-                    || e instanceof Base) { // TODO: MAGIC MAN CLONE AND NEPTR PIE?
+            } else if (e instanceof Minion || e instanceof Tower || e instanceof Base) {
                 double distance = e.getLocation().distance(location);
                 if (distance < distanceNonChampion) {
                     distanceNonChampion = distance;
@@ -619,25 +627,5 @@ public class Minion extends Actor {
             lanePoints = team == 0 ? practicePurpleLanePoints : practiceBlueLanePoints;
         }
         return lanePoints;
-    }
-
-    private boolean actorsToIgnore(String avatar, String id) {
-        return avatar.equals("neptr_mine")
-                || avatar.equals("choosegoose_chest")
-                || id.contains("decoy");
-    }
-
-    private void moveTowardsTarget() {
-        if (this.target == null) return;
-        if (this.withinRange(this.target)) return;
-
-        double attackRange = this.getPlayerStat("attackRange");
-
-        if (movePointsToDest != null && !movePointsToDest.isEmpty()) {
-            Point2D lastMovePoint = movePointsToDest.get(movePointsToDest.size() - 1);
-            if (target.getLocation().distance(lastMovePoint) > attackRange && canMove()) {
-                startMoveTo(target.getLocation());
-            }
-        }
     }
 }

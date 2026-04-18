@@ -16,7 +16,7 @@ import xyz.openatbp.extension.game.effects.ModifierType;
 import xyz.openatbp.extension.pathfinding.PathFinder;
 
 public class PeppermintButler extends UserActor {
-    private static final double PASSIVE_HP_REG_PERCENT = 0.02d;
+    private static final double PASSIVE_HP_REG_PERCENT = 1.5;
     private static final int PASSIVE_TIME = 1750;
     private static final int PASSIVE_IMMUNITY_DURATION = 2000;
 
@@ -35,13 +35,18 @@ public class PeppermintButler extends UserActor {
     private static final double E_RANGE_VALUE = 0.5d;
     public static final int PASSIVE_ACTIVATION_DELAY = 500;
 
+    private final String PASSIVE_REGEN_ID;
+    private final String E_AS_ID;
+    private final String E_AD_ID;
+    private final String E_SPEED_ID;
+    private final String E_RANGE_ID;
+
     private int timeStopped = 0;
     private boolean qActive = false;
-    private boolean stopPassive = false;
     private boolean ultActive = false;
     private long qStartTime = 0;
     private long ultStartTime = 0;
-    private Point2D passiveLocation = null;
+
     private static final int E_DURATION = 7000;
 
     private boolean wActivated = false;
@@ -49,7 +54,10 @@ public class PeppermintButler extends UserActor {
     private Long wStartTime;
     private Point2D dashDestination;
     private boolean dashStarted = false;
-    private boolean passiveRunnableActive = false;
+
+    private Point2D passiveLocation = null;
+    private boolean passiveRunnableScheduled = false;
+    private boolean passiveActive = false;
 
     private enum Form {
         NORMAL,
@@ -60,22 +68,18 @@ public class PeppermintButler extends UserActor {
 
     public PeppermintButler(User u, ATBPExtension parentExt) {
         super(u, parentExt);
-        this.customPolySwap = true;
-    }
-
-    private void wEnd() {
-        performWAttack();
-        handleWCD();
+        this.hasCustomSwapToPoly = true;
+        this.hasCustomSwapFromPoly = true;
+        PASSIVE_REGEN_ID = id + "_pepbut_passive_regen";
+        E_AS_ID = id + "_pepbut_e_as";
+        E_AD_ID = id + "_pepbut_e_ad";
+        E_SPEED_ID = id + "_pepbut_e_speed";
+        E_RANGE_ID = id + "_pepbut_e_range";
     }
 
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if (passiveLocation != null && location.distance(passiveLocation) > 0.001) {
-            stopPassive = true;
-            passiveRunnableActive = false;
-            timeStopped = 0;
-        }
         if (ultActive && System.currentTimeMillis() - ultStartTime >= E_DURATION) {
             endUlt();
         }
@@ -83,81 +87,40 @@ public class PeppermintButler extends UserActor {
             qActive = false;
         }
 
-        if (isStopped()
-                && !qActive
-                && !stopPassive
-                && form != Form.FERAL
-                && !isCapturingAltar()
-                && !dead) {
-            passiveLocation = location;
+        if (countPassiveTimeToActivation() && timeStopped < PASSIVE_TIME && !passiveActive) {
             timeStopped += 100;
-
-            if (timeStopped >= PASSIVE_TIME
-                    && !effectManager.hasState(ActorState.STEALTH)
-                    && !passiveRunnableActive) {
-                passiveRunnableActive = true;
-                ExtensionCommands.actorAnimate(
-                        this.parentExt, this.room, this.id, "passive", 500, false);
-                Runnable activatePassive =
-                        () -> {
-                            if (timeStopped >= PASSIVE_TIME) {
-                                ExtensionCommands.actorAnimate(
-                                        this.parentExt,
-                                        this.room,
-                                        this.id,
-                                        "passive_idle",
-                                        1000 * 60 * 15,
-                                        true);
-                                ExtensionCommands.playSound(
-                                        this.parentExt,
-                                        this.player,
-                                        this.id,
-                                        "sfx_pepbut_invis_hide",
-                                        this.location);
-                                effectManager.setState(ActorState.STEALTH, true);
-                                effectManager.setState(ActorState.INVISIBLE, true);
-                            }
-                        };
-                scheduleTask(activatePassive, PASSIVE_ACTIVATION_DELAY);
-            }
-        } else {
-            timeStopped = 0;
-            if (stopPassive) stopPassive = false;
-            if (passiveRunnableActive) passiveRunnableActive = false;
-            passiveLocation = null;
-            if (effectManager.hasState(ActorState.STEALTH)) {
-                String animation = "idle";
-                if (isMoving) animation = "run";
-                ExtensionCommands.actorAnimate(
-                        this.parentExt, this.room, this.id, animation, 1, false);
-                effectManager.setState(ActorState.STEALTH, false);
-
-                ExtensionCommands.playSound(
-                        this.parentExt,
-                        this.room,
-                        this.id,
-                        "sfx_pepbut_invis_reveal",
-                        this.location);
-
-                ExtensionCommands.createActorFX(
-                        parentExt,
-                        room,
-                        id,
-                        "statusEffect_immunity",
-                        PASSIVE_IMMUNITY_DURATION,
-                        id + "_Immunity",
-                        true,
-                        "displayBar",
-                        false,
-                        false,
-                        team);
-                effectManager.addState(
-                        ActorState.IMMUNITY,
-                        id + "_pep_passive_immunity",
-                        0d,
-                        PASSIVE_IMMUNITY_DURATION);
-            }
         }
+
+        if (!countPassiveTimeToActivation() && passiveActive) {
+            endPepPassive();
+        }
+
+        if (timeStopped >= PASSIVE_TIME && !passiveRunnableScheduled) {
+            passiveRunnableScheduled = true;
+            ExtensionCommands.actorAnimate(parentExt, room, id, "passive", 500, false);
+            Runnable activatePassive =
+                    () -> {
+                        if (timeStopped >= PASSIVE_TIME) {
+                            passiveActive = true;
+
+                            ExtensionCommands.actorAnimate(
+                                    parentExt, room, id, "passive_idle", 1000 * 60 * 15, true);
+                            ExtensionCommands.playSound(
+                                    parentExt, player, id, "sfx_pepbut_invis_hide", location);
+                            effectManager.setState(ActorState.STEALTH, true);
+                            effectManager.setState(ActorState.INVISIBLE, true);
+                            effectManager.addEffect(
+                                    PASSIVE_REGEN_ID,
+                                    "healthRegen",
+                                    PASSIVE_HP_REG_PERCENT,
+                                    ModifierType.MULTIPLICATIVE,
+                                    ModifierIntent.BUFF,
+                                    1000 * 60 * 15);
+                        }
+                    };
+            scheduleTask(activatePassive, PASSIVE_ACTIVATION_DELAY);
+        }
+
         if (this.qActive && this.currentHealth <= 0) {
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_qRing");
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_aoe");
@@ -225,28 +188,59 @@ public class PeppermintButler extends UserActor {
         }
     }
 
-    @Override
-    public double getPlayerStat(String stat) {
-        if (stat.equalsIgnoreCase("healthRegen"))
-            return super.getPlayerStat("healthRegen") + (this.maxHealth * PASSIVE_HP_REG_PERCENT);
-        else if (stat.equalsIgnoreCase("attackSpeed") && this.form == Form.FERAL) {
-            double currentAttackSpeed = super.getPlayerStat("attackSpeed");
-            double modifier = (this.getStat("attackSpeed") * E_ATTACKSPEED_PERCENT);
-            return currentAttackSpeed - modifier < BASIC_ATTACK_DELAY
-                    ? BASIC_ATTACK_DELAY
-                    : currentAttackSpeed - modifier;
-        } else if (stat.equalsIgnoreCase("attackDamage") && this.form == Form.FERAL)
-            return super.getPlayerStat("attackDamage")
-                    + (this.getStat("attackDamage") * E_ATTACK_DAMAGE_PERCENT);
-        else if (stat.equalsIgnoreCase("attackRange") && this.form == Form.FERAL) {
-            return super.getPlayerStat(stat) + E_RANGE_VALUE;
-        }
+    private void removeEEffects() {
+        effectManager.removeAllEffectsById(E_AS_ID);
+        effectManager.removeAllEffectsById(E_AD_ID);
+        effectManager.removeAllEffectsById(E_SPEED_ID);
+        effectManager.removeAllEffectsById(E_RANGE_ID);
+    }
 
-        return super.getPlayerStat(stat);
+    private void removePassiveEffect() {
+        effectManager.removeAllEffectsById(PASSIVE_REGEN_ID);
+    }
+
+    private void wEnd() {
+        performWAttack();
+        handleWCD();
+    }
+
+    private boolean countPassiveTimeToActivation() {
+        return !isMoving && !qActive && !isCapturingAltar() && !dead && form != Form.FERAL;
+    }
+
+    private void endPepPassive() {
+        timeStopped = 0;
+        passiveActive = false;
+        passiveRunnableScheduled = false;
+
+        if (isMoving) {
+            ExtensionCommands.actorAnimate(parentExt, room, id, "run", 1, false);
+        }
+        removePassiveEffect();
+        effectManager.setState(ActorState.STEALTH, false);
+        effectManager.setState(ActorState.INVISIBLE, false);
+
+        ExtensionCommands.playSound(parentExt, room, id, "sfx_pepbut_invis_reveal", location);
+
+        ExtensionCommands.createActorFX(
+                parentExt,
+                room,
+                id,
+                "statusEffect_immunity",
+                PASSIVE_IMMUNITY_DURATION,
+                id + "_Immunity",
+                true,
+                "displayBar",
+                false,
+                false,
+                team);
+        effectManager.addState(
+                ActorState.IMMUNITY, id + "_pep_passive_immunity", 0d, PASSIVE_IMMUNITY_DURATION);
     }
 
     @Override
     public void customSwapToPoly() {
+        super.customSwapToPoly();
         if (this.form == Form.FERAL) {
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandL");
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandR");
@@ -291,7 +285,8 @@ public class PeppermintButler extends UserActor {
     @Override
     public void attack(Actor a) {
         super.attack(a);
-        this.stopPassive = true;
+        if (passiveActive) endPepPassive();
+        timeStopped = 0;
         ExtensionCommands.createActorFX(
                 this.parentExt,
                 this.room,
@@ -308,21 +303,9 @@ public class PeppermintButler extends UserActor {
 
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
-        this.stopPassive = true;
+        if (passiveActive) endPepPassive();
         timeStopped = 0;
         return super.damaged(a, damage, attackData);
-    }
-
-    @Override
-    protected boolean canRegenHealth() {
-        if (this.isStopped()
-                && !qActive
-                && !stopPassive
-                && this.form != Form.FERAL
-                && !isCapturingAltar()
-                && !dead
-                && ChampionData.getJunkLevel(this, "junk_1_ax_bass") < 1) return true;
-        return super.canRegenHealth();
     }
 
     @Override
@@ -349,10 +332,12 @@ public class PeppermintButler extends UserActor {
             int gCooldown,
             int castDelay,
             Point2D dest) {
-        this.stopPassive = true;
+        if (passiveActive) endPepPassive();
+        timeStopped = 0;
         switch (ability) {
             case 1:
                 canCast[0] = false;
+                qActive = true;
                 try {
                     this.qStartTime = System.currentTimeMillis();
                     ExtensionCommands.createActorFX(
@@ -379,8 +364,7 @@ public class PeppermintButler extends UserActor {
                             true,
                             false,
                             this.team);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, "sfx_pepbut_aoe", this.location);
+                    ExtensionCommands.playSound(parentExt, room, id, "sfx_pepbut_aoe", location);
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
@@ -392,7 +376,6 @@ public class PeppermintButler extends UserActor {
                         true,
                         getReducedCooldown(cooldown),
                         gCooldown);
-                qActive = true;
                 int delay = getReducedCooldown(cooldown);
                 scheduleTask(abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay);
                 break;
@@ -423,16 +406,37 @@ public class PeppermintButler extends UserActor {
                                 this.form = Form.FERAL;
 
                                 effectManager.addEffect(
-                                        this.id + "_pep_e_speed",
+                                        E_SPEED_ID,
                                         "speed",
                                         E_SPEED_PERCENT,
                                         ModifierType.MULTIPLICATIVE,
                                         ModifierIntent.BUFF,
                                         E_DURATION);
 
-                                String[] statsToUpdate = {
-                                    "speed", "attackSpeed", "attackDamage", "attackRange"
-                                };
+                                effectManager.addEffect(
+                                        E_AS_ID,
+                                        "attackSpeed",
+                                        E_ATTACKSPEED_PERCENT,
+                                        ModifierType.MULTIPLICATIVE,
+                                        ModifierIntent.BUFF,
+                                        E_DURATION);
+
+                                effectManager.addEffect(
+                                        E_AD_ID,
+                                        "attackDamage",
+                                        E_ATTACK_DAMAGE_PERCENT,
+                                        ModifierType.MULTIPLICATIVE,
+                                        ModifierIntent.BUFF,
+                                        E_DURATION);
+
+                                effectManager.addEffect(
+                                        E_RANGE_ID,
+                                        "attackRange",
+                                        E_RANGE_VALUE,
+                                        ModifierType.ADDITIVE,
+                                        ModifierIntent.BUFF,
+                                        E_DURATION);
+
                                 String eVO = SkinData.getPeppermintButlerEVO(avatar);
                                 ExtensionCommands.playSound(
                                         this.parentExt, this.room, this.id, eVO, this.location);
@@ -508,6 +512,7 @@ public class PeppermintButler extends UserActor {
 
     private void endUlt() {
         this.form = Form.NORMAL;
+        removeEEffects();
         this.ultActive = false;
         if (!effectManager.hasState(ActorState.POLYMORPH)) { // poly asset swap handled elsewhere
             swapAsset(false);

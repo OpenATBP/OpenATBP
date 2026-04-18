@@ -186,22 +186,6 @@ public class Finn extends UserActor {
     }
 
     @Override
-    public double getPlayerStat(String stat) {
-        /* NERF 8/13/24
-        if (stat.equalsIgnoreCase("attackSpeed")
-                && finnUltRing != null
-                && finnUltRing.contains(this.getLocation())) {
-            double currentAttackSpeed = super.getPlayerStat("attackSpeed");
-            double modifier = (this.getStat("attackSpeed") * Q_ATTACKSPEED_VALUE);
-            return currentAttackSpeed - modifier < BASIC_ATTACK_DELAY
-                    ? BASIC_ATTACK_DELAY
-                    : currentAttackSpeed - modifier;
-        }
-         */
-        return super.getPlayerStat(stat);
-    }
-
-    @Override
     public void die(Actor a) {
         super.die(a);
         if (this.furyTarget != null)

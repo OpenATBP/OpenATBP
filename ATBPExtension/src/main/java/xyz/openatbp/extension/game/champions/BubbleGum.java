@@ -344,7 +344,7 @@ public class BubbleGum extends UserActor {
                         float range = E_KNOCKBACK_DIST + distToBomb;
 
                         Point2D initLeap =
-                                Champion.getAbilityLine(bombLocation, location, range).getP2();
+                                Champion.createLineTowards(bombLocation, location, range).getP2();
                         RoomHandler rh = parentExt.getRoomHandler(room.getName());
                         PathFinder pf = rh.getPathFinder();
 

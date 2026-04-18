@@ -63,10 +63,9 @@ public class HitActorHandler extends BaseClientRequestHandler {
             if (actor.withinRange(target) && actor.canAttack()) {
                 actor.stopMoving();
                 actor.attack(target);
-            } else if (!actor.withinRange(target)
-                    && actor.canMove()
-                    && actor.canAttack()) { // Move actor
-                actor.startMoveTo(target.getLocation());
+            } else if (!actor.withinRange(target) && actor.canMove() && actor.canAttack()) {
+                // Move actor
+                actor.startMoveTo(target.getLocation(), false);
             } else if (actor.withinRange(target)) {
                 actor.stopMoving();
             }

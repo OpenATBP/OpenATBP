@@ -37,6 +37,8 @@ public class JakeBot extends Bot {
     private long ultStartTime = 0;
     private long lastSpell1cAnimTime = 0L;
     private boolean qAnimResetNeeded = false;
+    private boolean blockAttacks = false;
+    private boolean qInterrupt = false;
 
     private JakeQProjectile qProjectile;
 
@@ -50,18 +52,37 @@ public class JakeBot extends Bot {
             BotMapConfig mapConfig) {
         super(parentExt, room, botId, avatar, displayName, team, mapConfig);
 
-        qCooldownMs = 12000;
-        wCooldownMs = 14000;
-        eCooldownMs = 60000;
+        this.qCooldownMs = 12000;
+        this.wCooldownMs = 14000;
+        this.eCooldownMs = 60000;
 
-        qGCooldownMs = 1000;
-        wGCooldownMs = 500;
-        eGCooldownMs = 5000;
+        this.qGCooldownMs = 1000;
+        this.wGCooldownMs = 500;
+        this.eGCooldownMs = 5000;
 
-        qCastDelayMS = 600;
-        wCastDelayMS = 0;
-        eCastDelayMS = 0;
+        this.qCastDelayMS = 600;
+        this.wCastDelayMS = 0;
+        this.eCastDelayMS = 0;
         setHealth(800, 800);
+
+        this.lowHpActionPHealth = 0.25;
+
+        this.canWinUnderTowerLvDif = -2;
+        this.canWinEReadyLvDif = -1;
+        this.canWinQWReadyLvDif = -1;
+
+        this.soloJungleLv = 4;
+        this.soloJunglePHealth = 0.9;
+        this.duoJungleLv = 2;
+        this.duoJunglePHealth = 0.5;
+        this.trioJunglePHeath = 0.35;
+        this.closestPlayerLvDif = -1;
+
+        this.fleeMinionsAttackedPHpPerLv = 0.035f;
+        this.defAltarCaptureActionDist = 2f;
+        this.playerAttackedLvDif = -1;
+
+        this.botRole = BotRole.FIGHTER;
     }
 
     @Override
@@ -79,9 +100,8 @@ public class JakeBot extends Bot {
             qAnimResetNeeded = false;
         }
 
-        if (blockSkillsAndWalking && qProjectile != null && hasInterrupingCC()) {
-            qProjectile.destroy();
-            playInterruptSoundAndIdle();
+        if (blockSkillsAndWalking && qProjectile != null && hasInterrupingCC() && !qInterrupt) {
+            interruptQ();
         }
 
         if (ultActivated && target != null && evaluateBotState() == BotState.FIGHTING) {
@@ -99,7 +119,7 @@ public class JakeBot extends Bot {
                     new Point2D.Double(targetLoc.getX() + offsetX, targetLoc.getY() + offsetY);
 
             if (canMove() && !isMoving) {
-                startMoveTo(ultDest);
+                startMoveTo(ultDest, false);
             }
         }
 
@@ -159,9 +179,11 @@ public class JakeBot extends Bot {
         return super.canMove();
     }
 
-    private void unlockSkillsAndWalking() {
+    private void unlockSkillsAndWalking(boolean interrupt) {
         Runnable unlock = () -> blockSkillsAndWalking = false;
-        scheduleTask(unlock, Q_UNLOCK_SKILLS_DELAY);
+        int delay = interrupt ? 0 : Q_UNLOCK_SKILLS_DELAY;
+        scheduleTask(unlock, delay);
+        qInterrupt = false;
     }
 
     @Override
@@ -217,6 +239,9 @@ public class JakeBot extends Bot {
     @Override
     public void handleFightingAbilities() {
         if (target != null) {
+
+            if (target.getActorType() == ActorType.TOWER) return;
+
             if (target instanceof UserActor) {
                 if (canUseQ()) useQ(target.getLocation());
             }
@@ -275,7 +300,8 @@ public class JakeBot extends Bot {
         RoomHandler rh = parentExt.getRoomHandler(room.getName());
         List<Actor> enemiesNearby = Champion.getEnemyActorsInRadius(rh, team, location, W_RADIUS);
 
-        return enemiesNearby.size() > 1;
+        return enemiesNearby.size() > 1
+                || enemiesNearby.stream().anyMatch(a -> a instanceof UserActor);
     }
 
     @Override
@@ -305,7 +331,7 @@ public class JakeBot extends Bot {
         Runnable activateHitbox =
                 () -> {
                     Line2D qLine =
-                            Champion.getAbilityLine(location, target.getLocation(), Q_MAX_RANGE);
+                            Champion.createLineTowards(location, target.getLocation(), Q_MAX_RANGE);
                     qProjectile =
                             new JakeQProjectile(
                                     parentExt, this, qLine, Q_PROJECTILE_SPEED, 1f, 1f, "");
@@ -323,7 +349,12 @@ public class JakeBot extends Bot {
         globalCooldown += wGCooldownMs;
         lastWUse = System.currentTimeMillis();
 
-        this.stopMoving(wGCooldownMs);
+        stopMoving(wGCooldownMs);
+        blockAttacks = true;
+
+        Runnable enableAttacks = () -> blockAttacks = false;
+        scheduleTask(enableAttacks, wGCooldownMs);
+
         String ballFX = SkinData.getJakeWFX(avatar);
         String dustUpFX = SkinData.getJakeWDustUpFX(avatar);
 
@@ -371,7 +402,7 @@ public class JakeBot extends Bot {
                 a.handleKnockback(location, W_KNOCKBACK_DIST, DEFAULT_KNOCKBACK_SPEED);
             }
 
-            if (a.getActorType() != ActorType.TOWER && a.isNotLeaping()) {
+            if (a.getActorType() != ActorType.TOWER && a.isNotLeaping() && a.getTeam() != team) {
                 JsonNode spellData = parentExt.getAttackData(avatar, "spell2");
                 double dmg = getSpellDamage(spellData);
                 a.addToDamageQueue(this, dmg, spellData, false);
@@ -434,6 +465,16 @@ public class JakeBot extends Bot {
         String growSFX = SkinData.getJakeESFX(avatar);
         ExtensionCommands.playSound(parentExt, room, id, growSFX, location);
         ExtensionCommands.playSound(parentExt, room, id, growVO, location);
+    }
+
+    private void interruptQ() {
+        if (qInterrupt) return;
+
+        qInterrupt = true;
+        if (qProjectile != null) {
+            qProjectile.destroy();
+        }
+        playInterruptSoundAndIdle();
     }
 
     private class JakeQProjectile extends Projectile {
@@ -530,7 +571,7 @@ public class JakeBot extends Bot {
         @Override
         public void destroy() {
             super.destroy();
-            unlockSkillsAndWalking();
+            unlockSkillsAndWalking(qInterrupt);
             qAnimResetNeeded = true;
             lastSpell1cAnimTime = System.currentTimeMillis();
             ExtensionCommands.actorAnimate(parentExt, room, JakeBot.this.id, "spell1c", -1, false);

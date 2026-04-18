@@ -244,7 +244,7 @@ public class PathFinder {
         float distance = (float) startPoint.distance(exactIntersection);
         float newDistance = distance - INTERSECTION_STOP_DISTANCE;
 
-        Line2D line = Champion.getAbilityLine(startPoint, exactIntersection, newDistance);
+        Line2D line = Champion.createLineTowards(startPoint, exactIntersection, newDistance);
         return line.getP2();
     }
 
@@ -326,7 +326,7 @@ public class PathFinder {
     public Point2D getStoppingPoint(
             Point2D start, Point2D initialDestination, double stoppingDistance) {
         double lineLength = start.distance(initialDestination) - stoppingDistance;
-        return Champion.getAbilityLine(start, initialDestination, (float) lineLength).getP2();
+        return Champion.createLineTowards(start, initialDestination, (float) lineLength).getP2();
     }
 
     private boolean[][] buildGrid(Point2D[] mapShape, List<Point2D[]> obstacles) {

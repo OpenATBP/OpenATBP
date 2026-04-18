@@ -1,6 +1,6 @@
 package xyz.openatbp.extension.game;
 
-import static xyz.openatbp.extension.game.Champion.getAbilityLine;
+import static xyz.openatbp.extension.game.Champion.createLineTowards;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
@@ -66,7 +66,7 @@ public class AbilityShape {
 
     public static AbilityShape createRectangle(
             Point2D start, Point2D end, float spellRange, float offsetDistance) {
-        Line2D abilityLine = getAbilityLine(start, end, spellRange);
+        Line2D abilityLine = createLineTowards(start, end, spellRange);
         double angle =
                 Math.atan2(
                         abilityLine.getY2() - abilityLine.getY1(),
@@ -108,7 +108,7 @@ public class AbilityShape {
             float spellRange,
             float offsetDistanceBottom,
             float offsetDistanceTop) {
-        Line2D abilityLine = Champion.getAbilityLine(start, end, spellRange);
+        Line2D abilityLine = Champion.createLineTowards(start, end, spellRange);
         double angle =
                 Math.atan2(
                         abilityLine.getY2() - abilityLine.getY1(),

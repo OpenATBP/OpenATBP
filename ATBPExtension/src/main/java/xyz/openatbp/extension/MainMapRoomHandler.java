@@ -6,8 +6,6 @@ import java.awt.geom.Point2D;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
@@ -251,98 +249,6 @@ public class MainMapRoomHandler extends RoomHandler {
                 break;
         }
         return new Point2D.Float(x, z);
-    }
-
-    @Override
-    public void handlePlayerDC(User user) {
-        if (this.players.size() == 1) return;
-        try {
-            UserActor player = this.getPlayer(String.valueOf(user.getId()));
-            if (player.getTeam() == 0) this.dcWeight--;
-            else if (player.getTeam() == 1) this.dcWeight++;
-            this.dcPlayers.put(user, player);
-            player.destroy();
-            MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
-            Document data =
-                    playerData
-                            .find(eq("user.TEGid", (String) user.getSession().getProperty("tegid")))
-                            .first();
-            if (data != null && IS_RANKED_MATCH && this.secondsRan >= 5) {
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode dataObj = mapper.readTree(data.toJson());
-                double disconnects = dataObj.get("player").get("disconnects").asInt();
-                double playsPVP = dataObj.get("player").get("playsPVP").asInt();
-                double dcPercent = disconnects / playsPVP;
-                double elo = dataObj.get("player").get("elo").asInt();
-                double newElo = elo * (1 - dcPercent);
-
-                Bson updates =
-                        Updates.combine(
-                                Updates.inc("player.disconnects", 1),
-                                Updates.set("player.elo", (int) newElo));
-                UpdateOptions options = new UpdateOptions().upsert(true);
-                Console.debugLog(playerData.updateOne(data, updates, options));
-            }
-            int team = player.getTeam();
-            this.players.removeIf(p -> p.getId().equalsIgnoreCase(String.valueOf(user.getId())));
-            int teamMembersLeft = 0;
-            for (UserActor p : players) {
-                if (p.getTeam() == team) {
-                    teamMembersLeft++;
-                    break;
-                }
-            }
-            int purpleTeamSize = 0;
-            int blueTeamSize = 0;
-            for (UserActor p : players) {
-                if (p.getTeam() == 0) {
-                    purpleTeamSize++;
-                } else if (p.getTeam() == 1) {
-                    blueTeamSize++;
-                }
-            }
-            int teamSizeDiff = blueTeamSize - purpleTeamSize;
-            int oppositeTeam = 0;
-            if (team == 0) oppositeTeam = 1;
-            if (teamMembersLeft == 0) this.gameOver(oppositeTeam);
-            else {
-                for (UserActor p : this.players) {
-                    if (purpleTeamSize == 3 && blueTeamSize == 2) {
-                        if (p.getTeam() == team) {
-                            p.handleDCBuff(teamSizeDiff, false);
-                        }
-                    } else if (purpleTeamSize == 3 && blueTeamSize == 1) {
-                        if (p.getTeam() == team) {
-                            p.handleDCBuff(teamSizeDiff, false);
-                        }
-                    } else if (purpleTeamSize == 2 && blueTeamSize == 1) {
-                        if (p.getTeam() != team) {
-                            p.handleDCBuff(teamSizeDiff, true);
-                        } else if (p.getTeam() == 1) {
-                            p.handleDCBuff(teamSizeDiff, false);
-                        }
-                    } else if (purpleTeamSize == 2 && blueTeamSize == 3) {
-                        if (p.getTeam() == team) {
-                            p.handleDCBuff(teamSizeDiff, false);
-                        }
-                    } else if (purpleTeamSize == 1 && blueTeamSize == 3) {
-                        if (p.getTeam() == team) {
-                            p.handleDCBuff(teamSizeDiff, false);
-                        }
-                    } else if (purpleTeamSize == 1 && blueTeamSize == 2) {
-                        if (p.getTeam() != team) {
-                            p.handleDCBuff(teamSizeDiff, true);
-                        } else if (p.getTeam() == 0) {
-                            p.handleDCBuff(teamSizeDiff, false);
-                        }
-                    } else if (purpleTeamSize == blueTeamSize) {
-                        p.handleDCBuff(teamSizeDiff, false);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     public List<Actor> getCompanions() {

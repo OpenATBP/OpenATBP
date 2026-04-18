@@ -1,8 +1,10 @@
 package xyz.openatbp.extension.game.actors;
 
+import static xyz.openatbp.extension.game.actors.Tower.TOWER_ATTACK_RANGE;
 import static xyz.openatbp.extension.game.actors.UserActor.*;
 import static xyz.openatbp.extension.game.effects.EffectManager.FEAR_MOVING_DISTANCE;
 
+import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.*;
@@ -28,6 +30,21 @@ public abstract class Actor {
     public static final float CHARM_MIN_DISTANCE = 2f;
     public static final int TELEPORT_SPEED = 100;
     public static final int CYCLOPS_REGEN_DURATION = 60000;
+    public static final int CHAMPION_KILL_POINTS = 25;
+    public static final int TOWER_KILL_POINTS = 100;
+    private static final int HEALTH_PACK_REGEN = 15;
+    public static final int BASIC_ATTACK_DELAY = 500;
+    public final int BRUSH_PENALTY_DUR = 3000;
+
+    private static final String DC_BUFF_TIER1_ID = "dc_buff_tier1";
+    private static final String DC_BUFF_TIER2_ID = "dc_buff_tier2";
+    private static final int DC_BUFF_DURATION = 1000 * 15 * 60;
+
+    private static final float DC_AD_BUFF = 0.2f;
+    private static final float DC_ARMOR_BUFF = 0.2f;
+    private static final float DC_SPELL_RESIST_BUFF = 0.2f;
+    private static final float DC_SPEED_BUFF = 0.15f;
+    private static final float DC_PD_BUFF = 0.2f;
 
     public enum AttackType {
         PHYSICAL,
@@ -54,7 +71,6 @@ public abstract class Actor {
     protected List<Point2D> path;
     protected int xpWorth;
     protected String bundle;
-    protected boolean towerAggroCompanion = false;
     protected Map<Actor, ISFSObject> aggressors = new HashMap<>();
     protected Map<String, Double> endGameStats = new HashMap<>();
     protected Actor charmer;
@@ -64,43 +80,70 @@ public abstract class Actor {
     protected Point2D moveDestination;
     protected List<Point2D> movePointsToDest;
     protected int movePointsIndex = 0;
-
     protected long elapsedMoveTimeMs;
     protected long totalMoveTimeMs;
     protected int visualTargetIndex = 0;
-
     protected boolean isAutoAttacking = false;
     protected boolean isMoving = false;
     protected float forcedMoveSpeed = 3;
-
     protected boolean pickedUpHealthPack = false;
     protected Long healthPackRegenStart;
-
     protected boolean hasKeeothBuff = false;
     protected boolean hasGooBuff = false;
-
-    public static final int BASIC_ATTACK_DELAY = 500;
-
     protected EffectManager effectManager = new EffectManager(this);
-
-    protected boolean customPolySwap = false;
-
+    protected boolean hasCustomSwapFromPoly = false;
+    protected boolean hasCustomSwapToPoly = false;
+    protected boolean towerFocused = false;
     protected long lastGrobDeviceProc = 0L;
     protected boolean grobShieldActive = false;
-
     protected DashContext activeDash = null;
-
     protected MovementState movementState = MovementState.IDLE;
-
     protected int dashGeneration = 0;
-
     protected long brushPenaltyTime = 0L;
-
-    public final int BRUSH_PENALTY_DUR = 3000;
-
     protected boolean isInsideBrush = false;
-
     protected float lastSyncedMoveSpeed = -1;
+    protected long lastKilled = System.currentTimeMillis();
+    protected boolean shouldTriggerAnnouncer = false;
+    protected int killingSpree = 0;
+    protected int multiKill = 0;
+    protected List<Actor> killedChampions = new ArrayList<>();
+    private Point2D endPoint = null;
+
+    public List<Actor> getKilledChampions() {
+        return this.killedChampions;
+    }
+
+    public boolean getShouldTriggerAnnouncer() {
+        return shouldTriggerAnnouncer;
+    }
+
+    public void setShouldTriggerAnnouncer(boolean announced) {
+        this.shouldTriggerAnnouncer = announced;
+    }
+
+    public int getMultiKill() {
+        return multiKill;
+    }
+
+    public int getKillingSpree() {
+        return killingSpree;
+    }
+
+    public long getLastKilled() {
+        return lastKilled;
+    }
+
+    public void setLastKilled(Long time) {
+        this.lastKilled = time;
+    }
+
+    public boolean isTowerFocused() {
+        return this.towerFocused;
+    }
+
+    public void setTowerFocused(boolean focused) {
+        this.towerFocused = focused;
+    }
 
     public double getGameStat(String stat) {
         return this.endGameStats.get(stat);
@@ -137,6 +180,10 @@ public abstract class Actor {
             default:
                 return (float) getPlayerStat("speed");
         }
+    }
+
+    public int getLevel() {
+        return this.level;
     }
 
     public MovementState getMovementState() {
@@ -243,7 +290,14 @@ public abstract class Actor {
     public void increaseStat(String key, double num) {
         // Console.debugLog("Increasing " + key + " by " + num);
         stats.put(key, stats.get(key) + num);
-        ExtensionCommands.updateActorData(parentExt, room, id, key, getPlayerStat(key));
+        double statValue;
+
+        if (key.equals("kills") || key.equals("deaths") || key.equals("assists")) {
+            statValue = stats.get(key);
+        } else {
+            statValue = getPlayerStat(key);
+        }
+        ExtensionCommands.updateActorData(parentExt, room, id, key, statValue);
     }
 
     public Actor getRealKiller(Actor a) {
@@ -268,12 +322,18 @@ public abstract class Actor {
     // EFFECTS AND STATS
     public void onStateChange(ActorState state, boolean enabled) {}
 
-    public void customSwapToPoly() {}
+    public void customSwapToPoly() {
+        effectManager.handleSwapToPoly();
+    }
 
     public void customSwapFromPoly() {}
 
-    public boolean hasCustomPolySwap() {
-        return customPolySwap;
+    public boolean hasCustomSwapToPoly() {
+        return hasCustomSwapToPoly;
+    }
+
+    public boolean hasCustomSwapFromPoly() {
+        return hasCustomSwapFromPoly;
     }
 
     public boolean hasMovementCC() {
@@ -478,7 +538,7 @@ public abstract class Actor {
                 },
                 timeMs);
 
-        startMoveTo(dashEndPoint);
+        startMoveTo(dashEndPoint, true);
     }
 
     public void completeDash() {
@@ -517,12 +577,12 @@ public abstract class Actor {
 
         double distToAttacker = location.distance(source);
         float dist = (float) (distance + distToAttacker);
-        Point2D knockbackDest = Champion.getAbilityLine(source, location, dist).getP2();
+        Point2D knockbackDest = Champion.createLineTowards(source, location, dist).getP2();
 
         if (activeDash != null) {
             if (activeDash.canBeRedirected()) {
                 activeDash.setDest(knockbackDest);
-                startMoveTo(knockbackDest);
+                startMoveTo(knockbackDest, true);
             } else {
                 interruptDash(false);
             }
@@ -537,7 +597,7 @@ public abstract class Actor {
             return;
         }
         // opposite of knockback — line goes FROM actor TOWARD source
-        Point2D pullDest = Champion.getAbilityLine(location, source, distance).getP2();
+        Point2D pullDest = Champion.createLineTowards(location, source, distance).getP2();
 
         // pull always cancels dashes, no redirect
         if (activeDash != null) {
@@ -563,23 +623,25 @@ public abstract class Actor {
                 },
                 time);
 
-        startMoveTo(dest);
+        startMoveTo(dest, true);
     }
 
     public void handleCharmMovement() {
+        if (isDead()) return;
         if (effectManager.hasState(ActorState.CHARMED)
                 && location.distance(charmer.getLocation()) > CHARM_MIN_DISTANCE) {
-            startMoveTo(charmer.getLocation());
+            startMoveTo(charmer.getLocation(), true);
         } else if (effectManager.hasState(ActorState.CHARMED)) {
             stopMoving();
         }
     }
 
     public void handleFear(Actor fearer) {
+        if (isDead()) return;
         if (fearMovePoint == null) {
             Point2D fearerLoc = fearer.getLocation();
             Point2D stopPoint =
-                    Champion.getAbilityLine(location, fearerLoc, FEAR_MOVING_DISTANCE).getP2();
+                    Champion.createLineTowards(location, fearerLoc, FEAR_MOVING_DISTANCE).getP2();
 
             double dx = stopPoint.getX() - location.getX();
             double dy = stopPoint.getY() - location.getY();
@@ -588,7 +650,7 @@ public abstract class Actor {
         }
 
         if (fearMovePoint.distance(location) > 0.1) {
-            startMoveTo(fearMovePoint);
+            startMoveTo(fearMovePoint, true);
         }
     }
 
@@ -636,8 +698,10 @@ public abstract class Actor {
                 true);
     }
 
-    public void startMoveTo(Point2D endPoint) {
-        if (isAutoAttacking) return;
+    public void startMoveTo(Point2D endPoint, boolean forcedMovement) {
+        this.endPoint = endPoint;
+        if (isAutoAttacking && !forcedMovement) return;
+
         RoomHandler rh = parentExt.getRoomHandler(room.getName());
         PathFinder pF = rh.getPathFinder();
 
@@ -816,6 +880,149 @@ public abstract class Actor {
             best = i + 1;
         }
         return best; // remaining path is roughly straight
+    }
+
+    protected void handleAutoUnstuck() {
+        RoomHandler rh = parentExt.getRoomHandler(room.getName());
+        PathFinder pF = rh.getPathFinder();
+
+        if (!pF.isPointInsideObstacle(location) && pF.isPointInsideMap(location)) {
+            // Console.debugLog("Location is inside map, not auto-unstucking");
+            return;
+        }
+
+        Console.logWarning("id: " + id + " is inside obstacle or outside the map!");
+
+        if (endPoint == null) {
+            Console.debugLog("No end Point, not auto-unstucking");
+            return;
+        }
+
+        Point2D intersection = pF.getIntersectionPoint(location, endPoint);
+        float distToSafeSpot = (float) location.distance(intersection) + 1;
+
+        Line2D safeSpotLine = Champion.createLineTowards(location, intersection, distToSafeSpot);
+        Point2D safeSpot = safeSpotLine.getP2();
+
+        if (pF.isPointInsideMap(safeSpot) && !pF.isPointInsideObstacle(safeSpot)) {
+            Console.debugLog("Teleporting to safe spot");
+            teleport(safeSpot);
+            return;
+        }
+        Console.logWarning("Failed to auto-unstuck for actor: " + id);
+    }
+
+    public void addTier1DCBuff() {
+        effectManager.addEffect(
+                DC_BUFF_TIER1_ID,
+                "armor",
+                DC_ARMOR_BUFF - 1,
+                ModifierType.MULTIPLICATIVE,
+                ModifierIntent.BUFF,
+                DC_BUFF_DURATION);
+
+        effectManager.addEffect(
+                DC_BUFF_TIER1_ID,
+                "spellResist",
+                DC_SPELL_RESIST_BUFF,
+                ModifierType.MULTIPLICATIVE,
+                ModifierIntent.BUFF,
+                DC_BUFF_DURATION);
+
+        effectManager.addEffect(
+                DC_BUFF_TIER1_ID,
+                "speed",
+                DC_SPEED_BUFF,
+                ModifierType.MULTIPLICATIVE,
+                ModifierIntent.BUFF,
+                DC_BUFF_DURATION);
+        ExtensionCommands.createActorFX(
+                parentExt,
+                room,
+                id,
+                "disconnect_buff_duo",
+                DC_BUFF_DURATION,
+                id + "_dcbuff1",
+                true,
+                "",
+                false,
+                false,
+                team);
+    }
+
+    public void addTier2DCBuff() {
+        effectManager.addEffect(
+                DC_BUFF_TIER2_ID,
+                "attackDamage",
+                DC_AD_BUFF,
+                ModifierType.MULTIPLICATIVE,
+                ModifierIntent.BUFF,
+                DC_BUFF_DURATION);
+
+        effectManager.addEffect(
+                DC_BUFF_TIER2_ID,
+                "spellDamage",
+                DC_PD_BUFF,
+                ModifierType.MULTIPLICATIVE,
+                ModifierIntent.BUFF,
+                DC_BUFF_DURATION);
+
+        ExtensionCommands.createActorFX(
+                parentExt,
+                room,
+                id,
+                "disconnect_buff_solo",
+                DC_BUFF_DURATION,
+                id + "_dcbuff2",
+                true,
+                "",
+                false,
+                false,
+                team);
+    }
+
+    public void applyDCBuff(int tier) {
+        if (tier == 1) {
+            addTier1DCBuff();
+
+        } else if (tier == 2) {
+            addTier2DCBuff();
+        }
+    }
+
+    public void removeTier1DCBuff() {
+        effectManager.removeAllEffectsById(DC_BUFF_TIER1_ID);
+        ExtensionCommands.removeFx(parentExt, room, id + "_dcbuff1");
+    }
+
+    public void removeTier2DCBuff() {
+        effectManager.removeAllEffectsById(DC_BUFF_TIER2_ID);
+        ExtensionCommands.removeFx(parentExt, room, id + "_dcbuff2");
+    }
+
+    public void removeDCBuff(int tier) {
+        if (tier == 1) {
+            removeTier1DCBuff();
+        } else if (tier == 2) {
+            removeTier2DCBuff();
+        }
+    }
+
+    public boolean isInAliveTowerRange(Actor actor, boolean allyTower) {
+        RoomHandler rh = parentExt.getRoomHandler(room.getName());
+
+        List<Actor> towers = new ArrayList<>(rh.getTowers());
+        towers.addAll(rh.getBaseTowers());
+
+        int teamToCheck = allyTower ? actor.getOppositeTeam() : getTeam();
+
+        towers.removeIf(t -> t.getHealth() <= 0 || t.isDead() || t.getTeam() == teamToCheck);
+
+        for (Actor tower : towers) {
+            if (actor.getLocation().distance(tower.getLocation()) <= TOWER_ATTACK_RANGE)
+                return true;
+        }
+        return false;
     }
 
     public boolean withinRange(Actor a) {

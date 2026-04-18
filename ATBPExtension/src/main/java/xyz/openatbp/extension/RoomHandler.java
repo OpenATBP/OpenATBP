@@ -75,7 +75,12 @@ public abstract class RoomHandler implements Runnable {
     protected float FOUNTAIN_RADIUS = 4f;
     protected List<Actor> companions = new ArrayList<>();
     protected HashMap<Integer, Actor> endGameChampions = new HashMap<>();
+    protected List<Actor> champions = new ArrayList<>();
     protected boolean tutorialCoins = false;
+    protected boolean ranked;
+
+    protected List<Actor> championsWithFirstDcBuff = new ArrayList<>();
+    protected List<Actor> championsWithSecondDcBuff = new ArrayList<>();
 
     protected PathFinder pathFinder;
 
@@ -87,7 +92,7 @@ public abstract class RoomHandler implements Runnable {
     private PointLeadTeam pointLeadTeam;
 
     private boolean isAnnouncingKill = false;
-    private static final int SINGLE_KILL_COOLDOWN = 5000;
+    private static final int SINGLE_KILL_COOLDOWN = 3000;
     private long lastSingleKillAnnouncement = 0;
 
     public RoomHandler(
@@ -105,6 +110,7 @@ public abstract class RoomHandler implements Runnable {
         this.campMonsters = new ArrayList<>();
         this.SPAWNS = spawns;
         this.HP_SPAWN_RATE_SEC = HP_SPAWN_RATE;
+        this.ranked = GameManager.getRoomGroupEnum(room.getGroupId()).equals(RoomGroup.RANKED);
 
         Properties props = parentExt.getConfigProperties();
         monsterDebug = Boolean.parseBoolean(props.getProperty("monsterDebug", "false"));
@@ -126,6 +132,7 @@ public abstract class RoomHandler implements Runnable {
             UserActor ua = Champion.getCharacterClass(u, parentExt);
             players.add(ua);
             endGameChampions.put(u.getId(), ua);
+            champions.add(ua);
         }
     }
 
@@ -356,7 +363,48 @@ public abstract class RoomHandler implements Runnable {
 
     public abstract Point2D getHealthLocation(int num);
 
-    public abstract void handlePlayerDC(User user);
+    public void handlePlayerDC(User user) {
+        if (champions.size() == 1) return;
+        try {
+            UserActor player = this.getPlayer(String.valueOf(user.getId()));
+            player.destroy();
+            players.removeIf(p -> p.getId().equalsIgnoreCase(String.valueOf(user.getId())));
+            champions.removeIf(p -> p.getId().equalsIgnoreCase(String.valueOf(user.getId())));
+
+            handleDcBuffAndGameOver();
+
+            if (ranked) {
+                MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
+                Document data =
+                        playerData
+                                .find(
+                                        eq(
+                                                "user.TEGid",
+                                                (String) user.getSession().getProperty("tegid")))
+                                .first();
+
+                if (data != null && this.secondsRan >= 5) {
+                    ObjectMapper mapper = new ObjectMapper();
+                    JsonNode dataObj = mapper.readTree(data.toJson());
+                    double disconnects = dataObj.get("player").get("disconnects").asInt();
+                    double playsPVP = dataObj.get("player").get("playsPVP").asInt();
+                    double dcPercent = disconnects / playsPVP;
+                    double elo = dataObj.get("player").get("elo").asInt();
+                    double newElo = elo * (1 - dcPercent);
+
+                    Bson updates =
+                            Updates.combine(
+                                    Updates.inc("player.disconnects", 1),
+                                    Updates.set("player.elo", (int) newElo));
+                    UpdateOptions options = new UpdateOptions().upsert(true);
+                    Console.debugLog(playerData.updateOne(data, updates, options));
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     public abstract void addCompanion(Actor a);
 
@@ -517,7 +565,78 @@ public abstract class RoomHandler implements Runnable {
         }
     }
 
-    public void handleSpawns() {
+    protected void handleDcBuffAndGameOver() {
+        List<Actor> purpleTeam = new ArrayList<>(champions);
+        List<Actor> blueTeam = new ArrayList<>(champions);
+
+        purpleTeam.removeIf(c -> c.getTeam() != 0);
+        blueTeam.removeIf(c -> c.getTeam() != 1);
+
+        int purpleTeamSize = purpleTeam.size();
+        int blueTeamSize = blueTeam.size();
+
+        int winningTeam = -1;
+        if (purpleTeamSize == 0) winningTeam = 1;
+        else if (blueTeamSize == 0) winningTeam = 0;
+
+        if (winningTeam != -1) {
+            gameOver(winningTeam);
+            return;
+        }
+
+        this.dcWeight = purpleTeamSize - blueTeamSize;
+
+        int teamDif = Math.abs(purpleTeamSize - blueTeamSize);
+        List<Actor> smallerTeam = purpleTeamSize <= blueTeamSize ? purpleTeam : blueTeam;
+
+        // --- Tier 1 buff (diff >= 1) ---
+        if (teamDif >= 1) {
+            for (Actor c : smallerTeam) {
+                if (!championsWithFirstDcBuff.contains(c)) {
+                    c.applyDCBuff(1);
+                    championsWithFirstDcBuff.add(c);
+                }
+            }
+            championsWithFirstDcBuff.removeIf(
+                    c -> {
+                        if (!smallerTeam.contains(c)) {
+                            c.removeDCBuff(1);
+                            return true;
+                        }
+                        return false;
+                    });
+        } else {
+            for (Actor c : championsWithFirstDcBuff) {
+                c.removeDCBuff(1);
+            }
+            championsWithFirstDcBuff.clear();
+        }
+
+        // --- Tier 2 buff (diff >= 2, stacks on top of tier 1) ---
+        if (teamDif >= 2) {
+            for (Actor c : smallerTeam) {
+                if (!championsWithSecondDcBuff.contains(c)) {
+                    c.applyDCBuff(2);
+                    championsWithSecondDcBuff.add(c);
+                }
+            }
+            championsWithSecondDcBuff.removeIf(
+                    c -> {
+                        if (!smallerTeam.contains(c)) {
+                            c.removeDCBuff(2);
+                            return true;
+                        }
+                        return false;
+                    });
+        } else {
+            for (Actor c : championsWithSecondDcBuff) {
+                c.removeDCBuff(2);
+            }
+            championsWithSecondDcBuff.clear();
+        }
+    }
+
+    protected void handleSpawns() {
         ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
         for (String s : SPAWNS) {
             if (s.length() > 3) {
@@ -536,7 +655,7 @@ public abstract class RoomHandler implements Runnable {
         }
     }
 
-    public void handleHealthPackSpawns(ISFSObject spawns, String s) {
+    protected void handleHealthPackSpawns(ISFSObject spawns, String s) {
         int time = spawns.getInt(s);
 
         if (time == HP_SPAWN_RATE_SEC - 1) {
@@ -569,7 +688,7 @@ public abstract class RoomHandler implements Runnable {
         return spawnRate;
     }
 
-    public void handleHealth() {
+    protected void handleHealth() {
         for (String s : SPAWNS) {
             if (s.length() == 3) {
                 ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
@@ -610,7 +729,7 @@ public abstract class RoomHandler implements Runnable {
         }
     }
 
-    public void createChampionsCollectionsIfNotPresent(MongoDatabase db) {
+    private void createChampionsCollectionsIfNotPresent(MongoDatabase db) {
         String[] avatars = {
             "billy",
             "bmo",
@@ -1307,112 +1426,106 @@ public abstract class RoomHandler implements Runnable {
         parentExt.getTaskScheduler().schedule(stingEnd, duration, TimeUnit.MILLISECONDS);
     }
 
+    private void announceForTeam(Actor killer, int team, String announcerLine, boolean singleKill) {
+        List<UserActor> users = new ArrayList<>(players);
+
+        UserActor killerUA = getPlayer(killer.getId());
+        if (killerUA != null) users.remove(killerUA);
+
+        if (singleKill) {
+            Actor killedChampion =
+                    killer.getKilledChampions().get(killer.getKilledChampions().size() - 1);
+            UserActor killedUa = getPlayer(killedChampion.getId());
+
+            if (killedUa != null) {
+                users.remove(killedUa);
+            }
+        }
+
+        for (UserActor ua : users) {
+            if (ua.getTeam() == team) {
+                ExtensionCommands.playSound(parentExt, ua.getUser(), "global", announcerLine);
+            }
+        }
+    }
+
     private void announceKills() {
-        try {
-            for (UserActor ua : this.getPlayers()) {
-                if (System.currentTimeMillis() - ua.getLastKilled() < 550
-                        && ua.getStat("kills") > 0) {
+        for (Actor a : champions) {
+            if (a.getShouldTriggerAnnouncer()) {
+                a.setShouldTriggerAnnouncer(false);
+                handleAnnouncerBoolean();
 
-                    handleAnnouncerBoolean();
+                int multi = a.getMultiKill();
+                int spree = a.getKillingSpree();
 
-                    int killerMulti = ua.getMultiKill();
-                    int killerSpree = ua.getKillingSpree();
+                if (multi > 1) {
+                    announceMultiOrSpree(
+                            a,
+                            multi,
+                            ChampionData.ALLY_MULTIES,
+                            ChampionData.ENEMY_MULTIES,
+                            ChampionData.OWN_MULTIES);
 
-                    if (killerMulti > 1) {
-                        announceMultiKill(ua, killerMulti);
-                    } else if (killerSpree > 2) {
-                        announceKillingSpree(ua, killerSpree);
-                    } else if (System.currentTimeMillis() - lastSingleKillAnnouncement
-                            > SINGLE_KILL_COOLDOWN) {
-                        lastSingleKillAnnouncement = System.currentTimeMillis();
-                        announceSingleKill(ua);
-                    }
+                } else if (spree > 2) {
+                    announceMultiOrSpree(
+                            a,
+                            spree,
+                            ChampionData.ALLY_SPREES,
+                            ChampionData.ENEMY_SPREES,
+                            ChampionData.OWN_SPREES);
+
+                } else {
+                    announceSingleKill(a);
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            Console.logWarning("ANNOUNCER EXCEPTION OCCURRED");
         }
     }
 
-    private void announceMultiKill(UserActor killer, int killerMulti) {
-        String[] allyMulties = ChampionData.ALLY_MULTIES;
-        String[] enemyMulties = ChampionData.ENEMY_MULTIES;
-        String[] ownMulties = ChampionData.OWN_MULTIES;
+    private void announceMultiOrSpree(
+            Actor killer, int stat, String[] allySounds, String[] enemySounds, String[] ownSounds) {
+        int index = Math.min(stat, allySounds.length - 1);
 
-        int index = Math.min(killerMulti, allyMulties.length - 1);
-
-        ExtensionCommands.playSound(
-                parentExt, killer.getUser(), "global", "announcer/" + ownMulties[index]);
-
-        for (UserActor userActor : this.getPlayers()) {
-            if (!userActor.equals(killer)) {
-                String sound =
-                        userActor.getTeam() == killer.getTeam()
-                                ? allyMulties[index]
-                                : enemyMulties[index];
-
-                ExtensionCommands.playSound(
-                        parentExt, userActor.getUser(), "global", "announcer/" + sound);
-            }
-        }
-    }
-
-    private void announceKillingSpree(UserActor killer, int killerSpree) {
-        String[] allySprees = ChampionData.ALLY_SPREES;
-        String[] enemySprees = ChampionData.ENEMY_SPREES;
-        String[] ownSprees = ChampionData.OWN_SPREES;
-
-        int index = Math.min(killerSpree, allySprees.length - 1);
-
-        ExtensionCommands.playSound(
-                parentExt, killer.getUser(), "global", "announcer/" + ownSprees[index]);
-
-        for (UserActor userActor : this.getPlayers()) {
-            if (!userActor.equals(killer)) {
-                String sound =
-                        userActor.getTeam() == killer.getTeam()
-                                ? allySprees[index]
-                                : enemySprees[index];
-
-                ExtensionCommands.playSound(
-                        parentExt, userActor.getUser(), "global", "announcer/" + sound);
-            }
-        }
-    }
-
-    private void announceSingleKill(UserActor killer) {
-        ExtensionCommands.playSound(
-                parentExt, killer.getUser(), "global", "announcer/you_defeated_enemy");
-
-        List<UserActor> killerLastKills = killer.getKilledPlayers();
-
-        if (!killerLastKills.isEmpty()) {
-            int index = killerLastKills.size() - 1;
-            UserActor killedPlayer = killerLastKills.get(index);
-
+        UserActor killerUa = getPlayer(killer.getId());
+        if (killerUa != null) {
             ExtensionCommands.playSound(
-                    parentExt, killedPlayer.getUser(), "global", "announcer/you_are_defeated");
+                    parentExt, killerUa.getUser(), "global", "announcer/" + ownSounds[index]);
+        }
 
-            // making a list and removing the killer and the killedPlayer causes
-            // ConcurrentModificationException for some
-            // reason
+        String allySound = allySounds[index];
+        String enemySound = enemySounds[index];
 
-            for (UserActor ua : this.getPlayers()) {
-                if (!ua.equals(killer) && !ua.equals(killedPlayer)) {
-                    String sound =
-                            ua.getTeam() == killer.getTeam() ? "enemy_defeated" : "ally_defeated";
-                    ExtensionCommands.playSound(
-                            parentExt, ua.getUser(), "global", "announcer/" + sound);
-                }
+        announceForTeam(killer, killer.getTeam(), "announcer/" + allySound, false);
+        announceForTeam(killer, killer.getOppositeTeam(), "announcer/" + enemySound, false);
+    }
+
+    private void announceSingleKill(Actor killer) {
+        if (System.currentTimeMillis() - lastSingleKillAnnouncement >= SINGLE_KILL_COOLDOWN) {
+            lastSingleKillAnnouncement = System.currentTimeMillis();
+
+            UserActor killerUa = getPlayer(killer.getId());
+            if (killerUa != null) {
+                ExtensionCommands.playSound(
+                        parentExt, killerUa.getUser(), "global", "announcer/you_defeated_enemy");
             }
+
+            Actor killedChampion =
+                    killer.getKilledChampions().get(killer.getKilledChampions().size() - 1);
+            UserActor killedUa = getPlayer(killedChampion.getId());
+
+            if (killedUa != null) {
+                ExtensionCommands.playSound(
+                        parentExt, killedUa.getUser(), "global", "announcer/you_are_defeated");
+            }
+
+            announceForTeam(killer, killer.getTeam(), "announcer/enemy_defeated", true);
+            announceForTeam(killer, killer.getOppositeTeam(), "announcer/ally_defeated", true);
         }
     }
 
     private void handleAnnouncerBoolean() {
         isAnnouncingKill = true;
         Runnable resetIsAnnouncingKill = () -> isAnnouncingKill = false;
-        parentExt.getTaskScheduler().schedule(resetIsAnnouncingKill, 100, TimeUnit.MILLISECONDS);
+        parentExt.getTaskScheduler().schedule(resetIsAnnouncingKill, 500, TimeUnit.MILLISECONDS);
     }
 
     protected int getWinnerWhenTie() {
@@ -1721,12 +1834,12 @@ public abstract class RoomHandler implements Runnable {
         return returnMonsters;
     }
 
-    public int getAveragePlayerLevel() {
+    public int getAverageChampionLevel() {
         int combinedPlayerLevel = 0;
-        for (UserActor a : this.players) {
+        for (Actor a : champions) {
             combinedPlayerLevel += a.getLevel();
         }
-        return combinedPlayerLevel / this.players.size();
+        return combinedPlayerLevel / champions.size();
     }
 
     public List<Tower> getTowers() {

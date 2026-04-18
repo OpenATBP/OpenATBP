@@ -17,6 +17,26 @@ public class EffectManager {
     private final List<ActorStateEffect> stateEffects;
     private final Map<ActorState, Boolean> states = new HashMap<>();
 
+    private static final Set<String> statsToIgnore =
+            Set.of(
+                    "kills",
+                    "assists",
+                    "deaths",
+                    "spellDamagePerLevel",
+                    "attackDamagePerLevel",
+                    "healthRegenPerLevel",
+                    "attackSpeedPerLevel",
+                    "spellResistPerLevel",
+                    "armorPerLevel",
+                    "healthPerLevel",
+                    "coolDownReductionPerLevel",
+                    "aggroRange",
+                    "pLevel",
+                    "visionDistance",
+                    "valueScore",
+                    "weaponType",
+                    "availableSpellPoints");
+
     private Map<String, Double> tempStatsLastTick = new HashMap<>();
 
     private Map<String, Double> tempStats;
@@ -26,6 +46,7 @@ public class EffectManager {
 
     public static final float DEFAULT_KNOCKBACK_SPEED = 11;
     public static final int FEAR_MOVING_DISTANCE = 3;
+    private final float POLYMORPH_SLOW = 0.4f;
 
     public EffectManager(Actor a) {
         this.actor = a;
@@ -71,7 +92,12 @@ public class EffectManager {
 
             case POLYMORPH:
                 actor.interruptDash(false);
-                if (actor.hasCustomPolySwap()) actor.customSwapToPoly();
+                addState(
+                        ActorState.SLOWED,
+                        actor.getId() + "_poly_slow",
+                        POLYMORPH_SLOW,
+                        durationMs);
+                if (actor.hasCustomSwapToPoly()) actor.customSwapToPoly();
                 else handleSwapToPoly();
                 break;
 
@@ -409,7 +435,7 @@ public class EffectManager {
                 if (stateBools.get(s) && stateCount.get(s) == 0) {
                     setState(s, false); // remove state if expired
 
-                    if (s == ActorState.POLYMORPH && actor.hasCustomPolySwap()) {
+                    if (s == ActorState.POLYMORPH && actor.hasCustomSwapFromPoly()) {
                         actor.customSwapFromPoly();
                     } else if (s == ActorState.POLYMORPH) {
                         handleSwapFromPoly();
@@ -418,18 +444,18 @@ public class EffectManager {
             }
         }
 
-        // THIS PROBABLY HANDLES ALL STAT MENU UPDATES EVEN LEVEL UP AND JUNK UPGRADE
         if (actor instanceof UserActor) {
             UserActor ua = (UserActor) actor;
             for (Map.Entry<String, Double> entry : tempStats.entrySet()) {
                 String stat = entry.getKey();
 
                 // These are managed manually and shouldn't be auto-updated
-                if (stat.startsWith("sp_") || stat.equals("availableSpellPoints")) continue;
+                if (stat.startsWith("sp_")) continue;
 
                 double newVal = entry.getValue();
                 Double lastVal = tempStatsLastTick.get(stat);
                 if (lastVal == null || Math.abs(newVal - lastVal) > 0.001) {
+                    if (statsToIgnore.contains(stat)) continue;
                     Console.debugLog(
                             "Updating stat menu for stat: "
                                     + stat

@@ -50,11 +50,25 @@ public class LemongrabBot extends Bot {
         this.qCastDelayMS = 500;
         this.wCastDelayMS = 1250;
         this.eCastDelayMS = 1500;
-    }
 
-    @Override
-    protected BotRole getBotRole() {
-        return BotRole.LANE_PUSHER;
+        this.lowHpActionPHealth = 0.15;
+
+        this.canWinUnderTowerLvDif = -3;
+        this.canWinEReadyLvDif = 0;
+        this.canWinQWReadyLvDif = -1;
+
+        this.soloJungleLv = 2;
+        this.soloJunglePHealth = 0.95;
+        this.duoJungleLv = 2;
+        this.duoJunglePHealth = 0.3;
+        this.trioJunglePHeath = 0.25;
+        this.closestPlayerLvDif = 0;
+
+        this.fleeMinionsAttackedPHpPerLv = 0.05f;
+        this.defAltarCaptureActionDist = 4f;
+        this.playerAttackedLvDif = -1;
+
+        this.botRole = BotRole.JUNGLER;
     }
 
     @Override
@@ -113,6 +127,9 @@ public class LemongrabBot extends Bot {
     @Override
     public void handleFightingAbilities() {
         if (target == null || !canAttack()) return;
+
+        if (target.getActorType() == ActorType.TOWER) return;
+
         if (canUseQ()) {
             faceTarget(target);
             useQ(target.getLocation());

@@ -33,13 +33,15 @@ public class Hunson extends UserActor {
     private static final int W_SOUND_DELAY = 625;
     private static final int W_CAST_DELAY = 400;
     private static final int W_FEAR_DURATION = 1500;
-    private static final int W_DAMAGE_DURATION = 1500;
     private static final int E_DURATION = 3500;
     private static final int E_CAST_DELAY = 750;
     private static final double E_ARMOR_PERCENT = 0.5d;
     private static final int E_SPELLVAMP_VALUE = 45;
     public static final int W_DURATION = 1200;
     public static final float W_RADIUS = 2.5f;
+    public static final double E_SLOW_PERCENT = 0.4;
+
+    private final String E_SLOW_ID;
 
     private Map<Actor, Integer> qVictims;
     private boolean qActivated = false;
@@ -56,6 +58,7 @@ public class Hunson extends UserActor {
 
     public Hunson(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        E_SLOW_ID = id + "_hunson_e_slow";
     }
 
     @Override
@@ -156,13 +159,6 @@ public class Hunson extends UserActor {
     }
 
     @Override
-    public double getPlayerStat(String stat) {
-        if (stat.equalsIgnoreCase("speed") && this.ultActivated)
-            return super.getPlayerStat(stat) * 0.40d;
-        return super.getPlayerStat(stat);
-    }
-
-    @Override
     public void attack(Actor a) {
         super.attack(a);
         if (this.hasStatusEffect(a) && !this.passiveActivated && this.canUsePassive) {
@@ -253,7 +249,7 @@ public class Hunson extends UserActor {
                             this.id,
                             "sfx_hunson_scream2",
                             this.location);
-                    Line2D spellLine = Champion.getAbilityLine(this.location, dest, 8f);
+                    Line2D spellLine = Champion.createLineTowards(this.location, dest, 8f);
                     this.fireProjectile(
                             new HudsonProjectile(
                                     this.parentExt,
@@ -327,12 +323,17 @@ public class Hunson extends UserActor {
                 try {
                     this.resetTarget();
                     this.stopMoving(castDelay);
+
+                    effectManager.addEffect(
+                            E_SLOW_ID,
+                            "speed",
+                            E_SLOW_PERCENT,
+                            ModifierType.MULTIPLICATIVE,
+                            ModifierIntent.DEBUFF,
+                            E_DURATION);
+
                     ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "sfx_hunson_scream1",
-                            this.location);
+                            parentExt, room, id, "sfx_hunson_scream1", location);
                     Runnable soundDelay =
                             () ->
                                     ExtensionCommands.playSound(
@@ -383,6 +384,10 @@ public class Hunson extends UserActor {
         }
     }
 
+    private void removeESlow() {
+        effectManager.removeAllEffectsById(E_SLOW_ID);
+    }
+
     private boolean hasStatusEffect(Actor a) {
         ActorState[] states = ActorState.values();
         for (ActorState s : states) {
@@ -393,6 +398,7 @@ public class Hunson extends UserActor {
 
     private void endUlt() {
         this.ultActivated = false;
+        removeESlow();
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultHead");
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultRing");
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_ultSuck");

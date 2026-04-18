@@ -210,7 +210,7 @@ public class Gunter extends UserActor {
                 try {
                     stopMoving();
                     if (getHealth() > 0) {
-                        Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
+                        Line2D abilityLine = Champion.createLineTowards(this.location, dest, 8f);
                         ExtensionCommands.playSound(
                                 this.parentExt, this.room, "", "sfx_gunter_wing_it", this.location);
                         this.fireProjectile(

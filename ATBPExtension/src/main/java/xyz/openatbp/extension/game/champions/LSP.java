@@ -299,7 +299,7 @@ public class LSP extends UserActor {
             scheduleTask(enableECasting, delay);
 
             if (getHealth() > 0 && isCastingult) {
-                Line2D projectileLine = Champion.getAbilityLine(location, dest, 100f);
+                Line2D projectileLine = Champion.createLineTowards(location, dest, 100f);
                 ExtensionCommands.actorAnimate(parentExt, room, id, "spell3b", 500, false);
                 String eProjectile = SkinData.getLSPEProjectile(avatar);
 

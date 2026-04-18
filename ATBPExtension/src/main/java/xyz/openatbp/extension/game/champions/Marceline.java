@@ -36,6 +36,10 @@ public class Marceline extends UserActor {
     public static final int E_AS_PERCENT = 1;
     public static final int ULT_RADIUS = 3;
 
+    private final String BEAST_REGEN_BUFF_ID;
+    private final String W_BEAST_SPEED_BUFF_ID;
+    private final String BEAST_REGEN_FX_ID;
+
     private int passiveHits = 0;
     private boolean hpRegenActive = false;
     private Actor qVictim;
@@ -58,109 +62,79 @@ public class Marceline extends UserActor {
 
     public Marceline(User u, ATBPExtension parentExt) {
         super(u, parentExt);
-        this.customPolySwap = true;
+        this.hasCustomSwapFromPoly = true;
+        BEAST_REGEN_BUFF_ID = id + "_marcy_beast_regen";
+        W_BEAST_SPEED_BUFF_ID = id + "_marcy_beast_w_speed";
+        BEAST_REGEN_FX_ID = id + "_bat_regen";
     }
 
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if (this.vampireWActive
-                && System.currentTimeMillis() - this.vampireWStartTime >= W_DURATION) {
+        if (this.vampireWActive && System.currentTimeMillis() - vampireWStartTime >= W_DURATION) {
             this.vampireWActive = false;
             ExtensionCommands.removeStatusIcon(parentExt, player, W_VAMP_ICON);
         }
-        if (this.beastWActive && System.currentTimeMillis() - this.bestWStartTime >= W_DURATION) {
-            this.beastWActive = false;
+        if (beastWActive && System.currentTimeMillis() - bestWStartTime >= W_DURATION) {
+            beastWActive = false;
             ExtensionCommands.removeStatusIcon(parentExt, player, W_BEAST_ICON);
         }
-        if (this.currentHealth < this.maxHealth
-                && !this.hpRegenActive
-                && this.form == Form.BEAST
-                && !this.dead) {
-            ExtensionCommands.createActorFX(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    "marceline_vampiric_healing",
-                    15 * 1000 * 60,
-                    this.id + "_batRegen",
-                    true,
-                    "",
-                    true,
-                    false,
-                    this.team);
-            this.hpRegenActive = true;
-        } else if (hpRegenActive && this.currentHealth == this.maxHealth
-                || hpRegenActive && this.form == Form.BEAST && this.dead) {
-            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_batRegen");
-            this.hpRegenActive = false;
-        }
 
-        if (this.vampireWActive) {
+        if (vampireWActive) {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            for (Actor a : Champion.getActorsInRadius(handler, this.location, 2f)) {
+            for (Actor a : Champion.getActorsInRadius(handler, location, 2f)) {
                 if (isNeitherTowerNorAlly(a) && a.isNotLeaping()) {
-                    JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
+                    JsonNode spellData = parentExt.getAttackData(avatar, "spell2");
                     double damage = getSpellDamage(spellData, false) / 10d;
                     a.addToDamageQueue(this, damage, spellData, true);
                 }
             }
         }
-
-        if (this.qVictim != null && System.currentTimeMillis() - this.qHit >= 450) {
-            JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell1");
-            double damage = this.getSpellDamage(spellData, false) / 3d;
-            ExtensionCommands.playSound(
-                    this.parentExt,
-                    this.room,
-                    this.qVictim.getId(),
-                    "sfx_marceline_blood_hit",
-                    this.qVictim.getLocation());
-            if (this.qVictim != null) {
-                this.qVictim.addToDamageQueue(this, damage, spellData, true);
-                if (qVictim.getHealth() > 0) {
-                    ExtensionCommands.createActorFX(
-                            parentExt,
-                            room,
-                            qVictim.getId(),
-                            "fx_hit_blksmoke",
-                            1000,
-                            String.valueOf(Math.random()),
-                            false,
-                            "",
-                            true,
-                            false,
-                            team);
-                }
-            }
-            this.qHit = System.currentTimeMillis();
-        }
-        if (this.form == Form.BEAST
-                && this.currentHealth < this.maxHealth
+        if (form == Form.BEAST
+                && currentHealth < maxHealth
                 && System.currentTimeMillis() - regenSound >= PASSIVE_HP_REG_SOUND_DELAY) {
             regenSound = System.currentTimeMillis();
-            ExtensionCommands.playSound(
-                    this.parentExt, this.player, this.id, "marceline_regen_loop", this.location);
+            ExtensionCommands.playSound(parentExt, player, id, "marceline_regen_loop", location);
         }
         checkForDisablingUltAttack();
+
+        if (qVictim != null && System.currentTimeMillis() - qHit >= 450) {
+            Actor currentVictim = qVictim;
+            if (currentVictim == null) return;
+
+            if (currentVictim.getHealth() > 0) {
+                JsonNode spellData = parentExt.getAttackData(avatar, "spell1");
+                double damage = getSpellDamage(spellData, false) / 3d;
+                currentVictim.addToDamageQueue(this, damage, spellData, true);
+
+                ExtensionCommands.playSound(
+                        parentExt,
+                        room,
+                        currentVictim.getId(),
+                        "sfx_marceline_blood_hit",
+                        currentVictim.getLocation());
+
+                ExtensionCommands.createActorFX(
+                        parentExt,
+                        room,
+                        currentVictim.getId(),
+                        "fx_hit_blksmoke",
+                        1000,
+                        String.valueOf(Math.random()),
+                        false,
+                        "",
+                        true,
+                        false,
+                        team);
+            }
+            qHit = System.currentTimeMillis();
+        }
     }
 
     @Override
     public void customSwapFromPoly() {
         String bundle = this.form == Form.BEAST ? "marceline_bat" : getSkinAssetBundle();
         ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bundle);
-    }
-
-    @Override
-    public double getPlayerStat(String stat) {
-        if (stat.equalsIgnoreCase("healthRegen") && this.form == Form.BEAST) {
-            return super.getPlayerStat(stat) * PASSIVE_HP_REG_VALUE;
-        } else if (stat.equalsIgnoreCase("speed")) {
-            if (this.beastWActive) return super.getPlayerStat(stat) * (1 + W_BEAST_SPEED_PERCENT);
-            else if (this.vampireWActive)
-                return super.getPlayerStat(stat) * (1 + W_VAMPIRE_SPEED_PERCENT);
-        }
-        return super.getPlayerStat(stat);
     }
 
     @Override
@@ -241,6 +215,10 @@ public class Marceline extends UserActor {
             beastWActive = false;
             ExtensionCommands.removeStatusIcon(parentExt, player, W_BEAST_ICON);
         }
+
+        if (form == Form.BEAST) {
+            removeBeastPassiveFX();
+        }
     }
 
     @Override
@@ -256,7 +234,7 @@ public class Marceline extends UserActor {
                 this.canCast[0] = false;
                 try {
                     this.stopMoving(castDelay);
-                    Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 7f);
+                    Line2D abilityLine = Champion.createLineTowards(this.location, dest, 7f);
                     String qVO = SkinData.getMarcelineQVO(avatar, form.toString());
                     String proj = "projectile_marceline_dot";
                     String proj2 = "projectile_marceline_root";
@@ -338,8 +316,14 @@ public class Marceline extends UserActor {
                                 false,
                                 this.team);
 
-                        // this.addEffect("speed", this.getStat("speed") * W_BEAST_SPEED_VALUE,
-                        // W_DURATION);
+                        effectManager.addEffect(
+                                W_BEAST_SPEED_BUFF_ID,
+                                "speed",
+                                W_BEAST_SPEED_PERCENT,
+                                ModifierType.MULTIPLICATIVE,
+                                ModifierIntent.BUFF,
+                                W_DURATION);
+
                     } else {
                         this.vampireWActive = true;
                         this.vampireWStartTime = System.currentTimeMillis();
@@ -375,8 +359,14 @@ public class Marceline extends UserActor {
                                 true,
                                 false,
                                 this.team);
-                        // this.addEffect("speed", this.getStat("speed") * W_VAMPIRE_SPEED_VALUE,
-                        // W_DURATION);
+
+                        effectManager.addEffect(
+                                id + "_marcy_human_w_speed",
+                                "speed",
+                                W_VAMPIRE_SPEED_PERCENT,
+                                ModifierType.MULTIPLICATIVE,
+                                ModifierIntent.BUFF,
+                                W_DURATION);
                     }
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
@@ -435,6 +425,10 @@ public class Marceline extends UserActor {
             case 4:
                 break;
         }
+    }
+
+    private void removeBeastPassiveFX() {
+        ExtensionCommands.removeFx(parentExt, room, BEAST_REGEN_FX_ID);
     }
 
     private void addWStatusIcon(Form currentForm) {
@@ -497,6 +491,7 @@ public class Marceline extends UserActor {
                 passiveHits++;
             }
             if (beastWActive && form == Form.BEAST) {
+                effectManager.removeAllEffectsById(W_BEAST_SPEED_BUFF_ID);
                 beastWActive = false;
                 ExtensionCommands.playSound(
                         parentExt, room, id, "sfx_marceline_beast_crit_hit", location);
@@ -561,14 +556,13 @@ public class Marceline extends UserActor {
 
                 if (form == Form.BEAST) {
                     form = Form.VAMPIRE;
+                    removeBeastPassiveFX();
                     if (canSwapAsset) {
                         ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
                     }
-                    if (hpRegenActive) {
-                        ExtensionCommands.removeFx(parentExt, room, id + "_batRegen");
-                        hpRegenActive = false;
-                    }
-                    Marceline.this.effectManager.addEffect(
+
+                    effectManager.removeAllEffectsById(BEAST_REGEN_BUFF_ID);
+                    effectManager.addEffect(
                             Marceline.this.id + "_marcy_e_as_buff",
                             "attackSpeed",
                             E_AS_PERCENT,
@@ -582,6 +576,17 @@ public class Marceline extends UserActor {
                     if (canSwapAsset) {
                         ExtensionCommands.swapActorAsset(parentExt, room, id, "marceline_bat");
                     }
+
+                    effectManager.addEffect(
+                            BEAST_REGEN_BUFF_ID,
+                            "healthRegen",
+                            PASSIVE_HP_REG_VALUE,
+                            ModifierType.MULTIPLICATIVE,
+                            ModifierIntent.BUFF,
+                            1000 * 60 * 15,
+                            "marceline_vampiric_healing",
+                            BEAST_REGEN_FX_ID,
+                            "");
                 }
 
                 if (canDoUltAttack && !dead) {

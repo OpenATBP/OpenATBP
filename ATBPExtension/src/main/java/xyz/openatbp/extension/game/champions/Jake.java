@@ -53,6 +53,7 @@ public class Jake extends UserActor {
     private long ultStartTime = 0;
     private long lastSpell1cAnimTime = 0L;
     private boolean qAnimResetNeeded = false;
+    private boolean qInterrupt = false;
 
     private JakeQProjectile qProjectile;
 
@@ -75,9 +76,8 @@ public class Jake extends UserActor {
             qAnimResetNeeded = false;
         }
 
-        if (blockSkillsAndWalking && qProjectile != null && hasInterrupingCC()) {
-            qProjectile.destroy();
-            playInterruptSoundAndIdle();
+        if (blockSkillsAndWalking && qProjectile != null && hasInterrupingCC() && !qInterrupt) {
+            interruptQ();
         }
 
         if (this.ultActivated && System.currentTimeMillis() - this.ultStartTime >= E_DURATION) {
@@ -189,7 +189,7 @@ public class Jake extends UserActor {
                 blockSkillsAndWalking = true;
                 Runnable activateHitbox =
                         () -> {
-                            Line2D qLine = Champion.getAbilityLine(location, dest, Q_MAX_RANGE);
+                            Line2D qLine = Champion.createLineTowards(location, dest, Q_MAX_RANGE);
                             qProjectile =
                                     new JakeQProjectile(
                                             parentExt, this, qLine, Q_PROJECTILE_SPEED, 1f, 1f, "");
@@ -349,6 +349,16 @@ public class Jake extends UserActor {
         }
     }
 
+    private void interruptQ() {
+        if (qInterrupt) return;
+
+        qInterrupt = true;
+        if (qProjectile != null) {
+            qProjectile.destroy();
+        }
+        playInterruptSoundAndIdle();
+    }
+
     private class JakeQProjectile extends Projectile {
         public JakeQProjectile(
                 ATBPExtension parentExt,
@@ -441,7 +451,7 @@ public class Jake extends UserActor {
         @Override
         public void destroy() {
             super.destroy();
-            unlockSkillsAndWalking();
+            unlockSkillsAndWalking(qInterrupt);
             qAnimResetNeeded = true;
             lastSpell1cAnimTime = System.currentTimeMillis();
             ExtensionCommands.actorAnimate(parentExt, room, Jake.this.id, "spell1c", -1, false);
@@ -454,9 +464,11 @@ public class Jake extends UserActor {
         return super.canMove();
     }
 
-    private void unlockSkillsAndWalking() {
+    private void unlockSkillsAndWalking(boolean interrupt) {
         Runnable unlock = () -> blockSkillsAndWalking = false;
-        scheduleTask(unlock, Q_UNLOCK_SKILLS_DELAY);
+        int delay = interrupt ? 0 : Q_UNLOCK_SKILLS_DELAY;
+        scheduleTask(unlock, delay);
+        qInterrupt = false;
     }
 
     public void doPassive(Actor target) {

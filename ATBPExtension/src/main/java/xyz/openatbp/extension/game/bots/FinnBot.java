@@ -50,17 +50,37 @@ public class FinnBot extends Bot {
             int team,
             BotMapConfig mapConfig) {
         super(parentExt, room, botId, avatar, displayName, team, mapConfig);
-        qCooldownMs = 10000;
-        wCooldownMs = 12000;
-        eCooldownMs = 40000;
 
-        qGCooldownMs = 0;
-        wGCooldownMs = 500;
-        eGCooldownMs = 1000;
+        this.qCooldownMs = 10000;
+        this.wCooldownMs = 12000;
+        this.eCooldownMs = 40000;
 
-        qCastDelayMS = 0;
-        wCastDelayMS = 0;
-        eCastDelayMS = 500;
+        this.qGCooldownMs = 0;
+        this.wGCooldownMs = 500;
+        this.eGCooldownMs = 1000;
+
+        this.qCastDelayMS = 0;
+        this.wCastDelayMS = 0;
+        this.eCastDelayMS = 500;
+
+        this.lowHpActionPHealth = 0.25;
+
+        this.canWinUnderTowerLvDif = -2;
+        this.canWinEReadyLvDif = 0;
+        this.canWinQWReadyLvDif = -1;
+
+        this.soloJungleLv = 3;
+        this.soloJunglePHealth = 0.7;
+        this.duoJungleLv = 2;
+        this.duoJunglePHealth = 0.5;
+        this.trioJunglePHeath = 0.35;
+        this.closestPlayerLvDif = -2;
+
+        this.fleeMinionsAttackedPHpPerLv = 0.05f;
+        this.defAltarCaptureActionDist = 3f;
+        this.playerAttackedLvDif = -2;
+
+        this.botRole = BotRole.FIGHTER;
     }
 
     @Override
@@ -133,6 +153,9 @@ public class FinnBot extends Bot {
     @Override
     public void handleFightingAbilities() {
         if (target != null && canAttack()) {
+
+            if (target.getActorType() == ActorType.TOWER) return;
+
             double distance = target.getLocation().distance(location);
 
             boolean targetLowHP = target.getPHealth() <= 0.05;
@@ -153,7 +176,7 @@ public class FinnBot extends Bot {
     public void handleRetreatAbilities() {
         if (canAttack()) {
             Point2D fleePoint = getNextFleeWaypoint();
-            Point2D dashPoint = Champion.getAbilityLine(location, fleePoint, 5f).getP2();
+            Point2D dashPoint = Champion.createLineTowards(location, fleePoint, 5f).getP2();
 
             if (canUseW()) useW(dashPoint);
 

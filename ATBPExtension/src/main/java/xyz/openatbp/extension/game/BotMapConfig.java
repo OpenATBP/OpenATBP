@@ -416,7 +416,7 @@ public class BotMapConfig {
         return keeothLocation != null;
     }
 
-    public boolean hasDefenseAlter2() {
+    public boolean hasDefenseAltar2() {
         return defenseAltar2 != null;
     }
 

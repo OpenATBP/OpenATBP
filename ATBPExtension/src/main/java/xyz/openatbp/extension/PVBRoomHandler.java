@@ -25,8 +25,6 @@ public class PVBRoomHandler extends MainMapRoomHandler {
                 for (int i = 0; i < botProfiles.size(); i++) {
                     ISFSObject botProfile = botProfiles.get(i);
 
-                    Console.debugLog(botProfile.getDump());
-
                     Bot b =
                             GameModeSpawns.createSpecificBot(
                                     parentExt,
@@ -42,6 +40,7 @@ public class PVBRoomHandler extends MainMapRoomHandler {
                         botList[i] = b;
                         companions.add(b);
                         endGameChampions.put(botProfile.getInt("botId"), b);
+                        champions.add(b);
                     }
                 }
             }

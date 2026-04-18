@@ -24,12 +24,16 @@ import xyz.openatbp.extension.game.effects.ActorState;
 
 public class Champion {
     public static void updateServerHealth(ATBPExtension parentExt, Actor a) {
-        ISFSObject data = new SFSObject();
-        data.putUtfString("id", a.getId());
-        data.putInt("maxHealth", a.getMaxHealth());
-        data.putInt("currentHealth", a.getHealth());
-        data.putDouble("pHealth", a.getPHealth());
-        ExtensionCommands.updateActorData(parentExt, a.getRoom(), data);
+        if (a != null && parentExt != null) {
+            if (a.getId() != null) {
+                ISFSObject data = new SFSObject();
+                data.putUtfString("id", a.getId());
+                data.putInt("maxHealth", a.getMaxHealth());
+                data.putInt("currentHealth", a.getHealth());
+                data.putDouble("pHealth", a.getPHealth());
+                ExtensionCommands.updateActorData(parentExt, a.getRoom(), data);
+            }
+        }
     }
 
     public static UserActor getCharacterClass(User u, ATBPExtension parentExt) {
@@ -226,7 +230,7 @@ public class Champion {
         return new Line2D.Float(movementLine.getP1(), newPoint);
     }
 
-    public static Line2D getAbilityLine(Point2D location, Point2D dest, float abilityRange) {
+    public static Line2D createLineTowards(Point2D location, Point2D dest, float abilityRange) {
         double x = location.getX();
         double y = location.getY();
         double dx = dest.getX() - location.getX();

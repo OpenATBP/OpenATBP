@@ -51,7 +51,8 @@ public class FlamePrincess extends UserActor {
 
     public FlamePrincess(User u, ATBPExtension parentExt) {
         super(u, parentExt);
-        this.customPolySwap = true;
+        this.hasCustomSwapToPoly = true;
+        this.hasCustomSwapFromPoly = true;
     }
 
     @Override
@@ -98,6 +99,7 @@ public class FlamePrincess extends UserActor {
 
     @Override
     public void customSwapToPoly() {
+        super.customSwapToPoly();
         if (this.passiveEnabled) {
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_flame_passive");
         }
@@ -207,7 +209,7 @@ public class FlamePrincess extends UserActor {
                 try {
                     stopMoving();
                     if (getHealth() > 0) {
-                        Line2D abilityLine = Champion.getAbilityLine(location, dest, 8f);
+                        Line2D abilityLine = Champion.createLineTowards(location, dest, 8f);
                         ExtensionCommands.playSound(
                                 parentExt,
                                 room,

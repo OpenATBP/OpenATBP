@@ -316,7 +316,7 @@ public class Billy extends UserActor {
                 this.canCast[2] = false;
                 try {
                     this.stopMoving(castDelay);
-                    this.ultLoc = Champion.getAbilityLine(this.location, dest, 5.5f).getP2();
+                    this.ultLoc = Champion.createLineTowards(this.location, dest, 5.5f).getP2();
                     ExtensionCommands.playSound(
                             this.parentExt,
                             this.room,

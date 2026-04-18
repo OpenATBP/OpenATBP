@@ -142,8 +142,8 @@ public class Neptr extends UserActor {
     }
 
     @Override
-    public void startMoveTo(Point2D endPoint) {
-        super.startMoveTo(endPoint);
+    public void startMoveTo(Point2D endPoint, boolean forcedMovement) {
+        super.startMoveTo(endPoint, forcedMovement);
         if (this.isStopped())
             ExtensionCommands.playSound(
                     this.parentExt, this.player, this.id, "sfx_neptr_move_start", this.location);
@@ -194,7 +194,7 @@ public class Neptr extends UserActor {
             case 1:
                 this.canCast[0] = false;
                 try {
-                    Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
+                    Line2D abilityLine = Champion.createLineTowards(this.location, dest, 8f);
                     this.fireProjectile(
                             new NeptrProjectile(
                                     this.parentExt,

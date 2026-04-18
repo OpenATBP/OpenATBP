@@ -16,6 +16,8 @@ import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.game.effects.ActorState;
+import xyz.openatbp.extension.game.effects.ModifierIntent;
+import xyz.openatbp.extension.game.effects.ModifierType;
 
 public class BMO extends UserActor {
     private static final int PASSIVE_SLOW_DURATION = 2500;
@@ -32,6 +34,9 @@ public class BMO extends UserActor {
     private static final int E_CAST_DELAY = 250;
     private static final int E_RANGE = 16;
 
+    private final String W_ARMOR_BUFF_ID;
+    private final String W_SHIELDS_BUFF_ID;
+
     private int passiveStacks = 0;
     private boolean wActive = false;
     private long wStartTime = 0;
@@ -43,6 +48,8 @@ public class BMO extends UserActor {
 
     public BMO(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        W_ARMOR_BUFF_ID = id + "_bmo_w_armor";
+        W_SHIELDS_BUFF_ID = id + "_bmo_w_shields";
     }
 
     @Override
@@ -132,19 +139,14 @@ public class BMO extends UserActor {
         }
     }
 
-    @Override
-    public double getPlayerStat(String stat) {
-        if (this.wActive) {
-            if (stat.equalsIgnoreCase("armor")) return super.getPlayerStat(stat) * W_ARMOR_PERCENT;
-            else if (stat.equalsIgnoreCase("spellResist"))
-                return super.getPlayerStat(stat) * W_SHIELDS_PERCENT;
-        }
-        return super.getPlayerStat(stat);
+    private void removeWBuffs() {
+        effectManager.removeAllEffectsById(W_ARMOR_BUFF_ID);
+        effectManager.removeAllEffectsById(W_SHIELDS_BUFF_ID);
     }
 
     @Override
     public boolean canAttack() {
-        return wActive ? false : super.canAttack();
+        return !wActive && super.canAttack();
     }
 
     @Override
@@ -232,6 +234,22 @@ public class BMO extends UserActor {
                     this.stopMoving();
                     this.canCast[0] = false;
                     this.canCast[2] = false;
+
+                    effectManager.addEffect(
+                            W_ARMOR_BUFF_ID,
+                            "armor",
+                            W_ARMOR_PERCENT,
+                            ModifierType.MULTIPLICATIVE,
+                            ModifierIntent.BUFF,
+                            W_DURATION);
+                    effectManager.addEffect(
+                            W_SHIELDS_BUFF_ID,
+                            "spellResist",
+                            W_SHIELDS_PERCENT,
+                            ModifierType.MULTIPLICATIVE,
+                            ModifierIntent.BUFF,
+                            W_DURATION);
+
                     this.wActive = true;
                     wStartTime = System.currentTimeMillis();
                     String pixelsAoeFx = SkinData.getBMOWPixelsFX(avatar);
@@ -388,6 +406,7 @@ public class BMO extends UserActor {
 
     private void interrputW() {
         if (passiveStacks < 3) addPasiveStacks();
+        removeWBuffs();
         canMove = true;
         this.canCast[0] = true;
         this.canCast[2] = true;
@@ -399,11 +418,12 @@ public class BMO extends UserActor {
         ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "run", 500, false);
         int baseCooldown = ChampionData.getBaseAbilityCooldown(this, 2);
         ExtensionCommands.actorAbilityResponse(
-                this.parentExt, this.player, "w", true, getReducedCooldown(baseCooldown), 0);
+                parentExt, player, "w", true, getReducedCooldown(baseCooldown), 0);
     }
 
     private void wEnd(int cooldown, int gCooldown) {
         canMove = true;
+        removeWBuffs();
         RoomHandler handler = parentExt.getRoomHandler(room.getName());
         for (Actor a : Champion.getActorsInRadius(handler, this.location, 4f)) {
             if (isNeitherStructureNorAlly(a)) {
@@ -475,7 +495,7 @@ public class BMO extends UserActor {
             int delay = getReducedCooldown(cooldown) - E_CAST_DELAY;
             scheduleTask(enableECasting, delay);
             if (getHealth() > 0) {
-                Line2D abilityLine = Champion.getAbilityLine(location, dest, E_RANGE);
+                Line2D abilityLine = Champion.createLineTowards(location, dest, E_RANGE);
                 String ultProjectile = SkinData.getBMOEProjectileFX(avatar);
                 fireProjectile(
                         new BMOUltProjectile(

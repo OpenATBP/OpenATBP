@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
@@ -60,7 +59,7 @@ public class IceKing extends UserActor {
     public IceKing(User u, ATBPExtension parentExt) {
         super(u, parentExt);
         this.lastAbilityUsed = System.currentTimeMillis();
-        this.customPolySwap = true;
+        this.hasCustomSwapFromPoly = true;
     }
 
     @Override
@@ -68,20 +67,19 @@ public class IceKing extends UserActor {
         super.update(msRan);
         if ((ultLocation == null || ultLocation.distance(location) > E_RADIUS)
                 && effectManager.hasEffect(id + "_iceking_e_speed")) {
-            Console.debugLog("Removing speed effect");
             effectManager.removeAllEffectsById(id + "_iceking_e_speed");
         }
 
-        if (this.ultActive && this.ultLocation != null) {
+        if (ultActive && ultLocation != null) {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             List<Actor> actorsInUlt =
                     Champion.getActorsInRadius(handler, this.ultLocation, E_RADIUS);
             boolean containsIceKing = actorsInUlt.contains(this);
             if (containsIceKing && this.bundle == AssetBundle.NORMAL) {
                 this.bundle = AssetBundle.FLIGHT;
+
                 if (!effectManager.hasState(ActorState.POLYMORPH)) {
-                    ExtensionCommands.swapActorAsset(
-                            this.parentExt, this.room, this.id, getFlightAssetbundle());
+                    ExtensionCommands.swapActorAsset(parentExt, room, id, getFlightAssetbundle());
                 }
                 if (System.currentTimeMillis() - this.lasWhirlwindTime >= W_WHIRLWIND_CD) {
                     this.lasWhirlwindTime = System.currentTimeMillis();
@@ -495,7 +493,7 @@ public class IceKing extends UserActor {
             int delay = getReducedCooldown(cooldown) - Q_CAST_DELAY;
             scheduleTask(enableQCasting, delay);
             if (getHealth() > 0) {
-                Line2D abilityLine = Champion.getAbilityLine(location, dest, Q_RANGE);
+                Line2D abilityLine = Champion.createLineTowards(location, dest, Q_RANGE);
                 fireProjectile(
                         new IceKingProjectile(
                                 parentExt,

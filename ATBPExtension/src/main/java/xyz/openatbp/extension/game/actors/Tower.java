@@ -2,9 +2,9 @@ package xyz.openatbp.extension.game.actors;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -22,18 +22,17 @@ import xyz.openatbp.extension.game.RoomGroup;
 
 public class Tower extends Actor {
     private static final float DAMAGE_REDUCTION_NO_MINIONS = 0.85f;
-    private static final int SCORE_VALUE = 100;
+    private static final int TOWER_NORMAL_ATTACK_SPEED = 2000;
+    private static final int TOWER_ATTACK_SPEED_FIRST_SHOT = 1000;
+    public static final float TOWER_ATTACK_RANGE = 6;
+
     private final int[] PURPLE_TOWER_NUM = {2, 1};
     private final int[] BLUE_TOWER_NUM = {5, 4};
     private long lastHit;
     private boolean destroyed = false;
     protected long lastMissSoundTime = 0;
     protected long lastSpellDeniedTime = 0;
-    protected List<Actor> actorsInRadius;
-    private boolean isFocusingPlayer = false;
-    private boolean isFocusingCompanion = false;
-    private int numberOfAttacks = 0;
-    private List<UserActor> usersTargeted;
+    private List<UserActor> playersTargeted;
     private boolean reduceDmgTaken = false;
 
     public Tower(ATBPExtension parentExt, Room room, String id, int team, Point2D location) {
@@ -51,7 +50,7 @@ public class Tower extends Actor {
         if (team == 1) this.avatar = "tower2";
         this.displayName = parentExt.getDisplayName(this.avatar);
         this.stats = this.initializeStats();
-        this.usersTargeted = new ArrayList<>();
+        this.playersTargeted = new ArrayList<>();
         this.xpWorth = 15;
         ExtensionCommands.createWorldFX(
                 parentExt,
@@ -77,7 +76,7 @@ public class Tower extends Actor {
         this.parentExt = parentExt;
         this.room = room;
         this.team = team;
-        this.usersTargeted = new ArrayList<>();
+        this.playersTargeted = new ArrayList<>();
         this.actorType = ActorType.TOWER;
     }
 
@@ -96,32 +95,32 @@ public class Tower extends Actor {
         this.displayName = parentExt.getDisplayName(this.avatar);
         this.stats = this.initializeStats();
         this.xpWorth = 15;
-        this.usersTargeted = new ArrayList<>();
+        this.playersTargeted = new ArrayList<>();
     }
 
     @Override
     public boolean damaged(Actor a, int damage, JsonNode attackData) {
         if (this.destroyed) return true;
-        if (this.target == null && actorsInRadius.isEmpty()) {
+        if (this.target == null) {
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
                 if (System.currentTimeMillis() - this.lastMissSoundTime >= 1500
                         && getAttackType(attackData) == AttackType.PHYSICAL) {
-                    this.lastMissSoundTime = System.currentTimeMillis();
+                    lastMissSoundTime = System.currentTimeMillis();
                     ExtensionCommands.playSound(
-                            this.parentExt, ua.getUser(), ua.getId(), "sfx_attack_miss");
+                            parentExt, ua.getUser(), ua.getId(), "sfx_attack_miss");
                 } else if (System.currentTimeMillis() - this.lastSpellDeniedTime >= 1500) {
-                    this.lastSpellDeniedTime = System.currentTimeMillis();
+                    lastSpellDeniedTime = System.currentTimeMillis();
                     ExtensionCommands.playSound(
-                            this.parentExt, ua.getUser(), ua.getId(), "sfx_tower_no_damage_taken");
+                            parentExt, ua.getUser(), ua.getId(), "sfx_tower_no_damage_taken");
                 }
                 ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
+                        parentExt,
+                        room,
+                        id,
                         "tower_no_damage_taken",
                         500,
-                        this.id + "_noDamage",
+                        id + "_noDamage",
                         true,
                         "",
                         true,
@@ -142,6 +141,7 @@ public class Tower extends Actor {
 
     @Override
     public void attack(Actor a) {
+        attackCooldown = TOWER_NORMAL_ATTACK_SPEED;
         String projectileName = "tower_projectile_blue";
         String effectName = "tower_shoot_blue";
         if (this.team == 0) {
@@ -188,7 +188,7 @@ public class Tower extends Actor {
     @Override
     public void die(Actor a) {
         this.currentHealth = 0;
-        if (!this.destroyed) {
+        if (!destroyed) {
             this.destroyed = true;
             this.dead = true;
             ExtensionCommands.towerDown(parentExt, this.room, this.getTowerNum());
@@ -240,10 +240,7 @@ public class Tower extends Actor {
 
             parentExt
                     .getRoomHandler(this.room.getName())
-                    .addScore(earner, a.getTeam(), SCORE_VALUE);
-        }
-        if (target != null && target instanceof Bot) {
-            ExtensionCommands.removeFx(parentExt, room, id + "_target");
+                    .addScore(earner, a.getTeam(), TOWER_KILL_POINTS);
         }
     }
 
@@ -251,208 +248,174 @@ public class Tower extends Actor {
         return ua.getTeam() == this.team ? "your_tower_down" : "you_destroyed_tower";
     }
 
-    public List<UserActor> getUserActorsInTowerRadius() {
-        ArrayList<UserActor> players =
-                this.parentExt.getRoomHandler(this.room.getName()).getPlayers();
-        ArrayList<UserActor> playersInRadius = new ArrayList<>();
-        for (UserActor ua : players) {
-            if (ua.location.distance(this.location) <= (float) this.getPlayerStat("attackRange"))
-                playersInRadius.add(ua);
+    private boolean isChampion(Actor a) {
+        return a instanceof UserActor || a instanceof Bot;
+    }
+
+    private boolean isCompanion(Actor a) {
+        return a.getActorType() == ActorType.COMPANION && !(a instanceof Bot);
+    }
+
+    private void clearTowerFocus(Actor a) {
+        if (a.isTowerFocused()) a.setTowerFocused(false);
+    }
+
+    private Actor getClosestActor(List<Actor> actors) {
+        float minDistActor = 100000;
+        Actor closestActorTarget = null;
+
+        float minDistChampion = 100000;
+        Actor closestChampionTarget = null;
+
+        float minDistCompanion = 100000;
+        Actor closestCompanionTarget = null;
+
+        for (Actor a : actors) {
+            if (isChampion(a)) {
+                float dist = (float) location.distance(a.getLocation());
+                if (dist < minDistChampion) {
+                    minDistChampion = dist;
+                    closestChampionTarget = a;
+                }
+            }
+
+            if (isCompanion(a)) {
+                float dist = (float) location.distance(a.getLocation());
+                if (dist < minDistCompanion) {
+                    minDistCompanion = dist;
+                    closestCompanionTarget = a;
+                }
+            }
+
+            if (!isChampion(a) && !isCompanion(a)) {
+                float dist = (float) location.distance(a.getLocation());
+                if (dist < minDistActor) {
+                    minDistActor = dist;
+                    closestActorTarget = a;
+                }
+            }
         }
-        return playersInRadius;
+        return closestActorTarget != null
+                ? closestActorTarget
+                : closestCompanionTarget != null ? closestCompanionTarget : closestChampionTarget;
+    }
+
+    private Actor getFocusTarget(List<Actor> actors) {
+        for (Actor a : actors) {
+            if (a.isTowerFocused() && isChampion(a)) {
+                return a;
+            }
+
+            if (a.isTowerFocused() && isCompanion(a)) {
+                return a;
+            }
+        }
+        return null;
+    }
+
+    private boolean isInRange(Actor a) {
+        return a.getLocation().distance(location) <= TOWER_ATTACK_RANGE;
+    }
+
+    private void handlePlayerLeftTowerFXRemoval() {
+        if (playersTargeted.isEmpty()) return;
+
+        Iterator<UserActor> iterator = playersTargeted.iterator();
+        while (iterator.hasNext()) {
+            UserActor ua = iterator.next();
+            if (!isInRange(ua)) {
+                removePlayerFx(ua);
+                clearTowerFocus(ua);
+                iterator.remove();
+            }
+        }
+    }
+
+    private void removePlayerFx(UserActor ua) {
+        ExtensionCommands.removeFx(parentExt, ua.getUser(), id + "_aggro");
+        ExtensionCommands.removeFx(parentExt, ua.getUser(), id + "_target");
     }
 
     @Override
     public void update(int msRan) {
-        try {
-            if (!this.destroyed) {
-                this.handleDamageQueue();
-                if (this.destroyed) return;
+        if (destroyed) return;
+        handleDamageQueue();
+        handlePlayerLeftTowerFXRemoval();
 
-                RoomHandler rh = parentExt.getRoomHandler(room.getName());
-                float radius = (float) getPlayerStat("attackRange");
-                actorsInRadius = Champion.getEnemyActorsInRadius(rh, team, location, radius);
+        RoomHandler rh = parentExt.getRoomHandler(room.getName());
 
-                Predicate<Actor> isMinion = actor -> actor.getActorType() == ActorType.MINION;
+        List<Actor> enemiesInRadius = Champion.getActorsInRadius(rh, location, TOWER_ATTACK_RANGE);
+        enemiesInRadius.removeIf(a -> a.getTeam() == team);
 
-                reduceDmgTaken = actorsInRadius.stream().noneMatch(isMinion);
-
-                if (actorsInRadius.isEmpty() && this.attackCooldown != 1000) {
-                    if (numberOfAttacks != 0) this.numberOfAttacks = 0;
-                    this.attackCooldown = 1000;
-                }
-                if (this.target == null) {
-                    boolean hasMinion = false;
-                    double distance = 1000;
-                    Actor potentialTarget = null;
-                    for (Actor a : actorsInRadius) {
-                        if (hasMinion && a.getActorType() == ActorType.MINION) {
-                            if (a.getLocation().distance(this.location)
-                                    < distance) { // If minions exist in range, it only focuses on
-                                // finding the closest
-                                // minion
-                                potentialTarget = a;
-                                distance = a.getLocation().distance(this.location);
-                            }
-                        } else if (!hasMinion
-                                && (a.getActorType() == ActorType.MINION
-                                        || a.getActorType() == ActorType.COMPANION
-                                                && !(a
-                                                        instanceof
-                                                        Bot))) { // If minions have not been
-                            // found yet but it just
-                            // found
-                            // one, sets the first target to be searched
-                            hasMinion = true;
-                            potentialTarget = a;
-                            distance = a.getLocation().distance(this.location);
-                        } else if (!hasMinion && a.getActorType() == ActorType.PLAYER
-                                || a instanceof Bot) { // If potential target is a player and no
-                            // minion has been found,
-                            // starts processing closest player
-                            if (a.getLocation().distance(this.location) < distance) {
-                                potentialTarget = a;
-                                distance = a.getLocation().distance(this.location);
-                            }
-                        }
-                    }
-                    if (potentialTarget != null) {
-                        this.target = potentialTarget;
-                        if (this.target.getActorType() == ActorType.PLAYER) {
-                            UserActor user = (UserActor) this.target;
-                            this.targetPlayer(user);
-                        }
-                        ExtensionCommands.createActorFX(
-                                this.parentExt,
-                                this.room,
-                                this.target.getId(),
-                                "tower_current_target_indicator",
-                                10 * 60 * 1000,
-                                this.id + "_target",
-                                true,
-                                "displayBar",
-                                false,
-                                true,
-                                this.team);
-                    }
-                } else {
-                    if (this.target.getHealth() <= 0) {
-                        if (this.target.getActorType() == ActorType.COMPANION
-                                && isFocusingCompanion) isFocusingCompanion = false;
-                        if (this.target.getActorType() == ActorType.PLAYER && isFocusingPlayer)
-                            isFocusingPlayer = false;
-                        this.resetTarget(this.target);
-                        return;
-                    }
-                    if (!isFocusingCompanion && !isFocusingPlayer) {
-                        RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
-                        float range = (float) this.getPlayerStat("attackRange");
-                        for (Actor a : Champion.getActorsInRadius(handler, this.location, range)) {
-                            if (a.getActorType() == ActorType.COMPANION
-                                    && a.getTeam() != this.team
-                                    && a.towerAggroCompanion
-                                    && a.getHealth() > 0
-                                    && this.target != null
-                                    && this.target.getId().equalsIgnoreCase(a.getId())) {
-                                this.target = a;
-                                ExtensionCommands.removeFx(
-                                        this.parentExt, this.room, this.id + "_target");
-                                ExtensionCommands.createActorFX(
-                                        this.parentExt,
-                                        this.room,
-                                        this.target.getId(),
-                                        "tower_current_target_indicator",
-                                        10 * 60 * 1000,
-                                        this.id + "_target",
-                                        true,
-                                        "displayBar",
-                                        false,
-                                        true,
-                                        this.team);
-                                this.isFocusingCompanion = true;
-                            }
-                        }
-                    }
-                    if (!isFocusingPlayer && !isFocusingCompanion) {
-                        for (UserActor ua : getUserActorsInTowerRadius()) {
-                            if (ua.getActorType() == ActorType.PLAYER
-                                    && ua.getHealth() > 0
-                                    && this.target != null
-                                    && !this.target.getId().equalsIgnoreCase(ua.getId())) {
-                                if (ua.getTeam() != this.team && ua.changeTowerAggro) {
-                                    this.target = ua;
-                                    this.targetPlayer(ua);
-                                    ExtensionCommands.removeFx(
-                                            this.parentExt, this.room, this.id + "_target");
-                                    ExtensionCommands.createActorFX(
-                                            this.parentExt,
-                                            this.room,
-                                            this.target.getId(),
-                                            "tower_current_target_indicator",
-                                            10 * 60 * 1000,
-                                            this.id + "_target",
-                                            true,
-                                            "displayBar",
-                                            false,
-                                            true,
-                                            this.team);
-                                    this.isFocusingPlayer = true;
-                                }
-                            }
-                        }
-                    }
-                    if (this.attackCooldown > 0) this.reduceAttackCooldown();
-                    if (actorsInRadius.isEmpty()) {
-                        if (this.target != null
-                                && (this.target.getActorType() == ActorType.PLAYER
-                                        || target instanceof Bot)) {
-                            if (target.getActorType() == ActorType.PLAYER) {
-                                UserActor ua = (UserActor) this.target;
-                                ExtensionCommands.removeFx(
-                                        this.parentExt, ua.getUser(), this.id + "_aggro");
-                            }
-                            ExtensionCommands.removeFx(
-                                    this.parentExt, this.room, this.id + "_target");
-                        }
-                        this.target = null;
-                    } else {
-                        if (this.target != null
-                                && this.target.getLocation().distance(this.location)
-                                        <= this.getPlayerStat("attackRange")) {
-                            if (this.canAttack()) {
-                                this.attack(this.target);
-                                this.numberOfAttacks++;
-                                if (this.numberOfAttacks > 0) this.attackCooldown = 2000;
-                            }
-                        } else {
-                            if (this.target != null) this.resetTarget(this.target);
-                            this.isFocusingPlayer = false;
-                            this.isFocusingCompanion = false;
-                        }
-                    }
-                }
+        if (enemiesInRadius.isEmpty()) {
+            if (attackCooldown != TOWER_ATTACK_SPEED_FIRST_SHOT) {
+                attackCooldown = TOWER_ATTACK_SPEED_FIRST_SHOT;
+                target = null;
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+            return;
         }
+
+        if (attackCooldown > 0) attackCooldown -= 100;
+        if (attackCooldown < 0) attackCooldown = 0;
+
+        List<Actor> enemyMinions = new ArrayList<>(enemiesInRadius);
+        enemyMinions.removeIf(e -> !(e instanceof Minion));
+
+        this.reduceDmgTaken = enemyMinions.isEmpty();
+
+        Actor potentialTarget;
+        Actor focusTarget = getFocusTarget(enemiesInRadius);
+
+        if (focusTarget != null) potentialTarget = focusTarget;
+        else potentialTarget = getClosestActor(enemiesInRadius);
+
+        if (potentialTarget == null) return;
+
+        boolean targetChanged = target == null || !target.equals(potentialTarget);
+
+        if ((targetChanged && target != null) || (target != null && target.getHealth() <= 0)) {
+            ExtensionCommands.removeFx(parentExt, room, id + "_target");
+        }
+
+        this.target = potentialTarget;
+
+        if (target instanceof UserActor && !playersTargeted.contains(target)) {
+            targetPlayer((UserActor) target);
+        }
+
+        if (targetChanged) {
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    target.getId(),
+                    "tower_current_target_indicator",
+                    10 * 60 * 1000,
+                    id + "_target",
+                    true,
+                    "displayBar",
+                    false,
+                    true,
+                    team);
+        }
+
+        if (canAttack(target)) attack(target);
     }
 
     @Override
-    public void setTarget(Actor a) {
-        if (this.target != null) this.resetTarget(this.target);
-        this.target = a;
-    }
-
-    public String getId() {
-        return this.id;
-    }
+    public void setTarget(Actor a) {}
 
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
-        if (a.getActorType() == ActorType.COMPANION && isFocusingCompanion)
-            isFocusingCompanion = false;
-        if (a.getActorType() == ActorType.PLAYER && isFocusingPlayer) isFocusingPlayer = false;
-        this.resetTarget(a);
+        if (a instanceof UserActor) {
+            removePlayerFx((UserActor) a);
+            playersTargeted.remove(a);
+        }
+
+        if ((isChampion(a) || isCompanion(a))) {
+            clearTowerFocus(a);
+        }
+
+        this.target = null;
     }
 
     public int getTowerNum() { // Gets tower number for the client to process correctly
@@ -498,29 +461,12 @@ public class Tower extends Actor {
         this.lastHit = System.currentTimeMillis();
     }
 
-    public boolean canAttack() {
-        return this.attackCooldown == 0;
-    }
-
-    public void resetTarget(Actor a) { // TODO: Does not always work
-        if (a.getActorType() == ActorType.PLAYER) {
-            UserActor ua = (UserActor) a;
-            ExtensionCommands.removeFx(this.parentExt, ua.getUser(), this.id + "_aggro");
-            this.usersTargeted.remove(ua);
-        }
-        ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_target");
-        this.target = null;
+    public boolean canAttack(Actor target) {
+        return this.attackCooldown == 0 && isInRange(target) && target.getHealth() > 0;
     }
 
     public void targetPlayer(UserActor user) {
-        if (!this.usersTargeted.isEmpty()) {
-            for (UserActor t : new ArrayList<>(this.usersTargeted)) {
-                ExtensionCommands.removeFx(this.parentExt, t.getUser(), this.id + "_aggro");
-                this.usersTargeted.remove(t);
-            }
-        }
-        this.usersTargeted.add(user);
-        ExtensionCommands.setTarget(this.parentExt, user.getUser(), this.id, user.getId());
+        playersTargeted.add(user);
         ExtensionCommands.createWorldFX(
                 this.parentExt,
                 user.getUser(),
@@ -528,16 +474,12 @@ public class Tower extends Actor {
                 "tower_danger_alert",
                 this.id + "_aggro",
                 10 * 60 * 1000,
-                (float) this.location.getX(),
-                (float) this.location.getY(),
+                (float) location.getX(),
+                (float) location.getY(),
                 true,
-                this.team,
+                team,
                 0f);
         ExtensionCommands.playSound(
-                this.parentExt,
-                user.getUser(),
-                user.getId(),
-                "sfx_turret_has_you_targeted",
-                this.location);
+                parentExt, user.getUser(), user.getId(), "sfx_turret_has_you_targeted", location);
     }
 }

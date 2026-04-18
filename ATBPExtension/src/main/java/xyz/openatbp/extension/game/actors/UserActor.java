@@ -42,13 +42,6 @@ public class UserActor extends Actor {
     public static final int SIMON_GLASSES_RANGE = 5;
 
     public static final double DEFAULT_DASH_SPEED = 20d;
-    public static final int HEALTH_PACK_REGEN = 15;
-
-    public static final float DC_AD_BUFF = 0.2f;
-    public static final float DC_ARMOR_BUFF = 0.2f;
-    public static final float DC_SPELL_RESIST_BUFF = 0.2f;
-    public static final float DC_SPEED_BUFF = 0.15f;
-    public static final float DC_PD_BUFF = 0.2f;
 
     public static final double RESPAWN_SPEED_BOOST = 2d;
     public static final int RESPAWN_SPEED_BOOST_MS = 5000;
@@ -68,13 +61,9 @@ public class UserActor extends Actor {
     protected int magicNailStacks = 0;
     protected int lightningSwordStacks = 0;
     protected double robeStacks = 0;
-    protected int killingSpree = 0;
-    protected int multiKill = 0;
-    protected long lastKilled = System.currentTimeMillis();
     protected boolean[] canCast = {true, true, true};
     protected Map<String, ScheduledFuture<?>> iconHandlers = new HashMap<>();
     protected int idleTime = 0;
-    protected boolean changeTowerAggro = false;
     // Set debugging options via config.properties next to the extension jar
     protected static boolean movementDebug;
     private static boolean invincibleDebug;
@@ -109,10 +98,6 @@ public class UserActor extends Actor {
     protected Point2D queuedDest = null;
 
     private final int elo;
-
-    private static final String DC_BUFF_TIER1_ID = "dc_buff_tier1";
-    private static final String DC_BUFF_TIER2_ID = "dc_buff_tier2";
-    private static final int DC_BUFF_DURATION = 1000 * 15 * 60;
 
     // TODO: Add all stats into UserActor object instead of User Variables
     public UserActor(User u, ATBPExtension parentExt) {
@@ -171,6 +156,9 @@ public class UserActor extends Actor {
                     2);
         if (speedDebug) this.setStat("speed", 20);
         if (damageDebug) this.setStat("attackDamage", 1000);
+
+        endGameStats.put("spree", 0d);
+        endGameStats.put("largestMulti", 0d);
     }
 
     public Map<Actor, Long> getMagicCubeProcs() {
@@ -250,26 +238,6 @@ public class UserActor extends Actor {
         return canCast;
     }
 
-    public int getMultiKill() {
-        return multiKill;
-    }
-
-    public int getKillingSpree() {
-        return killingSpree;
-    }
-
-    public long getLastKilled() {
-        return lastKilled;
-    }
-
-    public void setLastKilled(Long time) {
-        this.lastKilled = time;
-    }
-
-    public List<UserActor> getKilledPlayers() {
-        return killedPlayers;
-    }
-
     public User getUser() {
         return this.player;
     }
@@ -312,14 +280,10 @@ public class UserActor extends Actor {
             if (this.dead) return true;
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
-                checkTowerAggro(ua);
 
                 if (getAttackType(attackData) == AttackType.SPELL) {
                     handleMagicCube(ua);
                 }
-            }
-            if (a.getActorType() == ActorType.COMPANION) {
-                checkTowerAggroCompanion(a);
             }
 
             if ((getAttackType(attackData) == AttackType.SPELL)
@@ -378,6 +342,12 @@ public class UserActor extends Actor {
             if (a instanceof UserActor || a instanceof Bot) {
                 a.addDamageGameStat(newDamage, type);
                 a.addGameStat("damageDealtChamps", newDamage);
+
+                if (a.isInAliveTowerRange(a, false)) a.setTowerFocused(true);
+            }
+
+            if (a.getActorType() == ActorType.COMPANION && !(a instanceof Bot)) {
+                if (a.isInAliveTowerRange(a, false)) a.setTowerFocused(true);
             }
 
             if (a instanceof UserActor) {
@@ -535,73 +505,6 @@ public class UserActor extends Actor {
         }
     }
 
-    public void checkTowerAggro(UserActor ua) {
-        if (isInTowerRadius(ua, false)) ua.changeTowerAggro = true;
-    }
-
-    public void checkTowerAggroCompanion(Actor a) {
-        if (isInTowerRadius(a, false)) a.towerAggroCompanion = true;
-    }
-
-    public boolean isInTowerRadius(Actor a, boolean ownTower) {
-        HashMap<String, Point2D> towers;
-        List<Point2D> towerLocations = new ArrayList<>();
-        HashMap<String, Point2D> baseTowers;
-        String roomGroup = room.getGroupId();
-        GameMap gameMap = GameManager.getMap(GameManager.getRoomGroupEnum(roomGroup));
-
-        if (gameMap == GameMap.CANDY_STREETS) {
-            if (ownTower) {
-                if (a.getTeam() == 1) {
-                    towers = MapData.getPTowerActorData(1);
-                    baseTowers = MapData.getBaseTowerData(1, roomGroup);
-                } else {
-                    towers = MapData.getPTowerActorData(0);
-                    baseTowers = MapData.getBaseTowerData(0, roomGroup);
-                }
-            } else {
-                if (a.getTeam() == 1) {
-                    towers = MapData.getPTowerActorData(0);
-                    baseTowers = MapData.getBaseTowerData(0, roomGroup);
-                } else {
-                    towers = MapData.getPTowerActorData(1);
-                    baseTowers = MapData.getBaseTowerData(1, roomGroup);
-                }
-            }
-        } else {
-            if (ownTower) {
-                if (a.getTeam() == 1) {
-                    towers = MapData.getMainMapTowerData(1);
-                    baseTowers = MapData.getBaseTowerData(1, roomGroup);
-                } else {
-                    towers = MapData.getMainMapTowerData(0);
-                    baseTowers = MapData.getBaseTowerData(0, roomGroup);
-                }
-            } else {
-                if (a.getTeam() == 1) {
-                    towers = MapData.getMainMapTowerData(0);
-                    baseTowers = MapData.getBaseTowerData(0, roomGroup);
-                } else {
-                    towers = MapData.getMainMapTowerData(1);
-                    baseTowers = MapData.getBaseTowerData(1, roomGroup);
-                }
-            }
-        }
-        for (String key : baseTowers.keySet()) {
-            towerLocations.add(baseTowers.get(key));
-        }
-        for (String key : towers.keySet()) {
-            towerLocations.add(towers.get(key));
-        }
-        for (Point2D location : towerLocations) {
-            RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            if (Champion.getActorsInRadius(handler, location, 6f).contains(a)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     protected boolean handleAttack(Actor a) {
         if (this.attackCooldown == 0) {
             double critChance = this.getPlayerStat("criticalChance") / 100d;
@@ -730,11 +633,13 @@ public class UserActor extends Actor {
                         this.id,
                         realKiller.getId(),
                         (HashMap<Actor, ISFSObject>) this.aggressors);
-                this.increaseStat("deaths", 1);
+                increaseStat("deaths", 1);
 
                 if (realKiller instanceof UserActor || realKiller instanceof Bot) {
-                    a.increaseStat("kills", 1);
-                    parentExt.getRoomHandler(this.room.getName()).addScore(a, a.getTeam(), 25);
+                    realKiller.increaseStat("kills", 1);
+                    parentExt
+                            .getRoomHandler(room.getName())
+                            .addScore(a, a.getTeam(), CHAMPION_KILL_POINTS);
                 }
                 for (Actor actor : this.aggressors.keySet()) {
                     if (actor.getActorType() == ActorType.PLAYER
@@ -833,6 +738,8 @@ public class UserActor extends Actor {
         handleGrobDevice();
         handleBrush();
         handleQueuedDest();
+
+        if (msRan % 500 == 0) handleAutoUnstuck();
 
         if (this.dead) {
             if (this.currentHealth > 0
@@ -963,7 +870,7 @@ public class UserActor extends Actor {
                     Point2D lastMovePoint = movePointsToDest.get(movePointsToDest.size() - 1);
                     double distance = tLoc.distance(lastMovePoint);
                     if (distance > 0.5) { // to avoid extension command spam
-                        startMoveTo(target.getLocation());
+                        startMoveTo(target.getLocation(), false);
                     }
                 }
             }
@@ -1057,29 +964,60 @@ public class UserActor extends Actor {
             }
 
             handleLargestMulti();
-
-            if (effectManager.hasTempStat("healthRegen") && currentHealth >= maxHealth) {
-                effectManager.removeAllStatEffects("healthRegen");
-            }
         }
-        if (this.changeTowerAggro && !isInTowerRadius(this, false)) this.changeTowerAggro = false;
+    }
+
+    @Override
+    public void addTier1DCBuff() {
+        super.addTier1DCBuff();
+        ExtensionCommands.addStatusIcon(
+                parentExt,
+                player,
+                "DC Buff #1",
+                "Some coward left the battle! Here's something to help even the playing field!",
+                "icon_parity",
+                0);
+    }
+
+    @Override
+    public void addTier2DCBuff() {
+        super.addTier2DCBuff();
+        ExtensionCommands.addStatusIcon(
+                parentExt,
+                player,
+                "DC Buff #2",
+                "You're the last one left, finish the mission",
+                "icon_parity2",
+                0);
+    }
+
+    @Override
+    public void removeTier1DCBuff() {
+        super.removeTier1DCBuff();
+        ExtensionCommands.removeStatusIcon(parentExt, player, "DC Buff #1");
+    }
+
+    @Override
+    public void removeTier2DCBuff() {
+        super.removeTier2DCBuff();
+        ExtensionCommands.removeStatusIcon(parentExt, player, "DC Buff #2");
     }
 
     protected void handleLargestMulti() {
-        if (System.currentTimeMillis() - this.lastKilled >= 10000) {
+        if (System.currentTimeMillis() - lastKilled >= 10000) {
             if (multiKill != 0) {
                 if (hasGameStat("largestMulti")) {
-                    double largestMulti = this.getGameStat("largestMulti");
-                    if (multiKill > largestMulti) setGameStat("largestMulti", this.multiKill);
-                } else setGameStat("largestMulti", this.multiKill);
-                multiKill = 0;
+                    double largestMulti = getGameStat("largestMulti");
+                    if (multiKill > largestMulti) setGameStat("largestMulti", multiKill);
+                    multiKill = 0;
+                }
             }
         }
     }
 
     private void handleQueuedDest() {
         if (queuedDest != null && canMove() && !isMoving) {
-            startMoveTo(queuedDest);
+            startMoveTo(queuedDest, false);
             queuedDest = null;
         }
     }
@@ -1291,10 +1229,6 @@ public class UserActor extends Actor {
         }
     }
 
-    public int getLevel() {
-        return this.level;
-    }
-
     public double getPLevel() {
         if (this.level == 10) return 0d;
         double lastLevelXP = ChampionData.getLevelXP(this.level - 1);
@@ -1498,17 +1432,18 @@ public class UserActor extends Actor {
             this.multiKill++;
             this.lastKilled = System.currentTimeMillis();
         }
-        if (a.getActorType() == ActorType.PLAYER) {
-            UserActor killedUA = (UserActor) a;
-            this.killedPlayers.add(killedUA);
-            if (this.hasGameStat("spree")) {
-                double endGameSpree = this.getGameStat("spree");
-                if (this.killingSpree > endGameSpree) {
-                    this.endGameStats.put("spree", (double) this.killingSpree);
-                }
-            } else {
-                this.endGameStats.put("spree", (double) this.killingSpree);
+
+        if (a instanceof UserActor || a instanceof Bot) {
+            shouldTriggerAnnouncer = true;
+            killedChampions.add(a);
+            double endGameSpree = getGameStat("spree");
+
+            if (killingSpree > endGameSpree) {
+                setGameStat("spree", killingSpree);
             }
+        }
+
+        if (a.getActorType() == ActorType.PLAYER) {
             if (ChampionData.getJunkLevel(this, "junk_5_ghost_pouch") > 0) {
                 this.useGhostPouch();
             }
@@ -1665,132 +1600,6 @@ public class UserActor extends Actor {
         this.parentExt.getRoomHandler(this.room.getName()).addProjectile(projectile);
     }
 
-    public void handleDCBuff(int teamSizeDiff, boolean removeSecondBuff) {
-        if (removeSecondBuff) {
-            removeDCBuff(2);
-            applyDCBuff(1); // downgrade to tier 1 if they still need a buff
-            return;
-        }
-
-        int targetTier;
-        switch (Math.abs(teamSizeDiff)) {
-            case 1:
-                targetTier = 1;
-                break;
-            case 2:
-                targetTier = 2;
-                break;
-            default:
-                targetTier = 0;
-                break;
-        }
-
-        // Remove both tiers and reapply at the correct tier
-        removeDCBuff(1);
-        removeDCBuff(2);
-        if (targetTier >= 1) applyDCBuff(1);
-        if (targetTier == 2) applyDCBuff(2);
-    }
-
-    private void applyDCBuff(int tier) {
-        if (tier == 1) {
-            effectManager.addEffect(
-                    DC_BUFF_TIER1_ID,
-                    "armor",
-                    DC_ARMOR_BUFF - 1,
-                    ModifierType.MULTIPLICATIVE,
-                    ModifierIntent.BUFF,
-                    DC_BUFF_DURATION);
-
-            effectManager.addEffect(
-                    DC_BUFF_TIER1_ID,
-                    "spellResist",
-                    DC_SPELL_RESIST_BUFF,
-                    ModifierType.MULTIPLICATIVE,
-                    ModifierIntent.BUFF,
-                    DC_BUFF_DURATION);
-
-            effectManager.addEffect(
-                    DC_BUFF_TIER1_ID,
-                    "speed",
-                    DC_SPEED_BUFF,
-                    ModifierType.MULTIPLICATIVE,
-                    ModifierIntent.BUFF,
-                    DC_BUFF_DURATION);
-
-            ExtensionCommands.addStatusIcon(
-                    parentExt,
-                    player,
-                    "DC Buff #1",
-                    "Some coward left the battle! Here's something to help even the playing field!",
-                    "icon_parity",
-                    0);
-
-            ExtensionCommands.createActorFX(
-                    parentExt,
-                    room,
-                    id,
-                    "disconnect_buff_duo",
-                    DC_BUFF_DURATION,
-                    id + "_dcbuff1",
-                    true,
-                    "",
-                    false,
-                    false,
-                    team);
-
-        } else if (tier == 2) {
-            effectManager.addEffect(
-                    DC_BUFF_TIER2_ID,
-                    "attackDamage",
-                    DC_AD_BUFF,
-                    ModifierType.MULTIPLICATIVE,
-                    ModifierIntent.BUFF,
-                    DC_BUFF_DURATION);
-
-            effectManager.addEffect(
-                    DC_BUFF_TIER2_ID,
-                    "spellDamage",
-                    DC_PD_BUFF,
-                    ModifierType.MULTIPLICATIVE,
-                    ModifierIntent.BUFF,
-                    DC_BUFF_DURATION);
-
-            ExtensionCommands.addStatusIcon(
-                    parentExt,
-                    player,
-                    "DC Buff #2",
-                    "You're the last one left, finish the mission",
-                    "icon_parity2",
-                    0);
-
-            ExtensionCommands.createActorFX(
-                    parentExt,
-                    room,
-                    id,
-                    "disconnect_buff_solo",
-                    DC_BUFF_DURATION,
-                    id + "_dcbuff2",
-                    true,
-                    "",
-                    false,
-                    false,
-                    team);
-        }
-    }
-
-    private void removeDCBuff(int tier) {
-        if (tier == 1) {
-            effectManager.removeAllEffectsById(DC_BUFF_TIER1_ID);
-            ExtensionCommands.removeStatusIcon(parentExt, player, "DC Buff #1");
-            ExtensionCommands.removeFx(parentExt, room, id + "_dcbuff1");
-        } else if (tier == 2) {
-            effectManager.removeAllEffectsById(DC_BUFF_TIER2_ID);
-            ExtensionCommands.removeStatusIcon(parentExt, player, "DC Buff #2");
-            ExtensionCommands.removeFx(parentExt, room, id + "_dcbuff2");
-        }
-    }
-
     private HashMap<String, Double> getPlayerStats(String[] stats) {
         HashMap<String, Double> playerStats = new HashMap<>(stats.length);
         for (String s : stats) {
@@ -1801,8 +1610,7 @@ public class UserActor extends Actor {
 
     public void updateStatMenu(String stat) {
         // Console.debugLog("Updating stat menu: " + stat + " with " + this.getPlayerStat(stat));
-        ExtensionCommands.updateActorData(
-                this.parentExt, this.room, this.id, stat, this.getPlayerStat(stat));
+        ExtensionCommands.updateActorData(parentExt, room, id, stat, getPlayerStat(stat));
     }
 
     protected void updateStatMenu(String[] stats) {

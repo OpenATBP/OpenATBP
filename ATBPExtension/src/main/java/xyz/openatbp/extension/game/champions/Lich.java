@@ -240,7 +240,7 @@ public class Lich extends UserActor {
                             "vo/vo_lich_charm_shot",
                             this.location);
 
-                    Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
+                    Line2D abilityLine = Champion.createLineTowards(this.location, dest, 8f);
                     this.fireProjectile(
                             new LichWProjectile(
                                     parentExt,
@@ -541,7 +541,7 @@ public class Lich extends UserActor {
                         false);
             if (this.target == null) { // Should follow Lich around
                 if (location.distance(Lich.this.location) > MIN_SKULLY_SEPARATION) {
-                    startMoveTo(Lich.this.location);
+                    startMoveTo(Lich.this.location, false);
                 } else if (isMoving) {
                     stopMoving();
                 }
@@ -550,13 +550,13 @@ public class Lich extends UserActor {
                 else {
                     if (this.location.distance(Lich.this.location) > MAX_SKULLY_SEPARATION) {
                         this.target = null;
-                        startMoveTo(Lich.this.location);
+                        startMoveTo(Lich.this.location, false);
                         return;
                     }
                     if (!this.withinRange(this.target)
                             && location.distance(Lich.this.location) > MIN_SKULLY_SEPARATION
                             && !this.isAutoAttacking) {
-                        startMoveTo(Lich.this.location);
+                        startMoveTo(Lich.this.location, false);
                     } else if (this.withinRange(this.target)) {
                         if (!this.isStopped()) this.stopMoving();
                         if (this.canAttack()) this.attack(this.target);
@@ -568,7 +568,7 @@ public class Lich extends UserActor {
         public void setTarget(Actor a) {
             if (this.target == a) return;
             this.target = a;
-            startMoveTo(a.getLocation());
+            startMoveTo(a.getLocation(), false);
         }
 
         public void resetTarget() {
@@ -606,7 +606,7 @@ public class Lich extends UserActor {
             if (highestPriorityActor != null) this.setTarget(highestPriorityActor);
             else {
                 if (this.location.distance(Lich.this.location) > 2.5d) {
-                    startMoveTo(Lich.this.location);
+                    startMoveTo(Lich.this.location, false);
                 }
             }
         }

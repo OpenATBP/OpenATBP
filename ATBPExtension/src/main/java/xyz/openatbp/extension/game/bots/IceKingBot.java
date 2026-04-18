@@ -59,35 +59,58 @@ public class IceKingBot extends Bot {
             int team,
             BotMapConfig mapConfig) {
         super(parentExt, room, botId, avatar, displayName, team, mapConfig);
-        qCooldownMs = 10000;
-        wCooldownMs = 12000;
-        eCooldownMs = 70000;
 
-        qGCooldownMs = 250;
-        wGCooldownMs = 250;
-        eGCooldownMs = 250;
+        this.qCooldownMs = 10000;
+        this.wCooldownMs = 12000;
+        this.eCooldownMs = 70000;
 
-        qCastDelayMS = 250;
-        wCastDelayMS = 250;
-        eCastDelayMS = 250;
+        this.qGCooldownMs = 250;
+        this.wGCooldownMs = 250;
+        this.eGCooldownMs = 250;
 
-        this.customPolySwap = true;
-    }
+        this.qCastDelayMS = 250;
+        this.wCastDelayMS = 250;
+        this.eCastDelayMS = 250;
 
-    @Override
-    protected BotRole getBotRole() {
-        return BotRole.LANE_PUSHER;
+        this.hasCustomSwapFromPoly = true;
+
+        this.lowHpActionPHealth = 0.3;
+
+        this.canWinUnderTowerLvDif = -2;
+        this.canWinEReadyLvDif = -1;
+        this.canWinQWReadyLvDif = -1;
+
+        this.soloJungleLv = 5;
+        this.soloJunglePHealth = 0.85;
+        this.duoJungleLv = 2;
+        this.duoJunglePHealth = 0.45;
+        this.trioJunglePHeath = 0.3;
+        this.closestPlayerLvDif = 0;
+
+        this.fleeMinionsAttackedPHpPerLv = 0.04f;
+        this.defAltarCaptureActionDist = 3f;
+        this.playerAttackedLvDif = -1;
+
+        this.botRole = BotRole.LANE_PUSHER;
     }
 
     @Override
     public void update(int msRan) {
         super.update(msRan);
+        handleESpeedRemoval();
         handleUlt();
         handleUpdatePassive();
         handleWUpdateEnd();
         handleUpdateEEnd();
         handleUpdateQ();
         handleUpdateW();
+    }
+
+    private void handleESpeedRemoval() {
+        if ((ultLocation == null || ultLocation.distance(location) > E_RADIUS)
+                && effectManager.hasEffect(id + "_iceking_e_speed")) {
+            effectManager.removeAllEffectsById(id + "_iceking_e_speed");
+        }
     }
 
     @Override
@@ -155,6 +178,9 @@ public class IceKingBot extends Bot {
     public void handleFightingAbilities() {
 
         if (target != null && canAttack()) {
+
+            if (target.getActorType() == ActorType.TOWER) return;
+
             if (canUseQ() && target.getLocation().distance(location) <= Q_RANGE) {
                 faceTarget(target);
                 useQ(target.getLocation());
@@ -437,7 +463,7 @@ public class IceKingBot extends Bot {
         @Override
         protected void spellQ() {
             if (getHealth() > 0) {
-                Line2D abilityLine = Champion.getAbilityLine(location, dest, 7.5f);
+                Line2D abilityLine = Champion.createLineTowards(location, dest, 7.5f);
                 IceKingBotProjectile p =
                         new IceKingBotProjectile(
                                 parentExt,
@@ -563,10 +589,11 @@ public class IceKingBot extends Bot {
             boolean containsIceKing = actorsInUlt.contains(this);
             if (containsIceKing && this.bundle == AssetBundle.NORMAL) {
                 this.bundle = AssetBundle.FLIGHT;
+
                 if (!effectManager.hasState(ActorState.POLYMORPH)) {
-                    ExtensionCommands.swapActorAsset(
-                            this.parentExt, this.room, this.id, getFlightAssetbundle());
+                    ExtensionCommands.swapActorAsset(parentExt, room, id, getFlightAssetbundle());
                 }
+
                 if (System.currentTimeMillis() - this.lasWhirlwindTime >= W_WHIRLWIND_CD) {
                     this.lasWhirlwindTime = System.currentTimeMillis();
                     ExtensionCommands.createActorFX(

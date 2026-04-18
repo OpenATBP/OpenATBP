@@ -436,7 +436,7 @@ public class GameManager {
                     if (a.hasGameStat(s)) endGameChampion.put(s, a.getGameStat(s));
                 }
 
-                int elo = 0;
+                int elo = 0; // bot elo
                 if (a instanceof UserActor) {
                     elo = ((UserActor) a).getElo();
                 }

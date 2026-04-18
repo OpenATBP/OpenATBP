@@ -36,7 +36,7 @@ public class MoveActorHandler extends BaseClientRequestHandler {
             float dx = params.getFloat("dest_x");
             float dz = params.getFloat("dest_z");
 
-            user.startMoveTo(new Point2D.Float(dx, dz));
+            user.startMoveTo(new Point2D.Float(dx, dz), false);
 
         } else if (user != null && user.getIsAutoAttacking()) {
             float dx = params.getFloat("dest_x");

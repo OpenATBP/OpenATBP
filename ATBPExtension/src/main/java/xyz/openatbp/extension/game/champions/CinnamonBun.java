@@ -311,14 +311,15 @@ public class CinnamonBun extends UserActor {
 
                 wStartTime = System.currentTimeMillis();
                 handlePassive();
-                double slideX = Champion.getAbilityLine(location, dest, 1.5f).getX2();
-                double slideY = Champion.getAbilityLine(location, dest, 1.5f).getY2();
+                double slideX = Champion.createLineTowards(location, dest, 1.5f).getX2();
+                double slideY = Champion.createLineTowards(location, dest, 1.5f).getY2();
                 float rotation = getRotation(dest);
 
                 RoomHandler rh = parentExt.getRoomHandler(room.getName());
                 PathFinder pf = rh.getPathFinder();
 
-                Point2D leapDest = Champion.getAbilityLine(location, dest, W_SPELL_RANGE).getP2();
+                Point2D leapDest =
+                        Champion.createLineTowards(location, dest, W_SPELL_RANGE).getP2();
 
                 Point2D leapPoint = pf.getNonObstaclePointOrIntersection(location, leapDest);
                 double time = location.distance(leapPoint) / W_DASH_SPEED;
@@ -331,8 +332,8 @@ public class CinnamonBun extends UserActor {
                                 .build();
                 startDash(ctx);
 
-                Point2D rectStart = Champion.getAbilityLine(location, dest, 0.5f).getP2();
-                Point2D rectEnd = Champion.getAbilityLine(location, dest, 7f).getP2();
+                Point2D rectStart = Champion.createLineTowards(location, dest, 0.5f).getP2();
+                Point2D rectEnd = Champion.createLineTowards(location, dest, 7f).getP2();
 
                 wPolygon =
                         AbilityShape.createRectangle(
