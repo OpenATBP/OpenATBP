@@ -1819,19 +1819,7 @@ public abstract class RoomHandler implements Runnable {
     }
 
     public List<Monster> getCampMonsters() {
-
         return new ArrayList<>(this.campMonsters);
-    }
-
-    public List<Monster> getCampMonsters(String id) {
-        List<Monster> returnMonsters = new ArrayList<>(3);
-        String type = id.split("_")[0];
-        for (Monster m : this.campMonsters) {
-            if (!m.getId().equalsIgnoreCase(id) && m.getId().contains(type)) {
-                returnMonsters.add(m);
-            }
-        }
-        return returnMonsters;
     }
 
     public int getAverageChampionLevel() {

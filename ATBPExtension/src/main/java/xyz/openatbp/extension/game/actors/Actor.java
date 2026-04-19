@@ -1025,6 +1025,76 @@ public abstract class Actor {
         return false;
     }
 
+    protected void processHitData(Actor a, JsonNode attackData, int damage) {
+        if (a.getId().contains("turret"))
+            a =
+                    parentExt
+                            .getRoomHandler(this.room.getName())
+                            .getEnemyChampion(this.team, "princessbubblegum");
+        if (a.getId().contains("skully"))
+            a = parentExt.getRoomHandler(this.room.getName()).getEnemyChampion(this.team, "lich");
+        String precursor = "attack";
+        if (attackData.has("spellName")) precursor = "spell";
+        if (aggressors.containsKey(a)) {
+            aggressors.get(a).putLong("lastAttacked", System.currentTimeMillis());
+            ISFSObject currentAttackData = aggressors.get(a);
+            int tries = 0;
+            for (String k : currentAttackData.getKeys()) {
+                if (k.contains("attack")) {
+                    ISFSObject attack0 = currentAttackData.getSFSObject(k);
+                    if (attackData
+                            .get(precursor + "Name")
+                            .asText()
+                            .equalsIgnoreCase(attack0.getUtfString("atkName"))) {
+                        attack0.putInt("atkDamage", attack0.getInt("atkDamage") + damage);
+                        aggressors.get(a).putSFSObject(k, attack0);
+                        return;
+                    } else tries++;
+                }
+            }
+            String attackNumber = "";
+            if (tries == 0) attackNumber = "attack1";
+            else if (tries == 1) attackNumber = "attack2";
+            else if (tries == 2) attackNumber = "attack3";
+            ISFSObject attack1 = new SFSObject();
+            attack1.putUtfString("atkName", attackData.get(precursor + "Name").asText());
+            attack1.putInt("atkDamage", damage);
+            String attackType = "physical";
+            if (precursor.equalsIgnoreCase("spell") && isRegularAttack(attackData))
+                attackType = "spell";
+            attack1.putUtfString("atkType", attackType);
+            attack1.putUtfString("atkIcon", attackData.get(precursor + "IconImage").asText());
+            aggressors.get(a).putSFSObject(attackNumber, attack1);
+        } else {
+            ISFSObject playerData = new SFSObject();
+            playerData.putLong("lastAttacked", System.currentTimeMillis());
+            ISFSObject attackObj = new SFSObject();
+            attackObj.putUtfString("atkName", attackData.get(precursor + "Name").asText());
+            attackObj.putInt("atkDamage", damage);
+            String attackType = "physical";
+            if (precursor.equalsIgnoreCase("spell") && isRegularAttack(attackData))
+                attackType = "spell";
+            attackObj.putUtfString("atkType", attackType);
+            attackObj.putUtfString("atkIcon", attackData.get(precursor + "IconImage").asText());
+            playerData.putSFSObject("attack1", attackObj);
+            aggressors.put(a, playerData);
+        }
+    }
+
+    public boolean isRegularAttack(JsonNode attackData) {
+        if (attackData.has("spellName")
+                && attackData.get("spellName").asText().equalsIgnoreCase("rattleballs_spell_1_name")
+                && attackData.has("counterAttack")) {
+            return false;
+        }
+        String[] spellNames = {"princess_bubblegum_spell_2_name", "lich_spell_4_name"};
+        for (String name : spellNames) {
+            if (attackData.has("spellName")
+                    && attackData.get("spellName").asText().equalsIgnoreCase(name)) return false;
+        }
+        return true;
+    }
+
     public boolean withinRange(Actor a) {
         if (a == null) return false;
         if (a.getActorType() == ActorType.BASE)

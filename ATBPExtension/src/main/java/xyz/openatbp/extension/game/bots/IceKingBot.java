@@ -90,6 +90,7 @@ public class IceKingBot extends Bot {
         this.fleeMinionsAttackedPHpPerLv = 0.04f;
         this.defAltarCaptureActionDist = 3f;
         this.playerAttackedLvDif = -1;
+        this.junglingAlliesRadius = 7;
 
         this.botRole = BotRole.LANE_PUSHER;
     }

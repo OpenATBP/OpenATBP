@@ -79,6 +79,7 @@ public class FinnBot extends Bot {
         this.fleeMinionsAttackedPHpPerLv = 0.05f;
         this.defAltarCaptureActionDist = 3f;
         this.playerAttackedLvDif = -2;
+        this.junglingAlliesRadius = 4;
 
         this.botRole = BotRole.FIGHTER;
     }

@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
-import com.smartfoxserver.v2.entities.data.SFSObject;
 
 import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.*;
@@ -953,7 +952,7 @@ public class UserActor extends Actor {
 
             int newDeath = 10 + ((msRan / 1000) / 60);
             if (newDeath != this.deathTime) this.deathTime = newDeath;
-            List<Actor> actorsToRemove = new ArrayList<Actor>(this.aggressors.keySet().size());
+            List<Actor> actorsToRemove = new ArrayList<>(this.aggressors.size());
             for (Actor a : this.aggressors.keySet()) {
                 ISFSObject damageData = this.aggressors.get(a);
                 if (System.currentTimeMillis() > damageData.getLong("lastAttacked") + 5000)
@@ -1235,79 +1234,6 @@ public class UserActor extends Actor {
         double currentLevelXP = ChampionData.getLevelXP(this.level);
         double delta = currentLevelXP - lastLevelXP;
         return (this.xp - lastLevelXP) / delta;
-    }
-
-    private void processHitData(Actor a, JsonNode attackData, int damage) {
-        if (a.getId().contains("turret"))
-            a =
-                    this.parentExt
-                            .getRoomHandler(this.room.getName())
-                            .getEnemyChampion(this.team, "princessbubblegum");
-        if (a.getId().contains("skully"))
-            a =
-                    this.parentExt
-                            .getRoomHandler(this.room.getName())
-                            .getEnemyChampion(this.team, "lich");
-        String precursor = "attack";
-        if (attackData.has("spellName")) precursor = "spell";
-        if (this.aggressors.containsKey(a)) {
-            this.aggressors.get(a).putLong("lastAttacked", System.currentTimeMillis());
-            ISFSObject currentAttackData = this.aggressors.get(a);
-            int tries = 0;
-            for (String k : currentAttackData.getKeys()) {
-                if (k.contains("attack")) {
-                    ISFSObject attack0 = currentAttackData.getSFSObject(k);
-                    if (attackData
-                            .get(precursor + "Name")
-                            .asText()
-                            .equalsIgnoreCase(attack0.getUtfString("atkName"))) {
-                        attack0.putInt("atkDamage", attack0.getInt("atkDamage") + damage);
-                        this.aggressors.get(a).putSFSObject(k, attack0);
-                        return;
-                    } else tries++;
-                }
-            }
-            String attackNumber = "";
-            if (tries == 0) attackNumber = "attack1";
-            else if (tries == 1) attackNumber = "attack2";
-            else if (tries == 2) attackNumber = "attack3";
-            ISFSObject attack1 = new SFSObject();
-            attack1.putUtfString("atkName", attackData.get(precursor + "Name").asText());
-            attack1.putInt("atkDamage", damage);
-            String attackType = "physical";
-            if (precursor.equalsIgnoreCase("spell") && isRegularAttack(attackData))
-                attackType = "spell";
-            attack1.putUtfString("atkType", attackType);
-            attack1.putUtfString("atkIcon", attackData.get(precursor + "IconImage").asText());
-            this.aggressors.get(a).putSFSObject(attackNumber, attack1);
-        } else {
-            ISFSObject playerData = new SFSObject();
-            playerData.putLong("lastAttacked", System.currentTimeMillis());
-            ISFSObject attackObj = new SFSObject();
-            attackObj.putUtfString("atkName", attackData.get(precursor + "Name").asText());
-            attackObj.putInt("atkDamage", damage);
-            String attackType = "physical";
-            if (precursor.equalsIgnoreCase("spell") && isRegularAttack(attackData))
-                attackType = "spell";
-            attackObj.putUtfString("atkType", attackType);
-            attackObj.putUtfString("atkIcon", attackData.get(precursor + "IconImage").asText());
-            playerData.putSFSObject("attack1", attackObj);
-            this.aggressors.put(a, playerData);
-        }
-    }
-
-    public boolean isRegularAttack(JsonNode attackData) {
-        if (attackData.has("spellName")
-                && attackData.get("spellName").asText().equalsIgnoreCase("rattleballs_spell_1_name")
-                && attackData.has("counterAttack")) {
-            return false;
-        }
-        String[] spellNames = {"princess_bubblegum_spell_2_name", "lich_spell_4_name"};
-        for (String name : spellNames) {
-            if (attackData.has("spellName")
-                    && attackData.get("spellName").asText().equalsIgnoreCase(name)) return false;
-        }
-        return true;
     }
 
     public String getBackpack() {

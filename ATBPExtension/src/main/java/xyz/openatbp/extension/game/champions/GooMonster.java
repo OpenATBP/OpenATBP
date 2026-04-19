@@ -46,16 +46,6 @@ public class GooMonster extends Monster {
     }
 
     public GooMonster(
-            ATBPExtension parentExt, Room room, Point2D startingLocation, String monsterName) {
-        super(parentExt, room, startingLocation, monsterName);
-        this.abilityCooldown = 5000;
-        this.usingAbility = false;
-        this.puddleActivated = false;
-        this.puddleStarted = -1;
-        this.puddleLocation = null;
-    }
-
-    public GooMonster(
             ATBPExtension parentExt,
             Room room,
             Point2D startingLocation,

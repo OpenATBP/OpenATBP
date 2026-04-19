@@ -138,88 +138,85 @@ public class MainMapRoomHandler extends RoomHandler {
     public void spawnMonster(String monster) {
         float x = 0;
         float z = 0;
-        String actor = monster;
+        String avatar = monster;
         if (monster.equalsIgnoreCase("gnomes") || monster.equalsIgnoreCase("ironowls")) {
             char[] abc = {'a', 'b', 'c'};
-            for (int i = 0;
-                    i < 3;
-                    i++) { // Gnomes and owls have three different mobs so need to be spawned in
+            for (int i = 0; i < 3; i++) {
+                // Gnomes and owls have three different mobs so need to be spawned in
                 // triplets
                 if (monster.equalsIgnoreCase("gnomes")) {
-                    actor = "gnome_" + abc[i];
+                    avatar = "gnome_" + abc[i];
                     x = (float) MapData.L2_GNOMES[i].getX();
                     z = (float) MapData.L2_GNOMES[i].getY();
 
                 } else {
-                    actor = "ironowl_" + abc[i];
+                    avatar = "ironowl_" + abc[i];
                     x = (float) MapData.L2_OWLS[i].getX();
                     z = (float) MapData.L2_OWLS[i].getY();
                 }
+
+                String id = avatar + "_" + Math.random();
+
+                // remove first for safety
+                campMonsters.removeIf(m -> m.getId().equalsIgnoreCase(id));
+
                 Point2D spawnLoc = new Point2D.Float(x, z);
-                campMonsters.add(new Monster(parentExt, room, spawnLoc, actor));
-                ExtensionCommands.createActor(
-                        this.parentExt, this.room, actor, actor, spawnLoc, 0f, 2);
-                ExtensionCommands.moveActor(
-                        this.parentExt, this.room, actor, spawnLoc, spawnLoc, 5f, false);
+                ExtensionCommands.createActor(parentExt, room, id, avatar, spawnLoc, 0f, 2);
+                campMonsters.add(new Monster(parentExt, room, id, spawnLoc, avatar));
             }
         } else if (monster.length() > 3) {
             switch (monster) {
                 case "hugwolf":
                     x = MapData.HUGWOLF[0];
                     z = MapData.HUGWOLF[1];
-                    campMonsters.add(new Monster(parentExt, room, MapData.HUGWOLF, actor));
+                    campMonsters.add(new Monster(parentExt, room, MapData.HUGWOLF, avatar));
                     break;
                 case "grassbear":
                     x = MapData.GRASSBEAR[0];
                     z = MapData.GRASSBEAR[1];
-                    campMonsters.add(new Monster(parentExt, room, MapData.GRASSBEAR, actor));
+                    campMonsters.add(new Monster(parentExt, room, MapData.GRASSBEAR, avatar));
                     break;
                 case "keeoth":
                     x = MapData.L2_KEEOTH[0];
                     z = MapData.L2_KEEOTH[1];
-                    campMonsters.add(new Keeoth(parentExt, room, MapData.L2_KEEOTH, actor));
+                    campMonsters.add(new Keeoth(parentExt, room, MapData.L2_KEEOTH, avatar));
                     break;
                 case "goomonster":
                     x = MapData.L2_GOOMONSTER[0];
                     z = MapData.L2_GOOMONSTER[1];
-                    actor = "goomonster";
-                    campMonsters.add(new GooMonster(parentExt, room, MapData.L2_GOOMONSTER, actor));
+                    avatar = "goomonster";
+                    campMonsters.add(
+                            new GooMonster(parentExt, room, MapData.L2_GOOMONSTER, avatar));
                     break;
             }
             Point2D spawnLoc = new Point2D.Float(x, z);
-            ExtensionCommands.createActor(this.parentExt, this.room, actor, actor, spawnLoc, 0f, 2);
+            ExtensionCommands.createActor(
+                    this.parentExt, this.room, avatar, avatar, spawnLoc, 0f, 2);
             ExtensionCommands.moveActor(
-                    this.parentExt, this.room, actor, spawnLoc, spawnLoc, 5f, false);
+                    this.parentExt, this.room, avatar, spawnLoc, spawnLoc, 5f, false);
         }
+    }
+
+    private boolean tripletCampCleared(String monsterName) {
+        List<Monster> triplet =
+                getCampMonsters().stream()
+                        .filter(m -> m.getId().contains(monsterName))
+                        .collect(Collectors.toList());
+        triplet.removeIf(Actor::isDead);
+        return triplet.isEmpty();
     }
 
     @Override
     public void handleSpawnDeath(Actor a) {
         // Console.debugLog("The room has killed " + a.getId());
-        String mons = a.getId().split("_")[0];
+        String monster = a.getId().split("_")[0];
 
         for (String s : GameManager.L2_SPAWNS) {
-            if (s.contains(mons)) {
-                if (s.contains("keeoth")) {
-                    room.getVariable("spawns").getSFSObjectValue().putInt(s, 0);
-                    return;
-                } else if (s.contains("goomonster")) {
-                    room.getVariable("spawns").getSFSObjectValue().putInt(s, 0);
-                    return;
-                } else if (!s.contains("gnomes") && !s.contains("owls")) {
-                    room.getVariable("spawns").getSFSObjectValue().putInt(s, 0);
-                    return;
-                } else {
-                    for (Monster m : campMonsters) {
-                        if (!m.getId().equalsIgnoreCase(a.getId())
-                                && m.getId().contains(mons)
-                                && m.getHealth() > 0) {
-                            return;
-                        }
-                    }
-                    room.getVariable("spawns").getSFSObjectValue().putInt(s, 0);
-                    return;
-                }
+            if (!s.contains(monster)) continue;
+
+            if ((!s.contains("gnomes") && !s.contains("owls")) || tripletCampCleared(monster)) {
+                room.getVariable("spawns").getSFSObjectValue().putInt(s, 0);
+                return;
             }
         }
     }

@@ -67,6 +67,7 @@ public class LemongrabBot extends Bot {
         this.fleeMinionsAttackedPHpPerLv = 0.05f;
         this.defAltarCaptureActionDist = 4f;
         this.playerAttackedLvDif = -1;
+        this.junglingAlliesRadius = 8;
 
         this.botRole = BotRole.JUNGLER;
     }

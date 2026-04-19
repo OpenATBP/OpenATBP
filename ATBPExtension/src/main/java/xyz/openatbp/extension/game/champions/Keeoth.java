@@ -40,13 +40,6 @@ public class Keeoth extends Monster {
     }
 
     public Keeoth(
-            ATBPExtension parentExt, Room room, Point2D startingLocation, String monsterName) {
-        super(parentExt, room, startingLocation, monsterName);
-        this.abilityCooldown = 3000;
-        this.usingAbility = false;
-    }
-
-    public Keeoth(
             ATBPExtension parentExt,
             Room room,
             Point2D startingLocation,
