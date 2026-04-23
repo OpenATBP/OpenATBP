@@ -32,7 +32,7 @@ public class Tower extends Actor {
     private boolean destroyed = false;
     protected long lastMissSoundTime = 0;
     protected long lastSpellDeniedTime = 0;
-    private List<UserActor> playersTargeted;
+    private List<Actor> actorsTargeted;
     private boolean reduceDmgTaken = false;
 
     public Tower(ATBPExtension parentExt, Room room, String id, int team, Point2D location) {
@@ -50,7 +50,7 @@ public class Tower extends Actor {
         if (team == 1) this.avatar = "tower2";
         this.displayName = parentExt.getDisplayName(this.avatar);
         this.stats = this.initializeStats();
-        this.playersTargeted = new ArrayList<>();
+        this.actorsTargeted = new ArrayList<>();
         this.xpWorth = 15;
         ExtensionCommands.createWorldFX(
                 parentExt,
@@ -76,7 +76,7 @@ public class Tower extends Actor {
         this.parentExt = parentExt;
         this.room = room;
         this.team = team;
-        this.playersTargeted = new ArrayList<>();
+        this.actorsTargeted = new ArrayList<>();
         this.actorType = ActorType.TOWER;
     }
 
@@ -95,7 +95,7 @@ public class Tower extends Actor {
         this.displayName = parentExt.getDisplayName(this.avatar);
         this.stats = this.initializeStats();
         this.xpWorth = 15;
-        this.playersTargeted = new ArrayList<>();
+        this.actorsTargeted = new ArrayList<>();
     }
 
     @Override
@@ -221,8 +221,10 @@ public class Tower extends Actor {
                         false,
                         this.team,
                         0f);
-                ExtensionCommands.removeFx(parentExt, u, this.id + "_ring");
-                ExtensionCommands.removeFx(parentExt, u, this.id + "_target");
+
+                ExtensionCommands.removeFx(parentExt, room, id + "_ring");
+                removeTargetIndicatorFX(a);
+
                 if (this.target != null && this.target.getActorType() == ActorType.PLAYER)
                     ExtensionCommands.removeFx(parentExt, u, this.id + "_aggro");
             }
@@ -260,7 +262,7 @@ public class Tower extends Actor {
         if (a.isTowerFocused()) a.setTowerFocused(false);
     }
 
-    private Actor getClosestActor(List<Actor> actors) {
+    private Actor getBestTarget(List<Actor> actors) {
         float minDistActor = 100000;
         Actor closestActorTarget = null;
 
@@ -317,15 +319,20 @@ public class Tower extends Actor {
         return a.getLocation().distance(location) <= TOWER_ATTACK_RANGE;
     }
 
-    private void handlePlayerLeftTowerFXRemoval() {
-        if (playersTargeted.isEmpty()) return;
+    private void handleIndicatorFXRemoval() {
+        if (actorsTargeted.isEmpty()) return;
 
-        Iterator<UserActor> iterator = playersTargeted.iterator();
+        Iterator<Actor> iterator = actorsTargeted.iterator();
         while (iterator.hasNext()) {
-            UserActor ua = iterator.next();
-            if (!isInRange(ua)) {
-                removePlayerFx(ua);
-                clearTowerFocus(ua);
+            Actor a = iterator.next();
+            if (!isInRange(a)) {
+
+                if (a instanceof UserActor) {
+                    UserActor ua = (UserActor) a;
+                    removePlayerFx(ua);
+                    clearTowerFocus(ua);
+                }
+                removeTargetIndicatorFX(a);
                 iterator.remove();
             }
         }
@@ -333,19 +340,23 @@ public class Tower extends Actor {
 
     private void removePlayerFx(UserActor ua) {
         ExtensionCommands.removeFx(parentExt, ua.getUser(), id + "_aggro");
-        ExtensionCommands.removeFx(parentExt, ua.getUser(), id + "_target");
+    }
+
+    private void removeTargetIndicatorFX(Actor a) {
+        ExtensionCommands.removeFx(parentExt, room, id + "_tower_current_target_indicator");
     }
 
     @Override
     public void update(int msRan) {
         if (destroyed) return;
         handleDamageQueue();
-        handlePlayerLeftTowerFXRemoval();
+        handleIndicatorFXRemoval();
 
         RoomHandler rh = parentExt.getRoomHandler(room.getName());
 
         List<Actor> enemiesInRadius = Champion.getActorsInRadius(rh, location, TOWER_ATTACK_RANGE);
         enemiesInRadius.removeIf(a -> a.getTeam() == team);
+        enemiesInRadius.removeIf(a -> a instanceof Monster);
 
         if (enemiesInRadius.isEmpty()) {
             if (attackCooldown != TOWER_ATTACK_SPEED_FIRST_SHOT) {
@@ -367,21 +378,19 @@ public class Tower extends Actor {
         Actor focusTarget = getFocusTarget(enemiesInRadius);
 
         if (focusTarget != null) potentialTarget = focusTarget;
-        else potentialTarget = getClosestActor(enemiesInRadius);
+        else potentialTarget = getBestTarget(enemiesInRadius);
 
         if (potentialTarget == null) return;
 
         boolean targetChanged = target == null || !target.equals(potentialTarget);
 
-        if ((targetChanged && target != null) || (target != null && target.getHealth() <= 0)) {
-            ExtensionCommands.removeFx(parentExt, room, id + "_target");
-        }
-
         this.target = potentialTarget;
 
-        if (target instanceof UserActor && !playersTargeted.contains(target)) {
+        if (target instanceof UserActor && !actorsTargeted.contains(target)) {
             targetPlayer((UserActor) target);
         }
+
+        actorsTargeted.add(target);
 
         if (targetChanged) {
             ExtensionCommands.createActorFX(
@@ -390,7 +399,7 @@ public class Tower extends Actor {
                     target.getId(),
                     "tower_current_target_indicator",
                     10 * 60 * 1000,
-                    id + "_target",
+                    id + "_tower_current_target_indicator",
                     true,
                     "displayBar",
                     false,
@@ -406,10 +415,7 @@ public class Tower extends Actor {
 
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
-        if (a instanceof UserActor) {
-            removePlayerFx((UserActor) a);
-            playersTargeted.remove(a);
-        }
+        actorsTargeted.remove(a);
 
         if ((isChampion(a) || isCompanion(a))) {
             clearTowerFocus(a);
@@ -466,9 +472,8 @@ public class Tower extends Actor {
     }
 
     public void targetPlayer(UserActor user) {
-        playersTargeted.add(user);
         ExtensionCommands.createWorldFX(
-                this.parentExt,
+                parentExt,
                 user.getUser(),
                 user.getId(),
                 "tower_danger_alert",

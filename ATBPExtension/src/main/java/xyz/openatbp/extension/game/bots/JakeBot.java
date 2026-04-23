@@ -65,24 +65,6 @@ public class JakeBot extends Bot {
         this.eCastDelayMS = 0;
         setHealth(800, 800);
 
-        this.lowHpActionPHealth = 0.25;
-
-        this.canWinUnderTowerLvDif = -2;
-        this.canWinEReadyLvDif = -1;
-        this.canWinQWReadyLvDif = -1;
-
-        this.soloJungleLv = 4;
-        this.soloJunglePHealth = 0.9;
-        this.duoJungleLv = 2;
-        this.duoJunglePHealth = 0.5;
-        this.trioJunglePHeath = 0.35;
-        this.closestPlayerLvDif = -1;
-
-        this.fleeMinionsAttackedPHpPerLv = 0.035f;
-        this.defAltarCaptureActionDist = 2f;
-        this.playerAttackedLvDif = -1;
-        this.junglingAlliesRadius = 4;
-
         this.botRole = BotRole.FIGHTER;
     }
 
@@ -108,7 +90,7 @@ public class JakeBot extends Bot {
         if (ultActivated && target != null && currentAction == BotAction.FIGHTING) {
             Point2D targetLoc = target.getLocation();
 
-            final float MAX_RADIUS = 0.5f;
+            final float MAX_RADIUS = 1f;
 
             double angle = Math.random() * 2 * Math.PI;
             double radius = Math.random() * MAX_RADIUS;
@@ -300,6 +282,7 @@ public class JakeBot extends Bot {
         if (!defaultAbilityCheck(2) || blockSkillsAndWalking || ultActivated) return false;
         RoomHandler rh = parentExt.getRoomHandler(room.getName());
         List<Actor> enemiesNearby = Champion.getEnemyActorsInRadius(rh, team, location, W_RADIUS);
+        enemiesNearby.removeIf(Actor::isInvisible);
 
         return enemiesNearby.size() > 1
                 || enemiesNearby.stream().anyMatch(a -> a instanceof UserActor);

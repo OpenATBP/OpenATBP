@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
@@ -22,7 +23,7 @@ public class LSP extends UserActor {
     public static final int Q_FEAR_DURATION = 2000;
     private static final float Q_OFFSET_DISTANCE = 0.75f;
     private static final float Q_SPELL_RANGE = 7.5f;
-    public static final int W_DURATION = 3500;
+    public static final int W_DURATION = 4000;
     public static final int W_CAST_DELAY = 500;
     public static final int E_CAST_DELAY = 1250;
 
@@ -31,9 +32,12 @@ public class LSP extends UserActor {
     private boolean wActive = false;
     private boolean isCastingult = false;
     private boolean isCastingQ = false;
+    private boolean disableWOnPoly = false;
 
     public LSP(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        hasCustomSwapToPoly = true;
+        hasCustomSwapFromPoly = true;
         ExtensionCommands.addStatusIcon(
                 parentExt, player, "p0", "lsp_spell_4_short_description", "icon_lsp_passive", 0f);
     }
@@ -44,12 +48,13 @@ public class LSP extends UserActor {
         if (this.wActive && this.getHealth() <= 0) {
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_wRing");
             ExtensionCommands.removeFx(parentExt, room, id + "_w");
-            this.wActive = false;
+            wActive = false;
+            disableWOnPoly = false;
         }
         if (this.wActive && System.currentTimeMillis() - this.wTime >= W_DURATION) {
             this.wActive = false;
         }
-        if (this.wActive) {
+        if (this.wActive && !disableWOnPoly) {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
@@ -91,6 +96,53 @@ public class LSP extends UserActor {
         super.die(a);
         if (isCastingult)
             ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
+    }
+
+    @Override
+    public void customSwapToPoly() {
+        super.customSwapToPoly();
+        if (wActive) {
+            disableWOnPoly = true;
+            ExtensionCommands.removeFx(parentExt, room, id + "_wRing");
+            ExtensionCommands.removeFx(parentExt, room, id + "_w");
+        }
+    }
+
+    @Override
+    public void customSwapFromPoly() {
+        effectManager.handleSwapFromPoly();
+        if (wActive) {
+            disableWOnPoly = false;
+            Console.debugLog("W time: " + wTime);
+            int remainingW = (int) (W_DURATION - (System.currentTimeMillis() - wTime));
+            Console.debugLog("remainingW: " + remainingW);
+
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    id,
+                    "lsp_the_lumps_aoe",
+                    remainingW,
+                    id + "_w",
+                    true,
+                    "",
+                    true,
+                    false,
+                    team);
+
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    id,
+                    "fx_target_ring_3",
+                    remainingW,
+                    id + "_wRing",
+                    true,
+                    "",
+                    true,
+                    true,
+                    team);
+        }
     }
 
     @Override
@@ -275,14 +327,14 @@ public class LSP extends UserActor {
             Runnable enableWCasting = () -> canCast[1] = true;
             int delay = getReducedCooldown(cooldown) - W_CAST_DELAY;
             scheduleTask(enableWCasting, delay);
-            if (getHealth() > 0) {
+            if (getHealth() > 0 && !disableWOnPoly) {
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_lsp_lumps_aoe", location);
                 ExtensionCommands.createActorFX(
                         parentExt,
                         room,
                         id,
                         "lsp_the_lumps_aoe",
-                        3000,
+                        W_DURATION - W_CAST_DELAY,
                         id + "_w",
                         true,
                         "",

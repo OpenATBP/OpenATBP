@@ -41,6 +41,7 @@ public class FlamePrincess extends UserActor {
     private long ultStartTime = 0;
     private long lastPolymorphTime = 0;
     private float fpScale = 1;
+    private boolean disableUltOnPoly = false;
 
     private enum Form {
         NORMAL,
@@ -62,7 +63,7 @@ public class FlamePrincess extends UserActor {
             canCast[2] = false; // to be on the safe side :D
             endUlt();
         }
-        if (this.form == Form.ULT) {
+        if (this.form == Form.ULT && !disableUltOnPoly) {
             RoomHandler handler = parentExt.getRoomHandler(this.room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, this.location, 2)) {
                 if (a.getTeam() != this.team && isNeitherTowerNorAlly(a) && a.isNotLeaping()) {
@@ -103,6 +104,10 @@ public class FlamePrincess extends UserActor {
         if (this.passiveEnabled) {
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_flame_passive");
         }
+        if (form == Form.ULT) {
+            disableUltOnPoly = true;
+            ExtensionCommands.removeFx(parentExt, room, id + "flameE");
+        }
         if (this.fpScale == 1.5f) {
             ExtensionCommands.scaleActor(parentExt, room, id, 0.6667f);
             this.fpScale = 1;
@@ -115,7 +120,22 @@ public class FlamePrincess extends UserActor {
         ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bundle);
         if (form == Form.ULT) {
             this.fpScale = 1.5f;
+            disableUltOnPoly = false;
             ExtensionCommands.scaleActor(parentExt, room, id, 1.5f);
+            int duration = (int) (E_DURATION - (System.currentTimeMillis() - ultStartTime));
+            // idk if should add +500 ms duration in case ult is extended by late dash?
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    id,
+                    "flame_princess_ultimate_aoe",
+                    duration,
+                    id + "flameE",
+                    true,
+                    "",
+                    false,
+                    false,
+                    team);
         }
         if (this.passiveEnabled) {
             ExtensionCommands.createActorFX(
@@ -389,6 +409,7 @@ public class FlamePrincess extends UserActor {
 
     private void endUlt() {
         this.form = Form.NORMAL;
+        disableUltOnPoly = false;
         if (this.fpScale == 1.5f) {
             ExtensionCommands.scaleActor(parentExt, room, id, 0.6667f);
             this.fpScale = 1;

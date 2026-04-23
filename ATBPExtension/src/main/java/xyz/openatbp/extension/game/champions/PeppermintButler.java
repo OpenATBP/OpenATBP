@@ -54,10 +54,9 @@ public class PeppermintButler extends UserActor {
     private Long wStartTime;
     private Point2D dashDestination;
     private boolean dashStarted = false;
-
-    private Point2D passiveLocation = null;
     private boolean passiveRunnableScheduled = false;
     private boolean passiveActive = false;
+    private boolean disableQOnPoly = false;
 
     private enum Form {
         NORMAL,
@@ -85,6 +84,7 @@ public class PeppermintButler extends UserActor {
         }
         if (qActive && System.currentTimeMillis() - qStartTime >= Q_DURATION) {
             qActive = false;
+            disableQOnPoly = false;
         }
 
         if (countPassiveTimeToActivation() && timeStopped < PASSIVE_TIME && !passiveActive) {
@@ -121,12 +121,7 @@ public class PeppermintButler extends UserActor {
             scheduleTask(activatePassive, PASSIVE_ACTIVATION_DELAY);
         }
 
-        if (this.qActive && this.currentHealth <= 0) {
-            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_qRing");
-            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_aoe");
-            this.qActive = false;
-        }
-        if (this.qActive) {
+        if (this.qActive && !disableQOnPoly) {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
                 if (isNeitherStructureNorAlly(a) && a.isNotLeaping()) {
@@ -245,6 +240,12 @@ public class PeppermintButler extends UserActor {
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandL");
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandR");
         }
+
+        if (qActive) {
+            disableQOnPoly = true;
+            ExtensionCommands.removeFx(parentExt, room, id + "_qRing");
+            ExtensionCommands.removeFx(parentExt, room, id + "_aoe");
+        }
     }
 
     @Override
@@ -279,6 +280,35 @@ public class PeppermintButler extends UserActor {
                     this.team);
         } else {
             swapAsset(false);
+        }
+        if (qActive) {
+            disableQOnPoly = false;
+            int remainingQ = (int) (Q_DURATION - (System.currentTimeMillis() - qStartTime));
+
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    id,
+                    "fx_target_ring_3",
+                    remainingQ,
+                    id + "_qRing",
+                    true,
+                    "",
+                    true,
+                    true,
+                    team);
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    id,
+                    "pepbut_aoe",
+                    remainingQ,
+                    id + "_aoe",
+                    true,
+                    "",
+                    true,
+                    false,
+                    team);
         }
     }
 
@@ -315,6 +345,13 @@ public class PeppermintButler extends UserActor {
             endUlt();
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandL");
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "ultHandR");
+        }
+
+        if (this.qActive) {
+            qActive = false;
+            disableQOnPoly = false;
+            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_qRing");
+            ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_aoe");
         }
     }
 

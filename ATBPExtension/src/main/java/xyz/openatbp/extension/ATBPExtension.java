@@ -304,6 +304,7 @@ public class ATBPExtension extends SFSExtension {
                             new TutorialRoomHandler(
                                     this, room, practiceMapBoundaries, practiceMapObstacles);
                     roomHandlers.put(rName, rh);
+                    rh.startScheduler();
                     rh.initPlayers();
                     break;
 
@@ -318,12 +319,14 @@ public class ATBPExtension extends SFSExtension {
                                     practiceMapBoundaries,
                                     practiceMapObstacles);
                     roomHandlers.put(rName, rh);
+                    rh.startScheduler();
                     rh.initPlayers();
                     break;
 
                 case PVB:
                     rh = new PVBRoomHandler(this, room, mainMapBoundaries, mainMapObstacles);
                     roomHandlers.put(rName, rh);
+                    rh.startScheduler();
                     rh.initPlayers();
                     break;
 
@@ -331,6 +334,7 @@ public class ATBPExtension extends SFSExtension {
                 case CUSTOM_BATTLE_LAB:
                     rh = new MainMapRoomHandler(this, room, mainMapBoundaries, mainMapObstacles);
                     roomHandlers.put(rName, rh);
+                    rh.startScheduler();
                     rh.initPlayers();
                     break;
             }

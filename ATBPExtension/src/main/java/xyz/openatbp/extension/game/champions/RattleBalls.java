@@ -14,6 +14,7 @@ import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.game.effects.ActorState;
 import xyz.openatbp.extension.game.effects.ModifierIntent;
 import xyz.openatbp.extension.game.effects.ModifierType;
 import xyz.openatbp.extension.pathfinding.PathFinder;
@@ -28,9 +29,11 @@ public class RattleBalls extends UserActor {
     private static final float Q_OFFSET_DISTANCE = 0.85f;
     private static final int Q_SPIN_ATTACK_BONUS_BASE_DMG = 55;
     private static final int W_CAST_DELAY = 500;
+    private static final int E_SECOND_USE_DELAY = 700;
     private static final int E_DURATION = 3500;
     private static final double E_SPEED_PERCENT = 0.14d;
-    private static final int E_SECOND_USE_DELAY = 700;
+    private static final int E_SOUND_DELAY = 500;
+
     private static final double W_PULL_DISTANCE = 1.2;
 
     private boolean passiveActive = false;
@@ -45,6 +48,7 @@ public class RattleBalls extends UserActor {
     private int qTime = 0;
     private int eCounter = 0;
     private long eStartTime;
+    private boolean disableEOnPoly = false;
 
     private AbilityShape qThrustRectangle = null;
     private boolean isDoingCounterAttackAnim = false;
@@ -52,6 +56,8 @@ public class RattleBalls extends UserActor {
 
     public RattleBalls(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        hasCustomSwapToPoly = true;
+        hasCustomSwapFromPoly = true;
     }
 
     @Override
@@ -68,37 +74,40 @@ public class RattleBalls extends UserActor {
             performQSpinAttack();
         }
         if (ultActive) {
-            int soundCooldown = 450;
-
-            if (System.currentTimeMillis() - lastSoundTime >= soundCooldown && !dead) {
+            if (System.currentTimeMillis() - lastSoundTime >= E_SOUND_DELAY
+                    && !dead
+                    && !disableEOnPoly) {
                 lastSoundTime = System.currentTimeMillis();
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_rattleballs_spin", location);
             }
 
             if (ultActive && dead
                     || ultActive && System.currentTimeMillis() - eStartTime >= E_DURATION
-                    || hasInterrupingCC()) {
+                    || cancelE()) {
                 endUlt();
-                if (hasInterrupingCC()) {
+                if (cancelE()) {
                     ExtensionCommands.playSound(
                             parentExt, room, id, "sfx_skill_interrupted", location);
                 }
             }
-            RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            for (Actor a : Champion.getActorsInRadius(handler, location, 2f)) {
-                if (isNeitherTowerNorAlly(a) && a.isNotLeaping()) {
-                    JsonNode spellData = parentExt.getAttackData(avatar, "spell3");
-                    double dmg = getSpellDamage(spellData, false) / 10d;
-                    a.addToDamageQueue(this, dmg, spellData, true);
+            if (!disableEOnPoly && !dead) {
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                for (Actor a : Champion.getActorsInRadius(handler, location, 2f)) {
+                    if (isNeitherTowerNorAlly(a) && a.isNotLeaping()) {
+                        JsonNode spellData = parentExt.getAttackData(avatar, "spell3");
+                        double dmg = getSpellDamage(spellData, false) / 10d;
+                        a.addToDamageQueue(this, dmg, spellData, true);
+                    }
                 }
-            }
-            for (Projectile p : parentExt.getRoomHandler(room.getName()).getActiveProjectiles()) {
-                if (p.getClass() != LSP.LSPUltProjectile.class
-                        && p.getClass() != BMO.BMOUltProjectile.class
-                        && p.getClass() != ChooseGoose.GooseProjectile.class
-                        && p.getTeam() != this.team
-                        && p.getLocation().distance(this.location) <= 2f) {
-                    p.destroy();
+                for (Projectile p :
+                        parentExt.getRoomHandler(room.getName()).getActiveProjectiles()) {
+                    if (p.getClass() != LSP.LSPUltProjectile.class
+                            && p.getClass() != BMO.BMOUltProjectile.class
+                            && p.getClass() != ChooseGoose.GooseProjectile.class
+                            && p.getTeam() != this.team
+                            && p.getLocation().distance(this.location) <= 2f) {
+                        p.destroy();
+                    }
                 }
             }
         }
@@ -134,6 +143,85 @@ public class RattleBalls extends UserActor {
     public boolean canAttack() {
         if (ultActive || parryActive) return false;
         return super.canAttack();
+    }
+
+    @Override
+    public void die(Actor a) {
+        super.die(a);
+        if (ultActive && disableEOnPoly) disableEOnPoly = false;
+    }
+
+    @Override
+    public void customSwapToPoly() {
+        super.customSwapToPoly();
+        if (ultActive) {
+            disableEOnPoly = true;
+            ExtensionCommands.removeFx(parentExt, room, id + "_ultRing");
+            ExtensionCommands.removeFx(parentExt, room, id + "_ultSpin");
+            ExtensionCommands.removeFx(parentExt, room, id + "_ultSparkles");
+        }
+    }
+
+    @Override
+    public void customSwapFromPoly() {
+        effectManager.handleSwapFromPoly();
+        if (ultActive) {
+            disableEOnPoly = false;
+            effectManager.removeAllEffectsById(id + "_rattle_e_speed");
+            int remainingE = (int) (E_DURATION - (System.currentTimeMillis() - eStartTime));
+            if (remainingE > 0) {
+                String swordSpinFX = SkinData.getRattleBallsESwordSpinFX(avatar);
+                createE(remainingE, swordSpinFX, remainingE);
+            }
+        }
+    }
+
+    private void createE(int remainingE, String swordSpinFX, int eBuffDuration) {
+        ExtensionCommands.createActorFX(
+                parentExt,
+                room,
+                id,
+                "fx_target_ring_2",
+                remainingE,
+                id + "_ultRing",
+                true,
+                "",
+                false,
+                true,
+                team);
+        ExtensionCommands.actorAnimate(parentExt, room, id, "spell3a", remainingE, true);
+        ExtensionCommands.createActorFX(
+                parentExt,
+                room,
+                id,
+                swordSpinFX,
+                remainingE,
+                id + "_ultSpin",
+                true,
+                "Bip001 Footsteps",
+                false,
+                false,
+                team);
+        ExtensionCommands.createActorFX(
+                parentExt,
+                room,
+                id,
+                "rattleballs_sword_sparkles",
+                remainingE,
+                id + "_ultSparkles",
+                true,
+                "Bip001 Prop1", // Bip001 L Finger0Nub
+                false,
+                false,
+                team);
+
+        effectManager.addEffect(
+                id + "_rattle_e_speed",
+                "speed",
+                E_SPEED_PERCENT,
+                ModifierType.MULTIPLICATIVE,
+                ModifierIntent.BUFF,
+                eBuffDuration);
     }
 
     @Override
@@ -367,54 +455,10 @@ public class RattleBalls extends UserActor {
                     ExtensionCommands.playSound(parentExt, room, id, spinCycleSFX, location);
                     ExtensionCommands.playSound(
                             parentExt, room, id, "vo/vo_rattleballs_eggcelent_1", location);
-                    ExtensionCommands.createActorFX(
-                            parentExt,
-                            room,
-                            id,
-                            "fx_target_ring_2",
-                            E_DURATION,
-                            id + "_ultRing",
-                            true,
-                            "",
-                            false,
-                            true,
-                            team);
-                    ExtensionCommands.actorAnimate(
-                            parentExt, room, id, "spell3a", E_DURATION, true);
-                    ExtensionCommands.createActorFX(
-                            parentExt,
-                            room,
-                            id,
-                            swordSpinFX,
-                            E_DURATION,
-                            id + "_ultSpin",
-                            true,
-                            "Bip001 Footsteps",
-                            false,
-                            false,
-                            team);
-                    ExtensionCommands.createActorFX(
-                            parentExt,
-                            room,
-                            id,
-                            "rattleballs_sword_sparkles",
-                            E_DURATION,
-                            id + "_ultSparkles",
-                            true,
-                            "Bip001 Prop1", // Bip001 L Finger0Nub
-                            false,
-                            false,
-                            team);
+
+                    createE(E_DURATION, swordSpinFX, E_DURATION);
                     ExtensionCommands.actorAbilityResponse(
                             parentExt, player, "e", true, E_SECOND_USE_DELAY, 0);
-                    effectManager.addEffect(
-                            this.id + "_rattle_e_speed",
-                            "speed",
-                            E_SPEED_PERCENT,
-                            ModifierType.MULTIPLICATIVE,
-                            ModifierIntent.BUFF,
-                            E_DURATION);
-
                 } else {
                     endUlt();
                 }
@@ -423,6 +467,16 @@ public class RattleBalls extends UserActor {
                         abilityRunnable(ability, spellData, cooldown, gCooldown, dest), eDelay);
                 break;
         }
+    }
+
+    private boolean cancelE() {
+        ActorState[] states = {
+            ActorState.CHARMED, ActorState.FEARED, ActorState.STUNNED, ActorState.SILENCED
+        };
+        for (ActorState state : states) {
+            if (effectManager.hasState(state)) return true;
+        }
+        return false;
     }
 
     private void endPassive() {

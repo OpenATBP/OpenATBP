@@ -51,24 +51,6 @@ public class LemongrabBot extends Bot {
         this.wCastDelayMS = 1250;
         this.eCastDelayMS = 1500;
 
-        this.lowHpActionPHealth = 0.15;
-
-        this.canWinUnderTowerLvDif = -3;
-        this.canWinEReadyLvDif = 0;
-        this.canWinQWReadyLvDif = -1;
-
-        this.soloJungleLv = 2;
-        this.soloJunglePHealth = 0.95;
-        this.duoJungleLv = 2;
-        this.duoJunglePHealth = 0.3;
-        this.trioJunglePHeath = 0.25;
-        this.closestPlayerLvDif = 0;
-
-        this.fleeMinionsAttackedPHpPerLv = 0.05f;
-        this.defAltarCaptureActionDist = 4f;
-        this.playerAttackedLvDif = -1;
-        this.junglingAlliesRadius = 8;
-
         this.botRole = BotRole.JUNGLER;
     }
 
@@ -198,10 +180,12 @@ public class LemongrabBot extends Bot {
 
     @Override
     public boolean canUseE() {
-        return (defaultAbilityCheck(3))
-                && (target.hasMovementCC()
-                        || (target != null && target.getEffectManager().hasState(ActorState.SLOWED))
-                                && target.getLocation().distance(location) <= E_MAX_CAST_RANGE);
+        boolean targetHasMovementCC = target != null && target.hasMovementCC();
+        boolean targetHasSlow =
+                target != null && target.getEffectManager().hasState(ActorState.SLOWED);
+        boolean targetInRange =
+                target != null && target.getLocation().distance(location) <= E_MAX_CAST_RANGE;
+        return defaultAbilityCheck(3) && targetInRange && (targetHasMovementCC || targetHasSlow);
     }
 
     @Override

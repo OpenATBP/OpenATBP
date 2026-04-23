@@ -42,19 +42,22 @@ public class Lich extends UserActor {
     private boolean eActive = false;
     private long eStartTime = 0;
     private long lastETickTime = 0;
+    private boolean disableQOnPoly = false;
+    private long qStartTime = 0L;
 
     private Map<Actor, Long> actorsWithQSlow = new HashMap<>();
 
     public Lich(User u, ATBPExtension parentExt) {
         super(u, parentExt);
         lastSkullySpawn = 0;
+        hasCustomSwapToPoly = true;
+        hasCustomSwapFromPoly = true;
     }
 
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if (this.skully != null) skully.update(msRan);
-        if (this.qActivated) {
+        if (this.qActivated && !disableQOnPoly) {
             if (!qPoints.isEmpty()) {
                 long time = System.currentTimeMillis();
                 qPoints.entrySet().removeIf(entry -> time - entry.getValue() >= 4000);
@@ -145,7 +148,7 @@ public class Lich extends UserActor {
     @Override
     public void die(Actor a) {
         super.die(a);
-        // if(this.skully != null) this.setSkullyTarget(a);
+        disableQOnPoly = false;
         if (this.skully != null) this.skully.die(this.skully);
     }
 
@@ -175,6 +178,38 @@ public class Lich extends UserActor {
     }
 
     @Override
+    public void customSwapToPoly() {
+        super.customSwapToPoly();
+        if (qActivated) {
+            disableQOnPoly = true;
+            ExtensionCommands.removeFx(parentExt, room, id + "_lichTrail");
+        }
+    }
+
+    @Override
+    public void customSwapFromPoly() {
+        effectManager.handleSwapFromPoly();
+        if (qActivated) {
+            disableQOnPoly = false;
+            int remainingQ = (int) (Q_DURATION - (System.currentTimeMillis() - qStartTime));
+            if (remainingQ > 0) {
+                ExtensionCommands.createActorFX(
+                        parentExt,
+                        room,
+                        id,
+                        "lichking_deathmist",
+                        remainingQ,
+                        id + "_lichTrail",
+                        true,
+                        "",
+                        true,
+                        false,
+                        team);
+            }
+        }
+    }
+
+    @Override
     public void useAbility(
             int ability,
             JsonNode spellData,
@@ -188,6 +223,7 @@ public class Lich extends UserActor {
         switch (ability) {
             case 1:
                 this.canCast[0] = false;
+                qStartTime = System.currentTimeMillis();
                 int delay = 0;
                 try {
                     effectManager.addEffect(

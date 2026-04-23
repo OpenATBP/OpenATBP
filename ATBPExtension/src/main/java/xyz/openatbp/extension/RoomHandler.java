@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -28,6 +29,8 @@ import com.smartfoxserver.v2.util.TaskScheduler;
 
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.*;
+import xyz.openatbp.extension.game.champions.GooMonster;
+import xyz.openatbp.extension.game.champions.Keeoth;
 import xyz.openatbp.extension.game.effects.ModifierIntent;
 import xyz.openatbp.extension.game.effects.ModifierType;
 import xyz.openatbp.extension.pathfinding.PathFinder;
@@ -75,10 +78,11 @@ public abstract class RoomHandler implements Runnable {
     protected float FOUNTAIN_RADIUS = 4f;
     protected List<Actor> companions = new ArrayList<>();
     protected HashMap<Integer, Actor> endGameChampions = new HashMap<>();
-    protected List<Actor> champions = new ArrayList<>();
     protected boolean tutorialCoins = false;
     protected boolean ranked;
+    protected final List<Bot> bots = new ArrayList<>();
 
+    private static final AtomicLong ACTOR_ID_COUNTER = new AtomicLong(0);
     protected List<Actor> championsWithFirstDcBuff = new ArrayList<>();
     protected List<Actor> championsWithSecondDcBuff = new ArrayList<>();
 
@@ -121,9 +125,6 @@ public abstract class RoomHandler implements Runnable {
         guardians[1] = new GumballGuardian(parentExt, room, 1);
         this.campMonsters = new ArrayList<>();
 
-        TaskScheduler scheduler = parentExt.getTaskScheduler();
-        scriptHandler = scheduler.scheduleAtFixedRate(this, 100, 100, TimeUnit.MILLISECONDS);
-
         pathFinder = new PathFinder(mapBoundary, obstacles);
     }
 
@@ -132,9 +133,15 @@ public abstract class RoomHandler implements Runnable {
             UserActor ua = Champion.getCharacterClass(u, parentExt);
             players.add(ua);
             endGameChampions.put(u.getId(), ua);
-            champions.add(ua);
         }
     }
+
+    public void startScheduler() {
+        TaskScheduler scheduler = parentExt.getTaskScheduler();
+        scriptHandler = scheduler.scheduleAtFixedRate(this, 100, 100, TimeUnit.MILLISECONDS);
+    }
+
+    public abstract Point2D getHealthLocation(int num);
 
     public abstract void handleMinionSpawns();
 
@@ -357,19 +364,16 @@ public abstract class RoomHandler implements Runnable {
         }
     }
 
-    public abstract void spawnMonster(String monster);
-
-    public abstract void handleSpawnDeath(Actor a);
-
-    public abstract Point2D getHealthLocation(int num);
+    protected String generateActorId(String prefix) {
+        return prefix + "_" + ACTOR_ID_COUNTER.incrementAndGet();
+    }
 
     public void handlePlayerDC(User user) {
-        if (champions.size() == 1) return;
+        if (getChampions().size() == 1) return;
         try {
             UserActor player = this.getPlayer(String.valueOf(user.getId()));
             player.destroy();
             players.removeIf(p -> p.getId().equalsIgnoreCase(String.valueOf(user.getId())));
-            champions.removeIf(p -> p.getId().equalsIgnoreCase(String.valueOf(user.getId())));
 
             handleDcBuffAndGameOver();
 
@@ -406,11 +410,17 @@ public abstract class RoomHandler implements Runnable {
         }
     }
 
-    public abstract void addCompanion(Actor a);
+    public void addCompanion(Actor a) {
+        this.companions.add(a);
+    }
 
-    public abstract void removeCompanion(Actor a);
+    public void removeCompanion(Actor a) {
+        this.companions.remove(a);
+    }
 
-    public abstract void addProjectile(Projectile p);
+    public void addProjectile(Projectile p) {
+        this.activeProjectiles.add(p);
+    }
 
     public abstract HashMap<Integer, Point2D> getFountainsCenter();
 
@@ -425,6 +435,7 @@ public abstract class RoomHandler implements Runnable {
         actors.addAll(minions);
         Collections.addAll(actors, bases);
         actors.addAll(players);
+        actors.addAll(bots);
         actors.addAll(campMonsters);
         actors.addAll(companions);
         actors.removeIf(a -> a.getHealth() <= 0);
@@ -566,8 +577,8 @@ public abstract class RoomHandler implements Runnable {
     }
 
     protected void handleDcBuffAndGameOver() {
-        List<Actor> purpleTeam = new ArrayList<>(champions);
-        List<Actor> blueTeam = new ArrayList<>(champions);
+        List<Actor> purpleTeam = new ArrayList<>(getChampions());
+        List<Actor> blueTeam = new ArrayList<>(getChampions());
 
         purpleTeam.removeIf(c -> c.getTeam() != 0);
         blueTeam.removeIf(c -> c.getTeam() != 1);
@@ -655,6 +666,128 @@ public abstract class RoomHandler implements Runnable {
         }
     }
 
+    private void removeStaleCampMonster(String monsterType) {
+        campMonsters.removeIf(m -> m.getId().startsWith(monsterType) && m.isDead());
+    }
+
+    public void spawnMonster(String monster) {
+        float x = 0;
+        float z = 0;
+        String avatar = monster;
+
+        if (monster.equalsIgnoreCase("gnomes") || monster.equalsIgnoreCase("ironowls")) {
+            char[] abc = {'a', 'b', 'c'};
+            for (int i = 0; i < 3; i++) {
+                if (monster.equalsIgnoreCase("gnomes")) {
+                    avatar = "gnome_" + abc[i];
+                    x = (float) MapData.L2_GNOMES[i].getX();
+                    z = (float) MapData.L2_GNOMES[i].getY();
+
+                } else {
+                    avatar = "ironowl_" + abc[i];
+                    x = (float) MapData.L2_OWLS[i].getX();
+                    z = (float) MapData.L2_OWLS[i].getY();
+                }
+
+                final String mobId = generateActorId(avatar);
+                final String finalAvatar = avatar;
+
+                // remove first for safety
+                campMonsters.removeIf(m -> m.getId().equalsIgnoreCase(mobId));
+
+                Point2D spawnLoc = new Point2D.Float(x, z);
+                ExtensionCommands.createActor(parentExt, room, mobId, avatar, spawnLoc, 0f, 2);
+                campMonsters.add(new Monster(parentExt, room, mobId, spawnLoc, finalAvatar));
+            }
+        } else if (monster.length() > 3) {
+            String mobId = monster;
+
+            switch (monster) {
+                case "hugwolf":
+                    {
+                        removeStaleCampMonster("hugwolf");
+                        mobId = generateActorId(avatar);
+                        x = MapData.HUGWOLF[0];
+                        z = MapData.HUGWOLF[1];
+                        Point2D spawnLoc = new Point2D.Float(x, z);
+                        campMonsters.add(
+                                new Monster(parentExt, room, mobId, MapData.HUGWOLF, avatar));
+                        ExtensionCommands.createActor(
+                                parentExt, room, mobId, avatar, spawnLoc, 0f, 2);
+                        break;
+                    }
+                case "grassbear":
+                    {
+                        removeStaleCampMonster("grassbear");
+                        mobId = generateActorId(avatar);
+                        x = MapData.GRASSBEAR[0];
+                        z = MapData.GRASSBEAR[1];
+                        Point2D spawnLoc = new Point2D.Float(x, z);
+                        campMonsters.add(
+                                new Monster(parentExt, room, mobId, MapData.GRASSBEAR, avatar));
+                        ExtensionCommands.createActor(
+                                parentExt, room, mobId, avatar, spawnLoc, 0f, 2);
+                        break;
+                    }
+                case "keeoth":
+                    {
+                        removeStaleCampMonster("keeoth");
+                        mobId = generateActorId(avatar);
+                        x = MapData.L2_KEEOTH[0];
+                        z = MapData.L2_KEEOTH[1];
+                        Point2D spawnLoc = new Point2D.Float(x, z);
+                        campMonsters.add(
+                                new Keeoth(parentExt, room, mobId, MapData.L2_KEEOTH, avatar));
+                        ExtensionCommands.createActor(
+                                parentExt, room, mobId, avatar, spawnLoc, 0f, 2);
+                        break;
+                    }
+                case "goomonster":
+                    {
+                        removeStaleCampMonster("goomonster");
+                        avatar = "goomonster"; // keep this before generateActorId so ID reflects
+                        // correct name
+                        mobId = generateActorId(avatar);
+                        x = MapData.L2_GOOMONSTER[0];
+                        z = MapData.L2_GOOMONSTER[1];
+                        Point2D spawnLoc = new Point2D.Float(x, z);
+                        campMonsters.add(
+                                new GooMonster(
+                                        parentExt, room, mobId, MapData.L2_GOOMONSTER, avatar));
+                        ExtensionCommands.createActor(
+                                parentExt, room, mobId, avatar, spawnLoc, 0f, 2);
+                        break;
+                    }
+            }
+        }
+    }
+
+    public void handleSpawnDeath(Actor a) {
+        String monster = a.getId().split("_")[0];
+        RoomGroup roomGroup = GameManager.getRoomGroupEnum(room.getGroupId());
+        GameMap map = GameManager.getMap(roomGroup);
+
+        String[] spawns = map == GameMap.BATTLE_LAB ? GameManager.L1_SPAWNS : GameManager.L2_SPAWNS;
+
+        for (String s : spawns) {
+            if (!s.contains(monster)) continue;
+
+            if ((!s.contains("gnomes") && !s.contains("owls")) || tripletCampCleared(monster)) {
+                room.getVariable("spawns").getSFSObjectValue().putInt(s, 0);
+                return;
+            }
+        }
+    }
+
+    public boolean tripletCampCleared(String monsterName) {
+        List<Monster> triplet =
+                getCampMonsters().stream()
+                        .filter(m -> m.getId().contains(monsterName))
+                        .collect(Collectors.toList());
+        triplet.removeIf(Actor::isDead);
+        return triplet.isEmpty();
+    }
+
     protected void handleHealthPackSpawns(ISFSObject spawns, String s) {
         int time = spawns.getInt(s);
 
@@ -694,9 +827,6 @@ public abstract class RoomHandler implements Runnable {
                 ISFSObject spawns = room.getVariable("spawns").getSFSObjectValue();
                 if (spawns.getInt(s) == HP_SPAWN_RATE_SEC + 1) {
                     List<Actor> actorsToCheck = new ArrayList<>(players);
-                    List<Actor> bots = new ArrayList<>(companions);
-                    bots.removeIf(a -> !(a instanceof Bot));
-
                     actorsToCheck.addAll(bots);
 
                     for (Actor a : actorsToCheck) {
@@ -849,7 +979,6 @@ public abstract class RoomHandler implements Runnable {
                 }
                 if (room.getUserList().isEmpty()) {
                     parentExt.stopScript(room.getName(), true);
-                    // If no one is in the room, stop running.
                 } else {
                     handleAltars();
                     int timeToSendToClient = mSecondsRan - 1000;
@@ -865,12 +994,16 @@ public abstract class RoomHandler implements Runnable {
             }
         }
 
+        handleHealth();
+
         if (mSecondsRan % 500 == 0) {
             announceKills();
             handleFountain();
         }
+
         try {
-            for (UserActor u : players) { // Tracks player location
+            List<UserActor> playersCopy = new ArrayList<>(players);
+            for (UserActor u : playersCopy) {
                 u.update(mSecondsRan);
             }
         } catch (Exception e) {
@@ -879,8 +1012,31 @@ public abstract class RoomHandler implements Runnable {
         }
 
         try {
-            List<Projectile> projectileList = new ArrayList<>(this.activeProjectiles);
-            for (Projectile p : projectileList) { // Handles skill shots
+            for (Bot b : bots) {
+                if (b != null) {
+                    b.update(mSecondsRan);
+                }
+            }
+        } catch (Exception e) {
+            Console.logWarning("BOT UPDATE EXCEPTION");
+            e.printStackTrace();
+        }
+
+        try {
+            List<Actor> companionsCopy = new ArrayList<>(companions);
+            for (Actor a : companionsCopy) {
+                if (a != null) {
+                    a.update(mSecondsRan);
+                }
+            }
+        } catch (Exception e) {
+            Console.logWarning("COMPANION UPDATE EXCEPTION");
+            e.printStackTrace();
+        }
+
+        try {
+            List<Projectile> projectilesCopy = new ArrayList<>(this.activeProjectiles);
+            for (Projectile p : projectilesCopy) { // Handles skill shots
                 p.update(this);
             }
             activeProjectiles.removeIf(Projectile::isDestroyed);
@@ -890,8 +1046,7 @@ public abstract class RoomHandler implements Runnable {
         }
 
         try {
-            for (Minion m : minions) { // Handles minion behavior
-                // minionPathHelper.addRect((float)m.getLocation().getX()+49.75f,(float)m.getLocation().getY()+30.25f,0.5f,0.5f);
+            for (Minion m : minions) {
                 m.update(mSecondsRan);
             }
             minions.removeIf(m -> (m.getHealth() <= 0));
@@ -899,7 +1054,7 @@ public abstract class RoomHandler implements Runnable {
             Console.logWarning("MINION UPDATE EXCEPTION");
             e.printStackTrace();
         }
-        handleHealth();
+
         try {
             for (Monster m : campMonsters) {
                 m.update(mSecondsRan);
@@ -959,7 +1114,6 @@ public abstract class RoomHandler implements Runnable {
             Console.logWarning("BASE UPDATE EXCEPTION");
             e.printStackTrace();
         }
-        if (this.room.getUserList().isEmpty()) parentExt.stopScript(this.room.getName(), true);
     }
 
     public ATBPExtension getParentExt() {
@@ -1450,7 +1604,7 @@ public abstract class RoomHandler implements Runnable {
     }
 
     private void announceKills() {
-        for (Actor a : champions) {
+        for (Actor a : getChampions()) {
             if (a.getShouldTriggerAnnouncer()) {
                 a.setShouldTriggerAnnouncer(false);
                 handleAnnouncerBoolean();
@@ -1732,8 +1886,25 @@ public abstract class RoomHandler implements Runnable {
         return -1;
     }
 
+    protected boolean hasSuperMinion(int lane, int team) {
+        for (Minion m : minions) {
+            if (m.getTeam() == team
+                    && m.getLane() == lane
+                    && m.getType() == Minion.MinionType.SUPER
+                    && m.getHealth() > 0) return true;
+        }
+        return false;
+    }
+
     public ArrayList<UserActor> getPlayers() {
         return new ArrayList<>(this.players);
+    }
+
+    public List<Actor> getChampions() {
+        List<Actor> champions = new ArrayList<>();
+        champions.addAll(bots);
+        champions.addAll(players);
+        return champions;
     }
 
     public Tower findTower(String id) {
@@ -1788,16 +1959,6 @@ public abstract class RoomHandler implements Runnable {
         return null;
     }
 
-    protected boolean hasSuperMinion(int lane, int team) {
-        for (Minion m : minions) {
-            if (m.getTeam() == team
-                    && m.getLane() == lane
-                    && m.getType() == Minion.MinionType.SUPER
-                    && m.getHealth() > 0) return true;
-        }
-        return false;
-    }
-
     public Actor getActor(String id) {
         for (Actor a : this.getActors()) {
             if (a.getId().equalsIgnoreCase(id)) return a;
@@ -1822,20 +1983,33 @@ public abstract class RoomHandler implements Runnable {
         return new ArrayList<>(this.campMonsters);
     }
 
-    public int getAverageChampionLevel() {
-        int combinedPlayerLevel = 0;
-        for (Actor a : champions) {
-            combinedPlayerLevel += a.getLevel();
-        }
-        return combinedPlayerLevel / champions.size();
-    }
-
     public List<Tower> getTowers() {
         return new ArrayList<>(this.towers);
     }
 
+    public List<Actor> getBases() {
+        List<Actor> bases = new ArrayList<>();
+        bases.add(this.bases[0]);
+        bases.add(this.bases[1]);
+        return bases;
+    }
+
     public List<BaseTower> getBaseTowers() {
         return new ArrayList<>(this.baseTowers);
+    }
+
+    public List<Actor> getBots() {
+        return new ArrayList<>(this.bots);
+    }
+
+    public int getAverageChampionLevel() {
+        if (getChampions().isEmpty()) return 1;
+
+        int combinedPlayerLevel = 0;
+        for (Actor a : getChampions()) {
+            combinedPlayerLevel += a.getLevel();
+        }
+        return combinedPlayerLevel / getChampions().size();
     }
 
     public boolean canSpawnSupers(int team) {

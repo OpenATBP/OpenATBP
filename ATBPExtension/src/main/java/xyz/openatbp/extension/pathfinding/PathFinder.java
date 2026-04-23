@@ -418,7 +418,7 @@ public class PathFinder {
         return Collections.emptyList();
     }
 
-    // ------------------------------------------------ line-of-sight (Bresenham + diagonal safety)
+    // line-of-sight (Bresenham + diagonal safety)
     private boolean hasLOS(int x0, int y0, int x1, int y1) {
         int dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
         int sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
@@ -445,7 +445,7 @@ public class PathFinder {
         }
     }
 
-    // ------------------------------------------------ path reconstruction
+    // path reconstruction
     private List<Point2D> reconstructGrid(int[][] parent, int[] start, int[] end) {
         LinkedList<Point2D> path = new LinkedList<>();
         int cx = end[0], cy = end[1];
@@ -460,7 +460,7 @@ public class PathFinder {
         return new ArrayList<>(path);
     }
 
-    // ------------------------------------------------ smoothing
+    // smoothing
     private List<Point2D> smoothPath(List<Point2D> path) {
         if (path.size() <= 1) return path;
         if (path.size() == 2) return subdivideLine(path.get(0), path.get(1), SPLINE_SUBDIVISIONS);

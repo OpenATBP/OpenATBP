@@ -29,7 +29,6 @@ public class Jake extends UserActor {
     public static final double PASSIVE_ATTACKDAMAGE_VALUE = 0.4d;
     public static final int PASSIVE_ROOT_DURATION = 1000;
 
-    public static final int Q_RESTRAINT_TIME = 1600;
     public static final int Q_STUN_DURATION = 2000;
     public static final int Q_UNLOCK_SKILLS_DELAY = 500;
     public static final int Q_PROJECTILE_DELAY = 500;

@@ -13,22 +13,12 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import com.smartfoxserver.v2.entities.Room;
-import com.smartfoxserver.v2.entities.User;
 
-import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.GameMap;
-import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.actors.*;
-import xyz.openatbp.extension.game.champions.GooMonster;
-import xyz.openatbp.extension.game.champions.Keeoth;
 
 public class MainMapRoomHandler extends RoomHandler {
-    public static final int BASE_ACCOUNT_EXP_VALUE = 10;
-    public static final int WINNER_ACCOUNT_EXP_INCREASE = 5;
-    private HashMap<User, UserActor> dcPlayers = new HashMap<>();
-    private final boolean IS_RANKED_MATCH = room.getGroupId().equals("RANKED");
-
     public MainMapRoomHandler(
             ATBPExtension parentExt, Room room, Point2D[] mapBoundary, List<Point2D[]> obstacles) {
         super(
@@ -106,7 +96,7 @@ public class MainMapRoomHandler extends RoomHandler {
 
     @Override
     public void handleAltarGameScore(int capturingTeam, int altarIndex) {
-        if (IS_RANKED_MATCH) {
+        if (ranked) {
             Point2D altarLocation = getAltarLocation(altarIndex);
             List<UserActor> userActorsInRadius =
                     Champion.getUserActorsInRadius(this, altarLocation, 2);
@@ -130,93 +120,6 @@ public class MainMapRoomHandler extends RoomHandler {
                 Bson updateOperation = Updates.inc("player.altars", 1);
                 UpdateOptions options = new UpdateOptions().upsert(true);
                 Console.debugLog(playerData.updateOne(filter, updateOperation, options));
-            }
-        }
-    }
-
-    @Override
-    public void spawnMonster(String monster) {
-        float x = 0;
-        float z = 0;
-        String avatar = monster;
-        if (monster.equalsIgnoreCase("gnomes") || monster.equalsIgnoreCase("ironowls")) {
-            char[] abc = {'a', 'b', 'c'};
-            for (int i = 0; i < 3; i++) {
-                // Gnomes and owls have three different mobs so need to be spawned in
-                // triplets
-                if (monster.equalsIgnoreCase("gnomes")) {
-                    avatar = "gnome_" + abc[i];
-                    x = (float) MapData.L2_GNOMES[i].getX();
-                    z = (float) MapData.L2_GNOMES[i].getY();
-
-                } else {
-                    avatar = "ironowl_" + abc[i];
-                    x = (float) MapData.L2_OWLS[i].getX();
-                    z = (float) MapData.L2_OWLS[i].getY();
-                }
-
-                String id = avatar + "_" + Math.random();
-
-                // remove first for safety
-                campMonsters.removeIf(m -> m.getId().equalsIgnoreCase(id));
-
-                Point2D spawnLoc = new Point2D.Float(x, z);
-                ExtensionCommands.createActor(parentExt, room, id, avatar, spawnLoc, 0f, 2);
-                campMonsters.add(new Monster(parentExt, room, id, spawnLoc, avatar));
-            }
-        } else if (monster.length() > 3) {
-            switch (monster) {
-                case "hugwolf":
-                    x = MapData.HUGWOLF[0];
-                    z = MapData.HUGWOLF[1];
-                    campMonsters.add(new Monster(parentExt, room, MapData.HUGWOLF, avatar));
-                    break;
-                case "grassbear":
-                    x = MapData.GRASSBEAR[0];
-                    z = MapData.GRASSBEAR[1];
-                    campMonsters.add(new Monster(parentExt, room, MapData.GRASSBEAR, avatar));
-                    break;
-                case "keeoth":
-                    x = MapData.L2_KEEOTH[0];
-                    z = MapData.L2_KEEOTH[1];
-                    campMonsters.add(new Keeoth(parentExt, room, MapData.L2_KEEOTH, avatar));
-                    break;
-                case "goomonster":
-                    x = MapData.L2_GOOMONSTER[0];
-                    z = MapData.L2_GOOMONSTER[1];
-                    avatar = "goomonster";
-                    campMonsters.add(
-                            new GooMonster(parentExt, room, MapData.L2_GOOMONSTER, avatar));
-                    break;
-            }
-            Point2D spawnLoc = new Point2D.Float(x, z);
-            ExtensionCommands.createActor(
-                    this.parentExt, this.room, avatar, avatar, spawnLoc, 0f, 2);
-            ExtensionCommands.moveActor(
-                    this.parentExt, this.room, avatar, spawnLoc, spawnLoc, 5f, false);
-        }
-    }
-
-    private boolean tripletCampCleared(String monsterName) {
-        List<Monster> triplet =
-                getCampMonsters().stream()
-                        .filter(m -> m.getId().contains(monsterName))
-                        .collect(Collectors.toList());
-        triplet.removeIf(Actor::isDead);
-        return triplet.isEmpty();
-    }
-
-    @Override
-    public void handleSpawnDeath(Actor a) {
-        // Console.debugLog("The room has killed " + a.getId());
-        String monster = a.getId().split("_")[0];
-
-        for (String s : GameManager.L2_SPAWNS) {
-            if (!s.contains(monster)) continue;
-
-            if ((!s.contains("gnomes") && !s.contains("owls")) || tripletCampCleared(monster)) {
-                room.getVariable("spawns").getSFSObjectValue().putInt(s, 0);
-                return;
             }
         }
     }
@@ -246,38 +149,6 @@ public class MainMapRoomHandler extends RoomHandler {
                 break;
         }
         return new Point2D.Float(x, z);
-    }
-
-    public List<Actor> getCompanions() {
-        return this.companions;
-    }
-
-    public void addCompanion(Actor a) {
-        this.companions.add(a);
-    }
-
-    public void removeCompanion(Actor a) {
-        this.companions.remove(a);
-    }
-
-    public void printActors() {
-        for (Actor a : this.getActors()) {
-            Console.log(
-                    "ROOM: "
-                            + this.room.getName()
-                            + " |  TYPE: "
-                            + a.getActorType().toString()
-                            + " | ID: "
-                            + (a.getActorType() == ActorType.PLAYER
-                                    ? a.getDisplayName()
-                                    : a.getId())
-                            + " | "
-                            + a.getHealth());
-        }
-    }
-
-    public void addProjectile(Projectile p) {
-        this.activeProjectiles.add(p);
     }
 
     @Override

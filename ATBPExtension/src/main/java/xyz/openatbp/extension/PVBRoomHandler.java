@@ -11,8 +11,6 @@ import xyz.openatbp.extension.game.RoomGroup;
 import xyz.openatbp.extension.game.actors.Bot;
 
 public class PVBRoomHandler extends MainMapRoomHandler {
-    private final Bot[] botList = new Bot[3];
-
     public PVBRoomHandler(
             ATBPExtension parentExt, Room room, Point2D[] mapBoundary, List<Point2D[]> obstacles) {
         super(parentExt, room, mapBoundary, obstacles);
@@ -37,22 +35,11 @@ public class PVBRoomHandler extends MainMapRoomHandler {
                                     GameMap.BATTLE_LAB);
 
                     if (b != null) {
-                        botList[i] = b;
-                        companions.add(b);
+                        bots.add(b);
                         endGameChampions.put(botProfile.getInt("botId"), b);
-                        champions.add(b);
                     }
                 }
             }
-        }
-    }
-
-    @Override
-    public void run() {
-        super.run();
-
-        for (Bot b : botList) {
-            if (b != null) b.update(mSecondsRan);
         }
     }
 }

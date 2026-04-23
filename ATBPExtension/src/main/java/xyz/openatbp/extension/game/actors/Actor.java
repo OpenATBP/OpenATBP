@@ -4,7 +4,6 @@ import static xyz.openatbp.extension.game.actors.Tower.TOWER_ATTACK_RANGE;
 import static xyz.openatbp.extension.game.actors.UserActor.*;
 import static xyz.openatbp.extension.game.effects.EffectManager.FEAR_MOVING_DISTANCE;
 
-import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.*;
@@ -107,7 +106,12 @@ public abstract class Actor {
     protected int killingSpree = 0;
     protected int multiKill = 0;
     protected List<Actor> killedChampions = new ArrayList<>();
-    private Point2D endPoint = null;
+    private Point2D lastCheckedLocation = null;
+    private int stuckTicks = 0;
+
+    public Actor getTarget() {
+        return this.target;
+    }
 
     public List<Actor> getKilledChampions() {
         return this.killedChampions;
@@ -698,8 +702,11 @@ public abstract class Actor {
                 true);
     }
 
+    public boolean isChampion() {
+        return this instanceof Bot || this instanceof UserActor;
+    }
+
     public void startMoveTo(Point2D endPoint, boolean forcedMovement) {
-        this.endPoint = endPoint;
         if (isAutoAttacking && !forcedMovement) return;
 
         RoomHandler rh = parentExt.getRoomHandler(room.getName());
@@ -808,7 +815,6 @@ public abstract class Actor {
             moveDestination = movePointsToDest.get(movePointsIndex);
             double dist = location.distance(moveDestination);
 
-            // skip zero length segments immediately
             while (dist <= 0.001 && movePointsIndex + 1 < movePointsToDest.size()) {
                 movePointsIndex++;
                 location = moveDestination;
@@ -883,33 +889,49 @@ public abstract class Actor {
     }
 
     protected void handleAutoUnstuck() {
-        RoomHandler rh = parentExt.getRoomHandler(room.getName());
-        PathFinder pF = rh.getPathFinder();
+        if (isMoving) {
+            if (lastCheckedLocation != null && location.distance(lastCheckedLocation) < 0.05) {
+                stuckTicks++;
+                if (stuckTicks >= 3) { // stuck for 1.5 seconds while moving
+                    Console.logWarning("Bot " + id + " appears stuck, unstucking");
+                    RoomHandler rh = parentExt.getRoomHandler(room.getName());
+                    PathFinder pF = rh.getPathFinder();
 
-        if (!pF.isPointInsideObstacle(location) && pF.isPointInsideMap(location)) {
-            // Console.debugLog("Location is inside map, not auto-unstucking");
-            return;
+                    if (!pF.isPointInsideObstacle(location) && pF.isPointInsideMap(location)) {
+                        return;
+                    }
+
+                    Console.logWarning("id: " + id + " is inside obstacle or outside the map!");
+
+                    // spiral search for nearest point that is in map, not in obstacle, and 0.5+
+                    // units from any edge
+                    double[] angles = new double[16];
+                    for (int i = 0; i < 16; i++) angles[i] = i * (Math.PI * 2 / 16);
+
+                    for (double r = 0.5; r <= 5.0; r += 0.5) {
+                        for (double angle : angles) {
+                            Point2D candidate =
+                                    new Point2D.Double(
+                                            location.getX() + r * Math.cos(angle),
+                                            location.getY() + r * Math.sin(angle));
+                            if (pF.isPointInsideMap(candidate)
+                                    && !pF.isPointInsideObstacle(candidate)) {
+                                Console.debugLog("Unstuck teleport dist=" + r);
+                                teleport(candidate);
+                                return;
+                            }
+                        }
+                    }
+                    Console.logWarning("Failed to unstuck: " + id);
+                    stuckTicks = 0;
+                }
+            } else {
+                stuckTicks = 0;
+            }
+        } else {
+            stuckTicks = 0;
         }
-
-        Console.logWarning("id: " + id + " is inside obstacle or outside the map!");
-
-        if (endPoint == null) {
-            Console.debugLog("No end Point, not auto-unstucking");
-            return;
-        }
-
-        Point2D intersection = pF.getIntersectionPoint(location, endPoint);
-        float distToSafeSpot = (float) location.distance(intersection) + 1;
-
-        Line2D safeSpotLine = Champion.createLineTowards(location, intersection, distToSafeSpot);
-        Point2D safeSpot = safeSpotLine.getP2();
-
-        if (pF.isPointInsideMap(safeSpot) && !pF.isPointInsideObstacle(safeSpot)) {
-            Console.debugLog("Teleporting to safe spot");
-            teleport(safeSpot);
-            return;
-        }
-        Console.logWarning("Failed to auto-unstuck for actor: " + id);
+        lastCheckedLocation = new Point2D.Double(location.getX(), location.getY());
     }
 
     public void addTier1DCBuff() {
@@ -1223,10 +1245,10 @@ public abstract class Actor {
             UserActor ua = (UserActor) this;
             String desc =
                     "You spell damage is reduced by "
-                            + debuffValue
+                            + (int) (debuffValue)
                             + " for "
-                            + MAGIC_CUBE_DEBUFF_DURATION
-                            + ".";
+                            + (MAGIC_CUBE_DEBUFF_DURATION / 1000)
+                            + " seconds.";
 
             Champion.handleStatusIcon(
                     parentExt, ua, "junk_4_antimagic_cube", desc, MAGIC_CUBE_DEBUFF_DURATION);
@@ -1537,9 +1559,9 @@ public abstract class Actor {
     }
 
     public void applyStopMovingDuringAttack() {
-        if (this.parentExt.getActorData(this.getAvatar()).has("attackType")) {
-            this.stopMoving();
-            this.isAutoAttacking = true;
+        if (parentExt.getActorData(this.getAvatar()).has("attackType")) {
+            stopMoving();
+            isAutoAttacking = true;
             Runnable resetIsAttacking = () -> this.isAutoAttacking = false;
             scheduleTask(resetIsAttacking, BASIC_ATTACK_DELAY);
         }

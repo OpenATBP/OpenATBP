@@ -127,11 +127,6 @@ public class BubbleGum extends UserActor {
                 }
             }
         }
-        ArrayList<Turret> turrets =
-                new ArrayList<>(this.turrets); // To remove concurrent exceptions
-        for (Turret t : turrets) {
-            t.update(msRan);
-        }
         if (this.bombLocation != null
                 && System.currentTimeMillis() - this.bombPlaceTime >= E_DURATION) {
             int baseUltCooldown = ChampionData.getBaseAbilityCooldown(this, 3);

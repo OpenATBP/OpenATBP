@@ -43,7 +43,11 @@ public class Monster extends Actor {
     private static boolean movementDebug = false;
 
     public Monster(
-            ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName) {
+            ATBPExtension parentExt,
+            Room room,
+            String id,
+            float[] startingLocation,
+            String monsterName) {
         this.startingLocation = new Point2D.Float(startingLocation[0], startingLocation[1]);
         this.type = MonsterType.BIG;
         this.attackCooldown = 0;
@@ -53,17 +57,17 @@ public class Monster extends Actor {
         this.team = 2;
         this.avatar = monsterName;
         this.stats = this.initializeStats();
-        this.id = monsterName;
+        this.id = id;
         this.maxHealth = this.stats.get("health");
         this.currentHealth = this.maxHealth;
         this.actorType = ActorType.MONSTER;
         this.displayName = parentExt.getDisplayName(monsterName);
-        this.xpWorth = this.parentExt.getActorXP(this.id);
+        this.xpWorth = this.parentExt.getActorXP(avatar);
         Properties props = parentExt.getConfigProperties();
         movementDebug = Boolean.parseBoolean(props.getProperty("movementDebug", "false"));
         if (movementDebug)
             ExtensionCommands.createActor(parentExt, room, id + "_test", "creep", location, 0f, 2);
-        this.updateMaxHealth();
+        updateMaxHealth();
     }
 
     public Monster(
@@ -86,30 +90,6 @@ public class Monster extends Actor {
         this.currentHealth = this.maxHealth;
         this.actorType = ActorType.MONSTER;
         this.xpWorth = this.parentExt.getActorXP(avatar);
-        this.displayName = parentExt.getDisplayName(monsterName);
-        this.updateMaxHealth();
-    }
-
-    public Monster(
-            ATBPExtension parentExt,
-            Room room,
-            Point2D startingLocation,
-            String monsterName,
-            String id) {
-        this.startingLocation = startingLocation;
-        this.type = MonsterType.SMALL;
-        this.attackCooldown = 0;
-        this.parentExt = parentExt;
-        this.room = room;
-        this.location = this.startingLocation;
-        this.team = 2;
-        this.avatar = monsterName;
-        this.stats = this.initializeStats();
-        this.id = id;
-        this.maxHealth = this.stats.get("health");
-        this.currentHealth = this.maxHealth;
-        this.actorType = ActorType.MONSTER;
-        this.xpWorth = this.parentExt.getActorXP(this.avatar);
         this.displayName = parentExt.getDisplayName(monsterName);
         this.updateMaxHealth();
     }
@@ -278,9 +258,10 @@ public class Monster extends Actor {
 
     @Override
     public void die(Actor a) { // Called when monster dies
-        Console.debugLog(this.id + " has died! " + this.dead);
-        if (!this.dead) { // No double deaths
-            this.dead = true;
+        if (!this.dead) {
+            Console.debugLog(this.id + " has died! ");
+            // No double deaths
+            dead = true;
 
             if (movementState != MovementState.KNOCKBACK && movementState != MovementState.PULLED) {
                 stopMoving();
@@ -291,7 +272,7 @@ public class Monster extends Actor {
                 rh.addScore(a, a.getTeam(), this.xpWorth);
             }
 
-            this.setHealth(0, (int) this.maxHealth);
+            setHealth(0, (int) this.maxHealth);
             RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getName());
             int scoreValue = parentExt.getActorStats(this.avatar).get("valueScore").asInt();
             if (a.getActorType() == ActorType.PLAYER

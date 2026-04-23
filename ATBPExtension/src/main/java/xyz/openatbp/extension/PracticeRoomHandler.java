@@ -8,7 +8,6 @@ import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 
 import xyz.openatbp.extension.game.GameMap;
-import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.RoomGroup;
 import xyz.openatbp.extension.game.actors.*;
 
@@ -60,23 +59,10 @@ public class PracticeRoomHandler extends RoomHandler {
 
                 if (b != null) {
                     bot = b;
-                    companions.add(bot);
+                    bots.add(b);
                     endGameChampions.put(botId, bot);
-                    champions.add(bot);
                 }
             }
-        }
-    }
-
-    @Override
-    public void run() {
-        super.run();
-        try {
-            if (bot != null) {
-                bot.update(mSecondsRan);
-            }
-        } catch (NullPointerException e) {
-            e.printStackTrace();
         }
     }
 
@@ -154,28 +140,6 @@ public class PracticeRoomHandler extends RoomHandler {
     }
 
     @Override
-    public void handleSpawnDeath(Actor a) {
-        // Console.debugLog("The room has killed " + a.getId());
-        String mons = a.getId().split("_")[0];
-
-        for (String s : SPAWNS) {
-            if (s.contains(mons)) {
-                if (s.contains("gnomes") || s.contains("owls")) {
-                    for (Monster m : campMonsters) {
-                        if (!m.getId().equalsIgnoreCase(a.getId())
-                                && m.getId().contains(mons)
-                                && m.getHealth() > 0) {
-                            return;
-                        }
-                    }
-                }
-                room.getVariable("spawns").getSFSObjectValue().putInt(s, 0);
-                return;
-            }
-        }
-    }
-
-    @Override
     public Point2D getHealthLocation(int num) {
         float x;
         float z;
@@ -190,21 +154,6 @@ public class PracticeRoomHandler extends RoomHandler {
             z = 0;
         }
         return new Point2D.Float(x, z);
-    }
-
-    @Override
-    public void addCompanion(Actor a) {
-        this.companions.add(a);
-    }
-
-    @Override
-    public void removeCompanion(Actor a) {
-        this.companions.remove(a);
-    }
-
-    @Override
-    public void addProjectile(Projectile p) {
-        this.activeProjectiles.add(p);
     }
 
     @Override

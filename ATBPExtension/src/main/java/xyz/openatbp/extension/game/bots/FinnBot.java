@@ -63,24 +63,6 @@ public class FinnBot extends Bot {
         this.wCastDelayMS = 0;
         this.eCastDelayMS = 500;
 
-        this.lowHpActionPHealth = 0.25;
-
-        this.canWinUnderTowerLvDif = -2;
-        this.canWinEReadyLvDif = 0;
-        this.canWinQWReadyLvDif = -1;
-
-        this.soloJungleLv = 3;
-        this.soloJunglePHealth = 0.7;
-        this.duoJungleLv = 2;
-        this.duoJunglePHealth = 0.5;
-        this.trioJunglePHeath = 0.35;
-        this.closestPlayerLvDif = -2;
-
-        this.fleeMinionsAttackedPHpPerLv = 0.05f;
-        this.defAltarCaptureActionDist = 3f;
-        this.playerAttackedLvDif = -2;
-        this.junglingAlliesRadius = 4;
-
         this.botRole = BotRole.FIGHTER;
     }
 
@@ -161,11 +143,16 @@ public class FinnBot extends Bot {
 
             boolean targetLowHP = target.getPHealth() <= 0.05;
 
-            if (canUseW() && distance <= 5f && isEnemyProtectedByTower(target) && targetLowHP) {
+            if (canUseW()
+                    && distance <= 5f
+                    && isPointInTowerRadius(target.getLocation(), target.getTeam())
+                    && targetLowHP) {
                 useW(target.getLocation());
             }
 
-            if (canUseW() && distance <= 5f && !isEnemyProtectedByTower(target)) {
+            if (canUseW()
+                    && distance <= 5f
+                    && !isPointInTowerRadius(target.getLocation(), target.getTeam())) {
                 useW(target.getLocation());
             }
 
@@ -530,7 +517,10 @@ public class FinnBot extends Bot {
 
             // OFFENSIVE ULT
             double distance = location.distance(target.getLocation());
-            return distance <= E_AREA && distance > ATTACK_RANGE && target.getPHealth() <= 0.4;
+            return distance <= E_AREA
+                    && distance > ATTACK_RANGE
+                    && target.getPHealth() <= 0.4
+                    && (target instanceof UserActor || target instanceof Bot);
         }
         return false;
     }

@@ -57,8 +57,7 @@ public class MagicMan extends UserActor {
             this.passiveActivated = false;
             ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "passive");
         }
-        if (this.magicManClone != null) this.magicManClone.update(msRan);
-        if (!effectManager.hasState(ActorState.INVISIBLE) && wLocation != null) {
+        if (!effectManager.hasState(ActorState.STEALTH) && wLocation != null) {
             if (this.magicManClone != null) this.magicManClone.die(this);
             this.wLocation = null;
             this.wDest = null;
@@ -201,6 +200,7 @@ public class MagicMan extends UserActor {
                         ExtensionCommands.actorAbilityResponse(
                                 this.parentExt, this.player, "w", true, 1000, 0);
                     } else {
+                        effectManager.setState(ActorState.STEALTH, false);
                         effectManager.setState(ActorState.INVISIBLE, false);
                         ExtensionCommands.actorAbilityResponse(
                                 this.parentExt,
@@ -266,7 +266,8 @@ public class MagicMan extends UserActor {
     }
 
     private void unveil() {
-        if (effectManager.hasState(ActorState.INVISIBLE)) {
+        if (effectManager.hasState(ActorState.STEALTH)) {
+            effectManager.setState(ActorState.STEALTH, false);
             effectManager.setState(ActorState.INVISIBLE, false);
         }
     }

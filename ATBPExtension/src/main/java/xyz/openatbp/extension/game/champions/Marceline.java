@@ -38,10 +38,10 @@ public class Marceline extends UserActor {
 
     private final String BEAST_REGEN_BUFF_ID;
     private final String W_BEAST_SPEED_BUFF_ID;
+    private final String W_VAMP_SPEED_BUFF_ID;
     private final String BEAST_REGEN_FX_ID;
 
     private int passiveHits = 0;
-    private boolean hpRegenActive = false;
     private Actor qVictim;
     private long qHit = -1;
     private long regenSound = 0;
@@ -52,6 +52,7 @@ public class Marceline extends UserActor {
     private long bestWStartTime = 0;
     private boolean eUsed = false;
     private boolean hadCCDuringECast = false;
+    private boolean disableVampireWOnPoly = false;
 
     private enum Form {
         BEAST,
@@ -62,9 +63,11 @@ public class Marceline extends UserActor {
 
     public Marceline(User u, ATBPExtension parentExt) {
         super(u, parentExt);
-        this.hasCustomSwapFromPoly = true;
+        hasCustomSwapToPoly = true;
+        hasCustomSwapFromPoly = true;
         BEAST_REGEN_BUFF_ID = id + "_marcy_beast_regen";
         W_BEAST_SPEED_BUFF_ID = id + "_marcy_beast_w_speed";
+        W_VAMP_SPEED_BUFF_ID = id + "_marcy_vamp_w_speed";
         BEAST_REGEN_FX_ID = id + "_bat_regen";
     }
 
@@ -73,6 +76,7 @@ public class Marceline extends UserActor {
         super.update(msRan);
         if (this.vampireWActive && System.currentTimeMillis() - vampireWStartTime >= W_DURATION) {
             this.vampireWActive = false;
+            disableVampireWOnPoly = false;
             ExtensionCommands.removeStatusIcon(parentExt, player, W_VAMP_ICON);
         }
         if (beastWActive && System.currentTimeMillis() - bestWStartTime >= W_DURATION) {
@@ -80,7 +84,7 @@ public class Marceline extends UserActor {
             ExtensionCommands.removeStatusIcon(parentExt, player, W_BEAST_ICON);
         }
 
-        if (vampireWActive) {
+        if (vampireWActive && !disableVampireWOnPoly) {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, location, 2f)) {
                 if (isNeitherTowerNorAlly(a) && a.isNotLeaping()) {
@@ -132,9 +136,49 @@ public class Marceline extends UserActor {
     }
 
     @Override
+    public void customSwapToPoly() {
+        super.customSwapToPoly();
+        if (form == Form.VAMPIRE && vampireWActive) {
+            disableVampireWOnPoly = true;
+            effectManager.removeAllEffectsById(W_VAMP_SPEED_BUFF_ID);
+            ExtensionCommands.removeFx(parentExt, room, id + "_mist");
+            ExtensionCommands.removeFx(parentExt, room, id + "_wBats");
+        }
+    }
+
+    @Override
     public void customSwapFromPoly() {
         String bundle = this.form == Form.BEAST ? "marceline_bat" : getSkinAssetBundle();
-        ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bundle);
+        ExtensionCommands.swapActorAsset(parentExt, room, id, bundle);
+        if (form == Form.VAMPIRE && vampireWActive) {
+            disableVampireWOnPoly = false;
+            int remainingW = (int) (W_DURATION - (System.currentTimeMillis() - vampireWStartTime));
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    id,
+                    "marceline_blood_mist",
+                    remainingW,
+                    id + "_mist",
+                    true,
+                    "",
+                    true,
+                    false,
+                    team);
+
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    id,
+                    "marceline_vamp_mark",
+                    remainingW,
+                    id + "_wBats",
+                    true,
+                    "",
+                    true,
+                    false,
+                    team);
+        }
     }
 
     @Override
@@ -208,6 +252,7 @@ public class Marceline extends UserActor {
         super.die(a);
         if (vampireWActive) {
             vampireWActive = false;
+            disableVampireWOnPoly = false;
             ExtensionCommands.removeStatusIcon(parentExt, player, W_VAMP_ICON);
         }
 
@@ -361,7 +406,7 @@ public class Marceline extends UserActor {
                                 this.team);
 
                         effectManager.addEffect(
-                                id + "_marcy_human_w_speed",
+                                id + "_marcy_vamp_w_speed",
                                 "speed",
                                 W_VAMPIRE_SPEED_PERCENT,
                                 ModifierType.MULTIPLICATIVE,

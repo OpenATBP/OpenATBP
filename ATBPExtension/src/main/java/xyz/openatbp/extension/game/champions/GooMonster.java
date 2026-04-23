@@ -36,22 +36,12 @@ public class GooMonster extends Monster {
     public static final int GOO_BUFF_DURATION = 60000;
 
     public GooMonster(
-            ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName) {
-        super(parentExt, room, startingLocation, monsterName);
-        this.abilityCooldown = 5000;
-        this.usingAbility = false;
-        this.puddleActivated = false;
-        this.puddleStarted = -1;
-        this.puddleLocation = null;
-    }
-
-    public GooMonster(
             ATBPExtension parentExt,
             Room room,
-            Point2D startingLocation,
-            String monsterName,
-            String id) {
-        super(parentExt, room, startingLocation, monsterName, id);
+            String id,
+            float[] startingLocation,
+            String monsterName) {
+        super(parentExt, room, id, startingLocation, monsterName);
         this.abilityCooldown = 5000;
         this.usingAbility = false;
         this.puddleActivated = false;

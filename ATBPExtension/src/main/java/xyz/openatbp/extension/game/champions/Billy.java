@@ -9,10 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import com.smartfoxserver.v2.entities.User;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ChampionData;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
@@ -22,33 +19,31 @@ import xyz.openatbp.extension.game.effects.ModifierType;
 import xyz.openatbp.extension.pathfinding.PathFinder;
 
 public class Billy extends UserActor {
-    private static final int FINAL_PASSIVE_DURATION = 5000;
     private static final int Q_SELF_CRIPPLE_DURATION = 500;
     private static final float Q_OFFSET_DISTANCE = 1.5f;
     private static final float Q_SPELL_RANGE = 4.5f;
     public static final int Q_STUN_DURATION = 1500;
+    public static final float Q_KNOCKBACK_DIST = 3.5f;
+
     private static final int W_ATTACKSPEED_DURATION = 5000;
     private static final float W_ATTACK_SPEED_PERCENT = 0.7f;
     private static final int W_SPEED_DURATION = 5000;
     private static final float W_SPEED_PERCENT = 0.5f;
     private static final int W_CRATER_OFFSET = 1;
     public static final float W_LEAP_SPEED = 14f;
+
     private static final int E_CAST_DELAY = 750;
     private static final int E_EMP_DURATION = 4500;
-    private static final float E_CENTER_DMG_MULTIPLIER = 1.1f;
-    public static final float Q_KNOCKBACK_DIST = 3.5f;
+    private static final float E_MIN_DAMAGE_PERCENTAGE = 0.4f;
+    private static final int E_TICK = 200;
+    private static final float E_CENTER_RING_DMG = 1.1f;
+    private static final float E_RADIUS = 2f;
 
     private int passiveUses = 0;
     private boolean jumpActive = false;
-    private Point2D ultLocation = null;
-    private long ultStartTime = 0;
-    private long lastUltTick = 0;
-    private long finalPassiveStart = 0;
-    private long lastSoundPlayed = 0;
-    private Point2D ultLoc = null;
-    private long lastPulseTime = 0;
-    private int pulseCounter = 0;
     private int wLeapDuration = 0;
+    private long eStartTime = 0;
+    private Point2D eLocation = null;
 
     public Billy(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -57,62 +52,42 @@ public class Billy extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if (this.ultLocation != null
-                && System.currentTimeMillis() - this.ultStartTime < E_EMP_DURATION
-                && System.currentTimeMillis() - this.lastUltTick >= 200) {
-            this.lastUltTick = System.currentTimeMillis();
-            RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
-            List<Actor> impactedActors =
-                    Champion.getEnemyActorsInRadius(handler, this.team, this.ultLocation, 2.25f);
-            JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
-            for (Actor a : impactedActors) {
 
-                double damageReduction;
-                int numActors = impactedActors.size();
+        if (eLocation != null) {
+            if (msRan % E_TICK == 0) {
+                RoomHandler rh = parentExt.getRoomHandler(room.getName());
+                List<Actor> enemies = Champion.getActorsInRadius(rh, eLocation, E_RADIUS);
+                JsonNode spellData = this.parentExt.getAttackData(avatar, "spell3");
+                float damage = getSpellDamage(spellData, false) / 5f;
 
-                if (numActors == 1 || numActors == 0) {
-                    damageReduction = 1.0;
-                } else {
-                    double calculatedReduction = 1 - (0.15 * (numActors - 1));
-                    damageReduction = Math.max(0.4, calculatedReduction);
+                for (Actor a : enemies) {
+                    if (a.getActorType() != ActorType.TOWER) {
+                        float calculatedReduction = (float) (1 - (0.15 * (enemies.size() - 1)));
+                        float dmgReduction = Math.max(E_MIN_DAMAGE_PERCENTAGE, calculatedReduction);
+                        damage *= dmgReduction;
+
+                        a.addToDamageQueue(this, damage, spellData, true);
+                    }
                 }
-
-                if (a.getActorType() != ActorType.TOWER) {
-                    double damage = (getSpellDamage(spellData, false) / 5d) * damageReduction;
-                    a.addToDamageQueue(this, damage, spellData, true);
-                }
+                ExtensionCommands.playSound(
+                        parentExt, room, "", "sfx_billy_nothung_pulse", eLocation);
+                ExtensionCommands.createWorldFX(
+                        parentExt,
+                        room,
+                        id,
+                        "billy_nothung_pulse",
+                        id + "_ultPulse_" + Math.random(),
+                        1000,
+                        (float) eLocation.getX(),
+                        (float) eLocation.getY(),
+                        false,
+                        team,
+                        0f);
             }
-        } else if (this.ultLocation != null
-                && System.currentTimeMillis() - this.ultStartTime >= E_EMP_DURATION) {
-            this.ultLocation = null;
-        }
-        if (System.currentTimeMillis() - finalPassiveStart >= FINAL_PASSIVE_DURATION) {
-            ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "finalpassive");
-        }
-        if (this.ultLocation != null
-                && System.currentTimeMillis() - this.ultStartTime < E_EMP_DURATION
-                && System.currentTimeMillis() - lastSoundPlayed >= 300) {
-            ExtensionCommands.playSound(
-                    this.parentExt, this.room, "", "sfx_billy_nothung_pulse", this.ultLocation);
-            lastSoundPlayed = System.currentTimeMillis();
-        }
-        if (ultLocation != null
-                && System.currentTimeMillis() - ultStartTime < E_EMP_DURATION
-                && System.currentTimeMillis() - lastPulseTime >= 175) {
-            lastPulseTime = System.currentTimeMillis();
-            pulseCounter++;
-            ExtensionCommands.createWorldFX(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    "billy_nothung_pulse",
-                    this.id + "_ultPulse" + pulseCounter,
-                    1000,
-                    (float) this.ultLocation.getX(),
-                    (float) this.ultLocation.getY(),
-                    false,
-                    this.team,
-                    0f);
+
+            if (System.currentTimeMillis() - eStartTime >= E_EMP_DURATION) {
+                eLocation = null;
+            }
         }
     }
 
@@ -299,7 +274,6 @@ public class Billy extends UserActor {
                             true,
                             false,
                             this.team);
-                    finalPassiveStart = System.currentTimeMillis();
                 }
 
                 int globalCooldown = (int) (wLeapDuration * 1.5);
@@ -316,13 +290,8 @@ public class Billy extends UserActor {
                 this.canCast[2] = false;
                 try {
                     this.stopMoving(castDelay);
-                    this.ultLoc = Champion.createLineTowards(this.location, dest, 5.5f).getP2();
                     ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "vo/vo_billy_nothung",
-                            this.location);
+                            parentExt, room, id, "vo/vo_billy_nothung", location);
                     ExtensionCommands.createWorldFX(
                             this.parentExt,
                             this.room,
@@ -330,8 +299,8 @@ public class Billy extends UserActor {
                             "lemongrab_ground_aoe_target",
                             this.id + "_billyUltTarget",
                             1750,
-                            (float) ultLoc.getX(),
-                            (float) ultLoc.getY(),
+                            (float) dest.getX(),
+                            (float) dest.getY(),
                             true,
                             this.team,
                             0f);
@@ -419,14 +388,11 @@ public class Billy extends UserActor {
             scheduleTask(enableECasting, delay);
 
             if (getHealth() > 0) {
-                ExtensionCommands.playSound(
-                        parentExt, room, "", "sfx_billy_nothung_skyfall", ultLoc);
+                ExtensionCommands.playSound(parentExt, room, "", "sfx_billy_nothung_skyfall", dest);
                 int duration = 1000;
                 if (passiveUses == 3) {
-                    ultLocation = ultLoc;
-                    ultStartTime = System.currentTimeMillis();
-                    lastUltTick = System.currentTimeMillis();
-                    lastSoundPlayed = System.currentTimeMillis();
+                    eStartTime = System.currentTimeMillis();
+                    eLocation = dest;
                     duration = E_EMP_DURATION;
                     usePassiveAbility();
                 }
@@ -437,8 +403,8 @@ public class Billy extends UserActor {
                         "billy_nothung_skyfall",
                         id + "_ult",
                         duration,
-                        (float) ultLoc.getX(),
-                        (float) ultLoc.getY(),
+                        (float) dest.getX(),
+                        (float) dest.getY(),
                         false,
                         team,
                         0f);
@@ -449,18 +415,21 @@ public class Billy extends UserActor {
                         "billy_nothung_pulse",
                         id + "_ultPulseNotEmpowered",
                         1000,
-                        (float) ultLoc.getX(),
-                        (float) ultLoc.getY(),
+                        (float) dest.getX(),
+                        (float) dest.getY(),
                         false,
                         team,
                         0f);
-                RoomHandler handler = parentExt.getRoomHandler(room.getName());
-                for (Actor a : Champion.getActorsInRadius(handler, ultLoc, 2.25f)) {
-                    if (isNeitherTowerNorAlly(a)) {
-                        double distance = a.getLocation().distance(ultLoc);
+
+                RoomHandler rh = parentExt.getRoomHandler(room.getName());
+                List<Actor> enemies = Champion.getActorsInRadius(rh, dest, E_RADIUS);
+
+                for (Actor a : enemies) {
+                    if (a.getActorType() != ActorType.TOWER) {
+                        double distance = a.getLocation().distance(dest);
                         double damage = getSpellDamage(spellData, true);
 
-                        if (distance <= 1) damage *= E_CENTER_DMG_MULTIPLIER;
+                        if (distance <= 1) damage *= E_CENTER_RING_DMG;
                         a.addToDamageQueue(Billy.this, damage, spellData, false);
                     }
                 }

@@ -19,7 +19,6 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 
 import xyz.openatbp.extension.game.BotMapConfig;
 import xyz.openatbp.extension.game.GameMap;
-import xyz.openatbp.extension.game.Projectile;
 import xyz.openatbp.extension.game.actors.*;
 import xyz.openatbp.extension.game.bots.JakeBot;
 
@@ -402,8 +401,8 @@ public class TutorialRoomHandler extends RoomHandler {
                     jakeBot.setStat("attackDamage", TUTORIAL_JAKE_DAMAGE);
                     jakeBot.setStat("spellDamage", TUTORIAL_JAKE_DAMAGE);
                     jakeBot.setHealth(TUTORIAL_JAKE_HP, TUTORIAL_JAKE_HP);
-                    companions.add(jakeBot);
 
+                    bots.add(jakeBot);
                     endGameChampions.put(10010, jakeBot);
                 }
             }
@@ -429,7 +428,6 @@ public class TutorialRoomHandler extends RoomHandler {
             Console.logWarning("BASE UPDATE EXCEPTION");
             e.printStackTrace();
         }
-        if (this.room.getUserList().isEmpty()) parentExt.stopScript(this.room.getName(), true);
     }
 
     private void removeWayPoint() {
@@ -517,9 +515,6 @@ public class TutorialRoomHandler extends RoomHandler {
     public void spawnMonster(String monster) {}
 
     @Override
-    public void handleSpawnDeath(Actor a) {}
-
-    @Override
     public Point2D getHealthLocation(int num) {
         float x;
         float z;
@@ -535,15 +530,6 @@ public class TutorialRoomHandler extends RoomHandler {
         }
         return new Point2D.Float(x, z);
     }
-
-    @Override
-    public void addCompanion(Actor a) {}
-
-    @Override
-    public void removeCompanion(Actor a) {}
-
-    @Override
-    public void addProjectile(Projectile p) {}
 
     @Override
     public HashMap<Integer, Point2D> getFountainsCenter() {

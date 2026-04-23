@@ -80,11 +80,6 @@ public class Neptr extends UserActor {
                 a.addToDamageQueue(this, dmg, attackData, true);
             }
         }
-
-        ArrayList<Mine> mines = new ArrayList<>(this.mines); // To remove concurrent exceptions
-        for (Mine m : mines) {
-            m.update(msRan);
-        }
     }
 
     @Override

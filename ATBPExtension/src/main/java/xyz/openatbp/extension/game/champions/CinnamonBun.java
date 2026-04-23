@@ -596,8 +596,6 @@ public class CinnamonBun extends UserActor {
         }
     }
 
-    private void handleUltBuff() {}
-
     private List<Actor> getEnemiesInRadius(Point2D center, float radius) {
         RoomHandler handler = parentExt.getRoomHandler(room.getName());
         List<Actor> returnVal = Champion.getActorsInRadius(handler, center, radius);

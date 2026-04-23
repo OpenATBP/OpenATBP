@@ -33,19 +33,12 @@ public class Keeoth extends Monster {
     public static final int KEEOTH_BUFF_DURATION = 60000;
 
     public Keeoth(
-            ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName) {
-        super(parentExt, room, startingLocation, monsterName);
-        this.abilityCooldown = 3000;
-        this.usingAbility = false;
-    }
-
-    public Keeoth(
             ATBPExtension parentExt,
             Room room,
-            Point2D startingLocation,
-            String monsterName,
-            String id) {
-        super(parentExt, room, startingLocation, monsterName, id);
+            String id,
+            float[] startingLocation,
+            String monsterName) {
+        super(parentExt, room, id, startingLocation, monsterName);
         this.abilityCooldown = 3000;
         this.usingAbility = false;
     }

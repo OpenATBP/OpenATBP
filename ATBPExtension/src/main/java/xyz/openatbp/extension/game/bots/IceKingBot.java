@@ -38,7 +38,18 @@ public class IceKingBot extends Bot {
     private long ultStartTime = 0;
     private long lasWhirlwindTime = 0;
 
-    private boolean fakeProjectileHit = false;
+    private static final double LOW_HP_ACTION_PHEALTH = 0.3;
+    private static final int SOLO_JUNGLE_LV = 5;
+    private static final double SOLO_JUNGLE_PHEALTH = 0.85;
+    private static final double DUO_JUNGLE_PHEALTH = 0.45;
+    private static final double TRIO_JUNGLE_PHEALTH = 0.35;
+    private static final float FLEE_MINIONS_ATTACKED_PHP_PER_LV = 0.04f;
+    private static final float DEF_ALTAR_CAPTURE_ACTION_DIST = 3f;
+    private static final double PLAYER_ATTACKED_LV_DIF = -1;
+    private static final double JUNGLING_ALLIES_RADIUS = 7;
+    private static final float AGGRO_RANGE = 5f;
+    private static final float FLEE_FROM_FIGHT_PHEALTH = 0.6f;
+    private static final float FLEE_FARM_MINIONS_PHEALTH = 0.4f;
 
     private enum AssetBundle {
         NORMAL,
@@ -73,24 +84,6 @@ public class IceKingBot extends Bot {
         this.eCastDelayMS = 250;
 
         this.hasCustomSwapFromPoly = true;
-
-        this.lowHpActionPHealth = 0.3;
-
-        this.canWinUnderTowerLvDif = -2;
-        this.canWinEReadyLvDif = -1;
-        this.canWinQWReadyLvDif = -1;
-
-        this.soloJungleLv = 5;
-        this.soloJunglePHealth = 0.85;
-        this.duoJungleLv = 2;
-        this.duoJunglePHealth = 0.45;
-        this.trioJunglePHeath = 0.3;
-        this.closestPlayerLvDif = 0;
-
-        this.fleeMinionsAttackedPHpPerLv = 0.04f;
-        this.defAltarCaptureActionDist = 3f;
-        this.playerAttackedLvDif = -1;
-        this.junglingAlliesRadius = 7;
 
         this.botRole = BotRole.LANE_PUSHER;
     }
@@ -264,12 +257,11 @@ public class IceKingBot extends Bot {
     @Override
     public void useQ(Point2D destination) {
         lastQUse = System.currentTimeMillis();
-
         globalCooldown = qCastDelayMS;
 
+        stopMoving();
         ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "spell1", 100, true);
         handleLastAbilityVar();
-        stopMoving();
         String freezeVO = SkinData.getIceKingQVO(avatar);
         ExtensionCommands.playSound(this.parentExt, this.room, this.id, freezeVO, this.location);
 
