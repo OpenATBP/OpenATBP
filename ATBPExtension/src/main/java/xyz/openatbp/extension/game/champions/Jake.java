@@ -198,7 +198,9 @@ public class Jake extends UserActor {
                 String stretchSFX = SkinData.getJakeQSFX(avatar);
                 String stretchVO = SkinData.getJakeQVO(avatar);
                 ExtensionCommands.playSound(parentExt, room, id, stretchSFX, location);
-                ExtensionCommands.playSound(parentExt, room, id, stretchVO, location);
+
+                playSoundWithChance(stretchVO, 50);
+
                 ExtensionCommands.actorAbilityResponse(
                         parentExt, player, "q", true, getReducedCooldown(cooldown), gCooldown);
                 scheduleTask(
@@ -263,8 +265,8 @@ public class Jake extends UserActor {
 
                         String ballVO = SkinData.getJakeWVO(avatar);
                         String ballSFX = SkinData.getJakeWSFX(avatar);
-                        ExtensionCommands.playSound(
-                                this.parentExt, this.room, this.id, ballVO, this.location);
+                        playSoundWithChance(ballVO, 50);
+
                         ExtensionCommands.playSound(
                                 this.parentExt, this.room, this.id, ballSFX, this.location);
                     }

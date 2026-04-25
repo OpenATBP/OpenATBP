@@ -200,19 +200,20 @@ public class BMO extends UserActor {
                     else addPasiveStacks();
                     String cameraFx = SkinData.getBMOQCameraFX(avatar);
                     ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
+                            parentExt,
+                            room,
+                            id,
                             cameraFx,
                             1000,
-                            this.id + "_camera",
+                            id + "_camera",
                             true,
                             "",
                             true,
                             false,
-                            this.team);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, "sfx_bmo_camera", this.location);
+                            team);
+                    ExtensionCommands.playSound(parentExt, room, id, "sfx_bmo_camera", location);
+                    playSoundWithChance("vo/vo_bmo_q", 50);
+
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
@@ -446,8 +447,9 @@ public class BMO extends UserActor {
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_pixels_aoe");
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_bmo_remote");
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_target_ring_4.5");
-        ExtensionCommands.playSound(
-                this.parentExt, this.room, this.id, "vo/vo_bmo_yay", this.location);
+
+        playSoundWithChance("vo/vo_bmo_yay", 50);
+
         ExtensionCommands.playSound(
                 this.parentExt, this.room, this.id, "sfx_bmo_pixels_explode", this.location);
         ExtensionCommands.createActorFX(

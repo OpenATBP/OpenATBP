@@ -32,7 +32,7 @@ public class Lemongrab extends UserActor {
     public static final int W_DELAY = 1000;
 
     public static final double W_CENTER_DMG_MULTIPLIER = 1.25;
-    public static final float W_RADIUS = 2f;
+    public static final float W_RADIUS = 2.25f;
     public static final float E_RADIUS = 2.5f;
 
     private int unacceptableLevels = 0;
@@ -182,12 +182,9 @@ public class Lemongrab extends UserActor {
                             this.id,
                             "sfx_lemongrab_sound_sword",
                             this.location);
-                    ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "vo/vo_lemongrab_sound_sword",
-                            this.location);
+
+                    playSoundWithChance("vo/vo_lemongrab_sound_sword", 50);
+
                     ExtensionCommands.createActorFX(
                             this.parentExt,
                             this.room,
@@ -218,12 +215,8 @@ public class Lemongrab extends UserActor {
                 this.canCast[1] = false;
                 try {
                     stopMoving(castDelay);
-                    ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "vo/vo_lemongrab_my_juice",
-                            this.location);
+                    playSoundWithChance("vo/vo_lemongrab_my_juice", 50);
+
                     ExtensionCommands.createWorldFX(
                             this.parentExt,
                             this.room,

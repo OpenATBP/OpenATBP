@@ -118,12 +118,8 @@ public class MagicMan extends UserActor {
                             this.id,
                             "sfx_magicman_snakes",
                             this.location);
-                    ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "vo/vo_magicman_snakes",
-                            this.location);
+
+                    playSoundWithChance("vo/vo_magicman_snakes", 50);
 
                     Point2D endPoint = Champion.createLineTowards(location, dest, 9.5f).getP2();
                     Line2D pathSP = new Line2D.Float(location, endPoint);
@@ -484,12 +480,8 @@ public class MagicMan extends UserActor {
                     0f);
             ExtensionCommands.playSound(
                     this.parentExt, this.room, "", "sfx_magicman_decoy", this.location);
-            ExtensionCommands.playSound(
-                    this.parentExt,
-                    this.room,
-                    MagicMan.this.id,
-                    "vo/vo_magicman_decoy2",
-                    MagicMan.this.location);
+
+            playSoundWithChance("vo/vo_magicman_decoy2", 50);
 
             String AVATAR = "magicman";
 

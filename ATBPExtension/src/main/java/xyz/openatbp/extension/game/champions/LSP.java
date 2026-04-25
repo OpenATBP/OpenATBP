@@ -160,8 +160,7 @@ public class LSP extends UserActor {
                 try {
                     this.stopMoving(castDelay);
                     String qVO = SkinData.getLSPQVO(avatar);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, qVO, this.location);
+                    playSoundWithChance(qVO, 50);
                     ExtensionCommands.createActorFX(
                             this.parentExt,
                             this.room,
@@ -193,7 +192,7 @@ public class LSP extends UserActor {
                 this.wActive = true;
                 this.wTime = System.currentTimeMillis();
                 String wVO = SkinData.getLSPWVO(avatar);
-                ExtensionCommands.playSound(this.parentExt, this.room, this.id, wVO, this.location);
+                playSoundWithChance(wVO, 50);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -361,7 +360,7 @@ public class LSP extends UserActor {
                 fireProjectile(projectile, location, dest, 100f);
 
                 String sound = "sfx_lsp_cellphone_throw";
-                ExtensionCommands.playSound(parentExt, room, "global", sound, location);
+                ExtensionCommands.playSound(parentExt, room, id, sound, location);
             }
             isCastingult = false;
         }

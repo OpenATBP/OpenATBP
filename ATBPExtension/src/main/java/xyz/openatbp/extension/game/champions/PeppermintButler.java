@@ -376,6 +376,8 @@ public class PeppermintButler extends UserActor {
                 canCast[0] = false;
                 qActive = true;
                 try {
+                    playSoundWithChance("vo/vo_pepbut.q", 50);
+
                     this.qStartTime = System.currentTimeMillis();
                     ExtensionCommands.createActorFX(
                             this.parentExt,
@@ -428,7 +430,8 @@ public class PeppermintButler extends UserActor {
                 String defaultVo = SkinData.getPeppermintButlerWHohoVO(avatar);
                 String wHohoVO = form == Form.FERAL ? feralHohoVo : defaultVo;
 
-                ExtensionCommands.playSound(parentExt, room, id, wHohoVO, location);
+                playSoundWithChance(wHohoVO, 50);
+
                 break;
             case 3:
                 canCast[2] = false;
@@ -623,7 +626,8 @@ public class PeppermintButler extends UserActor {
         String feralBeholdVo = "vo/vo_pepbut_zombie_behold";
         String beholdVO = form == Form.FERAL ? feralBeholdVo : defaultBeholdVO;
 
-        ExtensionCommands.playSound(parentExt, room, id, beholdVO, location);
+        playSoundWithChance(beholdVO, 50);
+
         ExtensionCommands.playSound(parentExt, room, id, "sfx_pepbut_dig_emerge", location);
 
         ExtensionCommands.actorAnimate(parentExt, room, id, "spell2c", 500, false);

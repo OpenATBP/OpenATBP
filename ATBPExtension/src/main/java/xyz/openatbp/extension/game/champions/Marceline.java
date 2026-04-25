@@ -284,7 +284,8 @@ public class Marceline extends UserActor {
                     String proj = "projectile_marceline_dot";
                     String proj2 = "projectile_marceline_root";
                     String projectile = form == Form.VAMPIRE ? proj : proj2;
-                    ExtensionCommands.playSound(parentExt, room, this.id, qVO, this.location);
+                    playSoundWithChance(qVO, 50);
+
                     ExtensionCommands.playSound(
                             this.parentExt,
                             this.room,
@@ -372,8 +373,7 @@ public class Marceline extends UserActor {
                     } else {
                         this.vampireWActive = true;
                         this.vampireWStartTime = System.currentTimeMillis();
-                        ExtensionCommands.playSound(
-                                this.parentExt, this.room, this.id, wVO, this.location);
+                        playSoundWithChance(wVO, 50);
                         ExtensionCommands.playSound(
                                 this.parentExt,
                                 this.room,

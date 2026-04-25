@@ -12,7 +12,6 @@ import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
-import xyz.openatbp.extension.game.actors.Bot;
 import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.game.effects.ActorState;
 import xyz.openatbp.extension.game.effects.ModifierIntent;
@@ -164,7 +163,7 @@ public class Finn extends UserActor {
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
         super.handleKill(a, attackData);
-        if (a instanceof UserActor || a instanceof Bot) {
+        if (a.isChampion()) {
             this.canCast[1] = true;
             ExtensionCommands.actorAbilityResponse(this.parentExt, this.player, "w", true, 0, 0);
             if (getHealth() > 0) {
@@ -238,37 +237,38 @@ public class Finn extends UserActor {
                     this.qActive = true;
                     String shieldFX = SkinData.getFinnQFX(avatar);
                     String shieldSFX = SkinData.getFinnQSFX(avatar);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, shieldSFX, this.location);
+                    ExtensionCommands.playSound(parentExt, room, id, shieldSFX, location);
+                    playSoundWithChance("vo/vo_finn_q", 50);
+
                     ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
+                            parentExt,
+                            room,
+                            id,
                             shieldFX,
                             3000,
-                            this.id + "_shield",
+                            id + "_shield",
                             true,
                             "Bip001 Pelvis",
                             true,
                             false,
-                            this.team);
+                            team);
 
                     effectManager.addEffect(
-                            this.id + "_finn_q_speed",
+                            id + "_finn_q_speed",
                             "speed",
                             Q_SPEED_PERCENT,
                             ModifierType.MULTIPLICATIVE,
                             ModifierIntent.BUFF,
                             Q_SPEED_DURATION);
                     effectManager.addEffect(
-                            this.id + "_finn_q_armor",
+                            id + "_finn_q_armor",
                             "armor",
                             Q_ARMOR_PERCENT,
                             ModifierType.MULTIPLICATIVE,
                             ModifierIntent.BUFF,
                             Q_ARMOR_DURATION);
                     effectManager.addEffect(
-                            this.id + "_finn_q_attack_speed",
+                            id + "_finn_q_attack_speed",
                             "attackSpeed",
                             Q_ATTACK_SPEED_PERCENT,
                             ModifierType.MULTIPLICATIVE,
@@ -343,17 +343,18 @@ public class Finn extends UserActor {
                 String dashFX = SkinData.getFinnWFX(avatar);
                 String dashSFX = SkinData.getFinnWSFX(avatar);
                 ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
+                        parentExt,
+                        room,
+                        id,
                         dashFX,
                         wDuration,
-                        this.id + "finnWTrail",
+                        id + "finnWTrail",
                         true,
                         "",
                         true,
                         false,
-                        this.team);
+                        team);
+                playSoundWithChance("vo/vo_finn_w", 50);
 
                 ExtensionCommands.playSound(parentExt, room, id, dashSFX, location);
 
@@ -375,6 +376,8 @@ public class Finn extends UserActor {
                                 this.canCast[1] = true;
                             };
                     scheduleTask(enableDashCasting, E_SELF_CRIPPLE_DURATION);
+
+                    ExtensionCommands.playSound(parentExt, room, id, "vo/vo_finn_e", location);
 
                     Runnable cast =
                             () -> {

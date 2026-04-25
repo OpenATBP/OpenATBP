@@ -303,8 +303,9 @@ public class Fionna extends UserActor {
                             false,
                             this.team);
                     int gruntNum = 3 - this.dashesRemaining;
-                    ExtensionCommands.playSound(
-                            parentExt, room, this.id, "fionna_grunt" + gruntNum, this.location);
+
+                    String sound = "fionna_grunt" + gruntNum;
+                    playSoundWithChance(sound, 50);
                 }
                 break;
             case 2:

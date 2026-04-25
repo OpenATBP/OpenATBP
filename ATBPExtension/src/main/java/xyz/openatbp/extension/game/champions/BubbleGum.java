@@ -223,7 +223,7 @@ public class BubbleGum extends UserActor {
                 try {
                     this.stopMoving();
                     String potionVo = SkinData.getBubbleGumQVO(avatar);
-                    ExtensionCommands.playSound(parentExt, room, id, potionVo, this.location);
+                    playSoundWithChance(potionVo, 50);
                     ExtensionCommands.createWorldFX(
                             parentExt,
                             room,
@@ -251,7 +251,7 @@ public class BubbleGum extends UserActor {
                     if (getHealth() > 0) {
                         this.stopMoving();
                         String turretVo = SkinData.getBubbleGumWVO(avatar);
-                        ExtensionCommands.playSound(parentExt, room, id, turretVo, this.location);
+                        playSoundWithChance(turretVo, 50);
                         this.spawnTurret(dest);
                     }
                     ExtensionCommands.actorAbilityResponse(

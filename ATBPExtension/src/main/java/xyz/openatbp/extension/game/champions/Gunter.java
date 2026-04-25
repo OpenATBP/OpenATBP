@@ -210,6 +210,7 @@ public class Gunter extends UserActor {
                 try {
                     stopMoving();
                     if (getHealth() > 0) {
+                        playSoundWithChance("vo/vo_gunter_w", 50);
                         Line2D abilityLine = Champion.createLineTowards(this.location, dest, 8f);
                         ExtensionCommands.playSound(
                                 this.parentExt, this.room, "", "sfx_gunter_wing_it", this.location);

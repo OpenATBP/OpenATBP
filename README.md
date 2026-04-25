@@ -14,7 +14,6 @@ custom content including a new champion (Choose Goose), additional skins, and ba
 
 Most core gameplay systems are functional. Areas still needing improvement include:
 - Pathfinding
-- Crowd control handling
 - Bots
 - Lobby server (queues and party logic)
 

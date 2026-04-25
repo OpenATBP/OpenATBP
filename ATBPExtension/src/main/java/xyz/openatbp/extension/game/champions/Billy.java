@@ -37,7 +37,7 @@ public class Billy extends UserActor {
     private static final float E_MIN_DAMAGE_PERCENTAGE = 0.4f;
     private static final int E_TICK = 200;
     private static final float E_CENTER_RING_DMG = 1.1f;
-    private static final float E_RADIUS = 2f;
+    private static final float E_RADIUS = 2.25f;
 
     private int passiveUses = 0;
     private boolean jumpActive = false;
@@ -56,7 +56,8 @@ public class Billy extends UserActor {
         if (eLocation != null) {
             if (msRan % E_TICK == 0) {
                 RoomHandler rh = parentExt.getRoomHandler(room.getName());
-                List<Actor> enemies = Champion.getActorsInRadius(rh, eLocation, E_RADIUS);
+                List<Actor> enemies =
+                        Champion.getEnemyActorsInRadius(rh, team, eLocation, E_RADIUS);
                 JsonNode spellData = this.parentExt.getAttackData(avatar, "spell3");
                 float damage = getSpellDamage(spellData, false) / 5f;
 
@@ -171,6 +172,7 @@ public class Billy extends UserActor {
                             }
                         }
                         if (this.passiveUses == 3) this.usePassiveAbility();
+
                         ExtensionCommands.playSound(
                                 this.parentExt,
                                 this.room,
@@ -210,6 +212,8 @@ public class Billy extends UserActor {
                                 .isLeap(true)
                                 .build();
                 startDash(ctx);
+
+                playSoundWithChance("vo/vo_billy_w", 50);
 
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_billy_jump", location);
                 ExtensionCommands.createActorFX(
@@ -422,7 +426,7 @@ public class Billy extends UserActor {
                         0f);
 
                 RoomHandler rh = parentExt.getRoomHandler(room.getName());
-                List<Actor> enemies = Champion.getActorsInRadius(rh, dest, E_RADIUS);
+                List<Actor> enemies = Champion.getEnemyActorsInRadius(rh, team, dest, E_RADIUS);
 
                 for (Actor a : enemies) {
                     if (a.getActorType() != ActorType.TOWER) {

@@ -236,6 +236,9 @@ public class FlamePrincess extends UserActor {
                                 this.id,
                                 "sfx_flame_princess_cone_of_flame",
                                 this.location);
+
+                        playSoundWithChance("vo/vo_flame_princess_q", 50);
+
                         fireProjectile(
                                 new FlameProjectile(
                                         this.parentExt,
@@ -268,17 +271,22 @@ public class FlamePrincess extends UserActor {
                     stopMoving();
                     this.wUsed = true;
                     ExtensionCommands.createWorldFX(
-                            this.parentExt,
-                            this.player.getLastJoinedRoom(),
-                            this.id,
+                            parentExt,
+                            room,
+                            id,
                             "fx_target_ring_2",
                             "flame_w",
                             1500,
                             (float) dest.getX(),
                             (float) dest.getY(),
                             true,
-                            this.team,
+                            team,
                             0f);
+
+                    ExtensionCommands.playSound(
+                            parentExt, room, id, "sfx_flame_princess_projectile_throw", location);
+                    playSoundWithChance("vo/vo_flame_princess_w", 50);
+
                     Runnable fxDelay =
                             () ->
                                     ExtensionCommands.createWorldFX(
@@ -316,32 +324,29 @@ public class FlamePrincess extends UserActor {
                     this.form = Form.ULT;
                     this.ultStartTime = System.currentTimeMillis();
                     this.stopMoving(castDelay);
+
+                    String[] eVOS = {
+                        "vo/vo_flame_princess_e",
+                        "vo/vo_flame_princess_e_2",
+                        "vo/vo_flame_princess_e_3"
+                    };
                     ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "vo/vo_flame_princess_flame_form",
-                            this.getLocation());
+                            parentExt, room, id, eVOS[random.nextInt(3)], location);
                     ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "sfx_flame_princess_flame_form",
-                            this.getLocation());
-                    ExtensionCommands.swapActorAsset(
-                            this.parentExt, this.room, this.id, "flame_ult");
+                            parentExt, room, id, "sfx_flame_princess_flame_form", location);
+                    ExtensionCommands.swapActorAsset(parentExt, room, id, "flame_ult");
                     ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
+                            parentExt,
+                            room,
+                            id,
                             "flame_princess_ultimate_aoe",
                             5500,
-                            this.id + "flameE",
+                            id + "flameE",
                             true,
                             "",
                             true,
                             false,
-                            this.team);
+                            team);
                     ExtensionCommands.addStatusIcon(
                             parentExt,
                             player,
@@ -349,15 +354,15 @@ public class FlamePrincess extends UserActor {
                             "flame_spell_3_description",
                             "icon_flame_s3",
                             E_DURATION);
-                    ExtensionCommands.scaleActor(this.parentExt, this.room, this.id, 1.5f);
-                    this.fpScale = 1.5f;
+                    ExtensionCommands.scaleActor(parentExt, room, id, 1.5f);
+                    fpScale = 1.5f;
                     ExtensionCommands.actorAbilityResponse(
-                            this.parentExt, this.player, "e", true, castDelay, 0);
+                            parentExt, player, "e", true, castDelay, 0);
                     scheduleTask(
                             abilityRunnable(ability, spellData, cooldown, gCooldown, dest),
                             castDelay);
-                } else if (this.ultUses < 5) {
-                    this.ultUses++;
+                } else if (ultUses < 5) {
+                    ultUses++;
 
                     RoomHandler rh = parentExt.getRoomHandler(room.getName());
                     PathFinder pathFinder = rh.getPathFinder();
@@ -365,7 +370,7 @@ public class FlamePrincess extends UserActor {
                     Point2D dashPoint = pathFinder.getIntersectionPoint(location, dest);
 
                     double time = location.distance(dashPoint) / E_DASH_SPEED;
-                    this.dashTime = (int) (time * 1000);
+                    dashTime = (int) (time * 1000);
 
                     DashContext ctx =
                             new DashContext.Builder(location, dashPoint, E_DASH_SPEED)
@@ -379,19 +384,15 @@ public class FlamePrincess extends UserActor {
 
                     if (remainingTime + dashTime > E_DURATION) { // handle last moment dashing
                         int timeNeeded = remainingTime + dashTime - E_DURATION;
-                        this.ultStartTime += timeNeeded; // add time to complete anim
-                        this.ultUses = 5; // disable further dashing
+                        ultStartTime += timeNeeded; // add time to complete anim
+                        ultUses = 5; // disable further dashing
                     }
                     scheduleTask(
                             abilityRunnable(ability, spellData, cooldown, gCooldown, dest),
                             E_DASH_COOLDOWN);
                 } else {
                     ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.player,
-                            this.id,
-                            "not_allowed_error",
-                            new Point2D.Float(0, 0));
+                            parentExt, player, id, "not_allowed_error", new Point2D.Float(0, 0));
                 }
 
                 break;
@@ -516,7 +517,7 @@ public class FlamePrincess extends UserActor {
             victim.addToDamageQueue(FlamePrincess.this, damage, attackData, false);
 
             ExtensionCommands.playSound(
-                    parentExt, room, "", "akubat_projectileHit1", victim.getLocation());
+                    parentExt, room, "", "sfx_fp_q_explode", victim.getLocation());
 
             ExtensionCommands.createActorFX(
                     parentExt,

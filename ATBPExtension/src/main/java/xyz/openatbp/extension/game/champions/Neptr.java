@@ -189,6 +189,9 @@ public class Neptr extends UserActor {
             case 1:
                 this.canCast[0] = false;
                 try {
+                    ExtensionCommands.playSound(parentExt, room, id, "sfx_neptr_q", location);
+                    playSoundWithChance("vo/vo_neptr_q", 50);
+
                     Line2D abilityLine = Champion.createLineTowards(this.location, dest, 8f);
                     this.fireProjectile(
                             new NeptrProjectile(
@@ -490,12 +493,7 @@ public class Neptr extends UserActor {
                     parentExt, room, this.id, this.avatar, this.location, 0f, this.team);
             Runnable creationDelay =
                     () -> {
-                        ExtensionCommands.playSound(
-                                parentExt,
-                                this.room,
-                                Neptr.this.id,
-                                "vo/vo_neptr_mine",
-                                Neptr.this.location);
+                        Neptr.this.playSoundWithChance("vo/vo_neptr_mine", 50);
                         ExtensionCommands.playSound(
                                 parentExt, room, this.id, "sfx_neptr_mine_spawn", this.location);
                         ExtensionCommands.createWorldFX(

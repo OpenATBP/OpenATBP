@@ -134,6 +134,7 @@ public class RattleBalls extends UserActor {
         }
         if (parryActive && getAttackType(attackData) == AttackType.PHYSICAL) { // Q COUNTER-ATTACK
             performQCounterAttack(a);
+            playSoundWithChance("vo/vo_rattleballs_q_counter_attack", 50);
             return false;
         }
         return super.damaged(a, damage, attackData);
@@ -391,6 +392,7 @@ public class RattleBalls extends UserActor {
                             parentExt, room, id, "sfx_rattleballs_rattle_balls_2", location);
                     ExtensionCommands.actorAnimate(
                             parentExt, room, id, "spell1c", qTimeEffects, false);
+                    playSoundWithChance("vo/vo_rattleballs_q_thrust", 50);
                     ExtensionCommands.createActorFX(
                             parentExt,
                             room,
@@ -507,6 +509,7 @@ public class RattleBalls extends UserActor {
         ExtensionCommands.playSound(parentExt, room, id, qEndSFX, location);
         ExtensionCommands.playSound(
                 parentExt, room, id, "sfx_rattleballs_rattle_balls_2", location);
+        playSoundWithChance("vo/vo_rattleballs_q_spin", 50);
         ExtensionCommands.actorAnimate(parentExt, room, id, "spell1b", 400, false);
 
         Runnable resetAnim =
@@ -677,6 +680,8 @@ public class RattleBalls extends UserActor {
                         false,
                         team,
                         0f);
+
+                playSoundWithChance("vo/vo_rattleballs_w", 50);
 
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 for (Actor a : Champion.getActorsInRadius(handler, location, 5f)) {

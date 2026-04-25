@@ -270,11 +270,10 @@ public class Lich extends UserActor {
                     ExtensionCommands.playSound(
                             parentExt, room, this.id, "sfx_lich_charm_shot", this.location);
                     ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "vo/vo_lich_charm_shot",
-                            this.location);
+                            parentExt, room, id, "vo/vo_lich_charm_shot", location);
+
+                    String[] wVOS = {"vo/vo_lich_w", "vo/vo_lich_w_2"};
+                    playSoundWithChance(wVOS[random.nextInt(2)], 50);
 
                     Line2D abilityLine = Champion.createLineTowards(this.location, dest, 8f);
                     this.fireProjectile(
@@ -308,7 +307,6 @@ public class Lich extends UserActor {
                     ExtensionCommands.playSound(
                             parentExt, room, this.id, "sfx_lich_death_pool", eLocation);
                     ExtensionCommands.playSound(parentExt, room, this.id, "sfx_lich_well", dest);
-                    ExtensionCommands.playSound(parentExt, room, this.id, "vo/vo_lich_well", dest);
                     ExtensionCommands.createWorldFX(
                             this.parentExt,
                             this.room,
@@ -448,6 +446,8 @@ public class Lich extends UserActor {
                 canCast[2] = true;
                 eActive = true;
                 eStartTime = System.currentTimeMillis();
+                ExtensionCommands.playSound(
+                        parentExt, room, id, "vo/vo_lich_e", Lich.this.location);
                 ExtensionCommands.createWorldFX(
                         parentExt,
                         room,

@@ -108,6 +108,7 @@ public abstract class Actor {
     protected List<Actor> killedChampions = new ArrayList<>();
     private Point2D lastCheckedLocation = null;
     private int stuckTicks = 0;
+    protected final Random random = new Random();
 
     public Actor getTarget() {
         return this.target;
@@ -1556,6 +1557,13 @@ public abstract class Actor {
         data.putDouble("pHealth", this.getPHealth());
         data.putInt("health", (int) this.maxHealth);
         ExtensionCommands.updateActorData(this.parentExt, this.room, this.id, data);
+    }
+
+    public void playSoundWithChance(String sound, int chancePercent) {
+        int rand = random.nextInt(100) + 1;
+        if (rand <= chancePercent) {
+            ExtensionCommands.playSound(parentExt, room, id, sound, location);
+        }
     }
 
     public void applyStopMovingDuringAttack() {

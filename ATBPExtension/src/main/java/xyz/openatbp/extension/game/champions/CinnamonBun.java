@@ -340,33 +340,34 @@ public class CinnamonBun extends UserActor {
                                 rectStart, rectEnd, W_SPELL_RANGE, W_OFFSET_DISTANCE);
 
                 ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
+                        parentExt,
+                        room,
+                        id,
                         "fx_target_rect_7",
                         W_DURATION,
-                        this.id + "w",
+                        id + "w",
                         false,
                         "",
                         true,
                         true,
-                        this.team);
+                        team);
                 ExtensionCommands.createWorldFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
+                        parentExt,
+                        room,
+                        id,
                         "cb_frosting_slide",
-                        this.id + "_slide",
+                        id + "_slide",
                         W_DURATION,
                         (float) slideX,
                         (float) slideY,
                         false,
-                        this.team,
+                        team,
                         rotation);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, "sfx_cb_power2", this.location);
-                ExtensionCommands.actorAnimate(
-                        this.parentExt, this.room, this.id, "spell2b", wTime, false);
+                ExtensionCommands.playSound(parentExt, room, id, "sfx_cb_power2", location);
+
+                playSoundWithChance("vo/vo_cb_w", 50);
+
+                ExtensionCommands.actorAnimate(parentExt, room, id, "spell2b", wTime, false);
 
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
