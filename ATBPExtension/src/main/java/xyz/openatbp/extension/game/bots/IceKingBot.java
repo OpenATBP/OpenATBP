@@ -262,8 +262,16 @@ public class IceKingBot extends Bot {
         stopMoving();
         ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "spell1", 100, true);
         handleLastAbilityVar();
-        String freezeVO = SkinData.getIceKingQVO(avatar);
-        ExtensionCommands.playSound(this.parentExt, this.room, this.id, freezeVO, this.location);
+
+        int bound = 1;
+        String[] qVOS = new String[2];
+        qVOS[0] = SkinData.getIceKingQVO(avatar);
+        if (!avatar.contains("queen")) {
+            qVOS[1] = "vo/vo_ice_king_q";
+            bound++;
+        }
+        playSoundWithChance(qVOS[random.nextInt(bound)], 50);
+        ExtensionCommands.playSound(parentExt, room, id, "sfx_ice_king_q", location);
 
         JsonNode spellData = parentExt.getAttackData("iceking", "spell1");
 

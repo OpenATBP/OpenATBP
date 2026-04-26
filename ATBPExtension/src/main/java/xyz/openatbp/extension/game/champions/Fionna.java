@@ -374,6 +374,7 @@ public class Fionna extends UserActor {
     }
 
     private void handleSwordAnimation() {
+        playSoundWithChance("vo/vo_fionna_w", 50);
         if (this.swordType == SwordType.FEARLESS) {
             ExtensionCommands.createActorFX(
                     parentExt,

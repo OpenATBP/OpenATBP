@@ -354,7 +354,9 @@ public class Finn extends UserActor {
                         true,
                         false,
                         team);
-                playSoundWithChance("vo/vo_finn_w", 50);
+
+                String[] wVOS = {"vo/vo_finn_w", "vo/vo_finn_w_2"};
+                playSoundWithChance(wVOS[random.nextInt(2)], 50);
 
                 ExtensionCommands.playSound(parentExt, room, id, dashSFX, location);
 
@@ -376,8 +378,6 @@ public class Finn extends UserActor {
                                 this.canCast[1] = true;
                             };
                     scheduleTask(enableDashCasting, E_SELF_CRIPPLE_DURATION);
-
-                    ExtensionCommands.playSound(parentExt, room, id, "vo/vo_finn_e", location);
 
                     Runnable cast =
                             () -> {
@@ -445,6 +445,12 @@ public class Finn extends UserActor {
                                         this.id,
                                         wallDropSFX,
                                         this.location);
+
+                                String[] eVOS = {"vo/vo_finn_e", "vo/vo_finn_e_2"};
+
+                                ExtensionCommands.playSound(
+                                        parentExt, room, id, eVOS[random.nextInt(3)], location);
+
                                 ExtensionCommands.createWorldFX(
                                         this.parentExt,
                                         this.room,

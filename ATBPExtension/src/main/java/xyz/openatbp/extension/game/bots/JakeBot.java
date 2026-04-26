@@ -325,7 +325,7 @@ public class JakeBot extends Bot {
         String stretchSFX = SkinData.getJakeQSFX(avatar);
         String stretchVO = SkinData.getJakeQVO(avatar);
         ExtensionCommands.playSound(parentExt, room, id, stretchSFX, location);
-        ExtensionCommands.playSound(parentExt, room, id, stretchVO, location);
+        playSoundWithChance(stretchVO, 50);
     }
 
     @Override
@@ -395,8 +395,8 @@ public class JakeBot extends Bot {
 
         String ballVO = SkinData.getJakeWVO(avatar);
         String ballSFX = SkinData.getJakeWSFX(avatar);
-        ExtensionCommands.playSound(parentExt, room, id, ballVO, location);
         ExtensionCommands.playSound(parentExt, room, id, ballSFX, location);
+        playSoundWithChance(ballVO, 50);
     }
 
     @Override

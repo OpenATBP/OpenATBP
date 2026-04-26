@@ -282,9 +282,14 @@ public class IceKing extends UserActor {
                 stopMoving();
                 this.canCast[0] = false;
 
-                String[] qVOS = {SkinData.getIceKingQVO(avatar), "vo/vo_ice_king_q"};
-
-                playSoundWithChance(qVOS[random.nextInt(2)], 50);
+                int bound = 1;
+                String[] qVOS = new String[2];
+                qVOS[0] = SkinData.getIceKingQVO(avatar);
+                if (!avatar.contains("queen")) {
+                    qVOS[1] = "vo/vo_ice_king_q";
+                    bound++;
+                }
+                playSoundWithChance(qVOS[random.nextInt(bound)], 50);
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_ice_king_q", location);
 
                 ExtensionCommands.actorAbilityResponse(

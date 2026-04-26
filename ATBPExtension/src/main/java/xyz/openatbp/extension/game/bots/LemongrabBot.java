@@ -233,8 +233,7 @@ public class LemongrabBot extends Bot {
         }
         ExtensionCommands.playSound(
                 this.parentExt, this.room, this.id, "sfx_lemongrab_sound_sword", this.location);
-        ExtensionCommands.playSound(
-                this.parentExt, this.room, this.id, "vo/vo_lemongrab_sound_sword", this.location);
+        playSoundWithChance("vo/vo_lemongrab_sound_sword", 50);
         ExtensionCommands.createActorFX(
                 this.parentExt,
                 this.room,
@@ -257,8 +256,7 @@ public class LemongrabBot extends Bot {
         stopMoving(wCastDelayMS);
         ExtensionCommands.actorAnimate(parentExt, room, id, "spell2", 2000, false);
 
-        ExtensionCommands.playSound(
-                this.parentExt, this.room, this.id, "vo/vo_lemongrab_my_juice", this.location);
+        playSoundWithChance("vo/vo_lemongrab_my_juice", 50);
         ExtensionCommands.createWorldFX(
                 this.parentExt,
                 this.room,
