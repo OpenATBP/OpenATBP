@@ -102,6 +102,21 @@ const ALL_ICONS_METADATA = {
     rarity: 'Common',
     cost: COMMON_ICON_COST,
   },
+  'The Lich': {
+    src: 'assets/pfp/The Lich.jpg',
+    rarity: 'Common',
+    cost: COMMON_ICON_COST,
+  },
+
+  Bonnie: {
+    src: 'assets/pfp/Bonnie.jpg',
+    rarity: 'Blooby',
+    unlock: {
+      stat: 'largestScore',
+      threshold: 500,
+      text: 'Earn 500 points in a single Ranked match',
+    },
+  },
 
   Cake: {
     src: 'assets/pfp/Cake.jpg',
@@ -147,6 +162,15 @@ const ALL_ICONS_METADATA = {
       stat: 'largestSpree',
       threshold: 9,
       text: 'Achieve a 9-KO spree in a single Ranked match',
+    },
+  },
+  'Supportive Jake': {
+    src: 'assets/pfp/Supportive Jake.jpg',
+    rarity: 'Blooby',
+    unlock: {
+      stat: 'assists',
+      threshold: 250,
+      text: 'Earn 250 total assists in Ranked matches',
     },
   },
   'Young Billy': {

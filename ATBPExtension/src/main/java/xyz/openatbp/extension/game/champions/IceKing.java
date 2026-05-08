@@ -34,7 +34,7 @@ public class IceKing extends UserActor {
     public static final int W_DURATION = 3000;
     public static final int E_DURATION = 6000;
     public static final float E_RADIUS = 5.5f;
-    public static final float Q_RANGE = 7.5f;
+    public static final float Q_RANGE = 8f;
     public static final double E_SPEED_PERCENT = 0.9;
 
     private boolean iceShield = false;
