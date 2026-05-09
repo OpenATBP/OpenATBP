@@ -109,6 +109,8 @@ public abstract class Actor {
     private Point2D lastCheckedLocation = null;
     private int stuckTicks = 0;
     protected final Random random = new Random();
+    protected String lastVoiceLinePlayed = "";
+    protected int voiceLineConsecutiveCount = 0;
 
     public Actor getTarget() {
         return this.target;
@@ -1116,6 +1118,40 @@ public abstract class Actor {
                     && attackData.get("spellName").asText().equalsIgnoreCase(name)) return false;
         }
         return true;
+    }
+
+    protected String getRandomVoiceLine(String[] abilityVoiceLines) {
+        if (abilityVoiceLines.length == 0) return "";
+        if (abilityVoiceLines.length == 1) return abilityVoiceLines[0];
+
+        String chosen = abilityVoiceLines[random.nextInt(abilityVoiceLines.length)];
+
+        Console.debugLog("chosen: " + chosen);
+
+        if (!chosen.equals(lastVoiceLinePlayed)) {
+            voiceLineConsecutiveCount = 1;
+            lastVoiceLinePlayed = chosen;
+            return chosen;
+
+        } else if (voiceLineConsecutiveCount < 2) {
+            voiceLineConsecutiveCount++;
+            return chosen;
+
+        } else {
+            String[] remainingLines = new String[abilityVoiceLines.length - 1];
+            int i = 0;
+
+            for (String line : abilityVoiceLines) {
+                if (!line.equals(chosen)) {
+                    remainingLines[i] = line;
+                    i++;
+                }
+            }
+            String finalLine = remainingLines[random.nextInt(remainingLines.length)];
+            voiceLineConsecutiveCount = 1;
+            lastVoiceLinePlayed = finalLine;
+            return finalLine;
+        }
     }
 
     public boolean withinRange(Actor a) {

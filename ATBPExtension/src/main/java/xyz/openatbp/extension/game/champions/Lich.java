@@ -273,7 +273,7 @@ public class Lich extends UserActor {
                             parentExt, room, id, "vo/vo_lich_charm_shot", location);
 
                     String[] wVOS = {"vo/vo_lich_w", "vo/vo_lich_w_2"};
-                    playSoundWithChance(wVOS[random.nextInt(2)], 50);
+                    playSoundWithChance(getRandomVoiceLine(wVOS), 50);
 
                     Line2D abilityLine = Champion.createLineTowards(this.location, dest, 8f);
                     this.fireProjectile(

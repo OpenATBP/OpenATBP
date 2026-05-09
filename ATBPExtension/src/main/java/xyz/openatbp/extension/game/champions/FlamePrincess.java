@@ -237,7 +237,8 @@ public class FlamePrincess extends UserActor {
                                 "sfx_flame_princess_cone_of_flame",
                                 this.location);
 
-                        playSoundWithChance("vo/vo_flame_princess_q", 50);
+                        String[] qVos = {"vo/vo_flame_princess_q", "vo/vo_flame_princess_q_2"};
+                        playSoundWithChance(getRandomVoiceLine(qVos), 50);
 
                         fireProjectile(
                                 new FlameProjectile(
@@ -331,7 +332,7 @@ public class FlamePrincess extends UserActor {
                         "vo/vo_flame_princess_e_3"
                     };
                     ExtensionCommands.playSound(
-                            parentExt, room, id, eVOS[random.nextInt(3)], location);
+                            parentExt, room, id, getRandomVoiceLine(eVOS), location);
                     ExtensionCommands.playSound(
                             parentExt, room, id, "sfx_flame_princess_flame_form", location);
                     ExtensionCommands.swapActorAsset(parentExt, room, id, "flame_ult");

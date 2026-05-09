@@ -801,8 +801,7 @@ public abstract class Bot extends Actor {
         return currentScore;
     }
 
-    private float processFightLvAndHp(
-            float currentScore, List<Actor> enemyChampions, List<Actor> allyChampions) {
+    private float processFightLvAndHp(float currentScore, List<Actor> enemyChampions) {
 
         for (Actor enemy : enemyChampions) {
             currentScore += (1f - (float) enemy.getPHealth()); // 0 to +1 per enemy
@@ -835,17 +834,33 @@ public abstract class Bot extends Actor {
     }
 
     private boolean canWinFightLowHp(RoomHandler rh, List<Actor> enemies) {
-        float score = 0f;
-        score -= 2f;
-
         List<Actor> allies = getAllyChampions(rh);
         List<Actor> enemyChampions = filterEnemiesForChampions(enemies);
 
-        score = processFightAbilities(score, 0.25f, 0.75f);
-        score = processFightLvAndHp(score, enemyChampions, allies);
-        score = processFightTeamDiff(allies, enemyChampions, score);
+        // If no champion enemies, don't low HP retaliate
+        if (enemyChampions.isEmpty()) {
+            return false;
+        }
 
-        // Console.debugLog("Can win fight low hp: " + (score >= 0));
+        // Very low HP bots should never retaliate
+        if (getPHealth() < 0.1f) {
+            return false;
+        }
+
+        // Only retaliate if the attacker/target is also very low
+        Actor closestEnemy = getClosestActor(enemyChampions, true);
+        if (closestEnemy == null || closestEnemy.getPHealth() > 0.35f) {
+            return false;
+        }
+
+        float score = -3f;
+
+        score = processFightAbilities(score, 0.15f, 0.5f);
+        score = processFightLvAndHp(score, enemyChampions);
+
+        // Team advantage should matter less when low HP
+        score += Math.min(allies.size() - enemyChampions.size(), 1) * 0.5f;
+
         return score >= 0;
     }
 
@@ -856,7 +871,7 @@ public abstract class Bot extends Actor {
         List<Actor> enemyChampions = filterEnemiesForChampions(enemies);
 
         score = processFightAbilities(score, 0.5f, 1f);
-        score = processFightLvAndHp(score, enemyChampions, allies);
+        score = processFightLvAndHp(score, enemyChampions);
         score = processFightTeamDiff(allies, enemyChampions, score);
 
         // Console.debugLog("Can win fight aggro engage: " + (score >= 0));
@@ -865,13 +880,12 @@ public abstract class Bot extends Actor {
 
     private boolean canWinFightDamagedByChampion(RoomHandler rh, List<Actor> enemies) {
         float score = 0f;
-        score -= 0.5f;
 
         List<Actor> allies = getAllyChampions(rh);
         List<Actor> enemyChampions = filterEnemiesForChampions(enemies);
 
         score = processFightAbilities(score, 0.35f, 0.75f);
-        score = processFightLvAndHp(score, enemyChampions, allies);
+        score = processFightLvAndHp(score, enemyChampions);
         score = processFightTeamDiff(allies, enemyChampions, score);
 
         // Console.debugLog("Can win fight damaged by champion: " + (score >= 0));
@@ -1041,17 +1055,16 @@ public abstract class Bot extends Actor {
         return true;
     }
 
-    private boolean canSurviveJungle() {
+    private boolean canSurviveJungle(List<Actor> nearbyAllies) {
+        if (level == 1 && nearbyAllies.isEmpty()) return false;
+
         float hpScore = (float) getPHealth(); // 0.0 to 1.0
         float armorScore = (float) Math.min(getPlayerStat("armor") / 100f, 0.4f);
         float levelScore = level / 20f;
+        float alliesScore = nearbyAllies.size() * 0.2f;
+        float roleScore = botRole == BotRole.JUNGLER || botRole == BotRole.LANE_PUSHER ? 0.1f : 0;
 
-        float jungleScore = hpScore + armorScore + levelScore;
-
-        // At a 1.0 threshold:
-        // - A Level 1 bot with 0 armor needs 95% HP to jungle.
-        // - A Level 5 bot with 20 armor needs 55% HP to jungle.
-        // - A Level 10 bot with 40 armor only needs 10% HP to jungle.
+        float jungleScore = hpScore + armorScore + levelScore + alliesScore + roleScore;
         return jungleScore > 1.0f;
     }
 
@@ -1258,7 +1271,7 @@ public abstract class Bot extends Actor {
             }
         }
 
-        if (canSurviveJungle()) {
+        if (canSurviveJungle(allies)) {
             List<Monster> monsters = rh.getCampMonsters();
             monsters.removeIf(m -> m.getHealth() <= 0 || m.isDead());
             if (!canFightGoo(rh)) monsters.removeIf(m -> m.getId().contains("goo"));
