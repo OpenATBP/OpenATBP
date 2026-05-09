@@ -270,7 +270,7 @@ public class IceKingBot extends Bot {
             qVOS[1] = "vo/vo_ice_king_q";
             bound++;
         }
-        playSoundWithChance(qVOS[random.nextInt(bound)], 50);
+        playSoundWithChance(getRandomVoiceLine(qVOS), 50);
         ExtensionCommands.playSound(parentExt, room, id, "sfx_ice_king_q", location);
 
         JsonNode spellData = parentExt.getAttackData("iceking", "spell1");

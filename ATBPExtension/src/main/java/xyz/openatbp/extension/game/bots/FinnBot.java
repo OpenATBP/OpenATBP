@@ -263,7 +263,7 @@ public class FinnBot extends Bot {
                 team);
         ExtensionCommands.playSound(parentExt, room, id, dashSFX, location);
         String[] wVOS = {"vo/vo_finn_w", "vo/vo_finn_w_2"};
-        playSoundWithChance(wVOS[random.nextInt(2)], 50);
+        playSoundWithChance(getRandomVoiceLine(wVOS), 50);
 
         JsonNode spellData = parentExt.getAttackData(avatar, "spell2");
 

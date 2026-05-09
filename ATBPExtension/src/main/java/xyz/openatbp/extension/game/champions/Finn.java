@@ -356,7 +356,7 @@ public class Finn extends UserActor {
                         team);
 
                 String[] wVOS = {"vo/vo_finn_w", "vo/vo_finn_w_2"};
-                playSoundWithChance(wVOS[random.nextInt(2)], 50);
+                playSoundWithChance(getRandomVoiceLine(wVOS), 50);
 
                 ExtensionCommands.playSound(parentExt, room, id, dashSFX, location);
 
@@ -449,7 +449,7 @@ public class Finn extends UserActor {
                                 String[] eVOS = {"vo/vo_finn_e", "vo/vo_finn_e_2"};
 
                                 ExtensionCommands.playSound(
-                                        parentExt, room, id, eVOS[random.nextInt(3)], location);
+                                        parentExt, room, id, getRandomVoiceLine(eVOS), location);
 
                                 ExtensionCommands.createWorldFX(
                                         this.parentExt,
