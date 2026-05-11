@@ -30,7 +30,7 @@ public class UserActor extends Actor {
     public static final int LIGHTNING_SWORD_STACKS_PER_NON_CHAMP = 4;
     public static final double ROBE_CD_CHAMP_OR_JG_BOSS_KO = 1;
     public static final double ROBE_CD_MINION_KO = 0.2;
-    public static final int DAMAGE_PER_NAIL_POINT = 30;
+    public static final int DAMAGE_PER_NAIL_POINT = 25;
     public static final int DAMAGE_PER_LIGHTNING_POINT = 55;
     public static final int CDR_PER_ROBE_POINT = 10;
     public static final int SAI_PROC_COOLDOWN = 3000;
@@ -131,6 +131,9 @@ public class UserActor extends Actor {
                     this.setHealth(
                             (int) ((this.getMaxHealth() + levelStat) * this.getPHealth()),
                             (int) (this.getMaxHealth() + levelStat));
+
+                    stats.put("health", maxHealth);
+
                 } else if (k.contains("attackSpeed")) {
                     this.increaseStat(stat, (levelStat * -1));
                 } else {
@@ -617,11 +620,11 @@ public class UserActor extends Actor {
                     realKiller.getId(),
                     this.deathTime);
             if (this.magicNailStacks > 0) {
-                this.magicNailStacks /= 2;
+                this.magicNailStacks = 0;
                 updateStatMenu("attackDamage");
             }
             if (this.lightningSwordStacks > 0) {
-                this.lightningSwordStacks /= 2;
+                this.lightningSwordStacks = 0;
                 updateStatMenu("spellDamage");
             }
             if (this.robeStacks > 0) {

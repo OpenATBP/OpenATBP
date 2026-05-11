@@ -1123,10 +1123,7 @@ public abstract class Actor {
     protected String getRandomVoiceLine(String[] abilityVoiceLines) {
         if (abilityVoiceLines.length == 0) return "";
         if (abilityVoiceLines.length == 1) return abilityVoiceLines[0];
-
         String chosen = abilityVoiceLines[random.nextInt(abilityVoiceLines.length)];
-
-        Console.debugLog("chosen: " + chosen);
 
         if (!chosen.equals(lastVoiceLinePlayed)) {
             voiceLineConsecutiveCount = 1;
