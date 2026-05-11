@@ -32,6 +32,7 @@ public class FlamePrincess extends UserActor {
     private static final int E_DASH_COOLDOWN = 350;
     private static final int E_DURATION = 5000;
     private static final int E_DASH_SPEED = 15;
+    public static final double CRIT_DAMAGE_RATIO = 1.4;
 
     private boolean passiveEnabled = false;
     private long lastPassiveUsage = 0;
@@ -599,7 +600,7 @@ public class FlamePrincess extends UserActor {
         public void run() {
             double damage = getPlayerStat("attackDamage");
             if (crit) {
-                damage *= 1.25;
+                damage *= CRIT_DAMAGE_RATIO;
                 damage = handleGrassSwordProc(damage);
             }
             new Champion.DelayedAttack(

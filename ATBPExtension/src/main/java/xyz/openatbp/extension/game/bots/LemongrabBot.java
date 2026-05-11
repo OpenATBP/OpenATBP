@@ -17,6 +17,8 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.Bot;
 import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.game.effects.ActorState;
+import xyz.openatbp.extension.game.effects.ModifierIntent;
+import xyz.openatbp.extension.game.effects.ModifierType;
 
 public class LemongrabBot extends Bot {
     private int unacceptableLevels = 0;
@@ -87,6 +89,14 @@ public class LemongrabBot extends Bot {
                 && System.currentTimeMillis() - lastHit >= PASSIVE_COOLDOWN
                 && this.getAttackType(attackData) == AttackType.SPELL) {
             this.unacceptableLevels++;
+
+            effectManager.addEffect(
+                    id + "lemon_passive_shields",
+                    "spellResist",
+                    5,
+                    ModifierType.ADDITIVE,
+                    ModifierIntent.BUFF,
+                    PASSIVE_STACK_DURATION);
 
             String voiceLinePassive = "";
             switch (this.unacceptableLevels) {

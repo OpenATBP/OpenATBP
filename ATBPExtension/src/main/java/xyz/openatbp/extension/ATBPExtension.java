@@ -115,16 +115,34 @@ public class ATBPExtension extends SFSExtension {
         super.destroy();
     }
 
-    private void loadDefinitions()
-            throws IOException { // Reads xml files and turns them into JsonNodes
+    private void loadDefinitions() throws IOException {
         File path = new File(getCurrentFolder() + "/definitions");
         File[] files = path.listFiles();
         ObjectMapper mapper = new XmlMapper();
-        assert files != null;
+
+        if (files == null) {
+            throw new IOException("Definitions folder not found: " + path.getAbsolutePath());
+        }
+
         for (File f : files) {
-            if (f.getName().contains("xml")) {
-                JsonNode node = mapper.readTree(f);
-                actorDefinitions.put(f.getName().replace(".xml", ""), node);
+            if (f.isFile() && f.getName().endsWith(".xml")) {
+                // Console.debugLog("Trying to load XML definition: " + f.getAbsolutePath());
+
+                try {
+                    JsonNode node = mapper.readTree(f);
+                    actorDefinitions.put(f.getName().replace(".xml", ""), node);
+
+                    // Console.debugLog("Loaded XML definition: " + f.getName());
+                } catch (Exception e) {
+                    Console.debugLog("========================================");
+                    Console.debugLog("BROKEN XML FILE: " + f.getAbsolutePath());
+                    Console.debugLog("ERROR MESSAGE: " + e.getMessage());
+                    Console.debugLog("========================================");
+
+                    e.printStackTrace();
+
+                    throw new IOException("Broken XML file: " + f.getAbsolutePath(), e);
+                }
             }
         }
     }

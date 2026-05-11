@@ -17,8 +17,8 @@ import xyz.openatbp.extension.game.effects.ActorState;
 import xyz.openatbp.extension.pathfinding.PathFinder;
 
 public class Fionna extends UserActor {
-    private static final double HP_REG_FIERCE_PERCENT = 0.02d;
-    private static final double HP_REG_FEARLESS_PERCENT = 0.01d;
+    private static final double FIERCE_HP_DRAIN = 0.02d;
+    private static final double HP_REG_FEARLESS_PERCENT = 0.03d;
     private static final double SPEED_FIERCE_PERCENT = 0.2d;
     private static final double ATTACK_SPEED_FIERCE_PERCENT = 0.2d;
     private static final double SPELL_RESIST_FEARLESS_PERCENT = 0.3d;
@@ -110,7 +110,7 @@ public class Fionna extends UserActor {
         switch (stat) {
             case "healthRegen":
                 if (this.swordType == SwordType.FIERCE)
-                    return super.getPlayerStat(stat) - 2 - (maxHealth * HP_REG_FIERCE_PERCENT);
+                    return super.getPlayerStat(stat) - 2 - (maxHealth * FIERCE_HP_DRAIN);
                 else return super.getPlayerStat(stat) + (maxHealth * HP_REG_FEARLESS_PERCENT);
             case "speed":
                 if (this.swordType == SwordType.FIERCE)

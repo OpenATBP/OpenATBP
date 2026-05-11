@@ -170,10 +170,7 @@ public class Lich extends UserActor {
     public void handleKill(Actor a, JsonNode attackData) {
         super.handleKill(a, attackData);
         if (attackData.has("spellName")) {
-            String sn = attackData.get("spellName").asText();
-            if (sn.contains("1") || sn.contains("4")) {
-                this.increaseStat("spellDamage", 1);
-            }
+            increaseStat("spellDamage", 1);
         }
     }
 
@@ -478,7 +475,7 @@ public class Lich extends UserActor {
         protected static final int SKULLY_LIFE_SPAN = 20000;
         protected static final int MAX_SKULLY_SEPARATION = 9;
         protected static final double MIN_SKULLY_SEPARATION = 2;
-        protected static final double SKULLY_DAMAGE_PERCENT = 0.4;
+        protected static final double SKULLY_DAMAGE_PERCENT = 0.5;
 
         private long spawnTimeStamp;
         private boolean dead = false;
@@ -534,8 +531,20 @@ public class Lich extends UserActor {
                     (float) a.getLocation().getY(),
                     false,
                     true);
-            PassiveAttack passiveAttack = new PassiveAttack(this, a, false);
-            scheduleTask(passiveAttack, BASIC_ATTACK_DELAY);
+
+            Runnable damageVictim =
+                    () -> {
+                        if (!hasAttackCC() && !a.isDead() && !this.isDead()) {
+                            JsonNode spellData =
+                                    parentExt.getAttackData(Lich.this.getAvatar(), "spell2");
+                            int damage =
+                                    (int)
+                                            (Lich.this.getPlayerStat("spellDamage")
+                                                    * SKULLY_DAMAGE_PERCENT);
+                            a.addToDamageQueue(this, damage, spellData, false);
+                        }
+                    };
+            scheduleTask(damageVictim, BASIC_ATTACK_DELAY);
             this.attackCooldown = 1000;
         }
 
@@ -666,23 +675,14 @@ public class Lich extends UserActor {
 
         @Override
         public void run() {
-            if (attacker.getClass() == Lich.class) {
-                double damage = this.attacker.getPlayerStat("attackDamage");
-                if (crit) {
-                    damage *= 1.25;
-                    damage = handleGrassSwordProc(damage);
-                }
-                new Champion.DelayedAttack(parentExt, attacker, target, (int) damage, "basicAttack")
-                        .run();
-                Lich.this.setSkullyTarget(this.target);
-            } else if (attacker.getClass() == Skully.class) {
-                double damage =
-                        10d + (Lich.this.getPlayerStat("spellDamage") * SKULLY_DAMAGE_PERCENT);
-                new Champion.DelayedAttack(
-                                parentExt, attacker, target, (int) damage, "skullyAttack")
-                        .run();
-                if (isNeitherStructureNorAlly(target)) Lich.this.handleLifeSteal();
+            double damage = this.attacker.getPlayerStat("attackDamage");
+            if (crit) {
+                damage *= 1.25;
+                damage = handleGrassSwordProc(damage);
             }
+            new Champion.DelayedAttack(parentExt, attacker, target, (int) damage, "basicAttack")
+                    .run();
+            Lich.this.setSkullyTarget(this.target);
         }
     }
 

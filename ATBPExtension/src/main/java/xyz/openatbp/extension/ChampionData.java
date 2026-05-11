@@ -359,7 +359,7 @@ public class ChampionData {
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 50000;
                     break;
                 case "bmo":
-                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 11000 : 37500;
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 11000 : 55000;
                     break;
                 case "choosegoose":
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 42000;
@@ -383,13 +383,13 @@ public class ChampionData {
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 45000;
                     break;
                 case "iceking":
-                    lv10Cooldown = abilityNumber == 1 ? 7000 : abilityNumber == 2 ? 8000 : 60000;
+                    lv10Cooldown = abilityNumber == 1 ? 9000 : abilityNumber == 2 ? 10000 : 60000;
                     break;
                 case "jake":
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 45000;
                     break;
                 case "lemongrab":
-                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 10000 : 35000;
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 10000 : 47000;
                     break;
                 case "lich":
                     lv10Cooldown = abilityNumber == 1 ? 10500 : abilityNumber == 2 ? 10000 : 45000;

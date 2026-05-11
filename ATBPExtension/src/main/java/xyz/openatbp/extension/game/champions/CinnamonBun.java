@@ -19,7 +19,7 @@ import xyz.openatbp.extension.game.effects.ModifierType;
 import xyz.openatbp.extension.pathfinding.PathFinder;
 
 public class CinnamonBun extends UserActor {
-    private static final float PASSIVE_HEAL_PERCENT = 0.05f;
+    private static final float PASSIVE_HEAL_PERCENT = 0.075f;
     private static final float Q_OFFSET_DISTANCE = 1f;
     private static final float Q_SPELL_RANGE = 3f;
     private static final float W_OFFSET_DISTANCE = 0.75f;
@@ -31,6 +31,7 @@ public class CinnamonBun extends UserActor {
     private static final int E_TICK_DELAY = 500;
     private static final float E_SPEED_BUFF_PERCENT = 0.1f;
     public static final float W_DASH_SPEED = 15f;
+    public static final double E_SMALL_RING_DAMAGE_RATIO = 1.25;
 
     private Point2D ultPoint = null;
     private Point2D ultPoint2 = null;
@@ -140,7 +141,7 @@ public class CinnamonBun extends UserActor {
             }
 
             if (ultUses > 1 && ultPoint2 != null) {
-                tickDamage *= 1.5;
+                tickDamage *= E_SMALL_RING_DAMAGE_RATIO;
             }
 
             if (System.currentTimeMillis() - this.lastUltTick >= E_TICK_DELAY) {

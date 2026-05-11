@@ -34,6 +34,7 @@ public class MagicMan extends UserActor {
     private static final int E_SLOW_DURATION = 2500;
     private static final int E_DEBUFF_DURATION = 3000;
     public static final float E_RADIUS = 4f;
+    public static final double CRIT_DAMAGE_RATIO = 1.4;
 
     private long passiveIconStarted = 0;
     private boolean passiveActivated = false;
@@ -522,7 +523,7 @@ public class MagicMan extends UserActor {
         public void run() {
             double damage = getPlayerStat("attackDamage");
             if (crit) {
-                damage *= 1.25;
+                damage *= CRIT_DAMAGE_RATIO;
                 damage = handleGrassSwordProc(damage);
             }
             new Champion.DelayedAttack(

@@ -39,6 +39,7 @@ public class BubbleGum extends UserActor {
     private static final int E_DURATION = 4000;
     private static final int E_SECOND_USE_DELAY = 750;
     public static final float E_KNOCKBACK_DIST = 3.5f;
+    public static final float W_TURRET_DMG_RATIO = 0.5f;
 
     private int passiveAmmunition = 3;
     private long passiveTimeStamp = 0;
@@ -583,15 +584,22 @@ public class BubbleGum extends UserActor {
                     "Bip01",
                     "targetNode",
                     time);
-            int damage = 10 + (int) this.getPlayerStat("attackDamage");
-            int delay = (int) time * 1000;
-            String attack = "turretAttack";
 
-            Champion.DelayedAttack delayedAttack =
-                    new Champion.DelayedAttack(parentExt, this, a, damage, attack);
-            scheduleTask(delayedAttack, delay);
-            BubbleGum.this.handleLifeSteal();
-            this.attackCooldown = this.getPlayerStat("attackSpeed");
+            Runnable damageVictim =
+                    () -> {
+                        if (!hasAttackCC() && !a.isDead() && !this.isDead()) {
+                            JsonNode spellData =
+                                    parentExt.getAttackData(BubbleGum.this.getAvatar(), "spell2");
+                            int damage =
+                                    (int)
+                                            (BubbleGum.this.getPlayerStat("spellDamage")
+                                                    * W_TURRET_DMG_RATIO);
+                            a.addToDamageQueue(this, damage, spellData, false);
+                        }
+                    };
+            scheduleTask(damageVictim, (int) (time * 1000));
+
+            this.attackCooldown = getPlayerStat("attackSpeed");
         }
 
         @Override

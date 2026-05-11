@@ -15,6 +15,8 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.Bot;
 import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.game.effects.ActorState;
+import xyz.openatbp.extension.game.effects.ModifierIntent;
+import xyz.openatbp.extension.game.effects.ModifierType;
 
 public class Lemongrab extends UserActor {
     public static final int PASSIVE_COOLDOWN = 2000;
@@ -100,6 +102,14 @@ public class Lemongrab extends UserActor {
                 && System.currentTimeMillis() - lastHit >= PASSIVE_COOLDOWN
                 && this.getAttackType(attackData) == AttackType.SPELL) {
             this.unacceptableLevels++;
+            effectManager.addEffect(
+                    id + "lemon_passive_shields",
+                    "spellResist",
+                    5,
+                    ModifierType.ADDITIVE,
+                    ModifierIntent.BUFF,
+                    PASSIVE_STACK_DURATION);
+
             String iconName = "lemon" + this.unacceptableLevels;
             ExtensionCommands.removeStatusIcon(parentExt, player, lastIcon);
             this.lastIcon = iconName;
