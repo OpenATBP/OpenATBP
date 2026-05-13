@@ -214,14 +214,14 @@ public class Gunter extends UserActor {
                         Line2D abilityLine = Champion.createLineTowards(this.location, dest, 8f);
                         ExtensionCommands.playSound(
                                 this.parentExt, this.room, "", "sfx_gunter_wing_it", this.location);
+
+                        String projectile =
+                                avatar.contains("green")
+                                        ? "projectile_gunter_skin_green_bottle"
+                                        : "projectile_gunter_bottle";
                         this.fireProjectile(
                                 new BottleProjectile(
-                                        this.parentExt,
-                                        this,
-                                        abilityLine,
-                                        11f,
-                                        0.5f,
-                                        "projectile_gunter_bottle"),
+                                        this.parentExt, this, abilityLine, 11f, 0.5f, projectile),
                                 this.location,
                                 dest,
                                 8f);
