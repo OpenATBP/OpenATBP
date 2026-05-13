@@ -15,12 +15,11 @@ import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.Bot;
 import xyz.openatbp.extension.game.actors.UserActor;
 import xyz.openatbp.extension.game.effects.ActorState;
-import xyz.openatbp.extension.game.effects.ModifierIntent;
-import xyz.openatbp.extension.game.effects.ModifierType;
 
 public class Lemongrab extends UserActor {
     public static final int PASSIVE_COOLDOWN = 2000;
     public static final int PASSIVE_STACK_DURATION = 6000;
+    public static final int PASSIVE_SPELL_RESIST = 5;
     public static final int Q_SLOW_DURATION = 2500;
     public static final double Q_SLOW_PERCENT = 0.4d;
     public static final float Q_OFFSET_DISTANCE_BOTTOM = 1.5f;
@@ -76,6 +75,7 @@ public class Lemongrab extends UserActor {
                         "icon_lemongrab_passive",
                         0f);
             this.lastHit = System.currentTimeMillis();
+            updateStatMenu("spellResist");
         }
     }
 
@@ -102,14 +102,6 @@ public class Lemongrab extends UserActor {
                 && System.currentTimeMillis() - lastHit >= PASSIVE_COOLDOWN
                 && this.getAttackType(attackData) == AttackType.SPELL) {
             this.unacceptableLevels++;
-            effectManager.addEffect(
-                    id + "lemon_passive_shields",
-                    "spellResist",
-                    5,
-                    ModifierType.ADDITIVE,
-                    ModifierIntent.BUFF,
-                    PASSIVE_STACK_DURATION);
-
             String iconName = "lemon" + this.unacceptableLevels;
             ExtensionCommands.removeStatusIcon(parentExt, player, lastIcon);
             this.lastIcon = iconName;
@@ -135,6 +127,7 @@ public class Lemongrab extends UserActor {
             ExtensionCommands.playSound(
                     this.parentExt, this.room, this.id, voiceLinePassive, this.location);
             this.lastHit = System.currentTimeMillis();
+            updateStatMenu("spellResist");
         }
         return super.damaged(a, damage, attackData);
     }
@@ -317,6 +310,14 @@ public class Lemongrab extends UserActor {
                         abilityRunnable(ability, spellData, cooldown, gCooldown, dest), ultDelay);
                 break;
         }
+    }
+
+    @Override
+    public double getPlayerStat(String stat) {
+        if (stat.equalsIgnoreCase("spellResist")) {
+            return super.getPlayerStat(stat) + (unacceptableLevels * PASSIVE_SPELL_RESIST);
+        }
+        return super.getPlayerStat(stat);
     }
 
     private LemonAbilityRunnable abilityRunnable(
