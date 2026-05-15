@@ -912,6 +912,7 @@ function sendInvite(sender, recipient, custom) {
     team != undefined
   ) {
     if (!custom) {
+      if (team.type == 'm_moba_sports_6p') return; //TODO: Remove when re-enabling pre-queues
       sendCommand(invitedPlayer, 'receive_invite', {
         name: senderUser.player.name,
         player: senderUser.player.player,
@@ -1391,7 +1392,7 @@ function handleRequest(jsonString, socket) {
       if (team == undefined) return; //TODO: Add error handling
       var act = team.type.split('_');
       var type = act[act.length - 1];
-      if (!act.includes('aram')) {
+      if (!act.includes('3p')) {
         console.log(act);
         var teamMembers = users.filter((u) =>
           team.players.includes(u.player.teg_id)
