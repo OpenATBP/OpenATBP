@@ -102,6 +102,21 @@ const ALL_ICONS_METADATA = {
     rarity: 'Common',
     cost: COMMON_ICON_COST,
   },
+  'The Lich': {
+    src: 'assets/pfp/The Lich.jpg',
+    rarity: 'Common',
+    cost: COMMON_ICON_COST,
+  },
+
+  Bonnie: {
+    src: 'assets/pfp/Bonnie.jpg',
+    rarity: 'Blooby',
+    unlock: {
+      stat: 'largestScore',
+      threshold: 500,
+      text: 'Earn 500 points in a single Ranked match',
+    },
+  },
 
   Cake: {
     src: 'assets/pfp/Cake.jpg',
@@ -147,6 +162,15 @@ const ALL_ICONS_METADATA = {
       stat: 'largestSpree',
       threshold: 9,
       text: 'Achieve a 9-KO spree in a single Ranked match',
+    },
+  },
+  'Supportive Jake': {
+    src: 'assets/pfp/Supportive Jake.jpg',
+    rarity: 'Blooby',
+    unlock: {
+      stat: 'assists',
+      threshold: 250,
+      text: 'Earn 250 total assists in Ranked matches',
     },
   },
   'Young Billy': {
@@ -201,14 +225,19 @@ const ALL_ICONS_METADATA = {
     rarity: 'Algebraic',
     unlock: { stat: 'largestMulti', threshold: 4, text: 'Get a Quad KO' },
   },
-  'Radiant Victory': {
-    src: 'assets/pfp/Radiant Victory.jpg',
-    rarity: 'Legendary',
+  Reaper: {
+    src: 'assets/pfp/Reaper.jpg',
+    rarity: 'Algebraic',
     unlock: {
-      stat: 'elo',
-      threshold: 999999,
-      text: 'Win the Community Highlight Contest',
+      stat: 'largestSpree',
+      threshold: 25,
+      text: 'Achieve a 25-KO spree in a single Ranked match',
     },
+  },
+  'Huntress Wizard': {
+    src: 'assets/pfp/Huntress Wizard.jpg',
+    rarity: 'Algebraic',
+    unlock: { stat: 'rank', threshold: 99, text: 'Reach level 99' },
   },
 };
 

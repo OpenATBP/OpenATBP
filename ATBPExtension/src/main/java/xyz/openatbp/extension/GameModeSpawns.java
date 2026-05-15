@@ -6,23 +6,33 @@ import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 
-public class GameModeSpawns {
+import xyz.openatbp.extension.game.BotMapConfig;
+import xyz.openatbp.extension.game.GameMap;
+import xyz.openatbp.extension.game.RoomGroup;
+import xyz.openatbp.extension.game.actors.Bot;
+import xyz.openatbp.extension.game.bots.FinnBot;
+import xyz.openatbp.extension.game.bots.IceKingBot;
+import xyz.openatbp.extension.game.bots.JakeBot;
+import xyz.openatbp.extension.game.bots.LemongrabBot;
 
-    public static final float MINI_GUARDIAN_ACTOR_OFFSET = 2.5f;
+public class GameModeSpawns {
 
     public static void spawnTowersForMode(Room room, ATBPExtension parentExt) {
         String groupId = room.getGroupId();
+        RoomGroup roomGroup = GameManager.getRoomGroupEnum(groupId);
 
-        switch (groupId) {
-            case "Tutorial":
+        Console.debugLog(roomGroup.name() + " spawn towers for mode");
+
+        switch (roomGroup) {
+            case TUTORIAL:
                 ExtensionCommands.createActor(
                         parentExt, room, MapData.getTowerActorData(0, 1, groupId));
                 ExtensionCommands.createActor(
                         parentExt, room, MapData.getTowerActorData(1, 4, groupId));
                 break;
 
-            case "Practice":
-            case "ARAM":
+            case PRACTICE:
+            case CUSTOM_CANDY_STREETS:
                 ExtensionCommands.createActor(
                         parentExt, room, MapData.getTowerActorData(0, 1, groupId));
                 ExtensionCommands.createActor(
@@ -34,8 +44,9 @@ public class GameModeSpawns {
                         parentExt, room, MapData.getBaseTowerActorData(1, groupId));
                 break;
 
-            case "PVE":
-            case "PVP":
+            case RANKED:
+            case PVB:
+            case CUSTOM_BATTLE_LAB:
                 ExtensionCommands.createActor(
                         parentExt, room, MapData.getTowerActorData(0, 1, groupId));
                 ExtensionCommands.createActor(
@@ -55,19 +66,18 @@ public class GameModeSpawns {
 
     public static void spawnAltarsForMode(Room room, ATBPExtension parentExt) {
         String groupId = room.getGroupId();
+        RoomGroup roomGroup = GameManager.getRoomGroupEnum(groupId);
+        GameMap gameMap = GameManager.getMap(roomGroup);
 
-        switch (groupId) {
-            case "Tutorial":
-            case "Practice":
-            case "ARAM":
+        switch (gameMap) {
+            case CANDY_STREETS:
                 ExtensionCommands.createActor(
                         parentExt, room, MapData.getAltarActorData(0, room.getGroupId()));
                 ExtensionCommands.createActor(
                         parentExt, room, MapData.getAltarActorData(1, room.getGroupId()));
                 break;
 
-            case "PVE":
-            case "PVP":
+            case BATTLE_LAB:
                 ExtensionCommands.createActor(
                         parentExt, room, MapData.getAltarActorData(0, room.getGroupId()));
                 ExtensionCommands.createActor(
@@ -80,19 +90,18 @@ public class GameModeSpawns {
 
     public static void spawnHealthForMode(Room room, ATBPExtension parentExt) {
         String groupId = room.getGroupId();
+        RoomGroup roomGroup = GameManager.getRoomGroupEnum(groupId);
+        GameMap gameMap = GameManager.getMap(roomGroup);
 
-        switch (groupId) {
-            case "Tutorial":
-            case "Practice":
-            case "ARAM":
+        switch (gameMap) {
+            case CANDY_STREETS:
                 ExtensionCommands.createActor(
                         parentExt, room, MapData.getHealthActorData(0, room.getGroupId(), -1));
                 ExtensionCommands.createActor(
                         parentExt, room, MapData.getHealthActorData(1, room.getGroupId(), -1));
                 break;
 
-            case "PVE":
-            case "PVP":
+            case BATTLE_LAB:
                 ExtensionCommands.createActor(
                         parentExt, room, MapData.getHealthActorData(0, room.getGroupId(), 0));
                 ExtensionCommands.createActor(
@@ -110,20 +119,21 @@ public class GameModeSpawns {
     }
 
     public static Point2D getBaseLocationForMode(Room room, int team) {
-        String roomGroup = room.getGroupId();
         Point2D L1_PURPLE = new Point2D.Float(MapData.L1_PURPLE_BASE[0], MapData.L1_PURPLE_BASE[1]);
         Point2D L1_BLUE = new Point2D.Float(MapData.L1_BLUE_BASE[0], MapData.L1_BLUE_BASE[1]);
         Point2D L2_PURPLE = new Point2D.Float(MapData.L2_PURPLE_BASE[0], MapData.L2_PURPLE_BASE[1]);
         Point2D L2_BLUE = new Point2D.Float(MapData.L2_BLUE_BASE[0], MapData.L2_BLUE_BASE[1]);
 
-        if (roomGroup.equals("Practice")
-                || roomGroup.equals("Tutorial")
-                || roomGroup.equals("ARAM")) {
-            if (team == 0) return L1_PURPLE;
-            else return L1_BLUE;
-        } else {
-            if (team == 0) return L2_PURPLE;
-            else return L2_BLUE;
+        String roomId = room.getGroupId();
+        GameMap gameMap = GameManager.getMap(GameManager.getRoomGroupEnum(roomId));
+
+        switch (gameMap) {
+            case CANDY_STREETS:
+                if (team == 0) return L1_PURPLE;
+                else return L1_BLUE;
+            default:
+                if (team == 0) return L2_PURPLE;
+                else return L2_BLUE;
         }
     }
 
@@ -131,13 +141,18 @@ public class GameModeSpawns {
         float towerX;
         float towerZ;
         Point2D towerLocation;
-        if (room.getGroupId().equals("Practice") || room.getGroupId().equals("ARAM")) {
+
+        String roomId = room.getGroupId();
+        GameMap gameMap = GameManager.getMap(GameManager.getRoomGroupEnum(roomId));
+
+        if (gameMap == GameMap.CANDY_STREETS) {
             towerX = team == 0 ? MapData.L1_PURPLE_TOWER_0[0] : MapData.L1_BLUE_TOWER_3[0];
             towerZ = team == 0 ? MapData.L1_PURPLE_TOWER_0[1] : MapData.L1_BLUE_TOWER_3[1];
         } else {
             towerX = team == 0 ? MapData.L2_PURPLE_BASE_TOWER[0] : MapData.L2_BLUE_BASE_TOWER[0];
             towerZ = team == 0 ? MapData.L2_PURPLE_BASE_TOWER[1] : MapData.L2_BLUE_BASE_TOWER[1];
         }
+
         towerLocation = new Point2D.Float(towerX, towerZ);
         return towerLocation;
     }
@@ -147,9 +162,9 @@ public class GameModeSpawns {
         float x;
         float z;
 
-        if (roomGroup.equals("Tutorial")
-                || roomGroup.equals("Practice")
-                || room.getGroupId().equals("ARAM")) {
+        GameMap gameMap = GameManager.getMap(GameManager.getRoomGroupEnum(roomGroup));
+
+        if (gameMap == GameMap.CANDY_STREETS) {
             x = team == 0 ? MapData.L1_P_GUARDIAN_MODEL_X : MapData.L1_B_GUARDIAN_MODEL_X;
             z = MapData.L1_GUARDIAN_MODEL_Z;
         } else {
@@ -175,5 +190,42 @@ public class GameModeSpawns {
         guardian.putFloat("rotation", 0f);
         guardian.putInt("team", team);
         return guardian;
+    }
+
+    public static Bot createSpecificBot(
+            ATBPExtension parentExt,
+            Room room,
+            int botId,
+            String displayName,
+            String avatar,
+            int team,
+            String backpack,
+            GameMap gameMap) {
+        // NOTE: TAB VIEW WORKS ONLY IF 'addUser' AND 'createActor' USED
+        // WITH THE SAME ID
+
+        BotMapConfig mapConfig = null;
+
+        switch (gameMap) {
+            case BATTLE_LAB:
+                mapConfig = BotMapConfig.createMainMap(team);
+                break;
+            case CANDY_STREETS:
+                mapConfig = BotMapConfig.createPractice(team);
+                break;
+        }
+
+        switch (avatar) {
+            case "finn":
+                return new FinnBot(parentExt, room, botId, avatar, displayName, team, mapConfig);
+            case "iceking":
+                return new IceKingBot(parentExt, room, botId, avatar, displayName, team, mapConfig);
+            case "jake":
+                return new JakeBot(parentExt, room, botId, avatar, displayName, team, mapConfig);
+            case "lemongrab":
+                return new LemongrabBot(
+                        parentExt, room, botId, avatar, displayName, team, mapConfig);
+        }
+        return null;
     }
 }

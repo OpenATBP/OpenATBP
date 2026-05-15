@@ -32,11 +32,12 @@ public class ChampionData {
         for (int i = 0; i < XP_LEVELS.length; i++) {
             if (xp < XP_LEVELS[i]) return i + 1;
         }
-        return -1;
+        return XP_LEVELS.length;
     }
 
     public static int getLevelXP(int level) {
-        if (level == 0) return 0;
+        if (level <= 0) return 0;
+        if (level > XP_LEVELS.length) return XP_LEVELS[XP_LEVELS.length - 1];
         return XP_LEVELS[level - 1];
     }
 
@@ -67,7 +68,7 @@ public class ChampionData {
                     stats = new double[] {0.1, 0.15, 0.2, 0.3};
                     break;
                 case "junk_4_antimagic_cube":
-                    stats = new double[] {-25, -50, -75, -100};
+                    stats = new double[] {25, 50, 75, 100};
                     break;
                 case "junk_2_peppermint_tank":
                 case "junk_3_globs_helmet":
@@ -358,7 +359,7 @@ public class ChampionData {
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 50000;
                     break;
                 case "bmo":
-                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 11000 : 37500;
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 11000 : 55000;
                     break;
                 case "choosegoose":
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 42000;
@@ -382,13 +383,13 @@ public class ChampionData {
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 45000;
                     break;
                 case "iceking":
-                    lv10Cooldown = abilityNumber == 1 ? 7000 : abilityNumber == 2 ? 8000 : 60000;
+                    lv10Cooldown = abilityNumber == 1 ? 9000 : abilityNumber == 2 ? 10000 : 60000;
                     break;
                 case "jake":
                     lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 12000 : 45000;
                     break;
                 case "lemongrab":
-                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 10000 : 35000;
+                    lv10Cooldown = abilityNumber == 1 ? 8000 : abilityNumber == 2 ? 10000 : 47000;
                     break;
                 case "lich":
                     lv10Cooldown = abilityNumber == 1 ? 10500 : abilityNumber == 2 ? 10000 : 45000;

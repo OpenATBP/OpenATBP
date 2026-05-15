@@ -1,5 +1,7 @@
 package xyz.openatbp.extension.game.champions;
 
+import static xyz.openatbp.extension.game.effects.EffectManager.DEFAULT_KNOCKBACK_SPEED;
+
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -8,7 +10,6 @@ import java.util.List;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import com.smartfoxserver.v2.entities.User;
-import com.smartfoxserver.v2.entities.data.ISFSObject;
 
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.Console;
@@ -17,19 +18,23 @@ import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.game.effects.ActorState;
+import xyz.openatbp.extension.game.effects.ModifierIntent;
+import xyz.openatbp.extension.game.effects.ModifierType;
 
 public class Neptr extends UserActor {
     private static final int PASSIVE_SPEED_DURATION = 3500;
-    private static final double PASSIVE_SPEED_VALUE = 0.35d;
-    private static final int PASSIVE_ATTACKSPEED_DURATION = 3500;
-    private static final double PASSIVE_ATTACKSPEED_VALUE = 0.25d;
+    private static final double PASSIVE_SPEED_PERCENT = 0.35d;
+    private static final int PASSIVE_ATTACK_SPEED_DURATION = 3500;
+    private static final double PASSIVE_ATTACK_SPEED_PERCENT = 0.25d;
     private static final int PASSIVE_DURATION = 3500;
     private static final int W_SLOW_DURATION = 3000;
-    private static final double W_SLOW_VALUE = 0.4d;
+    private static final double W_SLOW_PERCENT = 0.4d;
     private static final int MINE_LIFE_SPAN = 30000;
     private static final int E_DAMAGE_DURATION = 3000;
     private static final int E_CAST_DELAY = 500;
     private static final int E_SILENCE_DURATION = 1000;
+    public static final float E_KNOCKBACK_DIST = 3.5f;
     private boolean passiveActive = false;
     private long passiveStart = 0;
     private int mineNum = 0;
@@ -53,7 +58,6 @@ public class Neptr extends UserActor {
                 && System.currentTimeMillis() - this.passiveStart >= PASSIVE_DURATION) {
             this.passiveActive = false;
             ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "passive");
-            if (this.invisOrInBrush(this)) this.setState(ActorState.BRUSH, true);
         }
         if (this.isStopped() && !this.soundPlayed) {
             String moveEndSFX = SkinData.getNeptrMoveEndSFX(avatar);
@@ -76,17 +80,12 @@ public class Neptr extends UserActor {
                 a.addToDamageQueue(this, dmg, attackData, true);
             }
         }
-
-        ArrayList<Mine> mines = new ArrayList<>(this.mines); // To remove concurrent exceptions
-        for (Mine m : mines) {
-            m.update(msRan);
-        }
     }
 
     @Override
-    public void setState(ActorState state, boolean enabled) {
-        super.setState(state, enabled);
-        if (state == ActorState.BRUSH && enabled) {
+    public void setInsideBrush(boolean isInsideBrush) {
+        super.setInsideBrush(isInsideBrush);
+        if (isInsideBrush) {
             this.passiveStart = System.currentTimeMillis();
             ExtensionCommands.createActorFX(
                     this.parentExt,
@@ -108,12 +107,21 @@ public class Neptr extends UserActor {
                 ExtensionCommands.playSound(
                         this.parentExt, this.room, this.id, "vo/vo_neptr_passive", this.location);
             }
-            this.addEffect(
-                    "speed", this.getStat("speed") * PASSIVE_SPEED_VALUE, PASSIVE_SPEED_DURATION);
-            this.addEffect(
+            effectManager.addEffect(
+                    this.id + "_neptr_passive_speed",
+                    "speed",
+                    PASSIVE_SPEED_PERCENT,
+                    ModifierType.MULTIPLICATIVE,
+                    ModifierIntent.BUFF,
+                    PASSIVE_SPEED_DURATION);
+            effectManager.addEffect(
+                    this.id + "_neptr_passive_as",
                     "attackSpeed",
-                    this.getStat("attackSpeed") * -PASSIVE_ATTACKSPEED_VALUE,
-                    PASSIVE_ATTACKSPEED_DURATION);
+                    PASSIVE_ATTACK_SPEED_PERCENT,
+                    ModifierType.MULTIPLICATIVE,
+                    ModifierIntent.BUFF,
+                    PASSIVE_ATTACK_SPEED_DURATION);
+
             if (this.passiveActive) {
                 ExtensionCommands.removeStatusIcon(this.parentExt, this.player, "passive");
             }
@@ -129,12 +137,12 @@ public class Neptr extends UserActor {
     }
 
     @Override
-    public void move(ISFSObject params, Point2D destination) {
+    public void startMoveTo(Point2D endPoint, boolean forcedMovement) {
+        super.startMoveTo(endPoint, forcedMovement);
         if (this.isStopped())
             ExtensionCommands.playSound(
                     this.parentExt, this.player, this.id, "sfx_neptr_move_start", this.location);
         this.soundPlayed = false;
-        super.move(params, destination);
     }
 
     @Override
@@ -181,7 +189,10 @@ public class Neptr extends UserActor {
             case 1:
                 this.canCast[0] = false;
                 try {
-                    Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
+                    ExtensionCommands.playSound(parentExt, room, id, "sfx_neptr_q", location);
+                    playSoundWithChance("vo/vo_neptr_q", 50);
+
+                    Line2D abilityLine = Champion.createLineTowards(this.location, dest, 8f);
                     this.fireProjectile(
                             new NeptrProjectile(
                                     this.parentExt,
@@ -332,10 +343,16 @@ public class Neptr extends UserActor {
             ultImpactedActors = new ArrayList<>();
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, ultLocation, 3f)) {
-                if (a.getActorType() != ActorType.BASE) {
-                    if (isNeitherStructureNorAlly(a)) {
-                        a.knockback(Neptr.this.location, 3.5f);
-                        a.addState(ActorState.SILENCED, 0d, E_SILENCE_DURATION);
+                if (a.getActorType() != ActorType.BASE && a.isNotLeaping()) {
+                    if (isNeitherStructureNorAlly(a) && a.isNotLeaping()) {
+                        a.handleKnockback(
+                                Neptr.this.location, E_KNOCKBACK_DIST, DEFAULT_KNOCKBACK_SPEED);
+                        a.getEffectManager()
+                                .addState(
+                                        ActorState.SILENCED,
+                                        id + "_neptr_e_silence",
+                                        0d,
+                                        E_SILENCE_DURATION);
                     }
                     if (isNeitherTowerNorAlly(a)) {
                         ExtensionCommands.createActorFX(
@@ -374,22 +391,22 @@ public class Neptr extends UserActor {
                 UserActor owner,
                 Line2D path,
                 float speed,
-                float hitboxRadius,
+                float offsetDistance,
                 String projectileAsset) {
-            super(parentExt, owner, path, speed, hitboxRadius, projectileAsset);
+            super(parentExt, owner, path, speed, offsetDistance, offsetDistance, projectileAsset);
             this.damagedActors = new ArrayList<>();
         }
 
         @Override
         public void update(RoomHandler roomHandler) {
             if (destroyed) return;
-            this.updateTimeTraveled();
+            this.updateLocation();
             Actor hitActor = this.checkPlayerCollision(roomHandler);
             if (hitActor != null) {
                 this.hit(hitActor);
             }
             if (this.doPieReversing) {
-                this.estimatedDuration =
+                this.maxTravelTimeMs =
                         (this.startingLocation.distance(Neptr.this.getLocation()) / 8) * 1000;
                 this.destination = Neptr.this.getLocation();
                 ExtensionCommands.moveActor(
@@ -402,7 +419,7 @@ public class Neptr extends UserActor {
                         true);
             }
             if (this.destination.distance(this.getLocation()) <= getDistance()
-                    || System.currentTimeMillis() - this.startTime > this.estimatedDuration) {
+                    || System.currentTimeMillis() - this.startTime > this.maxTravelTimeMs) {
                 if (this.isReversed) {
                     Console.debugLog("Projectile being destroyed in update!");
                     this.destroy();
@@ -412,7 +429,7 @@ public class Neptr extends UserActor {
                     Runnable enableReversing =
                             () -> {
                                 this.startTime = System.currentTimeMillis();
-                                this.timeTraveled = 0;
+                                this.travelTimeMs = 0;
                                 this.doPieReversing = true;
                                 this.isReversed = true;
                                 this.damageReduction = 0;
@@ -432,21 +449,8 @@ public class Neptr extends UserActor {
         }
 
         @Override
-        public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            float searchArea = hitbox * 2;
-            List<Actor> actorsInRadius = roomHandler.getActorsInRadius(location, searchArea);
-            for (Actor a : actorsInRadius) {
-                if (!this.damagedActors.contains(a)) {
-                    JsonNode actorData = parentExt.getActorData(a.getAvatar());
-                    double collisionRadius = actorData.get("collisionRadius").asDouble();
-
-                    if (a.getLocation().distance(location) <= hitbox + collisionRadius
-                            && isTargetable(a)) {
-                        return a;
-                    }
-                }
-            }
-            return null;
+        public boolean isTargetable(Actor a) {
+            return super.isTargetable(a) && !this.damagedActors.contains(a);
         }
 
         @Override
@@ -489,12 +493,7 @@ public class Neptr extends UserActor {
                     parentExt, room, this.id, this.avatar, this.location, 0f, this.team);
             Runnable creationDelay =
                     () -> {
-                        ExtensionCommands.playSound(
-                                parentExt,
-                                this.room,
-                                Neptr.this.id,
-                                "vo/vo_neptr_mine",
-                                Neptr.this.location);
+                        Neptr.this.playSoundWithChance("vo/vo_neptr_mine", 50);
                         ExtensionCommands.playSound(
                                 parentExt, room, this.id, "sfx_neptr_mine_spawn", this.location);
                         ExtensionCommands.createWorldFX(
@@ -597,11 +596,16 @@ public class Neptr extends UserActor {
 
                         if (!targets.isEmpty()) {
                             for (Actor t : targets) {
-                                if (isNeitherStructureNorAlly(t)) {
-                                    t.addState(ActorState.SLOWED, W_SLOW_VALUE, W_SLOW_DURATION);
+                                if (isNeitherStructureNorAlly(t) && t.isNotLeaping()) {
+                                    t.getEffectManager()
+                                            .addState(
+                                                    ActorState.SLOWED,
+                                                    id + "_neptr_w_slow",
+                                                    W_SLOW_PERCENT,
+                                                    W_SLOW_DURATION);
                                 }
 
-                                if (isNeitherTowerNorAlly(t)) {
+                                if (isNeitherTowerNorAlly(t) && t.isNotLeaping()) {
                                     String ava = Neptr.this.avatar;
                                     JsonNode spellData = parentExt.getAttackData(ava, "spell2");
                                     double dmg = getSpellDamage(spellData, true);

@@ -1,7 +1,6 @@
 package xyz.openatbp.extension.game.champions;
 
 import java.awt.geom.Line2D;
-import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,18 +10,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.ATBPExtension;
+import xyz.openatbp.extension.Console;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.game.effects.ActorState;
 
 public class LSP extends UserActor {
     public static final int Q_CAST_DELAY = 750;
     public static final int Q_FEAR_DURATION = 2000;
     private static final float Q_OFFSET_DISTANCE = 0.75f;
     private static final float Q_SPELL_RANGE = 7.5f;
-    public static final int W_DURATION = 3500;
+    public static final int W_DURATION = 4000;
     public static final int W_CAST_DELAY = 500;
     public static final int E_CAST_DELAY = 1250;
 
@@ -31,9 +32,12 @@ public class LSP extends UserActor {
     private boolean wActive = false;
     private boolean isCastingult = false;
     private boolean isCastingQ = false;
+    private boolean disableWOnPoly = false;
 
     public LSP(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        hasCustomSwapToPoly = true;
+        hasCustomSwapFromPoly = true;
         ExtensionCommands.addStatusIcon(
                 parentExt, player, "p0", "lsp_spell_4_short_description", "icon_lsp_passive", 0f);
     }
@@ -44,16 +48,17 @@ public class LSP extends UserActor {
         if (this.wActive && this.getHealth() <= 0) {
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_wRing");
             ExtensionCommands.removeFx(parentExt, room, id + "_w");
-            this.wActive = false;
+            wActive = false;
+            disableWOnPoly = false;
         }
         if (this.wActive && System.currentTimeMillis() - this.wTime >= W_DURATION) {
             this.wActive = false;
         }
-        if (this.wActive) {
+        if (this.wActive && !disableWOnPoly) {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, this.location, 3f)) {
-                if (isNeitherTowerNorAlly(a)) {
+                if (isNeitherTowerNorAlly(a) && a.isNotLeaping()) {
                     double dmg = getSpellDamage(spellData, false) / 10d;
                     a.addToDamageQueue(this, dmg, spellData, true);
                 }
@@ -63,7 +68,7 @@ public class LSP extends UserActor {
             isCastingult = false;
             ExtensionCommands.playSound(parentExt, room, id, "sfx_skill_interrupted", location);
             ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 1, false);
-            if (!getState(ActorState.POLYMORPH))
+            if (!effectManager.hasState(ActorState.POLYMORPH))
                 ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
         }
 
@@ -94,6 +99,53 @@ public class LSP extends UserActor {
     }
 
     @Override
+    public void customSwapToPoly() {
+        super.customSwapToPoly();
+        if (wActive) {
+            disableWOnPoly = true;
+            ExtensionCommands.removeFx(parentExt, room, id + "_wRing");
+            ExtensionCommands.removeFx(parentExt, room, id + "_w");
+        }
+    }
+
+    @Override
+    public void customSwapFromPoly() {
+        effectManager.handleSwapFromPoly();
+        if (wActive) {
+            disableWOnPoly = false;
+            Console.debugLog("W time: " + wTime);
+            int remainingW = (int) (W_DURATION - (System.currentTimeMillis() - wTime));
+            Console.debugLog("remainingW: " + remainingW);
+
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    id,
+                    "lsp_the_lumps_aoe",
+                    remainingW,
+                    id + "_w",
+                    true,
+                    "",
+                    true,
+                    false,
+                    team);
+
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    id,
+                    "fx_target_ring_3",
+                    remainingW,
+                    id + "_wRing",
+                    true,
+                    "",
+                    true,
+                    true,
+                    team);
+        }
+    }
+
+    @Override
     public void useAbility(
             int ability,
             JsonNode spellData,
@@ -108,8 +160,7 @@ public class LSP extends UserActor {
                 try {
                     this.stopMoving(castDelay);
                     String qVO = SkinData.getLSPQVO(avatar);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, qVO, this.location);
+                    playSoundWithChance(qVO, 50);
                     ExtensionCommands.createActorFX(
                             this.parentExt,
                             this.room,
@@ -141,7 +192,7 @@ public class LSP extends UserActor {
                 this.wActive = true;
                 this.wTime = System.currentTimeMillis();
                 String wVO = SkinData.getLSPWVO(avatar);
-                ExtensionCommands.playSound(this.parentExt, this.room, this.id, wVO, this.location);
+                playSoundWithChance(wVO, 50);
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -230,19 +281,33 @@ public class LSP extends UserActor {
                         true,
                         false,
                         team);
-                Path2D qRect =
-                        Champion.createRectangle(location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
+                AbilityShape qRect =
+                        AbilityShape.createRectangle(
+                                location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
 
                 List<Actor> affectedActors = new ArrayList<>();
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
-                List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(team, qRect);
-                if (!actorsInPolygon.isEmpty()) {
-                    for (Actor a : actorsInPolygon) {
-                        if (isNeitherStructureNorAlly(a)) {
-                            a.handleFear(LSP.this.location, Q_FEAR_DURATION);
+
+                List<Actor> nearbyEnemies =
+                        Champion.getEnemyActorsInRadius(handler, team, location, Q_SPELL_RANGE);
+
+                if (!nearbyEnemies.isEmpty()) {
+                    for (Actor a : nearbyEnemies) {
+                        if (isNeitherStructureNorAlly(a)
+                                && qRect.contains(a.getLocation(), a.getCollisionRadius())
+                                && a.isNotLeaping()) {
+                            a.setFearer(LSP.this);
+                            a.getEffectManager()
+                                    .addState(
+                                            ActorState.FEARED,
+                                            id + "_lsp_q_fear",
+                                            0,
+                                            Q_FEAR_DURATION);
                         }
 
-                        if (isNeitherTowerNorAlly(a)) {
+                        if (isNeitherTowerNorAlly(a)
+                                && qRect.contains(a.getLocation(), a.getCollisionRadius())
+                                && a.isNotLeaping()) {
                             double damage = getSpellDamage(spellData, true);
                             a.addToDamageQueue(LSP.this, damage, spellData, false);
                             affectedActors.add(a);
@@ -261,14 +326,14 @@ public class LSP extends UserActor {
             Runnable enableWCasting = () -> canCast[1] = true;
             int delay = getReducedCooldown(cooldown) - W_CAST_DELAY;
             scheduleTask(enableWCasting, delay);
-            if (getHealth() > 0) {
+            if (getHealth() > 0 && !disableWOnPoly) {
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_lsp_lumps_aoe", location);
                 ExtensionCommands.createActorFX(
                         parentExt,
                         room,
                         id,
                         "lsp_the_lumps_aoe",
-                        3000,
+                        W_DURATION - W_CAST_DELAY,
                         id + "_w",
                         true,
                         "",
@@ -285,7 +350,7 @@ public class LSP extends UserActor {
             scheduleTask(enableECasting, delay);
 
             if (getHealth() > 0 && isCastingult) {
-                Line2D projectileLine = Champion.getAbilityLine(location, dest, 100f);
+                Line2D projectileLine = Champion.createLineTowards(location, dest, 100f);
                 ExtensionCommands.actorAnimate(parentExt, room, id, "spell3b", 500, false);
                 String eProjectile = SkinData.getLSPEProjectile(avatar);
 
@@ -295,7 +360,7 @@ public class LSP extends UserActor {
                 fireProjectile(projectile, location, dest, 100f);
 
                 String sound = "sfx_lsp_cellphone_throw";
-                ExtensionCommands.playSound(parentExt, room, "global", sound, location);
+                ExtensionCommands.playSound(parentExt, room, id, sound, location);
             }
             isCastingult = false;
         }
@@ -316,9 +381,9 @@ public class LSP extends UserActor {
                 UserActor owner,
                 Line2D path,
                 float speed,
-                float hitboxRadius,
+                float offsetDitance,
                 String id) {
-            super(parentExt, owner, path, speed, hitboxRadius, id);
+            super(parentExt, owner, path, speed, offsetDitance, offsetDitance, id);
             this.victims = new ArrayList<>();
         }
 

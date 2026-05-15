@@ -1,6 +1,7 @@
 package xyz.openatbp.extension.game.champions;
 
-import java.awt.geom.Path2D;
+import static xyz.openatbp.extension.game.effects.EffectManager.DEFAULT_KNOCKBACK_SPEED;
+
 import java.awt.geom.Point2D;
 import java.util.List;
 
@@ -10,15 +11,16 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.smartfoxserver.v2.entities.User;
 
 import xyz.openatbp.extension.*;
-import xyz.openatbp.extension.game.AbilityRunnable;
-import xyz.openatbp.extension.game.Champion;
-import xyz.openatbp.extension.game.Projectile;
-import xyz.openatbp.extension.game.SkinData;
+import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.game.effects.ActorState;
+import xyz.openatbp.extension.game.effects.ModifierIntent;
+import xyz.openatbp.extension.game.effects.ModifierType;
+import xyz.openatbp.extension.pathfinding.PathFinder;
 
 public class RattleBalls extends UserActor {
-    private static final double PASSIVE_LIFE_STEAL_VALUE = 0.65d;
+    private static final double PASSIVE_LIFE_STEAL_PERCENT = 0.65d;
     private static final int PASSIVE_STACK_DURATION = 5000;
     private static final int Q_PARRY_DURATION = 1500;
     private static final int Q_END_GLOBAL_CD = 500;
@@ -27,9 +29,11 @@ public class RattleBalls extends UserActor {
     private static final float Q_OFFSET_DISTANCE = 0.85f;
     private static final int Q_SPIN_ATTACK_BONUS_BASE_DMG = 55;
     private static final int W_CAST_DELAY = 500;
-    private static final int E_DURATION = 3500;
-    private static final double E_SPEED_VALUE = 0.14d;
     private static final int E_SECOND_USE_DELAY = 700;
+    private static final int E_DURATION = 3500;
+    private static final double E_SPEED_PERCENT = 0.14d;
+    private static final int E_SOUND_DELAY = 500;
+
     private static final double W_PULL_DISTANCE = 1.2;
 
     private boolean passiveActive = false;
@@ -44,18 +48,22 @@ public class RattleBalls extends UserActor {
     private int qTime = 0;
     private int eCounter = 0;
     private long eStartTime;
+    private boolean disableEOnPoly = false;
 
-    private Path2D qThrustRectangle = null;
+    private AbilityShape qThrustRectangle = null;
     private boolean isDoingCounterAttackAnim = false;
     private Long counterAttackAnimTime = 0L;
 
     public RattleBalls(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        hasCustomSwapToPoly = true;
+        hasCustomSwapFromPoly = true;
     }
 
     @Override
     public void update(int msRan) {
         super.update(msRan);
+
         if (passiveActive
                 && System.currentTimeMillis() - startPassiveStack >= PASSIVE_STACK_DURATION) {
             endPassive();
@@ -66,37 +74,40 @@ public class RattleBalls extends UserActor {
             performQSpinAttack();
         }
         if (ultActive) {
-            int soundCooldown = 450;
-
-            if (System.currentTimeMillis() - lastSoundTime >= soundCooldown && !dead) {
+            if (System.currentTimeMillis() - lastSoundTime >= E_SOUND_DELAY
+                    && !dead
+                    && !disableEOnPoly) {
                 lastSoundTime = System.currentTimeMillis();
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_rattleballs_spin", location);
             }
 
             if (ultActive && dead
                     || ultActive && System.currentTimeMillis() - eStartTime >= E_DURATION
-                    || hasInterrupingCC()) {
+                    || cancelE()) {
                 endUlt();
-                if (hasInterrupingCC()) {
+                if (cancelE()) {
                     ExtensionCommands.playSound(
                             parentExt, room, id, "sfx_skill_interrupted", location);
                 }
             }
-            RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            for (Actor a : Champion.getActorsInRadius(handler, location, 2f)) {
-                if (isNeitherTowerNorAlly(a)) {
-                    JsonNode spellData = parentExt.getAttackData(avatar, "spell3");
-                    double dmg = getSpellDamage(spellData, false) / 10d;
-                    a.addToDamageQueue(this, dmg, spellData, true);
+            if (!disableEOnPoly && !dead) {
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                for (Actor a : Champion.getActorsInRadius(handler, location, 2f)) {
+                    if (isNeitherTowerNorAlly(a) && a.isNotLeaping()) {
+                        JsonNode spellData = parentExt.getAttackData(avatar, "spell3");
+                        double dmg = getSpellDamage(spellData, false) / 10d;
+                        a.addToDamageQueue(this, dmg, spellData, true);
+                    }
                 }
-            }
-            for (Projectile p : parentExt.getRoomHandler(room.getName()).getActiveProjectiles()) {
-                if (p.getClass() != LSP.LSPUltProjectile.class
-                        && p.getClass() != BMO.BMOUltProjectile.class
-                        && p.getClass() != ChooseGoose.GooseProjectile.class
-                        && p.getTeam() != this.team
-                        && p.getLocation().distance(this.location) <= 2f) {
-                    p.destroy();
+                for (Projectile p :
+                        parentExt.getRoomHandler(room.getName()).getActiveProjectiles()) {
+                    if (p.getClass() != LSP.LSPUltProjectile.class
+                            && p.getClass() != BMO.BMOUltProjectile.class
+                            && p.getClass() != ChooseGoose.GooseProjectile.class
+                            && p.getTeam() != this.team
+                            && p.getLocation().distance(this.location) <= 2f) {
+                        p.destroy();
+                    }
                 }
             }
         }
@@ -123,6 +134,7 @@ public class RattleBalls extends UserActor {
         }
         if (parryActive && getAttackType(attackData) == AttackType.PHYSICAL) { // Q COUNTER-ATTACK
             performQCounterAttack(a);
+            playSoundWithChance("vo/vo_rattleballs_q_counter_attack", 50);
             return false;
         }
         return super.damaged(a, damage, attackData);
@@ -132,6 +144,85 @@ public class RattleBalls extends UserActor {
     public boolean canAttack() {
         if (ultActive || parryActive) return false;
         return super.canAttack();
+    }
+
+    @Override
+    public void die(Actor a) {
+        super.die(a);
+        if (ultActive && disableEOnPoly) disableEOnPoly = false;
+    }
+
+    @Override
+    public void customSwapToPoly() {
+        super.customSwapToPoly();
+        if (ultActive) {
+            disableEOnPoly = true;
+            ExtensionCommands.removeFx(parentExt, room, id + "_ultRing");
+            ExtensionCommands.removeFx(parentExt, room, id + "_ultSpin");
+            ExtensionCommands.removeFx(parentExt, room, id + "_ultSparkles");
+        }
+    }
+
+    @Override
+    public void customSwapFromPoly() {
+        effectManager.handleSwapFromPoly();
+        if (ultActive) {
+            disableEOnPoly = false;
+            effectManager.removeAllEffectsById(id + "_rattle_e_speed");
+            int remainingE = (int) (E_DURATION - (System.currentTimeMillis() - eStartTime));
+            if (remainingE > 0) {
+                String swordSpinFX = SkinData.getRattleBallsESwordSpinFX(avatar);
+                createE(remainingE, swordSpinFX, remainingE);
+            }
+        }
+    }
+
+    private void createE(int remainingE, String swordSpinFX, int eBuffDuration) {
+        ExtensionCommands.createActorFX(
+                parentExt,
+                room,
+                id,
+                "fx_target_ring_2",
+                remainingE,
+                id + "_ultRing",
+                true,
+                "",
+                false,
+                true,
+                team);
+        ExtensionCommands.actorAnimate(parentExt, room, id, "spell3a", remainingE, true);
+        ExtensionCommands.createActorFX(
+                parentExt,
+                room,
+                id,
+                swordSpinFX,
+                remainingE,
+                id + "_ultSpin",
+                true,
+                "Bip001 Footsteps",
+                false,
+                false,
+                team);
+        ExtensionCommands.createActorFX(
+                parentExt,
+                room,
+                id,
+                "rattleballs_sword_sparkles",
+                remainingE,
+                id + "_ultSparkles",
+                true,
+                "Bip001 Prop1", // Bip001 L Finger0Nub
+                false,
+                false,
+                team);
+
+        effectManager.addEffect(
+                id + "_rattle_e_speed",
+                "speed",
+                E_SPEED_PERCENT,
+                ModifierType.MULTIPLICATIVE,
+                ModifierIntent.BUFF,
+                eBuffDuration);
     }
 
     @Override
@@ -149,7 +240,7 @@ public class RattleBalls extends UserActor {
     public void handleLifeSteal() {
         if (passiveActive && passiveHits > 0) {
             double damage = getPlayerStat("attackDamage");
-            double lifesteal = (getPlayerStat("lifeSteal") / 100) + PASSIVE_LIFE_STEAL_VALUE;
+            double lifesteal = (getPlayerStat("lifeSteal") / 100) + PASSIVE_LIFE_STEAL_PERCENT;
             if (lifesteal > 100) lifesteal = 100;
             changeHealth((int) (damage * lifesteal));
             ExtensionCommands.removeStatusIcon(parentExt, player, "passive" + passiveHits);
@@ -195,19 +286,49 @@ public class RattleBalls extends UserActor {
         switch (ability) {
             case 1:
                 canCast[0] = false;
-                if (qUses > 0) {
+                qUses++;
+                Point2D destination;
+                RoomHandler rh = parentExt.getRoomHandler(room.getName());
+                PathFinder pf = rh.getPathFinder();
+                DashContext ctx;
+
+                if (qUses > 1) {
+                    destination = pf.getIntersectionPoint(location, dest);
+                    ctx =
+                            new DashContext.Builder(
+                                            location, destination, (float) DEFAULT_DASH_SPEED)
+                                    .canBeRedirected(true)
+                                    .isLeap(false)
+                                    .onEnd(this::onQDashEnd)
+                                    .onInterrupt(this::playInterruptSoundAndIdle)
+                                    .build();
+
                     qThrustRectangle =
-                            Champion.createRectangle(
+                            AbilityShape.createRectangle(
+                                    location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
+                } else {
+                    destination = pf.getNonObstaclePointOrIntersection(location, dest);
+                    ctx =
+                            new DashContext.Builder(
+                                            location, destination, (float) DEFAULT_DASH_SPEED)
+                                    .canBeRedirected(true)
+                                    .isLeap(true)
+                                    .onEnd(this::onQDashEnd)
+                                    .build();
+                    qThrustRectangle =
+                            AbilityShape.createRectangle(
                                     location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
                 }
-                Point2D ogLocation = location;
-                Point2D finalDashPoint = dash(dest, false, DASH_SPEED);
-                double time = ogLocation.distance(finalDashPoint) / DASH_SPEED;
+
+                double time = location.distance(destination) / DEFAULT_DASH_SPEED;
                 qTime = (int) (time * 1000);
+
+                startDash(ctx);
+
                 int qTimeEffects = qTime * 5;
                 String qTrailFX = SkinData.getRattleBallsQTrailFX(avatar);
                 String qDashDustFX = SkinData.getRattleBallsQDustFX(avatar);
-                if (qUses == 0) {
+                if (qUses == 1) {
                     qJumpActive = true;
                     ExtensionCommands.playSound(
                             parentExt, room, id, "sfx_rattleballs_counter_stance", location);
@@ -239,15 +360,19 @@ public class RattleBalls extends UserActor {
                             true,
                             false,
                             team);
-                    qUses++;
                 } else { // Q THRUST ATTACK
+
                     finishQAbility(false);
                     RoomHandler handler = parentExt.getRoomHandler(room.getName());
-                    List<Actor> enemiesInPolygon =
-                            handler.getEnemiesInPolygon(team, qThrustRectangle);
-                    if (!enemiesInPolygon.isEmpty()) {
-                        for (Actor a : enemiesInPolygon) {
-                            if (isNeitherTowerNorAlly(a)) {
+                    List<Actor> nearbyEnemies =
+                            Champion.getActorsInRadius(handler, location, Q_SPELL_RANGE);
+
+                    if (!nearbyEnemies.isEmpty()) {
+                        for (Actor a : nearbyEnemies) {
+                            if (isNeitherTowerNorAlly(a)
+                                    && qThrustRectangle.contains(
+                                            a.getLocation(), a.getCollisionRadius())
+                                    && a.isNotLeaping()) {
                                 double dmg = getSpellDamage(spellData, true);
                                 a.addToDamageQueue(this, dmg, spellData, false);
                             }
@@ -267,6 +392,7 @@ public class RattleBalls extends UserActor {
                             parentExt, room, id, "sfx_rattleballs_rattle_balls_2", location);
                     ExtensionCommands.actorAnimate(
                             parentExt, room, id, "spell1c", qTimeEffects, false);
+                    playSoundWithChance("vo/vo_rattleballs_q_thrust", 50);
                     ExtensionCommands.createActorFX(
                             parentExt,
                             room,
@@ -292,9 +418,6 @@ public class RattleBalls extends UserActor {
                             false,
                             team);
                 }
-                scheduleTask(
-                        abilityRunnable(ability, spellData, cooldown, gCooldown, finalDashPoint),
-                        qTime);
                 break;
             case 2:
                 canCast[1] = false;
@@ -334,47 +457,10 @@ public class RattleBalls extends UserActor {
                     ExtensionCommands.playSound(parentExt, room, id, spinCycleSFX, location);
                     ExtensionCommands.playSound(
                             parentExt, room, id, "vo/vo_rattleballs_eggcelent_1", location);
-                    ExtensionCommands.createActorFX(
-                            parentExt,
-                            room,
-                            id,
-                            "fx_target_ring_2",
-                            E_DURATION,
-                            id + "_ultRing",
-                            true,
-                            "",
-                            false,
-                            true,
-                            team);
-                    ExtensionCommands.actorAnimate(
-                            parentExt, room, id, "spell3a", E_DURATION, true);
-                    ExtensionCommands.createActorFX(
-                            parentExt,
-                            room,
-                            id,
-                            swordSpinFX,
-                            E_DURATION,
-                            id + "_ultSpin",
-                            true,
-                            "Bip001 Footsteps",
-                            false,
-                            false,
-                            team);
-                    ExtensionCommands.createActorFX(
-                            parentExt,
-                            room,
-                            id,
-                            "rattleballs_sword_sparkles",
-                            E_DURATION,
-                            id + "_ultSparkles",
-                            true,
-                            "Bip001 Prop1", // Bip001 L Finger0Nub
-                            false,
-                            false,
-                            team);
+
+                    createE(E_DURATION, swordSpinFX, E_DURATION);
                     ExtensionCommands.actorAbilityResponse(
                             parentExt, player, "e", true, E_SECOND_USE_DELAY, 0);
-                    addEffect("speed", getStat("speed") * E_SPEED_VALUE, E_DURATION);
                 } else {
                     endUlt();
                 }
@@ -383,6 +469,16 @@ public class RattleBalls extends UserActor {
                         abilityRunnable(ability, spellData, cooldown, gCooldown, dest), eDelay);
                 break;
         }
+    }
+
+    private boolean cancelE() {
+        ActorState[] states = {
+            ActorState.CHARMED, ActorState.FEARED, ActorState.STUNNED, ActorState.SILENCED
+        };
+        for (ActorState state : states) {
+            if (effectManager.hasState(state)) return true;
+        }
+        return false;
     }
 
     private void endPassive() {
@@ -413,6 +509,7 @@ public class RattleBalls extends UserActor {
         ExtensionCommands.playSound(parentExt, room, id, qEndSFX, location);
         ExtensionCommands.playSound(
                 parentExt, room, id, "sfx_rattleballs_rattle_balls_2", location);
+        playSoundWithChance("vo/vo_rattleballs_q_spin", 50);
         ExtensionCommands.actorAnimate(parentExt, room, id, "spell1b", 400, false);
 
         Runnable resetAnim =
@@ -445,7 +542,7 @@ public class RattleBalls extends UserActor {
         RoomHandler handler = parentExt.getRoomHandler(room.getName());
         List<Actor> affectedActors = Champion.getActorsInRadius(handler, location, 2f);
         for (Actor a : affectedActors) {
-            if (isNeitherTowerNorAlly(a)) {
+            if (isNeitherTowerNorAlly(a) && a.isNotLeaping()) {
                 JsonNode spellData = parentExt.getAttackData(avatar, "spell1");
                 double dmg = getSpellDamage(spellData, true) + Q_SPIN_ATTACK_BONUS_BASE_DMG;
                 a.addToDamageQueue(this, dmg, spellData, false);
@@ -480,9 +577,10 @@ public class RattleBalls extends UserActor {
     private void finishQAbility(boolean triggerPassive) {
         parryActive = false;
         qUses = 0;
+        if (!hasMovementCC()) canMove = true;
         if (triggerPassive) activatePassive();
         int baseQCooldown = ChampionData.getBaseAbilityCooldown(this, 1);
-        int cd = getReducedCooldown(baseQCooldown);
+        int cd = getReducedCooldown(baseQCooldown) - qTime;
         ExtensionCommands.actorAbilityResponse(parentExt, player, "q", true, cd, Q_END_GLOBAL_CD);
         Runnable enableQCasting = () -> canCast[0] = true;
         scheduleTask(enableQCasting, cd);
@@ -514,6 +612,39 @@ public class RattleBalls extends UserActor {
         return counterAttackData;
     }
 
+    private void onQDashEnd() {
+        if (qUses == 1) {
+            Runnable endCounterStance =
+                    () -> {
+                        canCast[0] = true;
+                        qJumpActive = false;
+                        parryActive = true;
+                        parryCooldown = System.currentTimeMillis();
+                        stopMoving(Q_PARRY_DURATION);
+                        ExtensionCommands.playSound(
+                                parentExt, room, id, "sfx_rattleballs_counter_stance", location);
+                        ExtensionCommands.actorAnimate(
+                                parentExt, room, id, "spell1b", Q_PARRY_DURATION, true);
+                        ExtensionCommands.createActorFX(
+                                parentExt,
+                                room,
+                                id,
+                                "rattleballs_counter_stance",
+                                Q_PARRY_DURATION,
+                                id + "_stance",
+                                true,
+                                "Bip001",
+                                true,
+                                false,
+                                team);
+                    };
+            scheduleTask(endCounterStance, qTime);
+        } else {
+            activatePassive();
+            qThrustRectangle = null;
+        }
+    }
+
     private RattleAbilityRunnable abilityRunnable(
             int ability, JsonNode spelldata, int cooldown, int gCooldown, Point2D dest) {
         return new RattleAbilityRunnable(ability, spelldata, cooldown, gCooldown, dest);
@@ -527,42 +658,7 @@ public class RattleBalls extends UserActor {
         }
 
         @Override
-        protected void spellQ() {
-            if (qUses == 1) {
-                Runnable flipDelay =
-                        () -> {
-                            canCast[0] = true;
-                            qJumpActive = false;
-                            parryActive = true;
-                            parryCooldown = System.currentTimeMillis();
-                            stopMoving(Q_PARRY_DURATION);
-                            ExtensionCommands.playSound(
-                                    parentExt,
-                                    room,
-                                    id,
-                                    "sfx_rattleballs_counter_stance",
-                                    location);
-                            ExtensionCommands.actorAnimate(
-                                    parentExt, room, id, "spell1b", Q_PARRY_DURATION, true);
-                            ExtensionCommands.createActorFX(
-                                    parentExt,
-                                    room,
-                                    id,
-                                    "rattleballs_counter_stance",
-                                    Q_PARRY_DURATION,
-                                    id + "_stance",
-                                    true,
-                                    "Bip001",
-                                    true,
-                                    false,
-                                    team);
-                        };
-                scheduleTask(flipDelay, qTime);
-            } else {
-                activatePassive();
-                qThrustRectangle = null;
-            }
-        }
+        protected void spellQ() {}
 
         @Override
         protected void spellW() {
@@ -585,13 +681,15 @@ public class RattleBalls extends UserActor {
                         team,
                         0f);
 
+                playSoundWithChance("vo/vo_rattleballs_w", 50);
+
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 for (Actor a : Champion.getActorsInRadius(handler, location, 5f)) {
                     if (isNeitherStructureNorAlly(a)) {
-                        a.handlePull(location, W_PULL_DISTANCE);
+                        a.handlePull(location, (float) W_PULL_DISTANCE, DEFAULT_KNOCKBACK_SPEED);
                     }
 
-                    if (isNeitherTowerNorAlly(a)) {
+                    if (isNeitherTowerNorAlly(a) && a.isNotLeaping()) {
                         double dmg = getSpellDamage(spellData, true);
                         Actor attacker = RattleBalls.this;
 

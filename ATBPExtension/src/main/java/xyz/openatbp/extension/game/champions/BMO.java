@@ -1,10 +1,11 @@
 package xyz.openatbp.extension.game.champions;
 
 import java.awt.geom.Line2D;
-import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -14,20 +15,27 @@ import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.game.effects.ActorState;
+import xyz.openatbp.extension.game.effects.ModifierIntent;
+import xyz.openatbp.extension.game.effects.ModifierType;
 
 public class BMO extends UserActor {
     private static final int PASSIVE_SLOW_DURATION = 2500;
-    private static final double PASSIVE_SLOW_VALUE = 0.5f;
+    private static final double PASSIVE_SLOW_PERCENT = 0.5f;
     private static final int Q_BLIND_DURATION = 2500;
     private static final float Q_OFFSET_DISTANCE_BOTTOM = 1.5f;
     private static final float Q_OFFSET_DISTANCE_TOP = 4f;
     private static final float Q_SPELL_RANGE = 6f;
     private static final int W_DURATION = 3000;
     private static final int W_RECAST_DELAY = 500;
-    private static final float W_ARMOR_VALUE = 1.2f;
-    private static final float W_SHIELDS_VALUE = 1.5f;
+    private static final float W_ARMOR_PERCENT = 0.2f;
+    private static final float W_SHIELDS_PERCENT = 0.5f;
+    public static final int W_STUN_DURATION = 1000;
     private static final int E_CAST_DELAY = 250;
     private static final int E_RANGE = 16;
+
+    private final String W_ARMOR_BUFF_ID;
+    private final String W_SHIELDS_BUFF_ID;
 
     private int passiveStacks = 0;
     private boolean wActive = false;
@@ -36,8 +44,12 @@ public class BMO extends UserActor {
     private boolean ultSlowActive = false;
     private boolean passiveFxRemoved = false;
 
+    private Map<Actor, Long> actorsWithPassiveSlow = new HashMap<>();
+
     public BMO(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        W_ARMOR_BUFF_ID = id + "_bmo_w_armor";
+        W_SHIELDS_BUFF_ID = id + "_bmo_w_shields";
     }
 
     @Override
@@ -61,8 +73,6 @@ public class BMO extends UserActor {
             this.canCast[0] = true;
             this.canCast[2] = true;
             this.wActive = false;
-            String[] statsToUpdate = {"armor", "spellResist"};
-            this.updateStatMenu(statsToUpdate);
         }
         if (wActive) {
             RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
@@ -129,19 +139,14 @@ public class BMO extends UserActor {
         }
     }
 
-    @Override
-    public double getPlayerStat(String stat) {
-        if (this.wActive) {
-            if (stat.equalsIgnoreCase("armor")) return super.getPlayerStat(stat) * W_ARMOR_VALUE;
-            else if (stat.equalsIgnoreCase("spellResist"))
-                return super.getPlayerStat(stat) * W_SHIELDS_VALUE;
-        }
-        return super.getPlayerStat(stat);
+    private void removeWBuffs() {
+        effectManager.removeAllEffectsById(W_ARMOR_BUFF_ID);
+        effectManager.removeAllEffectsById(W_SHIELDS_BUFF_ID);
     }
 
     @Override
     public boolean canAttack() {
-        return wActive ? false : super.canAttack();
+        return !wActive && super.canAttack();
     }
 
     @Override
@@ -157,23 +162,35 @@ public class BMO extends UserActor {
                 this.canCast[0] = false;
                 try {
                     this.stopMoving();
-                    Path2D trapezoid =
-                            Champion.createTrapezoid(
+                    AbilityShape qTrapezoid =
+                            AbilityShape.createTrapezoid(
                                     location,
                                     dest,
                                     Q_SPELL_RANGE,
                                     Q_OFFSET_DISTANCE_BOTTOM,
                                     Q_OFFSET_DISTANCE_TOP);
+
                     RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
-                    List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, trapezoid);
-                    if (!actorsInPolygon.isEmpty() && getHealth() > 0) {
-                        for (Actor a : actorsInPolygon) {
-                            if (isNeitherStructureNorAlly(a)) {
-                                a.addState(ActorState.BLINDED, 0d, Q_BLIND_DURATION);
+
+                    List<Actor> nearbyEnemies =
+                            Champion.getEnemyActorsInRadius(handler, team, location, 9f);
+                    if (!nearbyEnemies.isEmpty() && getHealth() > 0) {
+                        for (Actor a : nearbyEnemies) {
+                            if (isNeitherStructureNorAlly(a)
+                                    && qTrapezoid.contains(a.getLocation(), a.getCollisionRadius())
+                                    && a.isNotLeaping()) {
+                                a.getEffectManager()
+                                        .addState(
+                                                ActorState.BLINDED,
+                                                id + "_bmo_q_blind",
+                                                0d,
+                                                Q_BLIND_DURATION);
                                 if (this.passiveStacks == 3) applySlow(a);
                             }
 
-                            if (isNeitherTowerNorAlly(a)) {
+                            if (isNeitherTowerNorAlly(a)
+                                    && qTrapezoid.contains(a.getLocation(), a.getCollisionRadius())
+                                    && a.isNotLeaping()) {
                                 double damage = getSpellDamage(spellData, false);
                                 a.addToDamageQueue(this, damage, spellData, false);
                             }
@@ -183,19 +200,20 @@ public class BMO extends UserActor {
                     else addPasiveStacks();
                     String cameraFx = SkinData.getBMOQCameraFX(avatar);
                     ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
+                            parentExt,
+                            room,
+                            id,
                             cameraFx,
                             1000,
-                            this.id + "_camera",
+                            id + "_camera",
                             true,
                             "",
                             true,
                             false,
-                            this.team);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, "sfx_bmo_camera", this.location);
+                            team);
+                    ExtensionCommands.playSound(parentExt, room, id, "sfx_bmo_camera", location);
+                    playSoundWithChance("vo/vo_bmo_q", 50);
+
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
@@ -217,10 +235,24 @@ public class BMO extends UserActor {
                     this.stopMoving();
                     this.canCast[0] = false;
                     this.canCast[2] = false;
+
+                    effectManager.addEffect(
+                            W_ARMOR_BUFF_ID,
+                            "armor",
+                            W_ARMOR_PERCENT,
+                            ModifierType.MULTIPLICATIVE,
+                            ModifierIntent.BUFF,
+                            W_DURATION);
+                    effectManager.addEffect(
+                            W_SHIELDS_BUFF_ID,
+                            "spellResist",
+                            W_SHIELDS_PERCENT,
+                            ModifierType.MULTIPLICATIVE,
+                            ModifierIntent.BUFF,
+                            W_DURATION);
+
                     this.wActive = true;
                     wStartTime = System.currentTimeMillis();
-                    String[] statsToUpdate = {"armor", "spellResist"};
-                    this.updateStatMenu(statsToUpdate);
                     String pixelsAoeFx = SkinData.getBMOWPixelsFX(avatar);
                     String remoteSpinFx = SkinData.getBMOWRemoteFX(avatar);
                     ExtensionCommands.playSound(
@@ -277,8 +309,6 @@ public class BMO extends UserActor {
                     this.canCast[2] = true;
                     this.wActive = false;
                     this.wEnd(cooldown, gCooldown);
-                    String[] statsToUpdate = {"armor", "spellResist"};
-                    this.updateStatMenu(statsToUpdate);
                     int delay1 = getReducedCooldown(cooldown);
                     scheduleTask(
                             abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay1);
@@ -320,7 +350,17 @@ public class BMO extends UserActor {
     }
 
     private void applySlow(Actor a) {
-        a.addState(ActorState.SLOWED, PASSIVE_SLOW_VALUE, PASSIVE_SLOW_DURATION);
+        long lastProc = actorsWithPassiveSlow.getOrDefault(a, -1L);
+
+        if (lastProc == -1 || System.currentTimeMillis() - lastProc > PASSIVE_SLOW_DURATION) {
+            actorsWithPassiveSlow.put(a, System.currentTimeMillis());
+            a.getEffectManager()
+                    .addState(
+                            ActorState.SLOWED,
+                            id + "_bmo_passive_slow",
+                            PASSIVE_SLOW_PERCENT,
+                            PASSIVE_SLOW_DURATION);
+        }
     }
 
     private void addPasiveStacks() {
@@ -367,6 +407,7 @@ public class BMO extends UserActor {
 
     private void interrputW() {
         if (passiveStacks < 3) addPasiveStacks();
+        removeWBuffs();
         canMove = true;
         this.canCast[0] = true;
         this.canCast[2] = true;
@@ -378,15 +419,17 @@ public class BMO extends UserActor {
         ExtensionCommands.actorAnimate(this.parentExt, this.room, this.id, "run", 500, false);
         int baseCooldown = ChampionData.getBaseAbilityCooldown(this, 2);
         ExtensionCommands.actorAbilityResponse(
-                this.parentExt, this.player, "w", true, getReducedCooldown(baseCooldown), 0);
+                parentExt, player, "w", true, getReducedCooldown(baseCooldown), 0);
     }
 
     private void wEnd(int cooldown, int gCooldown) {
         canMove = true;
+        removeWBuffs();
         RoomHandler handler = parentExt.getRoomHandler(room.getName());
         for (Actor a : Champion.getActorsInRadius(handler, this.location, 4f)) {
             if (isNeitherStructureNorAlly(a)) {
-                a.addState(ActorState.STUNNED, 0d, 1000);
+                a.getEffectManager()
+                        .addState(ActorState.STUNNED, id + "_bmo_w_stun", 0d, W_STUN_DURATION);
             }
 
             if (isNeitherTowerNorAlly(a)) {
@@ -404,8 +447,9 @@ public class BMO extends UserActor {
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_pixels_aoe");
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_bmo_remote");
         ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_target_ring_4.5");
-        ExtensionCommands.playSound(
-                this.parentExt, this.room, this.id, "vo/vo_bmo_yay", this.location);
+
+        playSoundWithChance("vo/vo_bmo_yay", 50);
+
         ExtensionCommands.playSound(
                 this.parentExt, this.room, this.id, "sfx_bmo_pixels_explode", this.location);
         ExtensionCommands.createActorFX(
@@ -453,7 +497,7 @@ public class BMO extends UserActor {
             int delay = getReducedCooldown(cooldown) - E_CAST_DELAY;
             scheduleTask(enableECasting, delay);
             if (getHealth() > 0) {
-                Line2D abilityLine = Champion.getAbilityLine(location, dest, E_RANGE);
+                Line2D abilityLine = Champion.createLineTowards(location, dest, E_RANGE);
                 String ultProjectile = SkinData.getBMOEProjectileFX(avatar);
                 fireProjectile(
                         new BMOUltProjectile(
@@ -469,7 +513,7 @@ public class BMO extends UserActor {
     }
 
     public class BMOUltProjectile extends Projectile {
-        private List<Actor> victims;
+        private final List<Actor> eVictims;
         private double damageReduction = 0d;
 
         public BMOUltProjectile(
@@ -477,15 +521,15 @@ public class BMO extends UserActor {
                 UserActor owner,
                 Line2D path,
                 float speed,
-                float hitboxRadius,
+                float offsetDistance,
                 String id) {
-            super(parentExt, owner, path, speed, hitboxRadius, id);
-            this.victims = new ArrayList<>();
+            super(parentExt, owner, path, speed, offsetDistance, offsetDistance, id);
+            this.eVictims = new ArrayList<>();
         }
 
         @Override
         protected void hit(Actor victim) {
-            this.victims.add(victim);
+            this.eVictims.add(victim);
             JsonNode spellData = this.parentExt.getAttackData(BMO.this.avatar, "spell3");
             double damage = getSpellDamage(spellData, true) * (1 - damageReduction);
 
@@ -500,22 +544,8 @@ public class BMO extends UserActor {
         }
 
         @Override
-        public Actor checkPlayerCollision(RoomHandler roomHandler) {
-            float searchArea = hitbox * 2;
-            List<Actor> actorsInRadius = roomHandler.getActorsInRadius(location, searchArea);
-
-            for (Actor a : actorsInRadius) {
-                if (!this.victims.contains(a) && isNeitherTowerNorAlly(a)) {
-                    JsonNode actorData = parentExt.getActorData(a.getAvatar());
-                    double collisionRadius = actorData.get("collisionRadius").asDouble();
-
-                    if (a.getLocation().distance(location) <= hitbox + collisionRadius
-                            && isTargetable(a)) {
-                        return a;
-                    }
-                }
-            }
-            return null;
+        public boolean isTargetable(Actor a) {
+            return super.isTargetable(a) && !eVictims.contains(a);
         }
 
         public void destroy() {

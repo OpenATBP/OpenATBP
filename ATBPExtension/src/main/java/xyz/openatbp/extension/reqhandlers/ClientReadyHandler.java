@@ -1,5 +1,7 @@
 package xyz.openatbp.extension.reqhandlers;
 
+import java.util.List;
+
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -27,10 +29,26 @@ public class ClientReadyHandler extends BaseClientRequestHandler {
         if (progress == 100) {
             sender.getSession().setProperty("ready", true);
 
-            if (GameManager.playersReady(room)
-                    && (int) room.getProperty("state")
-                            == 1) { // If all players are ready, load everyone into the actual map
+            if (GameManager.playersReady(room) && (int) room.getProperty("state") == 1) {
+                // If all players are ready, load everyone into the actual map
+
+                // HANDLES BOT PROGRESS BAR
+                List<ISFSObject> botProfiles = (List<ISFSObject>) room.getProperty("botProfiles");
+
+                if (botProfiles != null) {
+                    for (ISFSObject botProfile : botProfiles) {
+                        ISFSObject botProgressBar = new SFSObject();
+                        int botId = botProfile.getInt("botId");
+                        botProgressBar.putUtfString("id", String.valueOf(botId));
+                        botProgressBar.putInt("progress", 100);
+                        botProgressBar.putBool("isReady", true);
+                        GameManager.sendAllUsers(
+                                parentExt, botProgressBar, "cmd_client_ready", room);
+                    }
+                }
+
                 try {
+
                     GameManager.initializeGame(room, parentExt); // Initializes the map for everyone
                 } catch (Exception e) { // TODO: Kick everyone out of game if this fails
                     e.printStackTrace();

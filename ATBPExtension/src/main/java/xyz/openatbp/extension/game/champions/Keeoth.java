@@ -21,34 +21,24 @@ import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.Monster;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.game.effects.ModifierIntent;
+import xyz.openatbp.extension.game.effects.ModifierType;
 
 public class Keeoth extends Monster {
 
+    public static final double KEEOTH_AD_VAMP = 35d;
+    public static final double KEEOTH_AP_VAMP = 40d;
     private int abilityCooldown;
     private boolean usingAbility;
-    private static final int KEEOTH_BUFF_DURATION = 90000;
-
-    public Keeoth(
-            ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName) {
-        super(parentExt, room, startingLocation, monsterName);
-        this.abilityCooldown = 3000;
-        this.usingAbility = false;
-    }
-
-    public Keeoth(
-            ATBPExtension parentExt, Room room, Point2D startingLocation, String monsterName) {
-        super(parentExt, room, startingLocation, monsterName);
-        this.abilityCooldown = 3000;
-        this.usingAbility = false;
-    }
+    public static final int KEEOTH_BUFF_DURATION = 60000;
 
     public Keeoth(
             ATBPExtension parentExt,
             Room room,
-            Point2D startingLocation,
-            String monsterName,
-            String id) {
-        super(parentExt, room, startingLocation, monsterName, id);
+            String id,
+            float[] startingLocation,
+            String monsterName) {
+        super(parentExt, room, id, startingLocation, monsterName);
         this.abilityCooldown = 3000;
         this.usingAbility = false;
     }
@@ -72,21 +62,49 @@ public class Keeoth extends Monster {
 
                 if (ua.getTeam() == killerTeam && ua.getHealth() > 0 && !ua.isDead()) {
                     ua.setHasKeeothBuff(true);
-                    ua.setKeeothBuffStartTime(System.currentTimeMillis());
-                    ua.addEffect("lifeSteal", 35d, KEEOTH_BUFF_DURATION, "jungle_buff_keeoth", "");
-                    ua.addEffect("spellVamp", 40d, KEEOTH_BUFF_DURATION);
+
+                    ua.getEffectManager()
+                            .addEffect(
+                                    ua.getId() + "_keeoth_buff_ad_vamp",
+                                    "lifeSteal",
+                                    KEEOTH_AD_VAMP,
+                                    ModifierType.ADDITIVE,
+                                    ModifierIntent.BUFF,
+                                    KEEOTH_BUFF_DURATION,
+                                    "jungle_buff_keeoth",
+                                    ua.getId() + "jungle_buff_keeoth",
+                                    "");
+                    ua.getEffectManager()
+                            .addEffect(
+                                    ua.getId() + "_keeoth_buff_ap_vamp",
+                                    "spellVamp",
+                                    KEEOTH_AP_VAMP,
+                                    ModifierType.ADDITIVE,
+                                    ModifierIntent.BUFF,
+                                    KEEOTH_BUFF_DURATION);
+
                     double critChange = 35d;
-                    if (ChampionData.getCustomJunkStat(ua, "junk_1_demon_blood_sword") > 0)
+                    if (ChampionData.getCustomJunkStat(ua, "junk_1_demon_blood_sword") > 0) {
                         critChange += 5d;
-                    ua.addEffect("criticalChance", critChange, KEEOTH_BUFF_DURATION);
+                    }
+
+                    ua.getEffectManager()
+                            .addEffect(
+                                    ua.getId() + "keeoth_crit",
+                                    "criticalChance",
+                                    critChange,
+                                    ModifierType.ADDITIVE,
+                                    ModifierIntent.BUFF,
+                                    KEEOTH_BUFF_DURATION);
+
                     double healthChange = (double) ua.getHealth() * 0.3d;
                     ua.heal((int) healthChange); // TODO: Maybe change?
-                    ExtensionCommands.addStatusIcon(
-                            this.parentExt,
-                            ua.getUser(),
-                            "keeoth_buff",
-                            "keeoth_buff_desc",
+
+                    Champion.handleStatusIcon(
+                            parentExt,
+                            ua,
                             "icon_buff_keeoth",
+                            "keeoth_buff_desc",
                             KEEOTH_BUFF_DURATION);
                 }
             }
@@ -172,8 +190,8 @@ public class Keeoth extends Monster {
                                                 Champion.getActorsInRadius(
                                                         handler, playerLoc, 2.5f)) {
                                             if (actor.getActorType() == ActorType.PLAYER
-                                                    || actor.getActorType()
-                                                            == ActorType.COMPANION) {
+                                                    || actor.getActorType() == ActorType.COMPANION
+                                                            && actor.isNotLeaping()) {
                                                 double dist =
                                                         actor.getLocation().distance(playerLoc);
                                                 if (dist > 1)

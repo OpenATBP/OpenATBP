@@ -16,19 +16,27 @@ import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.game.effects.ActorState;
+import xyz.openatbp.extension.game.effects.ModifierIntent;
+import xyz.openatbp.extension.game.effects.ModifierType;
 
 public class IceKing extends UserActor {
     public static final int PASSIVE_TIME = 10000;
     public static final int PASSIVE_SLOW_DURAITON = 2000;
-    public static final double PASSIVE_SLOW_VALUE = 0.25d;
+    public static final double PASSIVE_SLOW_PERCENT = 0.25d;
     public static final int PASSIVE_AS_DEBUFF_TIME = 2000;
-    public static final double PASSIVE_AS_DEBUFF_VALUE = 0.33d;
+    public static final double PASSIVE_AS_DEBUFF_PERCENT = 0.33d;
     public static final int PASSIVE_COOLDOWN = 5000;
     public static final int Q_CAST_DELAY = 250;
     public static final int Q_ROOT_DURATION = 1750;
     public static final int W_WHIRLWIND_CD = 2000;
+    public static final float W_RADIUS = 3f;
     public static final int W_DURATION = 3000;
     public static final int E_DURATION = 6000;
+    public static final float E_RADIUS = 5.5f;
+    public static final float Q_RANGE = 8f;
+    public static final double E_SPEED_PERCENT = 0.9;
+
     private boolean iceShield = false;
     private long lastAbilityUsed;
     private Actor qVictim = null;
@@ -51,20 +59,27 @@ public class IceKing extends UserActor {
     public IceKing(User u, ATBPExtension parentExt) {
         super(u, parentExt);
         this.lastAbilityUsed = System.currentTimeMillis();
+        this.hasCustomSwapFromPoly = true;
     }
 
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if (this.ultActive && this.ultLocation != null) {
+        if ((ultLocation == null || ultLocation.distance(location) > E_RADIUS)
+                && effectManager.hasEffect(id + "_iceking_e_speed")) {
+            effectManager.removeAllEffectsById(id + "_iceking_e_speed");
+        }
+
+        if (ultActive && ultLocation != null) {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            List<Actor> actorsInUlt = Champion.getActorsInRadius(handler, this.ultLocation, 5.5f);
+            List<Actor> actorsInUlt =
+                    Champion.getActorsInRadius(handler, this.ultLocation, E_RADIUS);
             boolean containsIceKing = actorsInUlt.contains(this);
             if (containsIceKing && this.bundle == AssetBundle.NORMAL) {
                 this.bundle = AssetBundle.FLIGHT;
-                if (!this.getState(ActorState.POLYMORPH)) {
-                    ExtensionCommands.swapActorAsset(
-                            this.parentExt, this.room, this.id, getFlightAssetbundle());
+
+                if (!effectManager.hasState(ActorState.POLYMORPH)) {
+                    ExtensionCommands.swapActorAsset(parentExt, room, id, getFlightAssetbundle());
                 }
                 if (System.currentTimeMillis() - this.lasWhirlwindTime >= W_WHIRLWIND_CD) {
                     this.lasWhirlwindTime = System.currentTimeMillis();
@@ -83,18 +98,26 @@ public class IceKing extends UserActor {
                 }
             } else if (!containsIceKing && this.bundle == AssetBundle.FLIGHT) {
                 this.bundle = AssetBundle.NORMAL;
-                if (!this.getState(ActorState.POLYMORPH)) {
+                if (!effectManager.hasState(ActorState.POLYMORPH)) {
                     ExtensionCommands.swapActorAsset(
                             this.parentExt, this.room, this.id, getSkinAssetBundle());
                 }
             }
 
+            if (ultLocation != null
+                    && ultLocation.distance(location) <= E_RADIUS
+                    && !effectManager.hasEffect(id + "_iceking_e_speed")) {
+                effectManager.addEffect(
+                        id + "_iceking_e_speed",
+                        "speed",
+                        E_SPEED_PERCENT,
+                        ModifierType.MULTIPLICATIVE,
+                        ModifierIntent.BUFF,
+                        E_DURATION);
+            }
             if (!actorsInUlt.isEmpty()) {
                 for (Actor a : actorsInUlt) {
-                    if (a.equals(this)) {
-                        this.addEffect("speed", this.getStat("speed") * 0.9, 150);
-                        this.updateStatMenu("speed");
-                    } else if (isNeitherTowerNorAlly(a)) {
+                    if (isNeitherTowerNorAlly(a) && a.isNotLeaping()) {
                         JsonNode spellData = this.parentExt.getAttackData("iceking", "spell3");
                         double dmg = getSpellDamage(spellData, false) / 10d;
                         a.addToDamageQueue(this, dmg, spellData, true);
@@ -112,7 +135,6 @@ public class IceKing extends UserActor {
             this.ultActive = false;
             this.bundle = AssetBundle.NORMAL;
             ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
-            this.updateStatMenu("speed");
         }
 
         if (System.currentTimeMillis() - lastAbilityUsed > PASSIVE_TIME) {
@@ -146,7 +168,7 @@ public class IceKing extends UserActor {
 
         if (this.wLocation != null) {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            for (Actor a : Champion.getActorsInRadius(handler, this.wLocation, 3f)) {
+            for (Actor a : Champion.getActorsInRadius(handler, this.wLocation, W_RADIUS)) {
                 if (isNeitherTowerNorAlly(a)) {
                     if (this.lastWHit != null && this.lastWHit.containsKey(a.getId())) {
                         if (System.currentTimeMillis() >= this.lastWHit.get(a.getId()) + 500) {
@@ -204,7 +226,7 @@ public class IceKing extends UserActor {
     }
 
     @Override
-    public void handleSwapFromPoly() {
+    public void customSwapFromPoly() {
         String bundle =
                 this.bundle == AssetBundle.FLIGHT && this.ultActive
                         ? getFlightAssetbundle()
@@ -218,11 +240,21 @@ public class IceKing extends UserActor {
                 && attackData.get("attackName").asText().contains("basic_attack")
                 && this.iceShield) {
             damage /= 2;
-            a.addState(ActorState.SLOWED, PASSIVE_SLOW_VALUE, PASSIVE_SLOW_DURAITON);
-            a.addEffect(
-                    "attackSpeed",
-                    a.getStat("attackSpeed") * PASSIVE_AS_DEBUFF_VALUE,
-                    PASSIVE_AS_DEBUFF_TIME);
+            a.getEffectManager()
+                    .addState(
+                            ActorState.SLOWED,
+                            id + "ice_king_passive_slow",
+                            PASSIVE_SLOW_PERCENT,
+                            PASSIVE_SLOW_DURAITON);
+            a.getEffectManager()
+                    .addEffect(
+                            a.getId() + "_iceking_passive_slow",
+                            "attackSpeed",
+                            PASSIVE_AS_DEBUFF_PERCENT,
+                            ModifierType.MULTIPLICATIVE,
+                            ModifierIntent.DEBUFF,
+                            PASSIVE_AS_DEBUFF_TIME);
+
             this.iceShield = false;
             this.lastAbilityUsed = System.currentTimeMillis() + 5000;
             Runnable handlePassiveCooldown =
@@ -249,9 +281,17 @@ public class IceKing extends UserActor {
             case 1:
                 stopMoving();
                 this.canCast[0] = false;
-                String freezeVO = SkinData.getIceKingQVO(avatar);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, freezeVO, this.location);
+
+                int bound = 1;
+                String[] qVOS = new String[2];
+                qVOS[0] = SkinData.getIceKingQVO(avatar);
+                if (!avatar.contains("queen")) {
+                    qVOS[1] = "vo/vo_ice_king_q";
+                    bound++;
+                }
+                playSoundWithChance(getRandomVoiceLine(qVOS), 50);
+                ExtensionCommands.playSound(parentExt, room, id, "sfx_ice_king_q", location);
+
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -272,8 +312,9 @@ public class IceKing extends UserActor {
                     String hailStormVO = SkinData.getIceKingWVO(avatar);
                     ExtensionCommands.playSound(
                             this.parentExt, this.room, "", "sfx_ice_king_hailstorm", dest);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, hailStormVO, this.location);
+
+                    playSoundWithChance(hailStormVO, 50);
+
                     ExtensionCommands.createActorFX(
                             this.parentExt,
                             this.room,
@@ -409,9 +450,9 @@ public class IceKing extends UserActor {
                 UserActor owner,
                 Line2D path,
                 float speed,
-                float hitboxRadius,
+                float offsetDistance,
                 String id) {
-            super(parentExt, owner, path, speed, hitboxRadius, id);
+            super(parentExt, owner, path, speed, offsetDistance, offsetDistance, id);
         }
 
         @Override
@@ -421,7 +462,18 @@ public class IceKing extends UserActor {
             qHitTime = System.currentTimeMillis() + 1750;
             victim.addToDamageQueue(
                     IceKing.this, getSpellDamage(spellData, true), spellData, false);
-            victim.addState(ActorState.ROOTED, 0d, Q_ROOT_DURATION, "iceKing_snare", "");
+
+            String id = victim.getId() + "_iceKing_freeze";
+            victim.getEffectManager()
+                    .addState(
+                            ActorState.ROOTED,
+                            id + "_ice_king_q_root",
+                            0,
+                            "iceKing_snare",
+                            Q_ROOT_DURATION,
+                            id,
+                            "");
+
             ExtensionCommands.playSound(
                     this.parentExt,
                     victim.getRoom(),
@@ -450,7 +502,7 @@ public class IceKing extends UserActor {
             int delay = getReducedCooldown(cooldown) - Q_CAST_DELAY;
             scheduleTask(enableQCasting, delay);
             if (getHealth() > 0) {
-                Line2D abilityLine = Champion.getAbilityLine(location, dest, 7.5f);
+                Line2D abilityLine = Champion.createLineTowards(location, dest, Q_RANGE);
                 fireProjectile(
                         new IceKingProjectile(
                                 parentExt,
@@ -461,7 +513,7 @@ public class IceKing extends UserActor {
                                 "projectile_iceking_deepfreeze"),
                         location,
                         dest,
-                        7.5f);
+                        Q_RANGE);
             }
         }
 

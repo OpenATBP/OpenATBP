@@ -1,6 +1,5 @@
 package xyz.openatbp.extension.game.actors;
 
-import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -10,23 +9,27 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.Room;
 
 import xyz.openatbp.extension.*;
-import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
 import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.MovementState;
+import xyz.openatbp.extension.game.effects.ActorState;
 
 public class Monster extends Actor {
 
-    enum AggroState {
+    public static final float JG_MONSTER_AGGRO_RANGE = 10f;
+    public static final double HP_REGEN_PERCENT_PER_TICK = 0.006;
+
+    public enum AggroState {
         PASSIVE,
         ATTACKED
     }
 
-    enum MonsterType {
+    public enum MonsterType {
         SMALL,
         BIG
     }
 
-    enum BuffType {
+    public enum BuffType {
         GNOME,
         WOLF,
         BEAR,
@@ -38,11 +41,13 @@ public class Monster extends Actor {
     private final Point2D startingLocation;
     private final MonsterType type;
     private static boolean movementDebug = false;
-    private boolean attackRangeOverride = false;
-    private boolean headingBack = false;
 
     public Monster(
-            ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName) {
+            ATBPExtension parentExt,
+            Room room,
+            String id,
+            float[] startingLocation,
+            String monsterName) {
         this.startingLocation = new Point2D.Float(startingLocation[0], startingLocation[1]);
         this.type = MonsterType.BIG;
         this.attackCooldown = 0;
@@ -52,46 +57,25 @@ public class Monster extends Actor {
         this.team = 2;
         this.avatar = monsterName;
         this.stats = this.initializeStats();
-        this.id = monsterName;
+        this.id = id;
         this.maxHealth = this.stats.get("health");
         this.currentHealth = this.maxHealth;
         this.actorType = ActorType.MONSTER;
         this.displayName = parentExt.getDisplayName(monsterName);
-        this.xpWorth = this.parentExt.getActorXP(this.id);
+        this.xpWorth = this.parentExt.getActorXP(avatar);
         Properties props = parentExt.getConfigProperties();
         movementDebug = Boolean.parseBoolean(props.getProperty("movementDebug", "false"));
         if (movementDebug)
-            ExtensionCommands.createActor(
-                    parentExt, room, id + "_test", "creep", this.location, 0f, 2);
-        this.updateMaxHealth();
-    }
-
-    public Monster(
-            ATBPExtension parentExt, Room room, Point2D startingLocation, String monsterName) {
-        this.startingLocation = startingLocation;
-        this.type = MonsterType.SMALL;
-        this.attackCooldown = 0;
-        this.parentExt = parentExt;
-        this.room = room;
-        this.location = this.startingLocation;
-        this.team = 2;
-        this.avatar = monsterName;
-        this.stats = this.initializeStats();
-        this.id = monsterName;
-        this.maxHealth = this.stats.get("health");
-        this.currentHealth = this.maxHealth;
-        this.actorType = ActorType.MONSTER;
-        this.xpWorth = this.parentExt.getActorXP(this.id);
-        this.displayName = parentExt.getDisplayName(monsterName);
-        this.updateMaxHealth();
+            ExtensionCommands.createActor(parentExt, room, id + "_test", "creep", location, 0f, 2);
+        updateMaxHealth();
     }
 
     public Monster(
             ATBPExtension parentExt,
             Room room,
+            String id,
             Point2D startingLocation,
-            String monsterName,
-            String id) {
+            String monsterName) {
         this.startingLocation = startingLocation;
         this.type = MonsterType.SMALL;
         this.attackCooldown = 0;
@@ -105,19 +89,26 @@ public class Monster extends Actor {
         this.maxHealth = this.stats.get("health");
         this.currentHealth = this.maxHealth;
         this.actorType = ActorType.MONSTER;
-        this.xpWorth = this.parentExt.getActorXP(this.avatar);
+        this.xpWorth = this.parentExt.getActorXP(avatar);
         this.displayName = parentExt.getDisplayName(monsterName);
         this.updateMaxHealth();
     }
 
+    public void setAggroState(AggroState state) {
+        this.state = state;
+    }
+
     @Override
-    public boolean damaged(Actor a, int damage, JsonNode attackData) { // Runs when taking damage
+    public boolean damaged(Actor a, int damage, JsonNode attackData) {
+        // Runs when taking damage
         try {
             if (this.dead) return true;
-            if (Champion.getUserActorsInRadius(
-                                    parentExt.getRoomHandler(room.getName()), location, 10f)
-                            .isEmpty()
-                    && state == AggroState.PASSIVE) return false;
+            RoomHandler rh = parentExt.getRoomHandler(room.getName());
+            List<Actor> enemies =
+                    Champion.getEnemyActorsInRadius(rh, team, location, JG_MONSTER_AGGRO_RANGE);
+            enemies.removeIf(e -> !(e instanceof UserActor || e instanceof Bot));
+
+            if (enemies.isEmpty() && state == AggroState.PASSIVE) return false;
             if (a.getActorType() == ActorType.PLAYER) {
                 UserActor ua = (UserActor) a;
                 if (ChampionData.getJunkLevel(ua, "junk_1_demon_blood_sword") > 0) {
@@ -128,33 +119,34 @@ public class Monster extends Actor {
             }
             AttackType attackType = this.getAttackType(attackData);
             int newDamage = this.getMitigatedDamage(damage, attackType, a);
-            if (a.getActorType() == ActorType.PLAYER)
-                this.addDamageGameStat((UserActor) a, newDamage, attackType);
+            if (a instanceof UserActor || a instanceof Bot) {
+                a.addDamageGameStat(newDamage, attackType);
+            }
             boolean returnVal = super.damaged(a, newDamage, attackData);
-            if (!this.headingBack && isProperActor(a)) { // attacks the nearest attacker
+            if (attackerInCamp(a) && isProperActor(a)) {
+                // attacks the nearest attacker
                 state = AggroState.ATTACKED;
-                if (!this.getState(ActorState.CHARMED) && this.target == null
-                        || a.getLocation().distance(this.getLocation())
-                                < this.target.getLocation().distance(this.location)) {
-                    this.target = a;
-                }
-                if (this.target != null && !this.withinRange(this.target)) {
-                    this.moveTowardsActor();
-                }
 
-                if (target != null && target.getActorType() == ActorType.PLAYER)
-                    ExtensionCommands.setTarget(
-                            parentExt, ((UserActor) target).getUser(), this.id, target.getId());
-                if (this.type
-                        == MonsterType
-                                .SMALL) { // Gets all mini monsters like gnomes and owls to all
+                Actor closest = getClosestActor(enemies);
+                if (closest != null) target = closest;
+
+                if (charmer != null && charmer.getHealth() <= 0) target = charmer;
+
+                if (this.type == MonsterType.SMALL && target != null) {
+                    // Gets all mini monsters like gnomes and owls to all
                     // target player when
                     // one is hit
-                    for (Monster m :
-                            parentExt
-                                    .getRoomHandler(this.room.getName())
-                                    .getCampMonsters(this.id)) {
-                        m.setAggroState(AggroState.ATTACKED, a);
+                    List<Monster> campMonsters = rh.getCampMonsters();
+
+                    if (id.contains("owl")) {
+                        campMonsters.removeIf(m -> !m.getId().contains("owl"));
+                    } else if (id.contains("gnome")) {
+                        campMonsters.removeIf(m -> !m.getId().contains("gnome"));
+                    }
+
+                    for (Monster m : campMonsters) {
+                        m.setAggroState(AggroState.ATTACKED);
+                        m.setTarget(target);
                     }
                 }
             }
@@ -165,17 +157,27 @@ public class Monster extends Actor {
         }
     }
 
-    @Override
-    public void handleCharm(UserActor charmer, int duration) {
-        this.addState(ActorState.CHARMED, 0d, duration);
-        if (charmer != null) {
-            this.target = charmer;
-            this.charmer = charmer;
+    private boolean attackerInCamp(Actor a) {
+        if (a == null) return false;
+        if (a.getLocation() == null) return false;
+        return a.getLocation().distance(startingLocation) <= JG_MONSTER_AGGRO_RANGE;
+    }
+
+    private Actor getClosestActor(List<Actor> actors) {
+        Actor closest = null;
+        double closestDistance = Double.MAX_VALUE;
+        for (Actor a : actors) {
+            double distance = location.distance(a.getLocation());
+            if (distance < closestDistance) {
+                closest = a;
+                closestDistance = distance;
+            }
         }
+        return closest;
     }
 
     public void updateMaxHealth() {
-        int averagePLevel = parentExt.getRoomHandler(this.room.getName()).getAveragePlayerLevel();
+        int averagePLevel = parentExt.getRoomHandler(room.getName()).getAverageChampionLevel();
         if (averagePLevel != level) {
             int levelDiff = averagePLevel - level;
             this.maxHealth += parentExt.getHealthScaling(this.avatar) * levelDiff;
@@ -192,46 +194,15 @@ public class Monster extends Actor {
                 && a.getActorType() != ActorType.MONSTER;
     }
 
-    public void setAggroState(AggroState state, Actor a) {
-        if (this.state == AggroState.ATTACKED && state == AggroState.PASSIVE) {
-            double closestDistance = 1000;
-            UserActor closestPlayer = null;
-            for (UserActor ua : parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
-                if (ua.getLocation().distance(this.location) < closestDistance) {
-                    closestPlayer = ua;
-                    closestDistance = ua.getLocation().distance(this.location);
-                }
-            }
-            if (closestDistance <= 10) {
-                this.target = closestPlayer;
-            }
-        } else {
-            this.state = state;
-            if (state == AggroState.ATTACKED) this.target = a;
-        }
-    }
-
     @Override
     public void handleKill(Actor a, JsonNode attackData) {}
 
     @Override
-    public void knockback(Point2D source, float distance) {
-        super.knockback(source, distance);
-        this.attackRangeOverride = true;
-    }
-
-    @Override
-    public void handlePull(Point2D source, double pullDistance) {
-        super.handlePull(source, pullDistance);
-        this.attackRangeOverride = true;
-    }
-
-    @Override
     public void attack(Actor a) { // TODO: Almost identical to minions - maybe move to Actor class?
         // Called when it is attacking a player
-        this.stopMoving();
-        this.canMove = false;
         if (this.attackCooldown == 0) {
+            this.stopMoving();
+            this.canMove = false;
             this.attackCooldown = this.getPlayerStat("attackSpeed");
             int attackDamage = (int) this.getPlayerStat("attackDamage");
             ExtensionCommands.attackActor(
@@ -282,20 +253,26 @@ public class Monster extends Actor {
 
     @Override
     public void setTarget(Actor a) {
-        if (this.state == AggroState.PASSIVE) this.setAggroState(AggroState.ATTACKED, a);
         this.target = a;
-        this.movementLine = new Line2D.Float(this.location, a.getLocation());
-        this.timeTraveled = 0f;
-        this.moveTowardsActor();
     }
 
     @Override
     public void die(Actor a) { // Called when monster dies
-        Console.debugLog(this.id + " has died! " + this.dead);
-        if (!this.dead) { // No double deaths
-            this.dead = true;
-            if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
-            this.currentHealth = -1;
+        if (!this.dead) {
+            Console.debugLog(this.id + " has died! ");
+            // No double deaths
+            dead = true;
+
+            if (movementState != MovementState.KNOCKBACK && movementState != MovementState.PULLED) {
+                stopMoving();
+            }
+
+            if (a instanceof Bot) {
+                RoomHandler rh = parentExt.getRoomHandler(room.getName());
+                rh.addScore(a, a.getTeam(), this.xpWorth);
+            }
+
+            setHealth(0, (int) this.maxHealth);
             RoomHandler roomHandler = parentExt.getRoomHandler(this.room.getName());
             int scoreValue = parentExt.getActorStats(this.avatar).get("valueScore").asInt();
             if (a.getActorType() == ActorType.PLAYER
@@ -322,8 +299,7 @@ public class Monster extends Actor {
                 if (ua != null) {
                     ua.addGameStat("jungleMobs", 1);
                     roomHandler.addScore(ua, a.getTeam(), scoreValue);
-                    // roomHandler.handleXPShare(ua,this.parentExt.getActorXP(this.id));
-                    ExtensionCommands.knockOutActor(parentExt, this.room, this.id, ua.getId(), 45);
+                    ExtensionCommands.knockOutActor(parentExt, room, id, ua.getId(), 45);
                     ExtensionCommands.playSound(
                             this.parentExt,
                             ua.getUser(),
@@ -332,87 +308,82 @@ public class Monster extends Actor {
                             this.location);
                 }
             } else {
-                ExtensionCommands.knockOutActor(parentExt, this.room, this.id, a.getId(), 45);
+                ExtensionCommands.knockOutActor(parentExt, room, id, a.getId(), 45);
             }
-            ExtensionCommands.destroyActor(parentExt, this.room, this.id);
+            ExtensionCommands.destroyActor(parentExt, room, id);
             roomHandler.handleSpawnDeath(this);
         }
     }
 
     @Override
     public void update(int msRan) {
-        this.handleDamageQueue();
-        this.handleActiveEffects();
+        effectManager.handleEffectsUpdate();
+        handleDamageQueue();
+        handleMovementUpdate();
+        handleCharmMovement();
+
         if (this.dead) return;
-        if (this.target != null && (this.target.getState(ActorState.INVISIBLE))) {
-            this.state = AggroState.PASSIVE;
-            this.moveWithCollision(this.startingLocation);
-            this.target = null;
-        }
-        if (this.headingBack && this.location.distance(startingLocation) <= 1f) {
-            this.headingBack = false;
-        }
-        if (this.getState(ActorState.CHARMED) && this.charmer != null) {
-            moveTowardsCharmer(charmer);
+
+        if (this.target != null && (target.getEffectManager().hasState(ActorState.INVISIBLE))) {
+            state = AggroState.PASSIVE;
+            startMoveTo(startingLocation, false);
+            target = null;
         }
 
-        if (msRan % 1000 * 60
-                == 0) { // Every second it checks average player level and scales accordingly
-            this.updateMaxHealth();
+        if (msRan % 1000 == 0) {
+            // Every second it checks average player level and scales accordingly
+            updateMaxHealth();
         }
-        if (this.movementLine != null)
-            this.location =
-                    this.getRelativePoint(); // Sets location variable to its actual location
-        // using *math*
-        else this.movementLine = new Line2D.Float(this.location, this.location);
-        if (this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01d)
-            this.timeTraveled += 0.1f;
-        this.handlePathing();
-        if (this.target != null && this.target.getHealth() <= 0)
-            this.setAggroState(AggroState.PASSIVE, null);
-        if (movementDebug && this.type == MonsterType.BIG)
+
+        if (target != null && target.getHealth() <= 0) {
+            state = AggroState.PASSIVE;
+            startMoveTo(startingLocation, false);
+            target = null;
+        }
+
+        if (movementDebug && type == MonsterType.BIG) {
             ExtensionCommands.moveActor(
-                    parentExt, room, this.id + "_test", this.location, this.location, 5f, false);
-        if (this.state == AggroState.PASSIVE) {
-            if (this.currentHealth < this.maxHealth) {
-                int value = (int) (this.getMaxHealth() * 0.006);
-                this.changeHealth(value);
+                    parentExt, room, id + "_test", location, location, 5f, false);
+        }
+
+        if (state == AggroState.PASSIVE) {
+            if (currentHealth < maxHealth) {
+                int value = (int) (getMaxHealth() * HP_REGEN_PERCENT_PER_TICK);
+                changeHealth(value);
             }
-            if (this.isStopped() && this.location.distance(this.startingLocation) > 0.1d) {
-                this.move(this.startingLocation);
+
+            if (!isMoving && location.distance(startingLocation) > 0.1d) {
+                startMoveTo(startingLocation, false);
             }
-        } else { // Monster is pissed!!
-            if ((this.location.distance(this.startingLocation) >= 10 && !this.attackRangeOverride)
-                    || (this.target != null && this.target.getHealth() <= 0)) {
-                this.state = AggroState.PASSIVE; // Far from camp, heading back
-                this.moveWithCollision(this.startingLocation);
-                this.target = null;
-                this.headingBack = true;
-            } else if (this.target != null) { // Chasing player
-                if (this.attackRangeOverride) this.attackRangeOverride = false;
-                if (this.withinRange(this.target) && this.canAttack()) {
-                    this.attack(this.target);
-                } else if (!this.withinRange(this.target) && this.canMove()) {
-                    this.moveTowardsActor();
-                } else if (this.withinRange(this.target)
-                        && !this.states.get(ActorState.FEARED)
-                        && !this.states.get(ActorState.CHARMED)) {
-                    if (this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f)
-                        this.stopMoving();
+
+        } else {
+            // Monster is pissed!!
+            if ((location.distance(startingLocation) >= 10)
+                    || (target != null && target.getHealth() <= 0)) {
+                // Far from camp, heading back
+                state = AggroState.PASSIVE;
+                startMoveTo(startingLocation, false);
+                target = null;
+
+            } else if (target != null) {
+                // Chasing player
+                if (withinRange(target) && canAttack()) {
+                    attack(target);
+
+                } else if (!withinRange(target) && canMove()) {
+                    moveTowardsActor();
                 }
             }
         }
-        if (this.attackCooldown > 0) this.reduceAttackCooldown();
+        if (attackCooldown > 0) this.reduceAttackCooldown();
+        if (attackCooldown < 0) attackCooldown = 0;
     }
 
     @Override
     public boolean canMove() {
-        for (ActorState s : this.states.keySet()) {
-            if (s == ActorState.ROOTED
-                    || s == ActorState.STUNNED
-                    || s == ActorState.FEARED
-                    || s == ActorState.AIRBORNE) {
-                if (this.states.get(s)) return false;
+        for (ActorState s : effectManager.getStates().keySet()) {
+            if (s == ActorState.ROOTED || s == ActorState.STUNNED || s == ActorState.FEARED) {
+                if (effectManager.hasState(s)) return false;
             }
         }
         return this.canMove;
@@ -423,52 +394,8 @@ public class Monster extends Actor {
         return a.getLocation().distance(this.location) <= this.getPlayerStat("attackRange");
     }
 
-    public Point2D getRelativePoint() { // Gets player's current location based on time
-        if (this.movementLine == null) return this.location;
-        if (this.timeTraveled == 0
-                && this.movementLine.getP1().distance(this.movementLine.getP2()) > 0.01f)
-            this.timeTraveled += 0.1f; // Prevents any stagnation in movement
-        Point2D rPoint = new Point2D.Float();
-        Point2D destination = movementLine.getP2();
-        float x2 = (float) destination.getX();
-        float y2 = (float) destination.getY();
-        float x1 = (float) movementLine.getX1();
-        float y1 = (float) movementLine.getY1();
-        Line2D movementLine = new Line2D.Double(x1, y1, x2, y2);
-        double dist = movementLine.getP1().distance(movementLine.getP2());
-        double time = dist / (float) this.getPlayerStat("speed");
-        double currentTime = this.timeTraveled;
-        if (currentTime > time) currentTime = time;
-        double currentDist = (float) this.getPlayerStat("speed") * currentTime;
-        float x = (float) (x1 + (currentDist / dist) * (x2 - x1));
-        float y = (float) (y1 + (currentDist / dist) * (y2 - y1));
-        rPoint.setLocation(x, y);
-        if (dist != 0) return rPoint;
-        else return movementLine.getP1();
-    }
-
-    public void
-            moveTowardsActor() { // Moves towards a specific point. TODO: Have the path stop based
-        // on
-        // collision radius
-        if (!this.canMove()) return;
-        if (this.states.get(ActorState.FEARED)) return;
-        if (this.movementLine == null) {
-            this.moveWithCollision(this.target.getLocation());
-        }
-        if (this.path == null) {
-            if (this.target != null
-                    && this.movementLine.getP2().distance(this.target.getLocation()) > 0.1f) {
-                this.moveWithCollision(this.target.getLocation());
-            }
-        } else {
-            if (this.target != null
-                    && this.path.size() - this.pathIndex < 3
-                    && this.path.get(this.path.size() - 1).distance(this.target.getLocation())
-                            > 0.1f) {
-                this.moveWithCollision(this.target.getLocation());
-            }
-        }
+    public void moveTowardsActor() {
+        if (canMove()) startMoveTo(target.getLocation(), false);
     }
 
     public BuffType getBuffType() {

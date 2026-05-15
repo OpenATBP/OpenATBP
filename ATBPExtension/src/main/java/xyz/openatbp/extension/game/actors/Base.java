@@ -9,8 +9,9 @@ import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 
 import xyz.openatbp.extension.*;
-import xyz.openatbp.extension.game.ActorState;
 import xyz.openatbp.extension.game.ActorType;
+import xyz.openatbp.extension.game.RoomGroup;
+import xyz.openatbp.extension.game.effects.ActorState;
 
 public class Base extends Actor {
     private boolean unlocked = false;
@@ -29,10 +30,9 @@ public class Base extends Actor {
         this.actorType = ActorType.BASE;
         this.room = room;
         this.stats = this.initializeStats();
-        ExtensionCommands.updateActorState(parentExt, room, this.id, ActorState.INVINCIBLE, true);
         ExtensionCommands.updateActorState(parentExt, room, this.id, ActorState.IMMUNITY, true);
 
-        if (room.getGroupId().equals("Tutorial")) {
+        if (room.getGroupId().equals(RoomGroup.TUTORIAL.name())) {
             this.currentHealth = 450;
             this.maxHealth = 450;
         }
@@ -102,7 +102,6 @@ public class Base extends Actor {
 
     public void unlock() {
         unlocked = true;
-        ExtensionCommands.updateActorState(parentExt, room, this.id, ActorState.INVINCIBLE, false);
         ExtensionCommands.updateActorState(parentExt, room, this.id, ActorState.IMMUNITY, false);
     }
 

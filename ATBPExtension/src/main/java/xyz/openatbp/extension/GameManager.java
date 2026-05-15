@@ -1,5 +1,7 @@
 package xyz.openatbp.extension;
 
+import static xyz.openatbp.extension.TutorialRoomHandler.TUTORIAL_COINS;
+
 import java.awt.geom.Point2D;
 import java.util.*;
 
@@ -11,12 +13,12 @@ import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
-import com.smartfoxserver.v2.entities.variables.RoomVariable;
-import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
-import com.smartfoxserver.v2.entities.variables.SFSUserVariable;
-import com.smartfoxserver.v2.entities.variables.UserVariable;
+import com.smartfoxserver.v2.entities.variables.*;
 import com.smartfoxserver.v2.exceptions.SFSVariableException;
 
+import xyz.openatbp.extension.game.GameMap;
+import xyz.openatbp.extension.game.RoomGroup;
+import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
 
 public class GameManager {
@@ -74,21 +76,21 @@ public class GameManager {
         }
     }
 
+    public static String getMapAssetBundleName(String groupID) {
+        GameMap gameMap = getMap(getRoomGroupEnum(groupID));
+        if (gameMap == GameMap.CANDY_STREETS) return "AT_1L_Arena";
+        else return "AT_2L_Arena";
+    }
+
     public static void loadPlayers(
             Room room, ATBPExtension parentExt) { // Loads the map for everyone
         String groupID = room.getGroupId();
         for (User u : room.getUserList()) {
             ISFSObject data = new SFSObject();
-            if (groupID.equals("Practice")
-                    || groupID.equals("Tutorial")
-                    || groupID.equals("ARAM")
-                    || (room.getMaxUsers() <= 4
-                            && !room.getName().contains("1p")
-                            && !(room.getMaxUsers() == 1 && room.getName().contains("custom")))) {
-                data.putUtfString("set", "AT_1L_Arena");
-            } else {
-                data.putUtfString("set", "AT_2L_Arena");
-            }
+
+            String s1 = getMapAssetBundleName(groupID);
+            data.putUtfString("set", s1);
+
             int maxUsers = room.getMaxUsers();
             int userSize = room.getUserList().size();
             data.putUtfString("soundtrack", "music_main1");
@@ -106,6 +108,39 @@ public class GameManager {
             if (u.getProperty("joined") != null && (boolean) u.getProperty("joined")) num++;
         }
         return num == gameSize;
+    }
+
+    public static GameMap getMap(RoomGroup roomGroup) {
+        switch (roomGroup) {
+            case RANKED:
+            case PVB:
+            case CUSTOM_BATTLE_LAB:
+                return GameMap.BATTLE_LAB;
+            default:
+                return GameMap.CANDY_STREETS;
+        }
+    }
+
+    public static RoomGroup getRoomGroupEnum(String roomGroupID) {
+        switch (roomGroupID) {
+            case "CUSTOM_BATTLE_LAB":
+                return RoomGroup.CUSTOM_BATTLE_LAB;
+
+            case "CUSTOM_CANDY_STREETS":
+                return RoomGroup.CUSTOM_CANDY_STREETS;
+
+            case "PVB":
+                return RoomGroup.PVB;
+
+            case "PRACTICE":
+                return RoomGroup.PRACTICE;
+
+            case "TUTORIAL":
+                return RoomGroup.TUTORIAL;
+
+            default:
+                return RoomGroup.RANKED;
+        }
     }
 
     public static boolean playersReady(Room room) { // Checks if all clients are ready
@@ -127,78 +162,107 @@ public class GameManager {
         }
     }
 
-    public static void initializeGame(Room room, ATBPExtension parentExt)
+    private static void initializePlayer(
+            ATBPExtension parentExt,
+            User u,
+            Room room,
+            ISFSObject playerInfo,
+            int spawnNum,
+            boolean createActor)
             throws SFSVariableException {
-        room.setProperty("state", 2);
-        int blueNum = 0;
-        int purpleNum = 0;
-        initializeMap(room, parentExt);
-        for (User u : room.getUserList()) {
-            ISFSObject playerInfo = u.getVariable("player").getSFSObjectValue();
-            int team = playerInfo.getInt("team");
-            float px = 0f;
-            float pz = 0f;
-            if (team == 0) {
-                if (room.getGroupId().equals("Practice")
-                        || room.getGroupId().equals("Tutorial")
-                        || room.getGroupId().equals("ARAM")) {
-                    px = (float) MapData.L1_PURPLE_SPAWNS[purpleNum].getX();
-                    pz = (float) MapData.L1_PURPLE_SPAWNS[purpleNum].getY();
-                } else {
-                    px = (float) MapData.L2_PURPLE_SPAWNS[purpleNum].getX();
-                    pz = (float) MapData.L2_PURPLE_SPAWNS[purpleNum].getY();
-                }
-                purpleNum++;
+
+        GameMap gameMap = getMap(getRoomGroupEnum(room.getGroupId()));
+
+        boolean practiceMap = gameMap == GameMap.CANDY_STREETS;
+        int team = playerInfo.getInt("team");
+
+        float px = 0f;
+        float pz = 0f;
+        if (team == 0) {
+            if (practiceMap) {
+                px = (float) MapData.L1_PURPLE_SPAWNS[spawnNum].getX();
+                pz = (float) MapData.L1_PURPLE_SPAWNS[spawnNum].getY();
+            } else {
+                px = (float) MapData.L2_PURPLE_SPAWNS[spawnNum].getX();
+                pz = (float) MapData.L2_PURPLE_SPAWNS[spawnNum].getY();
             }
-            if (team == 1) {
-                if (room.getGroupId().equals("Practice")
-                        || room.getGroupId().equals("Tutorial")
-                        || room.getGroupId().equals("ARAM")) {
-                    px = (float) MapData.L1_PURPLE_SPAWNS[blueNum].getX() * -1;
-                    pz = (float) MapData.L1_PURPLE_SPAWNS[blueNum].getY();
-                } else {
-                    px = (float) MapData.L2_PURPLE_SPAWNS[blueNum].getX() * -1;
-                    pz = (float) MapData.L2_PURPLE_SPAWNS[blueNum].getY();
-                }
-                blueNum++;
+        }
+
+        if (team == 1) {
+            if (practiceMap) {
+                px = (float) MapData.L1_PURPLE_SPAWNS[spawnNum].getX() * -1;
+                pz = (float) MapData.L1_PURPLE_SPAWNS[spawnNum].getY();
+            } else {
+                px = (float) MapData.L2_PURPLE_SPAWNS[spawnNum].getX() * -1;
+                pz = (float) MapData.L2_PURPLE_SPAWNS[spawnNum].getY();
             }
+        }
+        if (createActor) {
             String id = String.valueOf(u.getId());
             String actor = playerInfo.getUtfString("avatar");
             Point2D location = new Point2D.Float(px, pz);
             ExtensionCommands.createActor(parentExt, room, id, actor, location, 0f, team);
-
-            ISFSObject updateData = new SFSObject();
-            updateData.putUtfString("id", String.valueOf(u.getId()));
-            int champMaxHealth =
-                    parentExt
-                            .getActorStats(playerInfo.getUtfString("avatar"))
-                            .get("health")
-                            .asInt();
-            updateData.putInt("currentHealth", champMaxHealth);
-            updateData.putInt("maxHealth", champMaxHealth);
-            updateData.putDouble("pHealth", 1);
-            updateData.putInt("xp", 0);
-            updateData.putDouble("pLevel", 0);
-            updateData.putInt("level", 1);
-            updateData.putInt("availableSpellPoints", 1);
-            updateData.putLong("timeSinceBasicAttack", 0);
-            // SP_CATEGORY 1-5 TBD
-            updateData.putInt("sp_category1", 0);
-            updateData.putInt("sp_category2", 0);
-            updateData.putInt("sp_category3", 0);
-            updateData.putInt("sp_category4", 0);
-            updateData.putInt("sp_category5", 0);
-            updateData.putInt("deaths", 0);
-            updateData.putInt("assists", 0);
-            JsonNode actorStats = parentExt.getActorStats(playerInfo.getUtfString("avatar"));
-            for (Iterator<String> it = actorStats.fieldNames(); it.hasNext(); ) {
-                String k = it.next();
-                updateData.putDouble(k, actorStats.get(k).asDouble());
-            }
-            UserVariable userStat = new SFSUserVariable("stats", updateData);
-            u.setVariable(userStat);
-            ExtensionCommands.updateActorData(parentExt, room, updateData);
         }
+
+        ISFSObject updateData = new SFSObject();
+        updateData.putUtfString("id", String.valueOf(u.getId()));
+        int champMaxHealth =
+                parentExt.getActorStats(playerInfo.getUtfString("avatar")).get("health").asInt();
+        updateData.putInt("currentHealth", champMaxHealth);
+        updateData.putInt("maxHealth", champMaxHealth);
+        updateData.putDouble("pHealth", 1);
+        updateData.putInt("xp", 0);
+        updateData.putDouble("pLevel", 0);
+        updateData.putInt("level", 1);
+        updateData.putInt("availableSpellPoints", 1);
+        updateData.putLong("timeSinceBasicAttack", 0);
+        // SP_CATEGORY 1-5 TBD
+        updateData.putInt("sp_category1", 0);
+        updateData.putInt("sp_category2", 0);
+        updateData.putInt("sp_category3", 0);
+        updateData.putInt("sp_category4", 0);
+        updateData.putInt("sp_category5", 0);
+        updateData.putInt("deaths", 0);
+        updateData.putInt("assists", 0);
+
+        // UPDATE LOCATION
+        ISFSObject playerLoc = u.getVariable("location").getSFSObjectValue();
+        playerLoc.getSFSObject("p1").putFloat("x", px);
+        playerLoc.getSFSObject("p1").putFloat("z", pz);
+        UserVariable locationVar = new SFSUserVariable("location", playerLoc);
+        u.setVariable(locationVar);
+
+        JsonNode actorStats = parentExt.getActorStats(playerInfo.getUtfString("avatar"));
+        for (Iterator<String> it = actorStats.fieldNames(); it.hasNext(); ) {
+            String k = it.next();
+            updateData.putDouble(k, actorStats.get(k).asDouble());
+        }
+        UserVariable userStat = new SFSUserVariable("stats", updateData);
+        u.setVariable(userStat);
+        ExtensionCommands.updateActorData(parentExt, room, updateData);
+    }
+
+    public static void initializeGame(Room room, ATBPExtension parentExt)
+            throws SFSVariableException {
+        room.setProperty("state", 2);
+
+        int blueNum = 0;
+        int purpleNum = 0;
+        initializeMap(room, parentExt);
+
+        for (User u : room.getUserList()) {
+            ISFSObject playerInfo = u.getVariable("player").getSFSObjectValue();
+            int team = playerInfo.getInt("team");
+
+            if (team == 0) {
+                initializePlayer(parentExt, u, room, playerInfo, purpleNum, true);
+                purpleNum++;
+            } else {
+                initializePlayer(parentExt, u, room, playerInfo, blueNum, true);
+                blueNum++;
+            }
+        }
+
         try { // Sets all the room variables once the game is about to begin
             setRoomVariables(room);
         } catch (SFSVariableException e) { // TODO: Disconnect all players if this fails
@@ -210,13 +274,8 @@ public class GameManager {
             parentExt.send("cmd_match_starting", data, u); // Starts the game for everyone
         }
 
-        String sound;
-        if (room.getGroupId().equals("Tutorial")) {
-            sound = "announcer/tut_intro";
-        } else {
-            sound = "announcer/welcome";
-        }
-        ExtensionCommands.playSound(parentExt, room, "global", sound, new Point2D.Float(0, 0));
+        ExtensionCommands.playSound(
+                parentExt, room, "global", "announcer/welcome", new Point2D.Float(0, 0));
         ExtensionCommands.playSound(
                 parentExt,
                 room,
@@ -268,6 +327,7 @@ public class GameManager {
 
     private static void initializeMap(Room room, ATBPExtension parentExt) {
         String groupId = room.getGroupId();
+        // NEXUS SPAWNS
         ExtensionCommands.createActor(parentExt, room, MapData.getBaseActorData(0, groupId));
         ExtensionCommands.createActor(parentExt, room, MapData.getBaseActorData(1, groupId));
 
@@ -291,12 +351,36 @@ public class GameManager {
         GameModeSpawns.spawnHealthForMode(room, parentExt);
     }
 
+    public static int getGameOverCoins(int team, int winningTeam, RoomGroup roomGroup) {
+        // SHOP CURRENCY
+        switch (roomGroup) {
+            case RANKED:
+                return team == winningTeam ? 100 : 75;
+            case PVB:
+                return team == winningTeam ? 40 : 20;
+            case PRACTICE:
+                return team == winningTeam ? 25 : 10;
+        }
+        return 0;
+    }
+
+    public static int getGameOverPrestigePoints(int team, int winningTeam, RoomGroup roomGroup) {
+        // ACCOUNT XP
+        switch (roomGroup) {
+            case RANKED:
+                return team == winningTeam ? 40 : 20;
+            case PVB:
+                return team == winningTeam ? 20 : 10;
+            case PRACTICE:
+                return team == winningTeam ? 10 : 5;
+        }
+        return 0;
+    }
+
     public static JsonNode getTeamData(
-            ATBPExtension parentExt,
-            HashMap<User, UserActor> dcPlayers,
+            HashMap<Integer, Actor> endGameChampions,
             int team,
             Room room,
-            boolean isRankedMatch,
             boolean tutorialCoins,
             int winningTeam) {
         final String[] STATS = {
@@ -333,63 +417,45 @@ public class GameManager {
             damageDealtPhysical
 
          */
-        int coins = isRankedMatch ? 80 : tutorialCoins ? 700 : 0;
-        int prestigePoints = isRankedMatch ? 10 : 0;
-        if (team == winningTeam && isRankedMatch) {
-            coins += 20;
-            prestigePoints += 5;
-        }
+
+        RoomGroup roomGroup = getRoomGroupEnum(room.getGroupId());
+        int coins = getGameOverCoins(team, winningTeam, roomGroup);
+        int prestigePoints = getGameOverPrestigePoints(team, winningTeam, roomGroup);
+        if (tutorialCoins) coins = TUTORIAL_COINS;
+
         ObjectNode node = objectMapper.createObjectNode();
-        for (User u : room.getUserList()) {
-            UserActor ua =
-                    parentExt.getRoomHandler(room.getName()).getPlayer(String.valueOf(u.getId()));
-            if (ua.getTeam() == team) {
-                ObjectNode player = objectMapper.createObjectNode();
-                ISFSObject playerVar = u.getVariable("player").getSFSObjectValue();
-                player.put("id", u.getId());
+
+        for (Actor a : endGameChampions.values()) {
+
+            if (a.getTeam() == team) {
+                ObjectNode endGameChampion = objectMapper.createObjectNode();
+
+                endGameChampion.put("id", Integer.parseInt(a.getId()));
+
                 for (String s : STATS) {
-                    if (ua.hasGameStat(s)) player.put(s, ua.getGameStat(s));
+                    if (a.hasGameStat(s)) endGameChampion.put(s, a.getGameStat(s));
                 }
-                player.put("name", playerVar.getUtfString("name"));
-                player.put("kills", ua.getStat("kills"));
-                player.put("deaths", ua.getStat("deaths"));
-                player.put("assists", ua.getStat("assists"));
-                player.put("playerName", ua.getFrame());
-                player.put("myElo", (double) playerVar.getInt("elo"));
-                player.put("coins", coins);
-                player.put("prestigePoints", prestigePoints);
-                node.set(String.valueOf(u.getId()), player);
-            }
-        }
-        if (!dcPlayers.isEmpty()) {
-            for (Map.Entry<User, UserActor> entry : dcPlayers.entrySet()) {
-                UserActor ua = entry.getValue();
-                if (ua.getTeam() == team) {
-                    ObjectNode player = objectMapper.createObjectNode();
-                    User u = entry.getKey();
-                    ISFSObject playerVar = u.getVariable("player").getSFSObjectValue();
-                    for (String s : STATS) {
-                        if (ua.hasGameStat(s)) player.put(s, ua.getGameStat(s));
-                    }
-                    player.put("name", playerVar.getUtfString("name"));
-                    player.put("kills", ua.getStat("kills"));
-                    player.put("deaths", ua.getStat("deaths"));
-                    player.put("assists", ua.getStat("assists"));
-                    player.put("playerName", ua.getFrame());
-                    player.put("myElo", (double) playerVar.getInt("elo"));
-                    player.put("coins", coins);
-                    player.put(
-                            "prestigePoints",
-                            10); // Just going to have this be a flat amount for now
-                    node.set(String.valueOf(u.getId()), player);
+
+                int elo = 0; // bot elo
+                if (a instanceof UserActor) {
+                    elo = ((UserActor) a).getElo();
                 }
+
+                endGameChampion.put("name", a.getDisplayName());
+                endGameChampion.put("kills", a.getStat("kills"));
+                endGameChampion.put("deaths", a.getStat("deaths"));
+                endGameChampion.put("assists", a.getStat("assists"));
+                endGameChampion.put("playerName", a.getFrame());
+                endGameChampion.put("myElo", elo);
+                endGameChampion.put("coins", coins);
+                endGameChampion.put("prestigePoints", prestigePoints);
+                node.set(a.getId(), endGameChampion);
             }
         }
         return node;
     }
 
-    public static JsonNode getGlobalTeamData(
-            ATBPExtension parentExt, HashMap<User, UserActor> dcPlayers, Room room) {
+    public static JsonNode getGlobalTeamData(Room room, Map<Integer, Actor> endGameChampions) {
         double killsA = 0;
         double killsB = 0;
         double deathsA = 0;
@@ -399,29 +465,15 @@ public class GameManager {
         double scoreA = 0;
         double scoreB = 0;
 
-        for (UserActor ua : parentExt.getRoomHandler(room.getName()).getPlayers()) {
-            if (ua.getTeam() == 0) {
-                killsA += ua.getStat("kills");
-                deathsA += ua.getStat("deaths");
-                assistsA += ua.getStat("assists");
+        for (Actor a : endGameChampions.values()) {
+            if (a.getTeam() == 0) {
+                killsA += a.getStat("kills");
+                deathsA += a.getStat("deaths");
+                assistsA += a.getStat("assists");
             } else {
-                killsB += ua.getStat("kills");
-                deathsB += ua.getStat("deaths");
-                assistsB += ua.getStat("assists");
-            }
-        }
-        if (!dcPlayers.isEmpty()) {
-            for (Map.Entry<User, UserActor> entry : dcPlayers.entrySet()) {
-                UserActor ua = entry.getValue();
-                if (ua.getTeam() == 0) {
-                    killsA += ua.getStat("kills");
-                    deathsA += ua.getStat("deaths");
-                    assistsA += ua.getStat("assists");
-                } else {
-                    killsB += ua.getStat("kills");
-                    deathsB += ua.getStat("deaths");
-                    assistsB += ua.getStat("assists");
-                }
+                killsB += a.getStat("kills");
+                deathsB += a.getStat("deaths");
+                assistsB += a.getStat("assists");
             }
         }
         ISFSObject scoreObject = room.getVariable("score").getSFSObjectValue();

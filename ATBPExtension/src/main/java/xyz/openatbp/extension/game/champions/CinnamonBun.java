@@ -1,44 +1,47 @@
 package xyz.openatbp.extension.game.champions;
 
-import java.awt.geom.Line2D;
-import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import com.smartfoxserver.v2.entities.User;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ChampionData;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.RoomHandler;
-import xyz.openatbp.extension.game.AbilityRunnable;
-import xyz.openatbp.extension.game.ActorState;
-import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.*;
+import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.game.effects.ActorState;
+import xyz.openatbp.extension.game.effects.ModifierIntent;
+import xyz.openatbp.extension.game.effects.ModifierType;
+import xyz.openatbp.extension.pathfinding.PathFinder;
 
 public class CinnamonBun extends UserActor {
-    private static final float PASSIVE_HEAL = 0.05f;
+    private static final float PASSIVE_HEAL_PERCENT = 0.075f;
     private static final float Q_OFFSET_DISTANCE = 1f;
     private static final float Q_SPELL_RANGE = 3f;
     private static final float W_OFFSET_DISTANCE = 0.75f;
     private static final float W_SPELL_RANGE = 7f;
     private static final int W_DURATION = 5000;
-    private static final float W_SLOW_VALUE = 0.2f;
+    private static final float W_SLOW_PERCENT = 0.2f;
     private static final int W_SLOW_DURATION = 1000;
     private static final int E_DURATION = 4500;
     private static final int E_TICK_DELAY = 500;
-    private static final float E_SPEED_BUFF_VALUE = 0.1f;
+    private static final float E_SPEED_BUFF_PERCENT = 0.1f;
+    public static final float W_DASH_SPEED = 15f;
+    public static final double E_SMALL_RING_DAMAGE_RATIO = 1.25;
 
     private Point2D ultPoint = null;
     private Point2D ultPoint2 = null;
     private int ultUses = 0;
     private long ultStart = 0;
-    private Path2D wPolygon = null;
+    private AbilityShape wPolygon = null;
     private long wStartTime = 0;
     private long lastUltTick = 0;
+
+    private Map<Actor, Long> actorsWithWSlow = new HashMap<>();
 
     public CinnamonBun(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -47,23 +50,82 @@ public class CinnamonBun extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
+        if (ultUses == 1
+                && ultPoint != null
+                && location.distance(ultPoint) <= 2
+                && !effectManager.hasEffect(id + "_cb_e_speed")) {
+            addESpeed();
+        }
+
+        if (ultUses == 1
+                && ultPoint != null
+                && location.distance(ultPoint) > 2
+                && effectManager.hasEffect(id + "_cb_e_speed")) {
+            removeESpeed();
+        }
+
+        if (ultUses > 1
+                && ultPoint2 == null
+                && ultPoint != null
+                && location.distance(ultPoint) <= 4
+                && !effectManager.hasEffect(id + "_cb_e_speed")) {
+            addESpeed();
+        } else if (effectManager.hasEffect(id + "_cb_e_speed")
+                && ultPoint != null
+                && location.distance(ultPoint) > 4) {
+            effectManager.removeAllEffectsById(id + "_cb_e_speed");
+        }
+
+        if (ultUses > 1 && ultPoint2 != null && ultPoint != null) {
+            boolean insideUltRing = false;
+            for (Point2D p : new Point2D[] {ultPoint, ultPoint2}) {
+                if (location.distance(p) <= 2) {
+                    insideUltRing = true;
+                    break;
+                }
+            }
+
+            if (insideUltRing && !effectManager.hasEffect(id + "_cb_e_speed")) {
+                addESpeed();
+            } else if (!insideUltRing && effectManager.hasEffect(id + "_cb_e_speed")) {
+                effectManager.removeAllEffectsById(id + "_cb_e_speed ult uses 2");
+            }
+        }
+
         if (this.wPolygon != null && System.currentTimeMillis() - this.wStartTime >= W_DURATION) {
             this.wPolygon = null;
         }
         if (this.wPolygon != null) {
             JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell2");
 
-            RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
-            List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, this.wPolygon);
-            if (!actorsInPolygon.isEmpty()) {
-                for (Actor a : actorsInPolygon) {
-                    if (isNeitherTowerNorAlly(a)) {
+            RoomHandler rh = this.parentExt.getRoomHandler(this.room.getName());
+
+            List<Actor> nearbyEnemies =
+                    Champion.getEnemyActorsInRadius(rh, team, location, W_SPELL_RANGE);
+            if (!nearbyEnemies.isEmpty()) {
+                for (Actor a : nearbyEnemies) {
+                    if (isNeitherTowerNorAlly(a)
+                            && wPolygon.contains(a.getLocation(), a.getCollisionRadius())
+                            && a.isNotLeaping()) {
                         int damage = (int) (getSpellDamage(spellData, false) / 10d);
                         a.addToDamageQueue(this, damage, spellData, true);
                     }
 
-                    if (isNeitherStructureNorAlly(a)) {
-                        a.addState(ActorState.SLOWED, W_SLOW_VALUE, W_SLOW_DURATION);
+                    if (isNeitherStructureNorAlly(a)
+                            && wPolygon.contains(a.getLocation(), a.getCollisionRadius())
+                            && a.isNotLeaping()) {
+                        long lastProc = actorsWithWSlow.getOrDefault(a, -1L);
+
+                        if (lastProc == -1
+                                || System.currentTimeMillis() - lastProc > W_SLOW_DURATION) {
+                            actorsWithWSlow.put(a, System.currentTimeMillis());
+                            a.getEffectManager()
+                                    .addState(
+                                            ActorState.SLOWED,
+                                            id + "_cb_w_slow",
+                                            W_SLOW_PERCENT,
+                                            W_SLOW_DURATION);
+                        }
                     }
                 }
             }
@@ -79,7 +141,7 @@ public class CinnamonBun extends UserActor {
             }
 
             if (ultUses > 1 && ultPoint2 != null) {
-                tickDamage *= 1.5;
+                tickDamage *= E_SMALL_RING_DAMAGE_RATIO;
             }
 
             if (System.currentTimeMillis() - this.lastUltTick >= E_TICK_DELAY) {
@@ -97,11 +159,7 @@ public class CinnamonBun extends UserActor {
                     }
                 }
             }
-            if (location.distance(ultPoint) <= radius
-                    || (ultPoint2 != null && location.distance(ultPoint2) <= radius)) {
-                double delta = getPlayerStat("speed") * E_SPEED_BUFF_VALUE;
-                this.addEffect("speed", delta, 150);
-            }
+
         } else if (this.ultPoint != null
                 && System.currentTimeMillis() - this.ultStart >= E_DURATION) {
             int baseCooldown = ChampionData.getBaseAbilityCooldown(this, 3);
@@ -174,6 +232,20 @@ public class CinnamonBun extends UserActor {
         }
     }
 
+    private void removeESpeed() {
+        effectManager.removeAllEffectsById(id + "_cb_e_speed");
+    }
+
+    private void addESpeed() {
+        effectManager.addEffect(
+                id + "_cb_e_speed",
+                "speed",
+                E_SPEED_BUFF_PERCENT,
+                ModifierType.MULTIPLICATIVE,
+                ModifierIntent.BUFF,
+                E_DURATION);
+    }
+
     @Override
     public void useAbility(
             int ability,
@@ -202,15 +274,19 @@ public class CinnamonBun extends UserActor {
                             false,
                             this.team);
                     handlePassive();
-                    Path2D qRect =
-                            Champion.createRectangle(
+
+                    AbilityShape qRect =
+                            AbilityShape.createRectangle(
                                     location, dest, Q_SPELL_RANGE, Q_OFFSET_DISTANCE);
 
                     RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
-                    List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, qRect);
-                    if (!actorsInPolygon.isEmpty()) {
-                        for (Actor a : actorsInPolygon) {
-                            if (isNeitherTowerNorAlly(a)) {
+                    List<Actor> nearbyEnemies =
+                            Champion.getActorsInRadius(handler, location, Q_SPELL_RANGE);
+                    if (!nearbyEnemies.isEmpty()) {
+                        for (Actor a : nearbyEnemies) {
+                            if (isNeitherTowerNorAlly(a)
+                                    && qRect.contains(a.getLocation(), a.getCollisionRadius())
+                                    && a.isNotLeaping()) {
                                 double damage = getSpellDamage(spellData, true);
                                 a.addToDamageQueue(this, damage, spellData, false);
                             }
@@ -233,65 +309,67 @@ public class CinnamonBun extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
-                Point2D finalDashPoint = null;
-                try {
-                    this.wStartTime = System.currentTimeMillis();
-                    handlePassive();
-                    Point2D origLocation = this.location;
-                    Line2D wLine = Champion.getAbilityLine(origLocation, dest, 6.5f);
-                    double slideX = Champion.getAbilityLine(origLocation, dest, 1.5f).getX2();
-                    double slideY = Champion.getAbilityLine(origLocation, dest, 1.5f).getY2();
-                    float rotation = getRotation(dest);
-                    finalDashPoint = this.dash(wLine.getP2(), false, 15d);
-                    double time = origLocation.distance(finalDashPoint) / 15d;
-                    int wTime = (int) (time * 1000);
-                    Line2D wPolyStartLine = Champion.getAbilityLine(origLocation, dest, 0.5f);
-                    Line2D wPolyLengthLine = Champion.getAbilityLine(origLocation, dest, 7f);
-                    Point2D wPolyStartPoint =
-                            new Point2D.Float(
-                                    (float) wPolyStartLine.getX2(), (float) wPolyStartLine.getY2());
-                    Point2D wPolyEndPoint =
-                            new Point2D.Float(
-                                    (float) wPolyLengthLine.getX2(),
-                                    (float) wPolyLengthLine.getY2());
-                    this.wPolygon =
-                            Champion.createRectangle(
-                                    wPolyStartPoint,
-                                    wPolyEndPoint,
-                                    W_SPELL_RANGE,
-                                    W_OFFSET_DISTANCE);
-                    ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "fx_target_rect_7",
-                            W_DURATION,
-                            this.id + "w",
-                            false,
-                            "",
-                            true,
-                            true,
-                            this.team);
-                    ExtensionCommands.createWorldFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "cb_frosting_slide",
-                            this.id + "_slide",
-                            W_DURATION,
-                            (float) slideX,
-                            (float) slideY,
-                            false,
-                            this.team,
-                            rotation);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, "sfx_cb_power2", this.location);
-                    ExtensionCommands.actorAnimate(
-                            this.parentExt, this.room, this.id, "spell2b", wTime, false);
-                } catch (Exception exception) {
-                    logExceptionMessage(avatar, ability);
-                    exception.printStackTrace();
-                }
+
+                wStartTime = System.currentTimeMillis();
+                handlePassive();
+                double slideX = Champion.createLineTowards(location, dest, 1.5f).getX2();
+                double slideY = Champion.createLineTowards(location, dest, 1.5f).getY2();
+                float rotation = getRotation(dest);
+
+                RoomHandler rh = parentExt.getRoomHandler(room.getName());
+                PathFinder pf = rh.getPathFinder();
+
+                Point2D leapDest =
+                        Champion.createLineTowards(location, dest, W_SPELL_RANGE).getP2();
+
+                Point2D leapPoint = pf.getNonObstaclePointOrIntersection(location, leapDest);
+                double time = location.distance(leapPoint) / W_DASH_SPEED;
+                int wTime = (int) (time * 1000);
+
+                DashContext ctx =
+                        new DashContext.Builder(location, leapPoint, W_DASH_SPEED)
+                                .isLeap(true)
+                                .canBeRedirected(false)
+                                .build();
+                startDash(ctx);
+
+                Point2D rectStart = Champion.createLineTowards(location, dest, 0.5f).getP2();
+                Point2D rectEnd = Champion.createLineTowards(location, dest, 7f).getP2();
+
+                wPolygon =
+                        AbilityShape.createRectangle(
+                                rectStart, rectEnd, W_SPELL_RANGE, W_OFFSET_DISTANCE);
+
+                ExtensionCommands.createActorFX(
+                        parentExt,
+                        room,
+                        id,
+                        "fx_target_rect_7",
+                        W_DURATION,
+                        id + "w",
+                        false,
+                        "",
+                        true,
+                        true,
+                        team);
+                ExtensionCommands.createWorldFX(
+                        parentExt,
+                        room,
+                        id,
+                        "cb_frosting_slide",
+                        id + "_slide",
+                        W_DURATION,
+                        (float) slideX,
+                        (float) slideY,
+                        false,
+                        team,
+                        rotation);
+                ExtensionCommands.playSound(parentExt, room, id, "sfx_cb_power2", location);
+
+                playSoundWithChance("vo/vo_cb_w", 50);
+
+                ExtensionCommands.actorAnimate(parentExt, room, id, "spell2b", wTime, false);
+
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt,
                         this.player,
@@ -301,7 +379,7 @@ public class CinnamonBun extends UserActor {
                         gCooldown);
                 int delay1 = getReducedCooldown(cooldown);
                 scheduleTask(
-                        abilityRunnable(ability, spellData, cooldown, gCooldown, finalDashPoint),
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, leapPoint),
                         delay1);
                 break;
             case 3:
@@ -520,8 +598,6 @@ public class CinnamonBun extends UserActor {
         }
     }
 
-    private void handleUltBuff() {}
-
     private List<Actor> getEnemiesInRadius(Point2D center, float radius) {
         RoomHandler handler = parentExt.getRoomHandler(room.getName());
         List<Actor> returnVal = Champion.getActorsInRadius(handler, center, radius);
@@ -530,7 +606,7 @@ public class CinnamonBun extends UserActor {
     }
 
     private void handlePassive() {
-        this.changeHealth((int) ((double) (this.getMaxHealth()) * PASSIVE_HEAL));
+        this.changeHealth((int) ((double) (this.getMaxHealth()) * PASSIVE_HEAL_PERCENT));
     }
 
     private CinnamonAbilityRunnable abilityRunnable(

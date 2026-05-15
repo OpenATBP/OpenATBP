@@ -16,49 +16,32 @@ import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ChampionData;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
-import xyz.openatbp.extension.game.ActorState;
-import xyz.openatbp.extension.game.ActorType;
-import xyz.openatbp.extension.game.Champion;
+import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.Monster;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.game.effects.ActorState;
+import xyz.openatbp.extension.game.effects.ModifierIntent;
+import xyz.openatbp.extension.game.effects.ModifierType;
 
 public class GooMonster extends Monster {
 
+    public static final double GOO_SLOW_PERCENT = 0.25;
+    public static final int GOO_SLOW_DURATION = 1000;
     private int abilityCooldown;
     private boolean usingAbility;
     private Point2D puddleLocation;
     private boolean puddleActivated;
     private long puddleStarted;
-    private static final int GOO_BUFF_DURATION = 60000;
-
-    public GooMonster(
-            ATBPExtension parentExt, Room room, float[] startingLocation, String monsterName) {
-        super(parentExt, room, startingLocation, monsterName);
-        this.abilityCooldown = 5000;
-        this.usingAbility = false;
-        this.puddleActivated = false;
-        this.puddleStarted = -1;
-        this.puddleLocation = null;
-    }
-
-    public GooMonster(
-            ATBPExtension parentExt, Room room, Point2D startingLocation, String monsterName) {
-        super(parentExt, room, startingLocation, monsterName);
-        this.abilityCooldown = 5000;
-        this.usingAbility = false;
-        this.puddleActivated = false;
-        this.puddleStarted = -1;
-        this.puddleLocation = null;
-    }
+    public static final int GOO_BUFF_DURATION = 60000;
 
     public GooMonster(
             ATBPExtension parentExt,
             Room room,
-            Point2D startingLocation,
-            String monsterName,
-            String id) {
-        super(parentExt, room, startingLocation, monsterName, id);
+            String id,
+            float[] startingLocation,
+            String monsterName) {
+        super(parentExt, room, id, startingLocation, monsterName);
         this.abilityCooldown = 5000;
         this.usingAbility = false;
         this.puddleActivated = false;
@@ -92,9 +75,17 @@ public class GooMonster extends Monster {
                     data.putUtfString("attackType", "spell");
                     JsonNode newAttackData = mapper.readTree(data.toJson());
                     for (Actor a : damagedActors) {
-                        if (!a.getId().equalsIgnoreCase(this.id)) {
-                            a.addState(ActorState.SLOWED, 0.25d, 1000);
-                            a.addToDamageQueue(this, 4, newAttackData, true);
+                        if (!a.getId().equalsIgnoreCase(this.id) && a.isNotLeaping()) {
+
+                            if (!a.getEffectManager().hasState(id + "_goo_slow")) {
+                                a.getEffectManager()
+                                        .addState(
+                                                ActorState.SLOWED,
+                                                id + "_goo_slow",
+                                                GOO_SLOW_PERCENT,
+                                                GOO_SLOW_DURATION);
+                            }
+                            a.addToDamageQueue(this, 5, newAttackData, true);
                         }
                     }
                 } catch (IOException e) {
@@ -116,18 +107,27 @@ public class GooMonster extends Monster {
                 ExtensionCommands.playSound(parentExt, ua.getUser(), "global", finalSound);
 
                 if (ua.getTeam() == killerTeam && ua.getHealth() > 0 && !ua.isDead()) {
-                    double delta = ua.getPlayerStat("speed") * 0.1d;
+                    double delta = 0.1;
                     if (ChampionData.getCustomJunkStat(ua, "junk_1_demon_blood_sword") > 0)
                         delta += 0.15;
                     ua.setHasGooBuff(true);
-                    ua.setGooBuffStartTime(System.currentTimeMillis());
-                    ua.addEffect("speed", delta, GOO_BUFF_DURATION, "jungle_buff_goo", "");
-                    ExtensionCommands.addStatusIcon(
-                            this.parentExt,
-                            ua.getUser(),
-                            "goomonster_buff",
-                            "goomonster_buff_desc",
+                    ua.getEffectManager()
+                            .addEffect(
+                                    ua.getId() + "_goo_buff",
+                                    "speed",
+                                    delta,
+                                    ModifierType.MULTIPLICATIVE,
+                                    ModifierIntent.BUFF,
+                                    GOO_BUFF_DURATION,
+                                    "jungle_buff_goo",
+                                    ua.getId() + "_jungle_buff_goo",
+                                    "");
+
+                    Champion.handleStatusIcon(
+                            parentExt,
+                            ua,
                             "icon_buff_goomonster",
+                            "goomonster_buff_desc",
                             GOO_BUFF_DURATION);
                 }
             }
@@ -247,10 +247,5 @@ public class GooMonster extends Monster {
     public boolean canAttack() {
         if (this.usingAbility) return false;
         return super.canAttack();
-    }
-
-    @Override
-    public String getPortrait() {
-        return "goomonster";
     }
 }

@@ -1,41 +1,101 @@
 package xyz.openatbp.extension.game.actors;
 
-import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import com.smartfoxserver.v2.entities.Room;
 
 import xyz.openatbp.extension.*;
-import xyz.openatbp.extension.game.ActorState;
-import xyz.openatbp.extension.game.ActorType;
-import xyz.openatbp.extension.game.Champion;
-import xyz.openatbp.extension.pathfinding.MovementManager;
+import xyz.openatbp.extension.game.*;
+import xyz.openatbp.extension.game.effects.ActorState;
 
 public class Minion extends Actor {
 
-    private final double[] blueBotX = {
-        36.90, 26.00, 21.69, 16.70, 3.44, -9.56, -21.20, -28.02, -33.11, -36.85
-    }; // Path points from blue base to purple base
-    private final double[] blueBotY = {
-        2.31, 8.64, 12.24, 17.25, 17.81, 18.76, 14.78, 7.19, 5.46, 2.33
-    };
-    private final double[] blueTopX = {
-        36.68, 30.10, 21.46, 18.20, -5.26, -12.05, -24.69, -28.99, -35.67
-    };
-    private final double[] blueTopY = {
-        -2.56, -7.81, -12.09, -16.31, -17.11, -17.96, -13.19, -7.50, -2.70
-    };
+    public static final float AGGRO_RANGE = 5f;
+    public static final int MAX_CHASE_TIME = 1500;
+    public static final float XP_RADIUS = 10f;
+    public static final float COLLISION_RADIUS = 0.5f;
+    public static final double MINIONS_SEPARATION = 0.15f;
 
-    private final double[] practiceX = {
-        38.00, 33.93, 30, 20.68, 12.76, 7.38, -4.87, -15.79, -24.00, -33.49, -38.77
-    };
-    private final double[] practiceY = {
-        0.76, 0.53, -1.5, -1.46, -1.43, 0.1, 0.1, -0.95, -0.79, -0.67, 0.06
-    };
+    List<Point2D> blueBotLanePoints =
+            List.of(
+                    new Point2D.Float(36.90f, 2.31f),
+                    new Point2D.Float(26.00f, 8.64f),
+                    new Point2D.Float(21.69f, 12.24f),
+                    new Point2D.Float(16.70f, 17.25f),
+                    new Point2D.Float(3.44f, 17.81f),
+                    new Point2D.Float(-9.56f, 18.76f),
+                    new Point2D.Float(-21.20f, 14.78f),
+                    new Point2D.Float(-28.02f, 7.19f),
+                    new Point2D.Float(-33.11f, 5.46f),
+                    new Point2D.Float(-36.85f, 2.33f));
+
+    List<Point2D> blueTopLanePoints =
+            List.of(
+                    new Point2D.Float(36.68f, -2.56f),
+                    new Point2D.Float(30.10f, -7.81f),
+                    new Point2D.Float(21.46f, -12.09f),
+                    new Point2D.Float(18.20f, -16.31f),
+                    new Point2D.Float(-5.26f, -17.11f),
+                    new Point2D.Float(-12.05f, -17.96f),
+                    new Point2D.Float(-24.69f, -13.19f),
+                    new Point2D.Float(-28.99f, -7.50f),
+                    new Point2D.Float(-35.67f, -2.70f));
+
+    List<Point2D> purpleBotLanePoints =
+            List.of(
+                    new Point2D.Float(-36.90f, 2.31f),
+                    new Point2D.Float(-26.00f, 8.64f),
+                    new Point2D.Float(-21.69f, 12.24f),
+                    new Point2D.Float(-16.70f, 17.25f),
+                    new Point2D.Float(-3.44f, 17.81f),
+                    new Point2D.Float(9.56f, 18.76f),
+                    new Point2D.Float(21.20f, 14.78f),
+                    new Point2D.Float(28.02f, 7.19f),
+                    new Point2D.Float(33.11f, 5.46f),
+                    new Point2D.Float(36.85f, 2.33f));
+
+    List<Point2D> purpleTopLanePoints =
+            List.of(
+                    new Point2D.Float(-36.68f, -2.56f),
+                    new Point2D.Float(-30.10f, -7.81f),
+                    new Point2D.Float(-21.46f, -12.09f),
+                    new Point2D.Float(-18.20f, -16.31f),
+                    new Point2D.Float(5.26f, -17.11f),
+                    new Point2D.Float(12.05f, -17.96f),
+                    new Point2D.Float(24.69f, -13.19f),
+                    new Point2D.Float(28.99f, -7.50f),
+                    new Point2D.Float(35.67f, -2.70f));
+
+    List<Point2D> practiceBlueLanePoints =
+            List.of(
+                    new Point2D.Float(38.00f, 0.76f),
+                    new Point2D.Float(33.93f, 0.53f),
+                    new Point2D.Float(30.00f, -1.50f),
+                    new Point2D.Float(20.68f, -1.46f),
+                    new Point2D.Float(12.76f, -1.43f),
+                    new Point2D.Float(7.38f, 0.10f),
+                    new Point2D.Float(-4.87f, 0.10f),
+                    new Point2D.Float(-15.79f, -0.95f),
+                    new Point2D.Float(-24.00f, -0.79f),
+                    new Point2D.Float(-33.49f, -0.67f),
+                    new Point2D.Float(-38.77f, 0.06f));
+
+    List<Point2D> practicePurpleLanePoints =
+            List.of(
+                    new Point2D.Float(-38.00f, 0.76f),
+                    new Point2D.Float(-33.93f, 0.53f),
+                    new Point2D.Float(-30.00f, -1.50f),
+                    new Point2D.Float(-20.68f, -1.46f),
+                    new Point2D.Float(-12.76f, -1.43f),
+                    new Point2D.Float(-7.38f, 0.10f),
+                    new Point2D.Float(4.87f, 0.10f),
+                    new Point2D.Float(15.79f, -0.95f),
+                    new Point2D.Float(24.00f, -0.79f),
+                    new Point2D.Float(33.49f, -0.67f),
+                    new Point2D.Float(38.77f, 0.06f));
 
     public enum MinionType {
         RANGED,
@@ -43,25 +103,30 @@ public class Minion extends Actor {
         SUPER
     } // Type of minion
 
-    public enum State {
-        IDLE,
-        MOVING,
-        TARGETING,
-        ATTACKING
+    public enum MinionState {
+        PUSHING,
+        ATTACKING,
+        STACKED
     }
 
     private MinionType type;
+    private final GameMap map;
 
     private int lane;
-    private int mainPathIndex = 0;
     private Map<UserActor, Integer> aggressors;
     private static boolean movementDebug = false;
-    private State state;
-    private int idleTime = 0;
+    private long chaseTime = 0L;
 
-    public Minion(ATBPExtension parentExt, Room room, int team, int minionNum, int wave, int lane) {
+    public Minion(
+            ATBPExtension parentExt,
+            Room room,
+            GameMap gameMap,
+            int team,
+            int minionNum,
+            int wave,
+            int lane) {
+        this.map = gameMap;
         this.avatar = "creep" + team;
-        this.state = State.IDLE;
         this.room = room;
         this.team = team;
         this.parentExt = parentExt;
@@ -82,49 +147,27 @@ public class Minion extends Actor {
         }
         this.displayName = parentExt.getDisplayName(this.getAvatar());
         this.currentHealth = this.maxHealth;
-        float x = (float) blueBotX[0]; // Bot Lane
-        float y = (float) blueBotY[0];
-        if (team == 0) x = (float) blueBotX[blueBotX.length - 1];
-        if (lane == 0) { // Top Lane
-            x = (float) blueTopX[0];
-            y = (float) blueTopY[0];
-            if (team == 0) {
-                x = (float) blueTopX[blueTopX.length - 1];
-                y = (float) blueTopY[blueTopY.length - 1];
-            }
-        }
-        if (this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
-            if (team == 1) {
-                x = (float) practiceX[0];
-                y = (float) practiceY[0];
-            } else {
-                x = (float) practiceX[practiceX.length - 1];
-                y = (float) practiceY[practiceY.length - 1];
-            }
-        }
-        this.location = new Point2D.Float(x, y);
-        this.id = team + "creep_" + lane + typeString + wave;
+        this.id = team + "creep_" + lane + typeString + wave + "_" + Math.random();
         this.lane = lane;
         this.actorType = ActorType.MINION;
-        if (team == 0) {
-            if (lane == 0) mainPathIndex = blueTopX.length - 1;
-            else mainPathIndex = blueBotX.length - 1;
-        }
-        if (this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
-            if (team == 0) mainPathIndex = practiceX.length - 1;
-        }
-        this.movementLine = new Line2D.Float(this.location, this.location);
+
         aggressors = new HashMap<>(3);
-        this.stats = this.initializeStats();
-        ExtensionCommands.createActor(
-                parentExt, room, this.id, this.getAvatar(), this.location, 0f, this.team);
+        this.stats = initializeStats();
+
+        location = getLanePoints().get(0);
+        ExtensionCommands.createActor(parentExt, room, id, getAvatar(), location, 0f, team);
+
         Properties props = parentExt.getConfigProperties();
         movementDebug = Boolean.parseBoolean(props.getProperty("movementDebug", "false"));
-        if (movementDebug)
+        if (movementDebug) {
             ExtensionCommands.createActor(
-                    parentExt, room, this.id + "_test", "gnome_a", this.location, 0f, this.team);
+                    parentExt, room, id + "_test", "gnome_a", location, 0f, team);
+        }
+
         this.attackCooldown = this.getPlayerStat("attackSpeed");
         this.xpWorth = 7;
+
+        forcedMoveSpeed = (float) getPlayerStat("speed");
     }
 
     @Override
@@ -144,49 +187,49 @@ public class Minion extends Actor {
                 (float) a.getLocation().getY(),
                 false,
                 true);
-        if (this.type == MinionType.RANGED)
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(
-                            new Champion.DelayedRangedAttack(this, a), 500, TimeUnit.MILLISECONDS);
-        else
-            parentExt
-                    .getTaskScheduler()
-                    .schedule(
-                            new Champion.DelayedAttack(
-                                    parentExt,
-                                    this,
-                                    a,
-                                    (int) this.getPlayerStat("attackDamage"),
-                                    "basicAttack"),
-                            500,
-                            TimeUnit.MILLISECONDS);
+
+        if (this.type == MinionType.RANGED) {
+            Champion.DelayedRangedAttack at = new Champion.DelayedRangedAttack(this, a);
+            scheduleTask(at, BASIC_ATTACK_DELAY);
+        } else {
+            double ad = getPlayerStat("attackDamage");
+            String attack = "basicAttack";
+            Champion.DelayedAttack at =
+                    new Champion.DelayedAttack(parentExt, this, a, (int) ad, attack);
+
+            scheduleTask(at, BASIC_ATTACK_DELAY);
+        }
     }
 
     @Override
     public void die(Actor a) {
         this.currentHealth = 0;
         if (this.dead) return;
-        if (!this.getState(ActorState.AIRBORNE)) this.stopMoving();
+
+        if (movementState != MovementState.KNOCKBACK && movementState != MovementState.PULLED) {
+            stopMoving();
+        }
+
+        if (a instanceof Bot) {
+            RoomHandler rh = parentExt.getRoomHandler(room.getName());
+            rh.addScore(a, a.getTeam(), 1);
+        }
+
         this.dead = true;
         if (a.getActorType() == ActorType.PLAYER || a.getActorType() == ActorType.COMPANION) {
             UserActor ua = null;
             if (a.getActorType() == ActorType.COMPANION) {
-                if (a.getId().contains("skully"))
-                    ua =
-                            this.parentExt
-                                    .getRoomHandler(this.room.getName())
-                                    .getEnemyChampion(this.team, "lich");
-                else if (a.getId().contains("turret"))
-                    ua =
-                            this.parentExt
-                                    .getRoomHandler(this.room.getName())
-                                    .getEnemyChampion(this.team, "princessbubblegum");
-                else if (a.getId().contains("mine"))
-                    ua =
-                            this.parentExt
-                                    .getRoomHandler(this.room.getName())
-                                    .getEnemyChampion(this.team, "neptr");
+
+                if (a.getId().contains("skully")) {
+                    RoomHandler rh = parentExt.getRoomHandler(room.getName());
+                    ua = rh.getEnemyChampion(team, "lich");
+                } else if (a.getId().contains("turret")) {
+                    RoomHandler rh = parentExt.getRoomHandler(room.getName());
+                    ua = rh.getEnemyChampion(team, "princessbubblegum");
+                } else if (a.getId().contains("mine")) {
+                    RoomHandler rh = parentExt.getRoomHandler(room.getName());
+                    ua = rh.getEnemyChampion(team, "neptr");
+                }
             } else ua = (UserActor) a;
             if (ua != null) {
                 ua.addGameStat("minions", 1);
@@ -197,13 +240,21 @@ public class Minion extends Actor {
             }
         } else {
             ExtensionCommands.knockOutActor(parentExt, this.room, this.id, a.getId(), 30);
-            for (UserActor user :
-                    Champion.getUserActorsInRadius(
-                            this.parentExt.getRoomHandler(this.room.getName()),
-                            this.location,
-                            10f)) {
-                if (user.getTeam() != this.team)
-                    user.addXP((int) Math.floor((double) this.xpWorth / 2d));
+
+            RoomHandler rh = parentExt.getRoomHandler(room.getName());
+
+            List<Actor> enemies = Champion.getEnemyActorsInRadius(rh, team, location, XP_RADIUS);
+            enemies.removeIf(e -> !(e instanceof UserActor || e instanceof Bot));
+
+            for (Actor actor : enemies) {
+
+                if (actor instanceof UserActor) {
+                    UserActor ua = (UserActor) actor;
+                    ua.addXP(xpWorth);
+                } else if (actor instanceof Bot) {
+                    Bot b = (Bot) actor;
+                    b.addBotExp(xpWorth);
+                }
             }
         }
         ExtensionCommands.destroyActor(parentExt, this.room, this.id);
@@ -219,18 +270,18 @@ public class Minion extends Actor {
                 UserActor ua = (UserActor) a;
                 aggressors.put(ua, 0);
                 if (ChampionData.getJunkLevel(ua, "junk_1_grape_juice_sword") > 0) {
-                    damage +=
-                            (damage
-                                    * ChampionData.getCustomJunkStat(
-                                            ua, "junk_1_grape_juice_sword"));
+                    double junkStat =
+                            ChampionData.getCustomJunkStat(ua, "junk_1_grape_juice_sword");
+                    double grapeDmg = damage * junkStat;
+                    damage += grapeDmg;
                 }
                 if (ChampionData.getJunkLevel(ua, "junk_2_peppermint_tank") > 0
                         && getAttackType(attackData) == AttackType.SPELL) {
                     if (ua.getLocation().distance(this.location) < 2d) {
-                        damage +=
-                                (damage
-                                        * ChampionData.getCustomJunkStat(
-                                                ua, "junk_2_peppermint_tank"));
+                        double junkStat =
+                                ChampionData.getCustomJunkStat(ua, "junk_2_peppermint_tank");
+                        double pepDmg = damage * junkStat;
+                        damage += pepDmg;
                         Console.debugLog("Increased damage from peppermint tank.");
                     }
                 }
@@ -242,8 +293,7 @@ public class Minion extends Actor {
             }
             AttackType type = this.getAttackType(attackData);
             int newDamage = this.getMitigatedDamage(damage, type, a);
-            if (a.getActorType() == ActorType.PLAYER)
-                this.addDamageGameStat((UserActor) a, newDamage, type);
+            if (a instanceof UserActor || a instanceof Bot) a.addDamageGameStat(newDamage, type);
             this.changeHealth(newDamage * -1);
             // Minion dies
             return currentHealth <= 0;
@@ -253,158 +303,227 @@ public class Minion extends Actor {
         }
     }
 
-    public boolean isInvisible(Actor a) {
-        ActorState[] states = {ActorState.INVISIBLE, ActorState.BRUSH};
-        for (ActorState state : states) {
-            if (a.getState(state)) return true;
+    @Override
+    public String getAvatar() {
+        return this.avatar.replace("0", "");
+    }
+
+    @Override
+    protected HashMap<String, Double> initializeStats() {
+        HashMap<String, Double> stats = new HashMap<>();
+        JsonNode actorStats = this.parentExt.getActorStats(this.avatar.replace("0", ""));
+        for (Iterator<String> it = actorStats.fieldNames(); it.hasNext(); ) {
+            String k = it.next();
+            stats.put(k, actorStats.get(k).asDouble());
         }
-        return false;
+        return stats;
+    }
+
+    private MinionState evaluateMinionState() {
+        // CHASING AND ATTACKING
+        RoomHandler rh = parentExt.getRoomHandler(room.getName());
+        List<Actor> enemiesInAggro =
+                Champion.getEnemyActorsInRadius(rh, team, location, AGGRO_RANGE);
+
+        enemiesInAggro.removeIf(
+                a ->
+                        !(a instanceof UserActor
+                                || a instanceof Bot
+                                || a instanceof Tower
+                                || a instanceof Base
+                                || a instanceof Minion));
+        enemiesInAggro.removeIf(Actor::isDead);
+
+        // if enemies are in aggro range, attack best target
+        if (!enemiesInAggro.isEmpty()) {
+            // no target, pick a new one
+            if (target == null) {
+                Actor potentialTarget = getBestTarget(enemiesInAggro);
+                if (potentialTarget != null) { // safety check
+                    chaseTime = System.currentTimeMillis();
+                    setTarget(potentialTarget);
+                } else {
+                    // should never happen
+                    return MinionState.PUSHING;
+                }
+            }
+            // chasing too long, pick a new target
+            else if (System.currentTimeMillis() - chaseTime >= MAX_CHASE_TIME) {
+                Actor potentialTarget = getBestTarget(enemiesInAggro);
+                chaseTime = System.currentTimeMillis();
+
+                if (potentialTarget != target) {
+                    setTarget(getBestTarget(enemiesInAggro));
+                } else if (enemiesInAggro.size() == 1) {
+                    return MinionState.PUSHING;
+                }
+            }
+
+            // Run separation as a side effect, still return ATTACKING
+            List<Minion> nearbyMinions = new ArrayList<>(rh.getMinions());
+            nearbyMinions.removeIf(
+                    a ->
+                            a == this
+                                    || a.getLocation().distance(location) > COLLISION_RADIUS
+                                    || a.getHealth() <= 0);
+
+            if (!nearbyMinions.isEmpty()) {
+                preventMinionStacking(nearbyMinions); // side effect, no state change
+            }
+
+            // return attack state, if not chasing too long, minion will attack the current target
+            return MinionState.ATTACKING;
+        }
+        // the default state is PUSHING
+        return MinionState.PUSHING;
+    }
+
+    private void executeMinionState(MinionState state) {
+        switch (state) {
+            case ATTACKING:
+                if (target != null) {
+                    double dist = location.distance(target.getLocation());
+                    float attackRange = (float) getPlayerStat("attackRange");
+                    if (dist <= attackRange && attackCooldown == 0) {
+                        attack(target);
+
+                    } else if (dist > attackRange && canMove()) {
+                        startMoveTo(target.getLocation(), false);
+                    }
+                }
+                break;
+
+            case PUSHING:
+                if (!isMoving) {
+                    // NO !isMoving condition here makes the visual model desync with server
+                    // location
+                    // isMoving is essentially the answer to "has the client already been given a
+                    // movement command that it's still executing?
+                    Point2D laneDestination = getLaneDestination();
+                    if (laneDestination != null && canMove()) {
+                        startMoveTo(laneDestination, false);
+                    }
+                }
+                break;
+        }
+    }
+
+    private void preventMinionStacking(List<Minion> nearbyMinions) {
+        if (nearbyMinions.isEmpty()) return;
+
+        double avgX = 0, avgY = 0;
+        for (Minion m : nearbyMinions) {
+            avgX += m.getLocation().getX();
+            avgY += m.getLocation().getY();
+        }
+        avgX /= nearbyMinions.size();
+        avgY /= nearbyMinions.size();
+
+        double dx = location.getX() - avgX;
+        double dy = location.getY() - avgY;
+        double dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < 0.001) {
+            Random random = new Random();
+            double angle = random.nextDouble() * 2 * Math.PI;
+            dx = Math.cos(angle);
+            dy = Math.sin(angle);
+            dist = 1.0;
+        }
+
+        // Normalize separation direction
+        dx /= dist;
+        dy /= dist;
+
+        float newX = (float) (location.getX() + dx * MINIONS_SEPARATION);
+        float newY = (float) (location.getY() + dy * MINIONS_SEPARATION);
+
+        // If we have a target, clamp the separation point to stay within attack range
+        if (target != null) {
+            float attackRange = (float) getPlayerStat("attackRange");
+            double toTargetX = target.getLocation().getX() - newX;
+            double toTargetY = target.getLocation().getY() - newY;
+            double distToTarget = Math.sqrt(toTargetX * toTargetX + toTargetY * toTargetY);
+
+            if (distToTarget > attackRange) {
+                // Pull the separation point back towards target so we stay in range
+                double pullX = toTargetX / distToTarget;
+                double pullY = toTargetY / distToTarget;
+                newX = (float) (newX + pullX * (distToTarget - attackRange + 0.1f));
+                newY = (float) (newY + pullY * (distToTarget - attackRange + 0.1f));
+            }
+        }
+        if (canMove()) {
+            startMoveTo(new Point2D.Float(newX, newY), false);
+        }
+    }
+
+    private Actor getBestTarget(List<Actor> enemiesInAggro) {
+        double distanceNonChampion = 1000, distanceChampion = 10000;
+        Actor nonChampionTarget = null, championTarget = null;
+
+        enemiesInAggro.removeIf(
+                a ->
+                        a.getAvatar().equals("neptr_mine")
+                                || a.getAvatar().equals("choosegoose_chest"));
+
+        for (Actor e : enemiesInAggro) {
+            if (e instanceof UserActor || e instanceof Bot) {
+                if (!isInvisible(e)) {
+                    double distance = e.getLocation().distance(location);
+                    if (distance < distanceChampion) {
+                        distanceChampion = distance;
+                        championTarget = e;
+                    }
+                }
+            } else if (e instanceof Minion || e instanceof Tower || e instanceof Base) {
+                double distance = e.getLocation().distance(location);
+                if (distance < distanceNonChampion) {
+                    distanceNonChampion = distance;
+                    nonChampionTarget = e;
+                }
+            }
+        }
+        return nonChampionTarget != null ? nonChampionTarget : championTarget;
     }
 
     @Override
     public void update(int msRan) {
+        effectManager.handleEffectsUpdate();
         this.handleDamageQueue();
-        this.handleActiveEffects();
-        if (this.dead) return;
-        if (this.target != null && isInvisible(target)
-                || this.target != null && this.target.getHealth() <= 0)
-            this.target = null; // isDead doesn't work?
-        if (msRan % 1000 == 0) {
-            /*
-            for(UserActor k : aggressors.keySet()){
-                if(aggressors.get(k) == 10) aggressors.remove(k);
-                else aggressors.put(k,aggressors.get(k)+1);
-            }
+        handleMovementUpdate();
+        handleCharmMovement();
 
-             */
+        MinionState state = evaluateMinionState();
+        if (state != null) executeMinionState(state);
+
+        if (dead) return;
+        if ((target != null && isInvisible(target))
+                || (target != null && target.getHealth() <= 0)) {
+            target = null;
+        }
+
+        if (attackCooldown > 0) this.reduceAttackCooldown();
+        if (attackCooldown < 0) attackCooldown = 0;
+
+        if (msRan % 1000 == 0) {
             int xp = 5 + ((msRan / 1000) / 60);
             if (xpWorth != xp) xpWorth = xp;
         }
 
-        if (!this.isStopped()) {
-            this.timeTraveled += 0.1f;
-            this.idleTime = 0;
-        } else {
-            this.idleTime++;
-            if (this.idleTime >= 5000)
-                Console.logWarning(this.id + " has state: " + this.state + " for " + this.idleTime);
-        }
-        this.location =
-                MovementManager.getRelativePoint(
-                        this.movementLine, this.getSpeed(), this.timeTraveled);
-        this.handlePathing();
-        Minion conflictingMinion = this.isInsideMinion();
-        if (conflictingMinion != null && this.state != State.ATTACKING && this.target != null) {
-            Line2D line = new Line2D.Float(conflictingMinion.getLocation(), this.location);
-            Line2D extendedLine = MovementManager.extendLine(line, 10f);
-            Point2D snapLocation = extendedLine.getP2();
-            Point2D finalLocation =
-                    MovementManager.getStoppingPoint(snapLocation, this.target.getLocation(), 0.5f);
-            if (!this.withinRange(this.target)) this.moveWithCollision(finalLocation);
-            // if(this.target != null) this.moveTowardsTarget();
-        }
-        if (this.attackCooldown > 0) this.reduceAttackCooldown();
         if (movementDebug)
             ExtensionCommands.moveActor(
                     parentExt, room, id + "_test", this.location, this.location, 5f, false);
-
-        switch (this.state) {
-            case IDLE:
-                this.mainPathIndex = this.findPathIndex(false);
-                this.moveWithCollision(this.getPathPoint());
-                this.state = State.MOVING;
-                break;
-            case MOVING:
-                if (this.getState(ActorState.CHARMED) || this.getState(ActorState.FEARED)) return;
-                if (this.location.distance(this.getPathPoint()) <= 0.1d) {
-                    this.moveAlongPath();
-                    return;
-                } else if (this.isStopped()) {
-                    // this.canMove = true;
-                    Point2D pathPoint = this.getPathPoint();
-                    if (this.team == 0) {
-                        if (pathPoint.getX() < this.location.getX()
-                                && this.isValidPathIndex(this.mainPathIndex - 1)) {
-                            this.mainPathIndex--;
-                            this.moveWithCollision(this.getPathPoint());
-                            return;
-                        }
-                    } else {
-                        if (pathPoint.getX() > this.location.getX()
-                                && this.isValidPathIndex(this.mainPathIndex + 1)) {
-                            this.mainPathIndex++;
-                            this.moveWithCollision(this.getPathPoint());
-                            return;
-                        }
-                    }
-                    this.moveWithCollision(this.getPathPoint());
-                }
-                Actor potentialTarget = this.searchForTarget();
-                if (potentialTarget != null) {
-                    this.setTarget(potentialTarget);
-                    this.state = State.TARGETING;
-                }
-                break;
-            case TARGETING:
-                if (this.target == null) {
-                    this.moveToLane();
-                    return;
-                }
-                if (this.withinAggroRange(this.target.getLocation()) && !this.target.isDead()) {
-                    if (this.withinRange(this.target) && conflictingMinion == null) {
-                        this.stopMoving();
-                        this.state = State.ATTACKING;
-                    } else if (conflictingMinion == null) {
-                        if (this.target.getLocation().distance(this.movementLine.getP2()) > 0.1)
-                            this.moveTowardsTarget();
-                    }
-                } else {
-                    this.resetTarget();
-                }
-                break;
-            case ATTACKING:
-                if (this.target == null) {
-                    this.moveToLane();
-                    return;
-                } else if (this.target.isDead()) {
-                    Actor target = this.searchForTarget();
-                    if (target != null) {
-                        this.state = State.TARGETING;
-                        this.setTarget(target);
-                    } else this.resetTarget();
-                    return;
-                }
-                if (this.withinRange(this.target) && this.canAttack()) {
-                    this.attack(this.target);
-                } else if (!this.withinRange(this.target) || this.target.isDead()) {
-                    Actor target = this.searchForTarget();
-                    if (target != null) {
-                        this.state = State.TARGETING;
-                        this.setTarget(target);
-                    } else {
-                        this.resetTarget();
-                    }
-                } else if (this.withinRange(this.target) && !this.isStopped()) {
-                    this.stopMoving();
-                }
-                break;
-        }
-    }
-
-    @Override
-    public void handleFear(Point2D source, int duration) {
-        super.handleFear(source, duration);
-        this.state = State.MOVING;
     }
 
     @Override
     public void setTarget(Actor a) {
+        if (a == null) return;
         this.target = a;
         if (a.getActorType() == ActorType.PLAYER) {
             UserActor ua = (UserActor) a;
             ExtensionCommands.setTarget(parentExt, ua.getUser(), this.id, ua.getId());
         }
-        this.moveTowardsTarget();
     }
 
     @Override
@@ -415,17 +534,12 @@ public class Minion extends Actor {
         double time = a.getLocation().distance(this.location) / 20d;
         ExtensionCommands.createProjectileFX(
                 this.parentExt, this.room, fxId, this.id, a.getId(), "emitNode", "", (float) time);
-        parentExt
-                .getTaskScheduler()
-                .schedule(
-                        new Champion.DelayedAttack(
-                                parentExt,
-                                this,
-                                a,
-                                (int) this.getPlayerStat("attackDamage"),
-                                "basicAttack"),
-                        (int) (time * 1000),
-                        TimeUnit.MILLISECONDS);
+        int ad = (int) getPlayerStat("attackDamage");
+
+        Champion.DelayedAttack at =
+                new Champion.DelayedAttack(parentExt, this, a, ad, "basicAttack");
+        int timeMS = (int) (time * 1000);
+        scheduleTask(at, timeMS);
     }
 
     @Override
@@ -470,9 +584,8 @@ public class Minion extends Actor {
         return super.getPlayerStat(stat);
     }
 
-    public void resetTarget() {
-        this.moveToLane();
-        this.target = null;
+    public boolean isInvisible(Actor a) {
+        return a.getEffectManager().hasState(ActorState.INVISIBLE);
     }
 
     public int getLane() {
@@ -483,298 +596,36 @@ public class Minion extends Actor {
         return this.type;
     }
 
-    private Point2D getPathPoint() {
-        double x;
-        double y;
-        try {
-            if (!this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
-                if (this.lane == 0) {
-                    x = blueTopX[this.mainPathIndex];
-                    y = blueTopY[this.mainPathIndex];
-                } else {
-                    x = blueBotX[this.mainPathIndex];
-                    y = blueBotY[this.mainPathIndex];
-                }
-            } else {
-                x = practiceX[this.mainPathIndex];
-                y = practiceY[this.mainPathIndex];
-            }
-            return new Point2D.Double(x, y);
-        } catch (ArrayIndexOutOfBoundsException e) {
-            e.printStackTrace();
-            if (!this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
-                if (this.team == 0) {
-                    this.mainPathIndex = 0;
-                } else {
-                    if (this.lane == 0) {
-                        this.mainPathIndex = blueTopX.length - 1;
-                    } else this.mainPathIndex = blueBotX.length - 1;
-                }
-            } else {
-                if (this.team == 0) this.mainPathIndex = 0;
-                else this.mainPathIndex = practiceX.length - 1;
-            }
-            return getPathPoint();
-        }
-    }
+    private Point2D getLaneDestination() {
+        List<Point2D> lanePoints = getLanePoints();
+        if (lanePoints == null || lanePoints.isEmpty()) return null;
 
-    private Point2D getPathPoint(int mainPathIndex) {
-        double x;
-        double y;
-        try {
-            if (!this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
-                if (this.lane == 0) {
-                    x = blueTopX[mainPathIndex];
-                    y = blueTopY[mainPathIndex];
-                } else {
-                    x = blueBotX[mainPathIndex];
-                    y = blueBotY[mainPathIndex];
-                }
-            } else {
-                x = practiceX[mainPathIndex];
-                y = practiceY[mainPathIndex];
-            }
-            return new Point2D.Double(x, y);
-        } catch (ArrayIndexOutOfBoundsException e) {
-            e.printStackTrace();
-            return getPathPoint(mainPathIndex > 0 ? mainPathIndex - 1 : 0);
-        }
-    }
+        double minDistance = Double.MAX_VALUE;
+        int closestIndex = 0;
 
-    private void moveAlongPath() {
-        if (this.team == 1) this.mainPathIndex++;
-        else this.mainPathIndex--;
-        if (this.mainPathIndex < 0) this.mainPathIndex = 0;
-        else {
-            if (!this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
-                if (this.lane == 0 && this.mainPathIndex == blueTopX.length) this.mainPathIndex--;
-                else if (this.lane == 1 && this.mainPathIndex == blueBotX.length)
-                    this.mainPathIndex--;
-            } else {
-                if (this.mainPathIndex == practiceX.length) this.mainPathIndex--;
+        for (int i = 0; i < lanePoints.size(); i++) {
+            double distance = lanePoints.get(i).distance(location);
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestIndex = i;
             }
         }
-        this.move(this.getPathPoint());
-        this.timeTraveled = 0.1f;
+        // Return the next waypoint ahead, or stay at the last one
+        int targetIndex = Math.min(closestIndex + 1, lanePoints.size() - 1);
+        return lanePoints.get(targetIndex);
     }
 
-    @Override
-    public String getAvatar() {
-        return this.avatar.replace("0", "");
-    }
+    private List<Point2D> getLanePoints() {
+        List<Point2D> lanePoints;
 
-    @Override
-    protected HashMap<String, Double> initializeStats() {
-        HashMap<String, Double> stats = new HashMap<>();
-        JsonNode actorStats = this.parentExt.getActorStats(this.avatar.replace("0", ""));
-        for (Iterator<String> it = actorStats.fieldNames(); it.hasNext(); ) {
-            String k = it.next();
-            stats.put(k, actorStats.get(k).asDouble());
-        }
-        return stats;
-    }
-
-    @Override
-    public String getPortrait() {
-        return this.getAvatar();
-    }
-
-    private boolean withinAggroRange(Point2D p) {
-        return p.distance(this.location) <= 5;
-    }
-
-    private boolean facingEntity(
-            Point2D p) { // Returns true if the point is in the same direction as the minion is
-        // heading
-        // TODO: Some minions don't attack others attacking the base when they spawn
-        double deltaX = movementLine.getX2() - location.getX();
-        // Negative = left Positive = right
-        if (Double.isNaN(deltaX)) return false;
-        if (deltaX > 0 && p.getX() > this.location.getX()) return true;
-        else return deltaX < 0 && p.getX() < this.location.getX();
-    }
-
-    private boolean facingEntity(
-            Line2D line,
-            Point2D p) { // Returns true if the point is in the same direction as the minion is
-        // heading
-        // TODO: Some minions don't attack others attacking the base when they spawn
-        double deltaX = line.getX2() - line.getX1();
-        // Negative = left Positive = right
-        if (Double.isNaN(deltaX)) return false;
-        if (deltaX > 0 && p.getX() > line.getX1()) return true;
-        else return deltaX < 0 && p.getX() < line.getX1();
-    }
-
-    public boolean isInvisOrInBrush(Actor a) {
-        ActorState[] states = {ActorState.INVISIBLE, ActorState.BRUSH};
-        for (ActorState state : states) {
-            if (a.getState(state)) return true;
-        }
-        return false;
-    }
-
-    private boolean isValidPathIndex(int index) {
-        return index >= 0
-                && index
-                        < (this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()
-                                ? this.practiceX.length
-                                : this.blueBotX.length);
-    }
-
-    public void moveToLane() {
-        int pathIndex = this.findPathIndex(false);
-        this.mainPathIndex = pathIndex;
-        int nextPathIndex = this.team == 0 ? pathIndex - 1 : pathIndex + 1;
-        int pastPathIndex = this.team == 0 ? pathIndex + 1 : pathIndex - 1;
-        Point2D closestPoint = this.getPathPoint();
-        double closestDist = this.location.distance(closestPoint);
-        if (this.isValidPathIndex(pastPathIndex)) {
-            Line2D pastLinePath =
-                    new Line2D.Double(
-                            this.getPathPoint(pastPathIndex), this.getPathPoint(pathIndex));
-            for (Point2D p : MovementManager.findAllPoints(pastLinePath)) {
-                if (p.distance(this.location) < closestDist) {
-                    closestPoint = p;
-                    closestDist = p.distance(this.location);
-                }
-            }
-        }
-        if (this.isValidPathIndex(nextPathIndex)) {
-            Line2D nextLinePath =
-                    new Line2D.Double(
-                            this.getPathPoint(pathIndex), this.getPathPoint(nextPathIndex));
-            for (Point2D p : MovementManager.findAllPoints(nextLinePath)) {
-                if (p.distance(this.location) < closestDist) {
-                    closestPoint = p;
-                    closestDist = p.distance(this.location);
-                }
-            }
-        }
-        this.moveWithCollision(closestPoint);
-        this.state = State.MOVING;
-    }
-
-    private boolean actorsToIgnore(String avatar, String id) {
-        return avatar.equals("neptr_mine")
-                || avatar.equals("choosegoose_chest")
-                || id.contains("decoy");
-    }
-
-    private Actor searchForTarget() {
-        Actor closestActor = null;
-        Actor closestNonUser = null;
-        double distance = 1000f;
-        double distanceNonUser = 1000f;
-        RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
-        List<Actor> filteredActors = handler.getEligibleActors(this.team, true, true, false, false);
-        for (Actor a : filteredActors) {
-            if (isNotAMonster(a)
-                    && !actorsToIgnore(a.getAvatar(), a.getId())
-                    && !isInvisOrInBrush(a)
-                    && this.withinAggroRange(a.getLocation())) {
-                if (a.getActorType() == ActorType.PLAYER && this.facingEntity(a.getLocation())) {
-                    UserActor ua = (UserActor) a;
-                    if (ua.getState(ActorState.REVEALED) && !ua.getState(ActorState.BRUSH)) {
-                        if (ua.getLocation().distance(this.location) < distance) {
-                            distance = ua.getLocation().distance(this.location);
-                            closestActor = ua;
-                        }
-                    }
-                } else {
-                    // Console.debugLog(this.id +": Targeting " + a.getId() + " at dist " +
-                    // a.getLocation().distance(this.location));
-                    if (a.getLocation().distance(this.location) < distanceNonUser) {
-                        if (a.getActorType() != ActorType.BASE) {
-                            closestNonUser = a;
-                            distanceNonUser = a.getLocation().distance(this.location);
-                        } else {
-                            Base b = (Base) a;
-                            if (b.isUnlocked()) {
-                                closestNonUser = a;
-                                distanceNonUser = a.getLocation().distance(this.location);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        if (closestNonUser != null) return closestNonUser;
-        else return closestActor;
-    }
-
-    private void moveTowardsTarget() {
-        // if (this.type == MinionType.MELEE) Console.debugLog(this.id + " is moving towards
-        // target");
-        if (!this.withinRange(this.target)) this.moveWithCollision(this.target.getLocation());
-    }
-
-    private Minion isInsideMinion() {
-        for (Minion m :
-                this.parentExt
-                        .getRoomHandler(this.room.getName())
-                        .getMinions(this.team, this.lane)) {
-            if (!m.getId().equalsIgnoreCase(this.id)
-                    && m.getLocation().distance(this.location) <= 0.45d) return m;
-        }
-        return null;
-    }
-
-    private int findPathIndex(
-            boolean retry) { // Finds the nearest point along the defined path for the minion to
-        // travel
-        // to
-        double[] pathX;
-        double[] pathY;
-        if (this.lane != 0) {
-            pathX = blueBotX;
-            pathY = blueBotY;
+        if (map == GameMap.BATTLE_LAB) {
+            if (lane == 0 && team == 0) lanePoints = purpleTopLanePoints;
+            else if (lane == 0 && team == 1) lanePoints = blueTopLanePoints;
+            else if (lane == 1 && team == 0) lanePoints = purpleBotLanePoints;
+            else lanePoints = blueBotLanePoints;
         } else {
-            pathX = blueTopX;
-            pathY = blueTopY;
+            lanePoints = team == 0 ? practicePurpleLanePoints : practiceBlueLanePoints;
         }
-        if (this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap()) {
-            pathX = practiceX;
-            pathY = practiceY;
-        }
-        double shortestDistance = 100;
-        int index = -1;
-        Line2D testLine;
-        if (this.movementLine == null || this.isStopped()) {
-            int p2 = blueBotX.length - 1;
-            if (lane == 0) p2 = blueTopX.length - 1;
-            if (team == 0) {
-                p2 = 0;
-            } else if (this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap())
-                p2 = practiceX.length - 1;
-            testLine = new Line2D.Float(this.location, this.getPathPoint(p2));
-        } else testLine = new Line2D.Float(this.location, this.movementLine.getP2());
-        for (int i = 0; i < pathX.length; i++) {
-            Point2D pathPoint = new Point2D.Double(pathX[i], pathY[i]);
-            if (this.facingEntity(testLine, pathPoint)) {
-                if (Math.abs(this.location.distance(pathPoint)) < shortestDistance) {
-                    shortestDistance = Math.abs(this.location.distance(pathPoint));
-                    index = i;
-                }
-            }
-        }
-        if (Math.abs(shortestDistance) < 0.01
-                && ((this.team == 0 && index + 1 != pathX.length)
-                        || (this.team == 1 && index - 1 != 0))) {
-            if (this.team == 1) index++;
-            else index--;
-        }
-        if (index == -1) {
-            if (retry) {
-                if (team == 0) {
-                    if (lane == 0) return blueTopX.length - 1;
-                    else return blueBotX.length - 1;
-                } else return 0;
-            } else {
-                this.movementLine = null;
-                return this.findPathIndex(true);
-            }
-        }
-        return index;
+        return lanePoints;
     }
 }

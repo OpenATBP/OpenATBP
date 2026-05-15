@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.smartfoxserver.v2.entities.Room;
 
 import xyz.openatbp.extension.*;
-import xyz.openatbp.extension.game.ActorState;
+import xyz.openatbp.extension.game.effects.ActorState;
 
 public class BaseTower extends Tower {
     private boolean isUnlocked = false;
@@ -16,7 +16,6 @@ public class BaseTower extends Tower {
     public BaseTower(ATBPExtension parentExt, Room room, String id, int team) {
         super(parentExt, room, id, team);
         this.location = GameModeSpawns.getBaseTowerLocationForMode(room, team);
-        ExtensionCommands.updateActorState(parentExt, room, id, ActorState.INVINCIBLE, true);
         ExtensionCommands.updateActorState(parentExt, room, id, ActorState.IMMUNITY, true);
         ExtensionCommands.createWorldFX(
                 parentExt,
@@ -63,7 +62,6 @@ public class BaseTower extends Tower {
 
     public void unlockBaseTower() {
         this.isUnlocked = true;
-        ExtensionCommands.updateActorState(parentExt, room, id, ActorState.INVINCIBLE, false);
         ExtensionCommands.updateActorState(parentExt, room, this.id, ActorState.IMMUNITY, false);
     }
 

@@ -1,7 +1,6 @@
 package xyz.openatbp.extension.game.champions;
 
 import java.awt.geom.Line2D;
-import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.List;
 
@@ -12,11 +11,10 @@ import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.ATBPExtension;
 import xyz.openatbp.extension.ExtensionCommands;
 import xyz.openatbp.extension.RoomHandler;
-import xyz.openatbp.extension.game.AbilityRunnable;
-import xyz.openatbp.extension.game.Champion;
-import xyz.openatbp.extension.game.Projectile;
+import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.pathfinding.PathFinder;
 
 public class Gunter extends UserActor {
     private static final float E_OFFSET_DISTANCE_BOTTOM = 0.5f;
@@ -28,7 +26,7 @@ public class Gunter extends UserActor {
     private long ultStartTime = 0;
     private int qTime;
 
-    Path2D eTrapezoid = null;
+    AbilityShape eTrapezoid = null;
 
     public Gunter(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -40,10 +38,13 @@ public class Gunter extends UserActor {
         if (this.ultActivated && this.eTrapezoid != null) {
             JsonNode spellData = parentExt.getAttackData(getAvatar(), "spell3");
             RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
-            List<Actor> actorsInTrapezoid = handler.getEnemiesInPolygon(this.team, this.eTrapezoid);
-            if (!actorsInTrapezoid.isEmpty()) {
-                for (Actor a : actorsInTrapezoid) {
-                    if (isNeitherTowerNorAlly(a)) {
+            List<Actor> nearbyEnemies =
+                    Champion.getEnemyActorsInRadius(handler, team, location, E_SPELL_RANGE + 2);
+            if (!nearbyEnemies.isEmpty()) {
+                for (Actor a : nearbyEnemies) {
+                    if (isNeitherTowerNorAlly(a)
+                            && eTrapezoid.contains(a.getLocation(), a.getCollisionRadius())
+                            && a.isNotLeaping()) {
                         double damage = getSpellDamage(spellData, false) / 10d;
                         a.addToDamageQueue(this, damage, spellData, true);
                     }
@@ -121,65 +122,106 @@ public class Gunter extends UserActor {
                     this.ultActivated = false;
                 }
                 this.canCast[0] = false;
-                Point2D finalDastPoint = this.location;
-                try {
-                    Point2D ogLocation = this.location;
-                    finalDastPoint = this.dash(dest, true, DASH_SPEED);
-                    double time = ogLocation.distance(finalDastPoint) / DASH_SPEED;
-                    this.qTime = (int) (time * 1000);
-                    ExtensionCommands.playSound(
-                            parentExt, this.room, this.id, "sfx_gunter_slide", this.location);
-                    ExtensionCommands.createActorFX(
-                            parentExt,
-                            room,
-                            this.id,
-                            "gunter_slide_trail",
-                            qTime,
-                            this.id + "_gunterTrail",
-                            true,
-                            "Bip01",
-                            true,
-                            false,
-                            team);
-                    ExtensionCommands.createActorFX(
-                            parentExt,
-                            room,
-                            this.id,
-                            "gunter_slide_snow",
-                            qTime,
-                            this.id + "_gunterTrail",
-                            true,
-                            "Bip01",
-                            true,
-                            false,
-                            team);
-                    ExtensionCommands.actorAnimate(parentExt, room, id, "spell1b", qTime, false);
-                } catch (Exception exception) {
-                    logExceptionMessage(avatar, ability);
-                    exception.printStackTrace();
-                }
+                RoomHandler rh = parentExt.getRoomHandler(room.getName());
+                PathFinder pf = rh.getPathFinder();
+
+                Point2D dashPoint = pf.getIntersectionPoint(location, dest);
+
+                double time = location.distance(dashPoint) / DEFAULT_DASH_SPEED;
+                qTime = (int) (time * 1000);
+
+                Runnable onEnd =
+                        () -> {
+                            if (getHealth() > 0 && !hasDashAttackInterruptCC()) {
+                                ExtensionCommands.createActorFX(
+                                        parentExt,
+                                        room,
+                                        id,
+                                        "gunter_belly_slide_bottles",
+                                        1500,
+                                        id + "_slide_bottles",
+                                        false,
+                                        "",
+                                        false,
+                                        false,
+                                        team);
+                                ExtensionCommands.playSound(
+                                        parentExt, room, id, "sfx_gunter_slide_shatter", location);
+                                ExtensionCommands.actorAnimate(
+                                        parentExt, room, id, "spell1c", 500, false);
+                                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                                List<Actor> affectedActors =
+                                        Champion.getActorsInRadius(handler, location, 2f);
+                                for (Actor a : affectedActors) {
+                                    if (isNeitherTowerNorAlly(a) && a.isNotLeaping()) {
+                                        double dmg = getSpellDamage(spellData, true);
+                                        a.addToDamageQueue(Gunter.this, dmg, spellData, false);
+                                    }
+                                }
+                            }
+                        };
+
+                DashContext ctx =
+                        new DashContext.Builder(location, dest, (float) DEFAULT_DASH_SPEED)
+                                .canBeRedirected(true)
+                                .triggerEndEffectOnRoot(true)
+                                .onInterrupt(this::playInterruptSoundAndIdle)
+                                .onEnd(onEnd)
+                                .build();
+                startDash(ctx);
+
+                ExtensionCommands.playSound(parentExt, room, id, "sfx_gunter_slide", location);
+
+                ExtensionCommands.createActorFX(
+                        parentExt,
+                        room,
+                        this.id,
+                        "gunter_slide_trail",
+                        qTime,
+                        this.id + "_gunterTrail",
+                        true,
+                        "Bip01",
+                        true,
+                        false,
+                        team);
+                ExtensionCommands.createActorFX(
+                        parentExt,
+                        room,
+                        this.id,
+                        "gunter_slide_snow",
+                        qTime,
+                        this.id + "_gunterTrail",
+                        true,
+                        "Bip01",
+                        true,
+                        false,
+                        team);
+                ExtensionCommands.actorAnimate(parentExt, room, id, "spell1b", qTime, false);
+
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt, player, "q", true, getReducedCooldown(cooldown), gCooldown);
-                scheduleTask(
-                        abilityRunnable(ability, spellData, cooldown, gCooldown, finalDastPoint),
-                        qTime);
+                Runnable enableQCasting = () -> canCast[0] = true;
+                int delay = getReducedCooldown(cooldown) - qTime;
+                scheduleTask(enableQCasting, delay);
+
                 break;
             case 2:
                 this.canCast[1] = false;
                 try {
                     stopMoving();
                     if (getHealth() > 0) {
-                        Line2D abilityLine = Champion.getAbilityLine(this.location, dest, 8f);
+                        playSoundWithChance("vo/vo_gunter_w", 50);
+                        Line2D abilityLine = Champion.createLineTowards(this.location, dest, 8f);
                         ExtensionCommands.playSound(
                                 this.parentExt, this.room, "", "sfx_gunter_wing_it", this.location);
+
+                        String projectile =
+                                avatar.contains("green")
+                                        ? "projectile_gunter_skin_green_bottle"
+                                        : "projectile_gunter_bottle";
                         this.fireProjectile(
                                 new BottleProjectile(
-                                        this.parentExt,
-                                        this,
-                                        abilityLine,
-                                        11f,
-                                        0.5f,
-                                        "projectile_gunter_bottle"),
+                                        this.parentExt, this, abilityLine, 11f, 0.5f, projectile),
                                 this.location,
                                 dest,
                                 8f);
@@ -190,8 +232,9 @@ public class Gunter extends UserActor {
                 }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
-                int delay = getReducedCooldown(cooldown);
-                scheduleTask(abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay);
+                int delay2 = getReducedCooldown(cooldown);
+                scheduleTask(
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay2);
                 break;
             case 3:
                 this.canCast[2] = false;
@@ -200,7 +243,7 @@ public class Gunter extends UserActor {
                     this.ultStartTime = System.currentTimeMillis();
                     this.ultActivated = true;
                     this.eTrapezoid =
-                            Champion.createTrapezoid(
+                            AbilityShape.createTrapezoid(
                                     location,
                                     dest,
                                     E_SPELL_RANGE,
@@ -239,9 +282,9 @@ public class Gunter extends UserActor {
                 }
                 ExtensionCommands.actorAbilityResponse(
                         this.parentExt, player, "e", true, getReducedCooldown(cooldown), gCooldown);
-                int delay1 = getReducedCooldown(cooldown);
+                int delay3 = getReducedCooldown(cooldown);
                 scheduleTask(
-                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay1);
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay3);
                 break;
         }
     }
@@ -266,7 +309,7 @@ public class Gunter extends UserActor {
                 Champion.getEnemyActorsInRadius(
                         handler, this.team, a.getLocation(), PASSIVE_RADIUS);
         for (Actor actor : enemyActorsInRadius) {
-            if (isNeitherTowerNorAlly(actor)) {
+            if (isNeitherTowerNorAlly(actor) && actor.isNotLeaping()) {
                 JsonNode spellData = this.parentExt.getAttackData(this.getAvatar(), "spell4");
                 double dmg = getSpellDamage(spellData, true);
                 actor.addToDamageQueue(this, dmg, spellData, false);
@@ -295,36 +338,7 @@ public class Gunter extends UserActor {
         }
 
         @Override
-        protected void spellQ() {
-            Runnable enableQCasting = () -> canCast[0] = true;
-            int delay = getReducedCooldown(cooldown) - qTime;
-            scheduleTask(enableQCasting, delay);
-            if (getHealth() > 0 && !hasDashAttackInterruptCC()) {
-                ExtensionCommands.createActorFX(
-                        parentExt,
-                        room,
-                        id,
-                        "gunter_belly_slide_bottles",
-                        1500,
-                        id + "_slide_bottles",
-                        false,
-                        "",
-                        false,
-                        false,
-                        team);
-                ExtensionCommands.playSound(
-                        parentExt, room, id, "sfx_gunter_slide_shatter", location);
-                ExtensionCommands.actorAnimate(parentExt, room, id, "spell1c", 500, false);
-                RoomHandler handler = parentExt.getRoomHandler(room.getName());
-                List<Actor> affectedActors = Champion.getActorsInRadius(handler, location, 2f);
-                for (Actor a : affectedActors) {
-                    if (isNeitherTowerNorAlly(a)) {
-                        double dmg = getSpellDamage(spellData, true);
-                        a.addToDamageQueue(Gunter.this, dmg, spellData, false);
-                    }
-                }
-            }
-        }
+        protected void spellQ() {}
 
         @Override
         protected void spellW() {
@@ -347,9 +361,9 @@ public class Gunter extends UserActor {
                 UserActor owner,
                 Line2D path,
                 float speed,
-                float hitboxRadius,
+                float offsetDistance,
                 String id) {
-            super(parentExt, owner, path, speed, hitboxRadius, id);
+            super(parentExt, owner, path, speed, offsetDistance, offsetDistance, id);
         }
 
         @Override

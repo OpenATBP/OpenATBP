@@ -1,5 +1,7 @@
 package xyz.openatbp.extension.game.champions;
 
+import static xyz.openatbp.extension.game.effects.EffectManager.DEFAULT_KNOCKBACK_SPEED;
+
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -15,22 +17,30 @@ import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.game.effects.ActorState;
+import xyz.openatbp.extension.game.effects.ModifierIntent;
+import xyz.openatbp.extension.game.effects.ModifierType;
+import xyz.openatbp.extension.pathfinding.PathFinder;
 
 public class BubbleGum extends UserActor {
     private static final String[] PASSIVE_NAMES = {
         "icon_pb_p0", "icon_pb_p1", "icon_pb_p2", "icon_pb_p3"
     };
-    private static final float PASSIVE_ATTACKSPEED_VALUE = 0.2f;
+    private static final float PASSIVE_AS_STACK_PERCENT = 0.2f;
+    public static final double PASSIVE_SLOW_PERCENT = 0.25;
     private static final int PASSIVE_RECHARGE_TIME = 10000;
     private static final int PASSIVE_EFFECT_DURATION = 5000;
     private static final int Q_CAST_DELAY = 750;
     private static final int Q_DURATION = 3000;
     private static final int Q_SLOW_DURATION = 2000;
-    private static final float Q_SLOW_VALUE = 0.3f;
+    private static final float Q_SLOW_VALUE_PERCENT = 0.3f;
     private static final int Q_SPEED_DURATION = 2000;
-    private static final float Q_SPEED_VALUE = 0.4f;
+    private static final float Q_SPEED_VALUE_PERCENT = 0.4f;
     private static final int E_DURATION = 4000;
     private static final int E_SECOND_USE_DELAY = 750;
+    public static final float E_KNOCKBACK_DIST = 3.5f;
+    public static final float W_TURRET_DMG_RATIO = 0.5f;
+
     private int passiveAmmunition = 3;
     private long passiveTimeStamp = 0;
     private boolean potionActivated = false;
@@ -41,7 +51,10 @@ public class BubbleGum extends UserActor {
     private int eUses = 0;
     private Point2D bombLocation;
     private long bombPlaceTime = 0;
-    private Map<String, Integer> passiveVictims = new HashMap<>();
+    private Map<Actor, Integer> passiveStacks = new HashMap<>();
+    private Map<Actor, Long> playersWithPassiveSlow = new HashMap<>();
+
+    private long lastQSpeed = 0L;
 
     public BubbleGum(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -80,32 +93,40 @@ public class BubbleGum extends UserActor {
                         double damage = this.getSpellDamage(spellData, false) / 10f;
                         a.addToDamageQueue(this, damage, spellData, true);
                         if (isNeitherStructureNorAlly(a)) {
-                            a.addState(ActorState.SLOWED, Q_SLOW_VALUE, Q_SLOW_DURATION);
+                            a.getEffectManager()
+                                    .addState(
+                                            ActorState.SLOWED,
+                                            id + "_pb_q_slow",
+                                            Q_SLOW_VALUE_PERCENT,
+                                            Q_SLOW_DURATION);
                         }
 
                     } else if (a.getId().equalsIgnoreCase(this.id)) {
-                        this.addEffect(
-                                "speed", this.getStat("speed") * Q_SPEED_VALUE, Q_SPEED_DURATION);
-                        ExtensionCommands.createActorFX(
-                                this.parentExt,
-                                this.room,
-                                this.id,
-                                "statusEffect_speed",
-                                Q_SPEED_DURATION,
-                                this.id + "_pbQSpeed",
-                                true,
-                                "Bip01 Footsteps",
-                                true,
-                                false,
-                                this.team);
+                        if (System.currentTimeMillis() - lastQSpeed > Q_SPEED_DURATION) {
+                            effectManager.addEffect(
+                                    this.id + "_pb_q_speed",
+                                    "speed",
+                                    Q_SPEED_VALUE_PERCENT,
+                                    ModifierType.MULTIPLICATIVE,
+                                    ModifierIntent.BUFF,
+                                    Q_SPEED_DURATION);
+
+                            ExtensionCommands.createActorFX(
+                                    this.parentExt,
+                                    this.room,
+                                    this.id,
+                                    "statusEffect_speed",
+                                    Q_SPEED_DURATION,
+                                    this.id + "_pbQSpeed",
+                                    true,
+                                    "Bip01 Footsteps",
+                                    true,
+                                    false,
+                                    this.team);
+                        }
                     }
                 }
             }
-        }
-        ArrayList<Turret> turrets =
-                new ArrayList<>(this.turrets); // To remove concurrent exceptions
-        for (Turret t : turrets) {
-            t.update(msRan);
         }
         if (this.bombLocation != null
                 && System.currentTimeMillis() - this.bombPlaceTime >= E_DURATION) {
@@ -135,6 +156,50 @@ public class BubbleGum extends UserActor {
         }
     }
 
+    private void handlePassive(Actor victim) {
+        if (passiveAmmunition > 0 && victim instanceof UserActor) {
+            int stacks = passiveStacks.getOrDefault(victim, 0);
+            passiveAmmunition--;
+
+            if (stacks < 3) {
+                passiveStacks.put(victim, stacks + 1);
+                victim.getEffectManager()
+                        .addEffect(
+                                victim.getId() + "_pb_as_passive_debuff",
+                                "attackSpeed",
+                                PASSIVE_AS_STACK_PERCENT,
+                                ModifierType.MULTIPLICATIVE,
+                                ModifierIntent.DEBUFF,
+                                PASSIVE_EFFECT_DURATION);
+            }
+
+            if (stacks == 3) {
+                long lastProc = playersWithPassiveSlow.getOrDefault(victim, -1L);
+
+                if (lastProc == -1
+                        || System.currentTimeMillis() - lastProc >= PASSIVE_EFFECT_DURATION) {
+                    victim.getEffectManager()
+                            .addState(
+                                    ActorState.SLOWED,
+                                    id + "_pb_passive_slow",
+                                    PASSIVE_SLOW_PERCENT,
+                                    PASSIVE_EFFECT_DURATION);
+                    playersWithPassiveSlow.put(victim, System.currentTimeMillis());
+                }
+            }
+        }
+    }
+
+    @Override
+    public void handleKill(Actor a, JsonNode attackData) {
+        super.handleKill(a, attackData);
+
+        if (a instanceof UserActor) {
+            playersWithPassiveSlow.remove(a);
+            passiveStacks.remove(a);
+        }
+    }
+
     @Override
     public void die(Actor a) {
         super.die(a);
@@ -159,7 +224,7 @@ public class BubbleGum extends UserActor {
                 try {
                     this.stopMoving();
                     String potionVo = SkinData.getBubbleGumQVO(avatar);
-                    ExtensionCommands.playSound(parentExt, room, id, potionVo, this.location);
+                    playSoundWithChance(potionVo, 50);
                     ExtensionCommands.createWorldFX(
                             parentExt,
                             room,
@@ -187,7 +252,7 @@ public class BubbleGum extends UserActor {
                     if (getHealth() > 0) {
                         this.stopMoving();
                         String turretVo = SkinData.getBubbleGumWVO(avatar);
-                        ExtensionCommands.playSound(parentExt, room, id, turretVo, this.location);
+                        playSoundWithChance(turretVo, 50);
                         this.spawnTurret(dest);
                     }
                     ExtensionCommands.actorAbilityResponse(
@@ -255,16 +320,41 @@ public class BubbleGum extends UserActor {
             for (Actor a : actors) {
                 double spellDamage = getSpellDamage(spellData, true);
                 if (a.getActorType() != ActorType.BASE && a.getActorType() != ActorType.TOWER) {
-                    a.knockback(bombLocation, 3.5f);
-                    if (a.getState(ActorState.SLOWED) && !a.equals(this)) spellDamage *= 1.25d;
+
+                    if (!a.equals(this)) {
+                        a.handleKnockback(bombLocation, E_KNOCKBACK_DIST, DEFAULT_KNOCKBACK_SPEED);
+                    }
+
+                    if (effectManager.hasState(ActorState.SLOWED) && !a.equals(this)) {
+                        spellDamage *= 1.25d;
+                    }
+
+                    Runnable animDelay =
+                            () ->
+                                    ExtensionCommands.actorAnimate(
+                                            parentExt, room, id, "spell3c", 500, false);
 
                     if (a.equals(this)) {
+
+                        float distToBomb = (float) location.distance(bombLocation);
+                        float range = E_KNOCKBACK_DIST + distToBomb;
+
+                        Point2D initLeap =
+                                Champion.createLineTowards(bombLocation, location, range).getP2();
+                        RoomHandler rh = parentExt.getRoomHandler(room.getName());
+                        PathFinder pf = rh.getPathFinder();
+
+                        Point2D leapLoc = pf.getNonObstaclePointOrIntersection(location, initLeap);
+
+                        DashContext ctx =
+                                new DashContext.Builder(location, leapLoc, DEFAULT_KNOCKBACK_SPEED)
+                                        .isLeap(true)
+                                        .canBeRedirected(false)
+                                        .onEnd(animDelay)
+                                        .build();
+                        startDash(ctx);
+
                         ExtensionCommands.actorAnimate(parentExt, room, id, "spell3b", 325, false);
-                        Runnable animDelay =
-                                () ->
-                                        ExtensionCommands.actorAnimate(
-                                                parentExt, room, id, "spell3c", 350, false);
-                        scheduleTask(animDelay, 325);
                     }
                 }
 
@@ -406,31 +496,13 @@ public class BubbleGum extends UserActor {
                 damage *= 1.25;
                 damage = handleGrassSwordProc(damage);
             }
-            if (BubbleGum.this.passiveAmmunition > 0
-                    && this.target.getActorType()
-                            == ActorType.PLAYER) { // TODO: Applying the passive here feels wrong
-                BubbleGum.this.passiveAmmunition--;
-                BubbleGum.this.passiveTimeStamp = System.currentTimeMillis();
-                double delta = this.target.getStat("attackSpeed") * PASSIVE_ATTACKSPEED_VALUE;
-                if (passiveVictims.containsKey(this.target.getId())) {
-                    passiveVictims.put(
-                            this.target.getId(), passiveVictims.get(this.target.getId()) + 1);
-                    if (passiveVictims.get(this.target.getId()) == 3) {
-                        this.target.addState(ActorState.SLOWED, 0.25, PASSIVE_EFFECT_DURATION / 2);
-                        passiveVictims = new HashMap<>();
-                    }
-                } else passiveVictims.put(this.target.getId(), 1);
-                this.target.addEffect("attackSpeed", delta, PASSIVE_EFFECT_DURATION);
-                handlePassiveStatusIcons(passiveAmmunition);
-                if (BubbleGum.this.passiveAmmunition == 0) passiveVictims = new HashMap<>();
-            }
             new Champion.DelayedAttack(
                             parentExt, this.attacker, this.target, (int) damage, "basicAttack")
                     .run();
         }
     }
 
-    private class Turret extends Actor {
+    public class Turret extends Actor {
         private long timeOfBirth;
         private Actor target;
         private boolean dead = false;
@@ -489,7 +561,7 @@ public class BubbleGum extends UserActor {
                     };
             int delay = 150;
             scheduleTask(creationDelay, delay);
-            this.addState(ActorState.IMMUNITY, 0d, 1000 * 60 * 15);
+            effectManager.addState(ActorState.IMMUNITY, id + "_immunity", 0d, 1000 * 60 * 15);
         }
 
         @Override
@@ -512,28 +584,22 @@ public class BubbleGum extends UserActor {
                     "Bip01",
                     "targetNode",
                     time);
-            int damage = 10 + (int) this.getPlayerStat("attackDamage");
-            int delay = (int) time * 1000;
-            String attack = "turretAttack";
 
-            Champion.DelayedAttack delayedAttack =
-                    new Champion.DelayedAttack(parentExt, this, a, damage, attack);
-            scheduleTask(delayedAttack, delay);
-            BubbleGum.this.handleLifeSteal();
-            this.attackCooldown = this.getPlayerStat("attackSpeed");
-        }
+            Runnable damageVictim =
+                    () -> {
+                        if (!hasAttackCC() && !a.isDead() && !this.isDead()) {
+                            JsonNode spellData =
+                                    parentExt.getAttackData(BubbleGum.this.getAvatar(), "spell2");
+                            int damage =
+                                    (int)
+                                            (BubbleGum.this.getPlayerStat("spellDamage")
+                                                    * W_TURRET_DMG_RATIO);
+                            a.addToDamageQueue(this, damage, spellData, false);
+                        }
+                    };
+            scheduleTask(damageVictim, (int) (time * 1000));
 
-        @Override
-        public void addState(ActorState state, double delta, int duration) {
-            if (state == ActorState.CHARMED || state == ActorState.FEARED) return;
-            super.addState(state, delta, duration);
-        }
-
-        @Override
-        public void addState(
-                ActorState state, double delta, int duration, String fxId, String emit) {
-            if (state == ActorState.CHARMED || state == ActorState.FEARED) return;
-            super.addState(state, delta, duration, fxId, emit);
+            this.attackCooldown = getPlayerStat("attackSpeed");
         }
 
         @Override
@@ -550,7 +616,6 @@ public class BubbleGum extends UserActor {
         @Override
         public void update(int msRan) {
             this.handleDamageQueue();
-            this.handleActiveEffects();
             if (this.dead) return;
             if (System.currentTimeMillis() - this.timeOfBirth >= TURRET_LIFETIME) {
                 this.die(this);
@@ -572,9 +637,11 @@ public class BubbleGum extends UserActor {
         }
 
         private boolean turretInBrush() {
-            for (Path2D brush :
-                    this.parentExt.getBrushPaths(
-                            this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap())) {
+            RoomGroup roomGroup = GameManager.getRoomGroupEnum(room.getName());
+            GameMap gameMap = GameManager.getMap(roomGroup);
+            List<Path2D> brushList = parentExt.getBrushPaths(gameMap);
+
+            for (Path2D brush : brushList) {
                 if (brush.contains(this.location)) {
                     return true;
                 }
@@ -592,16 +659,16 @@ public class BubbleGum extends UserActor {
 
             for (UserActor ua : playersInRange) {
                 if (ua.getTeam() != this.team && ua.getHealth() > 0) {
-                    if (ua.getState(ActorState.BRUSH) && turretInBrush()) this.target = ua;
-                    if (!ua.getState(ActorState.BRUSH)) this.target = ua;
+                    if (ua.isInsideBrush() && turretInBrush()) this.target = ua;
+                    if (!ua.isInsideBrush()) this.target = ua;
                     break;
                 }
             }
             if (this.target == null) {
                 for (Actor a : actorsInRange) {
                     if (a.getHealth() > 0) {
-                        if (a.getState(ActorState.BRUSH) && turretInBrush()) this.target = a;
-                        if (!a.getState(ActorState.BRUSH)) this.target = a;
+                        if (a.isInsideBrush() && turretInBrush()) this.target = a;
+                        if (!a.isInsideBrush()) this.target = a;
                         break;
                     }
                 }

@@ -1,7 +1,6 @@
 package xyz.openatbp.extension.game.champions;
 
 import java.awt.geom.Line2D;
-import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -13,7 +12,10 @@ import com.smartfoxserver.v2.entities.User;
 import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
+import xyz.openatbp.extension.game.actors.Bot;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.game.effects.ActorState;
+import xyz.openatbp.extension.pathfinding.PathFinder;
 
 public class FlamePrincess extends UserActor {
 
@@ -24,12 +26,13 @@ public class FlamePrincess extends UserActor {
     private static final int Q_BURST_RECTANGLE_LENGTH = 4;
     private static final int Q_BURST_RECTANGLE_WIDTH = 1;
 
-    private static final int W_POLY_DURATION = 3000;
+    public static final int W_POLY_DURATION = 3000;
     private static final int W_CAST_DELAY = 1000;
 
     private static final int E_DASH_COOLDOWN = 350;
     private static final int E_DURATION = 5000;
     private static final int E_DASH_SPEED = 15;
+    public static final double CRIT_DAMAGE_RATIO = 1.4;
 
     private boolean passiveEnabled = false;
     private long lastPassiveUsage = 0;
@@ -39,6 +42,7 @@ public class FlamePrincess extends UserActor {
     private long ultStartTime = 0;
     private long lastPolymorphTime = 0;
     private float fpScale = 1;
+    private boolean disableUltOnPoly = false;
 
     private enum Form {
         NORMAL,
@@ -49,6 +53,8 @@ public class FlamePrincess extends UserActor {
 
     public FlamePrincess(User u, ATBPExtension parentExt) {
         super(u, parentExt);
+        this.hasCustomSwapToPoly = true;
+        this.hasCustomSwapFromPoly = true;
     }
 
     @Override
@@ -58,10 +64,10 @@ public class FlamePrincess extends UserActor {
             canCast[2] = false; // to be on the safe side :D
             endUlt();
         }
-        if (this.form == Form.ULT) {
+        if (this.form == Form.ULT && !disableUltOnPoly) {
             RoomHandler handler = parentExt.getRoomHandler(this.room.getName());
             for (Actor a : Champion.getActorsInRadius(handler, this.location, 2)) {
-                if (a.getTeam() != this.team && isNeitherTowerNorAlly(a)) {
+                if (a.getTeam() != this.team && isNeitherTowerNorAlly(a) && a.isNotLeaping()) {
                     JsonNode attackData = this.parentExt.getAttackData(getAvatar(), "spell3");
                     double damage = (double) this.getSpellDamage(attackData, false) / 10;
                     a.addToDamageQueue(this, damage, attackData, true);
@@ -71,7 +77,7 @@ public class FlamePrincess extends UserActor {
         }
         if (System.currentTimeMillis() - lastPolymorphTime <= W_POLY_DURATION) {
             for (Actor a : this.parentExt.getRoomHandler(this.room.getName()).getPlayers()) {
-                boolean polymorphActive = a.getState(ActorState.POLYMORPH);
+                boolean polymorphActive = a.getEffectManager().hasState(ActorState.POLYMORPH);
                 if (polymorphActive) {
                     RoomHandler handler = parentExt.getRoomHandler(room.getName());
                     List<Actor> actorsInRadius =
@@ -79,7 +85,8 @@ public class FlamePrincess extends UserActor {
                     actorsInRadius.remove(a);
 
                     for (Actor affectedActor : actorsInRadius) {
-                        if (isNeitherStructureNorAlly(affectedActor)) {
+                        if (isNeitherStructureNorAlly(affectedActor)
+                                && affectedActor.isNotLeaping()) {
                             handlePassive();
                             JsonNode spellData = this.parentExt.getAttackData("flame", "spell2");
 
@@ -93,10 +100,14 @@ public class FlamePrincess extends UserActor {
     }
 
     @Override
-    public void handleSwapToPoly(int duration) {
-        super.handleSwapToPoly(duration);
+    public void customSwapToPoly() {
+        super.customSwapToPoly();
         if (this.passiveEnabled) {
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_flame_passive");
+        }
+        if (form == Form.ULT) {
+            disableUltOnPoly = true;
+            ExtensionCommands.removeFx(parentExt, room, id + "flameE");
         }
         if (this.fpScale == 1.5f) {
             ExtensionCommands.scaleActor(parentExt, room, id, 0.6667f);
@@ -105,12 +116,27 @@ public class FlamePrincess extends UserActor {
     }
 
     @Override
-    public void handleSwapFromPoly() {
+    public void customSwapFromPoly() {
         String bundle = this.form == Form.ULT ? "flame_ult" : getSkinAssetBundle();
         ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bundle);
         if (form == Form.ULT) {
             this.fpScale = 1.5f;
+            disableUltOnPoly = false;
             ExtensionCommands.scaleActor(parentExt, room, id, 1.5f);
+            int duration = (int) (E_DURATION - (System.currentTimeMillis() - ultStartTime));
+            // idk if should add +500 ms duration in case ult is extended by late dash?
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    id,
+                    "flame_princess_ultimate_aoe",
+                    duration,
+                    id + "flameE",
+                    true,
+                    "",
+                    false,
+                    false,
+                    team);
         }
         if (this.passiveEnabled) {
             ExtensionCommands.createActorFX(
@@ -204,13 +230,17 @@ public class FlamePrincess extends UserActor {
                 try {
                     stopMoving();
                     if (getHealth() > 0) {
-                        Line2D abilityLine = Champion.getAbilityLine(location, dest, 8f);
+                        Line2D abilityLine = Champion.createLineTowards(location, dest, 8f);
                         ExtensionCommands.playSound(
                                 parentExt,
                                 room,
                                 this.id,
                                 "sfx_flame_princess_cone_of_flame",
                                 this.location);
+
+                        String[] qVos = {"vo/vo_flame_princess_q", "vo/vo_flame_princess_q_2"};
+                        playSoundWithChance(getRandomVoiceLine(qVos), 50);
+
                         fireProjectile(
                                 new FlameProjectile(
                                         this.parentExt,
@@ -243,17 +273,22 @@ public class FlamePrincess extends UserActor {
                     stopMoving();
                     this.wUsed = true;
                     ExtensionCommands.createWorldFX(
-                            this.parentExt,
-                            this.player.getLastJoinedRoom(),
-                            this.id,
+                            parentExt,
+                            room,
+                            id,
                             "fx_target_ring_2",
                             "flame_w",
                             1500,
                             (float) dest.getX(),
                             (float) dest.getY(),
                             true,
-                            this.team,
+                            team,
                             0f);
+
+                    ExtensionCommands.playSound(
+                            parentExt, room, id, "sfx_flame_princess_projectile_throw", location);
+                    playSoundWithChance("vo/vo_flame_princess_w", 50);
+
                     Runnable fxDelay =
                             () ->
                                     ExtensionCommands.createWorldFX(
@@ -291,32 +326,29 @@ public class FlamePrincess extends UserActor {
                     this.form = Form.ULT;
                     this.ultStartTime = System.currentTimeMillis();
                     this.stopMoving(castDelay);
+
+                    String[] eVOS = {
+                        "vo/vo_flame_princess_e",
+                        "vo/vo_flame_princess_e_2",
+                        "vo/vo_flame_princess_e_3"
+                    };
                     ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "vo/vo_flame_princess_flame_form",
-                            this.getLocation());
+                            parentExt, room, id, getRandomVoiceLine(eVOS), location);
                     ExtensionCommands.playSound(
-                            this.parentExt,
-                            this.room,
-                            this.id,
-                            "sfx_flame_princess_flame_form",
-                            this.getLocation());
-                    ExtensionCommands.swapActorAsset(
-                            this.parentExt, this.room, this.id, "flame_ult");
+                            parentExt, room, id, "sfx_flame_princess_flame_form", location);
+                    ExtensionCommands.swapActorAsset(parentExt, room, id, "flame_ult");
                     ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
+                            parentExt,
+                            room,
+                            id,
                             "flame_princess_ultimate_aoe",
                             5500,
-                            this.id + "flameE",
+                            id + "flameE",
                             true,
                             "",
                             true,
                             false,
-                            this.team);
+                            team);
                     ExtensionCommands.addStatusIcon(
                             parentExt,
                             player,
@@ -324,41 +356,47 @@ public class FlamePrincess extends UserActor {
                             "flame_spell_3_description",
                             "icon_flame_s3",
                             E_DURATION);
-                    ExtensionCommands.scaleActor(this.parentExt, this.room, this.id, 1.5f);
-                    this.fpScale = 1.5f;
+                    ExtensionCommands.scaleActor(parentExt, room, id, 1.5f);
+                    fpScale = 1.5f;
                     ExtensionCommands.actorAbilityResponse(
-                            this.parentExt, this.player, "e", true, castDelay, 0);
+                            parentExt, player, "e", true, castDelay, 0);
                     scheduleTask(
                             abilityRunnable(ability, spellData, cooldown, gCooldown, dest),
                             castDelay);
-                } else if (this.ultUses < 5) {
-                    if (canDash()) {
-                        this.ultUses++;
-                        Point2D ogLocation = this.location;
-                        Point2D dashLocation = this.dash(dest, false, E_DASH_SPEED);
-                        double time = ogLocation.distance(dashLocation) / E_DASH_SPEED;
-                        this.dashTime = (int) (time * 1000);
-                        ExtensionCommands.actorAnimate(
-                                this.parentExt, this.room, this.id, "run", this.dashTime, false);
-                        int remainingTime = (int) (System.currentTimeMillis() - ultStartTime);
+                } else if (ultUses < 5) {
+                    ultUses++;
 
-                        if (remainingTime + dashTime > E_DURATION) { // handle last moment dashing
-                            int timeNeeded = remainingTime + dashTime - E_DURATION;
-                            this.ultStartTime += timeNeeded; // add time to complete anim
-                            this.ultUses = 5; // disable further dashing
-                        }
-                        scheduleTask(
-                                abilityRunnable(ability, spellData, cooldown, gCooldown, dest),
-                                E_DASH_COOLDOWN);
-                    } else {
-                        ExtensionCommands.playSound(
-                                this.parentExt,
-                                this.player,
-                                this.id,
-                                "not_allowed_error",
-                                new Point2D.Float(0, 0));
+                    RoomHandler rh = parentExt.getRoomHandler(room.getName());
+                    PathFinder pathFinder = rh.getPathFinder();
+
+                    Point2D dashPoint = pathFinder.getIntersectionPoint(location, dest);
+
+                    double time = location.distance(dashPoint) / E_DASH_SPEED;
+                    dashTime = (int) (time * 1000);
+
+                    DashContext ctx =
+                            new DashContext.Builder(location, dashPoint, E_DASH_SPEED)
+                                    .canBeRedirected(true)
+                                    .onInterrupt(this::playInterruptSoundAndIdle)
+                                    .build();
+                    startDash(ctx);
+
+                    ExtensionCommands.actorAnimate(parentExt, room, id, "run", dashTime, false);
+                    int remainingTime = (int) (System.currentTimeMillis() - ultStartTime);
+
+                    if (remainingTime + dashTime > E_DURATION) { // handle last moment dashing
+                        int timeNeeded = remainingTime + dashTime - E_DURATION;
+                        ultStartTime += timeNeeded; // add time to complete anim
+                        ultUses = 5; // disable further dashing
                     }
+                    scheduleTask(
+                            abilityRunnable(ability, spellData, cooldown, gCooldown, dest),
+                            E_DASH_COOLDOWN);
+                } else {
+                    ExtensionCommands.playSound(
+                            parentExt, player, id, "not_allowed_error", new Point2D.Float(0, 0));
                 }
+
                 break;
         }
     }
@@ -374,11 +412,12 @@ public class FlamePrincess extends UserActor {
 
     private void endUlt() {
         this.form = Form.NORMAL;
+        disableUltOnPoly = false;
         if (this.fpScale == 1.5f) {
             ExtensionCommands.scaleActor(parentExt, room, id, 0.6667f);
             this.fpScale = 1;
         }
-        if (!this.getState(ActorState.POLYMORPH)) { // poly asset swap handled elsewhere
+        if (!effectManager.hasState(ActorState.POLYMORPH)) { // poly asset swap handled elsewhere
             ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
         }
         ExtensionCommands.removeFx(parentExt, room, id + "flameE");
@@ -425,13 +464,14 @@ public class FlamePrincess extends UserActor {
                             .collect(Collectors.toList());
 
             for (Actor a : affectedUsers) {
-                if (a.getActorType() == ActorType.PLAYER) { // poly for bot handled elsewhere
-                    UserActor userActor = (UserActor) a;
-                    userActor.addState(ActorState.POLYMORPH, 0d, 3000);
+                if (a instanceof UserActor || a instanceof Bot && a.isNotLeaping()) {
+                    a.getEffectManager()
+                            .addState(ActorState.POLYMORPH, id + "_fp_poly", 0d, W_POLY_DURATION);
+
                     lastPolymorphTime = System.currentTimeMillis();
                 }
                 double newDamage = getSpellDamage(spellData, true);
-                if (isNeitherTowerNorAlly(a)) {
+                if (isNeitherTowerNorAlly(a) && a.isNotLeaping()) {
                     JsonNode attackData = parentExt.getAttackData(getAvatar(), "spell2");
                     a.addToDamageQueue(FlamePrincess.this, newDamage, attackData, false);
                     handlePassive();
@@ -464,9 +504,9 @@ public class FlamePrincess extends UserActor {
                 UserActor owner,
                 Line2D path,
                 float speed,
-                float hitboxRadius,
+                float offsetDistance,
                 String id) {
-            super(parentExt, owner, path, speed, hitboxRadius, id);
+            super(parentExt, owner, path, speed, offsetDistance, offsetDistance, id);
         }
 
         @Override
@@ -479,7 +519,7 @@ public class FlamePrincess extends UserActor {
             victim.addToDamageQueue(FlamePrincess.this, damage, attackData, false);
 
             ExtensionCommands.playSound(
-                    parentExt, room, "", "akubat_projectileHit1", victim.getLocation());
+                    parentExt, room, "", "sfx_fp_q_explode", victim.getLocation());
 
             ExtensionCommands.createActorFX(
                     parentExt,
@@ -511,14 +551,20 @@ public class FlamePrincess extends UserActor {
             Point2D hitPoint = victim.getLocation();
             Point2D endPoint = getBurstEndPoint(hitPoint);
 
-            Path2D rect =
-                    Champion.createRectangle(
+            AbilityShape qRect =
+                    AbilityShape.createRectangle(
                             hitPoint, endPoint, Q_BURST_RECTANGLE_LENGTH, Q_BURST_RECTANGLE_WIDTH);
 
             double burstDamage = damage * Q_BURST_DMG_RATIO;
 
-            for (Actor actor : handler.getEnemiesInPolygon(team, rect)) {
-                if (isNeitherTowerNorAlly(actor) && !actor.equals(victim)) {
+            List<Actor> nearbyEnemies =
+                    Champion.getEnemyActorsInRadius(handler, team, location, 10f);
+
+            for (Actor actor : nearbyEnemies) {
+                if (isNeitherTowerNorAlly(actor)
+                        && !actor.equals(victim)
+                        && qRect.contains(actor.getLocation(), actor.getCollisionRadius())
+                        && actor.isNotLeaping()) {
                     actor.addToDamageQueue(FlamePrincess.this, burstDamage, attackData, false);
                 }
             }
@@ -554,7 +600,7 @@ public class FlamePrincess extends UserActor {
         public void run() {
             double damage = getPlayerStat("attackDamage");
             if (crit) {
-                damage *= 1.25;
+                damage *= CRIT_DAMAGE_RATIO;
                 damage = handleGrassSwordProc(damage);
             }
             new Champion.DelayedAttack(

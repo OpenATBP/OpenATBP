@@ -15,7 +15,8 @@ import com.smartfoxserver.v2.exceptions.SFSJoinRoomException;
 import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 
 import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.MapData;
+import xyz.openatbp.extension.Console;
+import xyz.openatbp.extension.game.RoomGroup;
 
 public class GotoRoomHandler extends BaseClientRequestHandler {
 
@@ -37,24 +38,16 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
                 "elo", parentExt.getElo((String) sender.getSession().getProperty("tegid")));
         playerInfo.putBool("isTournamentEligible", params.getBool("isTournamentEligible"));
         SFSUserVariable playerVar = new SFSUserVariable("player", playerInfo);
-        ISFSObject location =
-                new SFSObject(); // Will need to be changed when we get actual spawn points made
-        String room_id = params.getUtfString("room_id");
-        float practiceX = (float) MapData.L1_PURPLE_SPAWNS[0].getX();
-        float practiceZ = (float) MapData.L1_PURPLE_SPAWNS[0].getY();
-        float battleLabX = (float) MapData.L2_PURPLE_SPAWNS[0].getX();
-        float battleLabZ = (float) MapData.L2_PURPLE_SPAWNS[0].getY();
-        float x = room_id.contains("practice") || room_id.contains("3p") ? practiceX : battleLabX;
-        float z = room_id.contains("practice") || room_id.contains("3p") ? practiceZ : battleLabZ;
-        if (team == 1) x *= -1;
-        location.putFloat("x", x);
-        location.putFloat("z", z);
+        ISFSObject location = new SFSObject();
+
+        location.putFloat("x", 0f);
+        location.putFloat("z", 0f);
         ISFSObject p1 = new SFSObject();
-        p1.putFloat("x", x);
-        p1.putFloat("z", z);
+        p1.putFloat("x", 0f);
+        p1.putFloat("z", 0f);
         location.putSFSObject("p1", p1);
-        location.putFloat("time", 0);
-        location.putFloat("speed", 0);
+        location.putFloat("time", 0f);
+        location.putFloat("speed", 0f);
         UserVariable locVar = new SFSUserVariable("location", location);
         ISFSObject actorInfo = new SFSObject();
         actorInfo.putBool("autoAttack", true);
@@ -73,33 +66,37 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
             settings.setName(name);
             settings.setGame(true);
             String roomId = params.getUtfString("room_id");
+            Console.debugLog("Room ID: " + roomId);
 
-            if (roomId.contains("tutorial")) {
-                settings.setGroupId("Tutorial");
-                settings.setMaxUsers(1);
-
-            } else if (roomId.contains("practice")) {
-                settings.setGroupId("Practice");
-                settings.setMaxUsers(1);
-
-            } else if (roomId.contains("custom")) {
-                String[] roomIDSplit = params.getUtfString("room_id").split("_");
-                String split = (roomIDSplit[roomIDSplit.length - 1]);
-                int roomSize = Integer.parseInt(split.replace("p", ""));
+            if (roomId.contains("custom")) {
+                String lastPart = roomId.split("_")[2];
+                int roomSize = Integer.parseInt(lastPart.replace("p", ""));
+                Console.debugLog("Room size: " + roomSize);
                 settings.setMaxUsers(roomSize);
-                if (roomSize > 4 || roomSize == 1) settings.setGroupId("PVE");
-                else settings.setGroupId("Practice");
 
-            } else if (roomId.contains("aram")) {
-                settings.setGroupId("ARAM");
-                settings.setMaxUsers(6); // TODO: Testing value
+                if (roomSize > 4) {
+                    settings.setGroupId(RoomGroup.CUSTOM_BATTLE_LAB.name());
+                } else {
+                    settings.setGroupId(RoomGroup.CUSTOM_CANDY_STREETS.name());
+                }
+            } else if (roomId.contains("tutorial")) {
+                settings.setGroupId(RoomGroup.TUTORIAL.name());
+                settings.setMaxUsers(1);
+            } else if (roomId.contains("practice")) {
+                settings.setGroupId(RoomGroup.PRACTICE.name());
+                settings.setMaxUsers(1);
+
+            } else if (roomId.contains("3p")) {
+                // 3vs3 Bot game mode
+                settings.setGroupId(RoomGroup.PVB.name());
+                settings.setMaxUsers(3);
 
             } else if (roomId.contains("6p")) {
-                settings.setGroupId("PVP");
+                settings.setGroupId(RoomGroup.RANKED.name());
                 settings.setMaxUsers(6);
 
             } else {
-                settings.setGroupId("PVE");
+                settings.setGroupId(RoomGroup.PVB.name());
                 settings.setMaxUsers(1);
             }
             try {
@@ -112,16 +109,35 @@ public class GotoRoomHandler extends BaseClientRequestHandler {
         requestedRoom.setPassword("");
         try {
             if (!createdRoom) {
-                if ((int) requestedRoom.getProperty("state")
-                        == 0) // TODO: Desync may cause this to be null, even when it shouldn't?
-                parentExt
-                            .getApi()
-                            .joinRoom(
-                                    sender,
-                                    requestedRoom); // If you did not create the room, join the
-                // existing one.
+                Object stateProperty = requestedRoom.getProperty("state");
+
+                if (stateProperty == null) {
+                    Console.debugLog(
+                            "Room "
+                                    + requestedRoom.getName()
+                                    + " has null state, rejecting join for "
+                                    + sender.getName());
+                    return;
+                }
+
+                int state = (int) stateProperty;
+
+                if (state == 0) {
+                    parentExt.getApi().joinRoom(sender, requestedRoom);
+                } else {
+                    // Game already started, reject
+                    Console.logWarning(
+                            sender.getName()
+                                    + " tried to join room "
+                                    + requestedRoom.getName()
+                                    + " but game already started (state="
+                                    + state
+                                    + ")");
+                }
             }
-        } catch (SFSJoinRoomException e) { // TODO: Disconnect all players if this occurs
+        } catch (SFSJoinRoomException e) {
+            Console.debugLog(
+                    "SFSJoinRoomException for " + sender.getName() + ": " + e.getMessage());
             throw new RuntimeException(e);
         }
     }

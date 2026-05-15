@@ -26,30 +26,28 @@ import com.smartfoxserver.v2.extensions.SFSExtension;
 import com.smartfoxserver.v2.util.TaskScheduler;
 
 import xyz.openatbp.extension.evthandlers.*;
-import xyz.openatbp.extension.game.Obstacle;
+import xyz.openatbp.extension.game.GameMap;
+import xyz.openatbp.extension.game.RoomGroup;
 import xyz.openatbp.extension.game.actors.UserActor;
-import xyz.openatbp.extension.pathfinding.MovementManager;
-import xyz.openatbp.extension.pathfinding.Node;
 import xyz.openatbp.extension.reqhandlers.*;
 
 public class ATBPExtension extends SFSExtension {
     HashMap<String, JsonNode> actorDefinitions =
             new HashMap<>(); // Contains all xml definitions for the characters
-    // TODO: Change Vectors to Point2D
     HashMap<String, JsonNode> itemDefinitions = new HashMap<>();
-    ArrayList<Vector<Float>>[] mapColliders; // Contains all vertices for the practice map
-    ArrayList<Vector<Float>>[] mainMapColliders; // Contains all vertices for the main map
-    List<Obstacle> mainMapObstacles;
-    List<Obstacle> practiceMapObstacles;
+
+    Point2D[] mainMapBoundaries;
+    List<Point2D[]> mainMapObstacles = new ArrayList<>();
+
+    Point2D[] practiceMapBoundaries;
+    List<Point2D[]> practiceMapObstacles = new ArrayList<>();
 
     Map<String, StressLogger> commandStressLog = new HashMap<>();
     ArrayList<Vector<Float>>[] brushColliders;
     ArrayList<Vector<Float>>[] practiceBrushColliders;
-    ArrayList<Path2D> mapPaths; // Contains all line paths of the colliders for the practice map
-    ArrayList<Path2D> mainMapPaths; // Contains all line paths of the colliders for the main map
 
-    ArrayList<Path2D> brushPaths;
-    ArrayList<Path2D> practiceBrushPaths;
+    ArrayList<Path2D> battleLabBrushPaths;
+    ArrayList<Path2D> candyStreetsBrushPaths;
     HashMap<String, List<String>> tips = new HashMap<>();
 
     HashMap<String, RoomHandler> roomHandlers = new HashMap<>();
@@ -58,15 +56,7 @@ public class ATBPExtension extends SFSExtension {
     MongoCollection<Document> playerDatabase;
     MongoCollection<Document> championDatabase;
     MongoCollection<Document> matchHistoryDatabase;
-    public static final int MAP_SIZE_X = 61;
-    public static final int MAIN_MAP_SIZE_Y = 31;
-    public static final int PRAC_MAP_SIZE_Y = 20;
-    public static final int MAX_COL = MAP_SIZE_X * 4;
-    public static final int MAX_MAIN_ROW = MAIN_MAP_SIZE_Y * 4;
-    public static final int MAX_PRAC_ROW = PRAC_MAP_SIZE_Y * 4;
 
-    Node[][] mainMapNodes = new Node[MAX_COL][MAX_MAIN_ROW];
-    Node[][] practiceMapNodes = new Node[MAX_COL][MAX_PRAC_ROW];
     TaskScheduler taskScheduler;
 
     public void init() {
@@ -125,16 +115,34 @@ public class ATBPExtension extends SFSExtension {
         super.destroy();
     }
 
-    private void loadDefinitions()
-            throws IOException { // Reads xml files and turns them into JsonNodes
+    private void loadDefinitions() throws IOException {
         File path = new File(getCurrentFolder() + "/definitions");
         File[] files = path.listFiles();
         ObjectMapper mapper = new XmlMapper();
-        assert files != null;
+
+        if (files == null) {
+            throw new IOException("Definitions folder not found: " + path.getAbsolutePath());
+        }
+
         for (File f : files) {
-            if (f.getName().contains("xml")) {
-                JsonNode node = mapper.readTree(f);
-                actorDefinitions.put(f.getName().replace(".xml", ""), node);
+            if (f.isFile() && f.getName().endsWith(".xml")) {
+                // Console.debugLog("Trying to load XML definition: " + f.getAbsolutePath());
+
+                try {
+                    JsonNode node = mapper.readTree(f);
+                    actorDefinitions.put(f.getName().replace(".xml", ""), node);
+
+                    // Console.debugLog("Loaded XML definition: " + f.getName());
+                } catch (Exception e) {
+                    Console.debugLog("========================================");
+                    Console.debugLog("BROKEN XML FILE: " + f.getAbsolutePath());
+                    Console.debugLog("ERROR MESSAGE: " + e.getMessage());
+                    Console.debugLog("========================================");
+
+                    e.printStackTrace();
+
+                    throw new IOException("Broken XML file: " + f.getAbsolutePath(), e);
+                }
             }
         }
     }
@@ -170,138 +178,75 @@ public class ATBPExtension extends SFSExtension {
         }
     }
 
-    private void loadColliders()
-            throws IOException { // Reads json files and turns them into JsonNodes
-        File practiceMap = new File(getCurrentFolder() + "/data/colliders/practice.json");
-        File mainMap = new File(getCurrentFolder() + "/data/colliders/main.json");
+    private List<Point2D[]> getMapObstaclesFromFile(GameMap map) throws IOException {
+        List<Point2D[]> obstacleList = new ArrayList<>();
+        String filePath = getCurrentFolder();
+
+        if (map == GameMap.BATTLE_LAB) {
+            filePath += "/data/colliders/mainMapObstacles.json";
+        } else {
+            filePath += "/data/colliders/practiceMapObstacles.json";
+        }
+
+        File mapObstacles = new File(filePath);
         ObjectMapper mapper = new ObjectMapper();
-        JsonNode node = mapper.readTree(practiceMap);
-        ArrayNode colliders = (ArrayNode) node.get("SceneColliders").get("collider");
-        mapColliders = new ArrayList[colliders.size()];
-        mapPaths = new ArrayList<>(colliders.size());
-        practiceMapObstacles = new ArrayList<>(colliders.size());
+        JsonNode obstacleNode = mapper.readTree(mapObstacles);
 
-        int col = 0;
-        int row = 0;
+        JsonNode obstacles = obstacleNode.get("obstacles");
 
-        while (col < MAX_COL && row < MAX_MAIN_ROW) {
-            mainMapNodes[col][row] = new Node(col, row, false);
-            col++;
-            if (col == MAX_COL) {
-                col = 0;
-                row++;
-            }
-        }
+        for (JsonNode obstacle : obstacles) {
+            JsonNode vertices = obstacle.get("vertices");
 
-        col = 0;
-        row = 0;
-        while (col < MAX_COL && row < MAX_PRAC_ROW) {
-            practiceMapNodes[col][row] = new Node(col, row, true);
-            col++;
-            if (col == MAX_COL) {
-                col = 0;
-                row++;
-            }
+            Point2D[] points = getPoint2DArrFromJson(vertices);
+            obstacleList.add(points);
         }
-
-        for (int i = 0;
-                i < colliders.size();
-                i++) { // Reads all colliders and makes a list of their vertices
-            Path2D path = new Path2D.Float();
-            ArrayNode vertices = (ArrayNode) colliders.get(i).get("vertex");
-            ArrayList<Vector<Float>> vecs = new ArrayList<>(vertices.size());
-            for (int g = 0; g < vertices.size(); g++) {
-                if (g == 0) {
-                    path.moveTo(
-                            vertices.get(g).get("x").asDouble(),
-                            vertices.get(g).get("z").asDouble());
-                } else { // Draws lines from each vertex to make a shape
-                    path.lineTo(
-                            vertices.get(g).get("x").asDouble(),
-                            vertices.get(g).get("z").asDouble());
-                }
-                Vector<Float> vertex = new Vector<>(2);
-                vertex.add(0, (float) vertices.get(g).get("x").asDouble());
-                vertex.add(1, (float) vertices.get(g).get("z").asDouble());
-                vecs.add(vertex);
-            }
-            path.closePath();
-            mapPaths.add(path);
-            mapColliders[i] = vecs;
-            practiceMapObstacles.add(new Obstacle(path, vecs));
-        }
-
-        // Process main map. This can probably be optimized.
-        node = mapper.readTree(mainMap);
-        colliders = (ArrayNode) node.get("SceneColliders").get("collider");
-        mainMapColliders = new ArrayList[colliders.size()];
-        mainMapPaths = new ArrayList<>(colliders.size());
-        mainMapObstacles = new ArrayList<>(colliders.size());
-        for (int i = 0; i < colliders.size(); i++) {
-            Path2D path = new Path2D.Float();
-            ArrayNode vertices = (ArrayNode) colliders.get(i).get("vertex");
-            ArrayList<Vector<Float>> vecs = new ArrayList<>(vertices.size());
-            for (int g = 0; g < vertices.size(); g++) {
-                if (g == 0) {
-                    path.moveTo(
-                            vertices.get(g).get("x").asDouble(),
-                            vertices.get(g).get("z").asDouble());
-                } else {
-                    path.lineTo(
-                            vertices.get(g).get("x").asDouble(),
-                            vertices.get(g).get("z").asDouble());
-                }
-                Vector<Float> vertex = new Vector<>(2);
-                vertex.add(0, (float) vertices.get(g).get("x").asDouble());
-                vertex.add(1, (float) vertices.get(g).get("z").asDouble());
-                vecs.add(vertex);
-            }
-            path.closePath();
-            mainMapPaths.add(path);
-            mainMapColliders[i] = vecs;
-            mainMapObstacles.add(new Obstacle(path, vecs));
-        }
-
-        for (Node[] nodes : mainMapNodes) {
-            for (Node n : nodes) {
-                if (MovementManager.insideAnyObstacle(
-                                this, false, new Point2D.Double(n.getX(), n.getY()))
-                        || MovementManager.nearStructures(false, n.getLocation())) n.setSolid(true);
-            }
-        }
-        for (Node[] nodes : practiceMapNodes) {
-            for (Node n : nodes) {
-                if (MovementManager.insideAnyObstacle(
-                                this, true, new Point2D.Double(n.getX(), n.getY()))
-                        || MovementManager.nearStructures(true, n.getLocation())) n.setSolid(true);
-            }
-        }
+        return obstacleList;
     }
 
-    public Node[][] getMainMapNodes() {
-        return this.mainMapNodes;
+    private Point2D[] getMapBoundariesFromFile(GameMap map) throws IOException {
+        String filePath = getCurrentFolder();
+        if (map == GameMap.BATTLE_LAB) {
+            filePath += "/data/colliders/mainMapBoundaries.json";
+        } else {
+            filePath += "/data/colliders/practiceMapBoundaries.json";
+        }
+
+        File mapBoundary = new File(filePath);
+
+        ObjectMapper m = new ObjectMapper();
+        JsonNode nod = m.readTree(mapBoundary);
+        JsonNode boundaries = nod.get("boundaries");
+
+        return getPoint2DArrFromJson(boundaries);
     }
 
-    public Node[][] getPracticeMapNodes() {
-        return this.practiceMapNodes;
+    private Point2D[] getPoint2DArrFromJson(JsonNode boundaries) {
+        Point2D[] boundariesList = new Point2D[boundaries.size()];
+
+        int a = 0;
+
+        for (JsonNode pointNode : boundaries) {
+            double x = pointNode.get("x").asDouble();
+            double y = pointNode.get("z").asDouble();
+            boundariesList[a++] = new Point2D.Double(x, y);
+        }
+        return boundariesList;
     }
 
-    public List<Obstacle> getMainMapObstacles() {
+    private void loadColliders() throws IOException {
+        mainMapBoundaries = getMapBoundariesFromFile(GameMap.BATTLE_LAB);
+        mainMapObstacles = getMapObstaclesFromFile(GameMap.BATTLE_LAB);
+
+        practiceMapBoundaries = getMapBoundariesFromFile(GameMap.CANDY_STREETS);
+        practiceMapObstacles = getMapObstaclesFromFile(GameMap.CANDY_STREETS);
+    }
+
+    public Point2D[] getMainMapBoundary() {
+        return this.mainMapBoundaries;
+    }
+
+    public List<Point2D[]> getMainMapObstacles() {
         return this.mainMapObstacles;
-    }
-
-    public List<Obstacle> getPracticeMapObstacles() {
-        return this.practiceMapObstacles;
-    }
-
-    public ArrayList<Vector<Float>>[] getColliders(String map) {
-        if (map.equalsIgnoreCase("practice")) return mapColliders;
-        else return mainMapColliders;
-    }
-
-    public ArrayList<Path2D> getMapPaths(String map) {
-        if (map.equalsIgnoreCase("practice")) return mapPaths;
-        else return mainMapPaths;
     }
 
     public JsonNode getDefinition(String actorName) {
@@ -322,7 +267,7 @@ public class ATBPExtension extends SFSExtension {
 
     public JsonNode getActorData(String actorName) {
         JsonNode node = actorDefinitions.get(actorName);
-        if (node.has("MonoBehaviours")) {
+        if (node != null && node.has("MonoBehaviours")) {
             if (node.get("MonoBehaviours").has("ActorData"))
                 return node.get("MonoBehaviours").get("ActorData");
         }
@@ -363,26 +308,52 @@ public class ATBPExtension extends SFSExtension {
     public void startScripts(Room room) { // Creates a new task scheduler for a room
         if (!this.roomHandlers.containsKey(room.getName())) {
             String groupId = room.getGroupId();
+            RoomGroup roomGroup = GameManager.getRoomGroupEnum(groupId);
+
             int HP_RATE = MapData.NORMAL_HP_SPAWN_RATE;
             String[] pSpawns = GameManager.L1_SPAWNS;
             String rName = room.getName();
 
-            switch (groupId) {
-                case "Tutorial":
-                    roomHandlers.put(rName, new TutorialRoomHandler(this, room));
+            RoomHandler rh;
+
+            switch (roomGroup) {
+                case TUTORIAL:
+                    rh =
+                            new TutorialRoomHandler(
+                                    this, room, practiceMapBoundaries, practiceMapObstacles);
+                    roomHandlers.put(rName, rh);
+                    rh.startScheduler();
+                    rh.initPlayers();
                     break;
 
-                case "Practice":
-                    roomHandlers.put(rName, new PracticeRoomHandler(this, room, pSpawns, HP_RATE));
+                case PRACTICE:
+                case CUSTOM_CANDY_STREETS:
+                    rh =
+                            new PracticeRoomHandler(
+                                    this,
+                                    room,
+                                    pSpawns,
+                                    HP_RATE,
+                                    practiceMapBoundaries,
+                                    practiceMapObstacles);
+                    roomHandlers.put(rName, rh);
+                    rh.startScheduler();
+                    rh.initPlayers();
                     break;
 
-                case "ARAM":
-                    roomHandlers.put(rName, new AramRoomHandler(this, room));
+                case PVB:
+                    rh = new PVBRoomHandler(this, room, mainMapBoundaries, mainMapObstacles);
+                    roomHandlers.put(rName, rh);
+                    rh.startScheduler();
+                    rh.initPlayers();
                     break;
 
-                case "PVE":
-                case "PVP":
-                    roomHandlers.put(rName, new MainMapRoomHandler(this, room));
+                case RANKED:
+                case CUSTOM_BATTLE_LAB:
+                    rh = new MainMapRoomHandler(this, room, mainMapBoundaries, mainMapObstacles);
+                    roomHandlers.put(rName, rh);
+                    rh.startScheduler();
+                    rh.initPlayers();
                     break;
             }
             Console.debugLog("Starting script for room " + room.getName());
@@ -412,7 +383,7 @@ public class ATBPExtension extends SFSExtension {
         JsonNode node = mapper.readTree(mainMap);
         ArrayNode colliders = (ArrayNode) node.get("BrushAreas").get("brush");
         brushColliders = new ArrayList[colliders.size()];
-        brushPaths = new ArrayList<>(colliders.size());
+        battleLabBrushPaths = new ArrayList<>(colliders.size());
         for (int i = 0;
                 i < colliders.size();
                 i++) { // Reads all colliders and makes a list of their vertices
@@ -435,7 +406,7 @@ public class ATBPExtension extends SFSExtension {
                 vecs.add(vertex);
             }
             path.closePath();
-            brushPaths.add(path);
+            battleLabBrushPaths.add(path);
             brushColliders[i] = vecs;
         }
 
@@ -443,7 +414,7 @@ public class ATBPExtension extends SFSExtension {
         JsonNode node2 = mapper.readTree(practiceMap);
         ArrayNode colliders2 = (ArrayNode) node2.get("BrushAreas").get("brush");
         practiceBrushColliders = new ArrayList[colliders2.size()];
-        practiceBrushPaths = new ArrayList<>(colliders2.size());
+        candyStreetsBrushPaths = new ArrayList<>(colliders2.size());
         for (int i = 0;
                 i < colliders2.size();
                 i++) { // Reads all colliders and makes a list of their vertices
@@ -466,14 +437,14 @@ public class ATBPExtension extends SFSExtension {
                 vecs.add(vertex);
             }
             path.closePath();
-            practiceBrushPaths.add(path);
+            candyStreetsBrushPaths.add(path);
             practiceBrushColliders[i] = vecs;
         }
     }
 
-    public ArrayList<Path2D> getBrushPaths(boolean practice) {
-        if (!practice) return this.brushPaths;
-        else return this.practiceBrushPaths;
+    public ArrayList<Path2D> getBrushPaths(GameMap gameMap) {
+        if (gameMap == GameMap.BATTLE_LAB) return battleLabBrushPaths;
+        else return candyStreetsBrushPaths;
     }
 
     public Path2D getBrush(int num, ArrayList<Path2D> brushPaths) {

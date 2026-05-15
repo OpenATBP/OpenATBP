@@ -9,7 +9,17 @@ An open-source lobby, service, and game server for Adventure Time Battle Party.
 ![Screenshot](docs/screenshot2.png)
 
 ## Status
-Currently, a handful of characters have their full kits functional, and games can be played from start to finish. Collision, pathfinding, and a few other systems still need work. For the most up-to-date progress, check the [Trello board](https://trello.com/b/DcrsFKB1/openatbp). Contributions are always welcome!
+OpenATBP is fully playable. All original champions have been implemented, along with
+custom content including a new champion (Choose Goose), additional skins, and backpacks.
+
+Most core gameplay systems are functional. Areas still needing improvement include:
+- Pathfinding
+- Bots
+- Lobby server (queues and party logic)
+
+Adding new content is possible, though the pipeline involves working with legacy Unity
+tooling. For the most up-to-date progress, check the [Trello board](https://trello.com/b/DcrsFKB1/openatbp).
+Contributions are always welcome!
 
 ## Server Architecture
 Originally, Battle Party required several server-side components in order to to function:

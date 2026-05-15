@@ -16,6 +16,8 @@ import com.smartfoxserver.v2.extensions.BaseClientRequestHandler;
 import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.Champion;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.game.effects.ModifierIntent;
+import xyz.openatbp.extension.game.effects.ModifierType;
 
 @MultiHandler
 public class DoActorAbilityHandler extends BaseClientRequestHandler {
@@ -29,8 +31,8 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
         int spellNum = getAbilityNum(params.getUtfString("id"));
         boolean playSound = false;
         if (player.canUseAbility(spellNum)) {
-            if (player.isCastingDashAbility(player.getAvatar(), spellNum)) {
-                if (player.canDash()) {
+            if (player.movementAbility(player.getAvatar(), spellNum)) {
+                if (player.canUseMovementAbility()) {
                     doAbility(parentExt, player, sender, params, spellNum);
                 } else {
                     playSound = true;
@@ -60,13 +62,16 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
         // Console.debugLog(params.getDump());
         String playerActor = player.getAvatar();
         JsonNode spellData = getSpellData(playerActor, spellNum);
+
         if (spellData.has("castType")
                 && spellData.get("castType").asText().equalsIgnoreCase("AIMED")) {
             Point2D serverLocation =
                     new Point2D.Float(params.getFloat("fx"), params.getFloat("fz"));
             player.setLocation(serverLocation);
         }
+
         Point2D oldLocation = new Point2D.Float(x, z);
+
         ISFSObject specialAttackData = new SFSObject();
         List<Float> locationArray = new ArrayList<>(Arrays.asList(x, y, z));
         specialAttackData.putUtfString("id", userId);
@@ -97,7 +102,14 @@ public class DoActorAbilityHandler extends BaseClientRequestHandler {
                 float delta = speedPerZeldronPoints[pointsPutIntoZeldron - 1];
                 String iconName = "junk_3_armor_of_zeldron";
 
-                player.addEffect("speed", delta, ZELDRON_BUFF_DURATION);
+                player.getEffectManager()
+                        .addEffect(
+                                player.getId() + "_zeldron_buff",
+                                "speed",
+                                delta,
+                                ModifierType.MULTIPLICATIVE,
+                                ModifierIntent.BUFF,
+                                ZELDRON_BUFF_DURATION);
 
                 Long lastZeldronTime = player.getLastZeldronBuff();
 

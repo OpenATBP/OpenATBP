@@ -9,26 +9,28 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import com.smartfoxserver.v2.entities.User;
 
-import xyz.openatbp.extension.ATBPExtension;
-import xyz.openatbp.extension.ExtensionCommands;
-import xyz.openatbp.extension.RoomHandler;
+import xyz.openatbp.extension.*;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
-import xyz.openatbp.extension.game.actors.Bot;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.game.effects.ActorState;
+import xyz.openatbp.extension.game.effects.ModifierIntent;
+import xyz.openatbp.extension.game.effects.ModifierType;
+import xyz.openatbp.extension.pathfinding.PathFinder;
 
 public class Finn extends UserActor {
-    private static final int PASSIVE_DURATION = 5000;
-    private static final float Q_ATTACKSPEED_VALUE = 0.2f;
-    private static final float Q_ARMOR_VALUE = 0.15f;
-    private static final float Q_SPEED_VALUE = 0.5f;
-    private static final int Q_ATTACKSPEED_DURATION = 3000;
-    private static final int Q_ARMOR_DURATION = 3000;
-    private static final int Q_SPEED_DURATION = 3000;
-    private static final float W_OFFSET_DISTANCE = 1.25f;
-    private static final int E_DURATION = 5000;
-    private static final int E_ROOT_DURATION = 2000;
-    private static final int E_SELF_CRIPPLE_DURATION = 1200;
+    public static final int PASSIVE_DURATION = 5000;
+    public static final float Q_ATTACK_SPEED_PERCENT = 0.2f;
+    public static final float Q_ARMOR_PERCENT = 0.15f;
+    public static final float Q_SPEED_PERCENT = 0.1f;
+    public static final int Q_ATTACKSPEED_DURATION = 3000;
+    public static final int Q_ARMOR_DURATION = 3000;
+    public static final int Q_SPEED_DURATION = 3000;
+    public static final float W_OFFSET_DISTANCE = 1.25f;
+    public static final int E_DURATION = 5000;
+    public static final int E_ROOT_DURATION = 2000;
+    public static final int E_SELF_CRIPPLE_DURATION = 1200;
+
     private int furyStacks = 0;
     private Actor furyTarget = null;
     private boolean qActive = false;
@@ -43,6 +45,7 @@ public class Finn extends UserActor {
     private boolean isCastingUlt = false;
     private Path2D finnUltRing;
     private boolean ringBoostApplied = false;
+    private int wDuration = 0;
 
     public Finn(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -57,36 +60,34 @@ public class Finn extends UserActor {
                     && finnUltRing.contains(this.getLocation())
                     && !ringBoostApplied) {
                 ringBoostApplied = true;
-                updateStatMenu("attackSpeed");
             } else if (finnUltRing != null
                     && !finnUltRing.contains(this.getLocation())
                     && ringBoostApplied) {
                 ringBoostApplied = false;
-                updateStatMenu("attackSpeed");
             }
         }
-        if (this.ultActivated && System.currentTimeMillis() - this.eStartTime >= E_DURATION) {
-            this.wallLines = null;
-            this.wallsActivated = new boolean[] {false, false, false, false};
-            this.ultActivated = false;
-            this.finnUltRing = null;
-            this.updateStatMenu("attackSpeed");
-        }
+
         if (this.qActive && this.qStartTime + 3000 <= System.currentTimeMillis()) {
             this.qActive = false;
         }
-        if (this.ultActivated) {
+
+        if (this.ultActivated && wallLines != null) {
             for (int i = 0; i < this.wallLines.length; i++) {
                 if (this.wallsActivated[i]) {
                     RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
                     List<Actor> aInRadius = handler.getActorsInRadius(wallLines[0].getP1(), 10f);
                     for (Actor a : aInRadius) {
                         if (this.wallLines[i].ptSegDist(a.getLocation()) <= 0.5f) {
-                            if (isNeitherStructureNorAlly(a)) {
-                                a.addState(ActorState.ROOTED, 0d, E_ROOT_DURATION);
+                            if (isNeitherStructureNorAlly(a) && a.isNotLeaping()) {
+                                a.getEffectManager()
+                                        .addState(
+                                                ActorState.ROOTED,
+                                                id + "_finn_e_root",
+                                                0d,
+                                                E_ROOT_DURATION);
                             }
 
-                            if (isNeitherTowerNorAlly(a)) {
+                            if (isNeitherTowerNorAlly(a) && a.isNotLeaping()) {
                                 this.wallsActivated[i] = false;
                                 JsonNode spellData = this.parentExt.getAttackData("finn", "spell3");
                                 double damage = handlePassive(a, getSpellDamage(spellData, true));
@@ -127,6 +128,14 @@ public class Finn extends UserActor {
                 }
             }
         }
+
+        if (this.ultActivated && System.currentTimeMillis() - this.eStartTime >= E_DURATION) {
+            this.wallLines = null;
+            this.wallsActivated = new boolean[] {false, false, false, false};
+            this.ultActivated = false;
+            this.finnUltRing = null;
+        }
+
         if (furyStacks > 0) {
             if (System.currentTimeMillis() - passiveStart >= PASSIVE_DURATION) {
                 ExtensionCommands.removeFx(
@@ -154,7 +163,7 @@ public class Finn extends UserActor {
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
         super.handleKill(a, attackData);
-        if (a instanceof UserActor || a instanceof Bot) {
+        if (a.isChampion()) {
             this.canCast[1] = true;
             ExtensionCommands.actorAbilityResponse(this.parentExt, this.player, "w", true, 0, 0);
             if (getHealth() > 0) {
@@ -176,22 +185,6 @@ public class Finn extends UserActor {
     }
 
     @Override
-    public double getPlayerStat(String stat) {
-        /* NERF 8/13/24
-        if (stat.equalsIgnoreCase("attackSpeed")
-                && finnUltRing != null
-                && finnUltRing.contains(this.getLocation())) {
-            double currentAttackSpeed = super.getPlayerStat("attackSpeed");
-            double modifier = (this.getStat("attackSpeed") * Q_ATTACKSPEED_VALUE);
-            return currentAttackSpeed - modifier < BASIC_ATTACK_DELAY
-                    ? BASIC_ATTACK_DELAY
-                    : currentAttackSpeed - modifier;
-        }
-         */
-        return super.getPlayerStat(stat);
-    }
-
-    @Override
     public void die(Actor a) {
         super.die(a);
         if (this.furyTarget != null)
@@ -200,7 +193,7 @@ public class Finn extends UserActor {
         if (qActive) {
             RoomHandler handler = parentExt.getRoomHandler(room.getName());
             for (Actor actor : Champion.getActorsInRadius(handler, this.location, 2f)) {
-                if (isNeitherTowerNorAlly(actor)) {
+                if (isNeitherTowerNorAlly(actor) && actor.isNotLeaping()) {
                     JsonNode spellData = parentExt.getAttackData("finn", "spell1");
                     double damage = getSpellDamage(spellData, true);
                     actor.addToDamageQueue(Finn.this, damage, spellData, false);
@@ -242,28 +235,46 @@ public class Finn extends UserActor {
                     basicAttackReset();
                     this.qStartTime = System.currentTimeMillis();
                     this.qActive = true;
-                    this.updateStatMenu("speed");
                     String shieldFX = SkinData.getFinnQFX(avatar);
                     String shieldSFX = SkinData.getFinnQSFX(avatar);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, shieldSFX, this.location);
+                    ExtensionCommands.playSound(parentExt, room, id, shieldSFX, location);
+                    playSoundWithChance("vo/vo_finn_q", 50);
+
                     ExtensionCommands.createActorFX(
-                            this.parentExt,
-                            this.room,
-                            this.id,
+                            parentExt,
+                            room,
+                            id,
                             shieldFX,
                             3000,
-                            this.id + "_shield",
+                            id + "_shield",
                             true,
                             "Bip001 Pelvis",
                             true,
                             false,
-                            this.team);
-                    double asDelta = this.getStat("attackSpeed") * -Q_ATTACKSPEED_VALUE;
-                    this.addEffect("speed", Q_SPEED_VALUE, Q_SPEED_DURATION);
-                    this.addEffect(
-                            "armor", this.getStat("armor") * Q_ARMOR_VALUE, Q_ARMOR_DURATION);
-                    this.addEffect("attackSpeed", asDelta, Q_ATTACKSPEED_DURATION);
+                            team);
+
+                    effectManager.addEffect(
+                            id + "_finn_q_speed",
+                            "speed",
+                            Q_SPEED_PERCENT,
+                            ModifierType.MULTIPLICATIVE,
+                            ModifierIntent.BUFF,
+                            Q_SPEED_DURATION);
+                    effectManager.addEffect(
+                            id + "_finn_q_armor",
+                            "armor",
+                            Q_ARMOR_PERCENT,
+                            ModifierType.MULTIPLICATIVE,
+                            ModifierIntent.BUFF,
+                            Q_ARMOR_DURATION);
+                    effectManager.addEffect(
+                            id + "_finn_q_attack_speed",
+                            "attackSpeed",
+                            Q_ATTACK_SPEED_PERCENT,
+                            ModifierType.MULTIPLICATIVE,
+                            ModifierIntent.BUFF,
+                            Q_ATTACKSPEED_DURATION);
+
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
@@ -280,59 +291,80 @@ public class Finn extends UserActor {
                 break;
             case 2:
                 this.canCast[1] = false;
-                float W_SPELL_RANGE =
-                        location.distance(dest) >= 5 ? 5 : (float) this.location.distance(dest);
-                Path2D quadrangle =
-                        Champion.createRectangle(location, dest, W_SPELL_RANGE, W_OFFSET_DISTANCE);
-                Point2D ogLocation = this.location;
-                Point2D finalDashPoint = this.dash(dest, false, DASH_SPEED);
-                double time = ogLocation.distance(finalDashPoint) / DASH_SPEED;
-                int wTime = (int) (time * 1000);
-                Runnable endAnim =
-                        () ->
-                                ExtensionCommands.actorAnimate(
-                                        parentExt, room, id, "idle", wTime, false);
-                scheduleTask(endAnim, wTime);
+                RoomHandler rh = this.parentExt.getRoomHandler(this.room.getName());
+                PathFinder pf = rh.getPathFinder();
+
+                Point2D dashEndPoint = pf.getIntersectionPoint(location, dest);
+
+                float distance = (float) location.distance(dashEndPoint);
+                wDuration = (int) ((distance / DEFAULT_DASH_SPEED) * 1000);
+
+                AbilityShape wRect =
+                        AbilityShape.createRectangle(
+                                location, dashEndPoint, distance, W_OFFSET_DISTANCE);
+
+                RoomHandler handler = parentExt.getRoomHandler(room.getName());
+                for (Actor a : Champion.getActorsInRadius(handler, location, distance)) {
+                    if (isNeitherTowerNorAlly(a)
+                            && wRect.contains(a.getLocation(), a.getCollisionRadius())
+                            && a.isNotLeaping()) {
+                        double damage = handlePassive(a, getSpellDamage(spellData, true));
+                        a.addToDamageQueue(Finn.this, damage, spellData, false);
+                        passiveStart = System.currentTimeMillis();
+                    }
+                }
+
+                Runnable onEnd =
+                        () -> {
+                            doWEndAnim();
+                            handleWCD();
+                        };
+
+                Runnable onInterrupt =
+                        () -> {
+                            doWEndAnim();
+                            handleWCD();
+                            playInterruptSoundAndIdle();
+                        };
+
+                DashContext ctx =
+                        new DashContext.Builder(
+                                        new Point2D.Double(location.getX(), location.getY()),
+                                        dashEndPoint,
+                                        (float) DEFAULT_DASH_SPEED)
+                                .canBeRedirected(true)
+                                .triggerEndEffectOnRoot(false)
+                                .onEnd(onEnd)
+                                .onInterrupt(onInterrupt)
+                                .build();
+
+                startDash(ctx);
+
                 String dashFX = SkinData.getFinnWFX(avatar);
                 String dashSFX = SkinData.getFinnWSFX(avatar);
                 ExtensionCommands.createActorFX(
-                        this.parentExt,
-                        this.room,
-                        this.id,
+                        parentExt,
+                        room,
+                        id,
                         dashFX,
-                        wTime,
-                        this.id + "finnWTrail",
+                        wDuration,
+                        id + "finnWTrail",
                         true,
                         "",
                         true,
                         false,
-                        this.team);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, dashSFX, this.location);
+                        team);
 
-                RoomHandler handler = this.parentExt.getRoomHandler(this.room.getName());
-                List<Actor> actorsInPolygon = handler.getEnemiesInPolygon(this.team, quadrangle);
-                if (!actorsInPolygon.isEmpty() && getHealth() > 0) {
-                    for (Actor a : actorsInPolygon) {
+                String[] wVOS = {"vo/vo_finn_w", "vo/vo_finn_w_2"};
+                playSoundWithChance(getRandomVoiceLine(wVOS), 50);
 
-                        if (isNeitherTowerNorAlly(a)) {
-                            double damage = handlePassive(a, getSpellDamage(spellData, true));
-                            a.addToDamageQueue(this, damage, spellData, false);
-                            passiveStart = System.currentTimeMillis();
-                        }
-                    }
-                }
+                ExtensionCommands.playSound(parentExt, room, id, dashSFX, location);
 
                 ExtensionCommands.actorAbilityResponse(
-                        this.parentExt,
-                        this.player,
-                        "w",
-                        true,
-                        getReducedCooldown(cooldown),
-                        gCooldown);
+                        parentExt, player, "w", true, getReducedCooldown(cooldown), gCooldown);
                 int delay1 = getReducedCooldown(cooldown);
                 scheduleTask(
-                        abilityRunnable(ability, spellData, cooldown, gCooldown, finalDashPoint),
+                        abilityRunnable(ability, spellData, cooldown, gCooldown, dashEndPoint),
                         delay1);
                 break;
             case 3:
@@ -413,6 +445,12 @@ public class Finn extends UserActor {
                                         this.id,
                                         wallDropSFX,
                                         this.location);
+
+                                String[] eVOS = {"vo/vo_finn_e", "vo/vo_finn_e_2"};
+
+                                ExtensionCommands.playSound(
+                                        parentExt, room, id, getRandomVoiceLine(eVOS), location);
+
                                 ExtensionCommands.createWorldFX(
                                         this.parentExt,
                                         this.room,
@@ -432,8 +470,6 @@ public class Finn extends UserActor {
                                 this.wallLines =
                                         new Line2D[] {northWall, eastWall, southWall, westWall};
                                 this.wallsActivated = new boolean[] {true, true, true, true};
-
-                                updateStatMenu("attackSpeed");
                             };
 
                     scheduleTask(cast, castDelay);
@@ -453,6 +489,17 @@ public class Finn extends UserActor {
                         abilityRunnable(ability, spellData, cooldown, gCooldown, dest), delay2);
                 break;
         }
+    }
+
+    private void doWEndAnim() {
+        ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 100, false);
+    }
+
+    private void handleWCD() {
+        int cd = ChampionData.getBaseAbilityCooldown(this, 1);
+        int finalCD = getReducedCooldown(cd) - wDuration;
+        Runnable allowUse = () -> canCast[1] = true;
+        scheduleTask(allowUse, finalCD);
     }
 
     protected double handlePassive(Actor target, double damage) {
@@ -494,7 +541,7 @@ public class Finn extends UserActor {
                     if (this.qActive) {
                         RoomHandler handler = parentExt.getRoomHandler(room.getName());
                         for (Actor actor : Champion.getActorsInRadius(handler, this.location, 2f)) {
-                            if (isNeitherStructureNorAlly(actor)) {
+                            if (isNeitherStructureNorAlly(actor) && actor.isNotLeaping()) {
                                 JsonNode spellData = parentExt.getAttackData("finn", "spell1");
 
                                 double dmg = getSpellDamage(spellData, true);
@@ -576,9 +623,7 @@ public class Finn extends UserActor {
         }
 
         @Override
-        protected void spellW() {
-            canCast[1] = true;
-        }
+        protected void spellW() {}
 
         @Override
         protected void spellE() {

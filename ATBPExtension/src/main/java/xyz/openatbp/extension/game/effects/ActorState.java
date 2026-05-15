@@ -1,4 +1,4 @@
-package xyz.openatbp.extension.game;
+package xyz.openatbp.extension.game.effects;
 
 public enum ActorState {
     INVINCIBLE,
@@ -14,7 +14,7 @@ public enum ActorState {
     AIRBORNE,
     STEALTH,
     IMMUNITY,
-    BRUSH,
+    BRUSH, // APPLYING THIS STATE CHANGES ACTOR TEXTURE TO INVIS
     REVEALED,
     TRANSFORMED,
     CLEANSED

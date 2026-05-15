@@ -1,9 +1,10 @@
 package xyz.openatbp.extension.game.champions;
 
-import java.awt.geom.Path2D;
+import static xyz.openatbp.extension.game.effects.EffectManager.DEFAULT_KNOCKBACK_SPEED;
+
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -18,31 +19,42 @@ import xyz.openatbp.extension.RoomHandler;
 import xyz.openatbp.extension.game.*;
 import xyz.openatbp.extension.game.actors.Actor;
 import xyz.openatbp.extension.game.actors.UserActor;
+import xyz.openatbp.extension.game.effects.ActorState;
+import xyz.openatbp.extension.game.effects.ModifierIntent;
+import xyz.openatbp.extension.game.effects.ModifierType;
+import xyz.openatbp.extension.pathfinding.PathFinder;
 
 public class Jake extends UserActor {
-    private static final int PASSIVE_PER_TARGET_CD = 8000;
-    private static final double PASSIVE_ATTACKDAMAGE_VALUE = 0.4d;
-    private static final double PASSIVE_SLOW_VALUE = 0.5d;
-    private static final int PASSIVE_SLOW_DURATION = 1500;
-    private static final int PASSIVE_ROOT_DURATION = 1000;
-    private static final int Q_RESTRAINT_TIME = 1600;
-    private static final int Q_STUN_DURATION = 2000;
-    private static final int Q_UNLOCK_SKILLS_DELAY = 500;
-    private static final double E_SPEED_VALUE = 0.8;
-    private static final int E_DURATION = 5000;
-    private static final int E_STOMP_CD = 500;
-    private static final int Q_DASH_SPEED = 13;
-    private boolean grabActive = false;
-    private Point2D grabPoint;
-    private float grabStatus = 0;
-    private Point2D qDestination;
-    private boolean blockAbilities = false;
-    private float offsetDistance = 1;
+    public static final int PASSIVE_PER_TARGET_CD = 8000;
+    public static final double PASSIVE_ATTACKDAMAGE_VALUE = 0.4d;
+    public static final int PASSIVE_ROOT_DURATION = 1000;
+
+    public static final int Q_STUN_DURATION = 2000;
+    public static final int Q_UNLOCK_SKILLS_DELAY = 500;
+    public static final int Q_PROJECTILE_DELAY = 500;
+    public static final float Q_MAX_RANGE = 7f;
+    public static final int Q_VICTIM_SEPARATION = 1;
+    public static final float Q_PROJECTILE_SPEED = 9f;
+    public static final float Q_PULL_SPEED = 10f;
+
+    public static final float W_KNOCKBACK_DIST = 3.5f;
+    public static final float W_RADIUS = 3f;
+
+    public static final double E_SPEED_PERCENT = 0.2;
+    public static final int E_DURATION = 5000;
+    public static final int E_STOMP_CD = 500;
+
+    private boolean blockSkillsAndWalking = false;
     private boolean ultActivated = false;
     private long lastStomped = 0;
     private boolean stompSoundChange = false;
     private Map<String, Long> lastPassiveTime = new HashMap<>();
     private long ultStartTime = 0;
+    private long lastSpell1cAnimTime = 0L;
+    private boolean qAnimResetNeeded = false;
+    private boolean qInterrupt = false;
+
+    private JakeQProjectile qProjectile;
 
     public Jake(User u, ATBPExtension parentExt) {
         super(u, parentExt);
@@ -51,115 +63,33 @@ public class Jake extends UserActor {
     @Override
     public void update(int msRan) {
         super.update(msRan);
-        if (grabActive && (hasInterrupingCC() || this.dead)) {
-            blockAbilities = false;
-            resetGrab();
-            if (!hasMovementCC()) canMove = true;
-            ExtensionCommands.playSound(
-                    this.parentExt, this.room, this.id, "sfx_skill_interrupted", this.location);
-            ExtensionCommands.actorAnimate(parentExt, room, id, "idle", 10, false);
+
+        if (qAnimResetNeeded && isMoving && canMove()) {
+            // Console.debugLog("changing to run anim!");
+            qAnimResetNeeded = false;
+            ExtensionCommands.actorAnimate(parentExt, room, id, "run", 100, false);
         }
-        if (grabActive) {
-            if (grabStatus == 5) offsetDistance = 1.75f;
-            Path2D rectangle = Champion.createRectangle(grabPoint, qDestination, 1, offsetDistance);
-            RoomHandler handler = parentExt.getRoomHandler(room.getName());
-            List<Actor> foes = handler.getEnemiesInPolygon(team, rectangle);
-            foes.removeIf(f -> f.getActorType() == ActorType.TOWER);
 
-            if (!foes.isEmpty()) {
-                resetGrab();
-                Actor victim = foes.get(0);
-                JsonNode spellData = parentExt.getAttackData(getChampionName(avatar), "spell1");
+        if (qAnimResetNeeded && System.currentTimeMillis() - lastSpell1cAnimTime >= 1000) {
+            // Console.debugLog("QAnim reset no longer needed!");
+            qAnimResetNeeded = false;
+        }
 
-                Point2D origLocation = this.location;
-
-                float distance = (float) origLocation.distance(victim.getLocation());
-                JsonNode qData = parentExt.getAttackData(avatar, "spell1");
-                float dmgPerUnitOfDistance = (float) qData.get("damageRatio").asDouble();
-                int baseDmg = qData.get("damage").asInt();
-
-                float modifier = dmgPerUnitOfDistance * distance;
-                double damage = baseDmg + (modifier * getPlayerStat("spellDamage"));
-
-                victim.addToDamageQueue(this, damage, spellData, false);
-
-                if (isNeitherStructureNorAlly(victim)) {
-                    victim.addState(ActorState.STUNNED, 0d, Q_STUN_DURATION);
-                }
-
-                if (distance > 5) {
-                    ExtensionCommands.playSound(
-                            parentExt,
-                            room,
-                            victim.getId(),
-                            "sfx_oildrum_dead",
-                            victim.getLocation());
-
-                    ExtensionCommands.createActorFX(
-                            parentExt,
-                            room,
-                            victim.getId(),
-                            "jake_stomp_fx",
-                            500,
-                            this.id + "_jake_q_fx",
-                            false,
-                            "",
-                            false,
-                            false,
-                            team);
-                }
-                Point2D initLoc =
-                        Champion.getAbilityLine(origLocation, victim.getLocation(), distance - 1)
-                                .getP2();
-
-                Point2D dashPoint = this.dash(initLoc, true, Q_DASH_SPEED);
-                double time = origLocation.distance(dashPoint) / Q_DASH_SPEED;
-                int dashTimeMs = (int) (time * 1000);
-
-                ExtensionCommands.createActorFX(
-                        parentExt,
-                        room,
-                        id,
-                        "jake_trail",
-                        dashTimeMs,
-                        id + "qTrail",
-                        true,
-                        "",
-                        false,
-                        false,
-                        team);
-
-                ExtensionCommands.actorAnimate(parentExt, room, id, "spell1b", dashTimeMs, true);
-
-                Runnable nextAnimation =
-                        () -> {
-                            unlockAbilitiesAfterDelay();
-                            ExtensionCommands.actorAnimate(
-                                    parentExt, room, id, "spell1c", 500, false);
-                        };
-                scheduleTask(nextAnimation, dashTimeMs);
-            } else if (grabStatus < 8) {
-                grabPoint = Champion.getAbilityLine(grabPoint, qDestination, 1).getP2();
-                grabStatus++;
-            } else {
-                resetGrab();
-                unlockAbilitiesAfterDelay();
-                ExtensionCommands.actorAnimate(parentExt, room, id, "spell1c", 500, false);
-            }
+        if (blockSkillsAndWalking && qProjectile != null && hasInterrupingCC() && !qInterrupt) {
+            interruptQ();
         }
 
         if (this.ultActivated && System.currentTimeMillis() - this.ultStartTime >= E_DURATION) {
             ExtensionCommands.swapActorAsset(parentExt, room, id, getSkinAssetBundle());
             ExtensionCommands.removeFx(parentExt, room, id + "_stomp");
             this.ultActivated = false;
-            updateStatMenu("speed");
         }
         if (this.ultActivated && !this.isStopped()) {
             if (System.currentTimeMillis() - this.lastStomped >= E_STOMP_CD) {
                 this.lastStomped = System.currentTimeMillis();
                 RoomHandler handler = parentExt.getRoomHandler(room.getName());
                 for (Actor a : Champion.getActorsInRadius(handler, this.location, 2f)) {
-                    if (isNeitherTowerNorAlly(a)) {
+                    if (isNeitherTowerNorAlly(a) && a.isNotLeaping()) {
                         JsonNode spellData = this.parentExt.getAttackData(this.avatar, "spell3");
                         double damage = (double) (getSpellDamage(spellData, false)) / 2d;
                         a.addToDamageQueue(this, (int) damage, spellData, true);
@@ -194,68 +124,8 @@ public class Jake extends UserActor {
     }
 
     @Override
-    public Point2D dash(Point2D dest, boolean noClip, double dashSpeed) {
-        this.isDashing = true;
-        if (movementDebug)
-            ExtensionCommands.createWorldFX(
-                    this.parentExt,
-                    this.room,
-                    this.id,
-                    "gnome_a",
-                    this.id + "_test" + Math.random(),
-                    5000,
-                    (float) dest.getX(),
-                    (float) dest.getY(),
-                    false,
-                    0,
-                    0f);
-        Point2D dashPoint = dest;
-        /*
-        if (MovementManager.insideAnyObstacle(
-                this.parentExt,
-                this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap(),
-                dest)) {
-            Line2D extendedLine =
-                    MovementManager.extendLine(new Line2D.Double(this.location, dest), 5f);
-            Point2D[] points = MovementManager.findAllPoints(extendedLine);
-            boolean atDashPoint = false;
-            for (Point2D p : points) {
-                if (p.distance(dest) <= 0.01 && !atDashPoint) atDashPoint = true;
-                if (atDashPoint) {
-                    if (!MovementManager.insideAnyObstacle(
-                            this.parentExt,
-                            this.parentExt.getRoomHandler(this.room.getName()).isPracticeMap(),
-                            p)) {
-                        dashPoint = p;
-                        break;
-                    }
-                }
-            }
-            if (dashPoint == null) dashPoint = dest;
-        } else dashPoint = dest;
-
-         */
-        double time = dashPoint.distance(this.location) / dashSpeed;
-        int timeMs = (int) (time * 1000d);
-        this.stopMoving(timeMs);
-        Runnable setIsDashing = () -> this.isDashing = false;
-        parentExt.getTaskScheduler().schedule(setIsDashing, timeMs, TimeUnit.MILLISECONDS);
-        ExtensionCommands.moveActor(
-                this.parentExt,
-                this.room,
-                this.id,
-                this.location,
-                dashPoint,
-                (float) dashSpeed,
-                true);
-        this.setLocation(dashPoint);
-        this.target = null;
-        return dashPoint;
-    }
-
-    @Override
     public boolean canUseAbility(int ability) {
-        if (blockAbilities) return false;
+        if (blockSkillsAndWalking) return false;
         return super.canUseAbility(ability);
     }
 
@@ -281,20 +151,8 @@ public class Jake extends UserActor {
             ExtensionCommands.swapActorAsset(
                     this.parentExt, this.room, this.id, this.getSkinAssetBundle());
             ExtensionCommands.removeFx(this.parentExt, this.room, this.id + "_jake_ring_2");
-            updateStatMenu("speed");
         }
-        if (grabActive) {
-            resetGrab();
-            blockAbilities = false;
-        }
-    }
-
-    @Override
-    public double getPlayerStat(String stat) {
-        if (stat.equalsIgnoreCase("speed") && ultActivated) {
-            return super.getPlayerStat("speed") * E_SPEED_VALUE;
-        }
-        return super.getPlayerStat(stat);
+        if (blockSkillsAndWalking) blockSkillsAndWalking = false;
     }
 
     @Override
@@ -326,28 +184,25 @@ public class Jake extends UserActor {
             Point2D dest) {
         switch (ability) {
             case 1:
-                stopMoving(Q_RESTRAINT_TIME);
-                blockAbilities = true;
+                stopMoving();
+                blockSkillsAndWalking = true;
                 Runnable activateHitbox =
                         () -> {
-                            grabPoint = this.location;
-                            qDestination = Champion.getAbilityLine(location, dest, 9).getP2();
-                            grabActive = true;
+                            Line2D qLine = Champion.createLineTowards(location, dest, Q_MAX_RANGE);
+                            qProjectile =
+                                    new JakeQProjectile(
+                                            parentExt, this, qLine, Q_PROJECTILE_SPEED, 1f, 1f, "");
+                            fireProjectile(qProjectile, location, qLine.getP2(), Q_MAX_RANGE);
                         };
-                scheduleTask(activateHitbox, 500);
+                scheduleTask(activateHitbox, Q_PROJECTILE_DELAY);
                 String stretchSFX = SkinData.getJakeQSFX(avatar);
                 String stretchVO = SkinData.getJakeQVO(avatar);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, stretchSFX, this.location);
-                ExtensionCommands.playSound(
-                        this.parentExt, this.room, this.id, stretchVO, this.location);
+                ExtensionCommands.playSound(parentExt, room, id, stretchSFX, location);
+
+                playSoundWithChance(stretchVO, 50);
+
                 ExtensionCommands.actorAbilityResponse(
-                        this.parentExt,
-                        this.player,
-                        "q",
-                        true,
-                        getReducedCooldown(cooldown),
-                        gCooldown);
+                        parentExt, player, "q", true, getReducedCooldown(cooldown), gCooldown);
                 scheduleTask(
                         abilityHandler(ability, spellData, cooldown, gCooldown, dest),
                         getReducedCooldown(cooldown));
@@ -396,12 +251,13 @@ public class Jake extends UserActor {
                                 true,
                                 this.team);
                         RoomHandler handler = parentExt.getRoomHandler(room.getName());
-                        for (Actor a : Champion.getActorsInRadius(handler, location, 3f)) {
+                        for (Actor a : Champion.getActorsInRadius(handler, location, W_RADIUS)) {
                             if (isNeitherStructureNorAlly(a)) {
-                                a.knockback(location, 3.5f);
+                                a.handleKnockback(
+                                        location, W_KNOCKBACK_DIST, DEFAULT_KNOCKBACK_SPEED);
                             }
 
-                            if (isNeitherTowerNorAlly(a)) {
+                            if (isNeitherTowerNorAlly(a) && a.isNotLeaping()) {
                                 double dmg = getSpellDamage(spellData, false);
                                 a.addToDamageQueue(this, dmg, spellData, false);
                             }
@@ -409,8 +265,8 @@ public class Jake extends UserActor {
 
                         String ballVO = SkinData.getJakeWVO(avatar);
                         String ballSFX = SkinData.getJakeWSFX(avatar);
-                        ExtensionCommands.playSound(
-                                this.parentExt, this.room, this.id, ballVO, this.location);
+                        playSoundWithChance(ballVO, 50);
+
                         ExtensionCommands.playSound(
                                 this.parentExt, this.room, this.id, ballSFX, this.location);
                     }
@@ -434,10 +290,20 @@ public class Jake extends UserActor {
                     this.stopMoving();
                     String bigFX = SkinData.getJakeEFX(avatar);
                     ExtensionCommands.swapActorAsset(this.parentExt, this.room, this.id, bigFX);
-                    this.cleanseEffects();
                     this.ultActivated = true;
                     this.ultStartTime = System.currentTimeMillis();
-                    updateStatMenu("speed");
+
+                    effectManager.cleanseDebuffs();
+                    effectManager.addEffect(
+                            id + "_jake_e_speed",
+                            "speed",
+                            E_SPEED_PERCENT,
+                            ModifierType.MULTIPLICATIVE,
+                            ModifierIntent.DEBUFF,
+                            E_DURATION);
+                    effectManager.addState(
+                            ActorState.IMMUNITY, id + "_jake_e_immunity", 0d, E_DURATION);
+
                     ExtensionCommands.createActorFX(
                             parentExt,
                             room,
@@ -462,15 +328,11 @@ public class Jake extends UserActor {
                             true,
                             true,
                             this.team);
-                    this.addState(ActorState.CLEANSED, 0d, E_DURATION);
-                    this.addState(ActorState.IMMUNITY, 0d, E_DURATION);
 
                     String growVO = SkinData.getJakeEVO(avatar);
                     String growSFX = SkinData.getJakeESFX(avatar);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, growSFX, this.location);
-                    ExtensionCommands.playSound(
-                            this.parentExt, this.room, this.id, growVO, this.location);
+                    ExtensionCommands.playSound(parentExt, room, id, growSFX, location);
+                    ExtensionCommands.playSound(parentExt, room, id, growVO, location);
                 } catch (Exception exception) {
                     logExceptionMessage(avatar, ability);
                     exception.printStackTrace();
@@ -488,18 +350,129 @@ public class Jake extends UserActor {
         }
     }
 
-    private void unlockAbilitiesAfterDelay() {
-        Runnable unlock = () -> blockAbilities = false;
-        scheduleTask(unlock, Q_UNLOCK_SKILLS_DELAY);
+    private void interruptQ() {
+        if (qInterrupt) return;
+
+        qInterrupt = true;
+        if (qProjectile != null) {
+            qProjectile.destroy();
+        }
+        playInterruptSoundAndIdle();
     }
 
-    private void resetGrab() {
-        grabActive = false;
-        grabStatus = 0;
-        offsetDistance = 1;
+    private class JakeQProjectile extends Projectile {
+        public JakeQProjectile(
+                ATBPExtension parentExt,
+                Actor owner,
+                Line2D path,
+                float speed,
+                float offsetDistance,
+                float rectangleHeight,
+                String projectileAsset) {
+            super(parentExt, owner, path, speed, offsetDistance, rectangleHeight, projectileAsset);
+        }
+
+        @Override
+        public boolean isTargetable(Actor a) {
+            return super.isTargetable(a) && a.isNotLeaping();
+        }
+
+        @Override
+        protected void hit(Actor victim) {
+            JsonNode spellData = parentExt.getAttackData(getChampionName(avatar), "spell1");
+
+            Point2D jakeLocation = Jake.this.location;
+            float distance = (float) jakeLocation.distance(victim.getLocation());
+            JsonNode qData = parentExt.getAttackData(avatar, "spell1");
+            float dmgPerUnitOfDistance = (float) qData.get("damageRatio").asDouble();
+            int baseDmg = qData.get("damage").asInt();
+
+            float modifier = dmgPerUnitOfDistance * distance;
+            double damage = baseDmg + (modifier * getPlayerStat("spellDamage"));
+
+            victim.addToDamageQueue(Jake.this, damage, spellData, false);
+
+            if (distance > 5) {
+                ExtensionCommands.playSound(
+                        parentExt, room, victim.getId(), "sfx_oildrum_dead", victim.getLocation());
+
+                ExtensionCommands.createActorFX(
+                        parentExt,
+                        room,
+                        victim.getId(),
+                        "jake_stomp_fx",
+                        500,
+                        this.id + "_jake_q_fx",
+                        false,
+                        "",
+                        false,
+                        false,
+                        team);
+            }
+
+            RoomHandler rh = parentExt.getRoomHandler(room.getName());
+            PathFinder pf = rh.getPathFinder();
+
+            Point2D initialPullPoint = pf.getIntersectionPoint(victim.getLocation(), jakeLocation);
+            Point2D finalPullPoint =
+                    pf.getStoppingPoint(
+                            victim.getLocation(), initialPullPoint, Q_VICTIM_SEPARATION);
+
+            float finalDistance = (float) victim.getLocation().distance(finalPullPoint);
+
+            victim.handlePull(Jake.this.location, finalDistance, Q_PULL_SPEED);
+
+            if (isNeitherStructureNorAlly(victim)) {
+                victim.getEffectManager()
+                        .addState(
+                                ActorState.STUNNED,
+                                Jake.this.id + "_jake_q_stun",
+                                0d,
+                                Q_STUN_DURATION);
+            }
+
+            int victimTravelTimeMs = (int) ((finalDistance / Q_PULL_SPEED) * 1000.0);
+
+            ExtensionCommands.createActorFX(
+                    parentExt,
+                    room,
+                    victim.getId(),
+                    "jake_trail",
+                    victimTravelTimeMs,
+                    victim.getId() + "qTrail",
+                    true,
+                    "",
+                    false,
+                    false,
+                    team);
+
+            destroy();
+        }
+
+        @Override
+        public void destroy() {
+            super.destroy();
+            unlockSkillsAndWalking(qInterrupt);
+            qAnimResetNeeded = true;
+            lastSpell1cAnimTime = System.currentTimeMillis();
+            ExtensionCommands.actorAnimate(parentExt, room, Jake.this.id, "spell1c", -1, false);
+        }
     }
 
-    private void doPassive(Actor target) {
+    @Override
+    public boolean canMove() {
+        if (blockSkillsAndWalking) return false;
+        return super.canMove();
+    }
+
+    private void unlockSkillsAndWalking(boolean interrupt) {
+        Runnable unlock = () -> blockSkillsAndWalking = false;
+        int delay = interrupt ? 0 : Q_UNLOCK_SKILLS_DELAY;
+        scheduleTask(unlock, delay);
+        qInterrupt = false;
+    }
+
+    public void doPassive(Actor target) {
         Runnable passive =
                 () -> {
                     lastPassiveTime.put(target.getId(), System.currentTimeMillis());
@@ -509,7 +482,14 @@ public class Jake extends UserActor {
                             getPlayerStat("attackDamage") * PASSIVE_ATTACKDAMAGE_VALUE,
                             attackData,
                             false);
-                    target.addState(ActorState.ROOTED, 0, PASSIVE_ROOT_DURATION);
+
+                    target.getEffectManager()
+                            .addState(
+                                    ActorState.ROOTED,
+                                    id + "_jake_passive_root",
+                                    0d,
+                                    PASSIVE_ROOT_DURATION);
+
                     if (!this.avatar.contains("cake"))
                         ExtensionCommands.playSound(
                                 this.parentExt,
