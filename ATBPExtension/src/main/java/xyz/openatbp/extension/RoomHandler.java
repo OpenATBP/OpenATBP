@@ -42,7 +42,7 @@ public abstract class RoomHandler implements Runnable {
     protected static final int GOO_SPAWN_RATE = 90;
     protected static final int MONSTER_DEBUG_SPAWN_RATE = 3;
     public static final double ALTAR_BUFF = 0.25;
-    public static final double GOO_ALTAR_BUFF = 37.5;
+    public static final double GOO_ALTAR_BUFF = 0.375;
     public static final int ALTAR_BUFF_DURATION = 60000;
     public static final int GOO_ALTAR_CAPTURE_EXP = 25;
     protected final String[] SPAWNS;
