@@ -92,7 +92,8 @@ public class BubbleGum extends UserActor {
                                 this.parentExt.getAttackData("princessbubblegum", "spell1");
                         double damage = this.getSpellDamage(spellData, false) / 10f;
                         a.addToDamageQueue(this, damage, spellData, true);
-                        if (isNeitherStructureNorAlly(a)) {
+                        if (isNeitherStructureNorAlly(a)
+                                && !a.getEffectManager().hasState(id + "_pb_q_slow")) {
                             a.getEffectManager()
                                     .addState(
                                             ActorState.SLOWED,
@@ -102,7 +103,8 @@ public class BubbleGum extends UserActor {
                         }
 
                     } else if (a.getId().equalsIgnoreCase(this.id)) {
-                        if (System.currentTimeMillis() - lastQSpeed > Q_SPEED_DURATION) {
+                        if (System.currentTimeMillis() - lastQSpeed > Q_SPEED_DURATION
+                                && !this.getEffectManager().hasEffect(this.id + "_pb_q_speed")) {
                             effectManager.addEffect(
                                     this.id + "_pb_q_speed",
                                     "speed",
