@@ -47,7 +47,6 @@ public class Billy extends UserActor {
 
     public Billy(User u, ATBPExtension parentExt) {
         super(u, parentExt);
-        Console.debugLog(room.getGroupId());
     }
 
     @Override
