@@ -164,7 +164,12 @@ public class MagicMan extends UserActor {
                     exception.printStackTrace();
                 }
                 ExtensionCommands.actorAbilityResponse(
-                        this.parentExt, this.player, "q", true, 0, gCooldown);
+                        this.parentExt,
+                        this.player,
+                        "q",
+                        true,
+                        getReducedCooldown(cooldown),
+                        gCooldown);
                 int globalCD = gCooldown + 1000;
                 scheduleTask(abilityRunnable(ability, spellData, 0, globalCD, dest), gCooldown);
                 break;
