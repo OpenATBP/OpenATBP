@@ -192,7 +192,6 @@ public abstract class RoomHandler implements Runnable {
                         ObjectMapper mapper = new ObjectMapper();
                         JsonNode dataObj = mapper.readTree(data.toJson());
                         int wins = 0;
-                        int points = 0;
                         int kills = (int) ua.getStat("kills");
                         int deaths = (int) ua.getStat("deaths");
                         int assists = (int) ua.getStat("assists");
@@ -268,11 +267,6 @@ public abstract class RoomHandler implements Runnable {
                                             ChampionData.getTier(currentElo + eloGain)));
                             updateList.add(Updates.inc("player.elo", eloGain));
                             updateList.add(Updates.inc("player.winsPVP", wins));
-                            updateList.add(
-                                    Updates.inc(
-                                            "player.points",
-                                            points)); // Always zero I have no idea what this is
-                            // for?;
                             updateList.add(Updates.inc("player.kills", kills));
                             updateList.add(Updates.inc("player.deaths", deaths));
                             updateList.add(Updates.inc("player.assists", assists));

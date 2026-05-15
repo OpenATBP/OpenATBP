@@ -491,12 +491,12 @@ public class TutorialRoomHandler extends RoomHandler {
             if (playerDoc != null) {
                 Document playerObject = playerDoc.get("player", Document.class);
                 if (playerObject != null) {
-                    Integer winsBots = playerObject.getInteger("winsBots");
-                    if (winsBots != null && winsBots == 0) {
+                    boolean tutorialCompleted = playerObject.getBoolean("tutorialCompleted", false);
+                    if (!tutorialCompleted) {
                         this.tutorialCoins = true;
 
                         List<Bson> updateList = new ArrayList<>();
-                        updateList.add(Updates.inc("player.winsBots", 1));
+                        updateList.add(Updates.set("player.tutorialCompleted", true));
                         updateList.add(Updates.inc("player.coins", TUTORIAL_COINS));
 
                         Bson updates = Updates.combine(updateList);
