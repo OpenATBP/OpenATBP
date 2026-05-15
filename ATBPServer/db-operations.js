@@ -39,6 +39,7 @@ var newUserFunction = function (
             elo: 1.0,
             disconnects: 0.0,
             playsBots: 0.0,
+            tutorialCompleted: false,
             rank: 1.0,
             rankProgress: 0.0,
             winsPVP: 0.0,

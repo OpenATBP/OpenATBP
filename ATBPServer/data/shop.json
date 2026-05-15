@@ -259,6 +259,12 @@
   },
   {
     "type": "CUSTOM_SKIN",
+    "id": "gunter_skin_green",
+    "default": false,
+    "cost": 500
+  },
+  {
+    "type": "CUSTOM_SKIN",
     "id": "gunter_skin_guntelina",
     "default": false,
     "cost": 500
