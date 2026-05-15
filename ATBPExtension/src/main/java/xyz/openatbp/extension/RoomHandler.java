@@ -184,7 +184,7 @@ public abstract class RoomHandler implements Runnable {
                             parentExt, ua.getUser(), "music", "music/music_defeat");
                 }
 
-                if (roomGroup.equals(RoomGroup.RANKED)) {
+                if (roomGroup.equals(RoomGroup.RANKED) || roomGroup.equals(RoomGroup.PVB)) {
                     MongoCollection<Document> playerData = this.parentExt.getPlayerDatabase();
                     String tegID = (String) ua.getUser().getSession().getProperty("tegid");
                     Document data = playerData.find(eq("user.TEGid", tegID)).first();
@@ -260,37 +260,41 @@ public abstract class RoomHandler implements Runnable {
                             }
                         }
                         List<Bson> updateList = new ArrayList<>();
+                        if (roomGroup == RoomGroup.RANKED) {
+                            updateList.add(Updates.inc("player.playsPVP", 1));
+                            updateList.add(
+                                    Updates.set(
+                                            "player.tier",
+                                            ChampionData.getTier(currentElo + eloGain)));
+                            updateList.add(Updates.inc("player.elo", eloGain));
+                            updateList.add(Updates.inc("player.winsPVP", wins));
+                            updateList.add(
+                                    Updates.inc(
+                                            "player.points",
+                                            points)); // Always zero I have no idea what this is
+                            // for?;
+                            updateList.add(Updates.inc("player.kills", kills));
+                            updateList.add(Updates.inc("player.deaths", deaths));
+                            updateList.add(Updates.inc("player.assists", assists));
+                            updateList.add(Updates.inc("player.towers", towers));
+                            updateList.add(Updates.inc("player.minions", minions));
+                            updateList.add(Updates.inc("player.jungleMobs", jungleMobs));
+                            updateList.add(Updates.inc("player.altars", altars));
+                            updateList.add(Updates.inc("player.scoreTotal", score));
 
-                        updateList.add(Updates.inc("player.playsPVP", 1));
-                        updateList.add(
-                                Updates.set(
-                                        "player.tier", ChampionData.getTier(currentElo + eloGain)));
-                        updateList.add(Updates.inc("player.elo", eloGain));
-                        updateList.add(Updates.inc("player.winsPVP", wins));
-                        updateList.add(
-                                Updates.inc(
-                                        "player.points",
-                                        points)); // Always zero I have no idea what this is
-                        // for?;
-                        updateList.add(Updates.inc("player.kills", kills));
-                        updateList.add(Updates.inc("player.deaths", deaths));
-                        updateList.add(Updates.inc("player.assists", assists));
-                        updateList.add(Updates.inc("player.towers", towers));
-                        updateList.add(Updates.inc("player.minions", minions));
-                        updateList.add(Updates.inc("player.jungleMobs", jungleMobs));
-                        updateList.add(Updates.inc("player.altars", altars));
-                        updateList.add(Updates.inc("player.scoreTotal", score));
-
-                        if (updateSpree) {
-                            updateList.add(Updates.set("player.largestSpree", largestSpree));
+                            if (updateSpree) {
+                                updateList.add(Updates.set("player.largestSpree", largestSpree));
+                            }
+                            if (updateMulti) {
+                                updateList.add(Updates.set("player.largestMulti", largestMulti));
+                            }
+                            if (updateHighestScore) {
+                                updateList.add(Updates.set("player.scoreHighest", score));
+                            }
+                        } else {
+                            updateList.add(Updates.inc("player.playsBots", 1));
+                            updateList.add(Updates.inc("player.winsBots", wins));
                         }
-                        if (updateMulti) {
-                            updateList.add(Updates.set("player.largestMulti", largestMulti));
-                        }
-                        if (updateHighestScore) {
-                            updateList.add(Updates.set("player.scoreHighest", score));
-                        }
-
                         Bson updates = Updates.combine(updateList);
                         UpdateOptions options = new UpdateOptions().upsert(true);
                         Console.debugLog(playerData.updateOne(data, updates, options));
