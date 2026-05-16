@@ -238,7 +238,6 @@ public class Finn extends UserActor {
                     String shieldFX = SkinData.getFinnQFX(avatar);
                     String shieldSFX = SkinData.getFinnQSFX(avatar);
                     ExtensionCommands.playSound(parentExt, room, id, shieldSFX, location);
-                    playSoundWithChance("vo/vo_finn_q", 50);
 
                     ExtensionCommands.createActorFX(
                             parentExt,

@@ -106,10 +106,11 @@ public class Billy extends UserActor {
             int gCooldown,
             int castDelay,
             Point2D dest) {
-        if (this.passiveUses < 3) {
-            if (this.passiveUses != 0)
-                ExtensionCommands.removeStatusIcon(
-                        this.parentExt, this.player, "p" + this.passiveUses);
+        if (passiveUses < 3) {
+            if (passiveUses != 0) {
+                ExtensionCommands.removeStatusIcon(parentExt, player, "p" + passiveUses);
+            }
+
             this.passiveUses++;
             if (this.passiveUses != 3) {
                 ExtensionCommands.addStatusIcon(
@@ -149,8 +150,9 @@ public class Billy extends UserActor {
                                 Champion.getEnemyActorsInRadius(rh, team, location, Q_SPELL_RANGE);
                         if (!nearbyEnemyActors.isEmpty()) {
                             for (Actor a : nearbyEnemyActors) {
-                                if (rect.contains(a.getLocation(), a.getCollisionRadius())) {
-                                    if (isNeitherStructureNorAlly(a) && a.isNotLeaping()) {
+                                if (rect.contains(a.getLocation(), a.getCollisionRadius())
+                                        && a.isNotLeaping()) {
+                                    if (isNeitherStructureNorAlly(a)) {
                                         if (passiveUses == 3) {
                                             a.getEffectManager()
                                                     .addState(
@@ -164,7 +166,7 @@ public class Billy extends UserActor {
                                                 Q_KNOCKBACK_DIST,
                                                 DEFAULT_KNOCKBACK_SPEED);
                                     }
-                                    if (isNeitherTowerNorAlly(a) && a.isNotLeaping()) {
+                                    if (isNeitherTowerNorAlly(a)) {
                                         double damage = getSpellDamage(spellData, true);
                                         a.addToDamageQueue(this, damage, spellData, false);
                                     }
@@ -247,13 +249,14 @@ public class Billy extends UserActor {
 
                     usePassiveAbility();
                     basicAttackReset();
-                    ExtensionCommands.addStatusIcon(
+
+                    Champion.handleStatusIcon(
                             parentExt,
-                            player,
-                            "finalpassive",
-                            "billy_spell_4_short_description",
+                            this,
                             "icon_billy_passive",
+                            "billy_spell_4_short_description",
                             W_ATTACKSPEED_DURATION);
+
                     ExtensionCommands.createActorFX(
                             this.parentExt,
                             this.room,

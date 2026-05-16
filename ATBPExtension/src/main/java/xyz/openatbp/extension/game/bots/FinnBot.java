@@ -182,7 +182,6 @@ public class FinnBot extends Bot {
         String shieldFX = SkinData.getFinnQFX(avatar);
         String shieldSFX = SkinData.getFinnQSFX(avatar);
         ExtensionCommands.playSound(this.parentExt, this.room, this.id, shieldSFX, this.location);
-        playSoundWithChance("vo/vo_finn_q", 50);
         ExtensionCommands.createActorFX(
                 this.parentExt,
                 this.room,

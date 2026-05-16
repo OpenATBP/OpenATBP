@@ -487,6 +487,7 @@ public class Neptr extends UserActor {
             this.actorType = ActorType.COMPANION;
             this.stats = this.initializeStats();
             this.iconName = "Mine #" + mineNum;
+            this.movementState = MovementState.IDLE;
             ExtensionCommands.addStatusIcon(
                     parentExt, player, iconName, "Mine placed!", "icon_neptr_s2", MINE_LIFE_SPAN);
             ExtensionCommands.createActor(
@@ -496,18 +497,18 @@ public class Neptr extends UserActor {
                         Neptr.this.playSoundWithChance("vo/vo_neptr_mine", 50);
                         ExtensionCommands.playSound(
                                 parentExt, room, this.id, "sfx_neptr_mine_spawn", this.location);
-                        ExtensionCommands.createWorldFX(
-                                this.parentExt,
-                                this.room,
-                                this.id,
+                        ExtensionCommands.createActorFX(
+                                parentExt,
+                                room,
+                                id,
                                 "fx_target_ring_2",
-                                this.id + "_mine",
-                                30000,
-                                (float) this.location.getX(),
-                                (float) this.location.getY(),
+                                MINE_LIFE_SPAN,
+                                id + "_mine",
                                 true,
-                                this.team,
-                                0f);
+                                "",
+                                false,
+                                true,
+                                team);
                     };
             int delay = 150;
             scheduleTask(creationDelay, delay);
@@ -556,7 +557,8 @@ public class Neptr extends UserActor {
 
         @Override
         public void update(int msRan) {
-            this.handleDamageQueue();
+            handleDamageQueue();
+            handleMovementUpdate();
             if (this.dead) return;
             if (System.currentTimeMillis() - this.timeOfBirth >= MINE_LIFE_SPAN) {
                 this.die(this);

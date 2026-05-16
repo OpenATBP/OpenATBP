@@ -374,7 +374,10 @@ public class Jake extends UserActor {
 
         @Override
         public boolean isTargetable(Actor a) {
-            return super.isTargetable(a) && a.isNotLeaping();
+            String avatar = a.getAvatar();
+            return !avatar.equals("choosegoose_chest")
+                    && a.getActorType() != ActorType.TOWER
+                    && a.getTeam() != owner.getTeam();
         }
 
         @Override

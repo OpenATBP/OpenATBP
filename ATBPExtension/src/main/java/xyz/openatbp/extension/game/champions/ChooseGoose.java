@@ -155,7 +155,6 @@ public class ChooseGoose extends UserActor {
                 qStacks.clear();
                 stopMoving();
                 basicAttackReset();
-
                 if (!isAutoAttacking) {
                     ExtensionCommands.actorAnimate(parentExt, room, id, "spell1a", 400, false);
                 }
@@ -260,6 +259,7 @@ public class ChooseGoose extends UserActor {
                 canCast[2] = false;
                 eStartTime = System.currentTimeMillis();
                 isEActive = true;
+                stopMoving();
 
                 eProjectileDestination = dest;
                 eSpellData = spellData;
@@ -318,7 +318,7 @@ public class ChooseGoose extends UserActor {
 
     @Override
     public void handleKill(Actor a, JsonNode attackData) {
-        if (a.getActorType() == ActorType.PLAYER || a instanceof Bot) spawnChest(a);
+        if (a.getActorType() == ActorType.PLAYER || a instanceof Bot) spawnChest(a.getLocation());
         super.handleKill(a, attackData);
     }
 
@@ -341,7 +341,7 @@ public class ChooseGoose extends UserActor {
                     enemyWhoDied = enemy;
                 }
             }
-            if (enemyWhoDied != null) spawnChest(enemyWhoDied);
+            if (enemyWhoDied != null) spawnChest(enemyWhoDied.getLocation());
         }
     }
 
@@ -355,11 +355,10 @@ public class ChooseGoose extends UserActor {
         }
     }
 
-    private void spawnChest(Actor enemy) {
+    private void spawnChest(Point2D spawnLoc) {
         if (System.currentTimeMillis() - lastChestSpawn >= PASSIVE_COOLDOWN) {
             lastChestSpawn = System.currentTimeMillis();
 
-            Point2D enemyLocation = enemy.getLocation();
             Random random = new Random();
             double minRadius = 1; // Minimum distance from enemy
             double maxRadius = 2; // Maximum distance from enemy
@@ -368,13 +367,12 @@ public class ChooseGoose extends UserActor {
 
             Point2D randomLocation =
                     new Point2D.Double(
-                            enemyLocation.getX() + (randomDistance * Math.cos(randomAngle)),
-                            enemyLocation.getY() + (randomDistance * Math.sin(randomAngle)));
+                            spawnLoc.getX() + (randomDistance * Math.cos(randomAngle)),
+                            spawnLoc.getY() + (randomDistance * Math.sin(randomAngle)));
 
             RoomHandler rh = parentExt.getRoomHandler(room.getName());
             PathFinder pf = rh.getPathFinder();
-            Point2D chestPoint =
-                    pf.getNonObstaclePointOrIntersection(enemyLocation, randomLocation);
+            Point2D chestPoint = pf.getNonObstaclePointOrIntersection(spawnLoc, randomLocation);
 
             chest = new Chest(chestPoint, getOppositeTeam());
             rh.addCompanion(chest);
@@ -565,35 +563,36 @@ public class ChooseGoose extends UserActor {
             this.timeOfBirth = System.currentTimeMillis();
             this.actorType = ActorType.COMPANION;
             this.stats = this.initializeStats();
+            this.movementState = MovementState.IDLE;
 
             ExtensionCommands.createActor(parentExt, room, id, avatar, location, 0f, team);
 
             Runnable creationDelay =
                     () -> {
-                        ExtensionCommands.createWorldFX(
+                        ExtensionCommands.createActorFX(
                                 parentExt,
                                 room,
                                 id,
                                 "billy_passive",
-                                id + "_chestFX",
                                 CHEST_DURATION,
-                                (float) location.getX(),
-                                (float) location.getY(),
+                                id + "_chestFX",
                                 false,
-                                team,
-                                0f);
-                        ExtensionCommands.createWorldFX(
+                                "",
+                                false,
+                                false,
+                                team);
+                        ExtensionCommands.createActorFX(
                                 parentExt,
                                 room,
                                 id,
                                 "fx_aggrorange_2",
-                                id + "_chestRing",
                                 CHEST_DURATION,
-                                (float) location.getX(),
-                                (float) location.getY(),
+                                id + "_chestRing",
+                                false,
+                                "",
+                                false,
                                 true,
-                                getOppositeTeam(),
-                                0f);
+                                getOppositeTeam());
 
                         Point2D gooseLocation = ChooseGoose.this.location;
                         if (gooseLocation.distance(location) < 10) {
@@ -696,6 +695,7 @@ public class ChooseGoose extends UserActor {
         @Override
         public void update(int msRan) {
             handleDamageQueue();
+            handleMovementUpdate();
             if (dead) return;
             if (System.currentTimeMillis() - timeOfBirth >= CHEST_DURATION) {
                 die(this);
