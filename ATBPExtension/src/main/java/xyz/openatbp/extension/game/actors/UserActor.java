@@ -294,6 +294,9 @@ public class UserActor extends Actor {
             if ((getAttackType(attackData) == AttackType.SPELL)
                     && (a instanceof UserActor || a instanceof Bot)) {
                 if (grobShieldActive) {
+                    ExtensionCommands.removeFx(parentExt, room, id + "_spellShield");
+                    ExtensionCommands.removeStatusIcon(
+                            parentExt, player, "junk_4_grob_gob_glob_grod_name");
                     grobShieldActive = false;
                     lastGrobDeviceProc = System.currentTimeMillis();
                     return false;
@@ -413,10 +416,9 @@ public class UserActor extends Actor {
     }
 
     public void handleGrobDevice() {
-        int points = ChampionData.getJunkLevel(this, "junk_5_grob_device");
-        if (points != -1
-                && System.currentTimeMillis() - lastGrobDeviceProc >= GROB_DEVICE_SHIELD_CD
-                && !grobShieldActive) {
+        boolean points = ChampionData.getJunkLevel(this, "junk_4_grob_gob_glob_grod") > 0;
+        boolean cdOk = System.currentTimeMillis() - lastGrobDeviceProc >= GROB_DEVICE_SHIELD_CD;
+        if (points && (lastGrobDeviceProc == 0 || cdOk) && !grobShieldActive) {
             grobShieldActive = true;
             ExtensionCommands.createActorFX(
                     parentExt,
