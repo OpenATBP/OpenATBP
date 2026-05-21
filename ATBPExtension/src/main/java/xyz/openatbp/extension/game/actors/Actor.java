@@ -588,8 +588,9 @@ public abstract class Actor {
 
         if (activeDash != null) {
             if (activeDash.canBeRedirected()) {
-                activeDash.setDest(knockbackDest);
-                startMoveTo(knockbackDest, true);
+                Point2D blockedDest = getForcedMovementDestination(knockbackDest);
+                activeDash.setDest(blockedDest);
+                startMoveTo(blockedDest, true);
             } else {
                 interruptDash(false);
             }
@@ -615,7 +616,8 @@ public abstract class Actor {
     }
 
     private void applyForcedMovement(Point2D dest, MovementState state, float speed) {
-        float finalDist = (float) location.distance(dest);
+        Point2D blockedDest = getForcedMovementDestination(dest);
+        float finalDist = (float) location.distance(blockedDest);
         int time = (int) ((finalDist / speed) * 1000);
 
         movementState = state;
@@ -630,7 +632,18 @@ public abstract class Actor {
                 },
                 time);
 
-        startMoveTo(dest, true);
+        startMoveTo(blockedDest, true);
+    }
+
+    private Point2D getForcedMovementDestination(Point2D dest) {
+        RoomHandler rh = parentExt.getRoomHandler(room.getName());
+        PathFinder pF = rh.getPathFinder();
+
+        Point2D blockedDest = pF.getIntersectionPoint(location, dest);
+        if (!pF.isPointInsideMap(blockedDest)) {
+            return pF.getMapEdgeIntersectionPoint(location, blockedDest);
+        }
+        return blockedDest;
     }
 
     public void handleCharmMovement() {

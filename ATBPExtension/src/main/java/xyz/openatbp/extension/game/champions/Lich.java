@@ -326,13 +326,11 @@ public class Lich extends UserActor {
 
                         RoomHandler rh = parentExt.getRoomHandler(room.getName());
                         PathFinder pf = rh.getPathFinder();
-                        Point2D teleportPoint =
-                                pf.getNonObstaclePointOrIntersection(location, eLocation);
-                        teleport(eLocation);
+                        Point2D tPoint = pf.getNonObstaclePointOrIntersection(location, eLocation);
+                        teleport(tPoint);
 
                         if (skully != null) {
-                            skully.setLocation(teleportPoint);
-                            skully.teleport(teleportPoint);
+                            skully.teleport(tPoint);
                         }
 
                         ExtensionCommands.removeStatusIcon(parentExt, player, "ultDuration");
