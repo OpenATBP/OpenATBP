@@ -77,6 +77,7 @@ public abstract class Actor {
     protected Actor fearer;
     protected Point2D moveStartPoint;
     protected Point2D moveDestination;
+    protected Point2D moveTarget;
     protected List<Point2D> movePointsToDest;
     protected int movePointsIndex = 0;
     protected long elapsedMoveTimeMs;
@@ -108,6 +109,8 @@ public abstract class Actor {
     protected List<Actor> killedChampions = new ArrayList<>();
     private Point2D lastCheckedLocation = null;
     private int stuckTicks = 0;
+    private static final double MOVE_TARGET_EPSILON = 0.25d;
+    private static final double UNSTUCK_EDGE_CLEARANCE = 0.5d;
     protected final Random random = new Random();
     protected String lastVoiceLinePlayed = "";
     protected int voiceLineConsecutiveCount = 0;
@@ -499,6 +502,7 @@ public abstract class Actor {
         isMoving = false;
         moveStartPoint = location;
         moveDestination = location;
+        moveTarget = null;
         movePointsToDest = new ArrayList<>();
         movePointsIndex = 0;
         elapsedMoveTimeMs = 0;
@@ -774,6 +778,7 @@ public abstract class Actor {
 
         if (movePointsToDest.isEmpty()) {
             isMoving = false;
+            moveTarget = null;
             return;
         }
 
@@ -784,11 +789,13 @@ public abstract class Actor {
         }
         if (movePointsIndex >= movePointsToDest.size()) {
             isMoving = false;
+            moveTarget = null;
             return;
         }
 
         moveStartPoint = location;
         moveDestination = movePointsToDest.get(movePointsIndex);
+        moveTarget = new Point2D.Double(endPoint.getX(), endPoint.getY());
 
         float speed = getEffectiveMoveSpeed();
         double distance = location.distance(moveDestination);
@@ -822,6 +829,7 @@ public abstract class Actor {
 
             if (movePointsToDest == null || movePointsIndex + 1 >= movePointsToDest.size()) {
                 isMoving = false;
+                moveTarget = null;
                 elapsedMoveTimeMs = 0;
                 return;
             }
@@ -840,6 +848,7 @@ public abstract class Actor {
             }
             if (dist <= 0.001) {
                 isMoving = false;
+                moveTarget = null;
                 elapsedMoveTimeMs = 0;
                 return;
             }
@@ -875,6 +884,10 @@ public abstract class Actor {
         if (activeDash != null && activeDash.getOnTick() != null) {
             activeDash.getOnTick().run();
         }
+    }
+
+    protected boolean isMovingToward(Point2D dest) {
+        return isMoving && moveTarget != null && moveTarget.distance(dest) <= MOVE_TARGET_EPSILON;
     }
 
     private int findVisualTargetIndex() {
@@ -913,11 +926,16 @@ public abstract class Actor {
                     RoomHandler rh = parentExt.getRoomHandler(room.getName());
                     PathFinder pF = rh.getPathFinder();
 
-                    if (!pF.isPointInsideObstacle(location) && pF.isPointInsideMap(location)) {
+                    if (pF.isPointSafelyWalkable(location, UNSTUCK_EDGE_CLEARANCE)) {
+                        stopMoving();
+                        stuckTicks = 0;
                         return;
                     }
 
-                    Console.logWarning("id: " + id + " is inside obstacle or outside the map!");
+                    Console.logWarning(
+                            "id: "
+                                    + id
+                                    + " is inside obstacle, outside the map, or too close to an obstacle edge!");
 
                     // spiral search for nearest point that is in map, not in obstacle, and 0.5+
                     // units from any edge
@@ -930,10 +948,10 @@ public abstract class Actor {
                                     new Point2D.Double(
                                             location.getX() + r * Math.cos(angle),
                                             location.getY() + r * Math.sin(angle));
-                            if (pF.isPointInsideMap(candidate)
-                                    && !pF.isPointInsideObstacle(candidate)) {
+                            if (pF.isPointSafelyWalkable(candidate, UNSTUCK_EDGE_CLEARANCE)) {
                                 Console.debugLog("Unstuck teleport dist=" + r);
                                 teleport(candidate);
+                                stuckTicks = 0;
                                 return;
                             }
                         }

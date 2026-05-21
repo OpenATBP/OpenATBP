@@ -1332,7 +1332,7 @@ public abstract class Bot extends Actor {
     }
 
     private void move(Point2D dest) {
-        if (moveDestination != dest) startMoveTo(dest, false);
+        if (!isMovingToward(dest)) startMoveTo(dest, false);
     }
 
     protected void executeBotAction(BotAction stateToExecute) {
@@ -1363,8 +1363,8 @@ public abstract class Bot extends Actor {
                     }
                 }
 
-                if (closestPack != null && canMove()) startMoveTo(closestPack, false);
-                else if (canMove()) startMoveTo(mapConfig.respawnPoint, false);
+                if (closestPack != null && canMove()) move(closestPack);
+                else if (canMove()) move(mapConfig.respawnPoint);
 
                 break;
             case FLEEING:
@@ -1466,7 +1466,7 @@ public abstract class Bot extends Actor {
 
             this.target = target;
             if (!withinRange(target) && canMove()) {
-                startMoveTo(target.getLocation(), false);
+                move(target.getLocation());
             } else if (withinRange(target)) {
                 if (!isStopped()) stopMoving();
                 if (canAttack()) attack(target);

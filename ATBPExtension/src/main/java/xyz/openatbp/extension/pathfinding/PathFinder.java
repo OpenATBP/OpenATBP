@@ -119,6 +119,14 @@ public class PathFinder {
         return false;
     }
 
+    private boolean isSegmentClear(Point2D start, Point2D dest) {
+        return isPointInsideMap(start)
+                && isPointInsideMap(dest)
+                && !isPointInsideObstacle(start)
+                && !isPointInsideObstacle(dest)
+                && !lineIntersectsObstacle(start, dest);
+    }
+
     public boolean isPointInsideObstacle(Point2D point) {
         for (Obstacle obs : obstacleList) {
             if (obs.getPath().contains(point)) {
@@ -126,6 +134,22 @@ public class PathFinder {
             }
         }
         return false;
+    }
+
+    public boolean isPointSafelyWalkable(Point2D point, double obstacleClearance) {
+        return isPointInsideMap(point)
+                && !isPointInsideObstacle(point)
+                && getDistanceToNearestObstacleEdge(point) >= obstacleClearance;
+    }
+
+    public double getDistanceToNearestObstacleEdge(Point2D point) {
+        double closest = Double.MAX_VALUE;
+        for (Obstacle obs : obstacleList) {
+            for (Line2D edge : obs.getEdges()) {
+                closest = Math.min(closest, edge.ptSegDist(point));
+            }
+        }
+        return closest;
     }
 
     public Point2D getIntersectionPoint(Point2D start, Point2D end) {
@@ -352,7 +376,7 @@ public class PathFinder {
         if (!walkable[gs[0]][gs[1]] || !walkable[ge[0]][ge[1]]) return Collections.emptyList();
 
         // fast path – direct line of sight
-        if (hasLOS(gs[0], gs[1], ge[0], ge[1])) {
+        if (hasLOS(gs[0], gs[1], ge[0], ge[1]) && isSegmentClear(start, end)) {
             return subdivideLine(start, end, SPLINE_SUBDIVISIONS);
         }
 
@@ -486,7 +510,7 @@ public class PathFinder {
             double diff = Math.abs(a2 - a1);
             if (diff > Math.PI) diff = 2.0 * Math.PI - diff;
 
-            if (diff > threshold) {
+            if (diff > threshold || !isSegmentClear(prev, next)) {
                 result.add(cur);
             }
         }
@@ -525,13 +549,15 @@ public class PathFinder {
 
             List<Point2D> seg = new ArrayList<>();
             boolean valid = true;
+            Point2D previous = p1;
 
             for (int j = 1; j <= subdivisions; j++) {
                 double t = j / (double) subdivisions;
                 Point2D pt = catmullRom(p0, p1, p2, p3, t);
                 int[] g = worldToGrid(pt);
-                if (inBounds(g[0], g[1]) && walkable[g[0]][g[1]]) {
+                if (inBounds(g[0], g[1]) && walkable[g[0]][g[1]] && isSegmentClear(previous, pt)) {
                     seg.add(pt);
+                    previous = pt;
                 } else {
                     valid = false;
                     break;
