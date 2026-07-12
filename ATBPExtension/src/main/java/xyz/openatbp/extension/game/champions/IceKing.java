@@ -2,6 +2,7 @@ package xyz.openatbp.extension.game.champions;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -282,14 +283,13 @@ public class IceKing extends UserActor {
                 stopMoving();
                 this.canCast[0] = false;
 
-                int bound = 1;
-                String[] qVOS = new String[2];
-                qVOS[0] = SkinData.getIceKingQVO(avatar);
+                List<String> qVOS = new ArrayList<>();
+                qVOS.add(SkinData.getIceKingQVO(avatar));
                 if (!avatar.contains("queen")) {
-                    qVOS[1] = "vo/vo_ice_king_q";
-                    bound++;
+                    qVOS.add("vo/vo_ice_king_q");
                 }
-                playSoundWithChance(getRandomVoiceLine(qVOS), 50);
+                String[] arr = qVOS.toArray(new String[0]);
+                playSoundWithChance(getRandomVoiceLine(arr), 50);
                 ExtensionCommands.playSound(parentExt, room, id, "sfx_ice_king_q", location);
 
                 ExtensionCommands.actorAbilityResponse(

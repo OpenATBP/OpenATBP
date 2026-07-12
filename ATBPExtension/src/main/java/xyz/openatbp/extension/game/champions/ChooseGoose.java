@@ -741,7 +741,7 @@ public class ChooseGoose extends UserActor {
         }
 
         private boolean isProperTarget(Actor a) {
-            return a.getActorType() == ActorType.PLAYER
+            return a.isChampion()
                     || a.getActorType() == ActorType.BASE
                     || a.getAvatar().equals("keeoth")
                     || a.getAvatar().equals("goomonster")

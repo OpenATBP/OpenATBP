@@ -38,19 +38,6 @@ public class IceKingBot extends Bot {
     private long ultStartTime = 0;
     private long lasWhirlwindTime = 0;
 
-    private static final double LOW_HP_ACTION_PHEALTH = 0.3;
-    private static final int SOLO_JUNGLE_LV = 5;
-    private static final double SOLO_JUNGLE_PHEALTH = 0.85;
-    private static final double DUO_JUNGLE_PHEALTH = 0.45;
-    private static final double TRIO_JUNGLE_PHEALTH = 0.35;
-    private static final float FLEE_MINIONS_ATTACKED_PHP_PER_LV = 0.04f;
-    private static final float DEF_ALTAR_CAPTURE_ACTION_DIST = 3f;
-    private static final double PLAYER_ATTACKED_LV_DIF = -1;
-    private static final double JUNGLING_ALLIES_RADIUS = 7;
-    private static final float AGGRO_RANGE = 5f;
-    private static final float FLEE_FROM_FIGHT_PHEALTH = 0.6f;
-    private static final float FLEE_FARM_MINIONS_PHEALTH = 0.4f;
-
     private enum AssetBundle {
         NORMAL,
         FLIGHT

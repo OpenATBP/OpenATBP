@@ -28,7 +28,7 @@ public class Billy extends UserActor {
     private static final int W_ATTACKSPEED_DURATION = 5000;
     private static final float W_ATTACK_SPEED_PERCENT = 0.7f;
     private static final int W_SPEED_DURATION = 5000;
-    private static final float W_SPEED_PERCENT = 0.5f;
+    private static final float W_SPEED_BUFF = 0.5f;
     private static final int W_CRATER_OFFSET = 1;
     public static final float W_LEAP_SPEED = 14f;
 
@@ -245,14 +245,14 @@ public class Billy extends UserActor {
                                 W_ATTACKSPEED_DURATION);
                     }
 
-                    if (effectManager.hasEffect(id + "_billy_w_attack_speed")) {
-                        effectManager.refreshEffect(id + "_billy_w_attack_speed");
+                    if (effectManager.hasEffect(id + "_billy_w_speed")) {
+                        effectManager.refreshEffect(id + "_billy_w_speed");
                     } else {
                         effectManager.addEffect(
                                 this.id + "_billy_w_speed",
                                 "speed",
-                                W_SPEED_PERCENT,
-                                ModifierType.MULTIPLICATIVE,
+                                W_SPEED_BUFF,
+                                ModifierType.ADDITIVE,
                                 ModifierIntent.BUFF,
                                 W_SPEED_DURATION);
                     }
